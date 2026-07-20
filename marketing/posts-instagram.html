@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<title>AniDeck — Posts Instagram</title>
+<link href="https://fonts.googleapis.com/css2?family=Anton&family=Manrope:wght@400;600;700;800&family=JetBrains+Mono:wght@500;600&display=swap" rel="stylesheet">
+<style>
+  *{box-sizing:border-box; margin:0; padding:0;}
+  body{background:#333; display:flex; flex-direction:column; align-items:center; gap:40px; padding:40px; font-family:'JetBrains Mono',monospace;}
+  .label{color:#fff; font-size:13px; margin-bottom:10px; text-align:center;}
+  .post{
+    width:1080px; height:1080px; position:relative; overflow:hidden;
+    background:#0A0714; color:#F1EEFA; font-family:'Manrope',sans-serif;
+    transform:scale(0.5); transform-origin:top center; margin-bottom:-540px;
+  }
+  .holo{background:linear-gradient(90deg,#FF4FD8,#7B5CFF 45%,#3FE0F0); -webkit-background-clip:text; background-clip:text; color:transparent;}
+  .ambient{position:absolute; inset:0;
+    background:
+      radial-gradient(600px 500px at 15% 10%, rgba(255,79,216,.16), transparent 60%),
+      radial-gradient(650px 550px at 90% 90%, rgba(63,224,240,.14), transparent 60%);
+  }
+  .grid-bg{position:absolute; inset:0; background-image:linear-gradient(#2B2247 1px,transparent 1px),linear-gradient(90deg,#2B2247 1px,transparent 1px); background-size:64px 64px; opacity:.35; mask-image:radial-gradient(ellipse 80% 60% at 50% 0%, black 0%, transparent 75%);}
+
+  /* POST 1 - anúncio */
+  .p1-content{position:relative; z-index:2; height:100%; display:flex; flex-direction:column; align-items:center; justify-content:center; text-align:center; padding:100px;}
+  .p1-logo{display:flex; align-items:center; gap:20px; margin-bottom:60px;}
+  .p1-logo .mark{width:80px; height:80px; border-radius:22px; background:linear-gradient(135deg,#FF4FD8,#7B5CFF,#3FE0F0); display:flex; align-items:center; justify-content:center; font-family:'Anton',sans-serif; font-size:36px; color:#0A0714;}
+  .p1-logo .word{font-family:'Anton',sans-serif; font-size:56px;}
+  .p1-content h1{font-family:'Anton',sans-serif; font-size:64px; text-transform:uppercase; line-height:1.15; margin-bottom:30px;}
+  .p1-content p{font-size:28px; color:#A79BC9; max-width:780px; line-height:1.5;}
+  .p1-badge{margin-top:50px; font-family:'JetBrains Mono',monospace; font-size:22px; padding:16px 34px; border-radius:99px; border:2px dashed #FFC542; color:#FFC542;}
+
+  /* POST 2 - feature calendário */
+  .p2-content{position:relative; z-index:2; height:100%; padding:90px; display:flex; flex-direction:column;}
+  .p2-kicker{font-family:'JetBrains Mono',monospace; font-size:24px; color:#3FE0F0; letter-spacing:.1em; margin-bottom:20px;}
+  .p2-content h1{font-family:'Anton',sans-serif; font-size:58px; text-transform:uppercase; line-height:1.1; margin-bottom:40px; max-width:800px;}
+  .p2-cards{display:flex; flex-direction:column; gap:24px; margin-top:20px;}
+  .p2-card{display:flex; align-items:center; gap:28px; background:#130F22; border:2px solid #2B2247; border-radius:24px; padding:28px 34px;}
+  .p2-thumb{width:90px; height:90px; border-radius:16px; flex-shrink:0;}
+  .p2-t1{background:linear-gradient(145deg,#FF4FD8,#181330);}
+  .p2-t2{background:linear-gradient(145deg,#7B5CFF,#181330);}
+  .p2-title{font-weight:700; font-size:30px;}
+  .p2-sub{font-family:'JetBrains Mono',monospace; font-size:20px; color:#6B5F94; margin-top:6px;}
+  .p2-count{margin-left:auto; font-family:'JetBrains Mono',monospace; font-weight:700; font-size:24px; color:#3FE0F0; background:rgba(63,224,240,.1); border:2px solid rgba(63,224,240,.3); padding:10px 20px; border-radius:99px; white-space:nowrap;}
+  .p2-footer{margin-top:auto; display:flex; align-items:center; gap:16px;}
+  .p2-footer .mark{width:56px; height:56px; border-radius:16px; background:linear-gradient(135deg,#FF4FD8,#7B5CFF,#3FE0F0); display:flex; align-items:center; justify-content:center; font-family:'Anton',sans-serif; font-size:26px; color:#0A0714;}
+  .p2-footer .word{font-family:'Anton',sans-serif; font-size:36px;}
+
+  /* POST 3 - feature curadoria/stats */
+  .p3-content{position:relative; z-index:2; height:100%; padding:90px; display:flex; flex-direction:column;}
+  .p3-kicker{font-family:'JetBrains Mono',monospace; font-size:24px; color:#FF4FD8; letter-spacing:.1em; margin-bottom:20px;}
+  .p3-content h1{font-family:'Anton',sans-serif; font-size:56px; text-transform:uppercase; line-height:1.1; margin-bottom:50px; max-width:850px;}
+  .p3-stats{display:grid; grid-template-columns:1fr 1fr; gap:24px;}
+  .p3-stat{background:#130F22; border:2px solid #2B2247; border-radius:24px; padding:34px; border-top:6px solid var(--c);}
+  .p3-stat b{display:block; font-family:'Anton',sans-serif; font-size:52px;}
+  .p3-stat span{font-family:'JetBrains Mono',monospace; font-size:18px; color:#6B5F94; text-transform:uppercase;}
+  .p3-footer{margin-top:auto; display:flex; align-items:center; gap:16px;}
+  .p3-footer .mark{width:56px; height:56px; border-radius:16px; background:linear-gradient(135deg,#FF4FD8,#7B5CFF,#3FE0F0); display:flex; align-items:center; justify-content:center; font-family:'Anton',sans-serif; font-size:26px; color:#0A0714;}
+  .p3-footer .word{font-family:'Anton',sans-serif; font-size:36px;}
+</style>
+</head>
+<body>
+
+<div class="label">POST 1 — Anúncio / Teaser (1080×1080 real, exibido em 50% aqui)</div>
+<div class="post">
+  <div class="grid-bg"></div>
+  <div class="ambient"></div>
+  <div class="p1-content">
+    <div class="p1-logo">
+      <div class="mark">A</div>
+      <div class="word">Ani<span class="holo">Deck</span></div>
+    </div>
+    <h1>Seu Deck de animes,<br>do <span class="holo">seu jeito.</span></h1>
+    <p>O catálogo completo do MyAnimeList, com a curadoria, as notas e a organização que só fazem sentido pra você — numa interface que você não vai ter vergonha de usar.</p>
+    <div class="p1-badge">EM BREVE</div>
+  </div>
+</div>
+
+<div class="label">POST 2 — Feature: Calendário de Lançamentos</div>
+<div class="post">
+  <div class="grid-bg"></div>
+  <div class="ambient"></div>
+  <div class="p2-content">
+    <div class="p2-kicker">// PRÓXIMOS EPISÓDIOS</div>
+    <h1>Nunca mais perca o dia do lançamento.</h1>
+    <div class="p2-cards">
+      <div class="p2-card">
+        <div class="p2-thumb p2-t1"></div>
+        <div><div class="p2-title">Seu anime favorito</div><div class="p2-sub">EPISÓDIO 09</div></div>
+        <div class="p2-count">⏱ 2D 06H</div>
+      </div>
+      <div class="p2-card">
+        <div class="p2-thumb p2-t2"></div>
+        <div><div class="p2-title">Aquele que você tá em dia</div><div class="p2-sub">EPISÓDIO 04</div></div>
+        <div class="p2-count">⏱ 5D 12H</div>
+      </div>
+    </div>
+    <div class="p2-footer">
+      <div class="mark">A</div>
+      <div class="word">Ani<span class="holo">Deck</span></div>
+    </div>
+  </div>
+</div>
+
+<div class="label">POST 3 — Feature: Estatísticas Pessoais</div>
+<div class="post">
+  <div class="grid-bg"></div>
+  <div class="ambient"></div>
+  <div class="p3-content">
+    <div class="p3-kicker">// SUA RELAÇÃO COM ANIME, EM NÚMEROS</div>
+    <h1>Sua curadoria vira estatística de verdade.</h1>
+    <div class="p3-stats">
+      <div class="p3-stat" style="--c:#3FE0F0;"><b>18d 6h</b><span>Tempo assistido</span></div>
+      <div class="p3-stat" style="--c:#FF4FD8;"><b>Ação</b><span>Gênero favorito</span></div>
+      <div class="p3-stat" style="--c:#FFC542;"><b>9.1</b><span>Sua nota média</span></div>
+      <div class="p3-stat" style="--c:#a0ff78;"><b>437</b><span>Episódios assistidos</span></div>
+    </div>
+    <div class="p3-footer">
+      <div class="mark">A</div>
+      <div class="word">Ani<span class="holo">Deck</span></div>
+    </div>
+  </div>
+</div>
+
+</body>
+</html>

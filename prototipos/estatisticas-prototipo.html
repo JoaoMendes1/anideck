@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AniDeck — Estatísticas</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Anton&family=Manrope:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --void:#0A0714; --panel:#130F22; --panel-2:#181330; --line:#2B2247;
+    --text:#F1EEFA; --muted:#A79BC9; --muted-2:#6B5F94;
+    --holo-1:#FF4FD8; --holo-2:#7B5CFF; --holo-3:#3FE0F0; --gold:#FFC542; --green:#a0ff78;
+  }
+  *{box-sizing:border-box;}
+  body{margin:0; background:var(--void); color:var(--text); font-family:'Manrope',sans-serif; -webkit-font-smoothing:antialiased;}
+  a{color:inherit; text-decoration:none;}
+  .display{font-family:'Anton',sans-serif; font-weight:400;}
+  .mono{font-family:'JetBrains Mono',monospace;}
+  .container{max-width:980px; margin:0 auto; padding:0 20px;}
+  .holo-text{background:linear-gradient(90deg, var(--holo-1), var(--holo-2) 45%, var(--holo-3)); -webkit-background-clip:text; background-clip:text; color:transparent;}
+  ::-webkit-scrollbar{height:6px;} ::-webkit-scrollbar-thumb{background:var(--line); border-radius:99px;}
+
+  nav{position:sticky; top:0; z-index:50; background:rgba(10,7,20,.9); backdrop-filter:blur(12px); border-bottom:1px solid var(--line); padding:14px 0;}
+  .nav-inner{display:flex; align-items:center; justify-content:space-between; gap:16px; max-width:980px; margin:0 auto; padding:0 20px;}
+  .logo{display:flex; align-items:center; gap:10px;}
+  .logo-mark{width:32px; height:32px; border-radius:9px; background:linear-gradient(135deg, var(--holo-1), var(--holo-2), var(--holo-3)); display:flex; align-items:center; justify-content:center; font-family:'Anton',sans-serif; font-size:14px; color:#0A0714;}
+  .logo-word{font-family:'Anton',sans-serif; font-size:16px;}
+  .nav-links{display:flex; align-items:center; gap:24px;}
+  .nav-links a{font-size:13.5px; font-weight:600; color:var(--muted);}
+  .nav-links a.active{color:var(--text);}
+  .search-icon-btn{width:32px; height:32px; border-radius:50%; border:1px solid var(--line); background:var(--panel); color:var(--muted); display:flex; align-items:center; justify-content:center;}
+  .profile-chip{display:flex; align-items:center; gap:9px; padding:6px 12px 6px 6px; border-radius:99px; background:var(--panel); border:1px solid var(--line);}
+  .avatar{width:26px; height:26px; border-radius:50%; background:linear-gradient(135deg, var(--holo-2), var(--holo-3));}
+  .profile-chip span{font-size:12.5px; font-weight:700;}
+  @media(max-width:760px){ .nav-links{display:none;} }
+
+  .page-head{padding:36px 0 22px;}
+  .page-head h1{font-family:'Anton',sans-serif; font-weight:400; text-transform:uppercase; font-size:clamp(1.6rem,3.6vw,2.2rem); margin:0 0 6px;}
+  .page-head p{color:var(--muted); font-size:14px; margin:0;}
+
+  .hero-stat-row{display:grid; grid-template-columns:1.2fr 1fr 1fr; gap:16px; margin-bottom:30px;}
+  @media(max-width:700px){ .hero-stat-row{grid-template-columns:1fr; } }
+  .hero-stat{background:var(--panel); border:1px solid var(--line); border-radius:16px; padding:22px;}
+  .hero-stat .k{font-family:'JetBrains Mono',monospace; font-size:10.5px; color:var(--muted-2); letter-spacing:.08em; margin-bottom:8px;}
+  .hero-stat .v{font-family:'Anton',sans-serif; font-size:28px;}
+  .hero-stat .v small{font-size:14px; color:var(--muted); font-family:'Manrope',sans-serif; font-weight:600;}
+  .hero-stat.big{background:linear-gradient(135deg, rgba(255,79,216,.08), rgba(63,224,240,.08)); border-color:rgba(63,224,240,.25);}
+
+  .grid-2{display:grid; grid-template-columns:1fr 1fr; gap:20px;}
+  @media(max-width:760px){ .grid-2{grid-template-columns:1fr;} }
+
+  .card{background:var(--panel); border:1px solid var(--line); border-radius:16px; padding:24px; margin-bottom:20px;}
+  .card h2{font-family:'Anton',sans-serif; font-weight:400; text-transform:uppercase; font-size:14.5px; margin:0 0 20px;}
+
+  /* DONUT */
+  .donut-wrap{display:flex; align-items:center; gap:24px; flex-wrap:wrap;}
+  .legend{display:flex; flex-direction:column; gap:10px; flex:1; min-width:140px;}
+  .legend-item{display:flex; align-items:center; gap:9px; font-size:12.5px;}
+  .legend-item .sw{width:10px; height:10px; border-radius:3px; flex-shrink:0;}
+  .legend-item b{margin-left:auto; font-family:'JetBrains Mono',monospace;}
+
+  /* GENRE BARS */
+  .genre-row{display:grid; grid-template-columns:110px 1fr 34px; gap:10px; align-items:center; margin-bottom:12px;}
+  .genre-row .name{font-size:12.5px; font-weight:700;}
+  .genre-track{height:8px; background:var(--panel-2); border-radius:99px; overflow:hidden;}
+  .genre-fill{height:100%; border-radius:99px; background:linear-gradient(90deg, var(--holo-1), var(--holo-2));}
+  .genre-row .pct{font-family:'JetBrains Mono',monospace; font-size:11px; color:var(--muted-2); text-align:right;}
+
+  /* MONTH BARS */
+  .month-chart{display:flex; align-items:flex-end; gap:8px; height:110px; margin-bottom:8px;}
+  .month-bar{flex:1; background:linear-gradient(0deg, var(--holo-2), var(--holo-3)); border-radius:4px 4px 0 0; position:relative;}
+  .month-labels{display:flex; gap:8px;}
+  .month-labels span{flex:1; text-align:center; font-family:'JetBrains Mono',monospace; font-size:9.5px; color:var(--muted-2);}
+
+  /* LINE CHART */
+  .line-chart-wrap{width:100%; overflow-x:auto;}
+</style>
+</head>
+<body>
+
+<nav>
+  <div class="nav-inner">
+    <div class="logo"><div class="logo-mark"><svg width="100%" height="100%" viewBox="0 0 84 100" xmlns="http://www.w3.org/2000/svg">
+<defs>
+<linearGradient id="hG" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#FF4FD8"/><stop offset="35%" stop-color="#7B5CFF"/><stop offset="65%" stop-color="#3FE0F0"/><stop offset="100%" stop-color="#8be9ff"/></linearGradient>
+<filter id="dS" x="-20%" y="-20%" width="150%" height="150%"><feDropShadow dx="0" dy="3" stdDeviation="3" flood-color="#000000" flood-opacity="0.6"/></filter>
+<filter id="nG" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur in="SourceGraphic" stdDeviation="2" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+<pattern id="hx" width="6" height="10.3923" patternUnits="userSpaceOnUse" patternTransform="scale(0.8)"><path d="M3 0 L6 1.732 L6 5.196 L3 6.928 L0 5.196 L0 1.732 Z" fill="none" stroke="#7B5CFF" stroke-width="0.3" opacity="0.4"/><circle cx="3" cy="3.464" r="0.5" fill="#3FE0F0" opacity="0.3"/></pattern>
+<clipPath id="cI"><rect x="6" y="8" width="50" height="72" rx="6"/></clipPath>
+<style>
+.sA{animation:oS 8s ease-in-out infinite;} .spS{animation:sS 40s linear infinite; transform-box:fill-box; transform-origin:center;} .spR{animation:sR 30s linear infinite; transform-box:fill-box; transform-origin:center;} .bA{animation:bL 7s ease-in-out infinite;} .tA{animation:tw 6s ease-in-out infinite;} .tAd{animation:tw 7s ease-in-out infinite 2s;}
+@keyframes oS{0%,10%{transform:translateX(-100%) skewX(-15deg);opacity:0;}15%{opacity:.22;}25%,100%{transform:translateX(200%) skewX(-15deg);opacity:0;}}
+@keyframes sS{0%{transform:rotate(0deg);}100%{transform:rotate(360deg);}}
+@keyframes sR{0%{transform:rotate(360deg);}100%{transform:rotate(0deg);}}
+@keyframes bL{0%,100%{opacity:.85;}50%{opacity:1;}}
+@keyframes tw{0%,100%{opacity:.5;}50%{opacity:.85;}}
+</style>
+</defs>
+<g transform="translate(11,4)">
+<g opacity="0.55">
+<rect x="4" y="16" width="48" height="68" rx="5" fill="#140d26" stroke="#3FE0F0" stroke-width="0.8" stroke-opacity="0.5" transform="rotate(-12 28 50)"/>
+<rect x="4" y="16" width="48" height="68" rx="5" fill="#140d26" stroke="#FF4FD8" stroke-width="0.8" stroke-opacity="0.5" transform="rotate(12 28 50)"/>
+</g>
+<g filter="url(#dS)">
+<rect x="6" y="8" width="50" height="72" rx="6" fill="url(#hG)"/>
+<g clip-path="url(#cI)">
+<rect x="8" y="10" width="46" height="68" rx="4" fill="#0A0714" opacity="0.97"/>
+<rect x="8" y="10" width="46" height="68" fill="url(#hx)"/>
+<rect x="-20" y="0" width="30" height="90" fill="url(#hG)" opacity="0" class="sA" style="mix-blend-mode:screen;"/>
+<g stroke="url(#hG)" stroke-width="1.2" fill="none" opacity="0.9">
+<path d="M12 24 v-6 a2 2 0 0 1 2-2 h6"/><path d="M50 64 v6 a2 2 0 0 1 -2 2 h-6"/>
+</g>
+<g transform="translate(31,44)">
+<g class="spS"><ellipse cx="0" cy="0" rx="17" ry="6" fill="none" stroke="#3FE0F0" stroke-width="0.6" transform="rotate(45)" opacity="0.6"/></g>
+<g class="spR"><ellipse cx="0" cy="0" rx="17" ry="6" fill="none" stroke="#FF4FD8" stroke-width="0.6" transform="rotate(-45)" opacity="0.6"/></g>
+<circle cx="0" cy="0" r="14" fill="none" stroke="url(#hG)" stroke-width="1.2" stroke-dasharray="1 3" opacity="0.8" class="spS"/>
+<circle cx="0" cy="0" r="12" fill="#05030A"/>
+<circle cx="0" cy="0" r="6" fill="#3FE0F0" filter="url(#nG)" class="bA"/>
+<g filter="url(#nG)">
+<polygon points="0,-11 4,-4 0,-1 -4,-4" fill="#8be9ff"/><polygon points="4,-4 9,0 0,-1" fill="#3FE0F0"/><polygon points="9,0 4,5 0,-1" fill="#2fb8c9"/><polygon points="4,5 0,11 0,3" fill="#5a3fd6"/><polygon points="0,11 -4,5 0,3" fill="#7B5CFF"/><polygon points="-4,5 -9,0 0,-1" fill="#FF4FD8"/><polygon points="-9,0 -4,-4 0,-1" fill="#ff8de8"/>
+<polygon points="0,-4 3,-1 0,3 -3,-1" fill="#ffffff" opacity="0.9"/>
+</g>
+</g>
+</g>
+<rect x="6" y="8" width="50" height="72" rx="6" fill="none" stroke="url(#hG)" stroke-width="1" opacity="0.9"/>
+</g>
+</g>
+</svg></div><div class="logo-word">Ani<span class="holo-text">Deck</span></div></div>
+    <div class="nav-links">
+      <a href="dashboard-prototipo.html">Meu Deck</a>
+      <a href="calendario-prototipo.html">Calendário</a>
+      <a href="rankings-prototipo.html">Rankings</a>
+      <a href="#" class="active">Estatísticas</a>
+    </div>
+    <div style="display:flex; align-items:center; gap:12px;">
+      <a href="busca-prototipo.html" class="search-icon-btn">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+      </a>
+      <div class="profile-chip"><div class="avatar"></div><span>joaojvm</span></div>
+    </div>
+  </div>
+</nav>
+
+<div class="container">
+  <div class="page-head">
+    <h1>Estatísticas</h1>
+    <p>Sua relação com anime, em números — tudo calculado a partir do seu próprio Deck.</p>
+  </div>
+
+  <div class="hero-stat-row">
+    <div class="hero-stat big">
+      <div class="k">TEMPO TOTAL ASSISTIDO</div>
+      <div class="v">18d 6h <small>≈ 437 episódios</small></div>
+    </div>
+    <div class="hero-stat">
+      <div class="k">GÊNERO FAVORITO</div>
+      <div class="v" style="font-size:20px;">Ação</div>
+    </div>
+    <div class="hero-stat">
+      <div class="k">SUA NOTA MÉDIA</div>
+      <div class="v">9.1</div>
+    </div>
+  </div>
+
+  <div class="grid-2">
+    <div class="card">
+      <h2>Distribuição por Status</h2>
+      <div class="donut-wrap">
+        <svg width="130" height="130" viewBox="0 0 42 42">
+          <circle cx="21" cy="21" r="15.9" fill="transparent" stroke="#181330" stroke-width="6"></circle>
+          <circle cx="21" cy="21" r="15.9" fill="transparent" stroke="#3FE0F0" stroke-width="6"
+            stroke-dasharray="42 58" stroke-dashoffset="25" transform="rotate(-90 21 21)"></circle>
+          <circle cx="21" cy="21" r="15.9" fill="transparent" stroke="#a0ff78" stroke-width="6"
+            stroke-dasharray="18 82" stroke-dashoffset="-17" transform="rotate(-90 21 21)"></circle>
+          <circle cx="21" cy="21" r="15.9" fill="transparent" stroke="#FFC542" stroke-width="6"
+            stroke-dasharray="30 70" stroke-dashoffset="-35" transform="rotate(-90 21 21)"></circle>
+          <circle cx="21" cy="21" r="15.9" fill="transparent" stroke="#FF4FD8" stroke-width="6"
+            stroke-dasharray="8 92" stroke-dashoffset="-65" transform="rotate(-90 21 21)"></circle>
+          <circle cx="21" cy="21" r="15.9" fill="transparent" stroke="#6B5F94" stroke-width="6"
+            stroke-dasharray="2 98" stroke-dashoffset="-73" transform="rotate(-90 21 21)"></circle>
+        </svg>
+        <div class="legend">
+          <div class="legend-item"><span class="sw" style="background:#3FE0F0"></span>Assistindo<b>42%</b></div>
+          <div class="legend-item"><span class="sw" style="background:#a0ff78"></span>Em Dia<b>18%</b></div>
+          <div class="legend-item"><span class="sw" style="background:#FFC542"></span>Completo<b>30%</b></div>
+          <div class="legend-item"><span class="sw" style="background:#FF4FD8"></span>Quero Assistir<b>8%</b></div>
+          <div class="legend-item"><span class="sw" style="background:#6B5F94"></span>Dropado<b>2%</b></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Gêneros Favoritos</h2>
+      <div class="genre-row"><span class="name">Ação</span><div class="genre-track"><div class="genre-fill" style="width:88%"></div></div><span class="pct">88%</span></div>
+      <div class="genre-row"><span class="name">Fantasia</span><div class="genre-track"><div class="genre-fill" style="width:71%"></div></div><span class="pct">71%</span></div>
+      <div class="genre-row"><span class="name">Comédia</span><div class="genre-track"><div class="genre-fill" style="width:64%"></div></div><span class="pct">64%</span></div>
+      <div class="genre-row"><span class="name">Drama</span><div class="genre-track"><div class="genre-fill" style="width:47%"></div></div><span class="pct">47%</span></div>
+      <div class="genre-row"><span class="name">Romance</span><div class="genre-track"><div class="genre-fill" style="width:33%"></div></div><span class="pct">33%</span></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>Episódios Assistidos por Mês</h2>
+    <div class="month-chart">
+      <div class="month-bar" style="height:40%;"></div>
+      <div class="month-bar" style="height:55%;"></div>
+      <div class="month-bar" style="height:30%;"></div>
+      <div class="month-bar" style="height:70%;"></div>
+      <div class="month-bar" style="height:48%;"></div>
+      <div class="month-bar" style="height:85%;"></div>
+      <div class="month-bar" style="height:60%;"></div>
+      <div class="month-bar" style="height:35%;"></div>
+      <div class="month-bar" style="height:90%;"></div>
+      <div class="month-bar" style="height:52%;"></div>
+      <div class="month-bar" style="height:100%;"></div>
+      <div class="month-bar" style="height:67%;"></div>
+    </div>
+    <div class="month-labels">
+      <span>Ago</span><span>Set</span><span>Out</span><span>Nov</span><span>Dez</span><span>Jan</span>
+      <span>Fev</span><span>Mar</span><span>Abr</span><span>Mai</span><span>Jun</span><span>Jul</span>
+    </div>
+  </div>
+
+  <div class="card" style="margin-bottom:50px;">
+    <h2>Atividade ao Longo do Ano</h2>
+    <div class="line-chart-wrap">
+      <svg width="100%" height="140" viewBox="0 0 600 140" preserveAspectRatio="none">
+        <defs>
+          <linearGradient id="areaFill" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stop-color="#7B5CFF" stop-opacity="0.35"/>
+            <stop offset="100%" stop-color="#7B5CFF" stop-opacity="0"/>
+          </linearGradient>
+        </defs>
+        <polyline points="0,90 55,70 110,100 165,50 220,80 275,30 330,60 385,95 440,20 495,65 550,10 600,45"
+          fill="none" stroke="#3FE0F0" stroke-width="2.5"/>
+        <polygon points="0,90 55,70 110,100 165,50 220,80 275,30 330,60 385,95 440,20 495,65 550,10 600,45 600,140 0,140"
+          fill="url(#areaFill)" stroke="none"/>
+      </svg>
+    </div>
+    <div class="month-labels">
+      <span>Ago</span><span>Set</span><span>Out</span><span>Nov</span><span>Dez</span><span>Jan</span>
+      <span>Fev</span><span>Mar</span><span>Abr</span><span>Mai</span><span>Jun</span><span>Jul</span>
+    </div>
+  </div>
+</div>
+
+</body>
+</html>

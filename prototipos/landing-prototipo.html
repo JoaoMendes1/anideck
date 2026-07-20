@@ -1,0 +1,572 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AniDeck — Seu Deck de animes</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Anton&family=Manrope:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --void:#0A0714;
+    --panel:#130F22;
+    --panel-2:#181330;
+    --line:#2B2247;
+    --text:#F1EEFA;
+    --muted:#A79BC9;
+    --muted-2:#6B5F94;
+    --holo-1:#FF4FD8;
+    --holo-2:#7B5CFF;
+    --holo-3:#3FE0F0;
+    --coral:#FF5C6C;
+    --gold:#FFC542;
+    --radius:18px;
+  }
+  *{box-sizing:border-box;}
+  html{scroll-behavior:smooth;}
+  body{
+    margin:0; background:var(--void); color:var(--text);
+    font-family:'Manrope',sans-serif; -webkit-font-smoothing:antialiased; overflow-x:hidden;
+  }
+  ::selection{background:var(--holo-1); color:#1a0512;}
+  a{color:inherit; text-decoration:none;}
+  img{max-width:100%; display:block;}
+  .mono{font-family:'JetBrains Mono',monospace;}
+  .display{font-family:'Anton',sans-serif; font-weight:400;}
+  .container{max-width:1140px; margin:0 auto; padding:0 20px;}
+  :focus-visible{outline:2px solid var(--holo-3); outline-offset:3px;}
+
+  .holo-text{
+    background:linear-gradient(90deg, var(--holo-1), var(--holo-2) 45%, var(--holo-3));
+    -webkit-background-clip:text; background-clip:text; color:transparent;
+  }
+  .holo-border{
+    position:relative; border-radius:var(--radius);
+  }
+  .holo-border::before{
+    content:''; position:absolute; inset:0; padding:1.5px; border-radius:inherit;
+    background:linear-gradient(135deg, var(--holo-1), var(--holo-2), var(--holo-3));
+    -webkit-mask:linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+    -webkit-mask-composite:xor; mask-composite:exclude;
+    opacity:.55; pointer-events:none; transition:opacity .3s ease;
+  }
+  .holo-border:hover::before{opacity:1;}
+
+  .bg-ambient{
+    position:fixed; inset:0; z-index:0; pointer-events:none;
+    background:
+      radial-gradient(480px 380px at 12% 8%, rgba(255,79,216,.16), transparent 60%),
+      radial-gradient(520px 420px at 90% 18%, rgba(63,224,240,.13), transparent 60%),
+      radial-gradient(600px 500px at 50% 100%, rgba(123,92,255,.14), transparent 60%);
+  }
+
+  /* ---- NAV ---- */
+  nav{position:fixed; top:0; left:0; right:0; z-index:50; padding:18px 0; transition:all .3s ease;}
+  nav.scrolled{padding:12px 0; background:rgba(10,7,20,.85); backdrop-filter:blur(12px); border-bottom:1px solid var(--line);}
+  .nav-inner{display:flex; align-items:center; justify-content:space-between; gap:16px;}
+  .logo{display:flex; align-items:center; gap:10px;}
+  .logo-mark{
+    width:36px; height:36px; border-radius:10px;
+    background:linear-gradient(135deg, var(--holo-1), var(--holo-2), var(--holo-3));
+    display:flex; align-items:center; justify-content:center;
+    font-family:'Anton',sans-serif; font-size:16px; color:#0A0714;
+  }
+  .logo-word{font-family:'Anton',sans-serif; font-size:18px; letter-spacing:.02em;}
+  .nav-links{display:flex; align-items:center; gap:30px;}
+  .nav-links a{font-size:14px; font-weight:600; color:var(--muted); transition:color .2s;}
+  .nav-links a:hover{color:var(--text);}
+  .search-icon-btn{
+    width:36px; height:36px; border-radius:50%; border:1px solid var(--line); background:var(--panel);
+    color:var(--muted); display:flex; align-items:center; justify-content:center; transition:all .2s; cursor:pointer;
+  }
+  .search-icon-btn:hover{border-color:var(--holo-3); color:var(--holo-3);}
+  .nav-cta{
+    font-weight:700; font-size:13.5px; padding:11px 20px; border-radius:99px; color:var(--void);
+    background:linear-gradient(90deg, var(--holo-1), var(--holo-3));
+  }
+  .burger{display:none; background:none; border:none; color:var(--text); padding:8px;}
+  @media(max-width:880px){ .nav-links{display:none;} .burger{display:block;} }
+
+  .mobile-menu{
+    display:flex; flex-direction:column; position:fixed; top:0; right:0; bottom:0; width:82%; max-width:320px; z-index:60;
+    background:var(--panel); border-left:1px solid var(--line); padding:26px 22px;
+    transform:translateX(100%); transition:transform .3s ease;
+  }
+  .mobile-menu.open{transform:translateX(0);}
+  .mobile-menu a{padding:16px 4px; border-bottom:1px solid var(--line); font-weight:600; font-size:15px;}
+  .mobile-menu .nav-cta{margin-top:20px; text-align:center;}
+  .scrim{position:fixed; inset:0; background:rgba(0,0,0,.6); z-index:55; opacity:0; pointer-events:none; transition:opacity .3s;}
+  .scrim.open{opacity:1; pointer-events:auto;}
+
+  /* ---- HERO ---- */
+  .hero{padding:150px 0 70px; position:relative; z-index:1;}
+  .hero-grid{display:grid; grid-template-columns:1.1fr .9fr; gap:44px; align-items:center;}
+  @media(max-width:900px){ .hero-grid{grid-template-columns:1fr; text-align:center;} }
+
+  .kicker{
+    display:inline-flex; align-items:center; gap:8px; padding:7px 14px; border-radius:99px;
+    background:var(--panel); border:1px solid var(--line); font-size:12px; font-weight:700;
+    color:var(--muted); letter-spacing:.04em;
+  }
+  .kicker .jp{font-size:13px; color:var(--holo-3);}
+
+  .hero h1{
+    font-family:'Anton',sans-serif; font-weight:400; text-transform:uppercase;
+    font-size:clamp(2.4rem, 6vw, 4rem); line-height:1.02; letter-spacing:.01em; margin:22px 0 20px;
+  }
+  .hero p.lede{color:var(--muted); font-size:16.5px; line-height:1.65; max-width:480px; margin:0 0 30px;}
+  @media(max-width:900px){ .hero p.lede{margin-inline:auto;} }
+
+  .hero-actions{display:flex; gap:14px; flex-wrap:wrap;}
+  @media(max-width:900px){ .hero-actions{justify-content:center;} }
+  .btn-primary{
+    font-weight:800; font-size:14.5px; padding:15px 28px; border-radius:99px; color:var(--void);
+    background:linear-gradient(90deg, var(--holo-1), var(--holo-2), var(--holo-3));
+    display:inline-flex; align-items:center; gap:8px; transition:transform .2s ease;
+  }
+  .btn-primary:hover{transform:translateY(-2px);}
+  .btn-ghost{
+    font-weight:700; font-size:14.5px; padding:14px 26px; border-radius:99px;
+    border:1.5px solid var(--line); color:var(--text);
+  }
+  .btn-ghost:hover{border-color:var(--holo-3);}
+
+  .hero-stats{display:flex; gap:28px; margin-top:44px; flex-wrap:wrap;}
+  @media(max-width:900px){ .hero-stats{justify-content:center;} }
+  .stat b{display:block; font-family:'Anton',sans-serif; font-size:20px; text-transform:uppercase;}
+  .stat span{font-size:11.5px; color:var(--muted-2); font-weight:600;}
+
+  /* Hero visual: holographic stacked cards (abstract, no real artwork) */
+  .hero-visual{position:relative; height:400px; display:flex; align-items:center; justify-content:center;}
+  .stack-card{
+    position:absolute; width:210px; height:300px; border-radius:20px; overflow:hidden;
+    box-shadow:0 30px 60px -20px rgba(0,0,0,.6);
+  }
+  .stack-card.c1{background:linear-gradient(150deg, #2a1a4d, #0A0714 70%); transform:rotate(-10deg) translateX(-70px); z-index:1; opacity:.7;}
+  .stack-card.c2{background:linear-gradient(160deg, #1a3d4d, #0A0714 70%); transform:rotate(8deg) translateX(70px); z-index:1; opacity:.7;}
+  .stack-card.c3{
+    background:linear-gradient(160deg, #3a1a4a 0%, #1a1030 55%, #0A0714 100%);
+    z-index:2; border:1px solid rgba(255,255,255,.08);
+  }
+  .stack-card.c3::before{
+    content:''; position:absolute; inset:0;
+    background:linear-gradient(120deg, transparent 30%, rgba(255,79,216,.25) 45%, rgba(63,224,240,.25) 55%, transparent 70%);
+    mix-blend-mode:screen;
+  }
+  .stack-card .rank{
+    position:absolute; top:14px; left:14px; font-family:'Anton',sans-serif; font-size:13px;
+    padding:4px 10px; border-radius:8px; background:rgba(255,197,66,.15); color:var(--gold); border:1px solid rgba(255,197,66,.4);
+  }
+  .stack-card .meta{position:absolute; bottom:16px; left:16px; right:16px;}
+  .stack-card .meta .t{font-family:'Anton',sans-serif; font-size:15px; text-transform:uppercase;}
+  .stack-card .meta .g{font-size:11px; color:var(--muted); font-family:'JetBrains Mono',monospace; margin-top:4px;}
+  @media(max-width:900px){ .hero-visual{height:280px;} .stack-card{width:150px; height:220px;} .stack-card.c1{transform:rotate(-10deg) translateX(-46px);} .stack-card.c2{transform:rotate(8deg) translateX(46px);} }
+
+  /* ---- SECTIONS ---- */
+  .section{padding:90px 0; position:relative; z-index:1;}
+  @media(max-width:640px){ .section{padding:64px 0;} }
+  .sec-head{margin-bottom:44px; text-align:center;}
+  .sec-kicker{font-family:'JetBrains Mono',monospace; font-size:11.5px; color:var(--holo-3); letter-spacing:.14em; margin-bottom:10px;}
+  .sec-head h2{font-family:'Anton',sans-serif; font-weight:400; text-transform:uppercase; font-size:clamp(1.5rem,3.4vw,2.2rem); margin:0 0 10px;}
+  .sec-head p{color:var(--muted); max-width:480px; margin:0 auto; font-size:15px; line-height:1.6;}
+
+  /* ---- RANKING PREVIEW ---- */
+  .rank-list{display:flex; flex-direction:column; gap:12px;}
+  .rank-row{
+    display:grid; grid-template-columns:44px 56px 1fr auto; gap:16px; align-items:center;
+    padding:14px 16px; background:var(--panel); border:1px solid var(--line); border-radius:14px;
+    transition:border-color .2s ease;
+  }
+  .rank-row:hover{border-color:var(--holo-2);}
+  .rank-num{font-family:'Anton',sans-serif; font-size:22px; color:var(--muted-2); text-align:center;}
+  .rank-num.top{background:linear-gradient(180deg, var(--gold), #e08a1a); -webkit-background-clip:text; background-clip:text; color:transparent;}
+  .rank-thumb{width:56px; height:56px; border-radius:10px; background:linear-gradient(145deg, var(--holo-2), var(--panel-2));}
+  .rank-title{font-weight:700; font-size:14.5px;}
+  .rank-tags{font-family:'JetBrains Mono',monospace; font-size:11px; color:var(--muted-2); margin-top:3px;}
+  .rank-score{font-family:'Anton',sans-serif; font-size:16px; color:var(--gold); text-align:right;}
+  @media(max-width:560px){
+    .rank-row{grid-template-columns:32px 44px 1fr auto; padding:12px;}
+    .rank-thumb{width:44px; height:44px;}
+    .rank-title{font-size:13px;}
+  }
+
+  /* ---- CALENDAR / COUNTDOWN ---- */
+  .cal-grid{display:grid; grid-template-columns:repeat(3,1fr); gap:16px;}
+  @media(max-width:820px){ .cal-grid{grid-template-columns:1fr 1fr;} }
+  @media(max-width:560px){ .cal-grid{grid-template-columns:1fr;} }
+  .cal-card{
+    background:var(--panel); border:1px solid var(--line); border-radius:16px; padding:18px;
+    display:flex; gap:14px; align-items:center;
+  }
+  .cal-thumb{width:52px; height:52px; border-radius:10px; flex-shrink:0; background:linear-gradient(145deg, var(--holo-1), var(--panel-2));}
+  .cal-info{min-width:0;}
+  .cal-title{font-weight:700; font-size:14px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
+  .cal-ep{font-family:'JetBrains Mono',monospace; font-size:11px; color:var(--muted-2); margin:3px 0 8px;}
+  .cal-countdown{
+    display:inline-flex; align-items:center; gap:6px; font-family:'JetBrains Mono',monospace;
+    font-size:11.5px; font-weight:700; color:var(--holo-3); background:rgba(63,224,240,.1);
+    border:1px solid rgba(63,224,240,.3); padding:4px 9px; border-radius:99px;
+  }
+
+  /* ---- MEU DECK (PREVIEW) ---- */
+  .deck-grid{display:grid; grid-template-columns:repeat(4,1fr); gap:18px;}
+  @media(max-width:900px){ .deck-grid{grid-template-columns:repeat(3,1fr);} }
+  @media(max-width:620px){ .deck-grid{grid-template-columns:repeat(2,1fr); gap:12px;} }
+  .deck-card{
+    aspect-ratio:3/4.2; border-radius:16px; position:relative; overflow:hidden; padding:14px;
+    display:flex; flex-direction:column; justify-content:flex-end;
+    border:1px solid var(--line); transition:transform .25s ease;
+  }
+  .deck-card:hover{transform:translateY(-4px);}
+  .deck-card.g1{background:linear-gradient(155deg, #3a1a4a, #120b22 75%);}
+  .deck-card.g2{background:linear-gradient(155deg, #1a3d4a, #120b22 75%);}
+  .deck-card.g3{background:linear-gradient(155deg, #4a1a2f, #120b22 75%);}
+  .deck-card.g4{background:linear-gradient(155deg, #1a2f4a, #120b22 75%);}
+  .status-chip{
+    position:absolute; top:10px; left:10px; font-size:9.5px; font-weight:800; padding:4px 8px;
+    border-radius:99px; text-transform:uppercase; letter-spacing:.03em;
+  }
+  .status-chip.watching{background:rgba(63,224,240,.18); color:var(--holo-3); border:1px solid rgba(63,224,240,.4);}
+  .status-chip.done{background:rgba(255,197,66,.18); color:var(--gold); border:1px solid rgba(255,197,66,.4);}
+  .status-chip.plan{background:rgba(255,79,216,.18); color:var(--holo-1); border:1px solid rgba(255,79,216,.4);}
+  .deck-card .vt{font-family:'Anton',sans-serif; font-size:13.5px; text-transform:uppercase; line-height:1.15;}
+  .deck-card .vs{font-family:'JetBrains Mono',monospace; font-size:10.5px; color:var(--muted-2); margin-top:5px;}
+  @media(max-width:620px){ .deck-card .vt{font-size:11.5px;} }
+
+  /* ---- FEATURES ---- */
+  .feat-grid{display:grid; grid-template-columns:repeat(3,1fr); gap:20px;}
+  @media(max-width:820px){ .feat-grid{grid-template-columns:1fr; max-width:440px; margin:0 auto;} }
+  .feat-card{background:var(--panel); border:1px solid var(--line); border-radius:var(--radius); padding:26px;}
+  .feat-icon{
+    width:44px; height:44px; border-radius:12px; margin-bottom:16px; display:flex; align-items:center; justify-content:center;
+    background:linear-gradient(135deg, rgba(255,79,216,.18), rgba(63,224,240,.18)); color:var(--holo-3);
+  }
+  .feat-card h3{font-size:16.5px; margin:0 0 8px;}
+  .feat-card p{color:var(--muted); font-size:14px; line-height:1.6; margin:0;}
+
+  /* ---- FOOTER ---- */
+  footer{padding:90px 0 40px; text-align:center; position:relative; z-index:1; border-top:1px solid var(--line); margin-top:20px;}
+  footer h2{font-family:'Anton',sans-serif; font-weight:400; text-transform:uppercase; font-size:clamp(1.8rem,4.5vw,2.6rem); margin:0 0 16px;}
+  footer p{color:var(--muted); max-width:440px; margin:0 auto 30px; line-height:1.6;}
+  .foot-links{margin-top:60px; padding-top:22px; border-top:1px solid var(--line); display:flex; justify-content:space-between; flex-wrap:wrap; gap:14px; font-size:12.5px; color:var(--muted-2);}
+  .foot-links a:hover{color:var(--text);}
+  .fl{display:flex; gap:20px;}
+
+  .reveal{opacity:0; transform:translateY(16px); transition:opacity .6s ease, transform .6s ease;}
+  .reveal.in{opacity:1; transform:translateY(0);}
+  @media(prefers-reduced-motion: reduce){ .reveal{opacity:1; transform:none; transition:none;} .stack-card{transition:none;} }
+</style>
+</head>
+<body>
+
+<div class="bg-ambient"></div>
+
+<nav id="nav">
+  <div class="container nav-inner">
+    <div class="logo">
+      <div class="logo-mark"><svg width="100%" height="100%" viewBox="0 0 84 100" xmlns="http://www.w3.org/2000/svg">
+<defs>
+<linearGradient id="hG" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#FF4FD8"/><stop offset="35%" stop-color="#7B5CFF"/><stop offset="65%" stop-color="#3FE0F0"/><stop offset="100%" stop-color="#8be9ff"/></linearGradient>
+<filter id="dS" x="-20%" y="-20%" width="150%" height="150%"><feDropShadow dx="0" dy="3" stdDeviation="3" flood-color="#000000" flood-opacity="0.6"/></filter>
+<filter id="nG" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur in="SourceGraphic" stdDeviation="2" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+<pattern id="hx" width="6" height="10.3923" patternUnits="userSpaceOnUse" patternTransform="scale(0.8)"><path d="M3 0 L6 1.732 L6 5.196 L3 6.928 L0 5.196 L0 1.732 Z" fill="none" stroke="#7B5CFF" stroke-width="0.3" opacity="0.4"/><circle cx="3" cy="3.464" r="0.5" fill="#3FE0F0" opacity="0.3"/></pattern>
+<clipPath id="cI"><rect x="6" y="8" width="50" height="72" rx="6"/></clipPath>
+<style>
+.sA{animation:oS 8s ease-in-out infinite;} .spS{animation:sS 40s linear infinite; transform-box:fill-box; transform-origin:center;} .spR{animation:sR 30s linear infinite; transform-box:fill-box; transform-origin:center;} .bA{animation:bL 7s ease-in-out infinite;} .tA{animation:tw 6s ease-in-out infinite;} .tAd{animation:tw 7s ease-in-out infinite 2s;}
+@keyframes oS{0%,10%{transform:translateX(-100%) skewX(-15deg);opacity:0;}15%{opacity:.22;}25%,100%{transform:translateX(200%) skewX(-15deg);opacity:0;}}
+@keyframes sS{0%{transform:rotate(0deg);}100%{transform:rotate(360deg);}}
+@keyframes sR{0%{transform:rotate(360deg);}100%{transform:rotate(0deg);}}
+@keyframes bL{0%,100%{opacity:.85;}50%{opacity:1;}}
+@keyframes tw{0%,100%{opacity:.5;}50%{opacity:.85;}}
+</style>
+</defs>
+<g transform="translate(11,4)">
+<g opacity="0.55">
+<rect x="4" y="16" width="48" height="68" rx="5" fill="#140d26" stroke="#3FE0F0" stroke-width="0.8" stroke-opacity="0.5" transform="rotate(-12 28 50)"/>
+<rect x="4" y="16" width="48" height="68" rx="5" fill="#140d26" stroke="#FF4FD8" stroke-width="0.8" stroke-opacity="0.5" transform="rotate(12 28 50)"/>
+</g>
+<g filter="url(#dS)">
+<rect x="6" y="8" width="50" height="72" rx="6" fill="url(#hG)"/>
+<g clip-path="url(#cI)">
+<rect x="8" y="10" width="46" height="68" rx="4" fill="#0A0714" opacity="0.97"/>
+<rect x="8" y="10" width="46" height="68" fill="url(#hx)"/>
+<rect x="-20" y="0" width="30" height="90" fill="url(#hG)" opacity="0" class="sA" style="mix-blend-mode:screen;"/>
+<g stroke="url(#hG)" stroke-width="1.2" fill="none" opacity="0.9">
+<path d="M12 24 v-6 a2 2 0 0 1 2-2 h6"/><path d="M50 64 v6 a2 2 0 0 1 -2 2 h-6"/>
+</g>
+<g transform="translate(31,44)">
+<g class="spS"><ellipse cx="0" cy="0" rx="17" ry="6" fill="none" stroke="#3FE0F0" stroke-width="0.6" transform="rotate(45)" opacity="0.6"/></g>
+<g class="spR"><ellipse cx="0" cy="0" rx="17" ry="6" fill="none" stroke="#FF4FD8" stroke-width="0.6" transform="rotate(-45)" opacity="0.6"/></g>
+<circle cx="0" cy="0" r="14" fill="none" stroke="url(#hG)" stroke-width="1.2" stroke-dasharray="1 3" opacity="0.8" class="spS"/>
+<circle cx="0" cy="0" r="12" fill="#05030A"/>
+<circle cx="0" cy="0" r="6" fill="#3FE0F0" filter="url(#nG)" class="bA"/>
+<g filter="url(#nG)">
+<polygon points="0,-11 4,-4 0,-1 -4,-4" fill="#8be9ff"/><polygon points="4,-4 9,0 0,-1" fill="#3FE0F0"/><polygon points="9,0 4,5 0,-1" fill="#2fb8c9"/><polygon points="4,5 0,11 0,3" fill="#5a3fd6"/><polygon points="0,11 -4,5 0,3" fill="#7B5CFF"/><polygon points="-4,5 -9,0 0,-1" fill="#FF4FD8"/><polygon points="-9,0 -4,-4 0,-1" fill="#ff8de8"/>
+<polygon points="0,-4 3,-1 0,3 -3,-1" fill="#ffffff" opacity="0.9"/>
+</g>
+</g>
+</g>
+<rect x="6" y="8" width="50" height="72" rx="6" fill="none" stroke="url(#hG)" stroke-width="1" opacity="0.9"/>
+</g>
+</g>
+</svg></div>
+      <div class="logo-word">Ani<span class="holo-text">Deck</span></div>
+    </div>
+    <div class="nav-links">
+      <a href="#calendario">Calendário</a>
+      <a href="#ranking">Rankings</a>
+      <a href="#deck">Meu Deck</a>
+      <a href="#recursos">Recursos</a>
+      <a href="busca-prototipo.html" class="search-icon-btn" aria-label="Buscar anime" title="Buscar">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+      </a>
+      <a href="#contato" class="nav-cta">Entrar</a>
+    </div>
+    <button class="burger" id="burgerBtn" aria-label="Abrir menu">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+    </button>
+  </div>
+</nav>
+
+<div class="scrim" id="scrim"></div>
+<div class="mobile-menu" id="mobileMenu">
+  <a href="#calendario">Calendário</a>
+  <a href="#ranking">Rankings</a>
+  <a href="#deck">Meu Deck</a>
+  <a href="#recursos">Recursos</a>
+  <a href="busca-prototipo.html">Buscar</a>
+  <a href="#contato" class="nav-cta">Entrar</a>
+</div>
+
+<!-- HERO -->
+<header class="hero container">
+  <div class="hero-grid">
+    <div class="reveal in">
+      <span class="kicker"><span class="jp">収集</span> · SEU DECK DE ANIMES, DO SEU JEITO</span>
+      <h1>Todo anime que <span class="holo-text">importa</span>, guardado do seu jeito.</h1>
+      <p class="lede">Catálogo completo do MyAnimeList, com a curadoria, as notas e a organização que só fazem sentido pra você — numa interface que você não vai ter vergonha de usar.</p>
+      <div class="hero-actions">
+        <a href="#deck" class="btn-primary">
+          Começar meu Deck
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+        </a>
+        <a href="#ranking" class="btn-ghost">Ver rankings</a>
+      </div>
+      <div class="hero-stats">
+        <div class="stat"><b>28 mil+</b><span>TÍTULOS, VIA MYANIMELIST</span></div>
+        <div class="stat"><b>Em Dia</b><span>PRA QUEM ACOMPANHA TODA SEMANA</span></div>
+        <div class="stat"><b>Streaming</b><span>FILTRE POR ONDE ASSISTIR</span></div>
+      </div>
+    </div>
+
+    <div class="hero-visual reveal in" style="transition-delay:.1s">
+      <div class="stack-card c1"></div>
+      <div class="stack-card c2"></div>
+      <div class="stack-card c3">
+        <span class="rank">TOP #1</span>
+        <div class="meta">
+          <div class="t">Sua próxima obsessão</div>
+          <div class="g">AÇÃO · FANTASIA · 24 EP</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</header>
+
+<!-- CALENDÁRIO -->
+<section class="section container" id="calendario" style="padding-top:0;">
+  <div class="sec-head reveal">
+    <div class="sec-kicker">// PRÓXIMOS EPISÓDIOS</div>
+    <h2>Calendário de Lançamentos</h2>
+    <p>Contagem regressiva dos próximos episódios dos animes que você está acompanhando.</p>
+  </div>
+
+  <div class="cal-grid reveal">
+    <div class="cal-card">
+      <div class="cal-thumb"></div>
+      <div class="cal-info">
+        <div class="cal-title">Entrada 01</div>
+        <div class="cal-ep">EPISÓDIO 09</div>
+        <span class="cal-countdown">⏱ 2D 06H</span>
+      </div>
+    </div>
+    <div class="cal-card">
+      <div class="cal-thumb"></div>
+      <div class="cal-info">
+        <div class="cal-title">Entrada 04</div>
+        <div class="cal-ep">EPISÓDIO 04</div>
+        <span class="cal-countdown">⏱ 5D 12H</span>
+      </div>
+    </div>
+    <div class="cal-card">
+      <div class="cal-thumb"></div>
+      <div class="cal-info">
+        <div class="cal-title">Entrada 07</div>
+        <div class="cal-ep">EPISÓDIO 15</div>
+        <span class="cal-countdown">⏱ 6D 20H</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- RANKING -->
+<section class="section container" id="ranking">
+  <div class="sec-head reveal">
+    <div class="sec-kicker">// RANKING GLOBAL</div>
+    <h2>Mais assistidos agora</h2>
+    <p>Direto da base pública do MyAnimeList — sem enfeite, só o que a comunidade mundial está assistindo.</p>
+  </div>
+
+  <div class="rank-list reveal">
+    <div class="rank-row">
+      <span class="rank-num top">01</span>
+      <div class="rank-thumb"></div>
+      <div><div class="rank-title">Título em Alta #1</div><div class="rank-tags">AÇÃO · SHOUNEN · TV</div></div>
+      <span class="rank-score">★ 9.2</span>
+    </div>
+    <div class="rank-row">
+      <span class="rank-num top">02</span>
+      <div class="rank-thumb"></div>
+      <div><div class="rank-title">Título em Alta #2</div><div class="rank-tags">FANTASIA · AVENTURA · TV</div></div>
+      <span class="rank-score">★ 9.0</span>
+    </div>
+    <div class="rank-row">
+      <span class="rank-num">03</span>
+      <div class="rank-thumb"></div>
+      <div><div class="rank-title">Título em Alta #3</div><div class="rank-tags">DRAMA · ROMANCE · TV</div></div>
+      <span class="rank-score">★ 8.8</span>
+    </div>
+  </div>
+</section>
+
+<!-- MEU DECK -->
+<section class="section container" id="deck">
+  <div class="sec-head reveal">
+    <div class="sec-kicker">// SUA COLEÇÃO</div>
+    <h2>Meu Deck</h2>
+    <p>Status, nota e anotação — organizado do seu jeito, não do jeito que o site impõe.</p>
+  </div>
+
+  <div class="deck-grid reveal">
+    <div class="deck-card g1"><span class="status-chip watching">Assistindo</span><div class="vt">Entrada 01</div><div class="vs">EP 8/24</div></div>
+    <div class="deck-card g2"><span class="status-chip done">Completo</span><div class="vt">Entrada 02</div><div class="vs">NOTA 9.5</div></div>
+    <div class="deck-card g3"><span class="status-chip plan">Planejo</span><div class="vt">Entrada 03</div><div class="vs">SALVO</div></div>
+    <div class="deck-card g4"><span class="status-chip watching">Assistindo</span><div class="vt">Entrada 04</div><div class="vs">EP 3/12</div></div>
+  </div>
+</section>
+
+<!-- FEATURES -->
+<section class="section container" id="recursos">
+  <div class="sec-head reveal">
+    <div class="sec-kicker">// O QUE VEM JUNTO</div>
+    <h2>Mais do que uma lista</h2>
+  </div>
+
+  <div class="feat-grid reveal">
+    <div class="feat-card">
+      <div class="feat-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg></div>
+      <h3>Dashboard pessoal</h3>
+      <p>Tempo assistido, gênero favorito, distribuição de notas — sua relação com anime, em números.</p>
+    </div>
+    <div class="feat-card">
+      <div class="feat-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg></div>
+      <h3>Onde assistir</h3>
+      <p>Link direto pras plataformas de streaming disponíveis — sem precisar procurar em outro lugar.</p>
+    </div>
+    <div class="feat-card">
+      <div class="feat-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2l2.4 7.2H22l-6 4.6 2.3 7.2-6.3-4.6-6.3 4.6 2.3-7.2-6-4.6h7.6z"/></svg></div>
+      <h3>Recomendações reais</h3>
+      <p>Sugestões com base no que outros fãs de cada título também assistiram — não algoritmo genérico.</p>
+    </div>
+  </div>
+</section>
+
+<!-- FOOTER -->
+<footer id="contato">
+  <div class="container reveal">
+    <div style="display:flex; justify-content:center; margin-bottom:36px;">
+<svg width="340" height="120" viewBox="0 0 450 160" xmlns="http://www.w3.org/2000/svg" style="max-width:100%; height:auto;">
+<defs>
+<linearGradient id="hGf" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#FF4FD8"/><stop offset="35%" stop-color="#7B5CFF"/><stop offset="65%" stop-color="#3FE0F0"/><stop offset="100%" stop-color="#8be9ff"/></linearGradient>
+<filter id="dSf" x="-20%" y="-20%" width="150%" height="150%"><feDropShadow dx="0" dy="6" stdDeviation="6" flood-color="#000000" flood-opacity="0.7"/></filter>
+<filter id="nGf" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur in="SourceGraphic" stdDeviation="3" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+<pattern id="hxf" width="6" height="10.3923" patternUnits="userSpaceOnUse" patternTransform="scale(0.8)"><path d="M3 0 L6 1.732 L6 5.196 L3 6.928 L0 5.196 L0 1.732 Z" fill="none" stroke="#7B5CFF" stroke-width="0.3" opacity="0.4"/><circle cx="3" cy="3.464" r="0.5" fill="#3FE0F0" opacity="0.3"/></pattern>
+<clipPath id="cAf"><rect x="6" y="8" width="50" height="72" rx="6"/></clipPath>
+<style>
+.sAf{animation:oSf 8s ease-in-out infinite;} .spSf{animation:sSf 40s linear infinite; transform-box:fill-box; transform-origin:center;} .spRf{animation:sRf 30s linear infinite; transform-box:fill-box; transform-origin:center;} .bAf{animation:bLf 7s ease-in-out infinite;}
+@keyframes oSf{0%,10%{transform:translateX(-100%) skewX(-15deg);opacity:0;}15%{opacity:.22;}25%,100%{transform:translateX(200%) skewX(-15deg);opacity:0;}}
+@keyframes sSf{0%{transform:rotate(0deg);}100%{transform:rotate(360deg);}}
+@keyframes sRf{0%{transform:rotate(360deg);}100%{transform:rotate(0deg);}}
+@keyframes bLf{0%,100%{opacity:.85;}50%{opacity:1;}}
+</style>
+</defs>
+<g transform="translate(20,24)">
+<g opacity="0.55">
+<rect x="4" y="16" width="48" height="68" rx="5" fill="#140d26" stroke="#3FE0F0" stroke-width="0.8" stroke-opacity="0.5" transform="rotate(-12 28 50)"/>
+<rect x="4" y="16" width="48" height="68" rx="5" fill="#140d26" stroke="#FF4FD8" stroke-width="0.8" stroke-opacity="0.5" transform="rotate(12 28 50)"/>
+</g>
+<g filter="url(#dSf)">
+<rect x="6" y="8" width="50" height="72" rx="6" fill="url(#hGf)"/>
+<g clip-path="url(#cAf)">
+<rect x="8" y="10" width="46" height="68" rx="4" fill="#0A0714" opacity="0.97"/>
+<rect x="8" y="10" width="46" height="68" fill="url(#hxf)"/>
+<rect x="-20" y="0" width="30" height="90" fill="url(#hGf)" opacity="0" class="sAf" style="mix-blend-mode:screen;"/>
+<g stroke="url(#hGf)" stroke-width="1.2" fill="none" opacity="0.9"><path d="M12 24 v-6 a2 2 0 0 1 2-2 h6"/><path d="M50 64 v6 a2 2 0 0 1 -2 2 h-6"/></g>
+<g transform="translate(31,44)">
+<g class="spSf"><ellipse cx="0" cy="0" rx="17" ry="6" fill="none" stroke="#3FE0F0" stroke-width="0.6" transform="rotate(45)" opacity="0.6"/></g>
+<g class="spRf"><ellipse cx="0" cy="0" rx="17" ry="6" fill="none" stroke="#FF4FD8" stroke-width="0.6" transform="rotate(-45)" opacity="0.6"/></g>
+<circle cx="0" cy="0" r="14" fill="none" stroke="url(#hGf)" stroke-width="1.2" stroke-dasharray="1 3" opacity="0.8" class="spSf"/>
+<circle cx="0" cy="0" r="12" fill="#05030A"/>
+<circle cx="0" cy="0" r="6" fill="#3FE0F0" filter="url(#nGf)" class="bAf"/>
+<g filter="url(#nGf)">
+<polygon points="0,-11 4,-4 0,-1 -4,-4" fill="#8be9ff"/><polygon points="4,-4 9,0 0,-1" fill="#3FE0F0"/><polygon points="9,0 4,5 0,-1" fill="#2fb8c9"/><polygon points="4,5 0,11 0,3" fill="#5a3fd6"/><polygon points="0,11 -4,5 0,3" fill="#7B5CFF"/><polygon points="-4,5 -9,0 0,-1" fill="#FF4FD8"/><polygon points="-9,0 -4,-4 0,-1" fill="#ff8de8"/><polygon points="0,-4 3,-1 0,3 -3,-1" fill="#ffffff" opacity="0.9"/>
+</g>
+</g>
+</g>
+<rect x="6" y="8" width="50" height="72" rx="6" fill="none" stroke="url(#hGf)" stroke-width="1" opacity="0.9"/>
+</g>
+</g>
+<g transform="translate(132,70)">
+<text x="0" y="0" font-family="Anton" font-size="44" fill="#F1EEFA" filter="url(#dSf)">Ani<tspan fill="url(#hGf)">Deck</tspan></text>
+<text x="2" y="24" font-family="JetBrains Mono" font-weight="700" font-size="11.5" fill="#8C7DBB" letter-spacing="1.5">SEU DECK DE ANIMES, DO SEU JEITO</text>
+<path d="M 2 32 L 15 32 L 20 36 L 270 36" fill="none" stroke="url(#hGf)" stroke-width="1.5" opacity="0.5"/>
+<circle cx="2" cy="32" r="2.5" fill="#3FE0F0" filter="url(#nGf)"/>
+<circle cx="270" cy="36" r="2.5" fill="#FF4FD8" filter="url(#nGf)"/>
+</g>
+</svg>
+</div>
+    <h2>Comece seu <span class="holo-text">Deck</span> hoje</h2>
+    <p>Sem anúncio, sem site datado. Só o catálogo que você ama, do jeito que deveria ter sido desde sempre.</p>
+    <a href="#" class="btn-primary">Criar minha conta</a>
+
+    <div class="foot-links">
+      <p>© 2026 AniDeck — parte do JVM Systems Portfolio</p>
+      <div class="fl">
+        <a href="#">GitHub</a>
+        <a href="#">MyAnimeList / Jikan API</a>
+      </div>
+    </div>
+  </div>
+</footer>
+
+<script>
+  const nav = document.getElementById('nav');
+  window.addEventListener('scroll', () => nav.classList.toggle('scrolled', window.scrollY > 20));
+
+  const burger = document.getElementById('burgerBtn');
+  const menu = document.getElementById('mobileMenu');
+  const scrim = document.getElementById('scrim');
+  function closeMenu(){ menu.classList.remove('open'); scrim.classList.remove('open'); }
+  burger.addEventListener('click', () => { menu.classList.add('open'); scrim.classList.add('open'); });
+  scrim.addEventListener('click', closeMenu);
+  menu.querySelectorAll('a').forEach(a => a.addEventListener('click', closeMenu));
+
+  const io = new IntersectionObserver((entries) => {
+    entries.forEach(e => { if(e.isIntersecting) e.target.classList.add('in'); });
+  }, { threshold: 0.12 });
+  document.querySelectorAll('.reveal').forEach(el => io.observe(el));
+</script>
+
+</body>
+</html>

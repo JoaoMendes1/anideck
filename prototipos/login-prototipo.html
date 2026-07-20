@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AniDeck — Entrar</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Anton&family=Manrope:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --void:#0A0714; --panel:#130F22; --panel-2:#181330; --line:#2B2247;
+    --text:#F1EEFA; --muted:#A79BC9; --muted-2:#6B5F94;
+    --holo-1:#FF4FD8; --holo-2:#7B5CFF; --holo-3:#3FE0F0;
+  }
+  *{box-sizing:border-box;}
+  body{margin:0; background:var(--void); color:var(--text); font-family:'Manrope',sans-serif; -webkit-font-smoothing:antialiased; min-height:100vh;}
+  a{color:inherit; text-decoration:none;}
+  button{font-family:inherit;}
+  .display{font-family:'Anton',sans-serif; font-weight:400;}
+  .holo-text{background:linear-gradient(90deg, var(--holo-1), var(--holo-2) 45%, var(--holo-3)); -webkit-background-clip:text; background-clip:text; color:transparent;}
+
+  .bg-ambient{
+    position:fixed; inset:0; z-index:0; pointer-events:none;
+    background:
+      radial-gradient(480px 380px at 15% 15%, rgba(255,79,216,.12), transparent 60%),
+      radial-gradient(520px 420px at 85% 85%, rgba(63,224,240,.10), transparent 60%);
+  }
+
+  .demo-bar{position:fixed; top:0; left:0; right:0; z-index:100; background:#000; padding:10px 16px; display:flex; gap:8px; justify-content:center; border-bottom:1px solid var(--line);}
+  .demo-bar button{font-family:'JetBrains Mono',monospace; font-size:11px; padding:7px 12px; border-radius:99px; border:1px solid var(--line); background:var(--panel); color:var(--muted); cursor:pointer;}
+  .demo-bar button.active{background:linear-gradient(90deg, var(--holo-1), var(--holo-2)); color:#fff; border-color:transparent;}
+
+  .wrap{min-height:100vh; display:flex; align-items:center; justify-content:center; padding:90px 20px 40px; position:relative; z-index:1;}
+  .card{width:100%; max-width:380px;}
+
+  .logo-row{display:flex; align-items:center; justify-content:center; gap:10px; margin-bottom:34px;}
+  .logo-mark{width:36px; height:36px; border-radius:10px; background:linear-gradient(135deg, var(--holo-1), var(--holo-2), var(--holo-3)); display:flex; align-items:center; justify-content:center; font-family:'Anton',sans-serif; font-size:16px; color:#0A0714;}
+  .logo-word{font-family:'Anton',sans-serif; font-size:19px;}
+
+  .panel{background:var(--panel); border:1px solid var(--line); border-radius:18px; padding:30px;}
+  .panel h1{font-family:'Anton',sans-serif; font-weight:400; text-transform:uppercase; font-size:22px; text-align:center; margin:0 0 6px;}
+  .panel p.sub{color:var(--muted); font-size:13.5px; text-align:center; margin:0 0 26px;}
+
+  .btn-google{
+    width:100%; display:flex; align-items:center; justify-content:center; gap:10px;
+    padding:13px; border-radius:10px; border:1px solid var(--line); background:var(--panel-2);
+    color:var(--text); font-weight:700; font-size:14px; cursor:pointer; margin-bottom:20px;
+  }
+  .btn-google:hover{border-color:var(--muted-2);}
+
+  .divider{display:flex; align-items:center; gap:12px; margin-bottom:20px; color:var(--muted-2); font-size:12px; font-family:'JetBrains Mono',monospace;}
+  .divider::before, .divider::after{content:''; flex:1; height:1px; background:var(--line);}
+
+  .field{margin-bottom:16px;}
+  .field label{display:block; font-size:12.5px; font-weight:700; color:var(--muted); margin-bottom:7px;}
+  .field input{
+    width:100%; background:var(--panel-2); border:1px solid var(--line); border-radius:10px;
+    padding:12px 14px; color:var(--text); font-size:14px; font-family:'Manrope',sans-serif;
+  }
+  .field input:focus{outline:none; border-color:var(--holo-3);}
+  .pw-wrap{position:relative;}
+  .pw-toggle{position:absolute; right:12px; top:50%; transform:translateY(-50%); background:none; border:none; color:var(--muted-2); cursor:pointer; padding:4px;}
+
+  .forgot{display:block; text-align:right; font-size:12.5px; color:var(--holo-3); font-weight:600; margin:-6px 0 18px;}
+
+  .btn-submit{
+    width:100%; padding:14px; border-radius:10px; border:none; font-weight:800; font-size:14.5px;
+    color:var(--void); background:linear-gradient(90deg, var(--holo-1), var(--holo-2), var(--holo-3)); cursor:pointer;
+  }
+
+  .switch-row{text-align:center; margin-top:22px; font-size:13.5px; color:var(--muted);}
+  .switch-row a{color:var(--holo-3); font-weight:700;}
+
+  .back-link{display:flex; align-items:center; gap:6px; justify-content:center; margin-top:24px; font-size:12.5px; color:var(--muted-2);}
+  .back-link:hover{color:var(--muted);}
+
+  .terms{font-size:11.5px; color:var(--muted-2); text-align:center; margin-top:18px; line-height:1.5;}
+  .terms a{color:var(--muted); text-decoration:underline;}
+</style>
+</head>
+<body>
+
+<div class="demo-bar">
+  <button class="active" data-state="login">Login</button>
+  <button data-state="signup">Cadastro</button>
+</div>
+
+<div class="bg-ambient"></div>
+
+<div class="wrap">
+  <div class="card">
+    <div class="logo-row">
+      <div class="logo-mark"><svg width="100%" height="100%" viewBox="0 0 84 100" xmlns="http://www.w3.org/2000/svg">
+<defs>
+<linearGradient id="hG" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#FF4FD8"/><stop offset="35%" stop-color="#7B5CFF"/><stop offset="65%" stop-color="#3FE0F0"/><stop offset="100%" stop-color="#8be9ff"/></linearGradient>
+<filter id="dS" x="-20%" y="-20%" width="150%" height="150%"><feDropShadow dx="0" dy="3" stdDeviation="3" flood-color="#000000" flood-opacity="0.6"/></filter>
+<filter id="nG" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur in="SourceGraphic" stdDeviation="2" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+<pattern id="hx" width="6" height="10.3923" patternUnits="userSpaceOnUse" patternTransform="scale(0.8)"><path d="M3 0 L6 1.732 L6 5.196 L3 6.928 L0 5.196 L0 1.732 Z" fill="none" stroke="#7B5CFF" stroke-width="0.3" opacity="0.4"/><circle cx="3" cy="3.464" r="0.5" fill="#3FE0F0" opacity="0.3"/></pattern>
+<clipPath id="cI"><rect x="6" y="8" width="50" height="72" rx="6"/></clipPath>
+<style>
+.sA{animation:oS 8s ease-in-out infinite;} .spS{animation:sS 40s linear infinite; transform-box:fill-box; transform-origin:center;} .spR{animation:sR 30s linear infinite; transform-box:fill-box; transform-origin:center;} .bA{animation:bL 7s ease-in-out infinite;} .tA{animation:tw 6s ease-in-out infinite;} .tAd{animation:tw 7s ease-in-out infinite 2s;}
+@keyframes oS{0%,10%{transform:translateX(-100%) skewX(-15deg);opacity:0;}15%{opacity:.22;}25%,100%{transform:translateX(200%) skewX(-15deg);opacity:0;}}
+@keyframes sS{0%{transform:rotate(0deg);}100%{transform:rotate(360deg);}}
+@keyframes sR{0%{transform:rotate(360deg);}100%{transform:rotate(0deg);}}
+@keyframes bL{0%,100%{opacity:.85;}50%{opacity:1;}}
+@keyframes tw{0%,100%{opacity:.5;}50%{opacity:.85;}}
+</style>
+</defs>
+<g transform="translate(11,4)">
+<g opacity="0.55">
+<rect x="4" y="16" width="48" height="68" rx="5" fill="#140d26" stroke="#3FE0F0" stroke-width="0.8" stroke-opacity="0.5" transform="rotate(-12 28 50)"/>
+<rect x="4" y="16" width="48" height="68" rx="5" fill="#140d26" stroke="#FF4FD8" stroke-width="0.8" stroke-opacity="0.5" transform="rotate(12 28 50)"/>
+</g>
+<g filter="url(#dS)">
+<rect x="6" y="8" width="50" height="72" rx="6" fill="url(#hG)"/>
+<g clip-path="url(#cI)">
+<rect x="8" y="10" width="46" height="68" rx="4" fill="#0A0714" opacity="0.97"/>
+<rect x="8" y="10" width="46" height="68" fill="url(#hx)"/>
+<rect x="-20" y="0" width="30" height="90" fill="url(#hG)" opacity="0" class="sA" style="mix-blend-mode:screen;"/>
+<g stroke="url(#hG)" stroke-width="1.2" fill="none" opacity="0.9">
+<path d="M12 24 v-6 a2 2 0 0 1 2-2 h6"/><path d="M50 64 v6 a2 2 0 0 1 -2 2 h-6"/>
+</g>
+<g transform="translate(31,44)">
+<g class="spS"><ellipse cx="0" cy="0" rx="17" ry="6" fill="none" stroke="#3FE0F0" stroke-width="0.6" transform="rotate(45)" opacity="0.6"/></g>
+<g class="spR"><ellipse cx="0" cy="0" rx="17" ry="6" fill="none" stroke="#FF4FD8" stroke-width="0.6" transform="rotate(-45)" opacity="0.6"/></g>
+<circle cx="0" cy="0" r="14" fill="none" stroke="url(#hG)" stroke-width="1.2" stroke-dasharray="1 3" opacity="0.8" class="spS"/>
+<circle cx="0" cy="0" r="12" fill="#05030A"/>
+<circle cx="0" cy="0" r="6" fill="#3FE0F0" filter="url(#nG)" class="bA"/>
+<g filter="url(#nG)">
+<polygon points="0,-11 4,-4 0,-1 -4,-4" fill="#8be9ff"/><polygon points="4,-4 9,0 0,-1" fill="#3FE0F0"/><polygon points="9,0 4,5 0,-1" fill="#2fb8c9"/><polygon points="4,5 0,11 0,3" fill="#5a3fd6"/><polygon points="0,11 -4,5 0,3" fill="#7B5CFF"/><polygon points="-4,5 -9,0 0,-1" fill="#FF4FD8"/><polygon points="-9,0 -4,-4 0,-1" fill="#ff8de8"/>
+<polygon points="0,-4 3,-1 0,3 -3,-1" fill="#ffffff" opacity="0.9"/>
+</g>
+</g>
+</g>
+<rect x="6" y="8" width="50" height="72" rx="6" fill="none" stroke="url(#hG)" stroke-width="1" opacity="0.9"/>
+</g>
+</g>
+</svg></div>
+      <div class="logo-word">Ani<span class="holo-text">Deck</span></div>
+    </div>
+
+    <div class="panel" id="panel"></div>
+
+    <a href="landing-prototipo.html" class="back-link">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>
+      Voltar pro catálogo
+    </a>
+  </div>
+</div>
+
+<script>
+const panel = document.getElementById('panel');
+const eyeIcon = `<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>`;
+const googleIcon = `<svg width="17" height="17" viewBox="0 0 24 24"><path fill="#4285F4" d="M23.5 12.27c0-.82-.07-1.6-.2-2.36H12v4.47h6.47c-.28 1.5-1.13 2.78-2.4 3.63v3h3.87c2.27-2.09 3.56-5.17 3.56-8.74z"/><path fill="#34A853" d="M12 24c3.24 0 5.95-1.07 7.94-2.9l-3.87-3c-1.08.72-2.45 1.15-4.07 1.15-3.13 0-5.78-2.11-6.73-4.96H1.28v3.1C3.26 21.3 7.3 24 12 24z"/><path fill="#FBBC05" d="M5.27 14.29c-.25-.72-.38-1.5-.38-2.29s.14-1.57.38-2.29V6.61H1.28A11.98 11.98 0 000 12c0 1.93.46 3.76 1.28 5.39l4-3.1z"/><path fill="#EA4335" d="M12 4.75c1.77 0 3.35.61 4.6 1.8l3.42-3.42C17.94 1.19 15.24 0 12 0 7.3 0 3.26 2.7 1.28 6.61l4 3.1c.95-2.86 3.6-4.96 6.73-4.96z"/></svg>`;
+
+const states = {
+  login: () => `
+    <h1>Bem-vindo de volta</h1>
+    <p class="sub">Entre pra ver seu Deck.</p>
+    <button class="btn-google">${googleIcon} Continuar com Google</button>
+    <div class="divider">OU</div>
+    <div class="field"><label>E-mail</label><input type="email" placeholder="voce@email.com"></div>
+    <div class="field">
+      <label>Senha</label>
+      <div class="pw-wrap">
+        <input type="password" placeholder="••••••••">
+        <button class="pw-toggle">${eyeIcon}</button>
+      </div>
+    </div>
+    <a href="#" class="forgot">Esqueci minha senha</a>
+    <button class="btn-submit">Entrar</button>
+    <div class="switch-row">Ainda não tem conta? <a href="#" data-switch="signup">Criar conta</a></div>
+  `,
+  signup: () => `
+    <h1>Criar sua conta</h1>
+    <p class="sub">Leva menos de 1 minuto.</p>
+    <button class="btn-google">${googleIcon} Continuar com Google</button>
+    <div class="divider">OU</div>
+    <div class="field"><label>Nome</label><input type="text" placeholder="Como podemos te chamar?"></div>
+    <div class="field"><label>E-mail</label><input type="email" placeholder="voce@email.com"></div>
+    <div class="field">
+      <label>Senha</label>
+      <div class="pw-wrap">
+        <input type="password" placeholder="Mínimo 8 caracteres">
+        <button class="pw-toggle">${eyeIcon}</button>
+      </div>
+    </div>
+    <button class="btn-submit">Criar conta</button>
+    <p class="terms">Ao criar conta, você concorda com os <a href="#">Termos</a> e a <a href="#">Privacidade</a>.</p>
+    <div class="switch-row">Já tem conta? <a href="#" data-switch="login">Entrar</a></div>
+  `
+};
+
+function render(state){
+  panel.innerHTML = states[state]();
+  document.querySelectorAll('.demo-bar button').forEach(b => b.classList.toggle('active', b.dataset.state === state));
+  panel.querySelectorAll('[data-switch]').forEach(el => el.addEventListener('click', (e) => { e.preventDefault(); render(el.dataset.switch); }));
+  const toggle = panel.querySelector('.pw-toggle');
+  if(toggle){
+    toggle.addEventListener('click', () => {
+      const input = toggle.previousElementSibling;
+      input.type = input.type === 'password' ? 'text' : 'password';
+    });
+  }
+}
+
+document.querySelectorAll('.demo-bar button').forEach(btn => {
+  btn.addEventListener('click', () => render(btn.dataset.state));
+});
+
+render('login');
+</script>
+
+</body>
+</html>
