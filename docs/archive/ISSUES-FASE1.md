@@ -13,9 +13,10 @@ Título: feat: Inicialização do projeto Go e estrutura de pastas #<número>
 **🏷️ Labels:** `backend`, `setup`
 
 ### 🎯 Objetivo
-Criar o esqueleto do backend em Go, seguindo a mesma estrutura de pastas usada no Grimoire, e
-garantir que o servidor falhe de forma clara (fail-fast) se variáveis de ambiente essenciais
-estiverem faltando — evita erro silencioso em produção.
+Criar o esqueleto do backend em Go, com estrutura de pastas convencional para projetos Go+Chi
+(separação clara entre handlers, middleware, banco e models), e garantir que o servidor falhe de
+forma clara (fail-fast) se variáveis de ambiente essenciais estiverem faltando — evita erro
+silencioso em produção.
 
 ### 📋 Tarefas
 - [ ] Inicializar módulo Go com Chi como roteador.
@@ -45,9 +46,10 @@ Título: feat: Configuração do Supabase e schema inicial #<número>
 **🏷️ Labels:** `backend`, `database`, `setup`
 
 ### 🎯 Objetivo
-Criar a base de dados do projeto no Supabase (organização própria, separada do Grimoire) e o
-schema inicial que guarda a relação do usuário com os títulos — de forma genérica (preparada
-para mangá no futuro, mesmo que só anime seja usado agora).
+Criar a base de dados do projeto no Supabase (organização e credenciais próprias do AniDeck,
+não reaproveitadas de nenhum outro projeto) e o schema inicial que guarda a relação do usuário
+com os títulos — de forma genérica (preparada para mangá no futuro, mesmo que só anime seja
+usado agora).
 
 ### 📋 Tarefas
 - [ ] Criar organização nova no Supabase (ou usar uma existente com projeto disponível — o
@@ -109,14 +111,15 @@ qualquer funcionalidade real, só para validar que backend, banco e variáveis d
 funcionam de verdade em produção, não só localmente.
 
 ### 📋 Tarefas
-- [ ] Criar serviço de homologação no Render (mesmo provedor do Grimoire).
-- [ ] Configurar variáveis de ambiente de produção (Supabase do AniDeck, não do Grimoire).
+- [ ] Criar serviço de homologação no Render.
+- [ ] Configurar variáveis de ambiente de produção (credenciais Supabase próprias do AniDeck,
+      não reaproveitadas de nenhum outro projeto).
 - [ ] Branch `staging` conectada ao deploy automático.
 - [ ] Confirmar que `/health` responde 200 OK no ambiente hospedado, não só local.
 
 ### ✅ Critérios de Aceite
 - [ ] URL de homologação pública responde corretamente.
 - [ ] Push na branch `staging` dispara novo deploy automaticamente.
-- [ ] Variáveis de ambiente de produção configuradas e funcionando (não reaproveitadas do
-      Grimoire por engano).
+- [ ] Variáveis de ambiente de produção configuradas e funcionando (credenciais próprias do
+      AniDeck, não reaproveitadas de nenhum outro projeto por engano).
 ```

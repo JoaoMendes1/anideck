@@ -1,0 +1,14 @@
+# Arquivos de ambiente
+.env
+
+# Binários do Go
+/bin/
+anideck
+
+# Pastas e arquivos do SO
+.DS_Store
+Thumbs.db
+
+# Build do frontend (React) que faremos no futuro
+/client/dist/
+/client/node_modules/

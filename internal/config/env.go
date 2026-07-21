@@ -1,0 +1,29 @@
+package config
+
+import (
+	"fmt"
+	"os"
+
+	"github.com/joho/godotenv"
+)
+
+// LoadAndValidateEnv carrega o .env local (se existir) e verifica as chaves obrigatórias.
+func LoadAndValidateEnv() error {
+	// Tentativa carregar arquivo .env
+	_ = godotenv.Load()
+
+	requiredVars := []string{
+		"PORT",
+		"SUPABASE_URL", 
+		"SUPABASE_PUBLIC_KEY", 
+	}
+
+	for _, v := range requiredVars {
+		if os.Getenv(v) == "" {
+			return fmt.Errorf("variável de ambiente obrigatória ausente: %s", v)
+		}
+	}
+
+	return nil
+
+}

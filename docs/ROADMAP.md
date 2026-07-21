@@ -58,8 +58,8 @@ Staging sobe já na Fase 1, como projeto esqueleto — mesmo padrão do JVM Syst
       mesmo que mais lenta.
 - [ ] Autenticação Supabase (mesmo que uso pessoal por enquanto — já deixa pronto para
       multiusuário futuro, conforme decisão registrada em `DECISIONS.md`).
-- [ ] Sanitização de qualquer texto livre inserido pelo usuário (anotações) — aprendizado direto
-      do Grimoire, nunca renderizar sem escape.
+- [ ] Sanitização de qualquer texto livre inserido pelo usuário (anotações) — nunca renderizar
+      sem escape (proteção contra XSS).
 
 ## 🎨 Fase 3: Identidade Visual — fim do MVP
 
@@ -98,7 +98,7 @@ Staging sobe já na Fase 1, como projeto esqueleto — mesmo padrão do JVM Syst
 
 ## 📱 Fase 8: Publicação como App (futuro, avaliar quando chegar)
 
-- [ ] Transformar o frontend num PWA completo (mesmo padrão já usado no Grimoire).
+- [ ] Transformar o frontend num PWA completo (manifest, service worker, instalável).
 - [ ] Empacotar via TWA (Trusted Web Activity, usando Bubblewrap/PWABuilder) para publicar na
       Play Store — reaproveita quase todo o código React existente, sem reescrever em React
       Native.
