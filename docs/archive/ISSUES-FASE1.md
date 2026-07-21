@@ -43,7 +43,7 @@ silencioso em produção.
 ```markdown
 Título: feat: Configuração do Supabase e schema inicial #<número>
 
-**🏷️ Labels:** `backend`, `database`, `setup`
+**🏷️ Labels:** `backend`, `database`, `setup`, `security`
 
 ### 🎯 Objetivo
 Criar a base de dados do projeto no Supabase (organização e credenciais próprias do AniDeck,

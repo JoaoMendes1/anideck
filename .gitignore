@@ -3,7 +3,7 @@
 
 # Binários do Go
 /bin/
-anideck
+/anideck
 
 # Pastas e arquivos do SO
 .DS_Store
