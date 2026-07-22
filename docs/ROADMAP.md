@@ -16,18 +16,18 @@ Staging sobe já na Fase 1, como projeto esqueleto — mesmo padrão do JVM Syst
 
 ## 🏗️ Fase 1: Fundação & Arquitetura — início do MVP
 
-- [ ] Inicializar backend Go + Chi (mesma estrutura de pastas dos outros projetos).
-- [ ] Criar projeto Supabase (banco + auth), organização já existente ou nova (avaliar limite de
+- [x] Inicializar backend Go + Chi (mesma estrutura de pastas dos outros projetos).
+- [x] Criar projeto Supabase (banco + auth), organização já existente ou nova (avaliar limite de
       projetos grátis na hora).
-- [ ] Schema inicial: tabela `media_entries` (id, mal_id, **tipo** [`anime`/`manga`], status, nota,
+- [x] Schema inicial: tabela `media_entries` (id, mal_id, **tipo** [`anime`/`manga`], status, nota,
       anotação, created_at, updated_at) — guarda só a relação do usuário com o título, não
       duplica o catálogo inteiro do MAL localmente. Usar `tipo` desde já (mesmo só populando
       `anime` no MVP) evita migração cara se mangá entrar depois — decisão registrada em
       `DECISIONS.md`.
-- [ ] Cliente HTTP em Go para consumir a Jikan API, com tratamento de rate limit (limite real:
+- [x] Cliente HTTP em Go para consumir a Jikan API, com tratamento de rate limit (limite real:
       ~3 requisições/segundo, 60/minuto — a Jikan já cacheia por 24h do lado dela, mas o nosso
       cliente deve ter throttling e backoff próprios para não estourar o limite).
-- [ ] Subir staging esqueleto.
+- [x] Subir staging esqueleto.
 
 ## 🔐 Fase 2: Catálogo Pessoal — fim do MVP
 
