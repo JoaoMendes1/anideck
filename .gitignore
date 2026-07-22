@@ -1,5 +1,5 @@
 # Arquivos de ambiente
-.env
+.env*
 
 # Binários do Go
 /bin/

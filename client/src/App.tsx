@@ -1,20 +1,30 @@
+import { Routes, Route } from 'react-router-dom'
+import Auth from './pages/Auth'
+
+const BuscaPlaceHolder = () => (
+  <div className="p-10 text-center">
+    <h1 className="text-2xl font-anton text-holo">Buscador de Animes (Pública)</h1>
+  </div>
+)
+
+const DashboardPlaceHolder = () => (
+  <div className="p-10 text-center">
+    <h1 className="text-2xl font-anton text-green">Meu Deck (Privada)</h1>
+  </div>
+)
+
 function App() {
   return (
-    // Usa classes flexbox padrão do Tailwind para centralizar o conteúdo 
-    <div className="flex min-h-screen items-center justify-center p-4">
-      {/* Usa as nossas cores exclusivas 'bg-panel' e 'border-line' configuradas no @theme */}
-      <div className="bg-panel border-line border p-8 rounded-2xl text-center shadow-xl">
+    <Routes>
+      {/* Rota pública inicial */}
+      <Route path="/" element={<BuscaPlaceHolder />} />
 
-         {/* Usa a tipografia 'font-anton' e o utilitário 'text-holo' criados por nós */}
-           <h1 className="font-anton text-4xl uppercase mb-2">
-          Ani<span className="text-holo">Deck</span>
-        </h1>
+      {/* Nova Rota Real de Autenticação */}
+      <Route path="/login" element={<Auth />} />
 
-        <p className="text-muted font-mono text-sm">
-          Fase 2 inicializada: Setup Frontend e Tailwind v4 prontos.
-        </p>
-      </div>
-    </div>
+      {/* Rota do Deck do usuário (em breve protegeremos essa rota) */}
+      <Route path="/deck" element={<DashboardPlaceHolder />} />
+    </Routes>
   )
 }
 
