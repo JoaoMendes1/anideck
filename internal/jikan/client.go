@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"net/url"
 	"time"
 
 	"golang.org/x/time/rate"
@@ -19,7 +20,7 @@ type Client struct {
 func NewClient() *Client {
 	return &Client{
 		httpClient: &http.Client{Timeout: 10 * time.Second},
-		limiter:    rate.NewLimiter(rate.Every(500*time.Millisecond), 1),
+		limiter:    rate.NewLimiter(rate.Every(1*time.Second), 1),
 		baseURL:    "https://api.jikan.moe/v4",
 	}
 }
@@ -30,10 +31,11 @@ func (c *Client) SearchAnime(ctx context.Context, query string) (*AnimeSearchRes
 		return nil, fmt.Errorf("erro no rate limiter: %w", err)
 	}
 
-	url := fmt.Sprintf("%s/anime?q=%s", c.baseURL, query)
+	safeQuery := url.QueryEscape(query)
+	targetURL := fmt.Sprintf("%s/anime?q=%s", c.baseURL, safeQuery)
 
 	for attempt := 1; attempt <= 3; attempt++ {
-		req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
+		req, err := http.NewRequestWithContext(ctx, http.MethodGet, targetURL, nil)
 		if err != nil {
 			return nil, err
 		}
