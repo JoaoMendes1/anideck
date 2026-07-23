@@ -1,11 +1,6 @@
 import { Routes, Route } from 'react-router-dom'
 import Auth from './pages/Auth'
-
-const BuscaPlaceHolder = () => (
-  <div className="p-10 text-center">
-    <h1 className="text-2xl font-anton text-holo">Buscador de Animes (Pública)</h1>
-  </div>
-)
+import Busca from './pages/Busca'
 
 const DashboardPlaceHolder = () => (
   <div className="p-10 text-center">
@@ -17,7 +12,7 @@ function App() {
   return (
     <Routes>
       {/* Rota pública inicial */}
-      <Route path="/" element={<BuscaPlaceHolder />} />
+      <Route path="/" element={<Busca />} />
 
       {/* Nova Rota Real de Autenticação */}
       <Route path="/login" element={<Auth />} />
