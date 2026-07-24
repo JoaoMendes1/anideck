@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"net/url"
 	"time"
+	"log"
 
 	"golang.org/x/time/rate"
 )
@@ -151,6 +152,9 @@ func (c *Client) GetAnimeStatistics(ctx context.Context, id string) (*AnimeStati
 		}
 
 		resp.Body.Close()
+
+		// LOG TEMPORÁRIO — remover depois de descobrir a causa real
+        log.Printf("[DEBUG JIKAN] status=%d tentativa=%d", resp.StatusCode, attempt)
 
 		if resp.StatusCode == http.StatusTooManyRequests || resp.StatusCode >= 500 {
 			sleepTime := time.Duration(1<<(attempt-1)) * time.Second
