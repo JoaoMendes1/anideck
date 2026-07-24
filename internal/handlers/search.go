@@ -19,7 +19,7 @@ func (h *SearchHandler) HandleSearch(w http.ResponseWriter, r *http.Request) {
 	// 1. Pegamos o que o usuário digitou na URL. Ex: /api/search?q=naruto
 	query := r.URL.Query().Get("q")
 	if query == "" {
-		// Se vier vazio, retornamos um erro 400 (Bad Request) na hora. 
+		// Se vier vazio, retornamos um erro 400 (Bad Request) na hora.
 		http.Error(w, "O parâmetro 'q' é obrigatório para a busca", http.StatusBadRequest)
 		return
 	}
@@ -27,14 +27,14 @@ func (h *SearchHandler) HandleSearch(w http.ResponseWriter, r *http.Request) {
 	// Chamando cliente interno da Jikan
 	resultados, err := h.JikanClient.SearchAnime(r.Context(), query)
 	if err != nil {
-		log.Printf("[ERRO JIKAN] Falha ao buscar '%s: %v", query, err)
+		log.Printf("[ERRO JIKAN] Falha ao buscar '%s': %v", query, err)
 
 		// 3. O GATE EXPLÍCITO: O Mock só é ativado se o desenvolvedor ligar a chave.
 		// Em produção, essa variável não existirá, então o if será falso.
-			if os.Getenv("MOCK_JIKAN") == "true" {
+		if os.Getenv("MOCK_JIKAN") == "true" {
 			log.Println("[MOCK] Variável MOCK_JIKAN ativada. Retornando dados falsos para desenvolvimento...")
 
-		resultados = &jikan.AnimeSearchResponse{
+			resultados = &jikan.AnimeSearchResponse{
 				Data: []jikan.Anime{
 					{MalID: 20, Title: "Naruto (Mock de Desenvolvimento)", Status: "Finished Airing"},
 					{MalID: 1735, Title: "Naruto: Shippuuden (Mock)", Status: "Finished Airing"},
@@ -51,8 +51,7 @@ func (h *SearchHandler) HandleSearch(w http.ResponseWriter, r *http.Request) {
 
 	// 3. Deu tudo certo! Dizemos pro navegador que a resposta é um JSON
 	w.Header().Set("Content-Type", "application/json")
-	//... e transformamos os dados(structs do GO) de volta em texto JSON para o React ler. 
+	//... e transformamos os dados(structs do GO) de volta em texto JSON para o React ler.
 	json.NewEncoder(w).Encode(resultados)
 
 }
-

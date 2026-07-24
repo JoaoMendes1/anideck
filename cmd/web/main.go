@@ -31,6 +31,10 @@ func main() {
 		JikanClient: jikanClient,
 	}
 
+	animeHandler := &handlers.AnimeHandler{
+		JikanClient: jikanClient,
+	}
+
 	// 4. Configuração das rotas (chi)
 	// Cria o roteador principal usando o framework Chi
 	r := chi.NewRouter()
@@ -45,6 +49,10 @@ func main() {
 
 	// Nova rota de BUSCA
 	r.Get("/api/search", searchHandler.HandleSearch)
+
+	// 2. Rotas dinâmicas do Anime. O {id} é extraído automaticamente pelo Chi.
+	r.Get("/api/anime/{id}", animeHandler.HandleGetAnime)
+	r.Get("/api/anime/{id}/statistics", animeHandler.HandleGetStatistics)
 
 	// Inicia o servidor
 	port := os.Getenv("PORT")

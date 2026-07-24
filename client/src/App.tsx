@@ -1,6 +1,7 @@
 import { Routes, Route } from 'react-router-dom'
 import Auth from './pages/Auth'
 import Busca from './pages/Busca'
+import Detalhes from './pages/Detalhes'
 
 const DashboardPlaceHolder = () => (
   <div className="p-10 text-center">
@@ -19,6 +20,8 @@ function App() {
 
       {/* Rota do Deck do usuário (em breve protegeremos essa rota) */}
       <Route path="/deck" element={<DashboardPlaceHolder />} />
+
+       <Route path="/anime/:id" element={<Detalhes />} />
     </Routes>
   )
 }

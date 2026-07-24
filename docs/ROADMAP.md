@@ -31,11 +31,13 @@ Staging sobe já na Fase 1, como projeto esqueleto — mesmo padrão do JVM Syst
 
 ## 🔐 Fase 2: Catálogo Pessoal — fim do MVP
 
-- [ ] Busca de anime (proxy para Jikan API) exibida no frontend. Busca instantânea (estilo
+- [x] Busca de anime (proxy para Jikan API) exibida no frontend. Busca instantânea (estilo
       Netflix/Prime): grade de pôsteres atualizando enquanto digita, com debounce de ~400ms
       (respeitando limite de taxa do Jikan). Funciona **sem login** — só a ação de salvar exige
-      conta. Cada card de resultado tem botão de adição rápida direto nele (detalhamento
-      completo em `fluxo-busca.md`).
+      conta. *(Implementado até a Issue #7: backend `/api/search` com rate limit + mock gate,
+      frontend com debounce funcionando. Pendente, não bloqueante: distinguir erro real de
+      "sem resultado" na tela — ver auditoria da Issue #7. Botão de adição rápida no card ainda
+      não implementado, depende do CRUD da lista pessoal, mais abaixo nesta fase.)*
 - [ ] Exibir ranking de mais assistidos/populares (`/top/anime`) e reviews de usuários
       (`/anime/{id}/reviews`) na página de cada título.
 - [ ] Página de detalhe do anime com: personagens/dubladores (`/characters`), equipe técnica
@@ -56,8 +58,10 @@ Staging sobe já na Fase 1, como projeto esqueleto — mesmo padrão do JVM Syst
       pode violar os Termos de Uso do MyAnimeList, que proíbem usar o Jikan para "popular seu
       próprio banco de dados". Buscar ao vivo por título (sem armazenar) é a alternativa segura,
       mesmo que mais lenta.
-- [ ] Autenticação Supabase (mesmo que uso pessoal por enquanto — já deixa pronto para
-      multiusuário futuro, conforme decisão registrada em `DECISIONS.md`).
+- [x] Autenticação Supabase (mesmo que uso pessoal por enquanto — já deixa pronto para
+      multiusuário futuro, conforme decisão registrada em `DECISIONS.md`). *(Tela de
+      login/cadastro implementada e funcional, conectada ao Supabase Auth. Rota `/deck` ainda
+      não está protegida — próximo passo natural de autenticação, ainda não feito.)*
 - [ ] Sanitização de qualquer texto livre inserido pelo usuário (anotações) — nunca renderizar
       sem escape (proteção contra XSS).
 
