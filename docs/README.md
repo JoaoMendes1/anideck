@@ -2,9 +2,9 @@
 
 > Domínio: `anideck.com.br`
 
-Catálogo pessoal de anime construído sobre a base pública do MyAnimeList (via Jikan API), com
+Catálogo pessoal de anime construído sobre a base global (via AniList API), com
 status de progresso, notas e avaliações próprias — uma interface moderna e com identidade visual
-própria, diferente da experiência padrão do MAL. Módulo futuro do hub
+própria, diferente da experiência padrão de outras plataformas. Módulo futuro do hub
 [JVM Systems — Portfolio Dev](../jvm-systems-portfolio-dev/README.md).
 
 **Status:** 🚧 Em planejamento — ver [`ROADMAP.md`](./ROADMAP.md).
@@ -14,14 +14,13 @@ própria, diferente da experiência padrão do MAL. Módulo futuro do hub
 ## ✨ Funcionalidades
 
 ### MVP
-- [ ] Busca e navegação no catálogo de anime (via Jikan API).
+- [ ] Busca e navegação no catálogo de anime (via AniList API).
 - [ ] Salvar anime na lista pessoal com status (assistindo / em dia / completo / quero assistir / dropado).
 - [ ] Notas e avaliações próprias por título.
 - [ ] Filtro por gênero/tag.
 - [ ] Filtro por plataforma de streaming disponível (ex: só mostrar o que está na Crunchyroll) —
-      **nota técnica:** o Jikan não permite filtrar busca por plataforma diretamente; é preciso
-      buscar e armazenar os dados de streaming (`/anime/{id}/streaming`) no próprio banco para
-      viabilizar esse filtro.
+      **nota técnica:** consulta ao vivo cruzando dados com o campo `externalLinks` da AniList a cada busca, **sem
+      armazenar dado de streaming no banco** (decisão de ToS registrada em `DECISIONS.md`).
 
 > **Definição sem ambiguidade:** a lista do usuário é 100% controlada manualmente — cada entrada
 > é adicionada, classificada (status) e anotada (nota/comentário) pelo próprio usuário. Não existe
@@ -44,7 +43,7 @@ própria, diferente da experiência padrão do MAL. Módulo futuro do hub
 | Backend | Go + Chi |
 | Frontend | React + Vite + TypeScript + Tailwind CSS |
 | Banco de dados | PostgreSQL (Supabase) |
-| Fonte de dados externa | [Jikan API](https://jikan.moe) (não oficial, somente leitura, sem necessidade de login) |
+| Fonte de dados externa | [AniList API](https://anilist.co/graphiql) (GraphQL, oficial, somente leitura, sem necessidade de login) |
 | Autenticação | Supabase Auth (JWT) |
 
 ---
@@ -53,7 +52,7 @@ própria, diferente da experiência padrão do MAL. Módulo futuro do hub
 
 Ainda em definição — direção combinada: fusão **cyberpunk/sci-fi com estética de anime**,
 moderna, com identidade própria e visualmente marcante (não um tema genérico de dev). Protótipo
-visual a ser desenhado em etapa separada.
+visual desenhado na pasta `/prototipos`.
 
 ---
 

@@ -1,5 +1,7 @@
 # 🗺️ AniDeck — Roadmap
 
+> ✅ **Aviso de Migração (28/07/2026):** O projeto pivotou inteiramente para a **AniList API (GraphQL)** devido à descontinuação iminente do Jikan. Todo o planejamento abaixo reflete essa nova realidade. Ver `DECISIONS.md`.
+
 Segue os mesmos princípios do `AGENTS.md` (issue antes de código, staging antes de produção,
 testes em issues com lógica, segurança desde o início, fases numeradas cronologicamente com
 espaço para fases `.5` intermediárias).
@@ -17,58 +19,29 @@ Staging sobe já na Fase 1, como projeto esqueleto — mesmo padrão do JVM Syst
 ## 🏗️ Fase 1: Fundação & Arquitetura — início do MVP
 
 - [x] Inicializar backend Go + Chi (mesma estrutura de pastas dos outros projetos).
-- [x] Criar projeto Supabase (banco + auth), organização já existente ou nova (avaliar limite de
-      projetos grátis na hora).
+- [x] Criar projeto Supabase (banco + auth).
 - [x] Schema inicial: tabela `media_entries` (id, mal_id, **tipo** [`anime`/`manga`], status, nota,
-      anotação, created_at, updated_at) — guarda só a relação do usuário com o título, não
-      duplica o catálogo inteiro do MAL localmente. Usar `tipo` desde já (mesmo só populando
-      `anime` no MVP) evita migração cara se mangá entrar depois — decisão registrada em
-      `DECISIONS.md`.
-- [x] Cliente HTTP em Go para consumir a Jikan API, com tratamento de rate limit (limite real:
-      ~3 requisições/segundo, 60/minuto — a Jikan já cacheia por 24h do lado dela, mas o nosso
-      cliente deve ter throttling e backoff próprios para não estourar o limite).
+      anotação, created_at, updated_at).
+- [x] Cliente HTTP em Go para consumir a Jikan API *(Nota histórica: Refatorado na Fase 2)*.
 - [x] Subir staging esqueleto.
 
 ## 🔐 Fase 2: Catálogo Pessoal — fim do MVP
 
-- [x] Busca de anime (proxy para Jikan API) exibida no frontend. Busca instantânea (estilo
-      Netflix/Prime): grade de pôsteres atualizando enquanto digita, com debounce de ~400ms
-      (respeitando limite de taxa do Jikan). Funciona **sem login** — só a ação de salvar exige
-      conta. *(Implementado até a Issue #7: backend `/api/search` com rate limit + mock gate,
-      frontend com debounce funcionando. Pendente, não bloqueante: distinguir erro real de
-      "sem resultado" na tela — ver auditoria da Issue #7. Botão de adição rápida no card ainda
-      não implementado, depende do CRUD da lista pessoal, mais abaixo nesta fase.)*
-- [ ] Exibir ranking de mais assistidos/populares (`/top/anime`) e reviews de usuários
-      (`/anime/{id}/reviews`) na página de cada título.
-- [ ] Página de detalhe do anime com: personagens/dubladores (`/characters`), equipe técnica
-      (`/staff`), animes relacionados (`/relations`), recomendações anime-a-anime
-      (`/recommendations`), temas de abertura/encerramento (`/themes`), onde assistir
-      (`/streaming`), galeria de imagens (`/pictures`) e **distribuição de notas da comunidade**
-      (`/statistics`, como gráfico — no MAL é tabela crua, aqui vira visualização de verdade;
-      pertence a esta página, não ao dashboard pessoal da Fase 4) — tudo identificado a partir
-      da análise do MyAnimeList como conteúdo rico mas mal apresentado lá.
-- [ ] Salvar/editar/remover entrada na lista pessoal (status, nota, anotação). Status incluem
-      um estado extra **"Em Dia"** (assistindo, mas já viu todos os episódios lançados até
-      agora) — diferente de "Completo" (usado só quando o anime encerrou de vez). Quando o
-      Jikan informar `status: Finished Airing` para um título marcado "Em Dia", sugerir
-      automaticamente mudar para "Completo".
-- [ ] Filtro por gênero/tag.
-- [ ] Filtro por plataforma de streaming disponível — **⚠️ revisar sob risco de ToS** (ver
-      `DECISIONS.md`): indexar permanentemente dados de `/anime/{id}/streaming` no próprio banco
-      pode violar os Termos de Uso do MyAnimeList, que proíbem usar o Jikan para "popular seu
-      próprio banco de dados". Buscar ao vivo por título (sem armazenar) é a alternativa segura,
-      mesmo que mais lenta.
-- [x] Autenticação Supabase (mesmo que uso pessoal por enquanto — já deixa pronto para
-      multiusuário futuro, conforme decisão registrada em `DECISIONS.md`). *(Tela de
-      login/cadastro implementada e funcional, conectada ao Supabase Auth. Rota `/deck` ainda
-      não está protegida — próximo passo natural de autenticação, ainda não feito.)*
-- [ ] Sanitização de qualquer texto livre inserido pelo usuário (anotações) — nunca renderizar
-      sem escape (proteção contra XSS).
+- [x] 🚨 **PIVÔ DE ARQUITETURA:** Substituição completa da Jikan API pela AniList API (GraphQL) devido ao anúncio de desligamento da Jikan. O Go foi refatorado como um *Adapter* (Issue #11) traduzindo os dados de volta para o JSON REST antigo, para salvar o frontend e o banco.
+- [x] Busca de anime exibida no frontend. Busca instantânea (estilo Netflix/Prime): grade de pôsteres atualizando enquanto digita, com debounce. Funciona **sem login** — só a ação de salvar exige conta.
+- [x] Página de detalhe do anime com: sinopse, onde assistir, temas de abertura/encerramento,
+      animes relacionados e **distribuição de notas da comunidade** (como gráfico).
+- [x] Salvar/editar/remover entrada na lista pessoal (status, nota, anotação) no Supabase (CRUD - Issue #9).
+- [x] Transição de status: Sugerir automaticamente mudar para "Completo" quando a API informar que o anime "Em Dia" terminou.
+- [x] Autenticação Supabase funcional (login/cadastro). Rota `/deck` protegida.
+- [x] Sanitização de qualquer texto livre inserido pelo usuário (anotações) via `bluemonday` (proteção contra XSS).
+- [ ] Exibir ranking global de animes baseado na query `Page(sort: SCORE_DESC)` da AniList (Issue #10).
+- [ ] Filtro por gênero/tag e plataforma de streaming (via campo `externalLinks` da AniList, cruzado em tempo de execução) (Issue #10).
 
 ## 🎨 Fase 3: Identidade Visual — fim do MVP
 
-- [ ] Protótipo visual dedicado (fusão cyberpunk/sci-fi + anime).
-- [ ] Aplicação da identidade nos componentes React reais.
+- [x] Protótipos visuais dedicados (fusão cyberpunk/sci-fi + anime) construídos em HTML/CSS nativo.
+- [ ] Aplicação da identidade (Design Tokens) nos componentes React reais.
 - [ ] Responsividade e acessibilidade básica.
 
 ## 📊 Fase 4: Dashboard de Estatísticas
@@ -78,22 +51,18 @@ Staging sobe já na Fase 1, como projeto esqueleto — mesmo padrão do JVM Syst
 
 ## 🎯 Fase 5: Recomendações Personalizadas
 
-- [ ] Lógica de recomendação com base na lista salva (gêneros/notas mais frequentes) usando
-      dados já disponíveis via Jikan (`/recommendations`).
+- [ ] Lógica de recomendação com base na lista salva (gêneros/notas mais frequentes) cruzando com as *edges* da AniList.
 
 ## 📅 Fase 5.5: Calendário de Lançamentos
 
-- [ ] Integrar **AniList API** (GraphQL) especificamente para o campo `nextAiringEpisode` —
-      o Jikan não cobre previsão precisa de data/hora do próximo episódio, só dia da semana
-      (`/schedules`), insuficiente para um calendário/contador real.
+- [ ] Consumir o campo `nextAiringEpisode` que já vem nativo nas requisições da AniList.
 - [ ] Tela de calendário mostrando próximos episódios dos animes marcados "Assistindo"/"Em Dia"
       na lista pessoal, com contagem regressiva.
 
 ## 📰 Fase 6: Notícias de Anime
 
-- [ ] Avaliar fonte externa de notícias (RSS de Anime News Network, Crunchyroll News, ou similar)
-      — Jikan não cobre isso nativamente.
-- [ ] Job de ingestão periódica (padrão parecido com o ping de uptime do JVM Systems).
+- [ ] Avaliar fonte externa de notícias (RSS de Anime News Network, Crunchyroll News, ou similar).
+- [ ] Job de ingestão periódica.
 - [ ] Exibição no frontend.
 
 ## 👥 Fase 7: Multiusuário (futuro, avaliar quando chegar)
@@ -103,38 +72,19 @@ Staging sobe já na Fase 1, como projeto esqueleto — mesmo padrão do JVM Syst
 ## 📱 Fase 8: Publicação como App (futuro, avaliar quando chegar)
 
 - [ ] Transformar o frontend num PWA completo (manifest, service worker, instalável).
-- [ ] Empacotar via TWA (Trusted Web Activity, usando Bubblewrap/PWABuilder) para publicar na
-      Play Store — reaproveita quase todo o código React existente, sem reescrever em React
-      Native.
-- [ ] Revisar com cuidado redobrado o uso do Jikan antes de qualquer publicação pública — risco
-      de Termos de Uso é maior com visibilidade de loja de apps do que em projeto pessoal.
+- [ ] Empacotar via TWA (Trusted Web Activity, usando Bubblewrap/PWABuilder) para publicar na Play Store.
 
 ---
 
 ## 📋 Backlog / Ideias em Avaliação
 
-- [ ] **Publicar nota automaticamente no MAL real** (via API oficial + OAuth) — só se o processo
-      manual (avaliar no AniDeck + votar também no MAL de vez em quando) se mostrar cansativo
-      na prática. Não muda a decisão atual do Jikan; seria uma integração adicional, opcional,
-      de longo prazo.
-- [ ] **Suporte a Mangá** — Jikan já tem os endpoints espelhados (`/manga`, `/top/manga`, etc.),
-      então a fonte de dados não é problema. Fora do MVP porque não é uso pessoal atual, mas o
-      schema (`media_entries` com coluna `tipo`) já foi desenhado pra não exigir migração cara
-      quando/se entrar. Afeta Busca, Rankings, Detalhe e Meu Deck — precisariam de toggle
-      anime/mangá em cada uma.
-- [ ] **Notificações de novas temporadas/sequências** — avisar quando uma sequência/temporada
-      nova é anunciada pra um título que já está no Deck do usuário. Reaproveita o dado de `/relations`
-      já planejado pra Fase 2. Escopo pequeno, valor real.
-- [ ] **Mini-página de Pessoa/Estúdio** — ao clicar num dublador/estúdio na página de Detalhe,
-      ver outros trabalhos dele. Refinamento da página de Detalhe, reaproveita `/people` e
-      `/characters` já planejados — não é seção nova.
+- [ ] **Publicar nota automaticamente no MAL real** (via API oficial + OAuth) — só se o processo manual se mostrar cansativo.
+- [ ] **Suporte a Mangá** — A AniList já cobre ambos. Fora do MVP porque não é uso pessoal atual, mas o
+      schema (`media_entries` com coluna `tipo`) já foi desenhado pra não exigir migração cara.
+- [ ] **Notificações de novas temporadas/sequências** — avisar quando uma sequência/temporada nova é anunciada.
+- [ ] **Mini-página de Pessoa/Estúdio** — ao clicar num dublador/estúdio na página de Detalhe, ver outros trabalhos dele.
 
 ### Avaliado e descartado (documentado pra não reabrir sem contexto)
-- **Fórum, Clubes, Blogs:** equivalem a construir uma rede social inteira (threads, moderação,
-  denúncia, clubes) — escopo de um segundo produto do tamanho do MAL, não cabe num projeto
-  pessoal solo.
-- **Mensageria direta (Inbox):** pressupõe comunidade ativa trocando mensagem; multiusuário
-  ainda é só "talvez, depois" — mensageria é um passo bem à frente disso.
-- **News / Featured Articles / MALxJapan:** conteúdo editorial que o MAL produz com equipe
-  própria (parcerias, redação) — não se aplica a um projeto pessoal de curadoria.
-- [ ] *(a preencher)*
+- **Fórum, Clubes, Blogs:** equivalem a construir uma rede social inteira.
+- **Mensageria direta (Inbox):** pressupõe comunidade ativa.
+- **News / Featured Articles / MALxJapan:** conteúdo editorial que o MAL produz com equipe própria.

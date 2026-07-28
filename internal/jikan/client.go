@@ -1,14 +1,14 @@
 package jikan
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
 	"net/http"
-	"net/url"
 	"time"
-	"log"
 
+	"github.com/microcosm-cc/bluemonday"
 	"golang.org/x/time/rate"
 )
 
@@ -20,150 +20,191 @@ type Client struct {
 
 func NewClient() *Client {
 	return &Client{
-		// Aumentamos o timeout para 15s conforme sugerido na auditoria
 		httpClient: &http.Client{Timeout: 15 * time.Second},
-		limiter:    rate.NewLimiter(rate.Every(1*time.Second), 1),
-		baseURL:    "https://api.jikan.moe/v4",
+		limiter:    rate.NewLimiter(rate.Every(2*time.Second), 1), // 30/min, dentro do limite atual da AniList
+		baseURL:    "https://graphql.anilist.co",
 	}
 }
 
-// SearchAnime busca animes por texto
+var stripHTML = bluemonday.StrictPolicy() // reaproveita a mesma lib da Issue #9
+
+// gqlRequest executa uma query GraphQL genérica contra a AniList
+func (c *Client) gqlRequest(ctx context.Context, query string, variables map[string]interface{}, out interface{}) error {
+	if err := c.limiter.Wait(ctx); err != nil {
+		return fmt.Errorf("erro no rate limiter: %w", err)
+	}
+
+	body, _ := json.Marshal(map[string]interface{}{"query": query, "variables": variables})
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, c.baseURL, bytes.NewReader(body))
+	if err != nil {
+		return fmt.Errorf("erro ao criar requisição: %w", err)
+	}
+	req.Header.Set("Content-Type", "application/json")
+
+	resp, err := c.httpClient.Do(req)
+	if err != nil {
+		return fmt.Errorf("erro ao executar requisição HTTP: %w", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return fmt.Errorf("erro inesperado da AniList: status %d", resp.StatusCode)
+	}
+
+	var envelope struct {
+		Data json.RawMessage `json:"data"`
+	}
+	if err := json.NewDecoder(resp.Body).Decode(&envelope); err != nil {
+		return fmt.Errorf("erro ao decodificar JSON: %w", err)
+	}
+	return json.Unmarshal(envelope.Data, out)
+}
+
+// mapStatus converte o enum da AniList pro mesmo texto que o Jikan usava —
+// evita ter que mexer no frontend, que já espera "Finished Airing" etc.
+func mapStatus(s string) string {
+	switch s {
+	case "FINISHED":
+		return "Finished Airing"
+	case "RELEASING":
+		return "Currently Airing"
+	case "NOT_YET_RELEASED":
+		return "Not yet aired"
+	default:
+		return s
+	}
+}
+
+// --- SEARCH ---
+
+const searchQuery = `
+query ($search: String) {
+  Page(page: 1, perPage: 10) {
+    media(search: $search, type: ANIME) {
+      idMal
+      title { romaji english }
+      status
+      episodes
+      averageScore
+      coverImage { large }
+      genres
+    }
+  }
+}`
+
+type aniListMedia struct {
+	IDMal         int      `json:"idMal"`
+	Title         struct{ Romaji, English string } `json:"title"`
+	Status        string   `json:"status"`
+	Description   string   `json:"description"`
+	Episodes      int      `json:"episodes"`
+	AverageScore  int      `json:"averageScore"`
+	CoverImage    struct{ Large string } `json:"coverImage"`
+	Genres        []string `json:"genres"`
+}
+
+func (m aniListMedia) toAnime() Anime {
+	titulo := m.Title.English
+	if titulo == "" {
+		titulo = m.Title.Romaji
+	}
+	var generos []struct{ Name string `json:"name"` }
+	for _, g := range m.Genres {
+		generos = append(generos, struct{ Name string `json:"name"` }{Name: g})
+	}
+	a := Anime{
+		MalID:    m.IDMal,
+		Title:    titulo,
+		Status:   mapStatus(m.Status),
+		Synopsis: stripHTML.Sanitize(m.Description),
+		Episodes: m.Episodes,
+		Score:    float64(m.AverageScore) / 10.0, // AniList usa 0-100, Jikan usava 0-10
+		Genres:   generos,
+	}
+	a.Images.JPG.ImageURL = m.CoverImage.Large
+	return a
+}
+
 func (c *Client) SearchAnime(ctx context.Context, query string) (*AnimeSearchResponse, error) {
-	err := c.limiter.Wait(ctx)
-	if err != nil {
-		return nil, fmt.Errorf("erro no rate limiter: %w", err)
+	var resultado struct {
+		Page struct{ Media []aniListMedia } `json:"Page"`
+	}
+	if err := c.gqlRequest(ctx, searchQuery, map[string]interface{}{"search": query}, &resultado); err != nil {
+		return nil, err
 	}
 
-	safeQuery := url.QueryEscape(query)
-	targetURL := fmt.Sprintf("%s/anime?q=%s", c.baseURL, safeQuery)
-
-	for attempt := 1; attempt <= 3; attempt++ {
-		req, err := http.NewRequestWithContext(ctx, http.MethodGet, targetURL, nil)
-		if err != nil {
-			return nil, fmt.Errorf("erro ao criar requisição: %w", err) // Erro embrulhado
-		}
-
-		req.Header.Set("User-Agent", "AniDeck-App/1.0")
-		resp, err := c.httpClient.Do(req)
-		if err != nil {
-			return nil, fmt.Errorf("erro ao executar requisição HTTP: %w", err) // Erro embrulhado
-		}
-
-		if resp.StatusCode == http.StatusOK {
-			var result AnimeSearchResponse
-			err := json.NewDecoder(resp.Body).Decode(&result)
-			resp.Body.Close()
-			if err != nil {
-				return nil, fmt.Errorf("erro ao decodificar JSON: %w", err)
-			}
-			return &result, nil
-		}
-
-		resp.Body.Close() // Fechamento manual (Previne vazamento de memória em loops)
-
-		if resp.StatusCode == http.StatusTooManyRequests || resp.StatusCode >= 500 {
-			// Backoff exponencial (1s, 2s, 4s)
-			sleepTime := time.Duration(1<<(attempt-1)) * time.Second
-			time.Sleep(sleepTime)
-			continue
-		}
-
-		return nil, fmt.Errorf("erro inesperado da API: status %d", resp.StatusCode)
+	var animes []Anime
+	for _, m := range resultado.Page.Media {
+		animes = append(animes, m.toAnime())
 	}
-
-	return nil, fmt.Errorf("limite de tentativas excedido na Jikan API")
+	return &AnimeSearchResponse{Data: animes}, nil
 }
 
-// GetAnimeById busca os detalhes ricos do anime usando a rota /full
+// --- DETALHE POR mal_id ---
+
+const byIdQuery = `
+query ($idMal: Int) {
+  Media(idMal: $idMal, type: ANIME) {
+    idMal
+    title { romaji english }
+    status
+    description
+    episodes
+    averageScore
+    coverImage { large }
+    genres
+  }
+}`
+
 func (c *Client) GetAnimeById(ctx context.Context, id string) (*AnimeByIdResponse, error) {
-	err := c.limiter.Wait(ctx)
-	if err != nil {
-		return nil, fmt.Errorf("erro no rate limiter: %w", err)
+	var malID int
+	fmt.Sscanf(id, "%d", &malID)
+
+	var resultado struct {
+		Media aniListMedia `json:"Media"`
 	}
-
-	// Correção da auditoria aplicada: usamos /full
-	targetURL := fmt.Sprintf("%s/anime/%s/full", c.baseURL, id)
-
-	for attempt := 1; attempt <= 3; attempt++ {
-		req, err := http.NewRequestWithContext(ctx, http.MethodGet, targetURL, nil)
-		if err != nil {
-			return nil, fmt.Errorf("erro ao criar requisição: %w", err)
-		}
-
-		req.Header.Set("User-Agent", "AniDeck-App/1.0")
-		resp, err := c.httpClient.Do(req)
-		if err != nil {
-			return nil, fmt.Errorf("erro ao executar requisição HTTP: %w", err)
-		}
-
-		if resp.StatusCode == http.StatusOK {
-			var result AnimeByIdResponse
-			err := json.NewDecoder(resp.Body).Decode(&result)
-			resp.Body.Close()
-			if err != nil {
-				return nil, fmt.Errorf("erro ao decodificar JSON: %w", err)
-			}
-			return &result, nil
-		}
-
-		resp.Body.Close()
-
-		if resp.StatusCode == http.StatusTooManyRequests || resp.StatusCode >= 500 {
-			sleepTime := time.Duration(1<<(attempt-1)) * time.Second
-			time.Sleep(sleepTime)
-			continue
-		}
-
-		return nil, fmt.Errorf("erro inesperado da API: status %d", resp.StatusCode)
+	if err := c.gqlRequest(ctx, byIdQuery, map[string]interface{}{"idMal": malID}, &resultado); err != nil {
+		return nil, err
 	}
-
-	return nil, fmt.Errorf("limite de tentativas excedido na Jikan API")
+	return &AnimeByIdResponse{Data: resultado.Media.toAnime()}, nil
 }
 
-// GetAnimeStatistics busca a distribuição de notas para o Histograma
+// --- ESTATÍSTICAS ---
+
+const statsQuery = `
+query ($idMal: Int) {
+  Media(idMal: $idMal, type: ANIME) {
+    stats { scoreDistribution { score amount } }
+  }
+}`
+
 func (c *Client) GetAnimeStatistics(ctx context.Context, id string) (*AnimeStatisticsResponse, error) {
-	err := c.limiter.Wait(ctx)
-	if err != nil {
-		return nil, fmt.Errorf("erro no rate limiter: %w", err)
-	}
+	var malID int
+	fmt.Sscanf(id, "%d", &malID)
 
-	targetURL := fmt.Sprintf("%s/anime/%s/statistics", c.baseURL, id)
-
-	for attempt := 1; attempt <= 3; attempt++ {
-		req, err := http.NewRequestWithContext(ctx, http.MethodGet, targetURL, nil)
-		if err != nil {
-			return nil, fmt.Errorf("erro ao criar requisição: %w", err)
-		}
-
-		req.Header.Set("User-Agent", "AniDeck-App/1.0")
-		resp, err := c.httpClient.Do(req)
-		if err != nil {
-			return nil, fmt.Errorf("erro ao executar requisição HTTP: %w", err)
-		}
-
-		if resp.StatusCode == http.StatusOK {
-			var result AnimeStatisticsResponse
-			err := json.NewDecoder(resp.Body).Decode(&result)
-			resp.Body.Close()
-			if err != nil {
-				return nil, fmt.Errorf("erro ao decodificar JSON: %w", err)
+	var resultado struct {
+		Media struct {
+			Stats struct {
+				ScoreDistribution []struct{ Score, Amount int }
 			}
-			return &result, nil
 		}
-
-		resp.Body.Close()
-
-		// LOG TEMPORÁRIO — remover depois de descobrir a causa real
-        log.Printf("[DEBUG JIKAN] status=%d tentativa=%d", resp.StatusCode, attempt)
-
-		if resp.StatusCode == http.StatusTooManyRequests || resp.StatusCode >= 500 {
-			sleepTime := time.Duration(1<<(attempt-1)) * time.Second
-			time.Sleep(sleepTime)
-			continue
-		}
-
-		return nil, fmt.Errorf("erro inesperado da API: status %d", resp.StatusCode)
+	}
+	if err := c.gqlRequest(ctx, statsQuery, map[string]interface{}{"idMal": malID}, &resultado); err != nil {
+		return nil, err
 	}
 
-	return nil, fmt.Errorf("limite de tentativas excedido na Jikan API")
+	total := 0
+	for _, s := range resultado.Media.Stats.ScoreDistribution {
+		total += s.Amount
+	}
+
+	var scores []ScoreDistribution
+	for _, s := range resultado.Media.Stats.ScoreDistribution {
+		pct := 0.0
+		if total > 0 {
+			pct = float64(s.Amount) / float64(total) * 100
+		}
+		scores = append(scores, ScoreDistribution{Score: s.Score / 10, Votes: s.Amount, Percentage: pct})
+	}
+	return &AnimeStatisticsResponse{Data: AnimeStatistics{Scores: scores}}, nil
 }
