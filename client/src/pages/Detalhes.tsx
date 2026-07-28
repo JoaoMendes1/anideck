@@ -1,8 +1,8 @@
 import { useState, useEffect } from 'react'
 import { useParams, Link } from 'react-router-dom'
 import { ChevronLeft, PlayCircle, Star, AlertCircle } from 'lucide-react'
+import { supabase } from '../lib/supabase'
 
-// 1. AS INTERFACES: Espelham exatamente o JSON no navegador
 interface AnimeDetail {
   mal_id: number
   title: string
@@ -22,37 +22,55 @@ interface AnimeStats {
   scores: { score: number; votes: number; percentage: number }[]
 }
 
-export default function Detalhes() {
-  // 2. Extrai o ID dinâmico da URL (ex: se a URL for /anime/20, id vira "20")
-  const { id } = useParams<{ id: string }>()
+interface MinhaEntrada {
+  id: string
+  status: string
+  mal_id: number
+  tipo: string
+}
 
-  // 3. Estados da Aplicação
+export default function Detalhes() {
+  const { id } = useParams<{ id: string }>()
+  
   const [anime, setAnime] = useState<AnimeDetail | null>(null)
   const [stats, setStats] = useState<AnimeStats | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  
+  const [minhaEntrada, setMinhaEntrada] = useState<MinhaEntrada | null>(null)
+  const [atualizandoStatus, setAtualizandoStatus] = useState(false)
 
-  // 4. O Efeito de Busca (Disparado quando a tela abre)
   useEffect(() => {
     const fetchData = async () => {
       setLoading(true)
       setError(null)
       try {
-        // PROMISE.ALL: Dispara as duas requisições ao mesmo tempo para o nosso backend Go!
         const [resAnime, resStats] = await Promise.all([
           fetch(`/api/anime/${id}`),
           fetch(`/api/anime/${id}/statistics`)
         ])
-
+        
         if (!resAnime.ok || !resStats.ok) {
           throw new Error('Falha ao carregar os dados do anime. Tente novamente.')
         }
-
+        
         const dataAnime = await resAnime.json()
         const dataStats = await resStats.json()
-
         setAnime(dataAnime.data)
         setStats(dataStats.data)
+
+        const { data: { session } } = await supabase.auth.getSession()
+        if (session) {
+          const resEntries = await fetch('/api/entries', {
+            headers: { 'Authorization': `Bearer ${session.access_token}` }
+          })
+          if (resEntries.ok) {
+            const entradas = await resEntries.json()
+            const entradaDesteAnime = entradas?.find((e: any) => e.mal_id === Number(id))
+            if (entradaDesteAnime) setMinhaEntrada(entradaDesteAnime)
+          }
+        }
+
       } catch (err: any) {
         console.error(err)
         setError(err.message)
@@ -64,7 +82,36 @@ export default function Detalhes() {
     if (id) fetchData()
   }, [id])
 
-  // --- RENDERIZAÇÃO CONDICIONAL (Loading e Erro) ---
+  const handleCompletarAnime = async () => {
+    if (!minhaEntrada) return
+    setAtualizandoStatus(true)
+    const { data: { session } } = await supabase.auth.getSession()
+    
+    try {
+        const response = await fetch(`/api/entries/${minhaEntrada.id}`, {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${session?.access_token}`,
+            },
+            body: JSON.stringify({
+                mal_id: minhaEntrada.mal_id,
+                tipo: minhaEntrada.tipo || 'anime',
+                status: 'Completo' 
+            }),
+        })
+
+        if (!response.ok) throw new Error()
+        
+        setMinhaEntrada({ ...minhaEntrada, status: 'Completo' })
+        alert('Parabéns! Movido para os Completos.')
+    } catch {
+        alert('Erro ao atualizar. Tente novamente.')
+    } finally {
+        setAtualizandoStatus(false)
+    }
+  }
+
   if (loading) {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center">
@@ -85,20 +132,16 @@ export default function Detalhes() {
     )
   }
 
-  // Descobre qual é a maior porcentagem de votos para calibrar a altura do nosso Histograma
   const maxPercentage = stats?.scores ? Math.max(...stats.scores.map(s => s.percentage)) : 100
 
-  // --- RENDERIZAÇÃO DA PÁGINA RICA ---
   return (
     <div className="pb-20">
-      {/* Navbar Minimalista */}
       <nav className="sticky top-0 z-50 bg-void/90 backdrop-blur-md border-b border-line px-5 py-3">
         <Link to="/" className="inline-flex items-center gap-2 text-muted hover:text-text transition-colors text-sm font-bold">
           <ChevronLeft size={18} /> Voltar
         </Link>
       </nav>
 
-      {/* Hero Banner (Fundo e Poster) */}
       <div className="relative h-64 overflow-hidden bg-gradient-to-br from-panel to-panel-2">
         <div className="absolute inset-0 bg-gradient-to-t from-void to-transparent"></div>
       </div>
@@ -113,13 +156,19 @@ export default function Detalhes() {
           <h1 className="font-anton text-3xl md:text-5xl uppercase leading-tight mb-2">
             {anime.title}
           </h1>
-
           <div className="flex flex-wrap gap-4 items-center font-mono text-xs text-muted mb-4">
             <span className="bg-panel px-2 py-1 rounded border border-line">{anime.status}</span>
             <span>{anime.episodes || '?'} EPISÓDIOS</span>
             {anime.studios?.length > 0 && <span>• {anime.studios[0].name}</span>}
-          </div>
 
+            {/* 🟢 ADICIONE ESTE BLOCO AQUI: O seu selo pessoal visual */}
+            {minhaEntrada && (
+              <span className="bg-holo-2/10 text-holo-2 border border-holo-2/30 px-3 py-1 rounded-full font-bold ml-2">
+                MEU DECK: {minhaEntrada.status}
+              </span>
+            )}
+            
+          </div>
           <div className="flex flex-wrap gap-2">
             {anime.genres?.map(g => (
               <span key={g.name} className="text-[11px] font-bold px-3 py-1 rounded-full bg-panel border border-line text-muted-2">
@@ -129,7 +178,6 @@ export default function Detalhes() {
           </div>
         </div>
 
-        {/* Badge da Nota Oficial */}
         <div className="bg-panel border border-line rounded-2xl p-4 flex items-center gap-3 shrink-0">
           <Star className="text-gold fill-gold" size={24} />
           <div>
@@ -139,9 +187,26 @@ export default function Detalhes() {
         </div>
       </div>
 
-      <div className="max-w-[1080px] mx-auto px-5 grid grid-cols-1 lg:grid-cols-3 gap-10">
+      {/* O BANNER MÁGICO DE TRANSIÇÃO */}
+      {minhaEntrada?.status === 'Em Dia' && anime?.status === 'Finished Airing' && (
+          <div className="max-w-[1080px] mx-auto px-5 mb-8">
+              <div className="bg-gradient-to-r from-holo-1 to-holo-2 p-5 rounded-xl flex flex-col md:flex-row justify-between items-center gap-4 text-void shadow-lg">
+                  <div>
+                      <h3 className="font-anton uppercase text-xl mb-1">Anime Finalizado!</h3>
+                      <p className="font-bold text-sm opacity-90">A Jikan detectou que esta obra acabou. Deseja mover da sua lista de "Em Dia" para "Completo"?</p>
+                  </div>
+                  <button 
+                      onClick={handleCompletarAnime} 
+                      disabled={atualizandoStatus}
+                      className="bg-void text-text px-6 py-3 rounded-xl font-extrabold text-sm shrink-0 hover:scale-105 transition-transform cursor-pointer"
+                  >
+                      {atualizandoStatus ? 'Atualizando...' : 'Marcar como Completo'}
+                  </button>
+              </div>
+          </div>
+      )}
 
-        {/* COLUNA ESQUERDA: Sinopse, Onde Assistir, Trilhas */}
+      <div className="max-w-[1080px] mx-auto px-5 grid grid-cols-1 lg:grid-cols-3 gap-10">
         <div className="lg:col-span-2 space-y-10">
           <section>
             <h2 className="font-anton text-lg uppercase mb-4 flex items-center gap-2">
@@ -182,9 +247,7 @@ export default function Detalhes() {
           )}
         </div>
 
-        {/* COLUNA DIREITA: Histograma e Relacionados */}
         <div className="space-y-10">
-
           {stats && stats.scores && (
             <section>
               <h2 className="font-anton text-lg uppercase mb-4 flex items-center gap-2">
@@ -192,7 +255,6 @@ export default function Detalhes() {
               </h2>
               <div className="bg-panel border border-line rounded-xl p-5">
                 <div className="flex items-end gap-1 h-32 mb-2">
-                  {/* Desenhando o Gráfico de Barras com React usando a porcentagem real! */}
                   {stats.scores.slice().reverse().map(s => {
                     const heightPct = maxPercentage > 0 ? (s.percentage / maxPercentage) * 100 : 0
                     return (
@@ -233,7 +295,6 @@ export default function Detalhes() {
               </div>
             </section>
           )}
-
         </div>
       </div>
     </div>

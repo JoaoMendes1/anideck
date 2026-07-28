@@ -25,7 +25,7 @@ func main() {
 
 	// 2. Carrega as chaves públicas da Supabase pra validar token de usuário 
 	if err := middleware.InitJWKS(os.Getenv("SUPABASE_URL")); err != nil {
-		log.Fatalf("Erro crítico ao carregar JWKS: %v")
+		log.Fatalf("Erro crítico ao carregar JWKS: %v", err)
 	}
 
 	// 3. Instaciamos o cliente da Jikan (que contém o rate limiter)

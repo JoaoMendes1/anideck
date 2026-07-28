@@ -12,7 +12,7 @@ var Client *supabase.Client
 // Connect inicializa o cliente usando as variáveis de ambiente já validadas 
 func Connect() {
 	supabaseURL := os.Getenv("SUPABASE_URL")
-	supabaseKey := os.Getenv("SUPABASE_PUBLIC_KEY")
+	supabaseKey := os.Getenv("SUPABASE_SERVICE_KEY")
 
 	Client = supabase.CreateClient(supabaseURL, supabaseKey)
 }

@@ -16,6 +16,7 @@ func LoadAndValidateEnv() error {
 		"PORT",
 		"SUPABASE_URL", 
 		"SUPABASE_PUBLIC_KEY", 
+		"SUPABASE_SERVICE_KEY",
 	}
 
 	for _, v := range requiredVars {
