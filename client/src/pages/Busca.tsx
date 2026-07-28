@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
-import { Link } from 'react-router-dom' // NOVO: Para podermos clicar no anime e ir pra Issue #8
-import { Search, AlertCircle } from 'lucide-react' 
+import { Link, useNavigate } from 'react-router-dom' // NOVO: Para podermos clicar no anime e ir pra Issue #8
+import { Search, AlertCircle } from 'lucide-react'
+import { supabase } from '../lib/supabase'
 
 interface Anime {
     mal_id: number
@@ -9,10 +10,44 @@ interface Anime {
 }
 
 export default function Busca() {
-    const [query, setQuery] = useState('') 
-    const [resultados, setResultados] = useState<Anime[]>([]) 
+
+    const navigate = useNavigate()
+
+    const handleSalvar = async (e: React.MouseEvent, malId: number) => {
+        e.preventDefault() // Não deixa o clique navegar pro /anime/{id} 
+
+        const { data: { session } } = await supabase.auth.getSession()
+
+        if (!session) {
+            navigate('/login') // Sem login, manda pra tela de auth em vez de tentar salvar 
+            return
+        }
+
+        try {
+            const response = await fetch('/api/entries', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${session.access_token}`, // Token de validação (middleware)
+                },
+                body: JSON.stringify({
+                    mal_id: malId,
+                    tipo: 'anime',
+                    status: 'Quero Assistir',
+                }),
+            })
+            if (!response.ok) throw new Error('Falha ao salvar')
+            alert('Salvo na sua lista!')
+        } catch (err) {
+            console.error(err)
+            alert('Erro ao salvar. Tente novamente!')
+        }
+    }
+
+    const [query, setQuery] = useState('')
+    const [resultados, setResultados] = useState<Anime[]>([])
     const [loading, setLoading] = useState(false)
-    const [hasSearched, setHasSearched] = useState(false) 
+    const [hasSearched, setHasSearched] = useState(false)
     const [error, setError] = useState<string | null>(null) // NOVO: Faltava isso no seu código!
 
     useEffect(() => {
@@ -23,7 +58,7 @@ export default function Busca() {
             return
         }
 
-        const delayDebounceFn = setTimeout(async() => {
+        const delayDebounceFn = setTimeout(async () => {
             setLoading(true)
             setHasSearched(true)
             setError(null)
@@ -40,7 +75,7 @@ export default function Busca() {
                 setResultados(data.data || [])
             } catch (err: any) {
                 console.error(err)
-                setResultados([]) 
+                setResultados([])
                 setError(err.message || 'Falha ao conectar com o servidor.') // SALVA O ERRO
             } finally {
                 setLoading(false)
@@ -48,8 +83,8 @@ export default function Busca() {
         }, 400)
 
         return () => clearTimeout(delayDebounceFn)
-    }, [query]); 
-    
+    }, [query]);
+
     return (
         <div className="max-w-[960px] mx-auto pt-16 px-5 pb-10">
             <div className="flex items-center gap-3 bg-panel border-2 border-holo-2 rounded-xl p-4 mb-8">
@@ -65,13 +100,13 @@ export default function Busca() {
 
             {/* Estado 1: Carregando (Skeleton) */}
             {loading && (
-                <> 
-                <p className="font-mono text-xs text-holo-3 tracking-widest mb-4">// BUSCANDO...</p>
-                <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-4">
-                    {[1, 2, 3, 4, 5].map((n) => (
-                        <div key={n} className="aspect-[2/3] rounded-xl bg-panel-2 animate-pulse border border-line"></div>
-                    ))}
-                </div>             
+                <>
+                    <p className="font-mono text-xs text-holo-3 tracking-widest mb-4">// BUSCANDO...</p>
+                    <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-4">
+                        {[1, 2, 3, 4, 5].map((n) => (
+                            <div key={n} className="aspect-[2/3] rounded-xl bg-panel-2 animate-pulse border border-line"></div>
+                        ))}
+                    </div>
                 </>
             )}
 
@@ -87,35 +122,32 @@ export default function Busca() {
             {/* Estado 3: Com Resultados + Links da Issue 8 */}
             {!loading && !error && hasSearched && resultados.length > 0 && (
                 <>
-                <p className="font-mono text-xs text-holo-3 tracking-widest mb-4">// RESULTADOS</p>
-                <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-4">
-                    {resultados.map((anime) => (
-                    
-                    <Link 
-                        to={`/anime/${anime.mal_id}`} 
-                        key={anime.mal_id} 
-                        className="relative aspect-[2/3] rounded-xl overflow-hidden border border-line bg-panel flex flex-col justify-end p-3 group block"
-                    >
-                        <div className="absolute inset-0 bg-gradient-to-br from-panel-2 to-void z-0 group-hover:scale-105 transition-transform duration-500"></div>
+                    <p className="font-mono text-xs text-holo-3 tracking-widest mb-4">// RESULTADOS</p>
+                    <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-4">
+                        {resultados.map((anime) => (
 
-                        <div className="relative z-10">
-                            <div className="font-bold text-sm leading-tight mb-1">{anime.title}</div>
-                            <div className="font-mono text-[10px] text-muted">{anime.status}</div>
-                        </div>
+                            <Link
+                                to={`/anime/${anime.mal_id}`}
+                                key={anime.mal_id}
+                                className="relative aspect-[2/3] rounded-xl overflow-hidden border border-line bg-panel flex flex-col justify-end p-3 group block"
+                            >
+                                <div className="absolute inset-0 bg-gradient-to-br from-panel-2 to-void z-0 group-hover:scale-105 transition-transform duration-500"></div>
 
-                        <button 
-                            onClick={(e) => {
-                                e.preventDefault() 
-                                alert('Funcionalidade de Salvar virá na Issue #9!')
-                            }}
-                            className="absolute top-2 right-2 w-8 h-8 rounded-full bg-void/70 border-2 border-white/40 text-white font-bold backdrop-blur-sm hover:bg-gradient-to-r hover:from-holo-1 hover:to-holo-2 hover:border-transparent transition-all z-20"
-                        >
-                        +
-                        </button>
-                    </Link>
+                                <div className="relative z-10">
+                                    <div className="font-bold text-sm leading-tight mb-1">{anime.title}</div>
+                                    <div className="font-mono text-[10px] text-muted">{anime.status}</div>
+                                </div>
 
-                    ))}
-                </div>
+                                <button
+                                    onClick={(e) => handleSalvar(e, anime.mal_id)}
+                                    className="absolute top-2 right-2 w-8 h-8 rounded-full bg-void/70 border-2 border-white/40 text-white font-bold backdrop-blur-sm hover:bg-gradient-to-r hover:from-holo-1 hover:to-holo-2 hover:border-transparent transition-all z-20"
+                                >
+                                    +
+                                </button>
+                            </Link>
+
+                        ))}
+                    </div>
                 </>
             )}
 

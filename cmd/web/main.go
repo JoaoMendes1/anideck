@@ -6,13 +6,13 @@ import (
 	"os"
 
 	"github.com/go-chi/chi/v5"
-	"github.com/go-chi/chi/v5/middleware"
+	chimw "github.com/go-chi/chi/v5/middleware"
 
 	"github.com/JoaoMendes1/anideck/internal/config"
 	"github.com/JoaoMendes1/anideck/internal/database"
 	"github.com/JoaoMendes1/anideck/internal/handlers"
 	"github.com/JoaoMendes1/anideck/internal/jikan"
-
+	"github.com/JoaoMendes1/anideck/internal/middleware"
 )
 
 func main() {
@@ -23,37 +23,45 @@ func main() {
 	database.Connect()
 	log.Println("Conexão com o banco de dados estabelecida!")
 
-	// 2. Instaciamos o cliente da Jikan (Que contém o rate limiter)
+	// 2. Carrega as chaves públicas da Supabase pra validar token de usuário 
+	if err := middleware.InitJWKS(os.Getenv("SUPABASE_URL")); err != nil {
+		log.Fatalf("Erro crítico ao carregar JWKS: %v")
+	}
+
+	// 3. Instaciamos o cliente da Jikan (que contém o rate limiter)
 	jikanClient := jikan.NewClient()
 
-	// 3. Instaciamos nosso Handler, entregando o cliente da Jikan para ele usar
-	searchHandler := &handlers.SearchHandler{
-		JikanClient: jikanClient,
-	}
-
-	animeHandler := &handlers.AnimeHandler{
-		JikanClient: jikanClient,
-	}
+	searchHandler := &handlers.SearchHandler{JikanClient: jikanClient}
+    animeHandler := &handlers.AnimeHandler{ JikanClient: jikanClient}
+	entriesHandler := handlers.EntriesHandler{}
 
 	// 4. Configuração das rotas (chi)
 	// Cria o roteador principal usando o framework Chi
 	r := chi.NewRouter()
-	r.Use(middleware.RequestID) // gera um ID único por requisição (útil para rastrear logs)
-	r.Use(middleware.Logger)
-	r.Use(middleware.Recoverer)
+	r.Use(chimw.RequestID) // gera um ID único por requisição (útil para rastrear logs)
+	r.Use(chimw.Logger)
+	r.Use(chimw.Recoverer)
 
 	r.Get("/health", func(w http.ResponseWriter, req *http.Request) {
 		w.WriteHeader(http.StatusOK)
 		w.Write([]byte("OK"))
 	})
 
-	// Nova rota de BUSCA
+	// Rotas públicas — sem login necessário
 	r.Get("/api/search", searchHandler.HandleSearch)
-
-	// 2. Rotas dinâmicas do Anime. O {id} é extraído automaticamente pelo Chi.
 	r.Get("/api/anime/{id}", animeHandler.HandleGetAnime)
 	r.Get("/api/anime/{id}/statistics", animeHandler.HandleGetStatistics)
 
+	// 5. Rotas protegidas que exigem token válido
+	r.Group(func(protegido chi.Router) {
+		protegido.Use(middleware.RequireAuth)
+		
+		protegido.Get("/api/entries", entriesHandler.HandleList)
+		protegido.Post("/api/entries", entriesHandler.HandleCreate)
+		protegido.Put("/api/entries/{id}", entriesHandler.HandleUpdate)
+		protegido.Delete("/api/entries/{id}", entriesHandler.HandleDelete)
+
+	})
 	// Inicia o servidor
 	port := os.Getenv("PORT")
 	log.Printf("Servidor rodando na porta %s...", port)

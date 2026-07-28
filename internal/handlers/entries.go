@@ -19,7 +19,7 @@ type EntriesHandler struct {}
 // HandleCreate salva uma nova entrada na lista pessoal do usuário autentiicado 
 func (h *EntriesHandler) HandleCreate(w http.ResponseWriter, r *http.Request) {
 	// O user_id vem do middleware, JÁ VALIDADO - nunca do corpo da requisição 
-	userID := r.Context().Value(middleware.UserIDkey).(string)
+	userID := r.Context().Value(middleware.UserIDKey).(string)
 
 	var entrada entries.MediaEntry
 	if err := json.NewDecoder(r.Body).Decode(&entrada); err != nil {
@@ -42,7 +42,7 @@ func (h *EntriesHandler) HandleCreate(w http.ResponseWriter, r *http.Request) {
 
 // HandleList retorno só entradas do usuário autenticado (RLS já protege, isso é reforço)
 func (h *EntriesHandler) HandleList(w http.ResponseWriter, r *http.Request) {
-	userID := r.Context().Value(middleware.UserIDkey).(string)
+	userID := r.Context().Value(middleware.UserIDKey).(string)
 
 	var resultado []entries.MediaEntry
 	err := database.Client.DB.From("media_entries"). 
@@ -60,7 +60,7 @@ func (h *EntriesHandler) HandleList(w http.ResponseWriter, r *http.Request) {
 
 // HandleUpdate altera status/nota/anotação de uma entrada existente 
 func (h *EntriesHandler) HandleUpdate(w http.ResponseWriter, r *http.Request) {
-	userID := r.Context().Value(middleware.UserIDkey).(string)
+	userID := r.Context().Value(middleware.UserIDKey).(string)
 	id := chi.URLParam(r, "id")
 
 
@@ -88,7 +88,7 @@ func (h *EntriesHandler) HandleUpdate(w http.ResponseWriter, r *http.Request) {
 
 // HandleDelete remove uma entrada da lista pessoal 
 func (h *EntriesHandler) HandleDelete(w http.ResponseWriter, r *http.Request) {
-	userID := r.Context().Value(middleware.UserIDkey).(string)
+	userID := r.Context().Value(middleware.UserIDKey).(string)
 	id := chi.URLParam(r, "id")
 
 	err := database.Client.DB.From("media_entries"). 
