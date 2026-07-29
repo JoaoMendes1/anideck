@@ -1,4 +1,4 @@
-package jikan
+package anilist
 
 type AnimeSearchResponse struct {
 	Data []Anime `json:"data"`

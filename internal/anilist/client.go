@@ -1,4 +1,4 @@
-package jikan
+package anilist
 
 import (
 	"bytes"

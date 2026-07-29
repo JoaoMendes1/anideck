@@ -11,7 +11,7 @@ import (
 	"github.com/JoaoMendes1/anideck/internal/config"
 	"github.com/JoaoMendes1/anideck/internal/database"
 	"github.com/JoaoMendes1/anideck/internal/handlers"
-	"github.com/JoaoMendes1/anideck/internal/jikan"
+	"github.com/JoaoMendes1/anideck/internal/anilist"
 	"github.com/JoaoMendes1/anideck/internal/middleware"
 )
 
@@ -31,11 +31,11 @@ func main() {
 		log.Fatalf("Erro crítico ao carregar JWKS: %v", err)
 	}
 
-	// 3. Instaciamos o cliente da Jikan (que contém o rate limiter)
-	jikanClient := jikan.NewClient()
+	// 3. Inicializa o cliente da AniList (que contém o rate limiter)
+	anilistClient := anilist.NewClient()
 
-	searchHandler := &handlers.SearchHandler{JikanClient: jikanClient}
-    animeHandler := &handlers.AnimeHandler{ JikanClient: jikanClient}
+	searchHandler := &handlers.SearchHandler{AniListClient: anilistClient}
+	animeHandler := &handlers.AnimeHandler{AniListClient: anilistClient}
 	entriesHandler := handlers.EntriesHandler{}
 
 	// 4. Configuração das rotas (chi)

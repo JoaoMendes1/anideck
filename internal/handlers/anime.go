@@ -7,11 +7,11 @@ import (
 	"os"
 
 	"github.com/go-chi/chi/v5"
-	"github.com/JoaoMendes1/anideck/internal/jikan"
+	"github.com/JoaoMendes1/anideck/internal/anilist"
 )
 
 type AnimeHandler struct {
-	JikanClient *jikan.Client
+	AniListClient *anilist.Client
 }
 
 func (h *AnimeHandler) HandleGetAnime(w http.ResponseWriter, r *http.Request) {
@@ -21,11 +21,11 @@ func (h *AnimeHandler) HandleGetAnime(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// 1. MOCK (Portão Antecipado)
-	if os.Getenv("MOCK_JIKAN") == "true" {
+	// Portão do mock — só ativo se MOCK_ANILIST=true no ambiente de desenvolvimento
+	if os.Getenv("MOCK_ANILIST") == "true" {
 		log.Println("[MOCK] Retornando detalhes ricos falsos para desenvolvimento...")
-		resultados := &jikan.AnimeByIdResponse{
-			Data: jikan.Anime{
+		resultados := &anilist.AnimeByIdResponse{
+			Data: anilist.Anime{
 				MalID:    20,
 				Title:    "Naruto (Mock Detail)",
 				Status:   "Finished Airing",
@@ -69,20 +69,23 @@ func (h *AnimeHandler) HandleGetAnime(w http.ResponseWriter, r *http.Request) {
 			},
 		}
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(resultados)
+		if err := json.NewEncoder(w).Encode(resultados); err != nil {
+			log.Printf("[ERRO] HandleGetAnime mock: falha ao serializar: %v", err)
+		}
 		return
 	}
 
-	// 2. PRODUÇÃO
-	resultados, err := h.JikanClient.GetAnimeById(r.Context(), id)
+	resultados, err := h.AniListClient.GetAnimeById(r.Context(), id)
 	if err != nil {
-		log.Printf("[ERRO JIKAN] Falha ao buscar detalhes do anime %s: %v", id, err)
+		log.Printf("[ERRO ANILIST] Falha ao buscar detalhes do anime %s: %v", id, err)
 		http.Error(w, "Detalhes indisponíveis no momento", http.StatusServiceUnavailable)
 		return
 	}
 
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(resultados)
+	if err := json.NewEncoder(w).Encode(resultados); err != nil {
+		log.Printf("[ERRO] HandleGetAnime: falha ao serializar resposta: %v", err)
+	}
 }
 
 func (h *AnimeHandler) HandleGetStatistics(w http.ResponseWriter, r *http.Request) {
@@ -92,11 +95,11 @@ func (h *AnimeHandler) HandleGetStatistics(w http.ResponseWriter, r *http.Reques
 		return
 	}
 
-	if os.Getenv("MOCK_JIKAN") == "true" {
+	if os.Getenv("MOCK_ANILIST") == "true" {
 		log.Println("[MOCK] Retornando estatísticas falsas para desenvolvimento...")
-		resultados := &jikan.AnimeStatisticsResponse{
-			Data: jikan.AnimeStatistics{
-				Scores: []jikan.ScoreDistribution{
+		resultados := &anilist.AnimeStatisticsResponse{
+			Data: anilist.AnimeStatistics{
+				Scores: []anilist.ScoreDistribution{
 					{Score: 10, Votes: 5000, Percentage: 50.0},
 					{Score: 9, Votes: 3000, Percentage: 30.0},
 					{Score: 8, Votes: 1000, Percentage: 10.0},
@@ -104,17 +107,21 @@ func (h *AnimeHandler) HandleGetStatistics(w http.ResponseWriter, r *http.Reques
 			},
 		}
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(resultados)
+		if err := json.NewEncoder(w).Encode(resultados); err != nil {
+			log.Printf("[ERRO] HandleGetStatistics mock: falha ao serializar: %v", err)
+		}
 		return
 	}
 
-	resultados, err := h.JikanClient.GetAnimeStatistics(r.Context(), id)
+	resultados, err := h.AniListClient.GetAnimeStatistics(r.Context(), id)
 	if err != nil {
-		log.Printf("[ERRO JIKAN] Falha ao buscar estatísticas do anime %s: %v", id, err)
+		log.Printf("[ERRO ANILIST] Falha ao buscar estatísticas do anime %s: %v", id, err)
 		http.Error(w, "Estatísticas indisponíveis no momento", http.StatusServiceUnavailable)
 		return
 	}
 
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(resultados)
+	if err := json.NewEncoder(w).Encode(resultados); err != nil {
+		log.Printf("[ERRO] HandleGetStatistics: falha ao serializar resposta: %v", err)
+	}
 }
