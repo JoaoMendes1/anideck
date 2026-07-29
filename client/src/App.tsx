@@ -4,6 +4,7 @@ import Busca from './pages/Busca'
 import Detalhes from './pages/Detalhes'
 import MeuDeck from './pages/MeuDeck.tsx'
 import RotaProtegida from './components/RotaProtegida'
+import Rankings from './pages/Rankings'
 
 function App() {
   return (
@@ -12,6 +13,7 @@ function App() {
       <Route path="/login" element={<Auth />} />
       <Route path="/deck" element={<RotaProtegida><MeuDeck /></RotaProtegida>} />
       <Route path="/anime/:id" element={<Detalhes />} />
+      <Route path="/rankings" element={<Rankings />} />
     </Routes>
   )
 }

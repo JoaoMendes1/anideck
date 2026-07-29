@@ -3,10 +3,16 @@ import { Link, useNavigate } from 'react-router-dom' // NOVO: Para podermos clic
 import { Search, AlertCircle } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 
+// Updated Anime interface to include more details for display and filtering
 interface Anime {
     mal_id: number
     title: string
     status: string
+    episodes?: number
+    score?: number
+    images?: { jpg: { image_url: string } }
+    genres?: { name: string }[] // For displaying genres
+    streaming?: { name: string; url: string }[] // For displaying streaming links
 }
 
 export default function Busca() {
@@ -45,13 +51,16 @@ export default function Busca() {
     }
 
     const [query, setQuery] = useState('')
+    const [selectedGenres, setSelectedGenres] = useState<string[]>([])
+    const [streamingFilter, setStreamingFilter] = useState('')
     const [resultados, setResultados] = useState<Anime[]>([])
     const [loading, setLoading] = useState(false)
     const [hasSearched, setHasSearched] = useState(false)
-    const [error, setError] = useState<string | null>(null) // NOVO: Faltava isso no seu código!
+    const [error, setError] = useState<string | null>(null)
 
     useEffect(() => {
-        if (query.trim() === '') {
+        // Só limpa os resultados se TODOS os campos de filtro estiverem vazios
+        if (query.trim() === '' && selectedGenres.length === 0 && streamingFilter.trim() === '') {
             setResultados([])
             setHasSearched(false)
             setError(null)
@@ -63,8 +72,13 @@ export default function Busca() {
             setHasSearched(true)
             setError(null)
 
+            const params = new URLSearchParams()
+            if (query.trim() !== '') params.append('q', query.trim())
+            selectedGenres.forEach(genre => params.append('genre', genre))
+            if (streamingFilter.trim() !== '') params.append('streaming', streamingFilter.trim())
+
             try {
-                const response = await fetch(`/api/search?q=${encodeURIComponent(query)}`)
+                const response = await fetch(`/api/search?${params.toString()}`)
 
                 // SE DER 503, DISPARA O ERRO REAL PARA A TELA
                 if (!response.ok) {
@@ -82,8 +96,21 @@ export default function Busca() {
             }
         }, 400)
 
-        return () => clearTimeout(delayDebounceFn)
-    }, [query]);
+        return () => clearTimeout(delayDebounceFn) // Cleanup debounce
+    }, [query, selectedGenres, streamingFilter]); // Add new dependencies
+
+    // Dummy list of genres for demonstration. In a real app, this might come from an API.
+    const availableGenres = [
+        "Action", "Adventure", "Comedy", "Drama", "Fantasy", "Sci-Fi", "Slice of Life",
+        "Sports", "Supernatural", "Thriller", "Romance", "Mystery", "Horror", "Mecha",
+        "Music", "Psychological"
+    ];
+
+    const handleGenreChange = (genre: string) => {
+        setSelectedGenres(prev =>
+            prev.includes(genre) ? prev.filter(g => g !== genre) : [...prev, genre]
+        );
+    };
 
     return (
         <div className="max-w-[960px] mx-auto pt-16 px-5 pb-10">
@@ -95,6 +122,28 @@ export default function Busca() {
                     onChange={(e) => setQuery(e.target.value)}
                     placeholder="Buscar anime, gênero, estúdio..."
                     className="bg-transparent border-none outline-none text-text text-base w-full font-manrope placeholder:text-muted-2"
+                />
+            </div>
+
+            {/* New: Genre and Streaming Filters */}
+            <div className="mb-8 flex flex-wrap gap-2">
+                {availableGenres.map(genre => (
+                    <button
+                        key={genre}
+                        onClick={() => handleGenreChange(genre)}
+                        className={`px-3 py-1 rounded-full text-xs font-bold transition-colors ${
+                            selectedGenres.includes(genre) ? 'bg-holo-2 text-void' : 'bg-panel border border-line text-muted hover:border-holo-3'
+                        }`}
+                    >
+                        {genre}
+                    </button>
+                ))}
+                <input
+                    type="text"
+                    value={streamingFilter}
+                    onChange={(e) => setStreamingFilter(e.target.value)}
+                    placeholder="Filtrar por streaming (ex: Crunchyroll)"
+                    className="flex-1 min-w-[200px] bg-panel border border-line rounded-full px-4 py-1 text-sm focus:outline-none focus:border-holo-3 transition-colors text-text placeholder:text-muted"
                 />
             </div>
 
@@ -131,7 +180,11 @@ export default function Busca() {
                                 key={anime.mal_id}
                                 className="relative aspect-[2/3] rounded-xl overflow-hidden border border-line bg-panel flex flex-col justify-end p-3 group block"
                             >
-                                <div className="absolute inset-0 bg-gradient-to-br from-panel-2 to-void z-0 group-hover:scale-105 transition-transform duration-500"></div>
+                                {anime.images?.jpg?.image_url ? (
+                                    <img src={anime.images.jpg.image_url} alt={anime.title} className="absolute inset-0 w-full h-full object-cover z-0 group-hover:scale-105 transition-transform duration-500" />
+                                ) : (
+                                    <div className="absolute inset-0 bg-gradient-to-br from-panel-2 to-void z-0 group-hover:scale-105 transition-transform duration-500"></div>
+                                )}
 
                                 <div className="relative z-10">
                                     <div className="font-bold text-sm leading-tight mb-1">{anime.title}</div>

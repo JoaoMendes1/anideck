@@ -77,10 +77,13 @@ func mapStatus(s string) string {
 
 // --- SEARCH ---
 
+// internal/anilist/client.go (apenas partes da busca)
+
+// 1) query
 const searchQuery = `
-query ($search: String) {
-  Page(page: 1, perPage: 10) {
-    media(search: $search, type: ANIME) {
+query ($search: String, $genre_in: [String]) {
+  Page(page: 1, perPage: 20) {
+    media(search: $search, type: ANIME, genre_in: $genre_in) {
       idMal
       title { romaji english }
       status
@@ -88,53 +91,106 @@ query ($search: String) {
       averageScore
       coverImage { large }
       genres
+      externalLinks { site url }
     }
   }
 }`
 
+// 2) struct
 type aniListMedia struct {
-	IDMal         int      `json:"idMal"`
+	IDMal         int                              `json:"idMal"`
 	Title         struct{ Romaji, English string } `json:"title"`
-	Status        string   `json:"status"`
-	Description   string   `json:"description"`
-	Episodes      int      `json:"episodes"`
-	AverageScore  int      `json:"averageScore"`
-	CoverImage    struct{ Large string } `json:"coverImage"`
-	Genres        []string `json:"genres"`
+	Status        string                           `json:"status"`
+	Description   string                           `json:"description"`
+	Episodes      int                              `json:"episodes"`
+	AverageScore  int                              `json:"averageScore"`
+	CoverImage    struct{ Large string }           `json:"coverImage"`
+	Genres        []string                         `json:"genres"`
+	ExternalLinks []struct {
+		Site string `json:"site"`
+		URL  string `json:"url"`
+	} `json:"externalLinks"`
 }
 
-func (m aniListMedia) toAnime() Anime {
-	titulo := m.Title.English
-	if titulo == "" {
-		titulo = m.Title.Romaji
+// toAnime converte o tipo de mídia da AniList para o tipo Anime do nosso domínio.
+func (m *aniListMedia) toAnime() Anime {
+	// Define o título principal, com fallback para o título em inglês.
+	title := m.Title.Romaji
+	if title == "" {
+		title = m.Title.English
 	}
-	var generos []struct{ Name string `json:"name"` }
+
+	// Converte a lista de strings de gêneros para a estrutura esperada.
+	var genres []struct {
+		Name string `json:"name"`
+	}
 	for _, g := range m.Genres {
-		generos = append(generos, struct{ Name string `json:"name"` }{Name: g})
+		genres = append(genres, struct {
+			Name string `json:"name"`
+		}{Name: g})
 	}
-	a := Anime{
+
+	// Mapeia os links externos para a estrutura de streaming.
+	var streaming []struct {
+		Name string `json:"name"`
+		URL  string `json:"url"`
+	}
+	for _, link := range m.ExternalLinks {
+		streaming = append(streaming, struct {
+			Name string `json:"name"`
+			URL  string `json:"url"`
+		}{
+			Name: link.Site,
+			URL:  link.URL,
+		})
+	}
+
+	return Anime{
 		MalID:    m.IDMal,
-		Title:    titulo,
+		Title:    title,
 		Status:   mapStatus(m.Status),
-		Synopsis: stripHTML.Sanitize(m.Description),
+		Synopsis: stripHTML.Sanitize(m.Description), // Remove tags HTML da sinopse
 		Episodes: m.Episodes,
-		Score:    float64(m.AverageScore) / 10.0, // AniList usa 0-100, Jikan usava 0-10
-		Genres:   generos,
+		Score:    float64(m.AverageScore) / 10.0, // Converte score de 0-100 para 0-10
+		Images: struct {
+			JPG struct {
+				ImageURL string `json:"image_url"`
+			} `json:"jpg"`
+		}{
+			JPG: struct {
+				ImageURL string `json:"image_url"`
+			}{
+				ImageURL: m.CoverImage.Large,
+			},
+		},
+		Genres:    genres,
+		Streaming: streaming,
 	}
-	a.Images.JPG.ImageURL = m.CoverImage.Large
-	return a
 }
 
-func (c *Client) SearchAnime(ctx context.Context, query string) (*AnimeSearchResponse, error) {
+// 4) assinatura + variáveis dinâmicas
+func (c *Client) SearchAnime(ctx context.Context, query string, genres []string) (*AnimeSearchResponse, error) {
 	var resultado struct {
 		Page struct{ Media []aniListMedia } `json:"Page"`
 	}
-	if err := c.gqlRequest(ctx, searchQuery, map[string]interface{}{"search": query}, &resultado); err != nil {
+
+	variables := map[string]interface{}{}
+	if query != "" {
+		variables["search"] = query
+	}
+	if len(genres) > 0 {
+		variables["genre_in"] = genres
+	}
+
+	if err := c.gqlRequest(ctx, searchQuery, variables, &resultado); err != nil {
 		return nil, err
 	}
 
 	var animes []Anime
 	for _, m := range resultado.Page.Media {
+		if m.IDMal == 0 {
+			continue
+		}
 		animes = append(animes, m.toAnime())
 	}
 	return &AnimeSearchResponse{Data: animes}, nil
@@ -207,4 +263,46 @@ func (c *Client) GetAnimeStatistics(ctx context.Context, id string) (*AnimeStati
 		scores = append(scores, ScoreDistribution{Score: s.Score / 10, Votes: s.Amount, Percentage: pct})
 	}
 	return &AnimeStatisticsResponse{Data: AnimeStatistics{Scores: scores}}, nil
+}
+
+const topAnimeQuery = `
+query ($page: Int, $perPage: Int) {
+  Page(page: $page, perPage: $perPage) {
+    media(type: ANIME, sort: SCORE_DESC) {
+      idMal
+      title { romaji english }
+      status
+      description
+      episodes
+      averageScore
+      coverImage { large }
+      genres
+      externalLinks { site url }
+    }
+  }
+}`
+
+func (c *Client) GetTopAnime(ctx context.Context, page int, perPage int) (*AnimeSearchResponse, error) {
+	var resultado struct {
+		Page struct{ Media []aniListMedia } `json:"Page"`
+	}
+
+	variables := map[string]interface{}{
+		"page":    page,
+		"perPage": perPage,
+	}
+
+	if err := c.gqlRequest(ctx, topAnimeQuery, variables, &resultado); err != nil {
+		return nil, err
+	}
+
+	var animes []Anime
+	for _, m := range resultado.Page.Media {
+		if m.IDMal == 0 {
+			continue
+		}
+		animes = append(animes, m.toAnime())
+	}
+
+	return &AnimeSearchResponse{Data: animes}, nil
 }

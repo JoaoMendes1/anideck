@@ -1,3 +1,4 @@
+// internal/handlers/search.go (substituir arquivo)
 package handlers
 
 import (
@@ -5,6 +6,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"strings"
 
 	"github.com/JoaoMendes1/anideck/internal/anilist"
 )
@@ -13,14 +15,34 @@ type SearchHandler struct {
 	AniListClient *anilist.Client
 }
 
+func filterByStreaming(animes []anilist.Anime, streamingFilter string) []anilist.Anime {
+	streamingFilter = strings.TrimSpace(streamingFilter)
+	if streamingFilter == "" {
+		return animes
+	}
+
+	var filtrados []anilist.Anime
+	for _, anime := range animes {
+		for _, stream := range anime.Streaming {
+			if strings.EqualFold(stream.Name, streamingFilter) {
+				filtrados = append(filtrados, anime)
+				break
+			}
+		}
+	}
+	return filtrados
+}
+
 func (h *SearchHandler) HandleSearch(w http.ResponseWriter, r *http.Request) {
-	query := r.URL.Query().Get("q")
-	if query == "" {
-		http.Error(w, "O parâmetro 'q' é obrigatório para a busca", http.StatusBadRequest)
+	query := strings.TrimSpace(r.URL.Query().Get("q"))
+	genres := r.URL.Query()["genre"]
+	streamingFilter := r.URL.Query().Get("streaming")
+
+	if query == "" && len(genres) == 0 {
+		http.Error(w, "É necessário informar um termo de busca ou gênero", http.StatusBadRequest)
 		return
 	}
 
-	// Portão do mock — só ativo se MOCK_ANILIST=true no ambiente de desenvolvimento
 	if os.Getenv("MOCK_ANILIST") == "true" {
 		log.Println("[MOCK] Variável MOCK_ANILIST ativada. Retornando dados falsos para busca...")
 		resultados := &anilist.AnimeSearchResponse{
@@ -37,12 +59,14 @@ func (h *SearchHandler) HandleSearch(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	resultados, err := h.AniListClient.SearchAnime(r.Context(), query)
+	resultados, err := h.AniListClient.SearchAnime(r.Context(), query, genres)
 	if err != nil {
 		log.Printf("[ERRO ANILIST] Falha ao buscar '%s': %v", query, err)
 		http.Error(w, "Busca indisponível no momento. Tente novamente mais tarde.", http.StatusServiceUnavailable)
 		return
 	}
+
+	resultados.Data = filterByStreaming(resultados.Data, streamingFilter)
 
 	w.Header().Set("Content-Type", "application/json")
 	if err := json.NewEncoder(w).Encode(resultados); err != nil {
