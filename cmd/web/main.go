@@ -20,8 +20,11 @@ func main() {
 	if err := config.LoadAndValidateEnv(); err != nil {
 		log.Fatalf("Erro crítico no boot: %v", err)
 	}
-	database.Connect()
+	if err := database.Connect(); err != nil {
+		log.Fatalf("Erro crítico ao conectar ao banco de dados: %v", err)
+	}
 	log.Println("Conexão com o banco de dados estabelecida!")
+
 
 	// 2. Carrega as chaves públicas da Supabase pra validar token de usuário 
 	if err := middleware.InitJWKS(os.Getenv("SUPABASE_URL")); err != nil {

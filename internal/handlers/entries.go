@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"encoding/json"
+	"log"
 	"net/http"
 
 	"github.com/go-chi/chi/v5"
@@ -34,12 +35,15 @@ func (h *EntriesHandler) HandleCreate(w http.ResponseWriter, r *http.Request) {
 	var resultado []entries.MediaEntry
 	err := database.Client.DB.From("media_entries").Insert(entrada).Execute(&resultado)
 	if err != nil {
+		log.Printf("[ERRO DB] HandleCreate: %v", err)
 		http.Error(w, "Erro ao salvar entrada", http.StatusInternalServerError)
 		return
 	}
 
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(resultado)
+	if err := json.NewEncoder(w).Encode(resultado); err != nil {
+		log.Printf("[ERRO] HandleCreate: falha ao serializar resposta: %v", err)
+	}
 }
 
 func (h *EntriesHandler) HandleList(w http.ResponseWriter, r *http.Request) {
@@ -56,12 +60,15 @@ func (h *EntriesHandler) HandleList(w http.ResponseWriter, r *http.Request) {
 		Execute(&resultado)
 
 	if err != nil {
+		log.Printf("[ERRO DB] HandleList: %v", err)
 		http.Error(w, "Erro ao buscar lista", http.StatusInternalServerError)
 		return
 	}
 
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(resultado)
+	if err := json.NewEncoder(w).Encode(resultado); err != nil {
+		log.Printf("[ERRO] HandleList: falha ao serializar resposta: %v", err)
+	}
 }
 
 func (h *EntriesHandler) HandleUpdate(w http.ResponseWriter, r *http.Request) {
@@ -72,6 +79,10 @@ func (h *EntriesHandler) HandleUpdate(w http.ResponseWriter, r *http.Request) {
 	}
 
 	id := chi.URLParam(r, "id")
+	if id == "" {
+		http.Error(w, "ID da entrada é obrigatório", http.StatusBadRequest)
+		return
+	}
 	var entrada entries.MediaEntry
 	if err := json.NewDecoder(r.Body).Decode(&entrada); err != nil {
 		http.Error(w, "Corpo da requisição inválido!", http.StatusBadRequest)
@@ -88,12 +99,15 @@ func (h *EntriesHandler) HandleUpdate(w http.ResponseWriter, r *http.Request) {
 		Execute(&resultado)
 
 	if err != nil {
-		http.Error(w, "Error ao atualizar entrada", http.StatusInternalServerError)
+		log.Printf("[ERRO DB] HandleUpdate (id=%s): %v", id, err)
+		http.Error(w, "Erro ao atualizar entrada", http.StatusInternalServerError)
 		return
 	}
 
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(resultado)
+	if err := json.NewEncoder(w).Encode(resultado); err != nil {
+		log.Printf("[ERRO] HandleUpdate: falha ao serializar resposta: %v", err)
+	}
 }
 
 func (h *EntriesHandler) HandleDelete(w http.ResponseWriter, r *http.Request) {
@@ -104,6 +118,10 @@ func (h *EntriesHandler) HandleDelete(w http.ResponseWriter, r *http.Request) {
 	}
 
 	id := chi.URLParam(r, "id")
+	if id == "" {
+		http.Error(w, "ID da entrada é obrigatório", http.StatusBadRequest)
+		return
+	}
 	err := database.Client.DB.From("media_entries").
 		Delete().
 		Eq("id", id).
@@ -111,6 +129,7 @@ func (h *EntriesHandler) HandleDelete(w http.ResponseWriter, r *http.Request) {
 		Execute(nil)
 
 	if err != nil {
+		log.Printf("[ERRO DB] HandleDelete (id=%s): %v", id, err)
 		http.Error(w, "Erro ao remover entrada", http.StatusInternalServerError)
 		return
 	}
