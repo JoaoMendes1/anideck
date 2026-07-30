@@ -1,4 +1,4 @@
-// internal/handlers/search.go (substituir arquivo)
+// internal/handlers/search.go
 package handlers
 
 import (
@@ -6,6 +6,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"strconv"
 	"strings"
 
 	"github.com/JoaoMendes1/anideck/internal/anilist"
@@ -15,31 +16,25 @@ type SearchHandler struct {
 	AniListClient *anilist.Client
 }
 
-func filterByStreaming(animes []anilist.Anime, streamingFilter string) []anilist.Anime {
-	streamingFilter = strings.TrimSpace(streamingFilter)
-	if streamingFilter == "" {
-		return animes
-	}
-
-	var filtrados []anilist.Anime
-	for _, anime := range animes {
-		for _, stream := range anime.Streaming {
-			if strings.EqualFold(stream.Name, streamingFilter) {
-				filtrados = append(filtrados, anime)
-				break
-			}
-		}
-	}
-	return filtrados
-}
-
+// HandleSearch processa buscas de anime por texto, gênero, tag, temporada, ano e/ou status.
+// Requer ao menos um de: q (texto), genre ou tag — filtros de contexto não são uma fonte de dados.
 func (h *SearchHandler) HandleSearch(w http.ResponseWriter, r *http.Request) {
 	query := strings.TrimSpace(r.URL.Query().Get("q"))
 	genres := r.URL.Query()["genre"]
-	streamingFilter := r.URL.Query().Get("streaming")
+	tags := r.URL.Query()["tag"]
+	season := strings.ToUpper(strings.TrimSpace(r.URL.Query().Get("season")))
+	status := strings.ToUpper(strings.TrimSpace(r.URL.Query().Get("status")))
 
-	if query == "" && len(genres) == 0 {
-		http.Error(w, "É necessário informar um termo de busca ou gênero", http.StatusBadRequest)
+	// seasonYear só é relevante quando season também está presente (regra da AniList)
+	seasonYear := 0
+	if season != "" {
+		if y, err := strconv.Atoi(r.URL.Query().Get("year")); err == nil && y > 0 {
+			seasonYear = y
+		}
+	}
+
+	if query == "" && len(genres) == 0 && len(tags) == 0 && season == "" && status == "" {
+		http.Error(w, "É necessário informar ao menos um critério de busca", http.StatusBadRequest)
 		return
 	}
 
@@ -59,14 +54,20 @@ func (h *SearchHandler) HandleSearch(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	resultados, err := h.AniListClient.SearchAnime(r.Context(), query, genres)
+	filters := anilist.SearchFilters{
+		Genres:     genres,
+		Tags:       tags,
+		Season:     season,
+		SeasonYear: seasonYear,
+		Status:     status,
+	}
+
+	resultados, err := h.AniListClient.SearchAnime(r.Context(), query, filters)
 	if err != nil {
 		log.Printf("[ERRO ANILIST] Falha ao buscar '%s': %v", query, err)
 		http.Error(w, "Busca indisponível no momento. Tente novamente mais tarde.", http.StatusServiceUnavailable)
 		return
 	}
-
-	resultados.Data = filterByStreaming(resultados.Data, streamingFilter)
 
 	w.Header().Set("Content-Type", "application/json")
 	if err := json.NewEncoder(w).Encode(resultados); err != nil {

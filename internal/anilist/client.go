@@ -77,13 +77,14 @@ func mapStatus(s string) string {
 
 // --- SEARCH ---
 
-// internal/anilist/client.go (apenas partes da busca)
-
-// 1) query
+// searchQuery busca animes por texto e/ou filtros.
+// genre_in / tag_in: a AniList separa as duas — sem tag_in, categorias como "Artes Marciais" nunca retornam resultado.
+// season + seasonYear: season sem ano busca em todos os anos; passamos seasonYear só quando fornecido.
+// status: enum MediaStatus da AniList (FINISHED, RELEASING, NOT_YET_RELEASED, etc.).
 const searchQuery = `
-query ($search: String, $genre_in: [String]) {
+query ($search: String, $genre_in: [String], $tag_in: [String], $season: MediaSeason, $seasonYear: Int, $status: MediaStatus) {
   Page(page: 1, perPage: 20) {
-    media(search: $search, type: ANIME, genre_in: $genre_in) {
+    media(search: $search, type: ANIME, genre_in: $genre_in, tag_in: $tag_in, season: $season, seasonYear: $seasonYear, status: $status) {
       idMal
       title { romaji english }
       status
@@ -169,7 +170,18 @@ func (m *aniListMedia) toAnime() Anime {
 }
 
 // 4) assinatura + variáveis dinâmicas
-func (c *Client) SearchAnime(ctx context.Context, query string, genres []string) (*AnimeSearchResponse, error) {
+// SearchFilters agrupa todos os filtros opcionais da busca num único struct,
+// evitando que a assinatura da função cresça a cada novo filtro adicionado.
+type SearchFilters struct {
+	Genres     []string
+	Tags       []string
+	Season     string // WINTER | SPRING | SUMMER | FALL (enum MediaSeason da AniList)
+	SeasonYear int    // ex: 2026; só enviado se > 0
+	Status     string // FINISHED | RELEASING | NOT_YET_RELEASED | CANCELLED | HIATUS
+}
+
+// SearchAnime busca animes por texto livre e/ou filtros estruturados.
+func (c *Client) SearchAnime(ctx context.Context, query string, f SearchFilters) (*AnimeSearchResponse, error) {
 	var resultado struct {
 		Page struct{ Media []aniListMedia } `json:"Page"`
 	}
@@ -178,8 +190,21 @@ func (c *Client) SearchAnime(ctx context.Context, query string, genres []string)
 	if query != "" {
 		variables["search"] = query
 	}
-	if len(genres) > 0 {
-		variables["genre_in"] = genres
+	if len(f.Genres) > 0 {
+		variables["genre_in"] = f.Genres
+	}
+	if len(f.Tags) > 0 {
+		variables["tag_in"] = f.Tags
+	}
+	if f.Season != "" {
+		variables["season"] = f.Season
+	}
+	// seasonYear sem season não faz sentido na AniList — só enviamos se ambos estiverem presentes
+	if f.SeasonYear > 0 && f.Season != "" {
+		variables["seasonYear"] = f.SeasonYear
+	}
+	if f.Status != "" {
+		variables["status"] = f.Status
 	}
 
 	if err := c.gqlRequest(ctx, searchQuery, variables, &resultado); err != nil {
@@ -265,10 +290,12 @@ func (c *Client) GetAnimeStatistics(ctx context.Context, id string) (*AnimeStati
 	return &AnimeStatisticsResponse{Data: AnimeStatistics{Scores: scores}}, nil
 }
 
+// topAnimeQuery busca os animes mais bem avaliados da AniList.
+// Todos os filtros são opcionais — omitidos quando não fornecidos.
 const topAnimeQuery = `
-query ($page: Int, $perPage: Int) {
+query ($page: Int, $perPage: Int, $genre_in: [String], $tag_in: [String], $season: MediaSeason, $seasonYear: Int, $status: MediaStatus) {
   Page(page: $page, perPage: $perPage) {
-    media(type: ANIME, sort: SCORE_DESC) {
+    media(type: ANIME, sort: SCORE_DESC, genre_in: $genre_in, tag_in: $tag_in, season: $season, seasonYear: $seasonYear, status: $status) {
       idMal
       title { romaji english }
       status
@@ -282,7 +309,9 @@ query ($page: Int, $perPage: Int) {
   }
 }`
 
-func (c *Client) GetTopAnime(ctx context.Context, page int, perPage int) (*AnimeSearchResponse, error) {
+// GetTopAnime retorna os animes mais bem avaliados com filtros opcionais.
+// Usa o mesmo struct SearchFilters da busca para manter consistência.
+func (c *Client) GetTopAnime(ctx context.Context, page int, perPage int, f SearchFilters) (*AnimeSearchResponse, error) {
 	var resultado struct {
 		Page struct{ Media []aniListMedia } `json:"Page"`
 	}
@@ -290,6 +319,21 @@ func (c *Client) GetTopAnime(ctx context.Context, page int, perPage int) (*Anime
 	variables := map[string]interface{}{
 		"page":    page,
 		"perPage": perPage,
+	}
+	if len(f.Genres) > 0 {
+		variables["genre_in"] = f.Genres
+	}
+	if len(f.Tags) > 0 {
+		variables["tag_in"] = f.Tags
+	}
+	if f.Season != "" {
+		variables["season"] = f.Season
+	}
+	if f.SeasonYear > 0 && f.Season != "" {
+		variables["seasonYear"] = f.SeasonYear
+	}
+	if f.Status != "" {
+		variables["status"] = f.Status
 	}
 
 	if err := c.gqlRequest(ctx, topAnimeQuery, variables, &resultado); err != nil {
@@ -303,6 +347,5 @@ func (c *Client) GetTopAnime(ctx context.Context, page int, perPage int) (*Anime
 		}
 		animes = append(animes, m.toAnime())
 	}
-
 	return &AnimeSearchResponse{Data: animes}, nil
 }

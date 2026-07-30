@@ -5,30 +5,60 @@ import (
 	"log"
 	"net/http"
 	"strconv"
+	"strings"
 
 	"github.com/JoaoMendes1/anideck/internal/anilist"
 )
 
-// RankingHandler lida com requisições relacionadas a rankings de animes.
+// RankingHandler lida com requisições de ranking de animes.
 type RankingHandler struct {
 	AniListClient *anilist.Client
 }
 
-// HandleGetTopAnime busca e retorna os animes mais bem avaliados.
+// HandleGetTopAnime retorna os animes mais bem avaliados da AniList.
+// Todos os filtros são opcionais e passados diretamente para a query GraphQL
+// — nenhum pós-processamento client-side necessário.
+//
+// Query params aceitos:
+//   - page     (int, padrão 1)
+//   - perPage  (int, padrão 20, máx 50)
+//   - genre    (repetível: ?genre=Action&genre=Drama)
+//   - tag      (repetível: ?tag=Martial+Arts)
+//   - season   (WINTER | SPRING | SUMMER | FALL)
+//   - year     (int, ex: 2026 — só usado se season também estiver presente)
+//   - status   (FINISHED | RELEASING | NOT_YET_RELEASED | CANCELLED | HIATUS)
 func (h *RankingHandler) HandleGetTopAnime(w http.ResponseWriter, r *http.Request) {
 	pageStr := r.URL.Query().Get("page")
 	page, err := strconv.Atoi(pageStr)
 	if err != nil || page < 1 {
-		page = 1 // Página padrão
+		page = 1
 	}
 
 	perPageStr := r.URL.Query().Get("perPage")
 	perPage, err := strconv.Atoi(perPageStr)
-	if err != nil || perPage < 1 || perPage > 50 { // AniList tem um limite de 50 por página
-		perPage = 20 // Quantidade padrão por página
+	if err != nil || perPage < 1 || perPage > 50 {
+		perPage = 20
 	}
 
-	resultados, err := h.AniListClient.GetTopAnime(r.Context(), page, perPage)
+	season := strings.ToUpper(strings.TrimSpace(r.URL.Query().Get("season")))
+	status := strings.ToUpper(strings.TrimSpace(r.URL.Query().Get("status")))
+
+	seasonYear := 0
+	if season != "" {
+		if y, err := strconv.Atoi(r.URL.Query().Get("year")); err == nil && y > 0 {
+			seasonYear = y
+		}
+	}
+
+	filters := anilist.SearchFilters{
+		Genres:     r.URL.Query()["genre"],
+		Tags:       r.URL.Query()["tag"],
+		Season:     season,
+		SeasonYear: seasonYear,
+		Status:     status,
+	}
+
+	resultados, err := h.AniListClient.GetTopAnime(r.Context(), page, perPage, filters)
 	if err != nil {
 		log.Printf("[ERRO ANILIST] Falha ao buscar top animes: %v", err)
 		http.Error(w, "Ranking indisponível no momento. Tente novamente mais tarde.", http.StatusServiceUnavailable)

@@ -1,7 +1,11 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { AlertCircle, ChevronLeft } from 'lucide-react'
+import { AlertCircle, ChevronLeft, SlidersHorizontal, X } from 'lucide-react'
 import { supabase } from '../lib/supabase'
+import {
+    CONTENT_FILTERS, STATUS_OPTIONS, SEASON_OPTIONS,
+    type FilterItem
+} from '../lib/filters'
 
 interface Anime {
     mal_id: number
@@ -12,69 +16,93 @@ interface Anime {
     images: { jpg: { image_url: string } }
 }
 
+const CURRENT_YEAR = new Date().getFullYear()
+const YEAR_OPTIONS = Array.from({ length: 10 }, (_, i) => CURRENT_YEAR - i)
+
 export default function Rankings() {
     const navigate = useNavigate()
-    const [animes, setAnimes] = useState<Anime[]>([])
-    const [loading, setLoading] = useState(true)
-    const [error, setError] = useState<string | null>(null)
-    const [page, setPage] = useState(1) // Controle de paginação 
+    const [animes, setAnimes]           = useState<Anime[]>([])
+    const [loading, setLoading]         = useState(true)
+    const [error, setError]             = useState<string | null>(null)
+    const [page, setPage]               = useState(1)
+    const [showFilters, setShowFilters] = useState(false)
 
-    // Busca os dados sempre que a 'page' mudar
+    const [selectedFilters, setSelectedFilters] = useState<FilterItem[]>([])
+    const [selectedStatus, setSelectedStatus]   = useState('')
+    const [selectedSeason, setSelectedSeason]   = useState('')
+    const [selectedYear, setSelectedYear]       = useState('')
+
+    const activeFilterCount =
+        selectedFilters.length +
+        (selectedStatus ? 1 : 0) +
+        (selectedSeason ? 1 : 0) +
+        (selectedYear ? 1 : 0)
+
+    // Reseta paginação quando filtros mudam
     useEffect(() => {
-        const fetchRanking = async () => {
-            setLoading(true)
-            setError(null)
-            try {
-                const response = await fetch(`/api/ranking?page=${page}`)
-                if (!response.ok) throw new Error('Ranking indisponível no momento.')
-                const data = await response.json()
+        setAnimes([])
+        setPage(1)
+    }, [selectedFilters, selectedStatus, selectedSeason, selectedYear])
 
-                // Se for a página 1, substitui a lista. Se não, concatena (junta) os animes novos com os antigos.
-                if (page === 1) {
-                    setAnimes(data.data || [])
-                } else {
-                    setAnimes(prev => [...prev, ...(data.data || [])])
-                }
-            } catch (err: any) {
-                console.error(err)
-                setError(err.message)
-            } finally {
-                setLoading(false)
-            }
+    const fetchRanking = useCallback(async (currentPage: number, replace: boolean) => {
+        setLoading(true)
+        setError(null)
+
+        const params = new URLSearchParams({ page: String(currentPage), perPage: '20' })
+        selectedFilters.forEach(f => params.append(f.type === 'genre' ? 'genre' : 'tag', f.value))
+        if (selectedStatus) params.set('status', selectedStatus)
+        if (selectedSeason) params.set('season', selectedSeason)
+        // year só é relevante com season (regra da AniList)
+        if (selectedSeason && selectedYear) params.set('year', selectedYear)
+
+        try {
+            const response = await fetch(`/api/ranking?${params.toString()}`)
+            if (!response.ok) throw new Error('Ranking indisponível no momento.')
+            const data = await response.json()
+            const incoming: Anime[] = data.data || []
+            setAnimes(prev => replace ? incoming : [...prev, ...incoming])
+        } catch (err: any) {
+            setError(err.message)
+        } finally {
+            setLoading(false)
         }
+    }, [selectedFilters, selectedStatus, selectedSeason, selectedYear])
 
-        fetchRanking()
-    }, [page])
+    useEffect(() => {
+        fetchRanking(page, page === 1)
+    }, [page, fetchRanking])
 
     const handleSalvar = async (e: React.MouseEvent, malId: number) => {
         e.preventDefault()
         const { data: { session } } = await supabase.auth.getSession()
-
-        if (!session) {
-            navigate('/login')
-            return
-        }
-
+        if (!session) { navigate('/login'); return }
         try {
-            const response = await fetch('/api/entries', {
+            const res = await fetch('/api/entries', {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${session.access_token}`,
-                },
+                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${session.access_token}` },
                 body: JSON.stringify({ mal_id: malId, tipo: 'anime', status: 'Quero Assistir' }),
             })
-            if (!response.ok) throw new Error('Falha ao salvar')
-            alert('Salvo na sua lista!!')
-        } catch (err) {
-            console.error(err)
-            alert('Erro ao salvar. Tente novamente!!')
-        }
+            if (!res.ok) throw new Error()
+            alert('Salvo na sua lista!')
+        } catch { alert('Erro ao salvar. Tente novamente!') }
+    }
+
+    const toggleFilter = (f: FilterItem) =>
+        setSelectedFilters(prev =>
+            prev.some(x => x.value === f.value && x.type === f.type)
+                ? prev.filter(x => !(x.value === f.value && x.type === f.type))
+                : [...prev, f]
+        )
+
+    const clearFilters = () => {
+        setSelectedFilters([])
+        setSelectedStatus('')
+        setSelectedSeason('')
+        setSelectedYear('')
     }
 
     return (
         <div className="pb-20">
-            {/* Navbar Minimalista */}
             <nav className="sticky top-0 z-50 bg-void/90 backdrop-blur-md border-b border-line px-5 py-3">
                 <Link to="/" className="inline-flex items-center gap-2 text-muted hover:text-text transition-colors text-sm font-bold">
                     <ChevronLeft size={18} /> Voltar para Busca
@@ -82,32 +110,132 @@ export default function Rankings() {
             </nav>
 
             <div className="max-w-[900px] mx-auto px-5 pt-10">
-                <div className="mb-8">
+                <div className="mb-6">
                     <p className="font-mono text-xs text-holo-3 tracking-widest mb-2">// RANKING GLOBAL</p>
-                    <h1 className="font-anton text-3xl md:text-4xl uppercase text-text mb-2">Mais assistidos agora</h1>
-                    <p className="text-muted text-sm">Direto da base pública da AniList — sem enfeite, só o que a comunidade mundial está aclamando.</p>
+                    <h1 className="font-anton text-3xl md:text-4xl uppercase text-text mb-2">Os mais aclamados</h1>
+                    <p className="text-muted text-sm">Direto da base pública da AniList — filtros aplicados no servidor.</p>
                 </div>
 
-                {/* Abas (Mockadas por enquanto, daremos vida a elas nas próximas tarefas da Issue #10) */}
-                <div className="flex gap-2 overflow-x-auto pb-2 mb-6 scrollbar-hide">
-                    <button className="flex-shrink-0 text-[13px] font-bold px-4 py-2 rounded-full border border-transparent bg-gradient-to-r from-holo-1 to-holo-2 text-void">
-                        Melhor Nota
+                {/* Controles de filtro */}
+                <div className="mb-6 space-y-3">
+                    <button
+                        onClick={() => setShowFilters(v => !v)}
+                        className={`inline-flex items-center gap-2 px-4 py-2 rounded-full border text-sm font-bold transition-all duration-200 cursor-pointer ${
+                            showFilters || activeFilterCount > 0
+                                ? 'border-holo-2 text-holo-2 bg-holo-2/10'
+                                : 'border-line text-muted bg-panel hover:border-holo-2 hover:text-holo-2'
+                        }`}
+                    >
+                        <SlidersHorizontal size={14} />
+                        Filtros
+                        {activeFilterCount > 0 && (
+                            <span className="flex items-center justify-center w-5 h-5 rounded-full bg-gradient-to-r from-holo-1 to-holo-2 text-void text-[10px] font-black">
+                                {activeFilterCount}
+                            </span>
+                        )}
                     </button>
-                    <button className="flex-shrink-0 text-[13px] font-bold px-4 py-2 rounded-full border border-line bg-panel text-muted opacity-50 cursor-not-allowed">
-                        Filtros de Streaming e Gênero (Em breve)
-                    </button>
+
+                    {showFilters && (
+                        <div className="bg-panel border border-line rounded-2xl p-5 space-y-6">
+
+                            {/* Status */}
+                            <div>
+                                <p className="font-mono text-[10px] text-muted-2 tracking-widest mb-3">// STATUS</p>
+                                <div className="flex flex-wrap gap-2">
+                                    {STATUS_OPTIONS.map(opt => (
+                                        <button
+                                            key={opt.value}
+                                            onClick={() => setSelectedStatus(selectedStatus === opt.value ? '' : opt.value)}
+                                            className={`px-3 py-1.5 rounded-full text-xs font-bold transition-all duration-150 cursor-pointer ${
+                                                selectedStatus === opt.value
+                                                    ? 'bg-gradient-to-r from-holo-1 to-holo-2 text-void shadow-[0_0_12px_rgba(123,92,255,0.4)]'
+                                                    : 'bg-panel-2 border border-line text-muted hover:border-holo-2 hover:text-text'
+                                            }`}
+                                        >
+                                            {opt.label}
+                                        </button>
+                                    ))}
+                                </div>
+                            </div>
+
+                            {/* Temporada + Ano */}
+                            <div>
+                                <p className="font-mono text-[10px] text-muted-2 tracking-widest mb-3">// TEMPORADA</p>
+                                <div className="flex flex-wrap gap-2 mb-3">
+                                    {SEASON_OPTIONS.map(opt => (
+                                        <button
+                                            key={opt.value}
+                                            onClick={() => setSelectedSeason(selectedSeason === opt.value ? '' : opt.value)}
+                                            className={`px-3 py-1.5 rounded-full text-xs font-bold transition-all duration-150 cursor-pointer ${
+                                                selectedSeason === opt.value
+                                                    ? 'bg-gradient-to-r from-holo-1 to-holo-2 text-void shadow-[0_0_12px_rgba(123,92,255,0.4)]'
+                                                    : 'bg-panel-2 border border-line text-muted hover:border-holo-2 hover:text-text'
+                                            }`}
+                                        >
+                                            {opt.emoji} {opt.label}
+                                        </button>
+                                    ))}
+                                </div>
+                                {/* Ano — só relevante quando temporada está selecionada */}
+                                {selectedSeason && (
+                                    <div className="flex flex-wrap gap-2">
+                                        {YEAR_OPTIONS.map(y => (
+                                            <button
+                                                key={y}
+                                                onClick={() => setSelectedYear(selectedYear === String(y) ? '' : String(y))}
+                                                className={`px-3 py-1.5 rounded-full text-xs font-bold transition-all duration-150 cursor-pointer ${
+                                                    selectedYear === String(y)
+                                                        ? 'bg-holo-3/20 border border-holo-3 text-holo-3'
+                                                        : 'bg-panel-2 border border-line text-muted hover:border-holo-3 hover:text-text'
+                                                }`}
+                                            >
+                                                {y}
+                                            </button>
+                                        ))}
+                                    </div>
+                                )}
+                            </div>
+
+                            {/* Categoria (gênero + tag) */}
+                            <div>
+                                <p className="font-mono text-[10px] text-muted-2 tracking-widest mb-3">// CATEGORIA</p>
+                                <div className="flex flex-wrap gap-2">
+                                    {CONTENT_FILTERS.map(f => {
+                                        const isActive = selectedFilters.some(x => x.value === f.value)
+                                        return (
+                                            <button
+                                                key={`${f.type}-${f.value}`}
+                                                onClick={() => toggleFilter(f)}
+                                                className={`px-3 py-1.5 rounded-full text-xs font-bold transition-all duration-150 cursor-pointer ${
+                                                    isActive
+                                                        ? 'bg-gradient-to-r from-holo-1 to-holo-2 text-void shadow-[0_0_12px_rgba(123,92,255,0.4)]'
+                                                        : 'bg-panel-2 border border-line text-muted hover:border-holo-2 hover:text-text'
+                                                }`}
+                                            >
+                                                {f.label}
+                                            </button>
+                                        )
+                                    })}
+                                </div>
+                            </div>
+
+                            {activeFilterCount > 0 && (
+                                <button onClick={clearFilters} className="flex items-center gap-1.5 text-coral text-xs font-bold hover:opacity-80 transition-opacity cursor-pointer">
+                                    <X size={12} /> Limpar filtros
+                                </button>
+                            )}
+                        </div>
+                    )}
                 </div>
 
-                {/* Lista do Ranking */}
+                {/* Lista */}
                 <div className="flex flex-col gap-3">
                     {animes.map((anime, index) => {
                         const rank = index + 1
-
-                        // Cores especiais para o Top 3 baseadas no DESIGN_TOKENS.md
-                        let rankColor = "text-muted-2"
-                        if (rank === 1) rankColor = "bg-gradient-to-b from-gold to-[#e08a1a] text-transparent bg-clip-text"
-                        else if (rank === 2) rankColor = "text-[#D9DDE6]" // Prata
-                        else if (rank === 3) rankColor = "text-[#C77B3E]" // Bronze
+                        let rankColor = 'text-muted-2'
+                        if (rank === 1) rankColor = 'bg-gradient-to-b from-gold to-[#e08a1a] text-transparent bg-clip-text'
+                        else if (rank === 2) rankColor = 'text-[#D9DDE6]'
+                        else if (rank === 3) rankColor = 'text-[#C77B3E]'
 
                         return (
                             <Link
@@ -118,31 +246,16 @@ export default function Rankings() {
                                 <span className={`font-anton text-lg md:text-xl text-center ${rankColor}`}>
                                     {rank < 10 ? `0${rank}` : rank}
                                 </span>
-
-                                <img
-                                    src={anime.images?.jpg?.image_url}
-                                    alt={anime.title}
-                                    className="w-11 h-11 md:w-14 md:h-14 rounded-lg object-cover bg-panel-2 border border-line"
-                                />
-
+                                <img src={anime.images?.jpg?.image_url} alt={anime.title} className="w-11 h-11 md:w-14 md:h-14 rounded-lg object-cover bg-panel-2 border border-line" />
                                 <div className="min-w-0">
                                     <div className="font-bold text-sm md:text-[14.5px] truncate">{anime.title}</div>
-                                    <div className="font-mono text-[10px] md:text-[10.5px] text-muted-2 mt-1 truncate">
-                                        {anime.status} • {anime.episodes || '?'} EP
-                                    </div>
+                                    <div className="font-mono text-[10px] md:text-[10.5px] text-muted-2 mt-1">{anime.status} • {anime.episodes || '?'} EP</div>
                                 </div>
-
                                 <div className="text-right">
-                                    <div className="font-anton text-sm md:text-base text-gold leading-tight">★ {anime.score || 'N/A'}</div>
+                                    <div className="font-anton text-sm md:text-base text-gold">★ {anime.score || 'N/A'}</div>
                                     <span className="font-mono text-[9px] text-muted-2 hidden md:block">NOTA</span>
                                 </div>
-
-                                <button
-                                    onClick={(e) => handleSalvar(e, anime.mal_id)}
-                                    className="hidden md:flex w-8 h-8 rounded-full border-[1.5px] border-line bg-transparent text-muted items-center justify-center font-bold text-lg group-hover:border-holo-3 group-hover:text-holo-3 transition-colors z-10"
-                                >
-                                    +
-                                </button>
+                                <button onClick={(e) => handleSalvar(e, anime.mal_id)} className="hidden md:flex w-8 h-8 rounded-full border-[1.5px] border-line bg-transparent text-muted items-center justify-center font-bold text-lg group-hover:border-holo-3 group-hover:text-holo-3 transition-colors z-10 cursor-pointer">+</button>
                             </Link>
                         )
                     })}
@@ -162,11 +275,18 @@ export default function Rankings() {
                     </div>
                 )}
 
+                {!loading && !error && animes.length === 0 && activeFilterCount > 0 && (
+                    <div className="text-center py-16">
+                        <p className="font-anton uppercase text-text text-xl mb-2">Nenhum resultado</p>
+                        <p className="text-sm text-muted mb-4">Nenhum anime encontrado com esses filtros.</p>
+                        <button onClick={clearFilters} className="px-4 py-2 rounded-full border border-coral text-coral text-sm font-bold hover:bg-coral/10 transition-colors cursor-pointer">
+                            Limpar filtros
+                        </button>
+                    </div>
+                )}
+
                 {!loading && !error && animes.length > 0 && (
-                    <button
-                        onClick={() => setPage(p => p + 1)}
-                        className="block mx-auto mt-8 mb-10 px-6 py-3 rounded-full border border-line bg-panel text-text font-bold text-sm hover:border-holo-3 hover:text-holo-3 transition-colors cursor-pointer"
-                    >
+                    <button onClick={() => setPage(p => p + 1)} className="block mx-auto mt-8 mb-10 px-6 py-3 rounded-full border border-line bg-panel text-text font-bold text-sm hover:border-holo-3 hover:text-holo-3 transition-colors cursor-pointer">
                         Carregar mais
                     </button>
                 )}
@@ -174,6 +294,3 @@ export default function Rankings() {
         </div>
     )
 }
-
-
-
