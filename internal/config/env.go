@@ -17,6 +17,7 @@ func LoadAndValidateEnv() error {
 		"SUPABASE_URL", 
 		"SUPABASE_PUBLIC_KEY", 
 		"SUPABASE_SERVICE_KEY",
+		"ADMIN_USER_ID",
 	}
 
 	for _, v := range requiredVars {

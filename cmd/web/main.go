@@ -8,10 +8,10 @@ import (
 	"github.com/go-chi/chi/v5"
 	chimw "github.com/go-chi/chi/v5/middleware"
 
+	"github.com/JoaoMendes1/anideck/internal/anilist"
 	"github.com/JoaoMendes1/anideck/internal/config"
 	"github.com/JoaoMendes1/anideck/internal/database"
 	"github.com/JoaoMendes1/anideck/internal/handlers"
-	"github.com/JoaoMendes1/anideck/internal/anilist"
 	"github.com/JoaoMendes1/anideck/internal/middleware"
 )
 
@@ -25,8 +25,7 @@ func main() {
 	}
 	log.Println("Conexão com o banco de dados estabelecida!")
 
-
-	// 2. Carrega as chaves públicas da Supabase pra validar token de usuário 
+	// 2. Carrega as chaves públicas da Supabase pra validar token de usuário
 	if err := middleware.InitJWKS(os.Getenv("SUPABASE_URL")); err != nil {
 		log.Fatalf("Erro crítico ao carregar JWKS: %v", err)
 	}
@@ -38,6 +37,7 @@ func main() {
 	animeHandler := &handlers.AnimeHandler{AniListClient: anilistClient}
 	entriesHandler := handlers.EntriesHandler{}
 	rankingHandler := &handlers.RankingHandler{AniListClient: anilistClient}
+	curationHandler := &handlers.CurationHandler{}
 
 	// 4. Configuração das rotas (chi)
 	// Cria o roteador principal usando o framework Chi
@@ -56,16 +56,27 @@ func main() {
 	r.Get("/api/anime/{id}", animeHandler.HandleGetAnime)
 	r.Get("/api/anime/{id}/statistics", animeHandler.HandleGetStatistics)
 	r.Get("/api/ranking", rankingHandler.HandleGetTopAnime)
+	r.Get("/api/curation", curationHandler.HandleList)
 
 	// 5. Rotas protegidas que exigem token válido
 	r.Group(func(protegido chi.Router) {
 		protegido.Use(middleware.RequireAuth)
-		
+
 		protegido.Get("/api/entries", entriesHandler.HandleList)
 		protegido.Post("/api/entries", entriesHandler.HandleCreate)
 		protegido.Put("/api/entries/{id}", entriesHandler.HandleUpdate)
 		protegido.Delete("/api/entries/{id}", entriesHandler.HandleDelete)
 
+	})
+
+	// 6. Rotas de Admin (Requer Login E ser o dono do sistema)
+	r.Group(func(admin chi.Router) {
+		admin.Use(middleware.RequireAuth)
+		admin.Use(middleware.RequireAdmin) // O nosso novo escudo!
+
+		admin.Post("/api/curation", curationHandler.HandleCreate)
+		admin.Put("/api/curation/{id}", curationHandler.HandleUpdate)
+		admin.Delete("/api/curation/{id}", curationHandler.HandleDelete)
 	})
 	// Inicia o servidor
 	port := os.Getenv("PORT")
