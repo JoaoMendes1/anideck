@@ -35,8 +35,15 @@ Staging sobe já na Fase 1, como projeto esqueleto — mesmo padrão do JVM Syst
 - [x] Transição de status: Sugerir automaticamente mudar para "Completo" quando a API informar que o anime "Em Dia" terminou.
 - [x] Autenticação Supabase funcional (login/cadastro). Rota `/deck` protegida.
 - [x] Sanitização de qualquer texto livre inserido pelo usuário (anotações) via `bluemonday` (proteção contra XSS).
-- [ ] Exibir ranking global de animes baseado na query `Page(sort: SCORE_DESC)` da AniList (Issue #10).
-- [ ] Filtro por gênero/tag e plataforma de streaming (via campo `externalLinks` da AniList, cruzado em tempo de execução) (Issue #10).
+- [x] Exibir ranking global de animes baseado na query `Page(sort: SCORE_DESC)` da AniList (Issue #10).
+- [x] Filtro por gênero/tag e plataforma de streaming (via campo `externalLinks` da AniList, cruzado em tempo de execução) (Issue #10).
+
+## 🗂️ Fase 2.5: Curadoria Pessoal (Painel Admin)
+
+- [ ] Criar tabela `curated_animes` no Supabase para armazenar destaques editados. 
+- [ ] Criar rotas no backend (`/api/curation`) para gerenciar (CRUD) od destaques.
+- [ ] Atualizar rotas de Busca e Ranking para usar a curadoria local como prioridade (Fallback para AniList).
+- [ ] Construir a interface do Painel Admin em React e conectar ao Backend. 
 
 ## 🎨 Fase 3: Identidade Visual — fim do MVP
 
