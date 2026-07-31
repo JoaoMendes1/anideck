@@ -38,6 +38,7 @@ func main() {
 	animeHandler := &handlers.AnimeHandler{AniListClient: anilistClient}
 	entriesHandler := handlers.EntriesHandler{}
 	rankingHandler := &handlers.RankingHandler{AniListClient: anilistClient}
+	curationHandler := &handlers.CurationHandler{}
 
 	// 4. Configuração das rotas (chi)
 	// Cria o roteador principal usando o framework Chi
@@ -56,6 +57,7 @@ func main() {
 	r.Get("/api/anime/{id}", animeHandler.HandleGetAnime)
 	r.Get("/api/anime/{id}/statistics", animeHandler.HandleGetStatistics)
 	r.Get("/api/ranking", rankingHandler.HandleGetTopAnime)
+	r.Get("/api/curation", curationHandler.HandleList)
 
 	// 5. Rotas protegidas que exigem token válido
 	r.Group(func(protegido chi.Router) {
@@ -67,6 +69,17 @@ func main() {
 		protegido.Delete("/api/entries/{id}", entriesHandler.HandleDelete)
 
 	})
+
+	// 6. Rotas de Admin (Requer Login E ser o dono do sistema)
+	r.Group(func(admin chi.Router) {
+		admin.Use(middleware.RequireAuth)
+		admin.Use(middleware.RequireAdmin) // O nosso escudo de administrador!
+
+		admin.Post("/api/curation", curationHandler.HandleCreate)
+		admin.Put("/api/curation/{id}", curationHandler.HandleUpdate)
+		admin.Delete("/api/curation/{id}", curationHandler.HandleDelete)
+	})
+	
 	// Inicia o servidor
 	port := os.Getenv("PORT")
 	log.Printf("Servidor rodando na porta %s...", port)
