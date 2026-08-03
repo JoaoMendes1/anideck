@@ -4,6 +4,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"path/filepath"
 
 	"github.com/go-chi/chi/v5"
 	chimw "github.com/go-chi/chi/v5/middleware"
@@ -77,6 +78,25 @@ func main() {
 		admin.Post("/api/curation", curationHandler.HandleCreate)
 		admin.Put("/api/curation/{id}", curationHandler.HandleUpdate)
 		admin.Delete("/api/curation/{id}", curationHandler.HandleDelete)
+	})
+
+	// 7. Servindo o Frontend (React/Vite) como Single Page Application
+	workDir, _ := os.Getwd()
+	filesDir := filepath.Join(workDir, "client", "dist")
+
+	r.Get("/*", func(w http.ResponseWriter, req *http.Request) {
+		path := filepath.Join(filesDir, req.URL.Path)
+		_, err := os.Stat(path)
+
+		// Se o arquivo não existir (ex: usuário digitou /rankings) ou for a raiz (/),
+		// nós devolvemos o index.html e deixamos o React Router cuidar do resto.
+		if os.IsNotExist(err) || req.URL.Path == "/" {
+			http.ServeFile(w, req, filepath.Join(filesDir, "index.html"))
+			return
+		}
+
+		// Se o arquivo existir de fato (ex: um .js ou .css dentro da pasta assets), servimos ele.
+		http.ServeFile(w, req, path)
 	})
 	
 	// Inicia o servidor
