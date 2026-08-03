@@ -1,8 +1,4 @@
-<<<<<<< HEAD
-package handlers 
-=======
 package handlers
->>>>>>> a66a1b3f772a700982e1d4577db5c9cc62726384
 
 import (
 	"encoding/json"
@@ -16,18 +12,6 @@ import (
 	"github.com/go-chi/chi/v5"
 )
 
-<<<<<<< HEAD
-// CurationHandler agrupa as funções que lidam com a curadoria de animes.
-type CurationHandler struct {}
-
-// HandleList (ler) - Traz todos os animes que estão na tabela de curadoria ordenados pelo OrderIndex.
-func (h *CurationHandler) HandleList(w http.ResponseWriter, r *http.Request) {
-	var resultado []models.CuratedAnime
-
-	err := database.Client.DB.From("curated_animes"). 
-	  Select("*").
-	  Execute(&resultado)
-=======
 // CurationHandler agrupa as funções que lidam com a nossa curadoria (Destaques).
 type CurationHandler struct{}
 
@@ -38,7 +22,6 @@ func (h *CurationHandler) HandleList(w http.ResponseWriter, r *http.Request) {
 	err := database.Client.DB.From("curated_animes").
 		Select("*").
 		Execute(&resultado)
->>>>>>> a66a1b3f772a700982e1d4577db5c9cc62726384
 
 	if err != nil {
 		log.Printf("[ERRO DB] HandleList Curation: %v", err)
@@ -59,26 +42,17 @@ func (h *CurationHandler) HandleList(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(resultado)
 }
 
-<<<<<<< HEAD
-// HandleCreate (Criar) - Recebe um anime do painel admin e salva no banco. 
-func (h *CurationHandler) HandleCreate(w http.ResponseWriter, r *http.Request) {
-	var entrada models.CuratedAnime 
-=======
 // HandleCreate (Criar) - Recebe um anime do painel admin e salva no banco.
 func (h *CurationHandler) HandleCreate(w http.ResponseWriter, r *http.Request) {
 	var entrada models.CuratedAnime
->>>>>>> a66a1b3f772a700982e1d4577db5c9cc62726384
+
 	if err := json.NewDecoder(r.Body).Decode(&entrada); err != nil {
 		http.Error(w, "Corpo da requisição inválido", http.StatusBadRequest)
 		return
 	}
 
-<<<<<<< HEAD
-	// Aproveitamos o "sanitizer" que já existe no entries.go para limpar qualquer código malicioso XSS que possa vir no título ou na sinopse do anime.
-=======
 	// Aproveitamos o "sanitizer" que já existe no seu arquivo entries.go
 	// para limpar qualquer código malicioso (XSS) que possa vir no texto da sinopse.
->>>>>>> a66a1b3f772a700982e1d4577db5c9cc62726384
 	entrada.CustomSynopsis = sanitizer.Sanitize(entrada.CustomSynopsis)
 
 	var resultado []models.CuratedAnime
@@ -101,11 +75,8 @@ func (h *CurationHandler) HandleUpdate(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-<<<<<<< HEAD
-	var entrada models.CuratedAnime 
-=======
 	var entrada models.CuratedAnime
->>>>>>> a66a1b3f772a700982e1d4577db5c9cc62726384
+
 	if err := json.NewDecoder(r.Body).Decode(&entrada); err != nil {
 		http.Error(w, "Corpo da requisição inválido", http.StatusBadRequest)
 		return
@@ -114,7 +85,6 @@ func (h *CurationHandler) HandleUpdate(w http.ResponseWriter, r *http.Request) {
 	entrada.CustomSynopsis = sanitizer.Sanitize(entrada.CustomSynopsis)
 
 	var resultado []models.CuratedAnime
-<<<<<<< HEAD
 	err := database.Client.DB.From("curated_animes"). 
 	   Update(entrada). 
 	   Eq("id", id). 
@@ -127,27 +97,21 @@ func (h *CurationHandler) HandleUpdate(w http.ResponseWriter, r *http.Request) {
 	   }
 
 	   
-=======
 	err := database.Client.DB.From("curated_animes").
 		Update(entrada).
 		Eq("id", id).
 		Execute(&resultado)
 
-	if err != nil {
+	   if err != nil {
 		log.Printf("[ERRO DB] HandleUpdate Curation (id=%s): %v", id, err)
 		http.Error(w, "Erro ao atualizar destaque", http.StatusInternalServerError)
-		return
-	}
+		return 
+	   }
 
->>>>>>> a66a1b3f772a700982e1d4577db5c9cc62726384
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(resultado)
 }
 
-<<<<<<< HEAD
-
-=======
->>>>>>> a66a1b3f772a700982e1d4577db5c9cc62726384
 // HandleDelete (Deletar) - Remove um anime da tabela de destaques.
 func (h *CurationHandler) HandleDelete(w http.ResponseWriter, r *http.Request) {
 	id := chi.URLParam(r, "id")
@@ -168,9 +132,4 @@ func (h *CurationHandler) HandleDelete(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.WriteHeader(http.StatusNoContent) // Responde 204 (Sucesso, sem conteúdo para retornar)
-<<<<<<< HEAD
 }
-
-=======
-}
->>>>>>> a66a1b3f772a700982e1d4577db5c9cc62726384

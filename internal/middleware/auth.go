@@ -67,28 +67,6 @@ func RequireAuth(next http.Handler) http.Handler {
 		ctx := context.WithValue(r.Context(), UserIDKey, userID)
 		next.ServeHTTP(w, r.WithContext(ctx))
 	})
-<<<<<<< HEAD
-}
-
-	func RequireAdmin(next http.Handler) http.Handler {
-		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			// 1. Pega o ID do usuário que já foi validade pelo middleware RequireAuth
-			userID, ok := r.Context().Value(UserIDKey).(string)
-
-			// 2 Pega o ID do dono do site no .env
-			adminID := os.Getenv("ADMIN_USER_ID")
-
-			// 3. Se não for o dono do site, é bloqueado o acesso com erro 403 (Proibido)
-			if !ok || userID != adminID {
-				http.Error(w, "Acesso negado: apenas o administrador pode acessar", http.StatusForbidden)
-				return
-			}
-
-			next.ServeHTTP(w, r)
-
-		})
-	}
-=======
 	
 }
 
@@ -112,4 +90,3 @@ func RequireAdmin(next http.Handler) http.Handler {
 		next.ServeHTTP(w, r)
 	})
 }
->>>>>>> a66a1b3f772a700982e1d4577db5c9cc62726384

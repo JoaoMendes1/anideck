@@ -72,20 +72,13 @@ func main() {
 	// 6. Rotas de Admin (Requer Login E ser o dono do sistema)
 	r.Group(func(admin chi.Router) {
 		admin.Use(middleware.RequireAuth)
-<<<<<<< HEAD
-		admin.Use(middleware.RequireAdmin) // O nosso novo escudo!
-=======
 		admin.Use(middleware.RequireAdmin) // O nosso escudo de administrador!
->>>>>>> a66a1b3f772a700982e1d4577db5c9cc62726384
 
 		admin.Post("/api/curation", curationHandler.HandleCreate)
 		admin.Put("/api/curation/{id}", curationHandler.HandleUpdate)
 		admin.Delete("/api/curation/{id}", curationHandler.HandleDelete)
 	})
-<<<<<<< HEAD
-=======
 	
->>>>>>> a66a1b3f772a700982e1d4577db5c9cc62726384
 	// Inicia o servidor
 	port := os.Getenv("PORT")
 	log.Printf("Servidor rodando na porta %s...", port)
