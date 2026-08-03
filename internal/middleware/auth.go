@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net/http"
 	"strings"
+	"os"
 
 	"github.com/MicahParks/keyfunc/v3"
 	"github.com/golang-jwt/jwt/v5"
@@ -66,6 +67,7 @@ func RequireAuth(next http.Handler) http.Handler {
 		ctx := context.WithValue(r.Context(), UserIDKey, userID)
 		next.ServeHTTP(w, r.WithContext(ctx))
 	})
+<<<<<<< HEAD
 }
 
 	func RequireAdmin(next http.Handler) http.Handler {
@@ -86,3 +88,28 @@ func RequireAuth(next http.Handler) http.Handler {
 
 		})
 	}
+=======
+	
+}
+
+// RequireAdmin é um escudo extra. Ele só deixa a requisição passar se o usuário logado
+// for o dono do ADMIN_USER_ID definido no .env.
+func RequireAdmin(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		// 1. Pegamos o ID do usuário que já foi validado pelo middleware RequireAuth
+		userID, ok := r.Context().Value(UserIDKey).(string)
+
+		// 2. Pegamos o ID do dono do site lá do .env
+		adminID := os.Getenv("ADMIN_USER_ID")
+
+		// 3. Se não for o dono do site, barramos na mesma hora com um Erro 403 (Proibido)
+		if !ok || userID != adminID {
+			http.Error(w, "Acesso negado: apenas o administrador tem permissão de curadoria", http.StatusForbidden)
+			return
+		}
+
+		// 4. Se for você mesmo, abrimos a porta e deixamos a requisição seguir para salvar o anime
+		next.ServeHTTP(w, r)
+	})
+}
+>>>>>>> a66a1b3f772a700982e1d4577db5c9cc62726384
