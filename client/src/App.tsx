@@ -5,6 +5,7 @@ import Detalhes from './pages/Detalhes'
 import MeuDeck from './pages/MeuDeck.tsx'
 import RotaProtegida from './components/RotaProtegida'
 import Rankings from './pages/Rankings'
+import PainelAdmin from './pages/PainelAdmin'
 
 function App() {
   return (
@@ -14,6 +15,7 @@ function App() {
       <Route path="/deck" element={<RotaProtegida><MeuDeck /></RotaProtegida>} />
       <Route path="/anime/:id" element={<Detalhes />} />
       <Route path="/rankings" element={<Rankings />} />
+      <Route path="/admin" element={<RotaProtegida><PainelAdmin /></RotaProtegida>} />
     </Routes>
   )
 }

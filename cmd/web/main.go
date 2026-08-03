@@ -38,6 +38,7 @@ func main() {
 	animeHandler := &handlers.AnimeHandler{AniListClient: anilistClient}
 	entriesHandler := handlers.EntriesHandler{}
 	rankingHandler := &handlers.RankingHandler{AniListClient: anilistClient}
+	curationHandler := &handlers.CurationHandler{}
 
 	// 4. Configuração das rotas (chi)
 	// Cria o roteador principal usando o framework Chi
@@ -56,6 +57,7 @@ func main() {
 	r.Get("/api/anime/{id}", animeHandler.HandleGetAnime)
 	r.Get("/api/anime/{id}/statistics", animeHandler.HandleGetStatistics)
 	r.Get("/api/ranking", rankingHandler.HandleGetTopAnime)
+	r.Get("/api/curation", curationHandler.HandleList)
 
 	// 5. Rotas protegidas que exigem token válido
 	r.Group(func(protegido chi.Router) {
