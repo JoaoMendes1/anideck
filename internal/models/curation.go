@@ -1,4 +1,4 @@
-package models 
+package models
 
 // CuratedAnime representa um anime que foi salvo/editado no Painel Admin.
 // As tags (json:"...") dizem como o Go deve converter isso para texto ao conversar com o Frontend.

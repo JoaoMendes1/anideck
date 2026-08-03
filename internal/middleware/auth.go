@@ -9,6 +9,7 @@ import (
 
 	"github.com/MicahParks/keyfunc/v3"
 	"github.com/golang-jwt/jwt/v5"
+	"os"
 )
 
 // contextKey evita colisão com outras chaves de contexto no projeto

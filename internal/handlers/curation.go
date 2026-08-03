@@ -1,4 +1,4 @@
-package handlers 
+package handlers
 
 import (
 	"encoding/json"
@@ -42,15 +42,17 @@ func (h *CurationHandler) HandleList(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(resultado)
 }
 
-// HandleCreate (Criar) - Recebe um anime do painel admin e salva no banco. 
+// HandleCreate (Criar) - Recebe um anime do painel admin e salva no banco.
 func (h *CurationHandler) HandleCreate(w http.ResponseWriter, r *http.Request) {
-	var entrada models.CuratedAnime 
+	var entrada models.CuratedAnime
+
 	if err := json.NewDecoder(r.Body).Decode(&entrada); err != nil {
 		http.Error(w, "Corpo da requisição inválido", http.StatusBadRequest)
 		return
 	}
 
-	// Aproveitamos o "sanitizer" que já existe no entries.go para limpar qualquer código malicioso XSS que possa vir no título ou na sinopse do anime.
+	// Aproveitamos o "sanitizer" que já existe no seu arquivo entries.go
+	// para limpar qualquer código malicioso (XSS) que possa vir no texto da sinopse.
 	entrada.CustomSynopsis = sanitizer.Sanitize(entrada.CustomSynopsis)
 
 	var resultado []models.CuratedAnime
@@ -73,7 +75,8 @@ func (h *CurationHandler) HandleUpdate(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var entrada models.CuratedAnime 
+	var entrada models.CuratedAnime
+
 	if err := json.NewDecoder(r.Body).Decode(&entrada); err != nil {
 		http.Error(w, "Corpo da requisição inválido", http.StatusBadRequest)
 		return
@@ -94,6 +97,17 @@ func (h *CurationHandler) HandleUpdate(w http.ResponseWriter, r *http.Request) {
 	   }
 
 	   
+	err := database.Client.DB.From("curated_animes").
+		Update(entrada).
+		Eq("id", id).
+		Execute(&resultado)
+
+	   if err != nil {
+		log.Printf("[ERRO DB] HandleUpdate Curation (id=%s): %v", id, err)
+		http.Error(w, "Erro ao atualizar destaque", http.StatusInternalServerError)
+		return 
+	   }
+
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(resultado)
 }
@@ -119,4 +133,3 @@ func (h *CurationHandler) HandleDelete(w http.ResponseWriter, r *http.Request) {
 
 	w.WriteHeader(http.StatusNoContent) // Responde 204 (Sucesso, sem conteúdo para retornar)
 }
-
