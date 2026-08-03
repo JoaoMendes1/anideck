@@ -40,10 +40,10 @@ Staging sobe já na Fase 1, como projeto esqueleto — mesmo padrão do JVM Syst
 
 ## 🗂️ Fase 2.5: Curadoria Pessoal (Painel Admin)
 
-- [ ] Criar tabela `curated_animes` no Supabase para armazenar destaques editados. 
-- [ ] Criar rotas no backend (`/api/curation`) para gerenciar (CRUD) od destaques.
-- [ ] Atualizar rotas de Busca e Ranking para usar a curadoria local como prioridade (Fallback para AniList).
-- [ ] Construir a interface do Painel Admin em React e conectar ao Backend. 
+- [x] Criar tabela `curated_animes` no Supabase para armazenar destaques editados. 
+- [x] Criar rotas no backend (`/api/curation`) para gerenciar (CRUD) od destaques.
+- [x] Atualizar rotas de Busca e Ranking para usar a curadoria local como prioridade (Fallback para AniList).
+- [x] Construir a interface do Painel Admin em React e conectar ao Backend. 
 
 ## 🎨 Fase 3: Identidade Visual — fim do MVP
 

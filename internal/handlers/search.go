@@ -10,6 +10,8 @@ import (
 	"strings"
 
 	"github.com/JoaoMendes1/anideck/internal/anilist"
+	"github.com/JoaoMendes1/anideck/internal/database"
+	"github.com/JoaoMendes1/anideck/internal/models"
 )
 
 type SearchHandler struct {
@@ -67,6 +69,41 @@ func (h *SearchHandler) HandleSearch(w http.ResponseWriter, r *http.Request) {
 		log.Printf("[ERRO ANILIST] Falha ao buscar '%s': %v", query, err)
 		http.Error(w, "Busca indisponível no momento. Tente novamente mais tarde.", http.StatusServiceUnavailable)
 		return
+	}
+
+	// 1. Buscando os animes do banco pessoal
+	var curados []models.CuratedAnime
+	database.Client.DB.From("curated_animes").Select("*").Execute(&curados)
+
+	// 2. Transformando a lista (array) em um dicionário (map) no Go. (Performance)
+	curadosMap := make(map[int]models.CuratedAnime)
+	for _, c := range curados {
+		curadosMap[c.MalID] = c 
+	}
+
+	// 3. Varrendo resultados que vieram da Anilist 
+	for i, animeAniList := range resultados.Data {
+		// Se existir no banco pessoal, sobrescreve os campos de título, sinopse e status com os valores customizados.
+		if curado, ok := curadosMap[animeAniList.MalID]; ok {
+			resultados.Data[i].Title = curado.CustomTitle
+
+			if curado.CustomSynopsis != "" {
+				resultados.Data[i].Synopsis = curado.CustomSynopsis
+			}
+			if curado.CustomStatus != "" {
+				resultados.Data[i].Status = curado.CustomStatus
+			}
+
+			// React espera uma lista de structs {Name: "tag"}, então convertemos as tags para o formato esperado.
+			if len(curado.CustomTags) > 0 {
+				var novasTags []struct{ Name string `json:"name"` }
+				for _, tag := range curado.CustomTags {
+					novasTags = append(novasTags, struct{ Name string `json:"name"` }{Name: tag})
+				}
+				resultados.Data[i].Genres = novasTags
+			}
+
+		}
 	}
 
 	w.Header().Set("Content-Type", "application/json")

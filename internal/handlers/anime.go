@@ -8,6 +8,8 @@ import (
 
 	"github.com/go-chi/chi/v5"
 	"github.com/JoaoMendes1/anideck/internal/anilist"
+	"github.com/JoaoMendes1/anideck/internal/database"
+	"github.com/JoaoMendes1/anideck/internal/models"
 )
 
 type AnimeHandler struct {
@@ -80,6 +82,30 @@ func (h *AnimeHandler) HandleGetAnime(w http.ResponseWriter, r *http.Request) {
 		log.Printf("[ERRO ANILIST] Falha ao buscar detalhes do anime %s: %v", id, err)
 		http.Error(w, "Detalhes indisponíveis no momento", http.StatusServiceUnavailable)
 		return
+	}
+
+	// Interceptação 
+	var curados []models.CuratedAnime
+	// Busca especificamente pelo mal_id deste anime
+	errCurado := database.Client.DB.From("curated_animes").Select("*").Eq("mal_id", id).Execute(&curados)
+
+	if errCurado == nil && len(curados) > 0 {
+		curado := curados[0]
+
+		resultados.Data.Title = curado.CustomTitle
+		if curado.CustomSynopsis != "" {
+			resultados.Data.Synopsis = curado.CustomSynopsis
+		}
+		if curado.CustomStatus != "" {
+			resultados.Data.Status = curado.CustomStatus
+		}
+		if len(curado.CustomTags) > 0 {
+			var novasTags []struct{ Name string `json:"name"` }
+			for _, tag := range curado.CustomTags {
+				novasTags = append(novasTags, struct{ Name string `json:"name"` }{Name: tag})
+			}
+			resultados.Data.Genres = novasTags
+		}
 	}
 
 	w.Header().Set("Content-Type", "application/json")

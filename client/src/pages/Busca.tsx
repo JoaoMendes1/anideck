@@ -14,6 +14,7 @@ interface Anime {
     episodes?: number
     score?: number
     images?: { jpg: { image_url: string } }
+    genres?: { name: string }[]
 }
 
 const CURRENT_YEAR = new Date().getFullYear()
@@ -112,6 +113,14 @@ export default function Busca() {
         setSelectedStatus('')
         setSelectedSeason('')
         setSelectedYear('')
+    }
+
+    // Traduz os status técnicos do banco/AniList para a interface
+    const traduzirStatus = (statusOriginal: string) => {
+        if (statusOriginal === 'FINISHED' || statusOriginal === 'Finished Airing') return 'Finalizado'
+        if (statusOriginal === 'RELEASING' || statusOriginal === 'Currently Airing') return 'Em Lançamento'
+        if (statusOriginal === 'NOT_YET_RELEASED') return 'Em Breve'
+        return statusOriginal
     }
 
     return (
@@ -295,8 +304,21 @@ export default function Busca() {
                                 }
                                 <div className="absolute inset-0 bg-gradient-to-t from-void/90 via-void/20 to-transparent z-10" />
                                 <div className="relative z-20">
-                                    <div className="font-bold text-sm leading-tight mb-1">{anime.title}</div>
-                                    <div className="font-mono text-[10px] text-muted">{anime.status}</div>
+                                    <div className="font-bold text-sm leading-tight mb-1 drop-shadow-md">{anime.title}</div>
+                                    
+                                    {/* 🟢 Renderiza no máximo 2 tags para não poluir o mobile */}
+                                    <div className="flex flex-wrap gap-1 mb-1.5">
+                                        {anime.genres?.slice(0, 2).map(g => (
+                                            <span key={g.name} className="bg-panel-2/80 backdrop-blur-sm border border-line text-[9px] px-1.5 py-0.5 rounded text-muted font-bold">
+                                                {g.name}
+                                            </span>
+                                        ))}
+                                    </div>
+                                    
+                                    {/* 🟢 Status traduzido */}
+                                    <div className="font-mono text-[10px] text-holo-3 font-bold uppercase">
+                                        {traduzirStatus(anime.status)}
+                                    </div>
                                 </div>
                                 <button onClick={(e) => handleSalvar(e, anime.mal_id)} className="absolute top-2 right-2 w-8 h-8 rounded-full bg-void/70 border-2 border-white/40 text-white font-bold backdrop-blur-sm hover:bg-gradient-to-r hover:from-holo-1 hover:to-holo-2 hover:border-transparent transition-all z-20 cursor-pointer">+</button>
                             </Link>
