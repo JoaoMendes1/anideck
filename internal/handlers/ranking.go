@@ -8,6 +8,8 @@ import (
 	"strings"
 
 	"github.com/JoaoMendes1/anideck/internal/anilist"
+	"github.com/JoaoMendes1/anideck/internal/database" 
+	"github.com/JoaoMendes1/anideck/internal/models"   
 )
 
 // RankingHandler lida com requisições de ranking de animes.
@@ -63,6 +65,35 @@ func (h *RankingHandler) HandleGetTopAnime(w http.ResponseWriter, r *http.Reques
 		log.Printf("[ERRO ANILIST] Falha ao buscar top animes: %v", err)
 		http.Error(w, "Ranking indisponível no momento. Tente novamente mais tarde.", http.StatusServiceUnavailable)
 		return
+	}
+
+var curados []models.CuratedAnime
+	errCurado := database.Client.DB.From("curated_animes").Select("*").Execute(&curados)
+
+	if errCurado == nil {
+		curadosMap := make(map[int]models.CuratedAnime)
+		for _, c := range curados {
+			curadosMap[c.MalID] = c
+		}
+
+		for i, animeAniList := range resultados.Data {
+			if curado, ok := curadosMap[animeAniList.MalID]; ok {
+				resultados.Data[i].Title = curado.CustomTitle
+				if curado.CustomSynopsis != "" {
+					resultados.Data[i].Synopsis = curado.CustomSynopsis
+				}
+				if curado.CustomStatus != "" {
+					resultados.Data[i].Status = curado.CustomStatus
+				}
+				if len(curado.CustomTags) > 0 {
+					var novasTags []struct{ Name string `json:"name"` }
+					for _, tag := range curado.CustomTags {
+						novasTags = append(novasTags, struct{ Name string `json:"name"` }{Name: tag})
+					}
+					resultados.Data[i].Genres = novasTags
+				}
+			}
+		}
 	}
 
 	w.Header().Set("Content-Type", "application/json")

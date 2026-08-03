@@ -222,7 +222,6 @@ func (c *Client) SearchAnime(ctx context.Context, query string, f SearchFilters)
 }
 
 // --- DETALHE POR mal_id ---
-
 const byIdQuery = `
 query ($idMal: Int) {
   Media(idMal: $idMal, type: ANIME) {
@@ -234,6 +233,25 @@ query ($idMal: Int) {
     averageScore
     coverImage { large }
     genres
+  }
+}`
+
+
+// byIdsQuery busca múltiplos animes de uma vez só passando uma lista de IDs.
+const byIdsQuery = `
+query ($idMal_in: [Int]) {
+  Page(page: 1, perPage: 50) {
+    media(idMal_in: $idMal_in, type: ANIME) {
+      idMal
+      title { romaji english }
+      status
+      description
+      episodes
+      averageScore
+      coverImage { large }
+      genres
+      externalLinks { site url }
+    }
   }
 }`
 
@@ -337,6 +355,30 @@ func (c *Client) GetTopAnime(ctx context.Context, page int, perPage int, f Searc
 	}
 
 	if err := c.gqlRequest(ctx, topAnimeQuery, variables, &resultado); err != nil {
+		return nil, err
+	}
+
+	var animes []Anime
+	for _, m := range resultado.Page.Media {
+		if m.IDMal == 0 {
+			continue
+		}
+		animes = append(animes, m.toAnime())
+	}
+	return &AnimeSearchResponse{Data: animes}, nil
+}
+
+// GetAnimesByMalIDs pede à AniList os dados base de uma lista específica de IDs.
+func (c *Client) GetAnimesByMalIDs(ctx context.Context, malIDs []int) (*AnimeSearchResponse, error) {
+	if len(malIDs) == 0 {
+		return &AnimeSearchResponse{Data: []Anime{}}, nil
+	}
+
+	var resultado struct {
+		Page struct{ Media []aniListMedia } `json:"Page"`
+	}
+
+	if err := c.gqlRequest(ctx, byIdsQuery, map[string]interface{}{"idMal_in": malIDs}, &resultado); err != nil {
 		return nil, err
 	}
 

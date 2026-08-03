@@ -96,18 +96,6 @@ func (h *CurationHandler) HandleUpdate(w http.ResponseWriter, r *http.Request) {
 		return 
 	   }
 
-	   
-	err := database.Client.DB.From("curated_animes").
-		Update(entrada).
-		Eq("id", id).
-		Execute(&resultado)
-
-	   if err != nil {
-		log.Printf("[ERRO DB] HandleUpdate Curation (id=%s): %v", id, err)
-		http.Error(w, "Erro ao atualizar destaque", http.StatusInternalServerError)
-		return 
-	   }
-
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(resultado)
 }

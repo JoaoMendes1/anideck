@@ -71,30 +71,63 @@ func (h *SearchHandler) HandleSearch(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// 1. Buscando os animes do banco pessoal
+// ==========================================
+	// 1. BUSCA HÍBRIDA CORRIGIDA (Issue #18b)
+	// ==========================================
+	if query != "" {
+		var localHits []models.CuratedAnime
+		// Correção 1: O Supabase usa '*' como curinga para o ilike!
+		errLocal := database.Client.DB.From("curated_animes").Select("*").Filter("custom_title", "ilike", "*"+query+"*").Execute(&localHits)
+
+		if errLocal == nil && len(localHits) > 0 {
+			var localMalIDs []int
+			for _, hit := range localHits {
+				localMalIDs = append(localMalIDs, hit.MalID)
+			}
+
+			localAnimes, errAniListIds := h.AniListClient.GetAnimesByMalIDs(r.Context(), localMalIDs)
+
+			if errAniListIds == nil && localAnimes != nil {
+				// Correção 2: LÓGICA DE MESCLAGEM ARRUMADA
+				existingIDs := make(map[int]bool)
+				var combined []anilist.Anime
+				
+				// 1º Coloca os do NOSSO banco no topo e marca o ID como "já adicionado"
+				for _, a := range localAnimes.Data {
+					combined = append(combined, a)
+					existingIDs[a.MalID] = true
+				}
+				
+				// 2º Adiciona os da AniList APENAS se ainda não estiverem na lista
+				for _, a := range resultados.Data {
+					if !existingIDs[a.MalID] {
+						combined = append(combined, a)
+						existingIDs[a.MalID] = true
+					}
+				}
+				resultados.Data = combined
+			}
+		}
+	}
+
+	
 	var curados []models.CuratedAnime
 	database.Client.DB.From("curated_animes").Select("*").Execute(&curados)
 
-	// 2. Transformando a lista (array) em um dicionário (map) no Go. (Performance)
 	curadosMap := make(map[int]models.CuratedAnime)
 	for _, c := range curados {
-		curadosMap[c.MalID] = c 
+		curadosMap[c.MalID] = c
 	}
 
-	// 3. Varrendo resultados que vieram da Anilist 
 	for i, animeAniList := range resultados.Data {
-		// Se existir no banco pessoal, sobrescreve os campos de título, sinopse e status com os valores customizados.
 		if curado, ok := curadosMap[animeAniList.MalID]; ok {
 			resultados.Data[i].Title = curado.CustomTitle
-
 			if curado.CustomSynopsis != "" {
 				resultados.Data[i].Synopsis = curado.CustomSynopsis
 			}
 			if curado.CustomStatus != "" {
 				resultados.Data[i].Status = curado.CustomStatus
 			}
-
-			// React espera uma lista de structs {Name: "tag"}, então convertemos as tags para o formato esperado.
 			if len(curado.CustomTags) > 0 {
 				var novasTags []struct{ Name string `json:"name"` }
 				for _, tag := range curado.CustomTags {
@@ -102,7 +135,6 @@ func (h *SearchHandler) HandleSearch(w http.ResponseWriter, r *http.Request) {
 				}
 				resultados.Data[i].Genres = novasTags
 			}
-
 		}
 	}
 

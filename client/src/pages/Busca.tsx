@@ -47,13 +47,16 @@ export default function Busca() {
         !!selectedStatus ||
         !!selectedSeason
 
-    useEffect(() => {
+useEffect(() => {
         if (!hasAnyFilter) {
             setResultados([])
             setHasSearched(false)
             setError(null)
             return
         }
+
+        // 1. Criamos um controlador para poder abortar a requisição antiga
+        const controller = new AbortController()
 
         // Debounce — evita disparo a cada tecla
         const timer = setTimeout(async () => {
@@ -71,19 +74,35 @@ export default function Busca() {
             }
 
             try {
-                const response = await fetch(`/api/search?${params.toString()}`)
+                // 2. Passamos o sinal de cancelamento para o fetch
+                const response = await fetch(`/api/search?${params.toString()}`, {
+                    signal: controller.signal
+                })
+                
                 if (!response.ok) throw new Error('Busca indisponível no momento. Tente novamente mais tarde.')
                 const data = await response.json()
                 setResultados(data.data || [])
+                
             } catch (err: any) {
+                // 3. Se o erro for apenas o nosso cancelamento forçado (AbortError), ignoramos silenciosamente!
+                if (err.name === 'AbortError') return
+                
                 setResultados([])
                 setError(err.message || 'Falha ao conectar com o servidor.')
             } finally {
-                setLoading(false)
+                // 4. Só removemos o Skeleton de carregamento se a requisição NÃO foi cancelada
+                if (!controller.signal.aborted) {
+                    setLoading(false)
+                }
             }
         }, 400)
 
-        return () => clearTimeout(timer)
+        // 5. Cleanup do React: Se o usuário digitar uma nova letra ANTES da requisição anterior terminar, 
+        // nós limpamos o timer E "matamos" a requisição velha no meio do caminho!
+        return () => {
+            clearTimeout(timer)
+            controller.abort() 
+        }
     }, [query, selectedFilters, selectedStatus, selectedSeason, selectedYear, hasAnyFilter])
 
     const handleSalvar = async (e: React.MouseEvent, malId: number) => {

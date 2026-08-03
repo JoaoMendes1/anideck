@@ -60,22 +60,50 @@ export default function PainelAdmin() {
     if (!termoBusca) return
     setBuscando(true)
     try {
-      const response = await fetch(`/api/search?q=${termoBusca}`)
-      const data = await response.json()
+      const graphqlQuery = `
+        query ($search: String) {
+          Page(page: 1, perPage: 1) {
+            media(search: $search, type: ANIME) {
+              idMal
+              title { romaji english }
+              status
+              description
+              coverImage { large }
+              genres
+            }
+          }
+        }
+      `
       
-      if (data.data && data.data.length > 0) {
-        const anime = data.data[0] // Pegamos o primeiro resultado
-        setPreview(anime)
+      const response = await fetch('https://graphql.anilist.co', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+        body: JSON.stringify({ query: graphqlQuery, variables: { search: termoBusca } })
+      })
+      
+      const json = await response.json()
+      const media = json.data?.Page?.media
+
+      if (media && media.length > 0) {
+        const anime = media[0]
+        const titulo = anime.title.romaji || anime.title.english || ''
         
-        // Auto-preenche o formulário com os dados da AniList
-        setMalId(anime.mal_id)
-        setTitulo(anime.title)
-        setStatus('FINISHED') // Valor padrão só pra preencher
-        setSinopse(anime.synopsis || '')
+        setPreview({ 
+          title: titulo, 
+          mal_id: anime.idMal, 
+          images: { jpg: { image_url: anime.coverImage?.large } } 
+        })
         
-        // Converte os gêneros que vieram da AniList para nossa lista de tags
-        const tagsIniciais = anime.genres?.map((g: any) => g.name) || []
-        setTags(tagsIniciais)
+        setMalId(anime.idMal)
+        setTitulo(titulo)
+        setStatus('FINISHED')
+        
+        // Remove as tags HTML sujas da AniList (ex: <br>, <i>)
+        const tempDiv = document.createElement("div")
+        tempDiv.innerHTML = anime.description || ''
+        setSinopse(tempDiv.textContent || tempDiv.innerText || '')
+        
+        setTags(anime.genres || [])
       } else {
         alert('Nenhum anime encontrado com esse termo.')
       }
