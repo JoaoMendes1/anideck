@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { useParams, Link } from 'react-router-dom'
 import { PlayCircle, Star, AlertCircle } from 'lucide-react'
 import { supabase } from '../lib/supabase'
+import { useToast } from '../contexts/ToastContext'
 
 interface AnimeDetail {
   mal_id: number
@@ -31,6 +32,8 @@ interface MinhaEntrada {
 
 export default function Detalhes() {
   const { id } = useParams<{ id: string }>()
+
+  const { showToast } = useToast()
   
   const [anime, setAnime] = useState<AnimeDetail | null>(null)
   const [stats, setStats] = useState<AnimeStats | null>(null)
@@ -104,9 +107,9 @@ export default function Detalhes() {
         if (!response.ok) throw new Error()
         
         setMinhaEntrada({ ...minhaEntrada, status: 'Completo' })
-        alert('Parabéns! Movido para os Completos.')
+        showToast('Parabéns! Movido para os Completos.')
     } catch {
-        alert('Erro ao atualizar. Tente novamente.')
+        showToast('Erro ao atualizar. Tente novamente.', 'error')
     } finally {
         setAtualizandoStatus(false)
     }

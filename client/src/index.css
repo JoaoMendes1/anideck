@@ -56,3 +56,30 @@
     radial-gradient(480px 380px at 15% 15%, rgba(255,79,216,.12), transparent 60%),
     radial-gradient(520px 420px at 85% 85%, rgba(63,224,240,.10), transparent 60%);
 }
+
+/* Shimmer Effect para Skeletons */
+@utility shimmer {
+  background: linear-gradient(100deg, var(--color-panel) 30%, var(--color-panel-2) 50%, var(--color-panel) 70%);
+  background-size: 200% 100%;
+  animation: shimmer 1.4s infinite;
+}
+@keyframes shimmer {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+/* Gradientes Fallback dos Cards (c1 a c5 do protótipo) */
+@utility card-g1 { background: linear-gradient(155deg, #3a1a4a, #120b22 75%); }
+@utility card-g2 { background: linear-gradient(155deg, #1a3d4a, #120b22 75%); }
+@utility card-g3 { background: linear-gradient(155deg, #4a1a2f, #120b22 75%); }
+@utility card-g4 { background: linear-gradient(155deg, #1a2f4a, #120b22 75%); }
+@utility card-g5 { background: linear-gradient(155deg, #2f4a1a, #120b22 75%); }
+
+/* Ocultar barra de rolagem nos quick filters */
+@utility scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}

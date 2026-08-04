@@ -1,8 +1,10 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
+import { useToast } from '../contexts/ToastContext'
 
 export default function Auth() {
+  const { showToast } = useToast()
   // Estados para controlar o que o usuário digita e o modo da tela
   const [isLogin, setIsLogin] = useState(true)
   const [email, setEmail] = useState('')
@@ -37,7 +39,7 @@ export default function Auth() {
           options: { data: { display_name: name } }
         })
         if (error) throw error
-        alert('Conta criada com sucesso! Você já pode fazer login.')
+        showToast('Conta criada com sucesso! Você já pode fazer login.')
         setIsLogin(true) // Volta para a tela de login
       }
     } catch (err: any) {

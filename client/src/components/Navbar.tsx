@@ -54,12 +54,16 @@ export default function Navbar() {
             </div>
           </Link>
 
-          {/* Links Principais (Desktop) */}
+         {/* Links Principais (Desktop) */}
           <div className="hidden md:flex items-center gap-7">
             {session && (
               <>
                 <Link to="/deck" className={`text-sm font-bold focus:outline-none select-none transition-colors ${location.pathname === '/deck' ? 'text-text' : 'text-muted hover:text-text'}`}>Meu Deck</Link>
-                <Link to="/admin" className={`text-sm font-bold focus:outline-none select-none transition-colors ${location.pathname === '/admin' ? 'text-text' : 'text-muted hover:text-text'}`}>Admin</Link>
+                
+                {/* Proteção do Admin via Variável de Ambiente */}
+                {session.user.id === import.meta.env.VITE_ADMIN_USER_ID && (
+                    <Link to="/admin" className={`text-sm font-bold focus:outline-none select-none transition-colors ${location.pathname === '/admin' ? 'text-text' : 'text-muted hover:text-text'}`}>Admin</Link>
+                )}
               </>
             )}
             <Link to="/rankings" className={`text-sm font-bold focus:outline-none select-none transition-colors ${location.pathname === '/rankings' ? 'text-text' : 'text-muted hover:text-text'}`}>Rankings</Link>
