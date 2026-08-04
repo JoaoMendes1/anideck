@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useParams, Link } from 'react-router-dom'
-import { ChevronLeft, PlayCircle, Star, AlertCircle } from 'lucide-react'
+import { PlayCircle, Star, AlertCircle } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 
 interface AnimeDetail {
@@ -136,12 +136,6 @@ export default function Detalhes() {
 
   return (
     <div className="pb-20">
-      <nav className="sticky top-0 z-50 bg-void/90 backdrop-blur-md border-b border-line px-5 py-3">
-        <Link to="/" className="inline-flex items-center gap-2 text-muted hover:text-text transition-colors text-sm font-bold">
-          <ChevronLeft size={18} /> Voltar
-        </Link>
-      </nav>
-
       <div className="relative h-64 overflow-hidden bg-gradient-to-br from-panel to-panel-2">
         <div className="absolute inset-0 bg-gradient-to-t from-void to-transparent"></div>
       </div>

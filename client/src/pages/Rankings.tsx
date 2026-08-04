@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { AlertCircle, ChevronLeft, SlidersHorizontal, X } from 'lucide-react'
+import { AlertCircle, SlidersHorizontal, X } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import {
     CONTENT_FILTERS, STATUS_OPTIONS, SEASON_OPTIONS,
@@ -103,12 +103,6 @@ export default function Rankings() {
 
     return (
         <div className="pb-20">
-            <nav className="sticky top-0 z-50 bg-void/90 backdrop-blur-md border-b border-line px-5 py-3">
-                <Link to="/" className="inline-flex items-center gap-2 text-muted hover:text-text transition-colors text-sm font-bold">
-                    <ChevronLeft size={18} /> Voltar para Busca
-                </Link>
-            </nav>
-
             <div className="max-w-[900px] mx-auto px-5 pt-10">
                 <div className="mb-6">
                     <p className="font-mono text-xs text-holo-3 tracking-widest mb-2">// RANKING GLOBAL</p>
