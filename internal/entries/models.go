@@ -6,6 +6,6 @@ type MediaEntry struct {
 	MalID    int    `json:"mal_id"`
 	Tipo     string `json:"tipo"`
 	Status   string `json:"status"`
-	Nota     *int   `json:"nota,omitempty"`
+	Nota     *float64   `json:"nota,omitempty"`
 	Anotacao string `json:"anotacao,omitempty"`
 }

@@ -44,11 +44,11 @@ export default function EditarEntradaModal({ entrada, onFechar, onSalvar, onExcl
                     'Content-Type': 'application/json',
                     'Authorization': `Bearer ${session.access_token}`,
                 },
-                body: JSON.stringify({
+               body: JSON.stringify({
                     mal_id: entrada.mal_id, 
                     tipo: entrada.tipo || 'anime', 
                     status,
-                    nota: nota ? Number(nota) : null,
+                    nota: nota ? Number(nota.toString().replace(',', '.')) : null,
                     anotacao,
                 }),
             })
