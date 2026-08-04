@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react'
+import { useToast } from '../contexts/ToastContext'
 import { Link, useNavigate } from 'react-router-dom'
-import { AlertCircle, SlidersHorizontal, X } from 'lucide-react'
+import { AlertCircle, SlidersHorizontal, X, Check } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import {
     CONTENT_FILTERS, STATUS_OPTIONS, SEASON_OPTIONS,
@@ -21,22 +22,50 @@ const YEAR_OPTIONS = Array.from({ length: 10 }, (_, i) => CURRENT_YEAR - i)
 
 export default function Rankings() {
     const navigate = useNavigate()
-    const [animes, setAnimes]           = useState<Anime[]>([])
-    const [loading, setLoading]         = useState(true)
-    const [error, setError]             = useState<string | null>(null)
-    const [page, setPage]               = useState(1)
+    const [animes, setAnimes] = useState<Anime[]>([])
+    const [loading, setLoading] = useState(true)
+    const [error, setError] = useState<string | null>(null)
+    const [page, setPage] = useState(1)
     const [showFilters, setShowFilters] = useState(false)
+    const { showToast } = useToast()
+    const [savingIds, setSavingIds] = useState<number[]>([]) // <-- Estado para controlar botões de loading individuais
+    const [savedIds, setSavedIds]       = useState<number[]>([])
+
 
     const [selectedFilters, setSelectedFilters] = useState<FilterItem[]>([])
-    const [selectedStatus, setSelectedStatus]   = useState('')
-    const [selectedSeason, setSelectedSeason]   = useState('')
-    const [selectedYear, setSelectedYear]       = useState('')
+    const [selectedStatus, setSelectedStatus] = useState('')
+    const [selectedSeason, setSelectedSeason] = useState('')
+    const [selectedYear, setSelectedYear] = useState('')
 
     const activeFilterCount =
         selectedFilters.length +
         (selectedStatus ? 1 : 0) +
         (selectedSeason ? 1 : 0) +
         (selectedYear ? 1 : 0)
+
+        // Busca o deck do usuário ao carregar a página para acender os checks
+    useEffect(() => {
+        const carregarDeck = async () => {
+            const { data: { session } } = await supabase.auth.getSession()
+            if (!session) return
+
+            try {
+                const response = await fetch('/api/entries', {
+                    headers: { 'Authorization': `Bearer ${session.access_token}` },
+                })
+                if (response.ok) {
+                    const entradas = await response.json()
+                    if (entradas && entradas.length > 0) {
+                        const idsSalvos = entradas.map((e: any) => e.mal_id)
+                        setSavedIds(idsSalvos)
+                    }
+                }
+            } catch (err) {
+                console.error('Falha ao sincronizar deck:', err)
+            }
+        }
+        carregarDeck()
+    }, [])
 
     // Reseta paginação quando filtros mudam
     useEffect(() => {
@@ -72,19 +101,37 @@ export default function Rankings() {
         fetchRanking(page, page === 1)
     }, [page, fetchRanking])
 
-    const handleSalvar = async (e: React.MouseEvent, malId: number) => {
+  const handleSalvar = async (e: React.MouseEvent, malId: number) => {
         e.preventDefault()
+        
+        if (savingIds.includes(malId) || savedIds.includes(malId)) return
+
         const { data: { session } } = await supabase.auth.getSession()
         if (!session) { navigate('/login'); return }
+
+        setSavingIds(prev => [...prev, malId])
+
         try {
             const res = await fetch('/api/entries', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${session.access_token}` },
                 body: JSON.stringify({ mal_id: malId, tipo: 'anime', status: 'Quero Assistir' }),
             })
-            if (!res.ok) throw new Error()
-            alert('Salvo na sua lista!')
-        } catch { alert('Erro ao salvar. Tente novamente!') }
+            if (!res.ok) {
+                // Caiu aqui, significa que a trava do banco (Unique) bloqueou a duplicidade.
+                setSavedIds(prev => [...prev, malId])
+                showToast('Este anime já estava no seu Deck!', 'error')
+                throw new Error('Duplicado')
+            }
+            
+            // Sucesso inédito
+            setSavedIds(prev => [...prev, malId])
+            showToast('Anime salvo no seu Deck!', 'success')
+        } catch { 
+            // Tratamento silencioso pois o Toast já foi disparado
+        } finally {
+            setSavingIds(prev => prev.filter(id => id !== malId))
+        }
     }
 
     const toggleFilter = (f: FilterItem) =>
@@ -114,11 +161,10 @@ export default function Rankings() {
                 <div className="mb-6 space-y-3">
                     <button
                         onClick={() => setShowFilters(v => !v)}
-                        className={`inline-flex items-center gap-2 px-4 py-2 rounded-full border text-sm font-bold transition-all duration-200 cursor-pointer ${
-                            showFilters || activeFilterCount > 0
+                        className={`inline-flex items-center gap-2 px-4 py-2 rounded-full border text-sm font-bold transition-all duration-200 cursor-pointer ${showFilters || activeFilterCount > 0
                                 ? 'border-holo-2 text-holo-2 bg-holo-2/10'
                                 : 'border-line text-muted bg-panel hover:border-holo-2 hover:text-holo-2'
-                        }`}
+                            }`}
                     >
                         <SlidersHorizontal size={14} />
                         Filtros
@@ -140,11 +186,10 @@ export default function Rankings() {
                                         <button
                                             key={opt.value}
                                             onClick={() => setSelectedStatus(selectedStatus === opt.value ? '' : opt.value)}
-                                            className={`px-3 py-1.5 rounded-full text-xs font-bold transition-all duration-150 cursor-pointer ${
-                                                selectedStatus === opt.value
+                                            className={`px-3 py-1.5 rounded-full text-xs font-bold transition-all duration-150 cursor-pointer ${selectedStatus === opt.value
                                                     ? 'bg-gradient-to-r from-holo-1 to-holo-2 text-void shadow-[0_0_12px_rgba(123,92,255,0.4)]'
                                                     : 'bg-panel-2 border border-line text-muted hover:border-holo-2 hover:text-text'
-                                            }`}
+                                                }`}
                                         >
                                             {opt.label}
                                         </button>
@@ -160,11 +205,10 @@ export default function Rankings() {
                                         <button
                                             key={opt.value}
                                             onClick={() => setSelectedSeason(selectedSeason === opt.value ? '' : opt.value)}
-                                            className={`px-3 py-1.5 rounded-full text-xs font-bold transition-all duration-150 cursor-pointer ${
-                                                selectedSeason === opt.value
+                                            className={`px-3 py-1.5 rounded-full text-xs font-bold transition-all duration-150 cursor-pointer ${selectedSeason === opt.value
                                                     ? 'bg-gradient-to-r from-holo-1 to-holo-2 text-void shadow-[0_0_12px_rgba(123,92,255,0.4)]'
                                                     : 'bg-panel-2 border border-line text-muted hover:border-holo-2 hover:text-text'
-                                            }`}
+                                                }`}
                                         >
                                             {opt.emoji} {opt.label}
                                         </button>
@@ -177,11 +221,10 @@ export default function Rankings() {
                                             <button
                                                 key={y}
                                                 onClick={() => setSelectedYear(selectedYear === String(y) ? '' : String(y))}
-                                                className={`px-3 py-1.5 rounded-full text-xs font-bold transition-all duration-150 cursor-pointer ${
-                                                    selectedYear === String(y)
+                                                className={`px-3 py-1.5 rounded-full text-xs font-bold transition-all duration-150 cursor-pointer ${selectedYear === String(y)
                                                         ? 'bg-holo-3/20 border border-holo-3 text-holo-3'
                                                         : 'bg-panel-2 border border-line text-muted hover:border-holo-3 hover:text-text'
-                                                }`}
+                                                    }`}
                                             >
                                                 {y}
                                             </button>
@@ -200,11 +243,10 @@ export default function Rankings() {
                                             <button
                                                 key={`${f.type}-${f.value}`}
                                                 onClick={() => toggleFilter(f)}
-                                                className={`px-3 py-1.5 rounded-full text-xs font-bold transition-all duration-150 cursor-pointer ${
-                                                    isActive
+                                                className={`px-3 py-1.5 rounded-full text-xs font-bold transition-all duration-150 cursor-pointer ${isActive
                                                         ? 'bg-gradient-to-r from-holo-1 to-holo-2 text-void shadow-[0_0_12px_rgba(123,92,255,0.4)]'
                                                         : 'bg-panel-2 border border-line text-muted hover:border-holo-2 hover:text-text'
-                                                }`}
+                                                    }`}
                                             >
                                                 {f.label}
                                             </button>
@@ -232,10 +274,11 @@ export default function Rankings() {
                         else if (rank === 3) rankColor = 'text-[#C77B3E]'
 
                         return (
-                            <Link
+                           <Link
                                 to={`/anime/${anime.mal_id}`}
                                 key={`${anime.mal_id}-${index}`}
-                                className="grid grid-cols-[28px_44px_1fr_auto] md:grid-cols-[36px_56px_1fr_auto_auto] gap-3 md:gap-4 items-center p-3 bg-panel border border-line rounded-xl hover:border-holo-2 transition-colors group"
+                                // Corrigido o grid mobile para caber o botão (24px_44px_1fr_auto_auto)
+                                className="grid grid-cols-[24px_44px_1fr_auto_auto] md:grid-cols-[36px_56px_1fr_auto_auto] gap-2 md:gap-4 items-center p-3 bg-panel border border-line rounded-xl hover:border-holo-2 transition-colors group"
                             >
                                 <span className={`font-anton text-lg md:text-xl text-center ${rankColor}`}>
                                     {rank < 10 ? `0${rank}` : rank}
@@ -249,7 +292,25 @@ export default function Rankings() {
                                     <div className="font-anton text-sm md:text-base text-gold">★ {anime.score || 'N/A'}</div>
                                     <span className="font-mono text-[9px] text-muted-2 hidden md:block">NOTA</span>
                                 </div>
-                                <button onClick={(e) => handleSalvar(e, anime.mal_id)} className="hidden md:flex w-8 h-8 rounded-full border-[1.5px] border-line bg-transparent text-muted items-center justify-center font-bold text-lg group-hover:border-holo-3 group-hover:text-holo-3 transition-colors z-10 cursor-pointer">+</button>
+                                
+                                {/* Removido o hidden md:flex e adicionada a lógica de Check visual */}
+                                <button 
+                                    onClick={(e) => handleSalvar(e, anime.mal_id)} 
+                                    disabled={savingIds.includes(anime.mal_id) || savedIds.includes(anime.mal_id)}
+                                    className={`flex w-8 h-8 rounded-full border-[1.5px] items-center justify-center font-bold text-lg transition-colors z-10 ${
+                                        savedIds.includes(anime.mal_id)
+                                            ? 'bg-green/20 border-green text-green cursor-default'
+                                            : 'border-line bg-transparent text-muted group-hover:border-holo-3 group-hover:text-holo-3 cursor-pointer'
+                                    }`}
+                                >
+                                    {savingIds.includes(anime.mal_id) ? (
+                                        <div className="w-3 h-3 border-2 border-current border-t-transparent rounded-full animate-spin"></div>
+                                    ) : savedIds.includes(anime.mal_id) ? (
+                                        <Check size={16} strokeWidth={3} />
+                                    ) : (
+                                        '+'
+                                    )}
+                                </button>
                             </Link>
                         )
                     })}

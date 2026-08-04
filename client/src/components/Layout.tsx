@@ -1,21 +1,21 @@
 import { Outlet } from 'react-router-dom'
 import Navbar from './Navbar'
+import BottomNav from './BottomNav'
 
 export default function Layout() {
   return (
     <div className="relative min-h-screen flex flex-col">
-      {/* Background global definido no index.css */}
       <div className="bg-ambient"></div>
-
+      
       <Navbar />
-
-      {/* O conteúdo da página vai renderizar aqui.
-          Foi colocado um padding top (pt-24) genérico para compensar a Navbar fixa,
-          mas algumas páginas como Detalhes podem querer ignorar isso para fazer a
-          imagem colar no topo (ajustaremos nessas páginas específicas). */}
-      <main className="relative z-10 flex-1 flex flex-col pt-24">
+      
+      {/* pt-24 compensa a navbar superior. pb-24 compensa a BottomNav no mobile para não cortar o último card */}
+      <main className="relative z-10 flex-1 flex flex-col pt-24 pb-24 md:pb-0">
         <Outlet />
       </main>
+
+      {/* A BottomNav tem a classe md:hidden internamente, então só renderiza no mobile */}
+      <BottomNav />
     </div>
   )
 }

@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
+import { useToast } from '../contexts/ToastContext'
 import { Link, useNavigate } from 'react-router-dom'
-import { Search, AlertCircle, SlidersHorizontal, X } from 'lucide-react'
+import { Search, AlertCircle, SlidersHorizontal, X, Check } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import {
     CONTENT_FILTERS, STATUS_OPTIONS, SEASON_OPTIONS,
@@ -22,23 +23,50 @@ const YEAR_OPTIONS = Array.from({ length: 10 }, (_, i) => CURRENT_YEAR - i)
 
 export default function Busca() {
     const navigate = useNavigate()
+    const { showToast } = useToast()
 
-    const [query, setQuery]                         = useState('')
-    const [selectedFilters, setSelectedFilters]     = useState<FilterItem[]>([])
-    const [selectedStatus, setSelectedStatus]       = useState('')
-    const [selectedSeason, setSelectedSeason]       = useState('')
-    const [selectedYear, setSelectedYear]           = useState('')
-    const [resultados, setResultados]               = useState<Anime[]>([])
-    const [loading, setLoading]                     = useState(false)
-    const [hasSearched, setHasSearched]             = useState(false)
-    const [error, setError]                         = useState<string | null>(null)
-    const [showFilters, setShowFilters]             = useState(false)
+    const [query, setQuery] = useState('')
+    const [selectedFilters, setSelectedFilters] = useState<FilterItem[]>([])
+    const [selectedStatus, setSelectedStatus] = useState('')
+    const [selectedSeason, setSelectedSeason] = useState('')
+    const [selectedYear, setSelectedYear] = useState('')
+    const [resultados, setResultados] = useState<Anime[]>([])
+    const [loading, setLoading] = useState(false)
+    const [hasSearched, setHasSearched] = useState(false)
+    const [error, setError] = useState<string | null>(null)
+    const [showFilters, setShowFilters] = useState(false)
+    const [savingIds, setSavingIds] = useState<number[]>([]) // <-- Estado para controlar botões de loading individuais
+    const [savedIds, setSavedIds]   = useState<number[]>([])
 
     const activeFilterCount =
         selectedFilters.length +
         (selectedStatus ? 1 : 0) +
         (selectedSeason ? 1 : 0) +
         (selectedYear ? 1 : 0)
+
+        // Busca o deck do usuário ao carregar a página para acender os checks
+    useEffect(() => {
+        const carregarDeck = async () => {
+            const { data: { session } } = await supabase.auth.getSession()
+            if (!session) return
+
+            try {
+                const response = await fetch('/api/entries', {
+                    headers: { 'Authorization': `Bearer ${session.access_token}` },
+                })
+                if (response.ok) {
+                    const entradas = await response.json()
+                    if (entradas && entradas.length > 0) {
+                        const idsSalvos = entradas.map((e: any) => e.mal_id)
+                        setSavedIds(idsSalvos)
+                    }
+                }
+            } catch (err) {
+                console.error('Falha ao sincronizar deck:', err)
+            }
+        }
+        carregarDeck()
+    }, [])
 
     // Há busca ativa se qualquer campo tiver valor
     const hasAnyFilter =
@@ -47,7 +75,7 @@ export default function Busca() {
         !!selectedStatus ||
         !!selectedSeason
 
-useEffect(() => {
+    useEffect(() => {
         if (!hasAnyFilter) {
             setResultados([])
             setHasSearched(false)
@@ -78,15 +106,15 @@ useEffect(() => {
                 const response = await fetch(`/api/search?${params.toString()}`, {
                     signal: controller.signal
                 })
-                
+
                 if (!response.ok) throw new Error('Busca indisponível no momento. Tente novamente mais tarde.')
                 const data = await response.json()
                 setResultados(data.data || [])
-                
+
             } catch (err: any) {
                 // 3. Se o erro for apenas o nosso cancelamento forçado (AbortError), ignoramos silenciosamente!
                 if (err.name === 'AbortError') return
-                
+
                 setResultados([])
                 setError(err.message || 'Falha ao conectar com o servidor.')
             } finally {
@@ -101,23 +129,41 @@ useEffect(() => {
         // nós limpamos o timer E "matamos" a requisição velha no meio do caminho!
         return () => {
             clearTimeout(timer)
-            controller.abort() 
+            controller.abort()
         }
     }, [query, selectedFilters, selectedStatus, selectedSeason, selectedYear, hasAnyFilter])
 
     const handleSalvar = async (e: React.MouseEvent, malId: number) => {
         e.preventDefault()
+        
+        if (savingIds.includes(malId) || savedIds.includes(malId)) return
+
         const { data: { session } } = await supabase.auth.getSession()
         if (!session) { navigate('/login'); return }
+
+        setSavingIds(prev => [...prev, malId])
+
         try {
             const res = await fetch('/api/entries', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${session.access_token}` },
                 body: JSON.stringify({ mal_id: malId, tipo: 'anime', status: 'Quero Assistir' }),
             })
-            if (!res.ok) throw new Error()
-            alert('Salvo na sua lista!')
-        } catch { alert('Erro ao salvar. Tente novamente!') }
+            if (!res.ok) {
+                // Caiu aqui, significa que a trava do banco (Unique) bloqueou a duplicidade.
+                setSavedIds(prev => [...prev, malId])
+                showToast('Este anime já estava no seu Deck!', 'error')
+                throw new Error('Duplicado')
+            }
+            
+            // Sucesso inédito
+            setSavedIds(prev => [...prev, malId])
+            showToast('Anime salvo no seu Deck!', 'success')
+        } catch { 
+            // Tratamento silencioso pois o Toast já foi disparado
+        } finally {
+            setSavingIds(prev => prev.filter(id => id !== malId))
+        }
     }
 
     const toggleFilter = (f: FilterItem) =>
@@ -161,11 +207,10 @@ useEffect(() => {
             <div className="flex items-center gap-3 mb-4 flex-wrap">
                 <button
                     onClick={() => setShowFilters(v => !v)}
-                    className={`inline-flex items-center gap-2 px-4 py-2 rounded-full border text-sm font-bold transition-all duration-200 cursor-pointer ${
-                        showFilters || activeFilterCount > 0
+                    className={`inline-flex items-center gap-2 px-4 py-2 rounded-full border text-sm font-bold transition-all duration-200 cursor-pointer ${showFilters || activeFilterCount > 0
                             ? 'border-holo-2 text-holo-2 bg-holo-2/10'
                             : 'border-line text-muted bg-panel hover:border-holo-2 hover:text-holo-2'
-                    }`}
+                        }`}
                 >
                     <SlidersHorizontal size={14} />
                     Filtros
@@ -213,11 +258,10 @@ useEffect(() => {
                                 <button
                                     key={opt.value}
                                     onClick={() => setSelectedStatus(selectedStatus === opt.value ? '' : opt.value)}
-                                    className={`px-3 py-1.5 rounded-full text-xs font-bold transition-all duration-150 cursor-pointer ${
-                                        selectedStatus === opt.value
+                                    className={`px-3 py-1.5 rounded-full text-xs font-bold transition-all duration-150 cursor-pointer ${selectedStatus === opt.value
                                             ? 'bg-gradient-to-r from-holo-1 to-holo-2 text-void shadow-[0_0_12px_rgba(123,92,255,0.4)]'
                                             : 'bg-panel-2 border border-line text-muted hover:border-holo-2 hover:text-text'
-                                    }`}
+                                        }`}
                                 >
                                     {opt.label}
                                 </button>
@@ -233,11 +277,10 @@ useEffect(() => {
                                 <button
                                     key={opt.value}
                                     onClick={() => setSelectedSeason(selectedSeason === opt.value ? '' : opt.value)}
-                                    className={`px-3 py-1.5 rounded-full text-xs font-bold transition-all duration-150 cursor-pointer ${
-                                        selectedSeason === opt.value
+                                    className={`px-3 py-1.5 rounded-full text-xs font-bold transition-all duration-150 cursor-pointer ${selectedSeason === opt.value
                                             ? 'bg-gradient-to-r from-holo-1 to-holo-2 text-void shadow-[0_0_12px_rgba(123,92,255,0.4)]'
                                             : 'bg-panel-2 border border-line text-muted hover:border-holo-2 hover:text-text'
-                                    }`}
+                                        }`}
                                 >
                                     {opt.emoji} {opt.label}
                                 </button>
@@ -249,11 +292,10 @@ useEffect(() => {
                                     <button
                                         key={y}
                                         onClick={() => setSelectedYear(selectedYear === String(y) ? '' : String(y))}
-                                        className={`px-3 py-1.5 rounded-full text-xs font-bold transition-all duration-150 cursor-pointer ${
-                                            selectedYear === String(y)
+                                        className={`px-3 py-1.5 rounded-full text-xs font-bold transition-all duration-150 cursor-pointer ${selectedYear === String(y)
                                                 ? 'bg-holo-3/20 border border-holo-3 text-holo-3'
                                                 : 'bg-panel-2 border border-line text-muted hover:border-holo-3 hover:text-text'
-                                        }`}
+                                            }`}
                                     >
                                         {y}
                                     </button>
@@ -272,11 +314,10 @@ useEffect(() => {
                                     <button
                                         key={`${f.type}-${f.value}`}
                                         onClick={() => toggleFilter(f)}
-                                        className={`px-3 py-1.5 rounded-full text-xs font-bold transition-all duration-150 cursor-pointer ${
-                                            isActive
+                                        className={`px-3 py-1.5 rounded-full text-xs font-bold transition-all duration-150 cursor-pointer ${isActive
                                                 ? 'bg-gradient-to-r from-holo-1 to-holo-2 text-void shadow-[0_0_12px_rgba(123,92,255,0.4)]'
                                                 : 'bg-panel-2 border border-line text-muted hover:border-holo-2 hover:text-text'
-                                        }`}
+                                            }`}
                                     >
                                         {f.label}
                                     </button>
@@ -298,7 +339,7 @@ useEffect(() => {
                 <>
                     <p className="font-mono text-xs text-holo-3 tracking-widest mb-4">// BUSCANDO...</p>
                     <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-4">
-                        {[1,2,3,4,5].map(n => <div key={n} className="aspect-[2/3] rounded-xl bg-panel-2 animate-pulse border border-line" />)}
+                        {[1, 2, 3, 4, 5].map(n => <div key={n} className="aspect-[2/3] rounded-xl bg-panel-2 animate-pulse border border-line" />)}
                     </div>
                 </>
             )}
@@ -324,7 +365,7 @@ useEffect(() => {
                                 <div className="absolute inset-0 bg-gradient-to-t from-void/90 via-void/20 to-transparent z-10" />
                                 <div className="relative z-20">
                                     <div className="font-bold text-sm leading-tight mb-1 drop-shadow-md">{anime.title}</div>
-                                    
+
                                     {/* 🟢 Renderiza no máximo 2 tags para não poluir o mobile */}
                                     <div className="flex flex-wrap gap-1 mb-1.5">
                                         {anime.genres?.slice(0, 2).map(g => (
@@ -333,13 +374,30 @@ useEffect(() => {
                                             </span>
                                         ))}
                                     </div>
-                                    
+
                                     {/* 🟢 Status traduzido */}
                                     <div className="font-mono text-[10px] text-holo-3 font-bold uppercase">
                                         {traduzirStatus(anime.status)}
                                     </div>
                                 </div>
-                                <button onClick={(e) => handleSalvar(e, anime.mal_id)} className="absolute top-2 right-2 w-8 h-8 rounded-full bg-void/70 border-2 border-white/40 text-white font-bold backdrop-blur-sm hover:bg-gradient-to-r hover:from-holo-1 hover:to-holo-2 hover:border-transparent transition-all z-20 cursor-pointer">+</button>
+                                {/* Troque a renderização do botão na linha 257 aproximadamente: */}
+                                <button 
+                                    onClick={(e) => handleSalvar(e, anime.mal_id)} 
+                                    disabled={savingIds.includes(anime.mal_id) || savedIds.includes(anime.mal_id)}
+                                    className={`absolute top-2 right-2 w-8 h-8 rounded-full border-2 flex items-center justify-center font-bold backdrop-blur-sm transition-all z-20 ${
+                                        savedIds.includes(anime.mal_id)
+                                            ? 'bg-green/30 border-green text-green cursor-default'
+                                            : 'bg-void/70 border-white/40 text-white hover:bg-gradient-to-r hover:from-holo-1 hover:to-holo-2 hover:border-transparent cursor-pointer'
+                                    }`}
+                                >
+                                    {savingIds.includes(anime.mal_id) ? (
+                                        <div className="w-3 h-3 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                                    ) : savedIds.includes(anime.mal_id) ? (
+                                        <Check size={16} strokeWidth={3} />
+                                    ) : (
+                                        '+'
+                                    )}
+                                </button>
                             </Link>
                         ))}
                     </div>
