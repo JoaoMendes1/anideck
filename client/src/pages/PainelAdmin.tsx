@@ -1,5 +1,7 @@
 import { useState, useEffect } from 'react'
 import { supabase } from '../lib/supabase'
+import { Link } from 'react-router-dom';
+
 
 interface CuratedAnime {
   id?: string
@@ -243,6 +245,9 @@ export default function PainelAdmin() {
           <span className="font-anton text-lg bg-gradient-to-r from-holo-1 via-holo-2 to-holo-3 text-transparent bg-clip-text">ANIDECK</span>
           <span className="font-mono text-[10px] font-bold text-gold bg-gold/10 border border-gold/40 px-2 py-1 rounded-full">⚙ ADMIN</span>
         </div>
+        <Link to="/" className="text-sm font-bold text-muted hover:text-text transition-colors">
+          ← Voltar ao site
+        </Link>
       </div>
 
       <div className="max-w-[1000px] mx-auto p-5 mt-4">
