@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useParams, Link } from 'react-router-dom'
-import { ChevronLeft, PlayCircle, Star, AlertCircle } from 'lucide-react'
+import { PlayCircle, Star, AlertCircle } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 
 interface AnimeDetail {

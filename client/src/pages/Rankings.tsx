@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { AlertCircle, ChevronLeft, SlidersHorizontal, X } from 'lucide-react'
+import { AlertCircle, SlidersHorizontal, X } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import {
     CONTENT_FILTERS, STATUS_OPTIONS, SEASON_OPTIONS,
