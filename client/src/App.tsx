@@ -7,9 +7,11 @@ import RotaProtegida from './components/RotaProtegida'
 import Rankings from './pages/Rankings'
 import PainelAdmin from './pages/PainelAdmin'
 import Layout from './components/Layout'
+import { ToastProvider } from './contexts/ToastContext'
 
 function App() {
   return (
+    <ToastProvider>
     <Routes>
       <Route element={<Layout />}>
       <Route path="/" element={<Busca />} />
@@ -23,6 +25,7 @@ function App() {
       <Route path="/login" element={<Auth />} />
       <Route path="/admin" element={<RotaProtegida><PainelAdmin /></RotaProtegida>} />
     </Routes>
+    </ToastProvider>
   )
 }
 

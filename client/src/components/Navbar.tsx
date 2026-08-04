@@ -1,13 +1,12 @@
 import { useState, useEffect } from 'react'
 import { Link, useLocation } from 'react-router-dom'
-import { Search, Menu, LogOut } from 'lucide-react'
+import { Search, LogOut } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import type { Session } from '@supabase/supabase-js'
 
 export default function Navbar() {
     const [session, setSession] = useState<Session | null>(null)
     const [scrolled, setScrolled] = useState(false)
-    const [menuOpen, setMenuOpen] = useState(false)
     const location = useLocation()
 
     // Gerencia o estado de Autenticação 
@@ -34,7 +33,6 @@ export default function Navbar() {
 
     const handleLogout= async () => {
         await supabase.auth.signOut()
-        setMenuOpen(false)
     }
 
    return (
@@ -45,6 +43,7 @@ export default function Navbar() {
         }`}
       >
         <div className="max-w-[1140px] mx-auto px-5 flex items-center justify-between gap-4">
+          
           {/* Logo */}
           <Link to="/" className="flex items-center gap-2.5 z-50">
             <div className="w-9 h-9 rounded-lg bg-gradient-to-br from-holo-1 via-holo-2 to-holo-3 flex items-center justify-center font-anton text-void text-base">
@@ -54,6 +53,7 @@ export default function Navbar() {
               Ani<span className="text-holo">Deck</span>
             </div>
           </Link>
+
           {/* Links Principais (Desktop) */}
           <div className="hidden md:flex items-center gap-7">
             {session && (
@@ -90,32 +90,8 @@ export default function Navbar() {
             )}
           </div>
 
-          {/* Mobile Menu Toggle */}
-          <button className="md:hidden text-text p-2 z-50 cursor-pointer" onClick={() => setMenuOpen(!menuOpen)}>
-            <Menu size={24} />
-          </button>
         </div>
       </nav>
-
-      {/* Mobile Menu (Overlay) */}
-      <div className={`fixed inset-0 bg-void/95 backdrop-blur-lg z-40 md:hidden transition-opacity duration-300 ${menuOpen ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'}`}>
-        <div className="flex flex-col items-center justify-center h-full gap-6 p-5 text-center">
-          <Link to="/" onClick={() => setMenuOpen(false)} className="text-lg font-bold text-muted hover:text-text">Busca</Link>
-          <Link to="/rankings" onClick={() => setMenuOpen(false)} className="text-lg font-bold text-muted hover:text-text">Rankings</Link>
-
-          {session ? (
-           <>
-              <Link to="/deck" onClick={() => setMenuOpen(false)} className="text-lg font-bold text-muted hover:text-text focus:outline-none select-none">Meu Deck</Link>
-              <Link to="/admin" onClick={() => setMenuOpen(false)} className="text-lg font-bold text-muted hover:text-text focus:outline-none select-none">Admin</Link>
-              <button onClick={handleLogout} className="mt-4 px-6 py-3 rounded-full border border-coral text-coral font-bold w-full max-w-[200px] focus:outline-none">Sair</button>
-            </>
-          ) : (
-            <Link to="/login" onClick={() => setMenuOpen(false)} className="mt-4 px-6 py-3 rounded-full font-bold text-void bg-gradient-to-r from-holo-1 to-holo-3 w-full max-w-[200px]">
-              Entrar
-            </Link>
-          )}
-        </div>
-      </div>
     </>
   )
 }
