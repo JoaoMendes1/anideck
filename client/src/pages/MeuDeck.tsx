@@ -59,38 +59,27 @@ export default function MeuDeck() {
 
                     // 3. Hidratação Ligeira: Busca todos os pôsteres da AniList de uma vez só
                     const malIds = dadosDeck.map(e => e.mal_id)
-                    const graphqlQuery = `
-                        query ($idMal_in: [Int]) {
-                          Page(page: 1, perPage: 50) {
-                            media(idMal_in: $idMal_in, type: ANIME) {
-                              idMal
-                              title { romaji english }
-                              coverImage { large }
-                            }
-                          }
-                        }
-                    `
-                    const aniResponse = await fetch('https://graphql.anilist.co', {
+
+                    const apiResponse = await fetch('/api/anime/bulk', {
                         method: 'POST',
-                        headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
-                        body: JSON.stringify({ query: graphqlQuery, variables: { idMal_in: malIds } })
+                        headers: {  'Content-Type': 'application/json' },
+                        body: JSON.stringify({ ids: malIds})
                     })
-                    
-                    const aniJson = await aniResponse.json()
-                    const media = aniJson.data?.Page?.media || []
-                    
+
+                    const apiJson = await apiResponse.json()
+                    const media = apiJson.data || []
+
                     const mapaAnimes: Record<number, HydratedAnime> = {}
                     media.forEach((m: any) => {
-                        // 🟢 REGRA CORRIGIDA: Se tiver nome na curadoria, usa ele. Se não, usa o original.
-                        const tituloOriginal = m.title.romaji || m.title.english || 'Título Desconhecido'
-                        
-                        mapaAnimes[m.idMal] = {
-                            mal_id: m.idMal,
-                            title: mapaCuradoria[m.idMal] || tituloOriginal,
-                            image_url: m.coverImage.large
+                        // Se tiver nome na curadoria, usa ele. Se não, usa o que o Go retornou.
+                        mapaAnimes[m.mal_id] = {
+                            mal_id: m.mal_id,
+                            title: mapaCuradoria[m.mal_id] || m.title || 'Titulo Desconhecido',
+                            image_url: m.images?.jpg?.image_url || ''
                         }
                     })
                     setAnimesData(mapaAnimes)
+                    
                 }
             } catch (err) {
                 setError('Não foi possível carregar seu deck. Tente novamente.')

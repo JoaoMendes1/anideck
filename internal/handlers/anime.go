@@ -151,3 +151,34 @@ func (h *AnimeHandler) HandleGetStatistics(w http.ResponseWriter, r *http.Reques
 		log.Printf("[ERRO] HandleGetStatistics: falha ao serializar resposta: %v", err)
 	}
 }
+
+// HandleGetAnimesByIDs recebe uma lista de IDs no corpo da requisição e retorna os dados hidratados
+func (h *AnimeHandler) HandleGetAnimesByIDs(w http.ResponseWriter, r *http.Request) {
+	var payload struct {
+		IDs []int `json:"ids"`
+	}
+
+	if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
+		http.Error(w, "Corpo da requisição inválido", http.StatusBadRequest)
+		return
+	}
+
+	// Se a lista estiver vazia, retorna um array vazio imediatamente para poupar a AniList
+	if len(payload.IDs) == 0 {
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(map[string]interface{}{"data": []interface{}{}})
+		return
+	}
+
+	resultados, err := h.AniListClient.GetAnimesByMalIDs(r.Context(), payload.IDs)
+	if err != nil {
+		log.Printf("[ERRO ANILIST] Falha ao buscar animes em lote: %v", err)
+		http.Error(w, "Detalhes indisponíveis no momento", http.StatusServiceUnavailable)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	if err := json.NewEncoder(w).Encode(resultados); err != nil {
+		log.Printf("[ERRO] HandleGetAnimesByIDs: falha ao serializar resposta: %v", err)
+	}
+}

@@ -66,58 +66,41 @@ export default function PainelAdmin() {
     }
   }
 
-  const buscarNaAniList = async () => {
+   const buscarNaAniList = async () => {
     if (!termoBusca) return
     setBuscando(true)
     try {
-      const graphqlQuery = `
-        query ($search: String) {
-          Page(page: 1, perPage: 1) {
-            media(search: $search, type: ANIME) {
-              idMal
-              title { romaji english }
-              status
-              description
-              coverImage { large }
-              genres
-            }
-          }
-        }
-      `
-      
-      const response = await fetch('https://graphql.anilist.co', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
-        body: JSON.stringify({ query: graphqlQuery, variables: { search: termoBusca } })
-      })
-      
+      // Substituindo GraphQL nativo pela nossa rota de busca do Go
+      const response = await fetch(`/api/search?q=${encodeURIComponent(termoBusca)}`)
       const json = await response.json()
-      const media = json.data?.Page?.media
+      const media = json.data
 
       if (media && media.length > 0) {
         const anime = media[0]
-        const tituloEncontrado = anime.title.romaji || anime.title.english || ''
-        
-        setPreview({ 
-          title: tituloEncontrado, 
-          mal_id: anime.idMal, 
-          images: { jpg: { image_url: anime.coverImage?.large } } 
+
+        setPreview({
+          title: anime.title,
+          mal_id: anime.mal_id,
+          images: { jpg: { image_url: anime.images?.jpg?.image_url } }
         })
-        
-        setMalId(anime.idMal)
-        setTitulo(tituloEncontrado)
-        setStatus('FINISHED')
-        
-        const tempDiv = document.createElement("div")
-        tempDiv.innerHTML = anime.description || ''
-        setSinopse(tempDiv.textContent || tempDiv.innerText || '')
-        
-        setTags(anime.genres || [])
+
+        setMalId(anime.mal_id)
+        setTitulo(anime.title)
+
+        // O Go traduz "Finished Airing", o form espera "FINISHED" ou "RELEASING"
+        const isFinished = anime.status === 'Finished Airing' || anime.status === 'FINISHED'
+        setStatus(isFinished ? 'FINISHED' : 'RELEASING')
+
+        // A sinopse do Go já vem higienizada sem HTML pela biblioteca bluemonday!
+        setSinopse(anime.synopsis || '')
+
+        // As tags chegam como array de objetos { name: "Ação" }
+        setTags(anime.genres ? anime.genres.map((g: any) => g.name) : [])
       } else {
         showToast('Nenhum anime encontrado com esse termo.', 'error')
       }
     } catch (err) {
-      showToast('Erro ao buscar na AniList.', 'error')
+      showToast('Erro ao buscar no nosso servidor.', 'error')
     } finally {
       setBuscando(false)
     }

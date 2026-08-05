@@ -1,0 +1,3 @@
+VITE_SUPABASE_URL=exemplo
+VITE_SUPABASE_ANON_KEY=exemplo
+VITE_ADMIN_USER_ID=admin-exemplo
