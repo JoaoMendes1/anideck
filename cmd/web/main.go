@@ -59,6 +59,8 @@ func main() {
 	r.Get("/api/ranking", rankingHandler.HandleGetTopAnime)
 	r.Get("/api/curation", curationHandler.HandleList)
 
+	r.Post("/api/anime/bulk", animeHandler.HandleGetAnimesByIDs)
+
 	// 5. Rotas protegidas que exigem token válido
 	r.Group(func(protegido chi.Router) {
 		protegido.Use(middleware.RequireAuth)
