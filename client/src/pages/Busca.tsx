@@ -180,16 +180,16 @@ export default function Busca() {
         setSelectedYear('')
     }
 
-    // Traduz os status técnicos do banco/AniList para a interface
+  // Traduz os status técnicos do banco/AniList para a interface
     const traduzirStatus = (statusOriginal: string) => {
         if (statusOriginal === 'FINISHED' || statusOriginal === 'Finished Airing') return 'Finalizado'
         if (statusOriginal === 'RELEASING' || statusOriginal === 'Currently Airing') return 'Em Lançamento'
-        if (statusOriginal === 'NOT_YET_RELEASED') return 'Em Breve'
+        if (statusOriginal === 'NOT_YET_RELEASED' || statusOriginal === 'Not yet aired') return 'Em Breve'
         return statusOriginal
     }
 
     return (
-        <div className="max-w-[960px] mx-auto pt-16 px-5 pb-10">
+        <div className="w-full min-w-0 max-w-[960px] mx-auto pt-16 px-5 pb-10">
 
             {/* Campo de busca */}
             <div className="flex items-center gap-3 bg-panel border-2 border-holo-2 rounded-xl p-4 mb-4">
@@ -203,11 +203,11 @@ export default function Busca() {
                 />
             </div>
 
-            {/* Linha de controle */}
-            <div className="flex items-center gap-3 mb-4 flex-wrap">
+                        {/* Linha de controle e Quick Filters */}
+            <div className="flex items-center gap-3 mb-4 overflow-x-auto pb-2 scrollbar-hide">
                 <button
                     onClick={() => setShowFilters(v => !v)}
-                    className={`inline-flex items-center gap-2 px-4 py-2 rounded-full border text-sm font-bold transition-all duration-200 cursor-pointer ${showFilters || activeFilterCount > 0
+                    className={`inline-flex items-center shrink-0 gap-2 px-4 py-2 rounded-full border text-sm font-bold transition-all duration-200 cursor-pointer ${showFilters || activeFilterCount > 0
                             ? 'border-holo-2 text-holo-2 bg-holo-2/10'
                             : 'border-line text-muted bg-panel hover:border-holo-2 hover:text-holo-2'
                         }`}
@@ -221,23 +221,42 @@ export default function Busca() {
                     )}
                 </button>
 
-                {/* Tags dos filtros ativos (painel fechado) */}
+                {/* Quick Filters (Categorias de Destaque) */}
+                {['Ação', 'Romance', 'Comédia', 'Fantasia'].map(cat => {
+                    const filterObj = CONTENT_FILTERS.find(f => f.label === cat)
+                    if (!filterObj) return null;
+                    const isActive = selectedFilters.some(x => x.value === filterObj.value)
+                    return (
+                        <button
+                            key={cat}
+                            onClick={() => toggleFilter(filterObj)}
+                            className={`shrink-0 px-4 py-2 rounded-full text-xs font-bold transition-all duration-150 cursor-pointer ${isActive
+                                    ? 'bg-gradient-to-r from-holo-1 to-holo-2 text-void border-transparent'
+                                    : 'bg-panel-2 border border-line text-muted hover:border-holo-2 hover:text-text'
+                                }`}
+                        >
+                            {cat}
+                        </button>
+                    )
+                })}
+
+                {/* Tags dos filtros ativos que não estão nos Quick Filters */}
                 {!showFilters && activeFilterCount > 0 && (
-                    <div className="flex items-center gap-2 flex-wrap">
-                        {selectedFilters.map(f => (
-                            <span key={`${f.type}-${f.value}`} className="flex items-center gap-1 px-2.5 py-1 rounded-full bg-holo-2/20 border border-holo-2/40 text-holo-2 text-[11px] font-bold">
+                    <div className="flex items-center gap-2 flex-nowrap shrink-0 border-l border-line pl-3">
+                        {selectedFilters.filter(f => !['Ação', 'Romance', 'Comédia', 'Fantasia'].includes(f.label)).map(f => (
+                            <span key={`${f.type}-${f.value}`} className="flex items-center shrink-0 gap-1 px-2.5 py-1.5 rounded-full bg-holo-2/20 border border-holo-2/40 text-holo-2 text-[11px] font-bold">
                                 {f.label}
                                 <button onClick={() => toggleFilter(f)} className="cursor-pointer hover:text-white"><X size={10} /></button>
                             </span>
                         ))}
                         {selectedStatus && (
-                            <span className="flex items-center gap-1 px-2.5 py-1 rounded-full bg-holo-3/20 border border-holo-3/40 text-holo-3 text-[11px] font-bold">
+                            <span className="flex items-center shrink-0 gap-1 px-2.5 py-1.5 rounded-full bg-holo-3/20 border border-holo-3/40 text-holo-3 text-[11px] font-bold">
                                 {STATUS_OPTIONS.find(s => s.value === selectedStatus)?.label}
                                 <button onClick={() => setSelectedStatus('')} className="cursor-pointer hover:text-white"><X size={10} /></button>
                             </span>
                         )}
                         {selectedSeason && (
-                            <span className="flex items-center gap-1 px-2.5 py-1 rounded-full bg-holo-1/20 border border-holo-1/40 text-holo-1 text-[11px] font-bold">
+                            <span className="flex items-center shrink-0 gap-1 px-2.5 py-1.5 rounded-full bg-holo-1/20 border border-holo-1/40 text-holo-1 text-[11px] font-bold">
                                 {SEASON_OPTIONS.find(s => s.value === selectedSeason)?.emoji} {SEASON_OPTIONS.find(s => s.value === selectedSeason)?.label} {selectedYear}
                                 <button onClick={() => { setSelectedSeason(''); setSelectedYear('') }} className="cursor-pointer hover:text-white"><X size={10} /></button>
                             </span>
@@ -246,9 +265,28 @@ export default function Busca() {
                 )}
             </div>
 
-            {/* Painel de filtros */}
-            {showFilters && (
-                <div className="bg-panel border border-line rounded-2xl p-5 space-y-6 mb-6">
+              {/* Painel de filtros (Drawer Mobile / Bloco Desktop) */}
+            <div className={`fixed inset-0 z-[70] flex flex-col justify-end pointer-events-none md:relative md:inset-auto md:z-auto md:block transition-all duration-300 ${
+                showFilters ? 'opacity-100' : 'opacity-0 md:opacity-100 md:hidden'
+            }`}>
+                {/* Overlay escuro (Só Mobile) - CORRIGIDO: pointer-events-none quando fechado */}
+                <div 
+                    className={`absolute inset-0 bg-void/80 backdrop-blur-sm md:hidden transition-opacity duration-300 ${showFilters ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'}`} 
+                    onClick={() => setShowFilters(false)}
+                />
+                
+                {/* Container do Drawer - CORRIGIDO: pointer-events-none quando fechado */}
+                <div className={`relative bg-panel md:bg-panel border-t md:border border-line rounded-t-3xl md:rounded-2xl p-6 pb-safe md:pb-6 space-y-6 transition-transform duration-300 transform md:transform-none max-h-[85vh] overflow-y-auto ${
+                    showFilters ? 'translate-y-0 pointer-events-auto' : 'translate-y-full pointer-events-none md:translate-y-0 md:pointer-events-auto'
+                } mb-0 md:mb-6`}>
+                    
+                    {/* Header do Drawer (Só Mobile) */}
+
+                    {/* Header do Drawer (Só Mobile) */}
+                    <div className="flex justify-between items-center md:hidden mb-2">
+                        <h3 className="font-anton text-lg uppercase text-text">Filtros Avançados</h3>
+                        <button onClick={() => setShowFilters(false)} className="text-muted hover:text-text cursor-pointer p-1"><X size={20} /></button>
+                    </div>
 
                     {/* Status */}
                     <div>
@@ -332,14 +370,16 @@ export default function Busca() {
                         </button>
                     )}
                 </div>
-            )}
+            </div>
 
             {/* Estados */}
             {loading && (
                 <>
                     <p className="font-mono text-xs text-holo-3 tracking-widest mb-4">// BUSCANDO...</p>
                     <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-4">
-                        {[1, 2, 3, 4, 5].map(n => <div key={n} className="aspect-[2/3] rounded-xl bg-panel-2 animate-pulse border border-line" />)}
+                        {[1, 2, 3, 4, 5, 6, 7, 8].map(n => (
+                            <div key={n} className="aspect-[2/3] rounded-xl shimmer border border-line" />
+                        ))}
                     </div>
                 </>
             )}
@@ -356,50 +396,53 @@ export default function Busca() {
                 <>
                     <p className="font-mono text-xs text-holo-3 tracking-widest mb-4">// RESULTADOS</p>
                     <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-4">
-                        {resultados.map(anime => (
-                            <Link to={`/anime/${anime.mal_id}`} key={anime.mal_id} className="relative aspect-[2/3] rounded-xl overflow-hidden border border-line bg-panel flex flex-col justify-end p-3 group block">
-                                {anime.images?.jpg?.image_url
-                                    ? <img src={anime.images.jpg.image_url} alt={anime.title} className="absolute inset-0 w-full h-full object-cover z-0 group-hover:scale-105 transition-transform duration-500" />
-                                    : <div className="absolute inset-0 bg-gradient-to-br from-panel-2 to-void z-0" />
-                                }
-                                <div className="absolute inset-0 bg-gradient-to-t from-void/90 via-void/20 to-transparent z-10" />
-                                <div className="relative z-20">
-                                    <div className="font-bold text-sm leading-tight mb-1 drop-shadow-md">{anime.title}</div>
-
-                                    {/* 🟢 Renderiza no máximo 2 tags para não poluir o mobile */}
-                                    <div className="flex flex-wrap gap-1 mb-1.5">
-                                        {anime.genres?.slice(0, 2).map(g => (
-                                            <span key={g.name} className="bg-panel-2/80 backdrop-blur-sm border border-line text-[9px] px-1.5 py-0.5 rounded text-muted font-bold">
-                                                {g.name}
-                                            </span>
-                                        ))}
-                                    </div>
-
-                                    {/* 🟢 Status traduzido */}
-                                    <div className="font-mono text-[10px] text-holo-3 font-bold uppercase">
-                                        {traduzirStatus(anime.status)}
-                                    </div>
-                                </div>
-                                {/* Troque a renderização do botão na linha 257 aproximadamente: */}
-                                <button 
-                                    onClick={(e) => handleSalvar(e, anime.mal_id)} 
-                                    disabled={savingIds.includes(anime.mal_id) || savedIds.includes(anime.mal_id)}
-                                    className={`absolute top-2 right-2 w-8 h-8 rounded-full border-2 flex items-center justify-center font-bold backdrop-blur-sm transition-all z-20 ${
-                                        savedIds.includes(anime.mal_id)
-                                            ? 'bg-green/30 border-green text-green cursor-default'
-                                            : 'bg-void/70 border-white/40 text-white hover:bg-gradient-to-r hover:from-holo-1 hover:to-holo-2 hover:border-transparent cursor-pointer'
-                                    }`}
-                                >
-                                    {savingIds.includes(anime.mal_id) ? (
-                                        <div className="w-3 h-3 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
-                                    ) : savedIds.includes(anime.mal_id) ? (
-                                        <Check size={16} strokeWidth={3} />
-                                    ) : (
-                                        '+'
+                        {resultados.map((anime, index) => {
+                            // Calcula a classe do gradiente com base no índice (c1 a c5)
+                            const gradClass = `card-g${(index % 5) + 1}`
+                            
+                            return (
+                                <Link to={`/anime/${anime.mal_id}`} key={anime.mal_id} className={`relative aspect-[2/3] rounded-xl overflow-hidden border border-line flex flex-col justify-end p-3 group block ${gradClass}`}>
+                                    {anime.images?.jpg?.image_url && (
+                                        <img src={anime.images.jpg.image_url} alt={anime.title} className="absolute inset-0 w-full h-full object-cover z-0 group-hover:scale-105 transition-transform duration-500" />
                                     )}
-                                </button>
-                            </Link>
-                        ))}
+                                    <div className="absolute inset-0 bg-gradient-to-t from-void/90 via-void/20 to-transparent z-10" />
+                                    <div className="relative z-20">
+                                        <div className="font-bold text-sm leading-tight mb-1 drop-shadow-md">{anime.title}</div>
+
+                                        {/* 🟢 Renderiza no máximo 2 tags para não poluir o mobile */}
+                                        <div className="flex flex-wrap gap-1 mb-1.5">
+                                            {anime.genres?.slice(0, 2).map(g => (
+                                                <span key={g.name} className="bg-panel-2/80 backdrop-blur-sm border border-line text-[9px] px-1.5 py-0.5 rounded text-muted font-bold">
+                                                    {g.name}
+                                                </span>
+                                            ))}
+                                        </div>
+
+                                        {/* 🟢 Status traduzido */}
+                                        <div className="font-mono text-[10px] text-holo-3 font-bold uppercase">
+                                            {traduzirStatus(anime.status)}
+                                        </div>
+                                    </div>
+                                    <button 
+                                        onClick={(e) => handleSalvar(e, anime.mal_id)} 
+                                        disabled={savingIds.includes(anime.mal_id) || savedIds.includes(anime.mal_id)}
+                                        className={`absolute top-2 right-2 w-8 h-8 rounded-full border-2 flex items-center justify-center font-bold backdrop-blur-sm transition-all z-20 ${
+                                            savedIds.includes(anime.mal_id)
+                                                ? 'bg-green/30 border-green text-green cursor-default'
+                                                : 'bg-void/70 border-white/40 text-white hover:bg-gradient-to-r hover:from-holo-1 hover:to-holo-2 hover:border-transparent cursor-pointer'
+                                        }`}
+                                    >
+                                        {savingIds.includes(anime.mal_id) ? (
+                                            <div className="w-3 h-3 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                                        ) : savedIds.includes(anime.mal_id) ? (
+                                            <Check size={16} strokeWidth={3} />
+                                        ) : (
+                                            '+'
+                                        )}
+                                    </button>
+                                </Link>
+                            )
+                        })}
                     </div>
                 </>
             )}

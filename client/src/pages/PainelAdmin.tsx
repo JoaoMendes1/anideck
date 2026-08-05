@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { supabase } from '../lib/supabase'
-import { Link } from 'react-router-dom';
-
+import { Link, Navigate } from 'react-router-dom'
+import { useToast } from '../contexts/ToastContext'
 
 interface CuratedAnime {
   id?: string
@@ -15,31 +15,42 @@ interface CuratedAnime {
 }
 
 export default function PainelAdmin() {
-  // 1. Estados Gerais
+  const { showToast } = useToast()
+  
   const [destaques, setDestaques] = useState<CuratedAnime[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  
+  const [isAdmin, setIsAdmin] = useState<boolean | null>(null) // Proteção de Rota
 
-  // 2. Estados do Formulário
   const [termoBusca, setTermoBusca] = useState('')
   const [buscando, setBuscando] = useState(false)
-  const [preview, setPreview] = useState<any>(null) // Guarda o resultado da AniList
+  const [preview, setPreview] = useState<any>(null)
 
-  // 3. Campos que vão para o Banco de Dados
-  const [editId, setEditId] = useState<string | null>(null) // Se tiver ID, estamos editando. Se não, criando.
+  const [editId, setEditId] = useState<string | null>(null)
   const [malId, setMalId] = useState<number | null>(null)
   const [titulo, setTitulo] = useState('')
   const [formato, setFormato] = useState('TV')
   const [status, setStatus] = useState('RELEASING')
   const [ordem, setOrdem] = useState(0)
   const [sinopse, setSinopse] = useState('')
-  
-  // 4. Lógica de Tags
   const [tags, setTags] = useState<string[]>([])
   const [tagInput, setTagInput] = useState('')
 
+  // Estado para o modal customizado de exclusão
+  const [itemParaExcluir, setItemParaExcluir] = useState<{id: string, titulo: string} | null>(null)
+  const [excluindo, setExcluindo] = useState(false)
+
   useEffect(() => {
-    carregarDestaques()
+    // Validação de Admin no Frontend
+    supabase.auth.getSession().then(({ data: { session } }) => {
+        if (!session || session.user.id !== import.meta.env.VITE_ADMIN_USER_ID) {
+            setIsAdmin(false)
+        } else {
+            setIsAdmin(true)
+            carregarDestaques()
+        }
+    })
   }, [])
 
   const carregarDestaques = async () => {
@@ -55,9 +66,6 @@ export default function PainelAdmin() {
     }
   }
 
-  // --- AÇÕES DO FORMULÁRIO ---
-
-  // Busca na AniList (usando a nossa própria rota já existente)
   const buscarNaAniList = async () => {
     if (!termoBusca) return
     setBuscando(true)
@@ -88,44 +96,41 @@ export default function PainelAdmin() {
 
       if (media && media.length > 0) {
         const anime = media[0]
-        const titulo = anime.title.romaji || anime.title.english || ''
+        const tituloEncontrado = anime.title.romaji || anime.title.english || ''
         
         setPreview({ 
-          title: titulo, 
+          title: tituloEncontrado, 
           mal_id: anime.idMal, 
           images: { jpg: { image_url: anime.coverImage?.large } } 
         })
         
         setMalId(anime.idMal)
-        setTitulo(titulo)
+        setTitulo(tituloEncontrado)
         setStatus('FINISHED')
         
-        // Remove as tags HTML sujas da AniList (ex: <br>, <i>)
         const tempDiv = document.createElement("div")
         tempDiv.innerHTML = anime.description || ''
         setSinopse(tempDiv.textContent || tempDiv.innerText || '')
         
         setTags(anime.genres || [])
       } else {
-        alert('Nenhum anime encontrado com esse termo.')
+        showToast('Nenhum anime encontrado com esse termo.', 'error')
       }
     } catch (err) {
-      alert('Erro ao buscar na AniList.')
+      showToast('Erro ao buscar na AniList.', 'error')
     } finally {
       setBuscando(false)
     }
   }
 
-// --- LÓGICA DE TAGS MELHORADA ---
   const adicionarTag = (valor: string) => {
-    const novaTag = valor.trim().replace(/,/g, '') // Limpa espaços e vírgulas
+    const novaTag = valor.trim().replace(/,/g, '')
     if (novaTag && !tags.includes(novaTag)) {
       setTags([...tags, novaTag])
     }
     setTagInput('')
   }
 
-  // Dispara ao apertar Enter ou Vírgula
   const handleKeyDownTag = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === 'Enter' || e.key === ',') {
       e.preventDefault()
@@ -133,20 +138,12 @@ export default function PainelAdmin() {
     }
   }
 
-  // Dispara ao clicar fora do campo (perder o foco)
-  const handleBlurTag = () => {
-    adicionarTag(tagInput)
-  }
+  const handleBlurTag = () => adicionarTag(tagInput)
+  const removerTag = (tagRemover: string) => setTags(tags.filter(t => t !== tagRemover))
 
-  // Remove Tag clicando no X
-  const removerTag = (tagRemover: string) => {
-    setTags(tags.filter(t => t !== tagRemover))
-  }
-
-  // Salvar no Banco
   const salvarDestaque = async () => {
     if (!malId || !titulo) {
-      alert('Busque um anime e defina um título antes de salvar!')
+      showToast('Busque um anime e defina um título antes de salvar!', 'error')
       return
     }
 
@@ -161,14 +158,12 @@ export default function PainelAdmin() {
     }
 
     try {
-      // Pegamos a sessão atual para conseguir o token de segurança (o Crachá)
       const { data: { session } } = await supabase.auth.getSession()
       if (!session) {
-        alert('Sessão expirada. Faça login novamente.')
+        showToast('Sessão expirada. Faça login novamente.', 'error')
         return
       }
 
-      // Se temos um editId, usamos PUT (Atualizar). Se não, POST (Criar).
       const url = editId ? `/api/curation/${editId}` : '/api/curation'
       const method = editId ? 'PUT' : 'POST'
 
@@ -176,70 +171,61 @@ export default function PainelAdmin() {
         method,
         headers: { 
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${session.access_token}` // <-- Nosso crachá agora está aqui!
+          'Authorization': `Bearer ${session.access_token}`
         },
         body: JSON.stringify(payload)
       })
 
       if (!response.ok) throw new Error('Falha ao salvar destaque')
       
-      alert('Destaque salvo com sucesso!')
-      
-      // Limpa o formulário e recarrega a lista
+      showToast('Destaque salvo com sucesso!')
       limparFormulario()
       carregarDestaques()
     } catch (err) {
-      alert('Erro ao salvar o destaque. Verifique o console.')
+      showToast('Erro ao salvar o destaque.', 'error')
     }
   }
 
-  const excluirDestaque = async (id: string) => {
-    if (!window.confirm('Tem certeza que deseja remover este destaque?')) return
-    
-    try {
-      const { data: { session } } = await supabase.auth.getSession()
-      const response = await fetch(`/api/curation/${id}`, { 
-        method: 'DELETE',
-        headers: { 'Authorization': `Bearer ${session?.access_token}` }
-      })
-      if (!response.ok) throw new Error()
-      carregarDestaques()
-    } catch (err) {
-      alert('Erro ao excluir destaque.')
-    }
+  const handleConfirmarExclusao = async () => {
+      if (!itemParaExcluir) return
+      setExcluindo(true)
+      try {
+        const { data: { session } } = await supabase.auth.getSession()
+        const response = await fetch(`/api/curation/${itemParaExcluir.id}`, { 
+            method: 'DELETE',
+            headers: { 'Authorization': `Bearer ${session?.access_token}` }
+        })
+        if (!response.ok) throw new Error()
+        showToast('Destaque removido com sucesso.')
+        carregarDestaques()
+      } catch (err) {
+        showToast('Erro ao excluir destaque.', 'error')
+      } finally {
+        setExcluindo(false)
+        setItemParaExcluir(null)
+      }
   }
 
   const limparFormulario = () => {
-    setEditId(null)
-    setMalId(null)
-    setPreview(null)
-    setTermoBusca('')
-    setTitulo('')
-    setSinopse('')
-    setTags([])
-    setOrdem(0)
+    setEditId(null); setMalId(null); setPreview(null); setTermoBusca('');
+    setTitulo(''); setSinopse(''); setTags([]); setOrdem(0)
   }
 
   const editarDestaque = (anime: CuratedAnime) => {
-    setEditId(anime.id || null)
-    setMalId(anime.mal_id)
-    setTitulo(anime.custom_title)
-    setFormato(anime.custom_format || 'TV')
-    setStatus(anime.custom_status || 'RELEASING')
-    setSinopse(anime.custom_synopsis || '')
-    setTags(anime.custom_tags || [])
-    setOrdem(anime.order_index)
-    
-    // Cria um preview falso só pra tela não ficar vazia
+    setEditId(anime.id || null); setMalId(anime.mal_id); setTitulo(anime.custom_title);
+    setFormato(anime.custom_format || 'TV'); setStatus(anime.custom_status || 'RELEASING');
+    setSinopse(anime.custom_synopsis || ''); setTags(anime.custom_tags || []); setOrdem(anime.order_index);
     setPreview({ title: anime.custom_title, mal_id: anime.mal_id }) 
     window.scrollTo({ top: 0, behavior: 'smooth' })
   }
 
-  if (loading) return <div className="p-10 text-center text-muted font-mono text-sm">Carregando painel...</div>
+  // Barreira de Intrusos
+  if (isAdmin === false) return <Navigate to="/deck" replace />
+  if (isAdmin === null || loading) return <div className="p-10 text-center text-muted font-mono text-sm">Carregando painel...</div>
   if (error) return <div className="p-10 text-center text-coral font-mono text-sm">{error}</div>
 
   return (
-    <div className="min-h-screen bg-void text-text pb-20">
+    <div className="min-h-screen bg-void text-text pb-20 relative">
       <div className="sticky top-0 z-30 flex items-center justify-between p-4 border-b border-line bg-panel/80 backdrop-blur-md">
         <div className="flex items-center gap-2">
           <span className="font-anton text-lg bg-gradient-to-r from-holo-1 via-holo-2 to-holo-3 text-transparent bg-clip-text">ANIDECK</span>
@@ -256,11 +242,11 @@ export default function PainelAdmin() {
           <p className="text-muted text-sm mt-1">Gerencie os "Destaques AniDeck" da home.</p>
         </div>
 
-        {/* --- FORMULÁRIO DE EDIÇÃO / CRIAÇÃO --- */}
+        {/* FORMULÁRIO */}
         <div className="bg-panel border border-line rounded-2xl p-6 mb-8 shadow-xl">
           <div className="flex justify-between items-center mb-4">
             <h3 className="font-extrabold text-sm">{editId ? '✎ Editando Destaque' : '🔍 Adicionar Novo Destaque'}</h3>
-            <button onClick={limparFormulario} className="text-xs text-muted hover:text-text">Limpar</button>
+            <button onClick={limparFormulario} className="text-xs text-muted hover:text-text cursor-pointer">Limpar</button>
           </div>
 
           <div className="flex gap-2 mb-6">
@@ -272,7 +258,7 @@ export default function PainelAdmin() {
               className="flex-1 bg-panel-2 border border-line rounded-xl px-4 py-2 text-sm outline-none focus:border-holo-2"
               onKeyDown={(e) => e.key === 'Enter' && buscarNaAniList()}
             />
-            <button onClick={buscarNaAniList} disabled={buscando} className="bg-panel-2 border border-line px-4 rounded-xl text-sm font-bold hover:border-holo-2">
+            <button onClick={buscarNaAniList} disabled={buscando} className="bg-panel-2 border border-line px-4 rounded-xl text-sm font-bold hover:border-holo-2 cursor-pointer disabled:opacity-50">
               {buscando ? 'Buscando...' : 'Buscar'}
             </button>
           </div>
@@ -312,11 +298,11 @@ export default function PainelAdmin() {
               </div>
 
               <div className="mb-4">
-                <label className="block text-xs font-bold text-muted mb-2 uppercase">Tags (Pressione Enter para adicionar)</label>
+                <label className="block text-xs font-bold text-muted mb-2 uppercase">Tags</label>
                 <div className="flex flex-wrap gap-2 p-2 border border-line rounded-xl bg-panel-2 min-h-[44px] items-center focus-within:border-holo-2">
                   {tags.map(tag => (
                     <span key={tag} className="flex items-center gap-1 bg-holo-3/10 text-holo-3 border border-holo-3/30 px-2 py-1 rounded-md text-xs font-bold">
-                      {tag} <button onClick={() => removerTag(tag)} className="hover:text-coral ml-1">×</button>
+                      {tag} <button onClick={() => removerTag(tag)} className="hover:text-coral ml-1 cursor-pointer">×</button>
                     </span>
                   ))}
                  <input 
@@ -341,7 +327,7 @@ export default function PainelAdmin() {
                   <label className="text-xs font-bold text-muted uppercase">Ordem de Exibição:</label>
                   <input type="number" value={ordem} onChange={e => setOrdem(Number(e.target.value))} className="w-20 bg-panel-2 border border-line rounded-xl px-3 py-2 text-sm outline-none" />
                 </div>
-                <button onClick={salvarDestaque} className="bg-gradient-to-r from-holo-1 to-holo-2 text-void font-extrabold text-sm px-6 py-2.5 rounded-full hover:opacity-90">
+                <button onClick={salvarDestaque} className="bg-gradient-to-r from-holo-1 to-holo-2 text-void font-extrabold text-sm px-6 py-2.5 rounded-full hover:opacity-90 cursor-pointer">
                   {editId ? 'Salvar Alterações' : 'Salvar Novo Destaque'}
                 </button>
               </div>
@@ -349,7 +335,7 @@ export default function PainelAdmin() {
           )}
         </div>
 
-        {/* --- LISTA DE DESTAQUES ATIVOS --- */}
+        {/* LISTA DE DESTAQUES ATIVOS */}
         <div>
           <h3 className="font-extrabold text-sm mb-4">📌 Destaques ativos</h3>
           {destaques.length === 0 ? (
@@ -369,7 +355,7 @@ export default function PainelAdmin() {
                   </div>
                   <div className="flex gap-2">
                     <button onClick={() => editarDestaque(anime)} className="w-9 h-9 rounded-lg bg-panel-2 border border-line text-muted hover:text-text hover:border-holo-2 transition-colors cursor-pointer">✎</button>
-                    <button onClick={() => anime.id && excluirDestaque(anime.id)} className="w-9 h-9 rounded-lg bg-panel-2 border border-line text-muted hover:text-coral hover:border-coral transition-colors cursor-pointer">🗑</button>
+                    <button onClick={() => anime.id && setItemParaExcluir({id: anime.id, titulo: anime.custom_title})} className="w-9 h-9 rounded-lg bg-panel-2 border border-line text-muted hover:text-coral hover:border-coral transition-colors cursor-pointer">🗑</button>
                   </div>
                 </div>
               ))}
@@ -377,6 +363,28 @@ export default function PainelAdmin() {
           )}
         </div>
       </div>
+
+      {/* Modal Customizado de Confirmação de Exclusão */}
+      {itemParaExcluir && (
+        <div className="fixed inset-0 bg-void/80 flex items-center justify-center z-[100] p-4 backdrop-blur-sm">
+            <div className="bg-panel border border-coral/30 rounded-2xl p-6 max-w-sm w-full text-center shadow-2xl">
+                <h3 className="font-anton text-coral text-xl uppercase mb-2">Remover destaque?</h3>
+                <p className="text-sm text-muted mb-6">Tem certeza que deseja remover <b>"{itemParaExcluir.titulo}"</b> da curadoria? Apenas os dados customizados serão apagados.</p>
+                <div className="flex gap-3 justify-center">
+                    <button onClick={() => setItemParaExcluir(null)} disabled={excluindo} className="flex-1 px-4 py-2.5 rounded-xl border border-line text-sm font-bold cursor-pointer hover:border-muted transition-colors disabled:opacity-50">
+                        Cancelar
+                    </button>
+                    <button onClick={handleConfirmarExclusao} disabled={excluindo} className="flex-1 px-4 py-2.5 rounded-xl bg-coral/10 border border-coral text-coral text-sm font-bold cursor-pointer hover:bg-coral hover:text-void transition-colors disabled:opacity-50 flex items-center justify-center">
+                        {excluindo ? (
+                            <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin"></div>
+                        ) : (
+                            'Remover'
+                        )}
+                    </button>
+                </div>
+            </div>
+        </div>
+      )}
     </div>
   )
 }

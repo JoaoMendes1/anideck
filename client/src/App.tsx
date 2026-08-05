@@ -15,7 +15,6 @@ function App() {
     <Routes>
       <Route element={<Layout />}>
       <Route path="/" element={<Busca />} />
-      <Route path="/login" element={<Auth />} />
       <Route path="/deck" element={<RotaProtegida><MeuDeck /></RotaProtegida>} />
       <Route path="/anime/:id" element={<Detalhes />} />
       <Route path="/rankings" element={<Rankings />} />

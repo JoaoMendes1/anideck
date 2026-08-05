@@ -1,5 +1,5 @@
 import { Link, useLocation } from 'react-router-dom'
-import { Search, Trophy, LayoutDashboard, User } from 'lucide-react'
+import { Search, Trophy, LayoutDashboard, User, Settings, LogOut } from 'lucide-react'
 import { useState, useEffect } from 'react'
 import { supabase } from '../lib/supabase'
 import type { Session } from '@supabase/supabase-js'
@@ -13,6 +13,10 @@ export default function BottomNav() {
         const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => setSession(session))
         return () => subscription.unsubscribe()
     }, [])
+
+    const handleLogout = async () => {
+        await supabase.auth.signOut()
+    }
 
     return (
     <div className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-void/90 backdrop-blur-md border-t border-line pb-safe">
@@ -28,12 +32,27 @@ export default function BottomNav() {
         </Link>
 
         {session ? (
-          <Link to="/deck" className={`flex flex-col items-center justify-center w-full h-full space-y-1 ${location.pathname === '/deck' ? 'text-holo-3' : 'text-muted'}`}>
-            <LayoutDashboard size={20} />
-            <span className="text-[10px] font-bold">Deck</span>
-          </Link>
+          <>
+            <Link to="/deck" className={`flex flex-col items-center justify-center w-full h-full space-y-1 ${location.pathname === '/deck' ? 'text-holo-3' : 'text-muted'}`}>
+              <LayoutDashboard size={20} />
+              <span className="text-[10px] font-bold">Deck</span>
+            </Link>
+            
+            {/* Botão Admin Adicionado e Protegido */}
+            {session.user.id === import.meta.env.VITE_ADMIN_USER_ID && (
+                <Link to="/admin" className={`flex flex-col items-center justify-center w-full h-full space-y-1 ${location.pathname === '/admin' ? 'text-holo-3' : 'text-muted'}`}>
+                  <Settings size={20} />
+                  <span className="text-[10px] font-bold">Admin</span>
+                </Link>
+            )}
+            
+            <button onClick={handleLogout} className="flex flex-col items-center justify-center w-full h-full space-y-1 text-muted cursor-pointer hover:text-coral transition-colors focus:outline-none select-none">
+              <LogOut size={20} />
+              <span className="text-[10px] font-bold">Sair</span>
+            </button>
+          </>
         ) : (
-          <Link to="/login" className="flex flex-col items-center justify-center w-full h-full space-y-1 text-muted">
+          <Link to="/login" className="flex flex-col items-center justify-center w-full h-full space-y-1 text-muted focus:outline-none select-none">
             <div className="w-5 h-5 rounded-full border border-line flex items-center justify-center bg-panel"><User size={12} /></div>
             <span className="text-[10px] font-bold">Entrar</span>
           </Link>

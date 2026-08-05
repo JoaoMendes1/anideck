@@ -71,12 +71,11 @@ func (h *SearchHandler) HandleSearch(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-// ==========================================
-	// 1. BUSCA HÍBRIDA CORRIGIDA (Issue #18b)
+	// ==========================================
+	// 1. BUSCA HÍBRIDA CORRIGIDA (Com respeito a filtros)
 	// ==========================================
 	if query != "" {
 		var localHits []models.CuratedAnime
-		// Correção 1: O Supabase usa '*' como curinga para o ilike!
 		errLocal := database.Client.DB.From("curated_animes").Select("*").Filter("custom_title", "ilike", "*"+query+"*").Execute(&localHits)
 
 		if errLocal == nil && len(localHits) > 0 {
@@ -88,17 +87,77 @@ func (h *SearchHandler) HandleSearch(w http.ResponseWriter, r *http.Request) {
 			localAnimes, errAniListIds := h.AniListClient.GetAnimesByMalIDs(r.Context(), localMalIDs)
 
 			if errAniListIds == nil && localAnimes != nil {
-				// Correção 2: LÓGICA DE MESCLAGEM ARRUMADA
+				// Mapa para aplicar a curadoria local antes de testar os filtros
+				curadosMap := make(map[int]models.CuratedAnime)
+				for _, hit := range localHits {
+					curadosMap[hit.MalID] = hit
+				}
+
 				existingIDs := make(map[int]bool)
 				var combined []anilist.Anime
 				
-				// 1º Coloca os do NOSSO banco no topo e marca o ID como "já adicionado"
+				// 1º Testa os animes do NOSSO banco contra os filtros ativos na tela
 				for _, a := range localAnimes.Data {
-					combined = append(combined, a)
-					existingIDs[a.MalID] = true
+					
+					// Aplica as tags e status curados localmente para a verificação ser justa
+					if curado, ok := curadosMap[a.MalID]; ok {
+						if curado.CustomStatus != "" { a.Status = curado.CustomStatus }
+						if len(curado.CustomTags) > 0 {
+							var novasTags []struct{ Name string `json:"name"` }
+							for _, tag := range curado.CustomTags {
+								novasTags = append(novasTags, struct{ Name string `json:"name"` }{Name: tag})
+							}
+							a.Genres = novasTags
+						}
+					}
+
+					match := true
+
+					// Verifica Gêneros (Lógica OR: tem que ter pelo menos um dos selecionados)
+					if len(genres) > 0 {
+						hasGenre := false
+						for _, reqG := range genres {
+							for _, animeG := range a.Genres {
+								if strings.EqualFold(animeG.Name, reqG) { hasGenre = true; break }
+							}
+							if hasGenre { break }
+						}
+						if !hasGenre { match = false }
+					}
+
+					// Verifica Tags
+					if match && len(tags) > 0 {
+						hasTag := false
+						for _, reqT := range tags {
+							for _, animeG := range a.Genres {
+								if strings.EqualFold(animeG.Name, reqT) { hasTag = true; break }
+							}
+							if hasTag { break }
+						}
+						if !hasTag { match = false }
+					}
+
+					// Verifica Status
+					if match && status != "" {
+						expectedStatus := status
+						switch status {
+						case "FINISHED": expectedStatus = "Finished Airing"
+						case "RELEASING": expectedStatus = "Currently Airing"
+						case "NOT_YET_RELEASED": expectedStatus = "Not yet aired"
+						}
+						if !strings.EqualFold(a.Status, expectedStatus) {
+							match = false
+						}
+					}
+
+					// Se passou por todos os filtros, entra na lista final
+					if match {
+						combined = append(combined, a)
+						existingIDs[a.MalID] = true
+					}
 				}
 				
-				// 2º Adiciona os da AniList APENAS se ainda não estiverem na lista
+				// 2º Adiciona os resultados originais da AniList APENAS se ainda não estiverem na lista
 				for _, a := range resultados.Data {
 					if !existingIDs[a.MalID] {
 						combined = append(combined, a)
