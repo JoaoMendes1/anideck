@@ -3,6 +3,7 @@ import { Link, useLocation } from 'react-router-dom'
 import { Search, LogOut } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import type { Session } from '@supabase/supabase-js'
+import { LogoMark } from './Brand'
 
 export default function Navbar() {
       const [session, setSession] = useState<Session | null>(null)
@@ -63,11 +64,9 @@ export default function Navbar() {
         <div className="max-w-[1140px] mx-auto px-5 flex items-center justify-between gap-4">
           
           {/* Logo */}
-          <Link to="/" className="flex items-center gap-2.5 z-50">
-            <div className="w-9 h-9 rounded-lg bg-gradient-to-br from-holo-1 via-holo-2 to-holo-3 flex items-center justify-center font-anton text-void text-base">
-              A
-            </div>
-            <div className="font-anton text-lg tracking-wide">
+          <Link to="/" className="flex items-center gap-2.5 z-50 group">
+            <LogoMark />
+            <div className="font-anton text-lg tracking-wide group-hover:opacity-80 transition-opacity">
               Ani<span className="text-holo">Deck</span>
             </div>
           </Link>
@@ -89,7 +88,7 @@ export default function Navbar() {
 
           {/* Ações (Busca, Auth/User) */}
           <div className="hidden md:flex items-center gap-3.5">
-            <Link to="/" className="w-9 h-9 rounded-full border border-line bg-panel text-muted flex items-center justify-center transition-all hover:border-holo-3 hover:text-holo-3" title="Buscar">
+            <Link to="/descobrir" className="w-9 h-9 rounded-full border border-line bg-panel text-muted flex items-center justify-center transition-all hover:border-holo-3 hover:text-holo-3" title="Buscar">
               <Search size={16} />
             </Link>
 

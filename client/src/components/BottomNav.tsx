@@ -43,7 +43,7 @@ export default function BottomNav() {
     return (
     <div className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-void/90 backdrop-blur-md border-t border-line pb-safe">
       <div className="flex items-center justify-around h-16 px-2">
-        <Link to="/" className={`flex flex-col items-center justify-center w-full h-full space-y-1 ${location.pathname === '/' ? 'text-holo-3' : 'text-muted'}`}>
+        <Link to="/descobrir" className={`flex flex-col items-center justify-center w-full h-full space-y-1 ${location.pathname === '/descobrir' ? 'text-holo-3' : 'text-muted'}`}>
           <Search size={20} />
           <span className="text-[10px] font-bold">Busca</span>
         </Link>
