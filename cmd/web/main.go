@@ -75,7 +75,12 @@ func main() {
 	// 6. Rotas de Admin (Requer Login E ser o dono do sistema)
 	r.Group(func(admin chi.Router) {
 		admin.Use(middleware.RequireAuth)
-		admin.Use(middleware.RequireAdmin) // O nosso escudo de administrador!
+		admin.Use(middleware.RequireAdmin)
+
+		admin.Get("/api/admin/verify", func(w http.ResponseWriter, req *http.Request) {
+			w.WriteHeader(http.StatusOK)
+			w.Write([]byte(`{"admin": true}`))
+		})
 
 		admin.Post("/api/curation", curationHandler.HandleCreate)
 		admin.Put("/api/curation/{id}", curationHandler.HandleUpdate)

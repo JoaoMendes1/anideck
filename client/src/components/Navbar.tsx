@@ -5,18 +5,36 @@ import { supabase } from '../lib/supabase'
 import type { Session } from '@supabase/supabase-js'
 
 export default function Navbar() {
-    const [session, setSession] = useState<Session | null>(null)
+      const [session, setSession] = useState<Session | null>(null)
+    const [isAdmin, setIsAdmin] = useState(false)
     const [scrolled, setScrolled] = useState(false)
     const location = useLocation()
 
-    // Gerencia o estado de Autenticação 
+    const verificarAdmin = async (currentSession: Session | null) => {
+        if (!currentSession) {
+            setIsAdmin(false)
+            return
+        }
+        try {
+            const res = await fetch('/api/admin/verify', {
+                headers: { 'Authorization': `Bearer ${currentSession.access_token}` }
+            })
+            setIsAdmin(res.ok)
+        } catch {
+            setIsAdmin(false)
+        }
+    }
+
+    // Gerencia o estado de Autenticação
     useEffect(() => {
         supabase.auth.getSession().then(({ data: {session }}) => {
             setSession(session)
+            verificarAdmin(session)
         })
 
         const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
             setSession(session)
+            verificarAdmin(session)
         })
 
         return () => subscription.unsubscribe()
@@ -60,8 +78,8 @@ export default function Navbar() {
               <>
                 <Link to="/deck" className={`text-sm font-bold focus:outline-none select-none transition-colors ${location.pathname === '/deck' ? 'text-text' : 'text-muted hover:text-text'}`}>Meu Deck</Link>
                 
-                {/* Proteção do Admin via Variável de Ambiente */}
-                {session.user.id === import.meta.env.VITE_ADMIN_USER_ID && (
+                                {/* Proteção do Admin validada no Backend */}
+                {isAdmin && (
                     <Link to="/admin" className={`text-sm font-bold focus:outline-none select-none transition-colors ${location.pathname === '/admin' ? 'text-text' : 'text-muted hover:text-text'}`}>Admin</Link>
                 )}
               </>

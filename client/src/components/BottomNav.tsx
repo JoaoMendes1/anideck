@@ -5,12 +5,34 @@ import { supabase } from '../lib/supabase'
 import type { Session } from '@supabase/supabase-js'
 
 export default function BottomNav() {
-    const location = useLocation()
+       const location = useLocation()
     const [session, setSession] = useState<Session | null>(null)
+    const [isAdmin, setIsAdmin] = useState(false)
+
+    const verificarAdmin = async (currentSession: Session | null) => {
+        if (!currentSession) {
+            setIsAdmin(false)
+            return
+        }
+        try {
+            const res = await fetch('/api/admin/verify', {
+                headers: { 'Authorization': `Bearer ${currentSession.access_token}` }
+            })
+            setIsAdmin(res.ok)
+        } catch {
+            setIsAdmin(false)
+        }
+    }
 
     useEffect(() => {
-        supabase.auth.getSession().then(({ data }) => setSession(data.session))
-        const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => setSession(session))
+        supabase.auth.getSession().then(({ data }) => {
+            setSession(data.session)
+            verificarAdmin(data.session)
+        })
+        const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+            setSession(session)
+            verificarAdmin(session)
+        })
         return () => subscription.unsubscribe()
     }, [])
 
@@ -38,8 +60,8 @@ export default function BottomNav() {
               <span className="text-[10px] font-bold">Deck</span>
             </Link>
             
-            {/* Botão Admin Adicionado e Protegido */}
-            {session.user.id === import.meta.env.VITE_ADMIN_USER_ID && (
+                        {/* Botão Admin com proteção pelo Backend */}
+            {isAdmin && (
                 <Link to="/admin" className={`flex flex-col items-center justify-center w-full h-full space-y-1 ${location.pathname === '/admin' ? 'text-holo-3' : 'text-muted'}`}>
                   <Settings size={20} />
                   <span className="text-[10px] font-bold">Admin</span>

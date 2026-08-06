@@ -41,17 +41,32 @@ export default function PainelAdmin() {
   const [itemParaExcluir, setItemParaExcluir] = useState<{id: string, titulo: string} | null>(null)
   const [excluindo, setExcluindo] = useState(false)
 
-  useEffect(() => {
-    // Validação de Admin no Frontend
-    supabase.auth.getSession().then(({ data: { session } }) => {
-        if (!session || session.user.id !== import.meta.env.VITE_ADMIN_USER_ID) {
-            setIsAdmin(false)
-        } else {
-            setIsAdmin(true)
-            carregarDestaques()
-        }
-    })
+    useEffect(() => {
+    verificarAcesso()
   }, [])
+
+  const verificarAcesso = async () => {
+    const { data: { session } } = await supabase.auth.getSession()
+    if (!session) {
+      setIsAdmin(false)
+      return
+    }
+
+    try {
+      const response = await fetch('/api/admin/verify', {
+        headers: { 'Authorization': `Bearer ${session.access_token}` }
+      })
+
+      if (response.ok) {
+        setIsAdmin(true)
+        carregarDestaques()
+      } else {
+        setIsAdmin(false)
+      }
+    } catch {
+      setIsAdmin(false)
+    }
+  }
 
   const carregarDestaques = async () => {
     try {
