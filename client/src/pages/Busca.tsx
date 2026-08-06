@@ -5,7 +5,7 @@ import { Search, AlertCircle, SlidersHorizontal, X, Check } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import {
     CONTENT_FILTERS, STATUS_OPTIONS, SEASON_OPTIONS,
-    type FilterItem
+    type FilterItem, getCategoryTheme
 } from '../lib/filters'
 
 interface Anime {
@@ -207,13 +207,13 @@ export default function Busca() {
             <div className="flex items-center gap-3 mb-4 overflow-x-auto pb-2 scrollbar-hide">
                 <button
                     onClick={() => setShowFilters(v => !v)}
+                    title="Filtros"
                     className={`inline-flex items-center shrink-0 gap-2 px-4 py-2 rounded-full border text-sm font-bold transition-all duration-200 cursor-pointer ${showFilters || activeFilterCount > 0
                             ? 'border-holo-2 text-holo-2 bg-holo-2/10'
                             : 'border-line text-muted bg-panel hover:border-holo-2 hover:text-holo-2'
                         }`}
                 >
-                    <SlidersHorizontal size={14} />
-                    Filtros
+                    <SlidersHorizontal size={16} />
                     {activeFilterCount > 0 && (
                         <span className="flex items-center justify-center w-5 h-5 rounded-full bg-gradient-to-r from-holo-1 to-holo-2 text-void text-[10px] font-black">
                             {activeFilterCount}
@@ -221,7 +221,7 @@ export default function Busca() {
                     )}
                 </button>
 
-                {/* Quick Filters (Categorias de Destaque) */}
+              {/* Quick Filters (Categorias de Destaque) */}
                 {['Ação', 'Romance', 'Comédia', 'Fantasia'].map(cat => {
                     const filterObj = CONTENT_FILTERS.find(f => f.label === cat)
                     if (!filterObj) return null;
@@ -230,9 +230,9 @@ export default function Busca() {
                         <button
                             key={cat}
                             onClick={() => toggleFilter(filterObj)}
-                            className={`shrink-0 px-4 py-2 rounded-full text-xs font-bold transition-all duration-150 cursor-pointer ${isActive
-                                    ? 'bg-gradient-to-r from-holo-1 to-holo-2 text-void border-transparent'
-                                    : 'bg-panel-2 border border-line text-muted hover:border-holo-2 hover:text-text'
+                            className={`shrink-0 px-4 py-2 rounded-full text-xs font-bold transition-all duration-150 cursor-pointer border ${isActive
+                                    ? `${getCategoryTheme(cat)} shadow-[0_0_10px_currentColor]`
+                                    : 'bg-panel-2 border-line text-muted hover:border-holo-2 hover:text-text'
                                 }`}
                         >
                             {cat}
@@ -412,7 +412,7 @@ export default function Busca() {
                                         {/* 🟢 Renderiza no máximo 2 tags para não poluir o mobile */}
                                         <div className="flex flex-wrap gap-1 mb-1.5">
                                             {anime.genres?.slice(0, 2).map(g => (
-                                                <span key={g.name} className="bg-panel-2/80 backdrop-blur-sm border border-line text-[9px] px-1.5 py-0.5 rounded text-muted font-bold">
+                                                <span key={g.name} className={`backdrop-blur-sm border text-[9px] px-1.5 py-0.5 rounded font-bold ${getCategoryTheme(g.name)}`}>
                                                     {g.name}
                                                 </span>
                                             ))}

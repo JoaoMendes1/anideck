@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import EditarEntradaModal from '../components/EditarEntradaModal'
 import { Play, CheckCircle2, Bookmark, MonitorPlay, Star, XCircle } from 'lucide-react'
+import { getCategoryTheme } from '../lib/filters'
 
 interface Entrada {
     id: string
@@ -17,6 +18,7 @@ interface HydratedAnime {
     mal_id: number
     title: string
     image_url: string
+    genre?: string
 }
 
 export default function MeuDeck() {
@@ -71,11 +73,12 @@ export default function MeuDeck() {
 
                     const mapaAnimes: Record<number, HydratedAnime> = {}
                     media.forEach((m: any) => {
-                        // Se tiver nome na curadoria, usa ele. Se não, usa o que o Go retornou.
                         mapaAnimes[m.mal_id] = {
                             mal_id: m.mal_id,
-                            title: mapaCuradoria[m.mal_id] || m.title || 'Titulo Desconhecido',
-                            image_url: m.images?.jpg?.image_url || ''
+                            title: mapaCuradoria[m.mal_id] || m.title || 'Título Desconhecido',
+                            image_url: m.images?.jpg?.image_url || '',
+                            // Salva a primeira categoria do array
+                            genre: m.genres && m.genres.length > 0 ? m.genres[0].name : undefined
                         }
                     })
                     setAnimesData(mapaAnimes)
@@ -238,22 +241,23 @@ export default function MeuDeck() {
                                         {entrada.status}
                                     </span>
                                     
-                                    <div className="relative z-20">
-                                        <div className="font-anton text-[12px] sm:text-[13.5px] uppercase leading-tight mb-1 truncate text-white drop-shadow-md">
+                                    <div className="relative z-20 mt-auto">
+                                        <div className="font-anton text-[12px] sm:text-[13.5px] uppercase leading-tight mb-2 truncate text-white drop-shadow-md">
                                             {animeLocal?.title || `ID: ${entrada.mal_id}`}
                                         </div>
                                         
-                                        <div className="flex justify-between items-center">
-                                            <div className="font-mono text-[10px] text-muted-2 font-bold">
-                                                {entrada.nota ? `★ ${entrada.nota}` : 'SEM NOTA'}
+                                        <div className="flex justify-between items-end">
+                                            <div className="flex flex-col gap-1">
+                                                {animeLocal?.genre && (
+                                                    <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded border w-fit backdrop-blur-sm ${getCategoryTheme(animeLocal.genre)}`}>
+                                                        {animeLocal.genre}
+                                                    </span>
+                                                )}
                                             </div>
-                                            <Link 
-                                                to={`/anime/${entrada.mal_id}`} 
-                                                onClick={(e) => e.stopPropagation()} 
-                                                className="text-[10px] text-holo-3 hover:text-holo-1 font-bold bg-panel-2/80 px-2 py-0.5 rounded transition-colors"
-                                            >
-                                                Ver ↗
-                                            </Link>
+                                            {/* Destaque maior na nota */}
+                                            <div className={`font-anton text-[12px] sm:text-[14px] px-2 py-0.5 rounded-md backdrop-blur-sm border ${entrada.nota ? 'bg-gold/20 text-gold border-gold/40 shadow-[0_0_8px_rgba(255,197,66,0.3)]' : 'bg-panel-2/80 text-muted-2 border-line'}`}>
+                                                {entrada.nota ? `★ ${entrada.nota}` : 'S/N'}
+                                            </div>
                                         </div>
                                     </div>
                                 </div>

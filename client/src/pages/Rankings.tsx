@@ -7,6 +7,7 @@ import {
     CONTENT_FILTERS, STATUS_OPTIONS, SEASON_OPTIONS,
     type FilterItem
 } from '../lib/filters'
+import { getCategoryTheme } from '../lib/filters'
 
 interface Anime {
     mal_id: number
@@ -15,6 +16,7 @@ interface Anime {
     score: number
     episodes: number
     images: { jpg: { image_url: string } }
+    genres?: { name: string }[]
 }
 
 const CURRENT_YEAR = new Date().getFullYear()
@@ -243,9 +245,9 @@ export default function Rankings() {
                                             <button
                                                 key={`${f.type}-${f.value}`}
                                                 onClick={() => toggleFilter(f)}
-                                                className={`px-3 py-1.5 rounded-full text-xs font-bold transition-all duration-150 cursor-pointer ${isActive
-                                                        ? 'bg-gradient-to-r from-holo-1 to-holo-2 text-void shadow-[0_0_12px_rgba(123,92,255,0.4)]'
-                                                        : 'bg-panel-2 border border-line text-muted hover:border-holo-2 hover:text-text'
+                                                className={`px-3 py-1.5 rounded-full text-xs font-bold transition-all duration-150 cursor-pointer border ${isActive
+                                                        ? `${getCategoryTheme(f.label)} shadow-[0_0_10px_currentColor]`
+                                                        : 'bg-panel-2 border-line text-muted hover:border-holo-2 hover:text-text'
                                                     }`}
                                             >
                                                 {f.label}
@@ -285,8 +287,15 @@ export default function Rankings() {
                                 </span>
                                 <img src={anime.images?.jpg?.image_url} alt={anime.title} className="w-11 h-11 md:w-14 md:h-14 rounded-lg object-cover bg-panel-2 border border-line" />
                                 <div className="min-w-0">
-                                    <div className="font-bold text-sm md:text-[14.5px] truncate">{anime.title}</div>
-                                    <div className="font-mono text-[10px] md:text-[10.5px] text-muted-2 mt-1">{anime.status} • {anime.episodes || '?'} EP</div>
+                                    <div className="font-bold text-sm md:text-[14.5px] truncate mb-1.5">{anime.title}</div>
+                                    <div className="flex items-center gap-2 font-mono text-[10px] md:text-[10.5px] text-muted-2">
+                                        {anime.genres && anime.genres.length > 0 && (
+                                            <span className={`px-1.5 py-0.5 rounded border font-bold font-manrope ${getCategoryTheme(anime.genres[0].name)}`}>
+                                                {anime.genres[0].name}
+                                            </span>
+                                        )}
+                                        <span>{anime.status} • {anime.episodes || '?'} EP</span>
+                                    </div>
                                 </div>
                                 <div className="text-right">
                                     <div className="font-anton text-sm md:text-base text-gold">★ {anime.score || 'N/A'}</div>

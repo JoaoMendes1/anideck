@@ -2,6 +2,9 @@ import { useState, useEffect } from 'react'
 import { supabase } from '../lib/supabase'
 import { Link, Navigate } from 'react-router-dom'
 import { useToast } from '../contexts/ToastContext'
+import { X } from 'lucide-react'
+import { LogoMark } from '../components/Brand'
+import { getCategoryTheme } from '../lib/filters'
 
 interface CuratedAnime {
   id?: string
@@ -223,10 +226,15 @@ export default function PainelAdmin() {
   if (error) return <div className="p-10 text-center text-coral font-mono text-sm">{error}</div>
 
   return (
-    <div className="min-h-screen bg-void text-text pb-20 relative">
+    <div className="min-h-screen bg-void text-text pb-20 relative z-10">
+      
+      {/* Luzes de fundo */}
+      <div className="bg-ambient"></div>
+
       <div className="sticky top-0 z-30 flex items-center justify-between p-4 border-b border-line bg-panel/80 backdrop-blur-md">
-        <div className="flex items-center gap-2">
-          <span className="font-anton text-lg bg-gradient-to-r from-holo-1 via-holo-2 to-holo-3 text-transparent bg-clip-text">ANIDECK</span>
+        <div className="flex items-center gap-3">
+          <LogoMark className="w-8 h-8 hidden md:block" />
+          <span className="font-anton text-lg bg-gradient-to-r from-holo-1 via-holo-2 to-holo-3 text-transparent bg-clip-text hidden md:block">ANIDECK</span>
           <span className="font-mono text-[10px] font-bold text-gold bg-gold/10 border border-gold/40 px-2 py-1 rounded-full">⚙ ADMIN</span>
         </div>
         <Link to="/" className="text-sm font-bold text-muted hover:text-text transition-colors">
@@ -247,16 +255,16 @@ export default function PainelAdmin() {
             <button onClick={limparFormulario} className="text-xs text-muted hover:text-text cursor-pointer">Limpar</button>
           </div>
 
-          <div className="flex gap-2 mb-6">
+          <div className="flex gap-2 mb-6 group">
             <input 
               type="text" 
               value={termoBusca}
               onChange={(e) => setTermoBusca(e.target.value)}
               placeholder="Digite o título na AniList..." 
-              className="flex-1 bg-panel-2 border border-line rounded-xl px-4 py-2 text-sm outline-none focus:border-holo-2"
+              className="flex-1 bg-panel-2 border border-line rounded-xl px-4 py-2 text-sm outline-none focus:border-holo-3 transition-colors group-focus-within:shadow-[0_0_15px_rgba(63,224,240,0.15)]"
               onKeyDown={(e) => e.key === 'Enter' && buscarNaAniList()}
             />
-            <button onClick={buscarNaAniList} disabled={buscando} className="bg-panel-2 border border-line px-4 rounded-xl text-sm font-bold hover:border-holo-2 cursor-pointer disabled:opacity-50">
+            <button onClick={buscarNaAniList} disabled={buscando} className="bg-panel-2 border border-line px-4 rounded-xl text-sm font-bold hover:border-holo-3 hover:text-holo-3 cursor-pointer disabled:opacity-50 transition-colors">
               {buscando ? 'Buscando...' : 'Buscar'}
             </button>
           </div>
@@ -280,7 +288,7 @@ export default function PainelAdmin() {
                   <div className="flex-1">
                     <label className="block text-xs font-bold text-muted mb-2 uppercase">Formato</label>
                     <select value={formato} onChange={e => setFormato(e.target.value)} className="w-full bg-panel-2 border border-line rounded-xl px-4 py-2 text-sm outline-none">
-                      <option value="TV">TV</option>
+                      <option value="TV">TV / Anime</option>
                       <option value="MOVIE">Filme</option>
                       <option value="OVA">OVA</option>
                     </select>
@@ -288,7 +296,7 @@ export default function PainelAdmin() {
                   <div className="flex-1">
                     <label className="block text-xs font-bold text-muted mb-2 uppercase">Status</label>
                     <select value={status} onChange={e => setStatus(e.target.value)} className="w-full bg-panel-2 border border-line rounded-xl px-4 py-2 text-sm outline-none">
-                      <option value="RELEASING">Em Lançamento</option>
+                      <option value="RELEASING">Lançamento</option>
                       <option value="FINISHED">Finalizado</option>
                     </select>
                   </div>
@@ -316,16 +324,23 @@ export default function PainelAdmin() {
               </div>
 
               <div className="mb-6">
-                <label className="block text-xs font-bold text-muted mb-2 uppercase">Sinopse Curada</label>
+                <div className="flex justify-between items-center mb-2">
+                  <label className="block text-xs font-bold text-muted uppercase mb-0">Sinopse Curada</label>
+                  {sinopse && (
+                    <button onClick={() => setSinopse('')} title="Limpar Sinopse" className="text-muted-2 hover:text-coral transition-colors cursor-pointer p-1">
+                      <X size={14} />
+                    </button>
+                  )}
+                </div>
                 <textarea value={sinopse} onChange={e => setSinopse(e.target.value)} className="w-full bg-panel-2 border border-line rounded-xl px-4 py-3 text-sm outline-none min-h-[100px] focus:border-holo-2" />
               </div>
 
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
+              <div className="flex flex-col md:flex-row items-center justify-between gap-4">
+                <div className="flex items-center gap-3 w-full md:w-auto justify-between md:justify-start">
                   <label className="text-xs font-bold text-muted uppercase">Ordem de Exibição:</label>
                   <input type="number" value={ordem} onChange={e => setOrdem(Number(e.target.value))} className="w-20 bg-panel-2 border border-line rounded-xl px-3 py-2 text-sm outline-none" />
                 </div>
-                <button onClick={salvarDestaque} className="bg-gradient-to-r from-holo-1 to-holo-2 text-void font-extrabold text-sm px-6 py-2.5 rounded-full hover:opacity-90 cursor-pointer">
+                <button onClick={salvarDestaque} className="w-full md:w-auto bg-gradient-to-r from-holo-1 to-holo-2 text-void font-extrabold text-sm px-6 py-2.5 rounded-full hover:opacity-90 cursor-pointer">
                   {editId ? 'Salvar Alterações' : 'Salvar Novo Destaque'}
                 </button>
               </div>
@@ -342,21 +357,25 @@ export default function PainelAdmin() {
             </div>
           ) : (
             <div className="flex flex-col gap-3">
-              {destaques.map((anime) => (
-                <div key={anime.id} className="flex items-center gap-4 bg-panel border border-line p-4 rounded-xl hover:border-muted-2 transition-colors">
-                  <div className="font-anton text-muted-2 text-xl w-8 text-center">{anime.order_index}</div>
+              {destaques.map((anime, index) => {
+                const gradClass = `card-g${(index % 5) + 1}`
+                return (
+                <div key={anime.id} className={`flex items-center gap-4 border border-line p-4 rounded-xl transition-all hover:-translate-y-1 hover:shadow-lg ${gradClass}`}>
+                  <div className="font-anton text-white/30 text-2xl w-8 text-center">{anime.order_index}</div>
                   <div className="flex-1">
-                    <div className="font-extrabold text-sm">{anime.custom_title}</div>
+                    <div className="font-extrabold text-sm text-white drop-shadow-md">{anime.custom_title}</div>
                     <div className="flex flex-wrap gap-2 mt-2">
-                      {anime.custom_tags?.map(t => <span key={t} className="text-[10px] font-bold bg-panel-2 border border-line text-muted px-2 py-0.5 rounded">{t}</span>)}
+                      {anime.custom_tags?.map(t => (
+                        <span key={t} className={`text-[10px] font-bold border px-2 py-0.5 rounded backdrop-blur-sm ${getCategoryTheme(t)}`}>{t}</span>
+                      ))}
                     </div>
                   </div>
                   <div className="flex gap-2">
-                    <button onClick={() => editarDestaque(anime)} className="w-9 h-9 rounded-lg bg-panel-2 border border-line text-muted hover:text-text hover:border-holo-2 transition-colors cursor-pointer">✎</button>
-                    <button onClick={() => anime.id && setItemParaExcluir({id: anime.id, titulo: anime.custom_title})} className="w-9 h-9 rounded-lg bg-panel-2 border border-line text-muted hover:text-coral hover:border-coral transition-colors cursor-pointer">🗑</button>
+                    <button onClick={() => editarDestaque(anime)} className="w-9 h-9 rounded-lg bg-panel-2/80 backdrop-blur-md border border-line text-muted hover:text-white hover:border-holo-2 transition-colors cursor-pointer flex items-center justify-center">✎</button>
+                    <button onClick={() => anime.id && setItemParaExcluir({id: anime.id, titulo: anime.custom_title})} className="w-9 h-9 rounded-lg bg-panel-2/80 backdrop-blur-md border border-line text-muted hover:text-coral hover:border-coral transition-colors cursor-pointer flex items-center justify-center">🗑</button>
                   </div>
                 </div>
-              ))}
+              )})}
             </div>
           )}
         </div>

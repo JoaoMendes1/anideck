@@ -86,3 +86,36 @@ export const SEASON_OPTIONS: SeasonOption[] = [
     { label: 'Verão',   value: 'SUMMER', emoji: '☀️' },
     { label: 'Outono',  value: 'FALL',   emoji: '🍂' },
 ]
+
+// Mapeamento semântico de cores para categorias
+export function getCategoryTheme(category: string) {
+    const cat = category.toLowerCase();
+    
+    // 🔴 Energia / Combate (Coral)
+    if (['ação', 'action', 'shounen', 'artes marciais', 'martial arts', 'militar', 'military'].includes(cat)) {
+        return 'bg-coral/10 border-coral/30 text-coral';
+    }
+    // 🟣 Místico / Sombrio (Holo-2 / Roxo)
+    if (['magia', 'magic', 'fantasia', 'fantasy', 'demônios', 'demons', 'sobrenatural', 'supernatural', 'terror', 'horror', 'suspense', 'thriller'].includes(cat)) {
+        return 'bg-holo-2/10 border-holo-2/30 text-holo-2';
+    }
+    // 🔵 Futurista / Inteligência (Holo-3 / Ciano)
+    if (['ficção científica', 'sci-fi', 'mecha', 'mistério', 'mystery', 'jogo', 'video games'].includes(cat)) {
+        return 'bg-holo-3/10 border-holo-3/30 text-holo-3';
+    }
+    // 💖 Sentimental / Relacionamentos (Holo-1 / Magenta)
+    if (['romance', 'shoujo', 'josei', 'harém', 'harém (ela)', 'harém (ele)', 'female harem', 'male harem', 'yuri', 'yaoi', "boys' love", 'boys love', 'ecchi', 'sem censura', 'nudity'].includes(cat)) {
+        return 'bg-holo-1/10 border-holo-1/30 text-holo-1';
+    }
+    // 🟡 Leveza / Dia a dia (Gold)
+    if (['comédia', 'comedy', 'slice of life', 'escolar', 'school'].includes(cat)) {
+        return 'bg-gold/10 border-gold/30 text-gold';
+    }
+    // 🟢 Movimento / Jornada (Green)
+    if (['aventura', 'adventure', 'esporte', 'sports', 'histórico', 'historical', 'samurai', 'musical', 'music'].includes(cat)) {
+        return 'bg-green/10 border-green/30 text-green';
+    }
+    
+    // ⚪ Neutro (Muted)
+    return 'bg-panel-2 border-line text-muted';
+}
