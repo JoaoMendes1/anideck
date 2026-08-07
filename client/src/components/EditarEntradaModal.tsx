@@ -19,6 +19,7 @@ interface Props {
     onExcluir: (id: string) => void
 }
 
+// A constante que o TypeScript reclamou. Agora vamos usá-la ali embaixo!
 const STATUS_OPCOES = ['Assistindo', 'Em Dia', 'Completo', 'Quero Assistir', 'Dropado']
 
 export default function EditarEntradaModal({ entrada, onFechar, onSalvar, onExcluir }: Props) {
@@ -26,7 +27,7 @@ export default function EditarEntradaModal({ entrada, onFechar, onSalvar, onExcl
     const [status, setStatus] = useState(entrada.status)
     const [nota, setNota] = useState(entrada.nota !== null && entrada.nota !== undefined ? entrada.nota.toString() : '')
     const [anotacao, setAnotacao] = useState(entrada.anotacao || '')
-    const [isFavorite, setIsFavorite] = useState(entrada.is_favorite || false) // 🟢 NOVO ESTADO
+    const [isFavorite, setIsFavorite] = useState(entrada.is_favorite || false) 
     
     const [salvando, setSalvando] = useState(false)
     const [erro, setErro] = useState<string | null>(null)
@@ -54,7 +55,7 @@ export default function EditarEntradaModal({ entrada, onFechar, onSalvar, onExcl
                     status,
                     nota: Number.isNaN(notaFormatada) ? null : notaFormatada,
                     anotacao,
-                    is_favorite: isFavorite // 🟢 ENVIANDO PRO BANCO
+                    is_favorite: isFavorite 
                 }),
             })
 
@@ -120,7 +121,6 @@ export default function EditarEntradaModal({ entrada, onFechar, onSalvar, onExcl
                 <div className="flex items-center justify-between mb-5 select-none">
                     <div className="flex items-center gap-3">
                         <h3 className="font-anton text-lg uppercase tracking-wide">Editar entrada</h3>
-                        {/* 🟢 BOTÃO DE FAVORITAR */}
                         <button 
                             type="button"
                             onClick={() => setIsFavorite(!isFavorite)} 
@@ -136,7 +136,8 @@ export default function EditarEntradaModal({ entrada, onFechar, onSalvar, onExcl
         <div className="mb-6">
           <label className="block text-[11px] font-bold text-muted mb-2.5 uppercase tracking-wide select-none">Status</label>
           <div className="flex flex-wrap gap-2">
-            {['Assistindo', 'Em Dia', 'Completo', 'Quero Assistir', 'Dropado'].map((opt) => (
+            {/* ✨ Correção: Usando a constante STATUS_OPCOES aqui! */}
+            {STATUS_OPCOES.map((opt) => (
               <button
                 key={opt}
                 type="button"
