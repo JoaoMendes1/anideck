@@ -3,20 +3,39 @@ import { Link, useLocation } from 'react-router-dom'
 import { Search, LogOut } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import type { Session } from '@supabase/supabase-js'
+import { LogoMark } from './Brand'
 
 export default function Navbar() {
-    const [session, setSession] = useState<Session | null>(null)
+      const [session, setSession] = useState<Session | null>(null)
+    const [isAdmin, setIsAdmin] = useState(false)
     const [scrolled, setScrolled] = useState(false)
     const location = useLocation()
 
-    // Gerencia o estado de Autenticação 
+    const verificarAdmin = async (currentSession: Session | null) => {
+        if (!currentSession) {
+            setIsAdmin(false)
+            return
+        }
+        try {
+            const res = await fetch('/api/admin/verify', {
+                headers: { 'Authorization': `Bearer ${currentSession.access_token}` }
+            })
+            setIsAdmin(res.ok)
+        } catch {
+            setIsAdmin(false)
+        }
+    }
+
+    // Gerencia o estado de Autenticação
     useEffect(() => {
         supabase.auth.getSession().then(({ data: {session }}) => {
             setSession(session)
+            verificarAdmin(session)
         })
 
         const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
             setSession(session)
+            verificarAdmin(session)
         })
 
         return () => subscription.unsubscribe()
@@ -45,11 +64,9 @@ export default function Navbar() {
         <div className="max-w-[1140px] mx-auto px-5 flex items-center justify-between gap-4">
           
           {/* Logo */}
-          <Link to="/" className="flex items-center gap-2.5 z-50">
-            <div className="w-9 h-9 rounded-lg bg-gradient-to-br from-holo-1 via-holo-2 to-holo-3 flex items-center justify-center font-anton text-void text-base">
-              A
-            </div>
-            <div className="font-anton text-lg tracking-wide">
+          <Link to="/" className="flex items-center gap-2.5 z-50 group">
+            <LogoMark />
+            <div className="font-anton text-lg tracking-wide group-hover:opacity-80 transition-opacity">
               Ani<span className="text-holo">Deck</span>
             </div>
           </Link>
@@ -60,8 +77,8 @@ export default function Navbar() {
               <>
                 <Link to="/deck" className={`text-sm font-bold focus:outline-none select-none transition-colors ${location.pathname === '/deck' ? 'text-text' : 'text-muted hover:text-text'}`}>Meu Deck</Link>
                 
-                {/* Proteção do Admin via Variável de Ambiente */}
-                {session.user.id === import.meta.env.VITE_ADMIN_USER_ID && (
+                                {/* Proteção do Admin validada no Backend */}
+                {isAdmin && (
                     <Link to="/admin" className={`text-sm font-bold focus:outline-none select-none transition-colors ${location.pathname === '/admin' ? 'text-text' : 'text-muted hover:text-text'}`}>Admin</Link>
                 )}
               </>
@@ -71,7 +88,7 @@ export default function Navbar() {
 
           {/* Ações (Busca, Auth/User) */}
           <div className="hidden md:flex items-center gap-3.5">
-            <Link to="/" className="w-9 h-9 rounded-full border border-line bg-panel text-muted flex items-center justify-center transition-all hover:border-holo-3 hover:text-holo-3" title="Buscar">
+            <Link to="/descobrir" className="w-9 h-9 rounded-full border border-line bg-panel text-muted flex items-center justify-center transition-all hover:border-holo-3 hover:text-holo-3" title="Buscar">
               <Search size={16} />
             </Link>
 
