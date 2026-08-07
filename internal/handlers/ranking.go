@@ -12,23 +12,10 @@ import (
 	"github.com/JoaoMendes1/anideck/internal/models"   
 )
 
-// RankingHandler lida com requisições de ranking de animes.
 type RankingHandler struct {
 	AniListClient *anilist.Client
 }
 
-// HandleGetTopAnime retorna os animes mais bem avaliados da AniList.
-// Todos os filtros são opcionais e passados diretamente para a query GraphQL
-// — nenhum pós-processamento client-side necessário.
-//
-// Query params aceitos:
-//   - page     (int, padrão 1)
-//   - perPage  (int, padrão 20, máx 50)
-//   - genre    (repetível: ?genre=Action&genre=Drama)
-//   - tag      (repetível: ?tag=Martial+Arts)
-//   - season   (WINTER | SPRING | SUMMER | FALL)
-//   - year     (int, ex: 2026 — só usado se season também estiver presente)
-//   - status   (FINISHED | RELEASING | NOT_YET_RELEASED | CANCELLED | HIATUS)
 func (h *RankingHandler) HandleGetTopAnime(w http.ResponseWriter, r *http.Request) {
 	pageStr := r.URL.Query().Get("page")
 	page, err := strconv.Atoi(pageStr)
@@ -67,8 +54,8 @@ func (h *RankingHandler) HandleGetTopAnime(w http.ResponseWriter, r *http.Reques
 		return
 	}
 
-var curados []models.CuratedAnime
-	errCurado := database.Client.DB.From("curated_animes").Select("*").Execute(&curados)
+	var curados []models.CuratedAnime
+	_, errCurado := database.Client.From("curated_animes").Select("*", "exact", false).ExecuteTo(&curados)
 
 	if errCurado == nil {
 		curadosMap := make(map[int]models.CuratedAnime)

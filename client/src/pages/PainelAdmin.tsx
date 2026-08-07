@@ -94,6 +94,7 @@ export default function PainelAdmin() {
         Page(page: 1, perPage: 5) {
           media(search: $search, type: ANIME) {
             id
+            idMal
             title { romaji english native }
             coverImage { large }
             format
@@ -126,7 +127,7 @@ export default function PainelAdmin() {
   }
 
   const selecionarAnimeDaBusca = (anime: any) => {
-    setMalId(anime.id)
+   setMalId(anime.idMal || anime.id)
     const tituloCorreto = anime.title.romaji || anime.title.english || anime.title.native
     setTitulo(tituloCorreto)
     setFormato(anime.format || 'TV')

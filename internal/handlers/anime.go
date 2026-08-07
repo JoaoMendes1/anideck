@@ -24,55 +24,6 @@ func (h *AnimeHandler) HandleGetAnime(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if os.Getenv("MOCK_ANILIST") == "true" {
-		log.Println("[MOCK] Retornando detalhes ricos falsos para desenvolvimento...")
-		resultados := &anilist.AnimeByIdResponse{
-			Data: anilist.Anime{
-				MalID:    20,
-				Title:    "Naruto (Mock Detail)",
-				Status:   "Finished Airing",
-				Synopsis: "Sinopse falsa gerada localmente. O Ninja Loiro faz coisas de ninja.",
-				Score:    8.5,
-				Episodes: 199,
-				Studios: []struct {
-					Name string `json:"name"`
-				}{{Name: "Studio Pierrot"}},
-				Streaming: []struct {
-					Name string `json:"name"`
-					URL  string `json:"url"`
-				}{
-					{Name: "Crunchyroll", URL: "https://crunchyroll.com/"},
-					{Name: "Netflix", URL: "https://netflix.com/"},
-				},
-				Theme: struct {
-					Openings []string `json:"openings"`
-					Endings  []string `json:"endings"`
-				}{
-					Openings: []string{"\"Rocks\" by Hound Dog"},
-					Endings:  []string{"\"Wind\" by Akeboshi"},
-				},
-				Relations: []struct {
-					Relation string `json:"relation"`
-					Entry    []struct {
-						MalID int    `json:"mal_id"`
-						Type  string `json:"type"`
-						Name  string `json:"name"`
-					} `json:"entry"`
-				}{
-					{
-						Relation: "Sequel",
-						Entry: []struct {
-							MalID int    `json:"mal_id"`
-							Type  string `json:"type"`
-							Name  string `json:"name"`
-						}{{MalID: 1735, Type: "anime", Name: "Naruto: Shippuuden"}},
-					},
-				},
-			},
-		}
-		w.Header().Set("Content-Type", "application/json")
-		if err := json.NewEncoder(w).Encode(resultados); err != nil {
-			log.Printf("[ERRO] HandleGetAnime mock: falha ao serializar: %v", err)
-		}
 		return
 	}
 
@@ -84,7 +35,7 @@ func (h *AnimeHandler) HandleGetAnime(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var curados []models.CuratedAnime
-	errCurado := database.Client.DB.From("curated_animes").Select("*").Eq("mal_id", id).Execute(&curados)
+	_, errCurado := database.Client.From("curated_animes").Select("*", "exact", false).Eq("mal_id", id).ExecuteTo(&curados)
 
 	if errCurado == nil && len(curados) > 0 {
 		curado := curados[0]
@@ -118,35 +69,14 @@ func (h *AnimeHandler) HandleGetStatistics(w http.ResponseWriter, r *http.Reques
 		return
 	}
 
-	if os.Getenv("MOCK_ANILIST") == "true" {
-		log.Println("[MOCK] Retornando estatísticas falsas para desenvolvimento...")
-		resultados := &anilist.AnimeStatisticsResponse{
-			Data: anilist.AnimeStatistics{
-				Scores: []anilist.ScoreDistribution{
-					{Score: 10, Votes: 5000, Percentage: 50.0},
-					{Score: 9, Votes: 3000, Percentage: 30.0},
-					{Score: 8, Votes: 1000, Percentage: 10.0},
-				},
-			},
-		}
-		w.Header().Set("Content-Type", "application/json")
-		if err := json.NewEncoder(w).Encode(resultados); err != nil {
-			log.Printf("[ERRO] HandleGetStatistics mock: falha ao serializar: %v", err)
-		}
-		return
-	}
-
 	resultados, err := h.AniListClient.GetAnimeStatistics(r.Context(), id)
 	if err != nil {
-		log.Printf("[ERRO ANILIST] Falha ao buscar estatísticas do anime %s: %v", id, err)
 		http.Error(w, "Estatísticas indisponíveis no momento", http.StatusServiceUnavailable)
 		return
 	}
 
 	w.Header().Set("Content-Type", "application/json")
-	if err := json.NewEncoder(w).Encode(resultados); err != nil {
-		log.Printf("[ERRO] HandleGetStatistics: falha ao serializar resposta: %v", err)
-	}
+	json.NewEncoder(w).Encode(resultados)
 }
 
 func (h *AnimeHandler) HandleGetAnimesByIDs(w http.ResponseWriter, r *http.Request) {
@@ -172,9 +102,9 @@ func (h *AnimeHandler) HandleGetAnimesByIDs(w http.ResponseWriter, r *http.Reque
 		return
 	}
 
-	// ✨ MUDOU AQUI: Aplicando a sua Curadoria (Override) diretamente no Backend!
 	var curados []models.CuratedAnime
-	errCurado := database.Client.DB.From("curated_animes").Select("*").Execute(&curados)
+	//Sintaxe da nova SDK
+	_, errCurado := database.Client.From("curated_animes").Select("*", "exact", false).ExecuteTo(&curados)
 	
 	if errCurado == nil && len(curados) > 0 {
 		mapaCuradoria := make(map[int]models.CuratedAnime)
@@ -190,7 +120,6 @@ func (h *AnimeHandler) HandleGetAnimesByIDs(w http.ResponseWriter, r *http.Reque
 				}
 				if len(curado.CustomTags) > 0 {
 					var novasTags []struct{ Name string `json:"name"` }
-					// O Deck pega a [0], então a primeira tag cadastrada será a categoria principal
 					for _, tag := range curado.CustomTags {
 						novasTags = append(novasTags, struct{ Name string `json:"name"` }{Name: tag})
 					}
@@ -201,7 +130,5 @@ func (h *AnimeHandler) HandleGetAnimesByIDs(w http.ResponseWriter, r *http.Reque
 	}
 
 	w.Header().Set("Content-Type", "application/json")
-	if err := json.NewEncoder(w).Encode(resultados); err != nil {
-		log.Printf("[ERRO] HandleGetAnimesByIDs: falha ao serializar resposta: %v", err)
-	}
+	json.NewEncoder(w).Encode(resultados)
 }

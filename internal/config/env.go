@@ -16,7 +16,7 @@ func LoadAndValidateEnv() error {
 		"PORT",
 		"SUPABASE_URL", 
 		"SUPABASE_PUBLIC_KEY", 
-		"SUPABASE_SERVICE_KEY",
+		"SUPABASE_ANON_KEY",
 		"ADMIN_USER_ID",
 	}
 

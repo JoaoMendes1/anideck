@@ -18,7 +18,10 @@ type EntriesHandler struct{}
 
 func (h *EntriesHandler) HandleCreate(w http.ResponseWriter, r *http.Request) {
 	userID, ok := r.Context().Value(middleware.UserIDKey).(string)
-	if !ok || userID == "" {
+	// Extraindo o token JWT do middleware
+	token, tokenOk := r.Context().Value(middleware.TokenKey).(string)
+
+	if !ok || !tokenOk || userID == "" {
 		http.Error(w, "Não autenticado", http.StatusUnauthorized)
 		return
 	}
@@ -32,8 +35,16 @@ func (h *EntriesHandler) HandleCreate(w http.ResponseWriter, r *http.Request) {
 	entrada.UserID = userID
 	entrada.Anotacao = sanitizer.Sanitize(entrada.Anotacao)
 
+	// Criando cliente seguro com o token do usuário
+	dbClient, errClient := database.ClientWithToken(token)
+	if errClient != nil {
+		http.Error(w, "Erro interno de conexão", http.StatusInternalServerError)
+		return
+	}
+
 	var resultado []entries.MediaEntry
-	err := database.Client.DB.From("media_entries").Insert(entrada).Execute(&resultado)
+	// Sintaxe da nova SDK (From direto e ExecuteTo)
+	_, err := dbClient.From("media_entries").Insert(entrada, false, "", "representation", "exact").ExecuteTo(&resultado)
 	if err != nil {
 		log.Printf("[ERRO DB] HandleCreate: %v", err)
 		http.Error(w, "Erro ao salvar entrada", http.StatusInternalServerError)
@@ -48,16 +59,25 @@ func (h *EntriesHandler) HandleCreate(w http.ResponseWriter, r *http.Request) {
 
 func (h *EntriesHandler) HandleList(w http.ResponseWriter, r *http.Request) {
 	userID, ok := r.Context().Value(middleware.UserIDKey).(string)
-	if !ok || userID == "" {
+	token, tokenOk := r.Context().Value(middleware.TokenKey).(string)
+
+	if !ok || !tokenOk || userID == "" {
 		http.Error(w, "Não autenticado", http.StatusUnauthorized)
 		return
 	}
 
+	dbClient, errClient := database.ClientWithToken(token)
+	if errClient != nil {
+		http.Error(w, "Erro interno de conexão", http.StatusInternalServerError)
+		return
+	}
+
 	var resultado []entries.MediaEntry
-	err := database.Client.DB.From("media_entries").
-		Select("*").
+	// O RLS do banco vai bloquear automaticamente se não for o dono
+	_, err := dbClient.From("media_entries").
+		Select("*", "exact", false).
 		Eq("user_id", userID).
-		Execute(&resultado)
+		ExecuteTo(&resultado)
 
 	if err != nil {
 		log.Printf("[ERRO DB] HandleList: %v", err)
@@ -73,7 +93,9 @@ func (h *EntriesHandler) HandleList(w http.ResponseWriter, r *http.Request) {
 
 func (h *EntriesHandler) HandleUpdate(w http.ResponseWriter, r *http.Request) {
 	userID, ok := r.Context().Value(middleware.UserIDKey).(string)
-	if !ok || userID == "" {
+	token, tokenOk := r.Context().Value(middleware.TokenKey).(string)
+
+	if !ok || !tokenOk || userID == "" {
 		http.Error(w, "Não autenticado", http.StatusUnauthorized)
 		return
 	}
@@ -91,12 +113,18 @@ func (h *EntriesHandler) HandleUpdate(w http.ResponseWriter, r *http.Request) {
 
 	entrada.Anotacao = sanitizer.Sanitize(entrada.Anotacao)
 
+	dbClient, errClient := database.ClientWithToken(token)
+	if errClient != nil {
+		http.Error(w, "Erro interno de conexão", http.StatusInternalServerError)
+		return
+	}
+
 	var resultado []entries.MediaEntry
-	err := database.Client.DB.From("media_entries").
-		Update(entrada).
+	_, err := dbClient.From("media_entries").
+		Update(entrada, "representation", "exact").
 		Eq("id", id).
 		Eq("user_id", userID).
-		Execute(&resultado)
+		ExecuteTo(&resultado)
 
 	if err != nil {
 		log.Printf("[ERRO DB] HandleUpdate (id=%s): %v", id, err)
@@ -112,7 +140,9 @@ func (h *EntriesHandler) HandleUpdate(w http.ResponseWriter, r *http.Request) {
 
 func (h *EntriesHandler) HandleDelete(w http.ResponseWriter, r *http.Request) {
 	userID, ok := r.Context().Value(middleware.UserIDKey).(string)
-	if !ok || userID == "" {
+	token, tokenOk := r.Context().Value(middleware.TokenKey).(string)
+
+	if !ok || !tokenOk || userID == "" {
 		http.Error(w, "Não autenticado", http.StatusUnauthorized)
 		return
 	}
@@ -122,11 +152,18 @@ func (h *EntriesHandler) HandleDelete(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "ID da entrada é obrigatório", http.StatusBadRequest)
 		return
 	}
-	err := database.Client.DB.From("media_entries").
-		Delete().
+
+	dbClient, errClient := database.ClientWithToken(token)
+	if errClient != nil {
+		http.Error(w, "Erro interno de conexão", http.StatusInternalServerError)
+		return
+	}
+
+	_, _, err := dbClient.From("media_entries").
+		Delete("", "exact").
 		Eq("id", id).
 		Eq("user_id", userID).
-		Execute(nil)
+		Execute()
 
 	if err != nil {
 		log.Printf("[ERRO DB] HandleDelete (id=%s): %v", id, err)
