@@ -21,14 +21,13 @@ type Client struct {
 func NewClient() *Client {
 	return &Client{
 		httpClient: &http.Client{Timeout: 15 * time.Second},
-		limiter:    rate.NewLimiter(rate.Every(2*time.Second), 1), // 30/min, dentro do limite atual da AniList
+		limiter:    rate.NewLimiter(rate.Every(2*time.Second), 1), 
 		baseURL:    "https://graphql.anilist.co",
 	}
 }
 
-var stripHTML = bluemonday.StrictPolicy() // reaproveita a mesma lib da Issue #9
+var stripHTML = bluemonday.StrictPolicy() 
 
-// gqlRequest executa uma query GraphQL genérica contra a AniList
 func (c *Client) gqlRequest(ctx context.Context, query string, variables map[string]interface{}, out interface{}) error {
 	if err := c.limiter.Wait(ctx); err != nil {
 		return fmt.Errorf("erro no rate limiter: %w", err)
@@ -60,8 +59,6 @@ func (c *Client) gqlRequest(ctx context.Context, query string, variables map[str
 	return json.Unmarshal(envelope.Data, out)
 }
 
-// mapStatus converte o enum da AniList pro mesmo texto que o Jikan usava —
-// evita ter que mexer no frontend, que já espera "Finished Airing" etc.
 func mapStatus(s string) string {
 	switch s {
 	case "FINISHED":
@@ -75,12 +72,6 @@ func mapStatus(s string) string {
 	}
 }
 
-// --- SEARCH ---
-
-// searchQuery busca animes por texto e/ou filtros.
-// genre_in / tag_in: a AniList separa as duas — sem tag_in, categorias como "Artes Marciais" nunca retornam resultado.
-// season + seasonYear: season sem ano busca em todos os anos; passamos seasonYear só quando fornecido.
-// status: enum MediaStatus da AniList (FINISHED, RELEASING, NOT_YET_RELEASED, etc.).
 const searchQuery = `
 query ($search: String, $genre_in: [String], $tag_in: [String], $season: MediaSeason, $seasonYear: Int, $status: MediaStatus) {
   Page(page: 1, perPage: 20) {
@@ -97,7 +88,6 @@ query ($search: String, $genre_in: [String], $tag_in: [String], $season: MediaSe
   }
 }`
 
-// 2) struct
 type aniListMedia struct {
 	IDMal         int                              `json:"idMal"`
 	Title         struct{ Romaji, English string } `json:"title"`
@@ -111,17 +101,20 @@ type aniListMedia struct {
 		Site string `json:"site"`
 		URL  string `json:"url"`
 	} `json:"externalLinks"`
+	// ✨ MUDOU AQUI: Preparando o Go para receber o nó de rankings
+	Rankings []struct {
+		Rank    int    `json:"rank"`
+		Type    string `json:"type"`
+		AllTime bool   `json:"allTime"`
+	} `json:"rankings"`
 }
 
-// toAnime converte o tipo de mídia da AniList para o tipo Anime do nosso domínio.
 func (m *aniListMedia) toAnime() Anime {
-	// Define o título principal, com fallback para o título em inglês.
 	title := m.Title.Romaji
 	if title == "" {
 		title = m.Title.English
 	}
 
-	// Converte a lista de strings de gêneros para a estrutura esperada.
 	var genres []struct {
 		Name string `json:"name"`
 	}
@@ -131,7 +124,6 @@ func (m *aniListMedia) toAnime() Anime {
 		}{Name: g})
 	}
 
-	// Mapeia os links externos para a estrutura de streaming.
 	var streaming []struct {
 		Name string `json:"name"`
 		URL  string `json:"url"`
@@ -146,13 +138,23 @@ func (m *aniListMedia) toAnime() Anime {
 		})
 	}
 
+	// ✨ MUDOU AQUI: Busca apenas a posição "Melhor avaliado de todos os tempos"
+	var bestRanking int
+	for _, r := range m.Rankings {
+		if r.Type == "RATED" && r.AllTime {
+			bestRanking = r.Rank
+			break
+		}
+	}
+
 	return Anime{
 		MalID:    m.IDMal,
 		Title:    title,
 		Status:   mapStatus(m.Status),
-		Synopsis: stripHTML.Sanitize(m.Description), // Remove tags HTML da sinopse
+		Synopsis: stripHTML.Sanitize(m.Description), 
 		Episodes: m.Episodes,
-		Score:    float64(m.AverageScore) / 10.0, // Converte score de 0-100 para 0-10
+		Score:    float64(m.AverageScore) / 10.0, 
+		Ranking:  bestRanking, // ✨ MUDOU AQUI: Atribui o ranking ao Anime final
 		Images: struct {
 			JPG struct {
 				ImageURL string `json:"image_url"`
@@ -169,18 +171,14 @@ func (m *aniListMedia) toAnime() Anime {
 	}
 }
 
-// 4) assinatura + variáveis dinâmicas
-// SearchFilters agrupa todos os filtros opcionais da busca num único struct,
-// evitando que a assinatura da função cresça a cada novo filtro adicionado.
 type SearchFilters struct {
 	Genres     []string
 	Tags       []string
-	Season     string // WINTER | SPRING | SUMMER | FALL (enum MediaSeason da AniList)
-	SeasonYear int    // ex: 2026; só enviado se > 0
-	Status     string // FINISHED | RELEASING | NOT_YET_RELEASED | CANCELLED | HIATUS
+	Season     string 
+	SeasonYear int    
+	Status     string 
 }
 
-// SearchAnime busca animes por texto livre e/ou filtros estruturados.
 func (c *Client) SearchAnime(ctx context.Context, query string, f SearchFilters) (*AnimeSearchResponse, error) {
 	var resultado struct {
 		Page struct{ Media []aniListMedia } `json:"Page"`
@@ -199,7 +197,6 @@ func (c *Client) SearchAnime(ctx context.Context, query string, f SearchFilters)
 	if f.Season != "" {
 		variables["season"] = f.Season
 	}
-	// seasonYear sem season não faz sentido na AniList — só enviamos se ambos estiverem presentes
 	if f.SeasonYear > 0 && f.Season != "" {
 		variables["seasonYear"] = f.SeasonYear
 	}
@@ -221,7 +218,6 @@ func (c *Client) SearchAnime(ctx context.Context, query string, f SearchFilters)
 	return &AnimeSearchResponse{Data: animes}, nil
 }
 
-// --- DETALHE POR mal_id ---
 const byIdQuery = `
 query ($idMal: Int) {
   Media(idMal: $idMal, type: ANIME) {
@@ -236,8 +232,7 @@ query ($idMal: Int) {
   }
 }`
 
-
-// byIdsQuery busca múltiplos animes de uma vez só passando uma lista de IDs.
+// ✨ MUDOU AQUI: Injetamos o pedido "rankings { rank type allTime }" na query em lote
 const byIdsQuery = `
 query ($idMal_in: [Int]) {
   Page(page: 1, perPage: 50) {
@@ -251,6 +246,7 @@ query ($idMal_in: [Int]) {
       coverImage { large }
       genres
       externalLinks { site url }
+      rankings { rank type allTime }
     }
   }
 }`
@@ -267,8 +263,6 @@ func (c *Client) GetAnimeById(ctx context.Context, id string) (*AnimeByIdRespons
 	}
 	return &AnimeByIdResponse{Data: resultado.Media.toAnime()}, nil
 }
-
-// --- ESTATÍSTICAS ---
 
 const statsQuery = `
 query ($idMal: Int) {
@@ -308,8 +302,6 @@ func (c *Client) GetAnimeStatistics(ctx context.Context, id string) (*AnimeStati
 	return &AnimeStatisticsResponse{Data: AnimeStatistics{Scores: scores}}, nil
 }
 
-// topAnimeQuery busca os animes mais bem avaliados da AniList.
-// Todos os filtros são opcionais — omitidos quando não fornecidos.
 const topAnimeQuery = `
 query ($page: Int, $perPage: Int, $genre_in: [String], $tag_in: [String], $season: MediaSeason, $seasonYear: Int, $status: MediaStatus) {
   Page(page: $page, perPage: $perPage) {
@@ -327,8 +319,6 @@ query ($page: Int, $perPage: Int, $genre_in: [String], $tag_in: [String], $seaso
   }
 }`
 
-// GetTopAnime retorna os animes mais bem avaliados com filtros opcionais.
-// Usa o mesmo struct SearchFilters da busca para manter consistência.
 func (c *Client) GetTopAnime(ctx context.Context, page int, perPage int, f SearchFilters) (*AnimeSearchResponse, error) {
 	var resultado struct {
 		Page struct{ Media []aniListMedia } `json:"Page"`
@@ -368,7 +358,6 @@ func (c *Client) GetTopAnime(ctx context.Context, page int, perPage int, f Searc
 	return &AnimeSearchResponse{Data: animes}, nil
 }
 
-// GetAnimesByMalIDs pede à AniList os dados base de uma lista específica de IDs.
 func (c *Client) GetAnimesByMalIDs(ctx context.Context, malIDs []int) (*AnimeSearchResponse, error) {
 	if len(malIDs) == 0 {
 		return &AnimeSearchResponse{Data: []Anime{}}, nil

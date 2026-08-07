@@ -50,15 +50,19 @@ Staging sobe já na Fase 1, como projeto esqueleto — mesmo padrão do JVM Syst
 - [x] Protótipos visuais dedicados (fusão cyberpunk/sci-fi + anime) construídos em HTML/CSS nativo.
 - [ ] Aplicação da identidade (Design Tokens) nos componentes React reais.
 - [ ] Responsividade e acessibilidade básica.
+- [ ] Realizar testes usando Smartphone para ajustes e refinamentos. 
 
 ## 📊 Fase 4: Dashboard de Estatísticas
 
 - [ ] Cálculo de métricas pessoais (tempo assistido, gênero favorito, distribuição por status).
 - [ ] Visualização (gráficos) no painel do usuário.
 
-## 🎯 Fase 5: Recomendações Personalizadas
+## 📅 Fase 5.5: Smart Tracking & Streaming Direto (Killer Feature)
 
-- [ ] Lógica de recomendação com base na lista salva (gêneros/notas mais frequentes) cruzando com as *edges* da AniList.
+- [ ] **Backend:** Atualizar a query GraphQL do Go para consumir `nextAiringEpisode` e repassar a janela de tempo ao frontend.
+- [ ] **Meu Deck:** Criar lógica visual de Badge "NOVO EP" para obras "Assistindo" ou "Em Dia" com episódios recém-lançados.
+- [ ] **Integração de Streaming:** Adicionar botão/ação rápida nos cards do Deck utilizando o campo `externalLinks` da AniList, permitindo pular direto para a Crunchyroll/Netflix.
+- [ ] **Calendário Personalizado:** Tela mostrando próximos episódios exclusivos da *watchlist* do usuário, agrupados por dia da semana e com contagem regressiva viva (ex: `⏱ 2D 06H`).
 
 ## 📅 Fase 5.5: Calendário de Lançamentos
 
@@ -85,13 +89,10 @@ Staging sobe já na Fase 1, como projeto esqueleto — mesmo padrão do JVM Syst
 
 ## 📋 Backlog / Ideias em Avaliação
 
-- [ ] **Publicar nota automaticamente no MAL real** (via API oficial + OAuth) — só se o processo manual se mostrar cansativo.
-- [ ] **Suporte a Mangá** — A AniList já cobre ambos. Fora do MVP porque não é uso pessoal atual, mas o
-      schema (`media_entries` com coluna `tipo`) já foi desenhado pra não exigir migração cara.
 - [ ] **Notificações de novas temporadas/sequências** — avisar quando uma sequência/temporada nova é anunciada.
-- [ ] **Mini-página de Pessoa/Estúdio** — ao clicar num dublador/estúdio na página de Detalhe, ver outros trabalhos dele.
 
 ### Avaliado e descartado (documentado pra não reabrir sem contexto)
 - **Fórum, Clubes, Blogs:** equivalem a construir uma rede social inteira.
 - **Mensageria direta (Inbox):** pressupõe comunidade ativa.
 - **News / Featured Articles / MALxJapan:** conteúdo editorial que o MAL produz com equipe própria.
+- **Mini-página de Pessoa/Estúdio** — ao clicar num dublador/estúdio na página de Detalhe, ver outros trabalhos dele.

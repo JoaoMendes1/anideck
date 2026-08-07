@@ -23,7 +23,6 @@ func (h *AnimeHandler) HandleGetAnime(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Portão do mock — só ativo se MOCK_ANILIST=true no ambiente de desenvolvimento
 	if os.Getenv("MOCK_ANILIST") == "true" {
 		log.Println("[MOCK] Retornando detalhes ricos falsos para desenvolvimento...")
 		resultados := &anilist.AnimeByIdResponse{
@@ -84,9 +83,7 @@ func (h *AnimeHandler) HandleGetAnime(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Interceptação 
 	var curados []models.CuratedAnime
-	// Busca especificamente pelo mal_id deste anime
 	errCurado := database.Client.DB.From("curated_animes").Select("*").Eq("mal_id", id).Execute(&curados)
 
 	if errCurado == nil && len(curados) > 0 {
@@ -152,7 +149,6 @@ func (h *AnimeHandler) HandleGetStatistics(w http.ResponseWriter, r *http.Reques
 	}
 }
 
-// HandleGetAnimesByIDs recebe uma lista de IDs no corpo da requisição e retorna os dados hidratados
 func (h *AnimeHandler) HandleGetAnimesByIDs(w http.ResponseWriter, r *http.Request) {
 	var payload struct {
 		IDs []int `json:"ids"`
@@ -163,7 +159,6 @@ func (h *AnimeHandler) HandleGetAnimesByIDs(w http.ResponseWriter, r *http.Reque
 		return
 	}
 
-	// Se a lista estiver vazia, retorna um array vazio imediatamente para poupar a AniList
 	if len(payload.IDs) == 0 {
 		w.Header().Set("Content-Type", "application/json")
 		json.NewEncoder(w).Encode(map[string]interface{}{"data": []interface{}{}})
@@ -175,6 +170,34 @@ func (h *AnimeHandler) HandleGetAnimesByIDs(w http.ResponseWriter, r *http.Reque
 		log.Printf("[ERRO ANILIST] Falha ao buscar animes em lote: %v", err)
 		http.Error(w, "Detalhes indisponíveis no momento", http.StatusServiceUnavailable)
 		return
+	}
+
+	// ✨ MUDOU AQUI: Aplicando a sua Curadoria (Override) diretamente no Backend!
+	var curados []models.CuratedAnime
+	errCurado := database.Client.DB.From("curated_animes").Select("*").Execute(&curados)
+	
+	if errCurado == nil && len(curados) > 0 {
+		mapaCuradoria := make(map[int]models.CuratedAnime)
+		for _, c := range curados {
+			mapaCuradoria[c.MalID] = c
+		}
+
+		for i, anime := range resultados.Data {
+			if curado, ok := mapaCuradoria[anime.MalID]; ok {
+				resultados.Data[i].Title = curado.CustomTitle
+				if curado.CustomStatus != "" {
+					resultados.Data[i].Status = curado.CustomStatus
+				}
+				if len(curado.CustomTags) > 0 {
+					var novasTags []struct{ Name string `json:"name"` }
+					// O Deck pega a [0], então a primeira tag cadastrada será a categoria principal
+					for _, tag := range curado.CustomTags {
+						novasTags = append(novasTags, struct{ Name string `json:"name"` }{Name: tag})
+					}
+					resultados.Data[i].Genres = novasTags
+				}
+			}
+		}
 	}
 
 	w.Header().Set("Content-Type", "application/json")

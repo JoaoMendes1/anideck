@@ -83,3 +83,67 @@
 .scrollbar-hide::-webkit-scrollbar {
   display: none;
 }
+
+/* =========================================
+   ANIMAÇÕES DA LOGO (SVG)
+   ========================================= */
+.sheen-anim-subtle { animation: occasionalSheen 8s ease-in-out infinite; }
+.spin-anim-slow { animation: slowSpin 40s linear infinite; transform-box: fill-box; transform-origin: center; }
+.spin-anim-slow-rev { animation: slowSpinReverse 30s linear infinite; transform-box: fill-box; transform-origin: center; }
+.breathe-anim { animation: breatheLight 7s ease-in-out infinite; }
+.twinkle-anim { animation: twinkle 6s ease-in-out infinite; }
+.twinkle-anim-delay { animation: twinkle 7s ease-in-out infinite 2s; }
+
+@keyframes occasionalSheen {
+  0%, 10% { transform: translateX(-100%) skewX(-15deg); opacity: 0; }
+  15% { opacity: 0.22; }
+  25%, 100% { transform: translateX(200%) skewX(-15deg); opacity: 0; }
+}
+@keyframes slowSpin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+@keyframes slowSpinReverse { 0% { transform: rotate(360deg); } 100% { transform: rotate(0deg); } }
+@keyframes breatheLight { 0%, 100% { opacity: 0.85; } 50% { opacity: 1; } }
+@keyframes twinkle { 0%, 100% { opacity: 0.5; } 50% { opacity: 0.85; } }
+
+/* =========================================
+   ESTILOS DA LANDING PAGE
+   ========================================= */
+.hero-visual { position: relative; height: 400px; display: flex; align-items: center; justify-content: center; }
+.stack-card { position: absolute; width: 210px; height: 300px; border-radius: 20px; overflow: hidden; box-shadow: 0 30px 60px -20px rgba(0,0,0,.6); }
+.stack-card.c1 { background: linear-gradient(150deg, #2a1a4d, #0A0714 70%); transform: rotate(-10deg) translateX(-70px); z-index: 1; opacity: .7; }
+.stack-card.c2 { background: linear-gradient(160deg, #1a3d4d, #0A0714 70%); transform: rotate(8deg) translateX(70px); z-index: 1; opacity: .7; }
+.stack-card.c3 { background: linear-gradient(160deg, #3a1a4a 0%, #1a1030 55%, #0A0714 100%); z-index: 2; border: 1px solid rgba(255,255,255,.08); }
+.stack-card.c3::before { content: ''; position: absolute; inset: 0; background: linear-gradient(120deg, transparent 30%, rgba(255,79,216,.25) 45%, rgba(63,224,240,.25) 55%, transparent 70%); mix-blend-mode: screen; }
+
+@media(max-width: 900px) {
+  .hero-visual { height: 280px; }
+  .stack-card { width: 150px; height: 220px; }
+  .stack-card.c1 { transform: rotate(-10deg) translateX(-46px); }
+  .stack-card.c2 { transform: rotate(8deg) translateX(46px); }
+}
+
+.reveal { opacity: 0; transform: translateY(16px); transition: opacity .6s ease, transform .6s ease; }
+.reveal.in { opacity: 1; transform: translateY(0); }
+@media(prefers-reduced-motion: reduce) { .reveal { opacity: 1; transform: none; transition: none; } .stack-card { transition: none; } }
+
+/* =========================================
+   CARTAS RARAS (FAVORITOS)
+   ========================================= */
+.foil-card {
+  background: linear-gradient(155deg, #2a103c, #120b22 75%);
+}
+.foil-card::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: linear-gradient(125deg, transparent 20%, rgba(255,255,255,0.2) 40%, rgba(255, 79, 216, 0.3) 50%, rgba(63, 224, 240, 0.3) 60%, transparent 80%);
+  background-size: 200% 200%;
+  animation: foilShine 8s linear infinite;
+  pointer-events: none;
+  z-index: 25;
+  mix-blend-mode: screen;
+}
+@keyframes foilShine {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}

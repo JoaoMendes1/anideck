@@ -8,13 +8,15 @@ import Rankings from './pages/Rankings'
 import PainelAdmin from './pages/PainelAdmin'
 import Layout from './components/Layout'
 import { ToastProvider } from './contexts/ToastContext'
+import Landing from './pages/Landing'
 
 function App() {
   return (
     <ToastProvider>
     <Routes>
       <Route element={<Layout />}>
-      <Route path="/" element={<Busca />} />
+      <Route path="/" element={<Landing />} />
+       <Route path="/descobrir" element={<Busca />} />
       <Route path="/deck" element={<RotaProtegida><MeuDeck /></RotaProtegida>} />
       <Route path="/anime/:id" element={<Detalhes />} />
       <Route path="/rankings" element={<Rankings />} />
