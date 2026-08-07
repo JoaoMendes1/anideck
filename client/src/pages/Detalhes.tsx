@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useParams, Link } from 'react-router-dom'
-import { PlayCircle, Star, AlertCircle, Save } from 'lucide-react'
+import { PlayCircle, Star, AlertCircle, Save, Trash2, Bookmark } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import { useToast } from '../contexts/ToastContext'
 
@@ -28,8 +28,9 @@ interface MinhaEntrada {
   status: string
   mal_id: number
   tipo: string
-  nota?: number
+  nota?: number | null
   anotacao?: string
+  is_favorite?: boolean
 }
 
 const STATUS_OPCOES = ['Assistindo', 'Em Dia', 'Completo', 'Quero Assistir', 'Dropado']
@@ -45,11 +46,12 @@ export default function Detalhes() {
   
   const [minhaEntrada, setMinhaEntrada] = useState<MinhaEntrada | null>(null)
   const [salvando, setSalvando] = useState(false)
+  const [excluindo, setExcluindo] = useState(false)
   
-  // 🟢 NOVA LÓGICA: Estados temporários para o formulário (só salva quando clicar no botão)
   const [statusInput, setStatusInput] = useState<string>('Quero Assistir')
   const [notaInput, setNotaInput] = useState<string>('')
   const [anotacaoInput, setAnotacaoInput] = useState<string>('')
+  const [isFavorite, setIsFavorite] = useState(false) // 🟢 NOVO ESTADO AQUI
 
   useEffect(() => {
     const fetchData = async () => {
@@ -81,8 +83,9 @@ export default function Detalhes() {
             if (entrada) {
                 setMinhaEntrada(entrada)
                 setStatusInput(entrada.status)
-                setNotaInput(entrada.nota?.toString() || '')
+                setNotaInput(entrada.nota !== null && entrada.nota !== undefined ? entrada.nota.toString() : '')
                 setAnotacaoInput(entrada.anotacao || '')
+                setIsFavorite(entrada.is_favorite || false) // 🟢 Puxa do banco
             }
           }
         }
@@ -95,7 +98,6 @@ export default function Detalhes() {
     if (id) fetchData()
   }, [id])
 
-  // Lida com o salvamento unificado de status, notas e anotações
   const handleAtualizarEntrada = async (overrideStatus?: string) => {
     setSalvando(true)
     const { data: { session } } = await supabase.auth.getSession()
@@ -105,15 +107,17 @@ export default function Detalhes() {
         return
     }
     
-    // Se vier um status forçado (ex: botão "Marcar como Completo"), usa ele. Senão, usa o status selecionado nas pílulas.
     const statusFinal = overrideStatus || statusInput
-    const notaFormatada = notaInput ? Number(notaInput.toString().replace(',', '.')) : null
+    const notaStr = String(notaInput).trim()
+    const notaFinal = notaStr === '' ? null : Number(notaStr.replace(',', '.'))
+    
     const payload = {
         mal_id: Number(id),
         tipo: 'anime',
         status: statusFinal,
-        nota: Number.isNaN(notaFormatada) ? null : notaFormatada,
-        anotacao: anotacaoInput
+        nota: Number.isNaN(notaFinal) ? null : notaFinal,
+        anotacao: anotacaoInput,
+        is_favorite: isFavorite // 🟢 SALVANDO NO BANCO
     }
 
     try {
@@ -132,14 +136,48 @@ export default function Detalhes() {
         if (!response.ok) throw new Error()
         
         const atualizada = await response.json()
-        setMinhaEntrada(Array.isArray(atualizada) ? atualizada[0] : atualizada)
-        if (overrideStatus) setStatusInput(overrideStatus)
+        const novaEntrada = Array.isArray(atualizada) ? atualizada[0] : atualizada
         
-        showToast(overrideStatus ? 'Parabéns! Movido para os Completos.' : 'Avaliação salva no seu Deck!', 'success')
+        setMinhaEntrada(novaEntrada)
+        if (overrideStatus) setStatusInput(overrideStatus)
+        setNotaInput(novaEntrada.nota !== null && novaEntrada.nota !== undefined ? novaEntrada.nota.toString() : '')
+        setIsFavorite(novaEntrada.is_favorite || false)
+        
+        showToast(
+            overrideStatus ? 'Parabéns! Movido para os Completos.' : 
+            minhaEntrada ? 'Alterações salvas!' : 'Adicionado ao Deck com sucesso!', 
+            'success'
+        )
     } catch {
         showToast('Erro ao atualizar seu Deck. Tente novamente.', 'error')
     } finally {
         setSalvando(false)
+    }
+  }
+
+  const handleRemoverEntrada = async () => {
+    if (!minhaEntrada) return
+    setExcluindo(true)
+    const { data: { session } } = await supabase.auth.getSession()
+    if (!session) return
+
+    try {
+        const response = await fetch(`/api/entries/${minhaEntrada.id}`, {
+            method: 'DELETE',
+            headers: { 'Authorization': `Bearer ${session.access_token}` }
+        })
+        if (!response.ok) throw new Error()
+        
+        setMinhaEntrada(null)
+        setStatusInput('Quero Assistir')
+        setNotaInput('')
+        setAnotacaoInput('')
+        setIsFavorite(false) // 🟢 Zera na remoção
+        showToast('Anime removido do seu Deck.', 'success')
+    } catch {
+        showToast('Erro ao remover do Deck. Tente novamente.', 'error')
+    } finally {
+        setExcluindo(false)
     }
   }
 
@@ -149,6 +187,9 @@ export default function Detalhes() {
     if (statusOriginal === 'NOT_YET_RELEASED' || statusOriginal === 'Not yet aired') return 'Em Breve'
     return statusOriginal
   }
+
+  const notaDisplay = notaInput && String(notaInput).trim() !== '' ? notaInput : 'N/A'
+  const temNotaDisplay = notaDisplay !== 'N/A'
 
   if (loading) {
     return (
@@ -173,21 +214,27 @@ export default function Detalhes() {
   const maxPercentage = stats?.scores ? Math.max(...stats.scores.map(s => s.percentage)) : 100
 
   return (
-    // 🟢 CORREÇÃO DE LAYOUT: O -mt-24 puxa a página para cima, anulando o padding do Layout.tsx e colando o banner no teto
     <div className="-mt-24 pb-20">
       
       <div className="relative h-[220px] overflow-hidden bg-gradient-to-br from-[#3a1a4a] to-[#0A0714] after:content-[''] after:absolute after:inset-0 after:bg-gradient-to-t after:from-void after:to-transparent" />
 
       <div className="max-w-[1040px] mx-auto px-5 -mt-[90px] relative z-20 pb-2">
+        
         <div className="flex flex-col sm:flex-row gap-5 sm:items-end mb-8 text-center sm:text-left items-center">
-          {/* POSTER */}
-          <img
-            src={anime.images?.jpg?.image_url}
-            alt={`Poster de ${anime.title}`}
-            className="w-[140px] h-[198px] rounded-xl shadow-[0_15px_30px_-10px_rgba(0,0,0,0.8)] border-[3px] border-panel shrink-0 object-cover bg-panel-2"
-          />
+          <div className="relative">
+            {/* COROA DE FAVORITO GIGANTE SE ATIVO */}
+            {isFavorite && (
+              <div className="absolute -top-4 -right-4 w-10 h-10 bg-void/80 border border-gold/50 rounded-full flex items-center justify-center text-xl shadow-[0_0_15px_rgba(255,197,66,0.4)] z-30">
+                👑
+              </div>
+            )}
+            <img
+              src={anime.images?.jpg?.image_url}
+              alt={`Poster de ${anime.title}`}
+              className={`w-[140px] h-[198px] rounded-xl shadow-[0_15px_30px_-10px_rgba(0,0,0,0.8)] border-[3px] shrink-0 object-cover bg-panel-2 transition-colors ${isFavorite ? 'border-gold' : 'border-panel'}`}
+            />
+          </div>
           
-          {/* INFO PRINCIPAL */}
           <div className="flex-1 min-w-0 pb-1">
             <h1 className="font-anton text-[clamp(1.4rem,3.5vw,2.4rem)] uppercase leading-[1.05] mb-2 tracking-wide drop-shadow-md">
               {anime.title}
@@ -205,36 +252,47 @@ export default function Detalhes() {
               )}
             </div>
             
-            <div className="flex flex-wrap gap-2 justify-center sm:justify-start">
+            <div className="flex flex-wrap gap-2 justify-center sm:justify-start mb-4">
               {anime.genres?.map(g => (
-                <span key={g.name} className="text-[10px] font-bold px-3 py-1 rounded-full bg-panel border border-line text-muted">
+                <span key={g.name} className="text-[10px] font-bold px-3 py-1 rounded-full bg-panel border border-line text-muted select-none">
                   {g.name}
                 </span>
               ))}
             </div>
-          </div>
 
-          {/* SCORE BADGE */}
-          <div className="bg-panel border border-line rounded-xl px-5 py-3 flex items-center gap-3 shrink-0 shadow-lg">
-            <Star className="text-gold fill-gold" size={24} />
-            <div className="text-left">
-              <div className="font-anton text-[22px] text-gold leading-none">{anime.score || 'N/A'}</div>
-              <div className="text-[10px] font-bold text-muted-2 mt-1">NOTA GERAL</div>
+            <div className="bg-panel border border-line rounded-xl px-5 py-3 inline-flex items-center gap-5 shrink-0 shadow-lg mt-1 select-none">
+              <div className="flex items-center gap-3">
+                <Star className="text-gold fill-gold w-6 h-6" />
+                <div className="text-left">
+                  <div className="font-anton text-[22px] text-gold leading-none">{anime.score || 'N/A'}</div>
+                  <div className="text-[10px] font-bold text-muted-2 mt-1 uppercase tracking-wide">Nota Geral</div>
+                </div>
+              </div>
+              
+              <div className="w-[1px] h-8 bg-line"></div>
+              
+              <div className="flex items-center gap-3">
+                <Star className={`w-6 h-6 ${temNotaDisplay ? 'text-holo-3 fill-holo-3' : 'text-muted-2'}`} />
+                <div className="text-left">
+                  <div className={`font-anton text-[22px] leading-none ${temNotaDisplay ? 'text-holo-3' : 'text-muted-2'}`}>
+                    {notaDisplay}
+                  </div>
+                  <div className="text-[10px] font-bold text-muted-2 mt-1 uppercase tracking-wide">Sua Nota</div>
+                </div>
+              </div>
             </div>
           </div>
         </div>
 
-        {/* TABS STICKY */}
         <div className="sticky top-[63px] md:top-[73px] z-40 bg-void/95 backdrop-blur-sm border-b border-line overflow-x-auto whitespace-nowrap py-3 mb-8 scrollbar-hide">
           <div className="flex gap-2.5">
-            <a href="#visao-geral" className="text-[13px] font-bold text-muted hover:text-text hover:border-holo-3 px-3.5 py-1.5 rounded-full border border-line transition-colors">Visão Geral</a>
-            <a href="#onde-assistir" className="text-[13px] font-bold text-muted hover:text-text hover:border-holo-3 px-3.5 py-1.5 rounded-full border border-line transition-colors">Onde Assistir</a>
-            <a href="#estatisticas" className="text-[13px] font-bold text-muted hover:text-text hover:border-holo-3 px-3.5 py-1.5 rounded-full border border-line transition-colors">Estatísticas</a>
-            <a href="#relacionados" className="text-[13px] font-bold text-muted hover:text-text hover:border-holo-3 px-3.5 py-1.5 rounded-full border border-line transition-colors">Relacionados</a>
+            <a href="#visao-geral" className="select-none text-[13px] font-bold text-muted hover:text-text hover:border-holo-3 px-3.5 py-1.5 rounded-full border border-line transition-colors">Visão Geral</a>
+            <a href="#onde-assistir" className="select-none text-[13px] font-bold text-muted hover:text-text hover:border-holo-3 px-3.5 py-1.5 rounded-full border border-line transition-colors">Onde Assistir</a>
+            <a href="#estatisticas" className="select-none text-[13px] font-bold text-muted hover:text-text hover:border-holo-3 px-3.5 py-1.5 rounded-full border border-line transition-colors">Estatísticas</a>
+            <a href="#relacionados" className="select-none text-[13px] font-bold text-muted hover:text-text hover:border-holo-3 px-3.5 py-1.5 rounded-full border border-line transition-colors">Relacionados</a>
           </div>
         </div>
 
-        {/* BANNER DE TRANSIÇÃO (SE APLICÁVEL) */}
         {minhaEntrada?.status === 'Em Dia' && (anime.status === 'Finished Airing' || anime.status === 'FINISHED') && (
             <div className="bg-gradient-to-r from-holo-1/20 to-holo-2/20 border border-holo-2/40 p-5 rounded-2xl flex flex-col md:flex-row justify-between items-center gap-4 shadow-lg mb-8 backdrop-blur-md">
                 <div className="text-center md:text-left">
@@ -242,22 +300,21 @@ export default function Detalhes() {
                     <p className="font-bold text-sm text-text">A AniList detectou que esta obra acabou. Deseja mover da sua lista de "Em Dia" para "Completo"?</p>
                 </div>
                 <button 
+                    type="button"
                     onClick={() => handleAtualizarEntrada('Completo')} 
                     disabled={salvando}
-                    className="bg-gradient-to-r from-holo-1 to-holo-2 text-void px-6 py-3 rounded-full font-extrabold text-sm shrink-0 transition-transform cursor-pointer hover:opacity-90 disabled:opacity-50"
+                    className="select-none bg-gradient-to-r from-holo-1 to-holo-2 text-void px-6 py-3 rounded-full font-extrabold text-sm shrink-0 transition-transform cursor-pointer hover:opacity-90 disabled:opacity-50"
                 >
                     {salvando ? 'Atualizando...' : 'Marcar como Completo ✓'}
                 </button>
             </div>
         )}
 
-        {/* GRID PRINCIPAL DE CONTEÚDO */}
         <div className="grid grid-cols-1 lg:grid-cols-[1fr_320px] gap-10" id="visao-geral">
-          
           <div className="space-y-10">
-            {/* SINOPSE */}
+            
             <section>
-              <h2 className="font-anton text-base uppercase mb-4 flex items-center gap-2">
+              <h2 className="font-anton text-base uppercase mb-4 flex items-center gap-2 select-none">
                 <span className="font-mono text-[11px] text-holo-3">01</span> Sinopse
               </h2>
               <div className="text-muted text-[14.5px] leading-[1.7] whitespace-pre-line bg-panel border border-line rounded-2xl p-6">
@@ -265,11 +322,23 @@ export default function Detalhes() {
               </div>
             </section>
 
-            {/* PAINEL DE AVALIAÇÃO */}
             <section>
-              <h2 className="font-anton text-base uppercase mb-4 flex items-center gap-2">
-                <span className="font-mono text-[11px] text-holo-3">02</span> Sua Avaliação
-              </h2>
+              <div className="flex items-center justify-between mb-4">
+                  <h2 className="font-anton text-base uppercase flex items-center gap-2 select-none m-0">
+                    <span className="font-mono text-[11px] text-holo-3">02</span> Sua Avaliação
+                  </h2>
+                  
+                  {/* 🟢 BOTÃO DE CORAÇÃO AQUI NA SESSÃO */}
+                  <button 
+                    type="button" 
+                    onClick={() => setIsFavorite(!isFavorite)} 
+                    className={`select-none flex items-center gap-2 text-[12.5px] font-bold px-3 py-1.5 rounded-full border transition-all cursor-pointer ${isFavorite ? 'bg-coral/10 text-coral border-coral/30 shadow-[0_0_10px_rgba(255,92,108,0.2)]' : 'bg-panel border-line text-muted hover:text-text hover:border-muted-2'}`}
+                    title="Marcar como Favorito"
+                  >
+                    {isFavorite ? '❤️ Favorito' : '🤍 Favoritar'}
+                  </button>
+              </div>
+
               <div className="bg-panel border border-line rounded-2xl p-5 relative">
                 {salvando && (
                    <div className="absolute inset-0 bg-panel/50 backdrop-blur-sm z-10 flex items-center justify-center rounded-2xl">
@@ -281,8 +350,9 @@ export default function Detalhes() {
                     {STATUS_OPCOES.map(status => (
                         <button
                             key={status}
+                            type="button"
                             onClick={() => setStatusInput(status)}
-                            className={`text-[12.5px] font-bold px-3.5 py-1.5 rounded-full border cursor-pointer transition-colors ${
+                            className={`select-none text-[12.5px] font-bold px-3.5 py-1.5 rounded-full border cursor-pointer transition-colors ${
                                 statusInput === status 
                                 ? 'bg-gradient-to-r from-holo-1 to-holo-2 text-white border-transparent shadow-md' 
                                 : 'bg-transparent border-line text-muted hover:border-holo-3 hover:text-text'
@@ -295,7 +365,14 @@ export default function Detalhes() {
 
                 <div className="grid grid-cols-1 md:grid-cols-[120px_1fr] gap-4">
                     <div>
-                        <label className="block text-[11px] font-bold text-muted uppercase tracking-wider mb-2">Nota (0-10)</label>
+                        <div className="flex justify-between items-center mb-2">
+                            <label className="block text-[11px] font-bold text-muted uppercase tracking-wider select-none">Nota (0-10)</label>
+                            {notaInput !== '' && (
+                                <button type="button" onClick={() => setNotaInput('')} title="Limpar nota" className="select-none text-[10px] font-bold text-coral hover:text-coral/80 uppercase cursor-pointer">
+                                    Limpar
+                                </button>
+                            )}
+                        </div>
                         <input 
                             type="number" 
                             min="0" max="10" step="0.1"
@@ -306,7 +383,7 @@ export default function Detalhes() {
                         />
                     </div>
                     <div>
-                        <label className="block text-[11px] font-bold text-muted uppercase tracking-wider mb-2">Anotação Privada</label>
+                        <label className="block text-[11px] font-bold text-muted uppercase tracking-wider mb-2 select-none">Anotação Privada</label>
                         <textarea 
                             value={anotacaoInput}
                             onChange={(e) => setAnotacaoInput(e.target.value)}
@@ -316,27 +393,45 @@ export default function Detalhes() {
                     </div>
                 </div>
                 
-                <div className="flex justify-end mt-4">
+                <div className="flex flex-wrap justify-between items-center mt-6 pt-6 border-t border-line gap-4">
+                    {minhaEntrada ? (
+                        <button 
+                            type="button"
+                            onClick={handleRemoverEntrada}
+                            disabled={excluindo || salvando}
+                            className="select-none flex items-center gap-2 text-[13px] font-bold text-coral/80 hover:text-coral transition-colors disabled:opacity-50 cursor-pointer"
+                        >
+                            <Trash2 size={16} />
+                            {excluindo ? 'Removendo...' : 'Remover do Deck'}
+                        </button>
+                    ) : (
+                        <div className="select-none text-xs text-muted font-bold flex items-center gap-2">
+                            <Bookmark size={14} className="text-holo-3" />
+                            Ainda não está no Deck
+                        </div> 
+                    )}
+                    
                     <button 
+                        type="button"
                         onClick={() => handleAtualizarEntrada()}
-                        className="flex items-center gap-2 bg-panel-2 border border-line hover:border-holo-3 text-text px-4 py-2 rounded-xl text-[13px] font-bold transition-colors cursor-pointer"
+                        disabled={salvando || excluindo}
+                        className="select-none flex items-center gap-2 bg-gradient-to-r from-holo-1 to-holo-3 text-void px-6 py-3 rounded-xl text-[13.5px] font-extrabold transition-opacity hover:opacity-90 cursor-pointer disabled:opacity-50 w-full sm:w-auto justify-center"
                     >
-                        <Save size={14} className="text-holo-3" />
-                        Salvar Anotações
+                        <Save size={16} />
+                        {minhaEntrada ? 'Salvar Alterações' : 'Adicionar ao Deck'}
                     </button>
                 </div>
               </div>
             </section>
 
-            {/* ONDE ASSISTIR */}
             {anime.streaming?.length > 0 && (
               <section id="onde-assistir">
-                <h2 className="font-anton text-base uppercase mb-4 flex items-center gap-2">
+                <h2 className="font-anton text-base uppercase mb-4 flex items-center gap-2 select-none">
                   <span className="font-mono text-[11px] text-holo-3">03</span> Onde Assistir Oficial
                 </h2>
                 <div className="flex flex-wrap gap-3">
                   {anime.streaming.map(st => (
-                    <a key={st.name} href={st.url} target="_blank" rel="noreferrer" className="flex items-center gap-2 bg-panel border border-line rounded-xl px-5 py-3 text-[13px] font-bold hover:border-holo-1 hover:text-holo-1 transition-colors">
+                    <a key={st.name} href={st.url} target="_blank" rel="noreferrer" className="select-none flex items-center gap-2 bg-panel border border-line rounded-xl px-5 py-3 text-[13px] font-bold hover:border-holo-1 hover:text-holo-1 transition-colors">
                       <PlayCircle size={16} />
                       {st.name}
                     </a>
@@ -345,22 +440,21 @@ export default function Detalhes() {
               </section>
             )}
 
-            {/* ABERTURAS / ENCERRAMENTOS */}
             {(anime.theme?.openings?.length > 0 || anime.theme?.endings?.length > 0) && (
               <section>
-                <h2 className="font-anton text-base uppercase mb-4 flex items-center gap-2">
+                <h2 className="font-anton text-base uppercase mb-4 flex items-center gap-2 select-none">
                   <span className="font-mono text-[11px] text-holo-3">04</span> Temas Musicais
                 </h2>
                 <div className="flex flex-col gap-2">
                   {anime.theme?.openings?.slice(0, 3).map((op, i) => (
                     <div key={i} className="flex justify-between items-center p-3 bg-panel border border-line rounded-xl text-[13px]">
-                        <span className="font-mono text-[10px] text-holo-3 font-bold shrink-0 mr-3">OP {i+1}</span>
+                        <span className="font-mono text-[10px] text-holo-3 font-bold shrink-0 mr-3 select-none">OP {i+1}</span>
                         <span className="text-muted truncate">{op}</span>
                     </div>
                   ))}
                   {anime.theme?.endings?.slice(0, 3).map((ed, i) => (
                     <div key={i} className="flex justify-between items-center p-3 bg-panel border border-line rounded-xl text-[13px]">
-                        <span className="font-mono text-[10px] text-holo-1 font-bold shrink-0 mr-3">ED {i+1}</span>
+                        <span className="font-mono text-[10px] text-holo-1 font-bold shrink-0 mr-3 select-none">ED {i+1}</span>
                         <span className="text-muted truncate">{ed}</span>
                     </div>
                   ))}
@@ -368,16 +462,15 @@ export default function Detalhes() {
               </section>
             )}
 
-            {/* RELACIONADOS */}
             {anime.relations?.length > 0 && (
               <section id="relacionados">
-                <h2 className="font-anton text-base uppercase mb-4 flex items-center gap-2">
+                <h2 className="font-anton text-base uppercase mb-4 flex items-center gap-2 select-none">
                   <span className="font-mono text-[11px] text-holo-3">05</span> Títulos Relacionados
                 </h2>
                 <div className="flex gap-4 overflow-x-auto pb-4 scrollbar-hide">
                   {anime.relations.map((rel, i) => (
                     <div key={i} className="flex-none w-[160px] bg-panel border border-line rounded-xl p-4">
-                      <div className="font-mono text-[10px] text-holo-2 mb-2 uppercase">{rel.relation}</div>
+                      <div className="font-mono text-[10px] text-holo-2 mb-2 uppercase select-none">{rel.relation}</div>
                       <div className="text-[13px] font-bold leading-tight">
                         {rel.entry[0]?.name || 'Título Desconhecido'}
                       </div>
@@ -388,29 +481,29 @@ export default function Detalhes() {
             )}
           </div>
 
-          {/* COLUNA LATERAL DIREITA */}
           <div className="space-y-10" id="estatisticas">
             
-            {/* INFORMAÇÃO PESSOAL (RESUMO) */}
             {minhaEntrada && (
               <section>
-                 <h2 className="font-anton text-base uppercase mb-4 flex items-center gap-2">
+                 <h2 className="font-anton text-base uppercase mb-4 flex items-center gap-2 select-none">
                   <span className="font-mono text-[11px] text-holo-3">MEU DECK</span>
                 </h2>
                 <div className="bg-gradient-to-br from-panel to-panel-2 border border-holo-3/30 rounded-2xl p-5">
-                   <div className="text-xs font-bold text-muted uppercase mb-1">Status Atual</div>
-                   <div className="font-anton text-2xl text-text mb-4 tracking-wide">{minhaEntrada.status}</div>
-                   <Link to="/deck" className="block text-center w-full py-2.5 rounded-xl border border-line text-sm font-bold hover:bg-panel-2 transition-colors">
+                   <div className="text-xs font-bold text-muted uppercase mb-1 select-none">Status Atual</div>
+                   <div className="font-anton text-2xl text-text mb-4 tracking-wide flex items-center gap-2">
+                       {minhaEntrada.status}
+                       {isFavorite && <span title="Favorito" className="text-xl">👑</span>}
+                   </div>
+                   <Link to="/deck" className="select-none block text-center w-full py-2.5 rounded-xl border border-line text-sm font-bold hover:bg-panel-2 transition-colors">
                      Gerenciar no Deck
                    </Link>
                 </div>
               </section>
             )}
 
-            {/* HISTOGRAMA */}
             {stats && stats.scores && (
               <section>
-                <h2 className="font-anton text-base uppercase mb-4 flex items-center gap-2">
+                <h2 className="font-anton text-base uppercase mb-4 flex items-center gap-2 select-none">
                   <span className="font-mono text-[11px] text-holo-3">ESTATÍSTICAS</span> Histograma
                 </h2>
                 <div className="bg-panel border border-line rounded-2xl p-5">
@@ -423,7 +516,7 @@ export default function Detalhes() {
                             style={{ height: `${heightPct}%` }}
                             className="bg-gradient-to-t from-holo-2 to-holo-3 rounded-t-sm opacity-80 group-hover:opacity-100 transition-all w-full"
                           >
-                            <span className="absolute -top-7 left-1/2 -translate-x-1/2 bg-void text-text text-[9px] font-mono px-1.5 py-1 rounded opacity-0 group-hover:opacity-100 pointer-events-none z-10 border border-line">
+                            <span className="select-none absolute -top-7 left-1/2 -translate-x-1/2 bg-void text-text text-[9px] font-mono px-1.5 py-1 rounded opacity-0 group-hover:opacity-100 pointer-events-none z-10 border border-line">
                               {s.percentage.toFixed(1)}%
                             </span>
                           </div>
@@ -431,15 +524,15 @@ export default function Detalhes() {
                       )
                     })}
                   </div>
-                  <div className="flex justify-between font-mono text-[10px] text-muted-2 px-1">
+                  <div className="flex justify-between font-mono text-[10px] text-muted-2 px-1 select-none">
                     <span>10</span><span>9</span><span>8</span><span>7</span><span>6</span><span>5</span><span>4</span><span>3</span><span>2</span><span>1</span>
                   </div>
                   
                   <div className="mt-6 pt-5 border-t border-line">
-                    <b className="font-anton text-lg text-text block leading-none mb-1">
+                    <b className="font-anton text-lg text-text block leading-none mb-1 select-none">
                         {stats.scores.reduce((acc, curr) => acc + curr.votes, 0).toLocaleString()}
                     </b>
-                    <span className="font-mono text-[10.5px] text-muted tracking-wider">AVALIAÇÕES</span>
+                    <span className="font-mono text-[10.5px] text-muted tracking-wider select-none">AVALIAÇÕES</span>
                   </div>
                 </div>
               </section>

@@ -19,6 +19,13 @@ interface Anime {
     genres?: { name: string }[]
 }
 
+// 🟢 Adicionamos o is_favorite aqui para o Rankings saber quem é Carta Rara
+interface SavedEntry {
+    mal_id: number
+    id: string
+    is_favorite?: boolean
+}
+
 const CURRENT_YEAR = new Date().getFullYear()
 const YEAR_OPTIONS = Array.from({ length: 10 }, (_, i) => CURRENT_YEAR - i)
 
@@ -30,9 +37,10 @@ export default function Rankings() {
     const [page, setPage] = useState(1)
     const [showFilters, setShowFilters] = useState(false)
     const { showToast } = useToast()
-    const [savingIds, setSavingIds] = useState<number[]>([]) // <-- Estado para controlar botões de loading individuais
-    const [savedIds, setSavedIds]       = useState<number[]>([])
-
+    const [savingIds, setSavingIds] = useState<number[]>([]) 
+    
+    // Agora salvamos o ID e o status de Favorito
+    const [savedEntries, setSavedEntries] = useState<SavedEntry[]>([])
 
     const [selectedFilters, setSelectedFilters] = useState<FilterItem[]>([])
     const [selectedStatus, setSelectedStatus] = useState('')
@@ -45,7 +53,6 @@ export default function Rankings() {
         (selectedSeason ? 1 : 0) +
         (selectedYear ? 1 : 0)
 
-        // Busca o deck do usuário ao carregar a página para acender os checks
     useEffect(() => {
         const carregarDeck = async () => {
             const { data: { session } } = await supabase.auth.getSession()
@@ -58,8 +65,9 @@ export default function Rankings() {
                 if (response.ok) {
                     const entradas = await response.json()
                     if (entradas && entradas.length > 0) {
-                        const idsSalvos = entradas.map((e: any) => e.mal_id)
-                        setSavedIds(idsSalvos)
+                        // 🟢 Salva o is_favorite que vem do banco
+                        const idsSalvos = entradas.map((e: any) => ({ mal_id: e.mal_id, id: e.id, is_favorite: e.is_favorite }))
+                        setSavedEntries(idsSalvos)
                     }
                 }
             } catch (err) {
@@ -69,7 +77,6 @@ export default function Rankings() {
         carregarDeck()
     }, [])
 
-    // Reseta paginação quando filtros mudam
     useEffect(() => {
         setAnimes([])
         setPage(1)
@@ -83,7 +90,6 @@ export default function Rankings() {
         selectedFilters.forEach(f => params.append(f.type === 'genre' ? 'genre' : 'tag', f.value))
         if (selectedStatus) params.set('status', selectedStatus)
         if (selectedSeason) params.set('season', selectedSeason)
-        // year só é relevante com season (regra da AniList)
         if (selectedSeason && selectedYear) params.set('year', selectedYear)
 
         try {
@@ -103,34 +109,40 @@ export default function Rankings() {
         fetchRanking(page, page === 1)
     }, [page, fetchRanking])
 
-  const handleSalvar = async (e: React.MouseEvent, malId: number) => {
+    const handleSalvar = async (e: React.MouseEvent, malId: number) => {
         e.preventDefault()
-        
-        if (savingIds.includes(malId) || savedIds.includes(malId)) return
+        if (savingIds.includes(malId)) return
 
         const { data: { session } } = await supabase.auth.getSession()
         if (!session) { navigate('/login'); return }
 
         setSavingIds(prev => [...prev, malId])
 
+        const entrySalva = savedEntries.find(e => e.mal_id === malId)
+
         try {
-            const res = await fetch('/api/entries', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${session.access_token}` },
-                body: JSON.stringify({ mal_id: malId, tipo: 'anime', status: 'Quero Assistir' }),
-            })
-            if (!res.ok) {
-                // Caiu aqui, significa que a trava do banco (Unique) bloqueou a duplicidade.
-                setSavedIds(prev => [...prev, malId])
-                showToast('Este anime já estava no seu Deck!', 'error')
-                throw new Error('Duplicado')
+            if (entrySalva) {
+                const res = await fetch(`/api/entries/${entrySalva.id}`, {
+                    method: 'DELETE',
+                    headers: { 'Authorization': `Bearer ${session.access_token}` }
+                })
+                if (!res.ok) throw new Error()
+                setSavedEntries(prev => prev.filter(e => e.mal_id !== malId))
+                showToast('Removido do Deck', 'success')
+            } else {
+                const res = await fetch('/api/entries', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${session.access_token}` },
+                    body: JSON.stringify({ mal_id: malId, tipo: 'anime', status: 'Quero Assistir' }),
+                })
+                if (!res.ok) throw new Error()
+                const novaEntrada = await res.json()
+                // 🟢 Quando adiciona novo, ele entra como is_favorite: false por padrão
+                setSavedEntries(prev => [...prev, { mal_id: malId, id: novaEntrada.id || novaEntrada[0]?.id, is_favorite: false }])
+                showToast('Adicionado ao Deck', 'success')
             }
-            
-            // Sucesso inédito
-            setSavedIds(prev => [...prev, malId])
-            showToast('Anime salvo no seu Deck!', 'success')
-        } catch { 
-            // Tratamento silencioso pois o Toast já foi disparado
+        } catch {
+            showToast('Erro ao processar. Tente novamente.', 'error')
         } finally {
             setSavingIds(prev => prev.filter(id => id !== malId))
         }
@@ -155,15 +167,14 @@ export default function Rankings() {
             <div className="max-w-[900px] mx-auto px-5 pt-10">
                 <div className="mb-6">
                     <p className="font-mono text-xs text-holo-3 tracking-widest mb-2">// RANKING GLOBAL</p>
-                    <h1 className="font-anton text-3xl md:text-4xl uppercase text-text mb-2">Os mais aclamados</h1>
-                    <p className="text-muted text-sm">Direto da base pública da AniList — filtros aplicados no servidor.</p>
+                    <h1 className="font-anton text-3xl md:text-4xl uppercase text-text mb-2 select-none">Os mais aclamados</h1>
+                    <p className="text-muted text-sm select-none">Direto da base pública da AniList — filtros aplicados no servidor.</p>
                 </div>
 
-                {/* Controles de filtro */}
                 <div className="mb-6 space-y-3">
                     <button
                         onClick={() => setShowFilters(v => !v)}
-                        className={`inline-flex items-center gap-2 px-4 py-2 rounded-full border text-sm font-bold transition-all duration-200 cursor-pointer ${showFilters || activeFilterCount > 0
+                        className={`select-none inline-flex items-center gap-2 px-4 py-2 rounded-full border text-sm font-bold transition-all duration-200 cursor-pointer ${showFilters || activeFilterCount > 0
                                 ? 'border-holo-2 text-holo-2 bg-holo-2/10'
                                 : 'border-line text-muted bg-panel hover:border-holo-2 hover:text-holo-2'
                             }`}
@@ -179,16 +190,14 @@ export default function Rankings() {
 
                     {showFilters && (
                         <div className="bg-panel border border-line rounded-2xl p-5 space-y-6">
-
-                            {/* Status */}
                             <div>
-                                <p className="font-mono text-[10px] text-muted-2 tracking-widest mb-3">// STATUS</p>
+                                <p className="font-mono text-[10px] text-muted-2 tracking-widest mb-3 select-none">// STATUS</p>
                                 <div className="flex flex-wrap gap-2">
                                     {STATUS_OPTIONS.map(opt => (
                                         <button
                                             key={opt.value}
                                             onClick={() => setSelectedStatus(selectedStatus === opt.value ? '' : opt.value)}
-                                            className={`px-3 py-1.5 rounded-full text-xs font-bold transition-all duration-150 cursor-pointer ${selectedStatus === opt.value
+                                            className={`select-none px-3 py-1.5 rounded-full text-xs font-bold transition-all duration-150 cursor-pointer ${selectedStatus === opt.value
                                                     ? 'bg-gradient-to-r from-holo-1 to-holo-2 text-void shadow-[0_0_12px_rgba(123,92,255,0.4)]'
                                                     : 'bg-panel-2 border border-line text-muted hover:border-holo-2 hover:text-text'
                                                 }`}
@@ -199,15 +208,14 @@ export default function Rankings() {
                                 </div>
                             </div>
 
-                            {/* Temporada + Ano */}
                             <div>
-                                <p className="font-mono text-[10px] text-muted-2 tracking-widest mb-3">// TEMPORADA</p>
+                                <p className="font-mono text-[10px] text-muted-2 tracking-widest mb-3 select-none">// TEMPORADA</p>
                                 <div className="flex flex-wrap gap-2 mb-3">
                                     {SEASON_OPTIONS.map(opt => (
                                         <button
                                             key={opt.value}
                                             onClick={() => setSelectedSeason(selectedSeason === opt.value ? '' : opt.value)}
-                                            className={`px-3 py-1.5 rounded-full text-xs font-bold transition-all duration-150 cursor-pointer ${selectedSeason === opt.value
+                                            className={`select-none px-3 py-1.5 rounded-full text-xs font-bold transition-all duration-150 cursor-pointer ${selectedSeason === opt.value
                                                     ? 'bg-gradient-to-r from-holo-1 to-holo-2 text-void shadow-[0_0_12px_rgba(123,92,255,0.4)]'
                                                     : 'bg-panel-2 border border-line text-muted hover:border-holo-2 hover:text-text'
                                                 }`}
@@ -216,14 +224,13 @@ export default function Rankings() {
                                         </button>
                                     ))}
                                 </div>
-                                {/* Ano — só relevante quando temporada está selecionada */}
                                 {selectedSeason && (
                                     <div className="flex flex-wrap gap-2">
                                         {YEAR_OPTIONS.map(y => (
                                             <button
                                                 key={y}
                                                 onClick={() => setSelectedYear(selectedYear === String(y) ? '' : String(y))}
-                                                className={`px-3 py-1.5 rounded-full text-xs font-bold transition-all duration-150 cursor-pointer ${selectedYear === String(y)
+                                                className={`select-none px-3 py-1.5 rounded-full text-xs font-bold transition-all duration-150 cursor-pointer ${selectedYear === String(y)
                                                         ? 'bg-holo-3/20 border border-holo-3 text-holo-3'
                                                         : 'bg-panel-2 border border-line text-muted hover:border-holo-3 hover:text-text'
                                                     }`}
@@ -235,9 +242,8 @@ export default function Rankings() {
                                 )}
                             </div>
 
-                            {/* Categoria (gênero + tag) */}
                             <div>
-                                <p className="font-mono text-[10px] text-muted-2 tracking-widest mb-3">// CATEGORIA</p>
+                                <p className="font-mono text-[10px] text-muted-2 tracking-widest mb-3 select-none">// CATEGORIA</p>
                                 <div className="flex flex-wrap gap-2">
                                     {CONTENT_FILTERS.map(f => {
                                         const isActive = selectedFilters.some(x => x.value === f.value)
@@ -245,7 +251,7 @@ export default function Rankings() {
                                             <button
                                                 key={`${f.type}-${f.value}`}
                                                 onClick={() => toggleFilter(f)}
-                                                className={`px-3 py-1.5 rounded-full text-xs font-bold transition-all duration-150 cursor-pointer border ${isActive
+                                                className={`select-none px-3 py-1.5 rounded-full text-xs font-bold transition-all duration-150 cursor-pointer border ${isActive
                                                         ? `${getCategoryTheme(f.label)} shadow-[0_0_10px_currentColor]`
                                                         : 'bg-panel-2 border-line text-muted hover:border-holo-2 hover:text-text'
                                                     }`}
@@ -258,7 +264,7 @@ export default function Rankings() {
                             </div>
 
                             {activeFilterCount > 0 && (
-                                <button onClick={clearFilters} className="flex items-center gap-1.5 text-coral text-xs font-bold hover:opacity-80 transition-opacity cursor-pointer">
+                                <button onClick={clearFilters} className="select-none flex items-center gap-1.5 text-coral text-xs font-bold hover:opacity-80 transition-opacity cursor-pointer">
                                     <X size={12} /> Limpar filtros
                                 </button>
                             )}
@@ -266,7 +272,6 @@ export default function Rankings() {
                     )}
                 </div>
 
-                {/* Lista */}
                 <div className="flex flex-col gap-3">
                     {animes.map((anime, index) => {
                         const rank = index + 1
@@ -275,47 +280,65 @@ export default function Rankings() {
                         else if (rank === 2) rankColor = 'text-[#D9DDE6]'
                         else if (rank === 3) rankColor = 'text-[#C77B3E]'
 
+                        // 🟢 Checa se está no banco e se é Favorito (Carta Rara)
+                        const savedEntry = savedEntries.find(e => e.mal_id === anime.mal_id)
+                        const isFoil = savedEntry?.is_favorite
+
                         return (
                            <Link
                                 to={`/anime/${anime.mal_id}`}
                                 key={`${anime.mal_id}-${index}`}
-                                // Corrigido o grid mobile para caber o botão (24px_44px_1fr_auto_auto)
-                                className="grid grid-cols-[24px_44px_1fr_auto_auto] md:grid-cols-[36px_56px_1fr_auto_auto] gap-2 md:gap-4 items-center p-3 bg-panel border border-line rounded-xl hover:border-holo-2 transition-colors group"
+                                // 🟢 Adicionado overflow-hidden e as classes do foil-card condicionalmente
+                                className={`relative overflow-hidden grid grid-cols-[24px_44px_1fr_auto_auto] md:grid-cols-[36px_56px_1fr_auto_auto] gap-2 md:gap-4 items-center p-3 rounded-xl transition-colors group ${
+                                    isFoil 
+                                        ? 'foil-card border border-gold/50 shadow-[0_0_15px_rgba(255,197,66,0.15)]' 
+                                        : 'bg-panel border border-line hover:border-holo-2'
+                                }`}
                             >
-                                <span className={`font-anton text-lg md:text-xl text-center ${rankColor}`}>
+                                {/* 🟢 Z-INDEX RELATIVE 30 PRA FICAR ACIMA DA LUZ DO FOIL */}
+                                <span className={`relative z-30 font-anton text-lg md:text-xl text-center select-none ${rankColor}`}>
                                     {rank < 10 ? `0${rank}` : rank}
                                 </span>
-                                <img src={anime.images?.jpg?.image_url} alt={anime.title} className="w-11 h-11 md:w-14 md:h-14 rounded-lg object-cover bg-panel-2 border border-line" />
-                                <div className="min-w-0">
-                                    <div className="font-bold text-sm md:text-[14.5px] truncate mb-1.5">{anime.title}</div>
+                                
+                                <img src={anime.images?.jpg?.image_url} alt={anime.title} className="relative z-30 w-11 h-11 md:w-14 md:h-14 rounded-lg object-cover bg-panel-2 border border-line" />
+                                
+                                <div className="relative z-30 min-w-0">
+                                    <div className="font-bold text-sm md:text-[14.5px] truncate mb-1.5">
+                                        {/* 👑 A COROA DO FAVORITO */}
+                                        {isFoil && <span className="text-gold mr-1" title="Favorito">👑</span>}
+                                        {anime.title}
+                                    </div>
                                     <div className="flex items-center gap-2 font-mono text-[10px] md:text-[10.5px] text-muted-2">
                                         {anime.genres && anime.genres.length > 0 && (
                                             <span className={`px-1.5 py-0.5 rounded border font-bold font-manrope ${getCategoryTheme(anime.genres[0].name)}`}>
                                                 {anime.genres[0].name}
                                             </span>
                                         )}
-                                        <span>{anime.status} • {anime.episodes || '?'} EP</span>
+                                        <span className="select-none">{anime.status} • {anime.episodes || '?'} EP</span>
                                     </div>
                                 </div>
-                                <div className="text-right">
+                                
+                                <div className="relative z-30 text-right select-none">
                                     <div className="font-anton text-sm md:text-base text-gold">★ {anime.score || 'N/A'}</div>
                                     <span className="font-mono text-[9px] text-muted-2 hidden md:block">NOTA</span>
                                 </div>
                                 
-                                {/* Removido o hidden md:flex e adicionada a lógica de Check visual */}
                                 <button 
                                     onClick={(e) => handleSalvar(e, anime.mal_id)} 
-                                    disabled={savingIds.includes(anime.mal_id) || savedIds.includes(anime.mal_id)}
-                                    className={`flex w-8 h-8 rounded-full border-[1.5px] items-center justify-center font-bold text-lg transition-colors z-10 ${
-                                        savedIds.includes(anime.mal_id)
-                                            ? 'bg-green/20 border-green text-green cursor-default'
+                                    disabled={savingIds.includes(anime.mal_id)}
+                                    className={`relative z-30 flex w-8 h-8 rounded-full border-[1.5px] items-center justify-center font-bold text-lg transition-colors select-none ${
+                                        savedEntry
+                                            ? 'bg-green/20 border-green text-green cursor-pointer hover:bg-coral/20 hover:border-coral hover:text-coral'
                                             : 'border-line bg-transparent text-muted group-hover:border-holo-3 group-hover:text-holo-3 cursor-pointer'
                                     }`}
                                 >
                                     {savingIds.includes(anime.mal_id) ? (
                                         <div className="w-3 h-3 border-2 border-current border-t-transparent rounded-full animate-spin"></div>
-                                    ) : savedIds.includes(anime.mal_id) ? (
-                                        <Check size={16} strokeWidth={3} />
+                                    ) : savedEntry ? (
+                                        <>
+                                            <span className="hover:hidden flex items-center justify-center"><Check size={16} strokeWidth={3} /></span>
+                                            <span className="hidden hover:flex items-center justify-center text-[15px]">×</span>
+                                        </>
                                     ) : (
                                         '+'
                                     )}
@@ -328,29 +351,29 @@ export default function Rankings() {
                 {loading && (
                     <div className="py-10 text-center">
                         <div className="inline-block w-8 h-8 rounded-full border-4 border-line border-t-holo-3 animate-spin mb-2"></div>
-                        <p className="font-mono text-muted text-xs tracking-widest">// CARREGANDO...</p>
+                        <p className="font-mono text-muted text-xs tracking-widest select-none">// CARREGANDO...</p>
                     </div>
                 )}
 
                 {error && (
                     <div className="text-center py-10 text-coral">
                         <AlertCircle className="mx-auto mb-2 opacity-80" size={28} />
-                        <p className="text-sm">{error}</p>
+                        <p className="text-sm select-none">{error}</p>
                     </div>
                 )}
 
                 {!loading && !error && animes.length === 0 && activeFilterCount > 0 && (
                     <div className="text-center py-16">
-                        <p className="font-anton uppercase text-text text-xl mb-2">Nenhum resultado</p>
-                        <p className="text-sm text-muted mb-4">Nenhum anime encontrado com esses filtros.</p>
-                        <button onClick={clearFilters} className="px-4 py-2 rounded-full border border-coral text-coral text-sm font-bold hover:bg-coral/10 transition-colors cursor-pointer">
+                        <p className="font-anton uppercase text-text text-xl mb-2 select-none">Nenhum resultado</p>
+                        <p className="text-sm text-muted mb-4 select-none">Nenhum anime encontrado com esses filtros.</p>
+                        <button onClick={clearFilters} className="select-none px-4 py-2 rounded-full border border-coral text-coral text-sm font-bold hover:bg-coral/10 transition-colors cursor-pointer">
                             Limpar filtros
                         </button>
                     </div>
                 )}
 
                 {!loading && !error && animes.length > 0 && (
-                    <button onClick={() => setPage(p => p + 1)} className="block mx-auto mt-8 mb-10 px-6 py-3 rounded-full border border-line bg-panel text-text font-bold text-sm hover:border-holo-3 hover:text-holo-3 transition-colors cursor-pointer">
+                    <button onClick={() => setPage(p => p + 1)} className="select-none block mx-auto mt-8 mb-10 px-6 py-3 rounded-full border border-line bg-panel text-text font-bold text-sm hover:border-holo-3 hover:text-holo-3 transition-colors cursor-pointer">
                         Carregar mais
                     </button>
                 )}

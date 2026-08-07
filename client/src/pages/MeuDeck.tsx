@@ -10,8 +10,9 @@ interface Entrada {
     mal_id: number
     tipo: string
     status: string
-    nota?: number
+    nota?: number | null
     anotacao?: string
+    is_favorite?: boolean
 }
 
 interface HydratedAnime {
@@ -19,6 +20,7 @@ interface HydratedAnime {
     title: string
     image_url: string
     genre?: string
+    ranking?: number 
 }
 
 export default function MeuDeck() {
@@ -38,7 +40,6 @@ export default function MeuDeck() {
             setUserName(session.user.user_metadata?.display_name || 'Usuário')
 
             try {
-                // 1. Pega os IDs e status salvos no nosso banco
                 const response = await fetch('/api/entries', {
                     headers: { 'Authorization': `Bearer ${session.access_token}` },
                 })
@@ -47,21 +48,7 @@ export default function MeuDeck() {
                 setEntradas(dadosDeck || [])
 
                 if (dadosDeck && dadosDeck.length > 0) {
-                    
-                    // 2. Busca a lista de nomes customizados (Curadoria Admin) para aplicar por cima
-                    let curadoria: any[] = []
-                    try {
-                        const resCur = await fetch('/api/curation')
-                        if (resCur.ok) curadoria = await resCur.json()
-                    } catch (e) {
-                        console.warn('Aviso: falha ao buscar curadoria', e)
-                    }
-                    const mapaCuradoria: Record<number, string> = {}
-                    curadoria.forEach(c => { mapaCuradoria[c.mal_id] = c.custom_title })
-
-                    // 3. Hidratação Ligeira: Busca todos os pôsteres da AniList de uma vez só
                     const malIds = dadosDeck.map(e => e.mal_id)
-
                     const apiResponse = await fetch('/api/anime/bulk', {
                         method: 'POST',
                         headers: {  'Content-Type': 'application/json' },
@@ -75,14 +62,13 @@ export default function MeuDeck() {
                     media.forEach((m: any) => {
                         mapaAnimes[m.mal_id] = {
                             mal_id: m.mal_id,
-                            title: mapaCuradoria[m.mal_id] || m.title || 'Título Desconhecido',
+                            title: m.title || 'Título Desconhecido',
                             image_url: m.images?.jpg?.image_url || '',
-                            // Salva a primeira categoria do array
-                            genre: m.genres && m.genres.length > 0 ? m.genres[0].name : undefined
+                            genre: m.genres && m.genres.length > 0 ? m.genres[0].name : undefined,
+                            ranking: m.ranking 
                         }
                     })
                     setAnimesData(mapaAnimes)
-                    
                 }
             } catch (err) {
                 setError('Não foi possível carregar seu deck. Tente novamente.')
@@ -94,7 +80,6 @@ export default function MeuDeck() {
         carregarDeck()
     }, [])
 
-    // 🟢 Lógica de Estatísticas Rápidas ATUALIZADA (Inclui Dropados)
     const stats = useMemo(() => {
         let assistindo = 0, emDia = 0, concluidos = 0, dropados = 0, somaNotas = 0, qtdNotas = 0;
         
@@ -102,8 +87,8 @@ export default function MeuDeck() {
             if (e.status === 'Assistindo') assistindo++;
             if (e.status === 'Em Dia') emDia++;
             if (e.status === 'Completo' || e.status === 'Finalizado') concluidos++;
-            if (e.status === 'Dropado') dropados++; // <-- Adicionado aqui
-            if (e.nota && e.nota > 0) {
+            if (e.status === 'Dropado') dropados++; 
+            if (e.nota !== null && e.nota !== undefined) {
                 somaNotas += e.nota;
                 qtdNotas++;
             }
@@ -118,10 +103,17 @@ export default function MeuDeck() {
         }
     }, [entradas])
 
-    // Filtro da lista
     const entradasFiltradas = entradas.filter(e => filtroAtivo === 'Todos' || e.status === filtroAtivo)
 
-    // Helpers de visual para os Cards
+    // 🟢 ORDENAÇÃO: Favoritos sempre puxados para o topo!
+    const entradasOrdenadas = useMemo(() => {
+        return [...entradasFiltradas].sort((a, b) => {
+            if (a.is_favorite && !b.is_favorite) return -1;
+            if (!a.is_favorite && b.is_favorite) return 1;
+            return 0;
+        })
+    }, [entradasFiltradas])
+
     const getStatusTheme = (status: string) => {
         switch(status) {
             case 'Assistindo': return { bg: 'bg-holo-3/20', text: 'text-holo-3', border: 'border-holo-3/40' }
@@ -144,25 +136,21 @@ export default function MeuDeck() {
 
     return (
         <div className="pb-20">
-            {/* O bg-ambient já é importado globalmente no index.css, mas garantimos que o container fique por cima */}
             <div className="max-w-[1180px] mx-auto px-5 pt-8 relative z-10">
-                
-                {/* HEADER DA PÁGINA */}
                 <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-5 mb-8">
                     <div>
-                        <h1 className="font-anton text-[clamp(1.6rem,3.6vw,2.2rem)] uppercase mb-1">
+                        <h1 className="font-anton text-[clamp(1.6rem,3.6vw,2.2rem)] uppercase mb-1 select-none">
                             Bem-vindo de volta, <span className="bg-gradient-to-r from-holo-1 via-holo-2 to-holo-3 text-transparent bg-clip-text">{userName}</span>
                         </h1>
-                        <p className="text-muted text-sm">Aqui está o que está rolando na sua coleção.</p>
+                        <p className="text-muted text-sm select-none">Aqui está o que está rolando na sua coleção.</p>
                     </div>
-                    <Link to="/" className="font-extrabold text-[13.5px] px-6 py-3 rounded-full text-void bg-gradient-to-r from-holo-1 via-holo-2 to-holo-3 flex items-center gap-2 hover:-translate-y-0.5 transition-transform">
+                    <Link to="/descobrir" className="font-extrabold text-[13.5px] px-6 py-3 rounded-full text-void bg-gradient-to-r from-holo-1 via-holo-2 to-holo-3 flex items-center gap-2 hover:-translate-y-0.5 transition-transform select-none">
                         <Play size={14} fill="currentColor" />
                         Buscar Anime
                     </Link>
                 </div>
 
-                {/* 🟢 QUICK STATS (Agora com 5 colunas no Desktop) */}
-                <div className="grid grid-cols-2 md:grid-cols-5 gap-3.5 mb-10">
+                <div className="grid grid-cols-2 md:grid-cols-5 gap-3.5 mb-10 select-none">
                     <div className="bg-panel border border-line rounded-[14px] p-4 md:p-[18px] border-t-[3px] border-t-holo-3 relative overflow-hidden">
                         <div className="w-7 h-7 rounded-lg bg-holo-3/20 text-holo-3 flex items-center justify-center mb-2"><MonitorPlay size={14} /></div>
                         <b className="block font-anton text-2xl mb-0.5">{stats.assistindo}</b>
@@ -190,13 +178,11 @@ export default function MeuDeck() {
                     </div>
                 </div>
 
-                {/* SESSÃO DECK */}
-                <div className="flex items-center justify-between mb-5">
+                <div className="flex items-center justify-between mb-5 select-none">
                     <h2 className="font-anton text-[17px] uppercase m-0">Meu Deck</h2>
                 </div>
 
-                {/* TABS DE FILTRO */}
-                <div className="flex gap-2 flex-wrap mb-7">
+                <div className="flex gap-2 flex-wrap mb-7 select-none">
                     {['Todos', 'Assistindo', 'Em Dia', 'Completo', 'Quero Assistir', 'Dropado'].map(tab => (
                         <button
                             key={tab}
@@ -212,37 +198,52 @@ export default function MeuDeck() {
                     ))}
                 </div>
 
-                {/* GRID DE CARDS */}
-                {entradasFiltradas.length === 0 ? (
-                    <div className="text-center py-16 bg-panel border border-line rounded-2xl">
+                {entradasOrdenadas.length === 0 ? (
+                    <div className="text-center py-16 bg-panel border border-line rounded-2xl select-none">
                         <Bookmark className="mx-auto mb-4 text-muted-2" size={32} />
                         <h3 className="font-anton uppercase text-text text-lg mb-1">Lista Vazia</h3>
                         <p className="text-sm text-muted">Nenhum anime encontrado com este status.</p>
                     </div>
                 ) : (
                     <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3 sm:gap-4">
-                        {entradasFiltradas.map((entrada, index) => {
+                        {entradasOrdenadas.map((entrada, index) => {
                             const animeLocal = animesData[entrada.mal_id]
                             const gradClass = `card-g${(index % 5) + 1}`
                             const temaStatus = getStatusTheme(entrada.status)
+                            
+                            // 🟢 SE FOR FAVORITO VIRA UMA CARTA FOIL E TEM BORDA DOURADA
+                            const isFoil = entrada.is_favorite
 
                             return (
                                 <div
                                     key={entrada.id}
-                                    onClick={() => setEditando(entrada)}
-                                    className={`relative aspect-[3/4.2] rounded-[14px] overflow-hidden p-3 md:p-3.5 flex flex-col justify-end border border-line cursor-pointer transition-transform hover:-translate-y-1 bg-panel ${gradClass} group`}
+                                    className={`relative aspect-[3/4.2] rounded-[14px] overflow-hidden p-3 md:p-3.5 flex flex-col justify-end border transition-transform hover:-translate-y-1 group ${
+                                        isFoil ? 'foil-card border-gold/50 shadow-[0_0_15px_rgba(255,197,66,0.15)]' : `border-line bg-panel ${gradClass}`
+                                    }`}
                                 >
+                                    <Link to={`/anime/${entrada.mal_id}`} className="absolute inset-0 z-10"></Link>
+
                                     {animeLocal?.image_url && (
                                         <img src={animeLocal.image_url} alt={animeLocal.title} className="absolute inset-0 w-full h-full object-cover z-0 opacity-80 group-hover:opacity-100 transition-opacity" />
                                     )}
-                                    <div className="absolute inset-0 bg-gradient-to-t from-void/95 via-void/40 to-transparent z-10" />
+                                    <div className="absolute inset-0 bg-gradient-to-t from-void/95 via-void/40 to-transparent z-0" />
                                     
-                                    <span className={`absolute top-2.5 left-2.5 z-30 text-[9px] md:text-[9.5px] font-extrabold px-2 py-1 rounded-full uppercase tracking-wider backdrop-blur-sm border ${temaStatus.bg} ${temaStatus.text} ${temaStatus.border}`}>
+                                    <span className={`select-none absolute top-2.5 left-2.5 z-20 text-[9px] md:text-[9.5px] font-extrabold px-2 py-1 rounded-full uppercase tracking-wider backdrop-blur-sm border ${temaStatus.bg} ${temaStatus.text} ${temaStatus.border}`}>
                                         {entrada.status}
                                     </span>
+
+                                    <button 
+                                        onClick={(e) => { e.preventDefault(); e.stopPropagation(); setEditando(entrada); }}
+                                        className="absolute top-2.5 right-2.5 z-30 w-8 h-8 rounded-full bg-void/80 border border-line text-muted hover:text-holo-3 hover:border-holo-3 flex items-center justify-center backdrop-blur-md cursor-pointer transition-colors shadow-lg"
+                                        title="Editar entrada"
+                                    >
+                                        ✎
+                                    </button>
                                     
-                                    <div className="relative z-20 mt-auto">
+                                    <div className="relative z-20 mt-auto pointer-events-none select-none">
                                         <div className="font-anton text-[12px] sm:text-[13.5px] uppercase leading-tight mb-2 truncate text-white drop-shadow-md">
+                                            {/* 👑 COROA DE HONRA PARA FAVORITOS */}
+                                            {isFoil && <span className="text-gold mr-1" title="Favorito">👑</span>}
                                             {animeLocal?.title || `ID: ${entrada.mal_id}`}
                                         </div>
                                         
@@ -254,9 +255,16 @@ export default function MeuDeck() {
                                                     </span>
                                                 )}
                                             </div>
-                                            {/* Destaque maior na nota */}
-                                            <div className={`font-anton text-[12px] sm:text-[14px] px-2 py-0.5 rounded-md backdrop-blur-sm border ${entrada.nota ? 'bg-gold/20 text-gold border-gold/40 shadow-[0_0_8px_rgba(255,197,66,0.3)]' : 'bg-panel-2/80 text-muted-2 border-line'}`}>
-                                                {entrada.nota ? `★ ${entrada.nota}` : 'S/N'}
+                                            
+                                            <div className="flex items-center gap-1.5">
+                                                {animeLocal?.ranking && (
+                                                    <div className="font-anton text-[12px] sm:text-[14px] px-2 py-0.5 rounded-md backdrop-blur-sm border bg-panel-2/90 text-holo-3 border-holo-3/40 shadow-[0_0_8px_rgba(63,224,240,0.15)] flex items-center gap-1" title={`#${animeLocal.ranking} no mundo`}>
+                                                        🏆 #{animeLocal.ranking}
+                                                    </div>
+                                                )}
+                                                <div className={`font-anton text-[12px] sm:text-[14px] px-2 py-0.5 rounded-md backdrop-blur-sm border ${entrada.nota !== null && entrada.nota !== undefined ? 'bg-gold/20 text-gold border-gold/40 shadow-[0_0_8px_rgba(255,197,66,0.3)]' : 'bg-panel-2/80 text-muted-2 border-line'}`}>
+                                                    {entrada.nota !== null && entrada.nota !== undefined ? `★ ${entrada.nota}` : 'S/N'}
+                                                </div>
                                             </div>
                                         </div>
                                     </div>
@@ -266,7 +274,6 @@ export default function MeuDeck() {
                     </div>
                 )}
 
-                {/* MODAL DE EDIÇÃO */}
                 {editando && (
                     <EditarEntradaModal
                         entrada={editando}

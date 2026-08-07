@@ -124,3 +124,26 @@
 .reveal { opacity: 0; transform: translateY(16px); transition: opacity .6s ease, transform .6s ease; }
 .reveal.in { opacity: 1; transform: translateY(0); }
 @media(prefers-reduced-motion: reduce) { .reveal { opacity: 1; transform: none; transition: none; } .stack-card { transition: none; } }
+
+/* =========================================
+   CARTAS RARAS (FAVORITOS)
+   ========================================= */
+.foil-card {
+  background: linear-gradient(155deg, #2a103c, #120b22 75%);
+}
+.foil-card::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: linear-gradient(125deg, transparent 20%, rgba(255,255,255,0.2) 40%, rgba(255, 79, 216, 0.3) 50%, rgba(63, 224, 240, 0.3) 60%, transparent 80%);
+  background-size: 200% 200%;
+  animation: foilShine 8s linear infinite;
+  pointer-events: none;
+  z-index: 25;
+  mix-blend-mode: screen;
+}
+@keyframes foilShine {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
