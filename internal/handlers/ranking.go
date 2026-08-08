@@ -13,7 +13,7 @@ import (
 )
 
 type RankingHandler struct {
-	AniListClient *anilist.Client
+	AniListClient anilist.Service
 }
 
 func (h *RankingHandler) HandleGetTopAnime(w http.ResponseWriter, r *http.Request) {
@@ -55,9 +55,10 @@ func (h *RankingHandler) HandleGetTopAnime(w http.ResponseWriter, r *http.Reques
 	}
 
 	var curados []models.CuratedAnime
-	_, errCurado := database.Client.From("curated_animes").Select("*", "exact", false).ExecuteTo(&curados)
+	data, _, errCurado := database.Client.From("curated_animes").Select("*", "exact", false).Execute()
 
 	if errCurado == nil {
+		_ = json.Unmarshal(data, &curados)
 		curadosMap := make(map[int]models.CuratedAnime)
 		for _, c := range curados {
 			curadosMap[c.MalID] = c

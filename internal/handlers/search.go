@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"log"
 	"net/http"
-	"os"
 	"strconv"
 	"strings"
 
@@ -14,7 +13,7 @@ import (
 )
 
 type SearchHandler struct {
-	AniListClient *anilist.Client
+	AniListClient anilist.Service
 }
 
 func (h *SearchHandler) HandleSearch(w http.ResponseWriter, r *http.Request) {
@@ -36,12 +35,6 @@ func (h *SearchHandler) HandleSearch(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if os.Getenv("MOCK_ANILIST") == "true" {
-		log.Println("[MOCK] Variável MOCK_ANILIST ativada. Retornando dados falsos para busca...")
-		return
-	}
-
-	// OTIMIZAÇÃO ISSUE #33: Pré-computando Filtros em Hash Maps O(1)
 	genreMap := make(map[string]bool)
 	for _, g := range genres {
 		genreMap[strings.ToLower(g)] = true
@@ -69,7 +62,11 @@ func (h *SearchHandler) HandleSearch(w http.ResponseWriter, r *http.Request) {
 
 	if query != "" {
 		var localHits []models.CuratedAnime
-		_, errLocal := database.Client.From("curated_animes").Select("*", "exact", false).Filter("custom_title", "ilike", "%"+query+"%").ExecuteTo(&localHits)
+		data, _, errLocal := database.Client.From("curated_animes").Select("*", "exact", false).Filter("custom_title", "ilike", "%"+query+"%").Execute()
+
+		if errLocal == nil {
+			_ = json.Unmarshal(data, &localHits)
+		}
 
 		if errLocal == nil && len(localHits) > 0 {
 			var localMalIDs []int
@@ -108,7 +105,6 @@ func (h *SearchHandler) HandleSearch(w http.ResponseWriter, r *http.Request) {
 
 					match := true
 
-					// OTIMIZAÇÃO ISSUE #33: Verificação algorítmica de Gêneros O(1)
 					if len(genres) > 0 {
 						hasGenre := false
 						for _, animeG := range a.Genres {
@@ -120,7 +116,6 @@ func (h *SearchHandler) HandleSearch(w http.ResponseWriter, r *http.Request) {
 						if !hasGenre { match = false }
 					}
 
-					// OTIMIZAÇÃO ISSUE #33: Verificação algorítmica de Tags O(1)
 					if match && len(tags) > 0 {
 						hasTag := false
 						for _, animeG := range a.Genres {
@@ -162,7 +157,10 @@ func (h *SearchHandler) HandleSearch(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var curados []models.CuratedAnime
-	_, _ = database.Client.From("curated_animes").Select("*", "exact", false).ExecuteTo(&curados)
+	dataCurados, _, _ := database.Client.From("curated_animes").Select("*", "exact", false).Execute()
+	if dataCurados != nil {
+		_ = json.Unmarshal(dataCurados, &curados)
+	}
 
 	curadosMap := make(map[int]models.CuratedAnime)
 	for _, c := range curados {

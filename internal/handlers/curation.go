@@ -18,16 +18,16 @@ type CurationHandler struct{}
 func (h *CurationHandler) HandleList(w http.ResponseWriter, r *http.Request) {
 	var resultado []models.CuratedAnime
 
-	// 🟢 MUDANÇA AQUI: Usa o cliente global (leitura pública)
-	_, err := database.Client.From("curated_animes").
+	data, _, err := database.Client.From("curated_animes").
 		Select("*", "exact", false).
-		ExecuteTo(&resultado)
+		Execute()
 
 	if err != nil {
 		log.Printf("[ERRO DB] HandleList Curation: %v", err)
 		http.Error(w, "Erro ao buscar destaques", http.StatusInternalServerError)
 		return
 	}
+	_ = json.Unmarshal(data, &resultado)
 
 	slices.SortFunc(resultado, func(a, b models.CuratedAnime) int {
 		return cmp.Compare(a.OrderIndex, b.OrderIndex)
@@ -38,7 +38,6 @@ func (h *CurationHandler) HandleList(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *CurationHandler) HandleCreate(w http.ResponseWriter, r *http.Request) {
-	// Requer autenticação do Admin
 	token, tokenOk := r.Context().Value(middleware.TokenKey).(string)
 	if !tokenOk {
 		http.Error(w, "Não autenticado", http.StatusUnauthorized)
@@ -60,12 +59,13 @@ func (h *CurationHandler) HandleCreate(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var resultado []models.CuratedAnime
-	_, err := dbClient.From("curated_animes").Insert(entrada, false, "", "representation", "exact").ExecuteTo(&resultado)
+	data, _, err := dbClient.From("curated_animes").Insert(entrada, false, "", "representation", "exact").Execute()
 	if err != nil {
 		log.Printf("[ERRO DB] HandleCreate Curation: %v", err)
 		http.Error(w, "Erro ao salvar destaque", http.StatusInternalServerError)
 		return
 	}
+	_ = json.Unmarshal(data, &resultado)
 
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(resultado)
@@ -99,16 +99,17 @@ func (h *CurationHandler) HandleUpdate(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var resultado []models.CuratedAnime
-	_, err := dbClient.From("curated_animes").
+	data, _, err := dbClient.From("curated_animes").
 		Update(entrada, "representation", "exact").
 		Eq("id", id).
-		ExecuteTo(&resultado)
+		Execute()
 
 	if err != nil {
 		log.Printf("[ERRO DB] HandleUpdate Curation (id=%s): %v", id, err)
 		http.Error(w, "Erro ao atualizar destaque", http.StatusInternalServerError)
 		return
 	}
+	_ = json.Unmarshal(data, &resultado)
 
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(resultado)

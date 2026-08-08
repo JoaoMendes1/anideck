@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"log"
 	"net/http"
-	"os"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/JoaoMendes1/anideck/internal/anilist"
@@ -13,17 +12,13 @@ import (
 )
 
 type AnimeHandler struct {
-	AniListClient *anilist.Client
+	AniListClient anilist.Service
 }
 
 func (h *AnimeHandler) HandleGetAnime(w http.ResponseWriter, r *http.Request) {
 	id := chi.URLParam(r, "id")
 	if id == "" {
 		http.Error(w, "ID do anime é obrigatório", http.StatusBadRequest)
-		return
-	}
-
-	if os.Getenv("MOCK_ANILIST") == "true" {
 		return
 	}
 
@@ -35,7 +30,11 @@ func (h *AnimeHandler) HandleGetAnime(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var curados []models.CuratedAnime
-	_, errCurado := database.Client.From("curated_animes").Select("*", "exact", false).Eq("mal_id", id).ExecuteTo(&curados)
+	data, _, errCurado := database.Client.From("curated_animes").Select("*", "exact", false).Eq("mal_id", id).Execute()
+
+	if errCurado == nil {
+		_ = json.Unmarshal(data, &curados)
+	}
 
 	if errCurado == nil && len(curados) > 0 {
 		curado := curados[0]
@@ -103,8 +102,11 @@ func (h *AnimeHandler) HandleGetAnimesByIDs(w http.ResponseWriter, r *http.Reque
 	}
 
 	var curados []models.CuratedAnime
-	//Sintaxe da nova SDK
-	_, errCurado := database.Client.From("curated_animes").Select("*", "exact", false).ExecuteTo(&curados)
+	data, _, errCurado := database.Client.From("curated_animes").Select("*", "exact", false).Execute()
+	
+	if errCurado == nil {
+		_ = json.Unmarshal(data, &curados)
+	}
 	
 	if errCurado == nil && len(curados) > 0 {
 		mapaCuradoria := make(map[int]models.CuratedAnime)

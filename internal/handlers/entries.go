@@ -18,7 +18,6 @@ type EntriesHandler struct{}
 
 func (h *EntriesHandler) HandleCreate(w http.ResponseWriter, r *http.Request) {
 	userID, ok := r.Context().Value(middleware.UserIDKey).(string)
-	// Extraindo o token JWT do middleware
 	token, tokenOk := r.Context().Value(middleware.TokenKey).(string)
 
 	if !ok || !tokenOk || userID == "" {
@@ -35,7 +34,6 @@ func (h *EntriesHandler) HandleCreate(w http.ResponseWriter, r *http.Request) {
 	entrada.UserID = userID
 	entrada.Anotacao = sanitizer.Sanitize(entrada.Anotacao)
 
-	// Criando cliente seguro com o token do usuário
 	dbClient, errClient := database.ClientWithToken(token)
 	if errClient != nil {
 		http.Error(w, "Erro interno de conexão", http.StatusInternalServerError)
@@ -43,13 +41,13 @@ func (h *EntriesHandler) HandleCreate(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var resultado []entries.MediaEntry
-	// Sintaxe da nova SDK (From direto e ExecuteTo)
-	_, err := dbClient.From("media_entries").Insert(entrada, false, "", "representation", "exact").ExecuteTo(&resultado)
+	data, _, err := dbClient.From("media_entries").Insert(entrada, false, "", "representation", "exact").Execute()
 	if err != nil {
 		log.Printf("[ERRO DB] HandleCreate: %v", err)
 		http.Error(w, "Erro ao salvar entrada", http.StatusInternalServerError)
 		return
 	}
+	_ = json.Unmarshal(data, &resultado)
 
 	w.Header().Set("Content-Type", "application/json")
 	if err := json.NewEncoder(w).Encode(resultado); err != nil {
@@ -73,17 +71,17 @@ func (h *EntriesHandler) HandleList(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var resultado []entries.MediaEntry
-	// O RLS do banco vai bloquear automaticamente se não for o dono
-	_, err := dbClient.From("media_entries").
+	data, _, err := dbClient.From("media_entries").
 		Select("*", "exact", false).
 		Eq("user_id", userID).
-		ExecuteTo(&resultado)
+		Execute()
 
 	if err != nil {
 		log.Printf("[ERRO DB] HandleList: %v", err)
 		http.Error(w, "Erro ao buscar lista", http.StatusInternalServerError)
 		return
 	}
+	_ = json.Unmarshal(data, &resultado)
 
 	w.Header().Set("Content-Type", "application/json")
 	if err := json.NewEncoder(w).Encode(resultado); err != nil {
@@ -120,17 +118,18 @@ func (h *EntriesHandler) HandleUpdate(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var resultado []entries.MediaEntry
-	_, err := dbClient.From("media_entries").
+	data, _, err := dbClient.From("media_entries").
 		Update(entrada, "representation", "exact").
 		Eq("id", id).
 		Eq("user_id", userID).
-		ExecuteTo(&resultado)
+		Execute()
 
 	if err != nil {
 		log.Printf("[ERRO DB] HandleUpdate (id=%s): %v", id, err)
 		http.Error(w, "Erro ao atualizar entrada", http.StatusInternalServerError)
 		return
 	}
+	_ = json.Unmarshal(data, &resultado)
 
 	w.Header().Set("Content-Type", "application/json")
 	if err := json.NewEncoder(w).Encode(resultado); err != nil {
