@@ -32,12 +32,19 @@ func main() {
 	}
 
 	// 3. Inicializa o cliente da AniList (que contém o rate limiter)
-	anilistClient := anilist.NewClient()
+	var anilistService anilist.Service
+	
+	if os.Getenv("MOCK_ANILIST") == "true" {
+		log.Println("[MOCK] Inicializando Mock Client para a AniList (Sem consumo real de API)")
+		anilistService = anilist.NewMockClient()
+	} else {
+		anilistService = anilist.NewClient()
+	}
 
-	searchHandler := &handlers.SearchHandler{AniListClient: anilistClient}
-	animeHandler := &handlers.AnimeHandler{AniListClient: anilistClient}
+	searchHandler := &handlers.SearchHandler{AniListClient: anilistService}
+	animeHandler := &handlers.AnimeHandler{AniListClient: anilistService}
 	entriesHandler := handlers.EntriesHandler{}
-	rankingHandler := &handlers.RankingHandler{AniListClient: anilistClient}
+	rankingHandler := &handlers.RankingHandler{AniListClient: anilistService}
 	curationHandler := &handlers.CurationHandler{}
 
 	// 4. Configuração das rotas (chi)

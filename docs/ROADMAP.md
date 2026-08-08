@@ -37,6 +37,7 @@ Staging sobe já na Fase 1, como projeto esqueleto — mesmo padrão do JVM Syst
 - [x] Sanitização de qualquer texto livre inserido pelo usuário (anotações) via `bluemonday` (proteção contra XSS).
 - [x] Exibir ranking global de animes baseado na query `Page(sort: SCORE_DESC)` da AniList (Issue #10).
 - [x] Filtro por gênero/tag e plataforma de streaming (via campo `externalLinks` da AniList, cruzado em tempo de execução) (Issue #10).
+- [x] **Sistema de Cartas Raras:** Funcionalidade de "Favoritos" com UI de carta holográfica (Foil) e organização prioritária no Deck e Rankings.
 
 ## 🗂️ Fase 2.5: Curadoria Pessoal (Painel Admin)
 
@@ -48,27 +49,28 @@ Staging sobe já na Fase 1, como projeto esqueleto — mesmo padrão do JVM Syst
 ## 🎨 Fase 3: Identidade Visual — fim do MVP
 
 - [x] Protótipos visuais dedicados (fusão cyberpunk/sci-fi + anime) construídos em HTML/CSS nativo.
-- [ ] Aplicação da identidade (Design Tokens) nos componentes React reais.
-- [ ] Responsividade e acessibilidade básica.
-- [ ] Realizar testes usando Smartphone para ajustes e refinamentos. 
+- [x] Aplicação da identidade (Design Tokens) nos componentes React reais.
+- [x] Responsividade e acessibilidade básica.
+- [x] Realizar testes usando Smartphone para ajustes e refinamentos. 
 
-## 📊 Fase 4: Dashboard de Estatísticas
+## 📊 Fase 4: Dashboard de Estatísticas (Foco em SQL Avançado)
 
-- [ ] Cálculo de métricas pessoais (tempo assistido, gênero favorito, distribuição por status).
-- [ ] Visualização (gráficos) no painel do usuário.
+- [ ] Migrar a lógica de agregação de dados do client/backend para **VIEWS e FUNCTIONS nativas no Postgres (Supabase)**, exigindo domínio de queries complexas.
+- [ ] Cálculo de métricas pessoais (tempo assistido, gênero favorito, distribuição por status) direto no banco.
+- [ ] Visualização (gráficos) no painel do usuário consumindo essas procedures.
 
-## 📅 Fase 5.5: Smart Tracking & Streaming Direto (Killer Feature)
+## 🤖 Fase 4.5: Automação e IA Generativa (Integração Google Workspace)
+
+- [ ] **Agente Curador (IA no Admin):** Integrar um LLM para reescrever sinopses frias da AniList de forma autônoma, adotando o tom de voz "AniDeck".
+- [ ] **Agente Olheiro (Automação Background):** Criar um fluxo orquestrado (ex: n8n) que cruza os favoritos do usuário (SQL) com os *trends* da AniList.
+- [ ] **Integração Google Workspace:** O Agente gera recomendações personalizadas em HTML e utiliza a API do Gmail para disparar um relatório automático para a caixa de entrada do usuário.
+
+## 📅 Fase 5: Smart Tracking, Streaming Direto & Calendário (Killer Feature)
 
 - [ ] **Backend:** Atualizar a query GraphQL do Go para consumir `nextAiringEpisode` e repassar a janela de tempo ao frontend.
 - [ ] **Meu Deck:** Criar lógica visual de Badge "NOVO EP" para obras "Assistindo" ou "Em Dia" com episódios recém-lançados.
 - [ ] **Integração de Streaming:** Adicionar botão/ação rápida nos cards do Deck utilizando o campo `externalLinks` da AniList, permitindo pular direto para a Crunchyroll/Netflix.
-- [ ] **Calendário Personalizado:** Tela mostrando próximos episódios exclusivos da *watchlist* do usuário, agrupados por dia da semana e com contagem regressiva viva (ex: `⏱ 2D 06H`).
-
-## 📅 Fase 5.5: Calendário de Lançamentos
-
-- [ ] Consumir o campo `nextAiringEpisode` que já vem nativo nas requisições da AniList.
-- [ ] Tela de calendário mostrando próximos episódios dos animes marcados "Assistindo"/"Em Dia"
-      na lista pessoal, com contagem regressiva.
+- [ ] **Calendário Personalizado:** Tela mostrando próximos episódios exclusivos da *watchlist* do usuário, agrupados por dia da semana e com contagem regressiva viva.
 
 ## 📰 Fase 6: Notícias de Anime
 

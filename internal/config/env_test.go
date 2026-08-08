@@ -17,7 +17,7 @@ func TestLoadAndValidateEnv (t *testing.T) {
 	os.Setenv("PORT", "8080")
 	os.Setenv("SUPABASE_URL", "https://teste.com")
 	os.Setenv("SUPABASE_PUBLIC_KEY", "chave123")
-	os.Setenv("SUPABASE_SERVICE_KEY", "chave-admin-123")
+	os.Setenv("SUPABASE_ANON_KEY", "chave-anon-123")
 
 	err = LoadAndValidateEnv()
 	if err != nil {
