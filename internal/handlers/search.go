@@ -22,6 +22,23 @@ func (h *SearchHandler) HandleSearch(w http.ResponseWriter, r *http.Request) {
 	tags := r.URL.Query()["tag"]
 	season := strings.ToUpper(strings.TrimSpace(r.URL.Query().Get("season")))
 	status := strings.ToUpper(strings.TrimSpace(r.URL.Query().Get("status")))
+	sortParam := r.URL.Query().Get("sort")
+
+	if sortParam == "" {
+		sortParam = "POPULARITY_DESC" // Padrão: Mais populares primeiro
+	}
+
+	pageStr := r.URL.Query().Get("page")
+	page, err := strconv.Atoi(pageStr)
+	if err != nil || page < 1 {
+		page = 1
+	}
+
+	perPageStr := r.URL.Query().Get("perPage")
+	perPage, err := strconv.Atoi(perPageStr)
+	if err != nil || perPage < 1 || perPage > 50 {
+		perPage = 20
+	}
 
 	seasonYear := 0
 	if season != "" {
@@ -51,16 +68,18 @@ func (h *SearchHandler) HandleSearch(w http.ResponseWriter, r *http.Request) {
 		Season:     season,
 		SeasonYear: seasonYear,
 		Status:     status,
+		Sort:       sortParam,
 	}
 
-	resultados, err := h.AniListClient.SearchAnime(r.Context(), query, filters)
+	resultados, err := h.AniListClient.SearchAnime(r.Context(), query, page, perPage, filters)
 	if err != nil {
 		log.Printf("[ERRO ANILIST] Falha ao buscar '%s': %v", query, err)
 		http.Error(w, "Busca indisponível no momento. Tente novamente mais tarde.", http.StatusServiceUnavailable)
 		return
 	}
 
-	if query != "" {
+	// Injeta a curadoria local APENAS na primeira página para não repetir
+	if query != "" && page == 1 {
 		var localHits []models.CuratedAnime
 		data, _, errLocal := database.Client.From("curated_animes").Select("*", "exact", false).Filter("custom_title", "ilike", "%"+query+"%").Execute()
 
@@ -86,7 +105,6 @@ func (h *SearchHandler) HandleSearch(w http.ResponseWriter, r *http.Request) {
 				var combined []anilist.Anime
 				
 				for _, a := range localAnimes.Data {
-					
 					if curado, ok := curadosMap[a.MalID]; ok {
 						a.Title = curado.CustomTitle 
 						if curado.CustomSynopsis != "" {
@@ -104,39 +122,23 @@ func (h *SearchHandler) HandleSearch(w http.ResponseWriter, r *http.Request) {
 					}
 
 					match := true
-
 					if len(genres) > 0 {
 						hasGenre := false
 						for _, animeG := range a.Genres {
 							if genreMap[strings.ToLower(animeG.Name)] {
-								hasGenre = true
-								break
+								hasGenre = true; break
 							}
 						}
 						if !hasGenre { match = false }
 					}
-
 					if match && len(tags) > 0 {
 						hasTag := false
 						for _, animeG := range a.Genres {
 							if tagMap[strings.ToLower(animeG.Name)] {
-								hasTag = true
-								break
+								hasTag = true; break
 							}
 						}
 						if !hasTag { match = false }
-					}
-
-					if match && status != "" {
-						expectedStatus := status
-						switch status {
-						case "FINISHED": expectedStatus = "Finished Airing"
-						case "RELEASING": expectedStatus = "Currently Airing"
-						case "NOT_YET_RELEASED": expectedStatus = "Not yet aired"
-						}
-						if !strings.EqualFold(a.Status, expectedStatus) {
-							match = false
-						}
 					}
 
 					if match {
@@ -184,6 +186,24 @@ func (h *SearchHandler) HandleSearch(w http.ResponseWriter, r *http.Request) {
 				resultados.Data[i].Genres = novasTags
 			}
 		}
+	}
+
+	// Filtra a lista final para garantir precisão
+	if status != "" {
+		expectedStatus := status
+		switch status {
+		case "FINISHED": expectedStatus = "Finished Airing"
+		case "RELEASING": expectedStatus = "Currently Airing"
+		case "NOT_YET_RELEASED": expectedStatus = "Not yet aired"
+		}
+		
+		var filtered []anilist.Anime
+		for _, a := range resultados.Data {
+			if strings.EqualFold(a.Status, expectedStatus) {
+				filtered = append(filtered, a)
+			}
+		}
+		resultados.Data = filtered
 	}
 
 	w.Header().Set("Content-Type", "application/json")

@@ -171,6 +171,30 @@ export default function Rankings() {
                     <p className="text-muted text-sm select-none">Direto da base pública da AniList — filtros aplicados no servidor.</p>
                 </div>
 
+                {/* Abas de Navegação Rápida no Ranking */}
+                <div className="flex gap-2 flex-wrap mb-6 select-none border-b border-line pb-4">
+                    <button
+                        onClick={() => { setSelectedStatus(''); setSelectedSeason(''); setSelectedYear(''); }}
+                        className={`text-[13px] font-bold px-5 py-2.5 rounded-full border transition-colors cursor-pointer ${
+                            selectedStatus === '' 
+                            ? 'bg-gradient-to-r from-holo-1 to-holo-2 text-white border-transparent shadow-lg'
+                            : 'bg-panel border-line text-muted hover:border-holo-3 hover:text-text'
+                        }`}
+                    >
+                        🏆 Top Global
+                    </button>
+                    <button
+                        onClick={() => setSelectedStatus('RELEASING')}
+                        className={`text-[13px] font-bold px-5 py-2.5 rounded-full border transition-colors cursor-pointer flex items-center gap-2 ${
+                            selectedStatus === 'RELEASING'
+                            ? 'bg-coral/20 border-coral text-coral shadow-[0_0_15px_rgba(255,92,108,0.2)]'
+                            : 'bg-panel border-line text-muted hover:border-coral hover:text-text'
+                        }`}
+                    >
+                        🔥 Temporada Atual
+                    </button>
+                </div>
+
                 <div className="mb-6 space-y-3">
                     <button
                         onClick={() => setShowFilters(v => !v)}
@@ -180,7 +204,7 @@ export default function Rankings() {
                             }`}
                     >
                         <SlidersHorizontal size={14} />
-                        Filtros
+                        Filtros Avançados
                         {activeFilterCount > 0 && (
                             <span className="flex items-center justify-center w-5 h-5 rounded-full bg-gradient-to-r from-holo-1 to-holo-2 text-void text-[10px] font-black">
                                 {activeFilterCount}
@@ -280,7 +304,6 @@ export default function Rankings() {
                         else if (rank === 2) rankColor = 'text-[#D9DDE6]'
                         else if (rank === 3) rankColor = 'text-[#C77B3E]'
 
-                        // 🟢 Checa se está no banco e se é Favorito (Carta Rara)
                         const savedEntry = savedEntries.find(e => e.mal_id === anime.mal_id)
                         const isFoil = savedEntry?.is_favorite
 
@@ -288,14 +311,12 @@ export default function Rankings() {
                            <Link
                                 to={`/anime/${anime.mal_id}`}
                                 key={`${anime.mal_id}-${index}`}
-                                // 🟢 Adicionado overflow-hidden e as classes do foil-card condicionalmente
                                 className={`relative overflow-hidden grid grid-cols-[24px_44px_1fr_auto_auto] md:grid-cols-[36px_56px_1fr_auto_auto] gap-2 md:gap-4 items-center p-3 rounded-xl transition-colors group ${
                                     isFoil 
                                         ? 'foil-card border border-gold/50 shadow-[0_0_15px_rgba(255,197,66,0.15)]' 
                                         : 'bg-panel border border-line hover:border-holo-2'
                                 }`}
                             >
-                                {/* 🟢 Z-INDEX RELATIVE 30 PRA FICAR ACIMA DA LUZ DO FOIL */}
                                 <span className={`relative z-30 font-anton text-lg md:text-xl text-center select-none ${rankColor}`}>
                                     {rank < 10 ? `0${rank}` : rank}
                                 </span>
@@ -304,7 +325,6 @@ export default function Rankings() {
                                 
                                 <div className="relative z-30 min-w-0">
                                     <div className="font-bold text-sm md:text-[14.5px] truncate mb-1.5">
-                                        {/* 👑 A COROA DO FAVORITO */}
                                         {isFoil && <span className="text-gold mr-1" title="Favorito">👑</span>}
                                         {anime.title}
                                     </div>

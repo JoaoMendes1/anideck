@@ -18,7 +18,6 @@ interface Anime {
     genres?: { name: string }[]
 }
 
-// 🟢 Nova interface para garantir a leitura dos Favoritos
 interface SavedEntry {
     mal_id: number
     id: string
@@ -27,6 +26,13 @@ interface SavedEntry {
 
 const CURRENT_YEAR = new Date().getFullYear()
 const YEAR_OPTIONS = Array.from({ length: 10 }, (_, i) => CURRENT_YEAR - i)
+
+const SORT_OPTIONS = [
+    { label: 'Mais Populares', value: 'POPULARITY_DESC' },
+    { label: 'Em Alta', value: 'TRENDING_DESC' },
+    { label: 'Maior Nota', value: 'SCORE_DESC' },
+    { label: 'Lançamentos', value: 'START_DATE_DESC' },
+]
 
 export default function Busca() {
     const navigate = useNavigate()
@@ -37,6 +43,9 @@ export default function Busca() {
     const [selectedStatus, setSelectedStatus] = useState('')
     const [selectedSeason, setSelectedSeason] = useState('')
     const [selectedYear, setSelectedYear] = useState('')
+    const [selectedSort, setSelectedSort] = useState('POPULARITY_DESC') 
+    const [page, setPage] = useState(1) 
+
     const [resultados, setResultados] = useState<Anime[]>([])
     const [loading, setLoading] = useState(false)
     const [hasSearched, setHasSearched] = useState(false)
@@ -44,14 +53,14 @@ export default function Busca() {
     const [showFilters, setShowFilters] = useState(false)
     const [savingIds, setSavingIds] = useState<number[]>([]) 
     
-    // Toggle system array
     const [savedEntries, setSavedEntries] = useState<SavedEntry[]>([])
 
     const activeFilterCount =
         selectedFilters.length +
         (selectedStatus ? 1 : 0) +
         (selectedSeason ? 1 : 0) +
-        (selectedYear ? 1 : 0)
+        (selectedYear ? 1 : 0) +
+        (selectedSort !== 'POPULARITY_DESC' ? 1 : 0)
 
     useEffect(() => {
         const carregarDeck = async () => {
@@ -105,6 +114,10 @@ export default function Busca() {
                 params.set('season', selectedSeason)
                 if (selectedYear) params.set('year', selectedYear)
             }
+            params.append('sort', selectedSort)
+            params.append('page', String(page)) 
+            // 🟢 AQUI: Forçando a trazer 40 de uma vez para encher mais a tela e exigir menos cliques no botão "Carregar mais"
+            params.append('perPage', '40') 
 
             try {
                 const response = await fetch(`/api/search?${params.toString()}`, {
@@ -113,11 +126,12 @@ export default function Busca() {
 
                 if (!response.ok) throw new Error('Busca indisponível no momento. Tente novamente mais tarde.')
                 const data = await response.json()
-                setResultados(data.data || [])
+                
+                setResultados(prev => page === 1 ? (data.data || []) : [...prev, ...(data.data || [])])
 
             } catch (err: any) {
                 if (err.name === 'AbortError') return
-                setResultados([])
+                if (page === 1) setResultados([])
                 setError(err.message || 'Falha ao conectar com o servidor.')
             } finally {
                 if (!controller.signal.aborted) {
@@ -130,7 +144,7 @@ export default function Busca() {
             clearTimeout(timer)
             controller.abort()
         }
-    }, [query, selectedFilters, selectedStatus, selectedSeason, selectedYear, hasAnyFilter])
+    }, [query, selectedFilters, selectedStatus, selectedSeason, selectedYear, selectedSort, page, hasAnyFilter])
 
     const handleSalvar = async (e: React.MouseEvent, malId: number) => {
         e.preventDefault()
@@ -170,18 +184,22 @@ export default function Busca() {
         }
     }
 
-    const toggleFilter = (f: FilterItem) =>
+    const toggleFilter = (f: FilterItem) => {
+        setPage(1)
         setSelectedFilters(prev =>
             prev.some(x => x.value === f.value && x.type === f.type)
                 ? prev.filter(x => !(x.value === f.value && x.type === f.type))
                 : [...prev, f]
         )
+    }
 
     const clearFilters = () => {
         setSelectedFilters([])
         setSelectedStatus('')
         setSelectedSeason('')
         setSelectedYear('')
+        setSelectedSort('POPULARITY_DESC')
+        setPage(1)
     }
 
     const traduzirStatus = (statusOriginal: string) => {
@@ -199,7 +217,7 @@ export default function Busca() {
                 <input
                     type="text"
                     value={query}
-                    onChange={(e) => setQuery(e.target.value)}
+                    onChange={(e) => { setQuery(e.target.value); setPage(1); }}
                     placeholder="Buscar anime, gênero, estúdio..."
                     className="bg-transparent border-none outline-none text-text text-base w-full font-manrope placeholder:text-muted-2"
                 />
@@ -222,6 +240,17 @@ export default function Busca() {
                     )}
                 </button>
 
+                <button
+                    onClick={() => { setSelectedStatus(selectedStatus === 'RELEASING' ? '' : 'RELEASING'); setPage(1); }}
+                    className={`shrink-0 px-4 py-2 rounded-full text-xs font-bold transition-all duration-150 cursor-pointer border flex items-center gap-1.5 ${
+                        selectedStatus === 'RELEASING'
+                            ? 'bg-coral/20 border-coral text-coral shadow-[0_0_10px_rgba(255,92,108,0.2)]'
+                            : 'bg-panel-2 border-line text-muted hover:border-coral hover:text-text'
+                    }`}
+                >
+                    🔥 Em Lançamento
+                </button>
+
                 {['Ação', 'Romance', 'Comédia', 'Fantasia'].map(cat => {
                     const filterObj = CONTENT_FILTERS.find(f => f.label === cat)
                     if (!filterObj) return null;
@@ -242,6 +271,12 @@ export default function Busca() {
 
                 {!showFilters && activeFilterCount > 0 && (
                     <div className="flex items-center gap-2 flex-nowrap shrink-0 border-l border-line pl-3">
+                        {selectedSort !== 'POPULARITY_DESC' && (
+                            <span className="flex items-center shrink-0 gap-1 px-2.5 py-1.5 rounded-full bg-gold/20 border border-gold/40 text-gold text-[11px] font-bold">
+                                {SORT_OPTIONS.find(s => s.value === selectedSort)?.label}
+                                <button onClick={() => { setSelectedSort('POPULARITY_DESC'); setPage(1) }} className="cursor-pointer hover:text-white"><X size={10} /></button>
+                            </span>
+                        )}
                         {selectedFilters.filter(f => !['Ação', 'Romance', 'Comédia', 'Fantasia'].includes(f.label)).map(f => (
                             <span key={`${f.type}-${f.value}`} className="flex items-center shrink-0 gap-1 px-2.5 py-1.5 rounded-full bg-holo-2/20 border border-holo-2/40 text-holo-2 text-[11px] font-bold">
                                 {f.label}
@@ -251,13 +286,13 @@ export default function Busca() {
                         {selectedStatus && (
                             <span className="flex items-center shrink-0 gap-1 px-2.5 py-1.5 rounded-full bg-holo-3/20 border border-holo-3/40 text-holo-3 text-[11px] font-bold">
                                 {STATUS_OPTIONS.find(s => s.value === selectedStatus)?.label}
-                                <button onClick={() => setSelectedStatus('')} className="cursor-pointer hover:text-white"><X size={10} /></button>
+                                <button onClick={() => { setSelectedStatus(''); setPage(1) }} className="cursor-pointer hover:text-white"><X size={10} /></button>
                             </span>
                         )}
                         {selectedSeason && (
                             <span className="flex items-center shrink-0 gap-1 px-2.5 py-1.5 rounded-full bg-holo-1/20 border border-holo-1/40 text-holo-1 text-[11px] font-bold">
                                 {SEASON_OPTIONS.find(s => s.value === selectedSeason)?.emoji} {SEASON_OPTIONS.find(s => s.value === selectedSeason)?.label} {selectedYear}
-                                <button onClick={() => { setSelectedSeason(''); setSelectedYear('') }} className="cursor-pointer hover:text-white"><X size={10} /></button>
+                                <button onClick={() => { setSelectedSeason(''); setSelectedYear(''); setPage(1) }} className="cursor-pointer hover:text-white"><X size={10} /></button>
                             </span>
                         )}
                     </div>
@@ -282,12 +317,30 @@ export default function Busca() {
                     </div>
 
                     <div>
+                        <p className="font-mono text-[10px] text-muted-2 tracking-widest mb-3">// ORDENAR POR</p>
+                        <div className="flex flex-wrap gap-2">
+                            {SORT_OPTIONS.map(opt => (
+                                <button
+                                    key={opt.value}
+                                    onClick={() => { setSelectedSort(opt.value); setPage(1); }}
+                                    className={`px-3 py-1.5 rounded-full text-xs font-bold transition-all duration-150 cursor-pointer ${selectedSort === opt.value
+                                            ? 'bg-gold/20 text-gold border border-gold/40 shadow-[0_0_12px_rgba(255,197,66,0.2)]'
+                                            : 'bg-panel-2 border border-line text-muted hover:border-gold hover:text-text'
+                                        }`}
+                                >
+                                    {opt.label}
+                                </button>
+                            ))}
+                        </div>
+                    </div>
+
+                    <div>
                         <p className="font-mono text-[10px] text-muted-2 tracking-widest mb-3">// STATUS</p>
                         <div className="flex flex-wrap gap-2">
                             {STATUS_OPTIONS.map(opt => (
                                 <button
                                     key={opt.value}
-                                    onClick={() => setSelectedStatus(selectedStatus === opt.value ? '' : opt.value)}
+                                    onClick={() => { setSelectedStatus(selectedStatus === opt.value ? '' : opt.value); setPage(1); }}
                                     className={`px-3 py-1.5 rounded-full text-xs font-bold transition-all duration-150 cursor-pointer ${selectedStatus === opt.value
                                             ? 'bg-gradient-to-r from-holo-1 to-holo-2 text-void shadow-[0_0_12px_rgba(123,92,255,0.4)]'
                                             : 'bg-panel-2 border border-line text-muted hover:border-holo-2 hover:text-text'
@@ -305,7 +358,7 @@ export default function Busca() {
                             {SEASON_OPTIONS.map(opt => (
                                 <button
                                     key={opt.value}
-                                    onClick={() => setSelectedSeason(selectedSeason === opt.value ? '' : opt.value)}
+                                    onClick={() => { setSelectedSeason(selectedSeason === opt.value ? '' : opt.value); setPage(1); }}
                                     className={`px-3 py-1.5 rounded-full text-xs font-bold transition-all duration-150 cursor-pointer ${selectedSeason === opt.value
                                             ? 'bg-gradient-to-r from-holo-1 to-holo-2 text-void shadow-[0_0_12px_rgba(123,92,255,0.4)]'
                                             : 'bg-panel-2 border border-line text-muted hover:border-holo-2 hover:text-text'
@@ -320,7 +373,7 @@ export default function Busca() {
                                 {YEAR_OPTIONS.map(y => (
                                     <button
                                         key={y}
-                                        onClick={() => setSelectedYear(selectedYear === String(y) ? '' : String(y))}
+                                        onClick={() => { setSelectedYear(selectedYear === String(y) ? '' : String(y)); setPage(1); }}
                                         className={`px-3 py-1.5 rounded-full text-xs font-bold transition-all duration-150 cursor-pointer ${selectedYear === String(y)
                                                 ? 'bg-holo-3/20 border border-holo-3 text-holo-3'
                                                 : 'bg-panel-2 border border-line text-muted hover:border-holo-3 hover:text-text'
@@ -362,7 +415,7 @@ export default function Busca() {
                 </div>
             </div>
 
-            {loading && (
+            {loading && page === 1 && (
                 <>
                     <p className="font-mono text-xs text-holo-3 tracking-widest mb-4 select-none">// BUSCANDO...</p>
                     <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-4">
@@ -373,7 +426,7 @@ export default function Busca() {
                 </>
             )}
 
-            {!loading && error && (
+            {!loading && error && page === 1 && (
                 <div className="text-center py-16 text-coral select-none">
                     <AlertCircle className="mx-auto mb-4 opacity-80" size={34} />
                     <h3 className="font-anton uppercase text-xl mb-2">Ops, problema de conexão</h3>
@@ -381,14 +434,12 @@ export default function Busca() {
                 </div>
             )}
 
-            {!loading && !error && hasSearched && resultados.length > 0 && (
+            {!error && hasSearched && resultados.length > 0 && (
                 <>
-                    <p className="font-mono text-xs text-holo-3 tracking-widest mb-4 select-none">// RESULTADOS</p>
+                    {page === 1 && <p className="font-mono text-xs text-holo-3 tracking-widest mb-4 select-none">// RESULTADOS</p>}
                     <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-4">
                         {resultados.map((anime, index) => {
                             const gradClass = `card-g${(index % 5) + 1}`
-                            
-                            // 🟢 INTEGRADO: Checando o status no banco de dados e as Cartas Raras
                             const savedEntry = savedEntries.find(e => e.mal_id === anime.mal_id)
                             const isSaved = !!savedEntry
                             const isFoil = savedEntry?.is_favorite
@@ -396,7 +447,7 @@ export default function Busca() {
                             return (
                                 <Link 
                                     to={`/anime/${anime.mal_id}`} 
-                                    key={anime.mal_id} 
+                                    key={`${anime.mal_id}-${index}`} 
                                     className={`relative aspect-[2/3] rounded-xl overflow-hidden border flex flex-col justify-end p-3 group block transition-transform hover:-translate-y-1 ${
                                         isFoil ? 'foil-card border-gold/50 shadow-[0_0_15px_rgba(255,197,66,0.15)]' : `border-line ${gradClass}`
                                     }`}
@@ -406,7 +457,6 @@ export default function Busca() {
                                     )}
                                     <div className="absolute inset-0 bg-gradient-to-t from-void/95 via-void/40 to-transparent z-10" />
                                     
-                                    {/* 🟢 Status visível no canto superior esquerdo (igual ao Deck) */}
                                     <span className={`absolute top-2.5 left-2.5 z-20 text-[9px] md:text-[9.5px] font-extrabold px-2 py-1 rounded-full uppercase tracking-wider backdrop-blur-sm border bg-panel/60 text-holo-3 border-holo-3/40 select-none`}>
                                         {traduzirStatus(anime.status)}
                                     </span>
@@ -446,7 +496,6 @@ export default function Busca() {
                                             ))}
                                         </div>
 
-                                        {/* 🟢 Mais detalhes! Adicionamos a nota da AniList e Episódios */}
                                         <div className="flex items-center justify-between mt-1 pt-2 border-t border-line/50">
                                             <div className="flex items-center gap-1.5">
                                                 <Star className="text-gold fill-gold" size={12} />
@@ -461,10 +510,25 @@ export default function Busca() {
                             )
                         })}
                     </div>
+
+                    {!loading && resultados.length >= 20 && (
+                        <button 
+                            onClick={() => setPage(p => p + 1)} 
+                            className="select-none block mx-auto mt-8 px-6 py-3 rounded-full border border-line bg-panel text-text font-bold text-sm hover:border-holo-3 hover:text-holo-3 transition-colors cursor-pointer"
+                        >
+                            Carregar mais
+                        </button>
+                    )}
+                    
+                    {loading && page > 1 && (
+                        <div className="py-8 text-center">
+                            <div className="inline-block w-6 h-6 rounded-full border-4 border-line border-t-holo-3 animate-spin"></div>
+                        </div>
+                    )}
                 </>
             )}
 
-            {!loading && !error && hasSearched && resultados.length === 0 && (
+            {!loading && !error && hasSearched && resultados.length === 0 && page === 1 && (
                 <div className="text-center py-16 text-muted select-none">
                     <Search className="mx-auto mb-4 text-muted-2" size={34} />
                     <h3 className="font-anton uppercase text-text text-xl mb-2">Nada encontrado</h3>

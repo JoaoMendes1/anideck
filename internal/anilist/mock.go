@@ -2,19 +2,20 @@ package anilist
 
 import "context"
 
-// MockClient é o cliente falso que finge ser a API da AniList
 type MockClient struct{}
 
 func NewMockClient() *MockClient {
 	return &MockClient{}
 }
 
-func (m *MockClient) SearchAnime(ctx context.Context, query string, f SearchFilters) (*AnimeSearchResponse, error) {
+func (m *MockClient) SearchAnime(ctx context.Context, query string, page int, perPage int, f SearchFilters) (*AnimeSearchResponse, error) {
 	return &AnimeSearchResponse{
 		Data: []Anime{
-			{MalID: 20, Title: "Naruto (Mock de Desenvolvimento)", Status: "Finished Airing"},
+			{
+				MalID: 20, Title: "Naruto (Mock de Desenvolvimento)", Status: "Currently Airing",
+				NextAiringEpisode: &NextAiringEpisode{AiringAt: 0, TimeUntilAiring: 14400, Episode: 15},
+			},
 			{MalID: 1735, Title: "Naruto: Shippuuden (Mock)", Status: "Finished Airing"},
-			{MalID: 31964, Title: "Boku no Hero Academia (Mock)", Status: "Finished Airing"},
 		},
 	}, nil
 }
@@ -24,10 +25,11 @@ func (m *MockClient) GetAnimeById(ctx context.Context, id string) (*AnimeByIdRes
 		Data: Anime{
 			MalID:    20,
 			Title:    "Naruto (Mock Detail)",
-			Status:   "Finished Airing",
+			Status:   "Currently Airing",
 			Synopsis: "Sinopse falsa gerada localmente. O Ninja Loiro faz coisas de ninja.",
 			Score:    8.5,
 			Episodes: 199,
+			NextAiringEpisode: &NextAiringEpisode{AiringAt: 0, TimeUntilAiring: 86400, Episode: 16},
 		},
 	}, nil
 }
@@ -49,5 +51,12 @@ func (m *MockClient) GetTopAnime(ctx context.Context, page int, perPage int, f S
 }
 
 func (m *MockClient) GetAnimesByMalIDs(ctx context.Context, malIDs []int) (*AnimeSearchResponse, error) {
-	return &AnimeSearchResponse{Data: []Anime{}}, nil
+	return &AnimeSearchResponse{
+		Data: []Anime{
+			{
+				MalID: 20, Title: "Naruto (Mock)", Status: "Currently Airing",
+				NextAiringEpisode: &NextAiringEpisode{AiringAt: 0, TimeUntilAiring: 3600, Episode: 10},
+			},
+		},
+	}, nil
 }

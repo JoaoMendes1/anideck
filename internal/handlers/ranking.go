@@ -31,6 +31,7 @@ func (h *RankingHandler) HandleGetTopAnime(w http.ResponseWriter, r *http.Reques
 
 	season := strings.ToUpper(strings.TrimSpace(r.URL.Query().Get("season")))
 	status := strings.ToUpper(strings.TrimSpace(r.URL.Query().Get("status")))
+	sortParam := r.URL.Query().Get("sort")
 
 	seasonYear := 0
 	if season != "" {
@@ -45,6 +46,7 @@ func (h *RankingHandler) HandleGetTopAnime(w http.ResponseWriter, r *http.Reques
 		Season:     season,
 		SeasonYear: seasonYear,
 		Status:     status,
+		Sort:       sortParam,
 	}
 
 	resultados, err := h.AniListClient.GetTopAnime(r.Context(), page, perPage, filters)
@@ -82,6 +84,27 @@ func (h *RankingHandler) HandleGetTopAnime(w http.ResponseWriter, r *http.Reques
 				}
 			}
 		}
+	}
+
+	if status != "" {
+		expectedStatusMapped := ""
+		switch status {
+		case "FINISHED":
+			expectedStatusMapped = "Finished Airing"
+		case "RELEASING":
+			expectedStatusMapped = "Currently Airing"
+		case "NOT_YET_RELEASED":
+			expectedStatusMapped = "Not yet aired"
+		}
+
+		var filtered []anilist.Anime
+		for _, a := range resultados.Data {
+			// Aceita "Currently Airing" (AniList) OU "RELEASING" (Admin Panel)
+			if strings.EqualFold(a.Status, expectedStatusMapped) || strings.EqualFold(a.Status, status) {
+				filtered = append(filtered, a)
+			}
+		}
+		resultados.Data = filtered
 	}
 
 	w.Header().Set("Content-Type", "application/json")

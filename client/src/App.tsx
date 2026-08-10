@@ -3,6 +3,7 @@ import Auth from './pages/Auth'
 import Busca from './pages/Busca'
 import Detalhes from './pages/Detalhes'
 import MeuDeck from './pages/MeuDeck.tsx'
+import Calendario from './pages/Calendario'
 import RotaProtegida from './components/RotaProtegida'
 import Rankings from './pages/Rankings'
 import PainelAdmin from './pages/PainelAdmin'
@@ -18,6 +19,7 @@ function App() {
       <Route path="/" element={<Landing />} />
        <Route path="/descobrir" element={<Busca />} />
       <Route path="/deck" element={<RotaProtegida><MeuDeck /></RotaProtegida>} />
+      <Route path="/calendario" element={<RotaProtegida><Calendario /></RotaProtegida>} />
       <Route path="/anime/:id" element={<Detalhes />} />
       <Route path="/rankings" element={<Rankings />} />
       </Route>
