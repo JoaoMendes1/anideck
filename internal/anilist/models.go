@@ -8,6 +8,12 @@ type AnimeByIdResponse struct {
 	Data Anime `json:"data"`
 }
 
+type NextAiringEpisode struct {
+	AiringAt        int `json:"airingAt"`
+	TimeUntilAiring int `json:"timeUntilAiring"`
+	Episode         int `json:"episode"`  
+}
+
 type Anime struct {
 	MalID    int     `json:"mal_id"`
 	Title    string  `json:"title"`
@@ -16,6 +22,8 @@ type Anime struct {
 	Episodes int     `json:"episodes"`
 	Score    float64 `json:"score"`
 	Ranking  int     `json:"ranking,omitempty"` // ✨ MUDOU AQUI: Propriedade para guardar a posição global
+
+	NextAiringEpisode *NextAiringEpisode `json:"nextAiringEpisode,omitempty"`
 
 	Images struct {
 		JPG struct {

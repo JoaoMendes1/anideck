@@ -71,13 +71,13 @@ export default function Navbar() {
             </div>
           </Link>
 
-         {/* Links Principais (Desktop) */}
+               {/* Links Principais (Desktop) */}
           <div className="hidden md:flex items-center gap-7">
             {session && (
               <>
                 <Link to="/deck" className={`text-sm font-bold focus:outline-none select-none transition-colors ${location.pathname === '/deck' ? 'text-text' : 'text-muted hover:text-text'}`}>Meu Deck</Link>
-                
-                                {/* Proteção do Admin validada no Backend */}
+                <Link to="/calendario" className={`text-sm font-bold focus:outline-none select-none transition-colors ${location.pathname === '/calendario' ? 'text-text' : 'text-muted hover:text-text'}`}>Calendário</Link>
+
                 {isAdmin && (
                     <Link to="/admin" className={`text-sm font-bold focus:outline-none select-none transition-colors ${location.pathname === '/admin' ? 'text-text' : 'text-muted hover:text-text'}`}>Admin</Link>
                 )}

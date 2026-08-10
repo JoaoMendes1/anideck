@@ -21,6 +21,15 @@ interface HydratedAnime {
     image_url: string
     genre?: string
     ranking?: number 
+     nextAiringEpisode?: {
+        airingAt: number
+        timeUntilAiring: number
+        episode: number
+    }
+    streaming?: {
+        name: string
+        url: string
+    }[]
 }
 
 export default function MeuDeck() {
@@ -65,7 +74,9 @@ export default function MeuDeck() {
                             title: m.title || 'Título Desconhecido',
                             image_url: m.images?.jpg?.image_url || '',
                             genre: m.genres && m.genres.length > 0 ? m.genres[0].name : undefined,
-                            ranking: m.ranking 
+                            ranking: m.ranking, 
+                            nextAiringEpisode: m.nextAiringEpisode, 
+                            streaming: m.streaming 
                         }
                     })
                     setAnimesData(mapaAnimes)
@@ -105,7 +116,7 @@ export default function MeuDeck() {
 
     const entradasFiltradas = entradas.filter(e => filtroAtivo === 'Todos' || e.status === filtroAtivo)
 
-    // 🟢 ORDENAÇÃO: Favoritos sempre puxados para o topo!
+    // Favoritos sempre puxados para o topo!
     const entradasOrdenadas = useMemo(() => {
         return [...entradasFiltradas].sort((a, b) => {
             if (a.is_favorite && !b.is_favorite) return -1;
@@ -211,26 +222,53 @@ export default function MeuDeck() {
                             const gradClass = `card-g${(index % 5) + 1}`
                             const temaStatus = getStatusTheme(entrada.status)
                             
-                            // 🟢 SE FOR FAVORITO VIRA UMA CARTA FOIL E TEM BORDA DOURADA
+                            // SE FOR FAVORITO VIRA UMA CARTA FOIL E TEM BORDA DOURADA
                             const isFoil = entrada.is_favorite
 
-                            return (
+                            const streamUrl = animeLocal?.streaming ? animeLocal.streaming.find(s => s.name.toLowerCase().includes('crunchyroll'))?.url || animeLocal.streaming.find(s => s.name.toLowerCase().includes('netflix'))?.url || animeLocal.streaming[0]?.url : null
+                            const isAtivo = entrada.status === 'Assistindo' || entrada.status === 'Em dia' || entrada.status === 'Quero Assistir'
+                            const acabouDeLancar = animeLocal?.nextAiringEpisode && animeLocal.nextAiringEpisode.timeUntilAiring > 518400 // 6 dias em segundos
+                            const lancaHoje = animeLocal?.nextAiringEpisode && animeLocal.nextAiringEpisode.timeUntilAiring < 86400 // Faltam menos de 24h
+
+                      return (
                                 <div
                                     key={entrada.id}
                                     className={`relative aspect-[3/4.2] rounded-[14px] overflow-hidden p-3 md:p-3.5 flex flex-col justify-end border transition-transform hover:-translate-y-1 group ${
                                         isFoil ? 'foil-card border-gold/50 shadow-[0_0_15px_rgba(255,197,66,0.15)]' : `border-line bg-panel ${gradClass}`
                                     }`}
                                 >
-                                    <Link to={`/anime/${entrada.mal_id}`} className="absolute inset-0 z-10"></Link>
+                                    {/* 🟢 OTIMIZAÇÃO: Se tem streaming e está ativo, o card todo vira botão, se não, vai pro detalhe */}
+                                    {streamUrl && isAtivo ? (
+                                        <>
+                                            <a href={streamUrl} target="_blank" rel="noreferrer" className="absolute inset-0 z-20 flex items-center justify-center bg-void/50 backdrop-blur-[2px] opacity-0 group-hover:opacity-100 transition-all duration-300">
+                                                <div className="w-12 h-12 rounded-full bg-holo-1 text-white flex items-center justify-center shadow-[0_0_20px_rgba(255,79,216,0.6)] transform scale-75 group-hover:scale-100 transition-transform duration-300">
+                                                    <Play fill="currentColor" size={20} className="ml-1" />
+                                                </div>
+                                            </a>
+                                            {/* Link invisível por trás do overlay para quem quiser ver os detalhes (clicando no canto) */}
+                                            <Link to={`/anime/${entrada.mal_id}`} className="absolute inset-0 z-10"></Link>
+                                        </>
+                                    ) : (
+                                        <Link to={`/anime/${entrada.mal_id}`} className="absolute inset-0 z-10"></Link>
+                                    )}
 
                                     {animeLocal?.image_url && (
                                         <img src={animeLocal.image_url} alt={animeLocal.title} className="absolute inset-0 w-full h-full object-cover z-0 opacity-80 group-hover:opacity-100 transition-opacity" />
                                     )}
                                     <div className="absolute inset-0 bg-gradient-to-t from-void/95 via-void/40 to-transparent z-0" />
                                     
-                                    <span className={`select-none absolute top-2.5 left-2.5 z-20 text-[9px] md:text-[9.5px] font-extrabold px-2 py-1 rounded-full uppercase tracking-wider backdrop-blur-sm border ${temaStatus.bg} ${temaStatus.text} ${temaStatus.border}`}>
-                                        {entrada.status}
-                                    </span>
+                                    <div className="absolute top-2.5 left-2.5 z-30 flex flex-col gap-1.5 items-start pointer-events-none">
+                                        <span className={`select-none text-[9px] md:text-[9.5px] font-extrabold px-2 py-1 rounded-full uppercase tracking-wider backdrop-blur-sm border ${temaStatus.bg} ${temaStatus.text} ${temaStatus.border}`}>
+                                            {entrada.status}
+                                        </span>
+                                        {/* 🟢 SMART TRACKING: Badges de Alerta */}
+                                        {(entrada.status === 'Assistindo' || entrada.status === 'Em Dia') && (
+                                            <>
+                                                {acabouDeLancar && <span className="select-none text-[8.5px] font-black px-2 py-0.5 rounded-sm bg-coral text-white shadow-[0_0_10px_rgba(255,92,108,0.5)] uppercase tracking-widest">Novo EP</span>}
+                                                {lancaHoje && !acabouDeLancar && <span className="select-none text-[8.5px] font-black px-2 py-0.5 rounded-sm bg-holo-3 text-void shadow-[0_0_10px_rgba(63,224,240,0.5)] uppercase tracking-widest">Hoje</span>}
+                                            </>
+                                        )}
+                                    </div>
 
                                     <button 
                                         onClick={(e) => { e.preventDefault(); e.stopPropagation(); setEditando(entrada); }}
@@ -241,8 +279,7 @@ export default function MeuDeck() {
                                     </button>
                                     
                                     <div className="relative z-20 mt-auto pointer-events-none select-none">
-                                        <div className="font-anton text-[12px] sm:text-[13.5px] uppercase leading-tight mb-2 truncate text-white drop-shadow-md">
-                                            {/* 👑 COROA DE HONRA PARA FAVORITOS */}
+                                        <div className="font-anton text-[12px] sm:text-[13.5px] uppercase leading-tight mb-2 text-white drop-shadow-md line-clamp-2">
                                             {isFoil && <span className="text-gold mr-1" title="Favorito">👑</span>}
                                             {animeLocal?.title || `ID: ${entrada.mal_id}`}
                                         </div>

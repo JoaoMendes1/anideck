@@ -73,9 +73,9 @@ func mapStatus(s string) string {
 }
 
 const searchQuery = `
-query ($search: String, $genre_in: [String], $tag_in: [String], $season: MediaSeason, $seasonYear: Int, $status: MediaStatus) {
-  Page(page: 1, perPage: 20) {
-    media(search: $search, type: ANIME, genre_in: $genre_in, tag_in: $tag_in, season: $season, seasonYear: $seasonYear, status: $status) {
+query ($page: Int, $perPage: Int, $search: String, $sort: [MediaSort], $genre_in: [String], $tag_in: [String], $season: MediaSeason, $seasonYear: Int, $status: MediaStatus) {
+  Page(page: $page, perPage: $perPage) {
+    media(search: $search, type: ANIME, sort: $sort, genre_in: $genre_in, tag_in: $tag_in, season: $season, seasonYear: $seasonYear, status: $status) {
       idMal
       title { romaji english }
       status
@@ -84,6 +84,7 @@ query ($search: String, $genre_in: [String], $tag_in: [String], $season: MediaSe
       coverImage { large }
       genres
       externalLinks { site url }
+      nextAiringEpisode { airingAt timeUntilAiring episode }
     }
   }
 }`
@@ -101,12 +102,13 @@ type aniListMedia struct {
 		Site string `json:"site"`
 		URL  string `json:"url"`
 	} `json:"externalLinks"`
-	// ✨ MUDOU AQUI: Preparando o Go para receber o nó de rankings
 	Rankings []struct {
 		Rank    int    `json:"rank"`
 		Type    string `json:"type"`
 		AllTime bool   `json:"allTime"`
 	} `json:"rankings"`
+	
+	NextAiringEpisode *NextAiringEpisode `json:"nextAiringEpisode"`
 }
 
 func (m *aniListMedia) toAnime() Anime {
@@ -138,7 +140,6 @@ func (m *aniListMedia) toAnime() Anime {
 		})
 	}
 
-	// ✨ MUDOU AQUI: Busca apenas a posição "Melhor avaliado de todos os tempos"
 	var bestRanking int
 	for _, r := range m.Rankings {
 		if r.Type == "RATED" && r.AllTime {
@@ -154,7 +155,8 @@ func (m *aniListMedia) toAnime() Anime {
 		Synopsis: stripHTML.Sanitize(m.Description), 
 		Episodes: m.Episodes,
 		Score:    float64(m.AverageScore) / 10.0, 
-		Ranking:  bestRanking, // ✨ MUDOU AQUI: Atribui o ranking ao Anime final
+		Ranking:  bestRanking, 
+		NextAiringEpisode: m.NextAiringEpisode,
 		Images: struct {
 			JPG struct {
 				ImageURL string `json:"image_url"`
@@ -177,16 +179,23 @@ type SearchFilters struct {
 	Season     string 
 	SeasonYear int    
 	Status     string 
+	Sort       string 
 }
 
-func (c *Client) SearchAnime(ctx context.Context, query string, f SearchFilters) (*AnimeSearchResponse, error) {
+func (c *Client) SearchAnime(ctx context.Context, query string, page int, perPage int, f SearchFilters) (*AnimeSearchResponse, error) {
 	var resultado struct {
 		Page struct{ Media []aniListMedia } `json:"Page"`
 	}
 
-	variables := map[string]interface{}{}
+	variables := map[string]interface{}{
+		"page":    page,
+		"perPage": perPage,
+	}
 	if query != "" {
 		variables["search"] = query
+	}
+	if f.Sort != "" {
+		variables["sort"] = []string{f.Sort}
 	}
 	if len(f.Genres) > 0 {
 		variables["genre_in"] = f.Genres
@@ -229,10 +238,11 @@ query ($idMal: Int) {
     averageScore
     coverImage { large }
     genres
+    externalLinks { site url }
+    nextAiringEpisode { airingAt timeUntilAiring episode }
   }
 }`
 
-// ✨ MUDOU AQUI: Injetamos o pedido "rankings { rank type allTime }" na query em lote
 const byIdsQuery = `
 query ($idMal_in: [Int]) {
   Page(page: 1, perPage: 50) {
@@ -247,6 +257,7 @@ query ($idMal_in: [Int]) {
       genres
       externalLinks { site url }
       rankings { rank type allTime }
+      nextAiringEpisode { airingAt timeUntilAiring episode }
     }
   }
 }`
@@ -303,9 +314,9 @@ func (c *Client) GetAnimeStatistics(ctx context.Context, id string) (*AnimeStati
 }
 
 const topAnimeQuery = `
-query ($page: Int, $perPage: Int, $genre_in: [String], $tag_in: [String], $season: MediaSeason, $seasonYear: Int, $status: MediaStatus) {
+query ($page: Int, $perPage: Int, $sort: [MediaSort], $genre_in: [String], $tag_in: [String], $season: MediaSeason, $seasonYear: Int, $status: MediaStatus) {
   Page(page: $page, perPage: $perPage) {
-    media(type: ANIME, sort: SCORE_DESC, genre_in: $genre_in, tag_in: $tag_in, season: $season, seasonYear: $seasonYear, status: $status) {
+    media(type: ANIME, sort: $sort, genre_in: $genre_in, tag_in: $tag_in, season: $season, seasonYear: $seasonYear, status: $status) {
       idMal
       title { romaji english }
       status
@@ -315,6 +326,7 @@ query ($page: Int, $perPage: Int, $genre_in: [String], $tag_in: [String], $seaso
       coverImage { large }
       genres
       externalLinks { site url }
+      nextAiringEpisode { airingAt timeUntilAiring episode }
     }
   }
 }`
@@ -328,6 +340,13 @@ func (c *Client) GetTopAnime(ctx context.Context, page int, perPage int, f Searc
 		"page":    page,
 		"perPage": perPage,
 	}
+	
+	if f.Sort != "" {
+		variables["sort"] = []string{f.Sort}
+	} else {
+		variables["sort"] = []string{"POPULARITY_DESC"}
+	}
+
 	if len(f.Genres) > 0 {
 		variables["genre_in"] = f.Genres
 	}
