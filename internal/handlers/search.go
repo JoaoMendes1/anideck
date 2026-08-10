@@ -1,11 +1,9 @@
-// internal/handlers/search.go
 package handlers
 
 import (
 	"encoding/json"
 	"log"
 	"net/http"
-	"os"
 	"strconv"
 	"strings"
 
@@ -15,11 +13,9 @@ import (
 )
 
 type SearchHandler struct {
-	AniListClient *anilist.Client
+	AniListClient anilist.Service
 }
 
-// HandleSearch processa buscas de anime por texto, gênero, tag, temporada, ano e/ou status.
-// Requer ao menos um de: q (texto), genre ou tag — filtros de contexto não são uma fonte de dados.
 func (h *SearchHandler) HandleSearch(w http.ResponseWriter, r *http.Request) {
 	query := strings.TrimSpace(r.URL.Query().Get("q"))
 	genres := r.URL.Query()["genre"]
@@ -27,7 +23,6 @@ func (h *SearchHandler) HandleSearch(w http.ResponseWriter, r *http.Request) {
 	season := strings.ToUpper(strings.TrimSpace(r.URL.Query().Get("season")))
 	status := strings.ToUpper(strings.TrimSpace(r.URL.Query().Get("status")))
 
-	// seasonYear só é relevante quando season também está presente (regra da AniList)
 	seasonYear := 0
 	if season != "" {
 		if y, err := strconv.Atoi(r.URL.Query().Get("year")); err == nil && y > 0 {
@@ -40,20 +35,14 @@ func (h *SearchHandler) HandleSearch(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if os.Getenv("MOCK_ANILIST") == "true" {
-		log.Println("[MOCK] Variável MOCK_ANILIST ativada. Retornando dados falsos para busca...")
-		resultados := &anilist.AnimeSearchResponse{
-			Data: []anilist.Anime{
-				{MalID: 20, Title: "Naruto (Mock de Desenvolvimento)", Status: "Finished Airing"},
-				{MalID: 1735, Title: "Naruto: Shippuuden (Mock)", Status: "Finished Airing"},
-				{MalID: 31964, Title: "Boku no Hero Academia (Mock)", Status: "Finished Airing"},
-			},
-		}
-		w.Header().Set("Content-Type", "application/json")
-		if err := json.NewEncoder(w).Encode(resultados); err != nil {
-			log.Printf("[ERRO] HandleSearch mock: falha ao serializar: %v", err)
-		}
-		return
+	genreMap := make(map[string]bool)
+	for _, g := range genres {
+		genreMap[strings.ToLower(g)] = true
+	}
+
+	tagMap := make(map[string]bool)
+	for _, t := range tags {
+		tagMap[strings.ToLower(t)] = true
 	}
 
 	filters := anilist.SearchFilters{
@@ -71,12 +60,13 @@ func (h *SearchHandler) HandleSearch(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// ==========================================
-	// 1. BUSCA HÍBRIDA CORRIGIDA (Com respeito a filtros)
-	// ==========================================
 	if query != "" {
 		var localHits []models.CuratedAnime
-		errLocal := database.Client.DB.From("curated_animes").Select("*").Filter("custom_title", "ilike", "*"+query+"*").Execute(&localHits)
+		data, _, errLocal := database.Client.From("curated_animes").Select("*", "exact", false).Filter("custom_title", "ilike", "%"+query+"%").Execute()
+
+		if errLocal == nil {
+			_ = json.Unmarshal(data, &localHits)
+		}
 
 		if errLocal == nil && len(localHits) > 0 {
 			var localMalIDs []int
@@ -87,7 +77,6 @@ func (h *SearchHandler) HandleSearch(w http.ResponseWriter, r *http.Request) {
 			localAnimes, errAniListIds := h.AniListClient.GetAnimesByMalIDs(r.Context(), localMalIDs)
 
 			if errAniListIds == nil && localAnimes != nil {
-				// Mapa para aplicar a curadoria local antes de testar os filtros
 				curadosMap := make(map[int]models.CuratedAnime)
 				for _, hit := range localHits {
 					curadosMap[hit.MalID] = hit
@@ -96,11 +85,14 @@ func (h *SearchHandler) HandleSearch(w http.ResponseWriter, r *http.Request) {
 				existingIDs := make(map[int]bool)
 				var combined []anilist.Anime
 				
-				// 1º Testa os animes do NOSSO banco contra os filtros ativos na tela
 				for _, a := range localAnimes.Data {
 					
-					// Aplica as tags e status curados localmente para a verificação ser justa
 					if curado, ok := curadosMap[a.MalID]; ok {
+						a.Title = curado.CustomTitle 
+						if curado.CustomSynopsis != "" {
+							a.Synopsis = curado.CustomSynopsis 
+						}
+						
 						if curado.CustomStatus != "" { a.Status = curado.CustomStatus }
 						if len(curado.CustomTags) > 0 {
 							var novasTags []struct{ Name string `json:"name"` }
@@ -113,31 +105,28 @@ func (h *SearchHandler) HandleSearch(w http.ResponseWriter, r *http.Request) {
 
 					match := true
 
-					// Verifica Gêneros (Lógica OR: tem que ter pelo menos um dos selecionados)
 					if len(genres) > 0 {
 						hasGenre := false
-						for _, reqG := range genres {
-							for _, animeG := range a.Genres {
-								if strings.EqualFold(animeG.Name, reqG) { hasGenre = true; break }
+						for _, animeG := range a.Genres {
+							if genreMap[strings.ToLower(animeG.Name)] {
+								hasGenre = true
+								break
 							}
-							if hasGenre { break }
 						}
 						if !hasGenre { match = false }
 					}
 
-					// Verifica Tags
 					if match && len(tags) > 0 {
 						hasTag := false
-						for _, reqT := range tags {
-							for _, animeG := range a.Genres {
-								if strings.EqualFold(animeG.Name, reqT) { hasTag = true; break }
+						for _, animeG := range a.Genres {
+							if tagMap[strings.ToLower(animeG.Name)] {
+								hasTag = true
+								break
 							}
-							if hasTag { break }
 						}
 						if !hasTag { match = false }
 					}
 
-					// Verifica Status
 					if match && status != "" {
 						expectedStatus := status
 						switch status {
@@ -150,14 +139,12 @@ func (h *SearchHandler) HandleSearch(w http.ResponseWriter, r *http.Request) {
 						}
 					}
 
-					// Se passou por todos os filtros, entra na lista final
 					if match {
 						combined = append(combined, a)
 						existingIDs[a.MalID] = true
 					}
 				}
 				
-				// 2º Adiciona os resultados originais da AniList APENAS se ainda não estiverem na lista
 				for _, a := range resultados.Data {
 					if !existingIDs[a.MalID] {
 						combined = append(combined, a)
@@ -169,9 +156,11 @@ func (h *SearchHandler) HandleSearch(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	
 	var curados []models.CuratedAnime
-	database.Client.DB.From("curated_animes").Select("*").Execute(&curados)
+	dataCurados, _, _ := database.Client.From("curated_animes").Select("*", "exact", false).Execute()
+	if dataCurados != nil {
+		_ = json.Unmarshal(dataCurados, &curados)
+	}
 
 	curadosMap := make(map[int]models.CuratedAnime)
 	for _, c := range curados {
