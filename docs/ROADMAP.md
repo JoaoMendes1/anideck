@@ -13,7 +13,6 @@ espaço para fases `.5` intermediárias).
 
 ## 🚀 Deploy contínuo
 Staging sobe já na Fase 1, como projeto esqueleto — mesmo padrão do JVM Systems.
-
 ---
 
 ## 🏗️ Fase 1: Fundação & Arquitetura — início do MVP
@@ -65,12 +64,13 @@ Staging sobe já na Fase 1, como projeto esqueleto — mesmo padrão do JVM Syst
 - [ ] **Agente Olheiro (Automação Background):** Criar um fluxo orquestrado (ex: n8n) que cruza os favoritos do usuário (SQL) com os *trends* da AniList.
 - [ ] **Integração Google Workspace:** O Agente gera recomendações personalizadas em HTML e utiliza a API do Gmail para disparar um relatório automático para a caixa de entrada do usuário.
 
-## 📅 Fase 5: Smart Tracking, Streaming Direto & Calendário (Killer Feature)
+## 📅 Fase 5: Smart Tracking, Streaming Direto & Calendário (Killer Feature) Finalizado 10/08/2026 
 
-- [ ] **Backend:** Atualizar a query GraphQL do Go para consumir `nextAiringEpisode` e repassar a janela de tempo ao frontend.
-- [ ] **Meu Deck:** Criar lógica visual de Badge "NOVO EP" para obras "Assistindo" ou "Em Dia" com episódios recém-lançados.
-- [ ] **Integração de Streaming:** Adicionar botão/ação rápida nos cards do Deck utilizando o campo `externalLinks` da AniList, permitindo pular direto para a Crunchyroll/Netflix.
-- [ ] **Calendário Personalizado:** Tela mostrando próximos episódios exclusivos da *watchlist* do usuário, agrupados por dia da semana e com contagem regressiva viva.
+- [x] **Backend:** Atualizar a query GraphQL do Go para consumir `nextAiringEpisode` e repassar a janela de tempo ao frontend.
+- [x] **Meu Deck:** Criar lógica visual de Badge "NOVO EP" para obras "Assistindo" ou "Em Dia" com episódios recém-lançados.
+- [x] **Integração de Streaming:** Adicionar botão/ação rápida nos cards do Deck utilizando o campo `externalLinks` da AniList, permitindo pular direto para a Crunchyroll/Netflix.
+- [x] **Calendário Personalizado:** Tela mostrando próximos episódios exclusivos da *watchlist* do usuário, agrupados por dia da semana e com contagem regressiva viva.
+OBS: O Product Owner decidiu que a fase 5 fosse implementada primeiro. 
 
 ## 📰 Fase 6: Notícias de Anime
 
