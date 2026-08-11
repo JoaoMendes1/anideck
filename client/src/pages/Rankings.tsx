@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react'
+import BotaoCopiar from '../components/BotaoCopiar'
 import { useToast } from '../contexts/ToastContext'
 import { Link, useNavigate } from 'react-router-dom'
 import { AlertCircle, SlidersHorizontal, X, Check } from 'lucide-react'
@@ -37,8 +38,8 @@ export default function Rankings() {
     const [page, setPage] = useState(1)
     const [showFilters, setShowFilters] = useState(false)
     const { showToast } = useToast()
-    const [savingIds, setSavingIds] = useState<number[]>([]) 
-    
+    const [savingIds, setSavingIds] = useState<number[]>([])
+
     // Agora salvamos o ID e o status de Favorito
     const [savedEntries, setSavedEntries] = useState<SavedEntry[]>([])
 
@@ -175,21 +176,19 @@ export default function Rankings() {
                 <div className="flex gap-2 flex-wrap mb-6 select-none border-b border-line pb-4">
                     <button
                         onClick={() => { setSelectedStatus(''); setSelectedSeason(''); setSelectedYear(''); }}
-                        className={`text-[13px] font-bold px-5 py-2.5 rounded-full border transition-colors cursor-pointer ${
-                            selectedStatus === '' 
-                            ? 'bg-gradient-to-r from-holo-1 to-holo-2 text-white border-transparent shadow-lg'
-                            : 'bg-panel border-line text-muted hover:border-holo-3 hover:text-text'
-                        }`}
+                        className={`text-[13px] font-bold px-5 py-2.5 rounded-full border transition-colors cursor-pointer ${selectedStatus === ''
+                                ? 'bg-gradient-to-r from-holo-1 to-holo-2 text-white border-transparent shadow-lg'
+                                : 'bg-panel border-line text-muted hover:border-holo-3 hover:text-text'
+                            }`}
                     >
                         🏆 Top Global
                     </button>
                     <button
                         onClick={() => setSelectedStatus('RELEASING')}
-                        className={`text-[13px] font-bold px-5 py-2.5 rounded-full border transition-colors cursor-pointer flex items-center gap-2 ${
-                            selectedStatus === 'RELEASING'
-                            ? 'bg-coral/20 border-coral text-coral shadow-[0_0_15px_rgba(255,92,108,0.2)]'
-                            : 'bg-panel border-line text-muted hover:border-coral hover:text-text'
-                        }`}
+                        className={`text-[13px] font-bold px-5 py-2.5 rounded-full border transition-colors cursor-pointer flex items-center gap-2 ${selectedStatus === 'RELEASING'
+                                ? 'bg-coral/20 border-coral text-coral shadow-[0_0_15px_rgba(255,92,108,0.2)]'
+                                : 'bg-panel border-line text-muted hover:border-coral hover:text-text'
+                            }`}
                     >
                         🔥 Temporada Atual
                     </button>
@@ -199,8 +198,8 @@ export default function Rankings() {
                     <button
                         onClick={() => setShowFilters(v => !v)}
                         className={`select-none inline-flex items-center gap-2 px-4 py-2 rounded-full border text-sm font-bold transition-all duration-200 cursor-pointer ${showFilters || activeFilterCount > 0
-                                ? 'border-holo-2 text-holo-2 bg-holo-2/10'
-                                : 'border-line text-muted bg-panel hover:border-holo-2 hover:text-holo-2'
+                            ? 'border-holo-2 text-holo-2 bg-holo-2/10'
+                            : 'border-line text-muted bg-panel hover:border-holo-2 hover:text-holo-2'
                             }`}
                     >
                         <SlidersHorizontal size={14} />
@@ -222,8 +221,8 @@ export default function Rankings() {
                                             key={opt.value}
                                             onClick={() => setSelectedStatus(selectedStatus === opt.value ? '' : opt.value)}
                                             className={`select-none px-3 py-1.5 rounded-full text-xs font-bold transition-all duration-150 cursor-pointer ${selectedStatus === opt.value
-                                                    ? 'bg-gradient-to-r from-holo-1 to-holo-2 text-void shadow-[0_0_12px_rgba(123,92,255,0.4)]'
-                                                    : 'bg-panel-2 border border-line text-muted hover:border-holo-2 hover:text-text'
+                                                ? 'bg-gradient-to-r from-holo-1 to-holo-2 text-void shadow-[0_0_12px_rgba(123,92,255,0.4)]'
+                                                : 'bg-panel-2 border border-line text-muted hover:border-holo-2 hover:text-text'
                                                 }`}
                                         >
                                             {opt.label}
@@ -240,8 +239,8 @@ export default function Rankings() {
                                             key={opt.value}
                                             onClick={() => setSelectedSeason(selectedSeason === opt.value ? '' : opt.value)}
                                             className={`select-none px-3 py-1.5 rounded-full text-xs font-bold transition-all duration-150 cursor-pointer ${selectedSeason === opt.value
-                                                    ? 'bg-gradient-to-r from-holo-1 to-holo-2 text-void shadow-[0_0_12px_rgba(123,92,255,0.4)]'
-                                                    : 'bg-panel-2 border border-line text-muted hover:border-holo-2 hover:text-text'
+                                                ? 'bg-gradient-to-r from-holo-1 to-holo-2 text-void shadow-[0_0_12px_rgba(123,92,255,0.4)]'
+                                                : 'bg-panel-2 border border-line text-muted hover:border-holo-2 hover:text-text'
                                                 }`}
                                         >
                                             {opt.emoji} {opt.label}
@@ -255,8 +254,8 @@ export default function Rankings() {
                                                 key={y}
                                                 onClick={() => setSelectedYear(selectedYear === String(y) ? '' : String(y))}
                                                 className={`select-none px-3 py-1.5 rounded-full text-xs font-bold transition-all duration-150 cursor-pointer ${selectedYear === String(y)
-                                                        ? 'bg-holo-3/20 border border-holo-3 text-holo-3'
-                                                        : 'bg-panel-2 border border-line text-muted hover:border-holo-3 hover:text-text'
+                                                    ? 'bg-holo-3/20 border border-holo-3 text-holo-3'
+                                                    : 'bg-panel-2 border border-line text-muted hover:border-holo-3 hover:text-text'
                                                     }`}
                                             >
                                                 {y}
@@ -276,8 +275,8 @@ export default function Rankings() {
                                                 key={`${f.type}-${f.value}`}
                                                 onClick={() => toggleFilter(f)}
                                                 className={`select-none px-3 py-1.5 rounded-full text-xs font-bold transition-all duration-150 cursor-pointer border ${isActive
-                                                        ? `${getCategoryTheme(f.label)} shadow-[0_0_10px_currentColor]`
-                                                        : 'bg-panel-2 border-line text-muted hover:border-holo-2 hover:text-text'
+                                                    ? `${getCategoryTheme(f.label)} shadow-[0_0_10px_currentColor]`
+                                                    : 'bg-panel-2 border-line text-muted hover:border-holo-2 hover:text-text'
                                                     }`}
                                             >
                                                 {f.label}
@@ -308,25 +307,30 @@ export default function Rankings() {
                         const isFoil = savedEntry?.is_favorite
 
                         return (
-                           <Link
+                            <Link
                                 to={`/anime/${anime.mal_id}`}
                                 key={`${anime.mal_id}-${index}`}
-                                className={`relative overflow-hidden grid grid-cols-[24px_44px_1fr_auto_auto] md:grid-cols-[36px_56px_1fr_auto_auto] gap-2 md:gap-4 items-center p-3 rounded-xl transition-colors group ${
-                                    isFoil 
-                                        ? 'foil-card border border-gold/50 shadow-[0_0_15px_rgba(255,197,66,0.15)]' 
+                                className={`relative overflow-hidden grid grid-cols-[24px_44px_1fr_auto_auto] md:grid-cols-[36px_56px_1fr_auto_auto] gap-2 md:gap-4 items-center p-3 rounded-xl transition-colors group ${isFoil
+                                        ? 'foil-card border border-gold/50 shadow-[0_0_15px_rgba(255,197,66,0.15)]'
                                         : 'bg-panel border border-line hover:border-holo-2'
-                                }`}
+                                    }`}
                             >
                                 <span className={`relative z-30 font-anton text-lg md:text-xl text-center select-none ${rankColor}`}>
                                     {rank < 10 ? `0${rank}` : rank}
                                 </span>
-                                
+
                                 <img src={anime.images?.jpg?.image_url} alt={anime.title} className="relative z-30 w-11 h-11 md:w-14 md:h-14 rounded-lg object-cover bg-panel-2 border border-line" />
-                                
+
                                 <div className="relative z-30 min-w-0">
-                                    <div className="font-bold text-sm md:text-[14.5px] truncate mb-1.5">
-                                        {isFoil && <span className="text-gold mr-1" title="Favorito">👑</span>}
-                                        {anime.title}
+                                    <div className="flex items-center gap-2 mb-1.5">
+                                        <div className="font-bold text-sm md:text-[14.5px] truncate">
+                                            {isFoil && <span className="text-gold mr-1" title="Favorito">👑</span>}
+                                            {anime.title}
+                                        </div>
+                                        <BotaoCopiar
+                                            texto={anime.title}
+                                            className="opacity-70 md:opacity-0 group-hover:opacity-100 transition-opacity relative z-40 shrink-0"
+                                        />
                                     </div>
                                     <div className="flex items-center gap-2 font-mono text-[10px] md:text-[10.5px] text-muted-2">
                                         {anime.genres && anime.genres.length > 0 && (
@@ -337,20 +341,19 @@ export default function Rankings() {
                                         <span className="select-none">{anime.status} • {anime.episodes || '?'} EP</span>
                                     </div>
                                 </div>
-                                
+
                                 <div className="relative z-30 text-right select-none">
                                     <div className="font-anton text-sm md:text-base text-gold">★ {anime.score || 'N/A'}</div>
                                     <span className="font-mono text-[9px] text-muted-2 hidden md:block">NOTA</span>
                                 </div>
-                                
-                                <button 
-                                    onClick={(e) => handleSalvar(e, anime.mal_id)} 
+
+                                <button
+                                    onClick={(e) => handleSalvar(e, anime.mal_id)}
                                     disabled={savingIds.includes(anime.mal_id)}
-                                    className={`relative z-30 flex w-8 h-8 rounded-full border-[1.5px] items-center justify-center font-bold text-lg transition-colors select-none ${
-                                        savedEntry
+                                    className={`relative z-30 flex w-8 h-8 rounded-full border-[1.5px] items-center justify-center font-bold text-lg transition-colors select-none ${savedEntry
                                             ? 'bg-green/20 border-green text-green cursor-pointer hover:bg-coral/20 hover:border-coral hover:text-coral'
                                             : 'border-line bg-transparent text-muted group-hover:border-holo-3 group-hover:text-holo-3 cursor-pointer'
-                                    }`}
+                                        }`}
                                 >
                                     {savingIds.includes(anime.mal_id) ? (
                                         <div className="w-3 h-3 border-2 border-current border-t-transparent rounded-full animate-spin"></div>
