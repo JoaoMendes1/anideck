@@ -32,7 +32,7 @@ export default function Calendario() {
     const [loading, setLoading] = useState(true)
     const [error, setError] = useState<string | null>(null)
     const [, setTick] = useState(0)
-    
+
     const [abaAtiva, setAbaAtiva] = useState<'meus' | 'todos'>('meus')
 
     useEffect(() => {
@@ -46,7 +46,7 @@ export default function Calendario() {
                 try {
                     const res = await fetch('/api/entries', { headers: { 'Authorization': `Bearer ${session.access_token}` } })
                     if (res.ok) userEntries = await res.json()
-                } catch(e) {}
+                } catch (e) { }
             }
 
             try {
@@ -62,8 +62,8 @@ export default function Calendario() {
                     const malIds = ativos.map(e => e.mal_id)
                     const apiResponse = await fetch('/api/anime/bulk', {
                         method: 'POST',
-                        headers: {  'Content-Type': 'application/json' },
-                        body: JSON.stringify({ ids: malIds})
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ ids: malIds })
                     })
                     const apiJson = await apiResponse.json()
                     media = apiJson.data || []
@@ -86,7 +86,7 @@ export default function Calendario() {
                             genre: m.genres && m.genres.length > 0 ? m.genres[0].name : undefined,
                             nextAiringEpisode: m.nextAiringEpisode,
                             streaming: m.streaming,
-                            is_favorite: entry?.is_favorite 
+                            is_favorite: entry?.is_favorite
                         })
                     }
                 })
@@ -100,7 +100,7 @@ export default function Calendario() {
         }
 
         carregarCalendario()
-    }, [abaAtiva]) 
+    }, [abaAtiva])
 
     useEffect(() => {
         const interval = setInterval(() => {
@@ -111,12 +111,20 @@ export default function Calendario() {
 
     const getDayLabel = (timestamp: number) => {
         const date = new Date(timestamp * 1000)
-        const today = new Date()
-        const tomorrow = new Date(today)
-        tomorrow.setDate(tomorrow.getDate() + 1)
 
-        if (date.toDateString() === today.toDateString()) return 'Hoje'
-        if (date.toDateString() === tomorrow.toDateString()) return 'Amanhã'
+        // Data atual do usuário travada na meia-noite
+        const today = new Date()
+        today.setHours(0, 0, 0, 0)
+
+        // Data do episódio travada na meia-noite
+        const targetDate = new Date(date)
+        targetDate.setHours(0, 0, 0, 0)
+
+        const diffTime = targetDate.getTime() - today.getTime()
+        const diffDays = Math.round(diffTime / (1000 * 60 * 60 * 24))
+
+        if (diffDays === 0) return 'Hoje'
+        if (diffDays === 1) return 'Amanhã'
 
         const diasSemana = ['Domingo', 'Segunda-feira', 'Terça-feira', 'Quarta-feira', 'Quinta-feira', 'Sexta-feira', 'Sábado']
         return diasSemana[date.getDay()]
@@ -172,23 +180,21 @@ export default function Calendario() {
 
                 {/* 🟢 OPÇÃO C: Abas de controle no topo do calendário */}
                 <div className="flex gap-2 mb-8 select-none border-b border-line pb-4 overflow-x-auto scrollbar-hide">
-                    <button 
+                    <button
                         onClick={() => setAbaAtiva('meus')}
-                        className={`shrink-0 whitespace-nowrap text-[13px] font-bold px-5 py-2.5 rounded-full border transition-colors cursor-pointer ${
-                            abaAtiva === 'meus' 
-                            ? 'bg-gradient-to-r from-holo-1 to-holo-2 text-white border-transparent shadow-lg'
-                            : 'bg-panel border-line text-muted hover:border-holo-3 hover:text-text'
-                        }`}
+                        className={`shrink-0 whitespace-nowrap text-[13px] font-bold px-5 py-2.5 rounded-full border transition-colors cursor-pointer ${abaAtiva === 'meus'
+                                ? 'bg-gradient-to-r from-holo-1 to-holo-2 text-white border-transparent shadow-lg'
+                                : 'bg-panel border-line text-muted hover:border-holo-3 hover:text-text'
+                            }`}
                     >
                         Meu Deck
                     </button>
-                    <button 
+                    <button
                         onClick={() => setAbaAtiva('todos')}
-                        className={`shrink-0 whitespace-nowrap text-[13px] font-bold px-5 py-2.5 rounded-full border transition-colors cursor-pointer flex items-center gap-2 ${
-                            abaAtiva === 'todos'
-                            ? 'bg-holo-3/20 border-holo-3 text-holo-3 shadow-[0_0_15px_rgba(63,224,240,0.2)]'
-                            : 'bg-panel border-line text-muted hover:border-holo-3 hover:text-text'
-                        }`}
+                        className={`shrink-0 whitespace-nowrap text-[13px] font-bold px-5 py-2.5 rounded-full border transition-colors cursor-pointer flex items-center gap-2 ${abaAtiva === 'todos'
+                                ? 'bg-holo-3/20 border-holo-3 text-holo-3 shadow-[0_0_15px_rgba(63,224,240,0.2)]'
+                                : 'bg-panel border-line text-muted hover:border-holo-3 hover:text-text'
+                            }`}
                     >
                         Lançamentos Global
                     </button>
@@ -210,13 +216,19 @@ export default function Calendario() {
                 ) : (
                     groups.map((group) => {
                         let badgeColor = 'bg-panel border-line text-muted-2'
-                        if (group.label === 'Hoje') badgeColor = 'bg-holo-3/15 border-holo-3/35 text-holo-3'
+                        // Atualizando o Hoje para a cor coral para dar destaque de urgência
+                        if (group.label === 'Hoje') badgeColor = 'bg-coral/15 border-coral/35 text-coral'
                         if (group.label === 'Amanhã') badgeColor = 'bg-gold/15 border-gold/35 text-gold'
 
                         return (
                             <div key={group.label} className="mb-10 animate-fade-in">
                                 <div className="flex items-center gap-3 mb-4 select-none">
-                                    <h2 className="font-anton text-text uppercase text-[17px] m-0">{group.label}</h2>
+                                    <h2 className="font-anton text-text uppercase text-[17px] m-0 flex items-center gap-2">
+                                        {group.label}
+                                        {group.label === 'Hoje' && (
+                                            <span className="w-2 h-2 rounded-full bg-coral animate-pulse" title="Lançamento hoje!"></span>
+                                        )}
+                                    </h2>
                                     <span className={`font-mono text-[10px] font-bold px-2 py-0.5 rounded-full border ${badgeColor}`}>
                                         {group.dateStr}
                                     </span>
@@ -232,9 +244,9 @@ export default function Calendario() {
 
                                         return (
                                             <div key={anime.mal_id} className={`grid grid-cols-[44px_1fr_auto] md:grid-cols-[56px_1fr_auto_auto] gap-3 md:gap-5 items-center p-3 border rounded-xl transition-colors group ${anime.is_favorite ? 'bg-panel-2 border-gold/30 shadow-[0_0_10px_rgba(255,197,66,0.05)]' : 'bg-panel border-line hover:border-holo-2'}`}>
-                                                
+
                                                 <div className={`w-11 h-11 md:w-14 md:h-14 rounded-lg flex-shrink-0 bg-cover bg-center border border-line ${gradClass}`} style={{ backgroundImage: `url(${anime.image_url})` }}></div>
-                                                
+
                                                 <div className="min-w-0">
                                                     <Link to={`/anime/${anime.mal_id}`} className="font-bold text-[13.5px] md:text-[14.5px] truncate block hover:text-holo-3 transition-colors">
                                                         {anime.title}

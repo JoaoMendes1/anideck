@@ -20,8 +20,8 @@ interface HydratedAnime {
     title: string
     image_url: string
     genre?: string
-    ranking?: number 
-     nextAiringEpisode?: {
+    ranking?: number
+    nextAiringEpisode?: {
         airingAt: number
         timeUntilAiring: number
         episode: number
@@ -60,8 +60,8 @@ export default function MeuDeck() {
                     const malIds = dadosDeck.map(e => e.mal_id)
                     const apiResponse = await fetch('/api/anime/bulk', {
                         method: 'POST',
-                        headers: {  'Content-Type': 'application/json' },
-                        body: JSON.stringify({ ids: malIds})
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ ids: malIds })
                     })
 
                     const apiJson = await apiResponse.json()
@@ -74,9 +74,9 @@ export default function MeuDeck() {
                             title: m.title || 'Título Desconhecido',
                             image_url: m.images?.jpg?.image_url || '',
                             genre: m.genres && m.genres.length > 0 ? m.genres[0].name : undefined,
-                            ranking: m.ranking, 
-                            nextAiringEpisode: m.nextAiringEpisode, 
-                            streaming: m.streaming 
+                            ranking: m.ranking,
+                            nextAiringEpisode: m.nextAiringEpisode,
+                            streaming: m.streaming
                         }
                     })
                     setAnimesData(mapaAnimes)
@@ -93,12 +93,12 @@ export default function MeuDeck() {
 
     const stats = useMemo(() => {
         let assistindo = 0, emDia = 0, concluidos = 0, dropados = 0, somaNotas = 0, qtdNotas = 0;
-        
+
         entradas.forEach(e => {
             if (e.status === 'Assistindo') assistindo++;
             if (e.status === 'Em Dia') emDia++;
             if (e.status === 'Completo' || e.status === 'Finalizado') concluidos++;
-            if (e.status === 'Dropado') dropados++; 
+            if (e.status === 'Dropado') dropados++;
             if (e.nota !== null && e.nota !== undefined) {
                 somaNotas += e.nota;
                 qtdNotas++;
@@ -125,7 +125,7 @@ export default function MeuDeck() {
     }, [entradasFiltradas])
 
     const getStatusTheme = (status: string) => {
-        switch(status) {
+        switch (status) {
             case 'Assistindo': return { bg: 'bg-void/50 backdrop-blur-sm', text: 'text-holo-3 drop-shadow-[0_1px_3px_rgba(0,0,0,1)]', border: 'border-holo-3/50' }
             case 'Em Dia': return { bg: 'bg-void/50 backdrop-blur-sm', text: 'text-green drop-shadow-[0_1px_3px_rgba(0,0,0,1)]', border: 'border-green/50' }
             case 'Completo': return { bg: 'bg-void/50 backdrop-blur-sm', text: 'text-gold drop-shadow-[0_1px_3px_rgba(0,0,0,1)]', border: 'border-gold/50' }
@@ -136,10 +136,10 @@ export default function MeuDeck() {
     }
 
     if (loading) return (
-      <div className="min-h-[70vh] flex flex-col items-center justify-center">
-        <div className="w-12 h-12 rounded-full border-4 border-line border-t-holo-2 animate-spin mb-4"></div>
-        <p className="font-mono text-muted text-sm tracking-widest">CARREGANDO DECK...</p>
-      </div>
+        <div className="min-h-[70vh] flex flex-col items-center justify-center">
+            <div className="w-12 h-12 rounded-full border-4 border-line border-t-holo-2 animate-spin mb-4"></div>
+            <p className="font-mono text-muted text-sm tracking-widest">CARREGANDO DECK...</p>
+        </div>
     )
 
     if (error) return <div className="p-10 text-center text-coral font-mono text-sm">{error}</div>
@@ -197,11 +197,10 @@ export default function MeuDeck() {
                         <button
                             key={tab}
                             onClick={() => setFiltroAtivo(tab)}
-                            className={`text-[13px] font-bold px-4 py-2 rounded-full border transition-colors cursor-pointer ${
-                                filtroAtivo === tab
-                                ? 'bg-gradient-to-r from-holo-1 to-holo-2 text-white border-transparent shadow-lg'
-                                : 'bg-panel border-line text-muted hover:border-holo-3 hover:text-text'
-                            }`}
+                            className={`text-[13px] font-bold px-4 py-2 rounded-full border transition-colors cursor-pointer ${filtroAtivo === tab
+                                    ? 'bg-gradient-to-r from-holo-1 to-holo-2 text-white border-transparent shadow-lg'
+                                    : 'bg-panel border-line text-muted hover:border-holo-3 hover:text-text'
+                                }`}
                         >
                             {tab}
                         </button>
@@ -220,20 +219,36 @@ export default function MeuDeck() {
                             const animeLocal = animesData[entrada.mal_id]
                             const gradClass = `card-g${(index % 5) + 1}`
                             const temaStatus = getStatusTheme(entrada.status)
-                            
+
                             const isFoil = entrada.is_favorite
 
                             const streamUrl = animeLocal?.streaming ? animeLocal.streaming.find(s => s.name.toLowerCase().includes('crunchyroll'))?.url || animeLocal.streaming.find(s => s.name.toLowerCase().includes('netflix'))?.url || animeLocal.streaming[0]?.url : null
                             const isAtivo = entrada.status === 'Assistindo' || entrada.status === 'Em dia' || entrada.status === 'Quero Assistir'
-                            const acabouDeLancar = animeLocal?.nextAiringEpisode && animeLocal.nextAiringEpisode.timeUntilAiring > 518400 
-                            const lancaHoje = animeLocal?.nextAiringEpisode && animeLocal.nextAiringEpisode.timeUntilAiring < 86400 
+                            const acabouDeLancar = animeLocal?.nextAiringEpisode && animeLocal.nextAiringEpisode.timeUntilAiring > 518400
+                          let lancaHoje = false
+                            let lancaAmanha = false
+                            
+                            if (animeLocal?.nextAiringEpisode) {
+                                const dataEpisodio = new Date(animeLocal.nextAiringEpisode.airingAt * 1000)
+                                const dataHoje = new Date()
+                                
+                                // Travamos ambas as datas na meia-noite para comparar apenas os dias
+                                dataHoje.setHours(0, 0, 0, 0)
+                                const dataEpisodioMeiaNoite = new Date(dataEpisodio)
+                                dataEpisodioMeiaNoite.setHours(0, 0, 0, 0)
+                                
+                                const diffTime = dataEpisodioMeiaNoite.getTime() - dataHoje.getTime()
+                                const diffDays = Math.round(diffTime / (1000 * 60 * 60 * 24))
 
-                      return (
+                                if (diffDays === 0) lancaHoje = true
+                                if (diffDays === 1) lancaAmanha = true
+                            }
+
+                            return (
                                 <div
                                     key={entrada.id}
-                                    className={`relative aspect-[3/4.2] rounded-[14px] overflow-hidden p-3 flex flex-col justify-end border transition-transform hover:-translate-y-1 group ${
-                                        isFoil ? 'foil-card border-gold/50 shadow-[0_0_15px_rgba(255,197,66,0.15)]' : `border-line bg-panel ${gradClass}`
-                                    }`}
+                                    className={`relative aspect-[3/4.2] rounded-[14px] overflow-hidden p-3 flex flex-col justify-end border transition-transform hover:-translate-y-1 group ${isFoil ? 'foil-card border-gold/50 shadow-[0_0_15px_rgba(255,197,66,0.15)]' : `border-line bg-panel ${gradClass}`
+                                        }`}
                                 >
                                     {streamUrl && isAtivo ? (
                                         <>
@@ -252,7 +267,7 @@ export default function MeuDeck() {
                                         <img src={animeLocal.image_url} alt={animeLocal.title} className="absolute inset-0 w-full h-full object-cover z-0 opacity-80 group-hover:opacity-100 transition-opacity" />
                                     )}
                                     <div className="absolute inset-0 bg-gradient-to-t from-void/95 via-void/40 to-transparent z-0" />
-                                    
+
                                     <div className="absolute top-2.5 left-2.5 z-30 flex flex-col gap-1.5 items-start pointer-events-none">
                                         <span className={`select-none text-[9px] md:text-[9.5px] font-extrabold px-2 py-1 rounded-full uppercase tracking-wider border ${temaStatus.bg} ${temaStatus.text} ${temaStatus.border}`}>
                                             {entrada.status}
@@ -261,24 +276,25 @@ export default function MeuDeck() {
                                             <>
                                                 {acabouDeLancar && <span className="select-none text-[8.5px] font-black px-2 py-0.5 rounded-sm bg-coral text-white shadow-[0_0_10px_rgba(255,92,108,0.5)] uppercase tracking-widest">Novo EP</span>}
                                                 {lancaHoje && !acabouDeLancar && <span className="select-none text-[8.5px] font-black px-2 py-0.5 rounded-sm bg-holo-3 text-void shadow-[0_0_10px_rgba(63,224,240,0.5)] uppercase tracking-widest">Hoje</span>}
+                                                {lancaAmanha && !acabouDeLancar && <span className="select-none text-[8.5px] font-black px-2 py-0.5 rounded-sm bg-gold text-void shadow-[0_0_10px_rgba(255,197,66,0.5)] uppercase tracking-widest">Amanhã</span>}
                                             </>
                                         )}
                                     </div>
 
-                                    <button 
+                                    <button
                                         onClick={(e) => { e.preventDefault(); e.stopPropagation(); setEditando(entrada); }}
                                         className="absolute top-2.5 right-2.5 z-30 w-8 h-8 rounded-full bg-void/80 border border-line text-muted hover:text-holo-3 hover:border-holo-3 flex items-center justify-center backdrop-blur-md cursor-pointer transition-colors shadow-lg"
                                         title="Editar entrada"
                                     >
                                         ✎
                                     </button>
-                                    
+
                                     <div className="relative z-20 mt-auto flex flex-col pointer-events-none select-none w-full min-h-[75px] justify-end">
                                         <div className="font-anton text-[12px] sm:text-[13px] uppercase leading-tight mb-2 text-white drop-shadow-md overflow-hidden text-ellipsis line-clamp-2 break-words" title={animeLocal?.title || `ID: ${entrada.mal_id}`}>
                                             {isFoil && <span className="text-gold mr-1" title="Favorito">👑</span>}
                                             {animeLocal?.title || `ID: ${entrada.mal_id}`}
                                         </div>
-                                        
+
                                         <div className="flex flex-wrap justify-between items-end gap-1.5 mt-auto">
                                             <div className="flex flex-col gap-1 shrink-0 max-w-[50%]">
                                                 {animeLocal?.genre && (
@@ -287,7 +303,7 @@ export default function MeuDeck() {
                                                     </span>
                                                 )}
                                             </div>
-                                            
+
                                             <div className="flex flex-wrap items-center justify-end gap-1.5 shrink-0 max-w-[100%] ml-auto">
                                                 {animeLocal?.ranking && (
                                                     <div className="font-anton text-[11px] sm:text-[12px] px-1.5 py-0.5 rounded-md backdrop-blur-sm border bg-panel-2/90 text-holo-3 border-holo-3/40 shadow-[0_0_8px_rgba(63,224,240,0.15)] flex items-center gap-1" title={`#${animeLocal.ranking} no mundo`}>
