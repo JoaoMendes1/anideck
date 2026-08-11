@@ -24,6 +24,10 @@ func (h *AnimeHandler) HandleGetAnime(w http.ResponseWriter, r *http.Request) {
 
 	resultados, err := h.AniListClient.GetAnimeById(r.Context(), id)
 	if err != nil {
+		if err.Error() == "ID inválido" {
+			http.Error(w, "ID do anime inválido", http.StatusBadRequest)
+			return
+		}
 		log.Printf("[ERRO ANILIST] Falha ao buscar detalhes do anime %s: %v", id, err)
 		http.Error(w, "Detalhes indisponíveis no momento", http.StatusServiceUnavailable)
 		return
@@ -70,6 +74,10 @@ func (h *AnimeHandler) HandleGetStatistics(w http.ResponseWriter, r *http.Reques
 
 	resultados, err := h.AniListClient.GetAnimeStatistics(r.Context(), id)
 	if err != nil {
+		if err.Error() == "ID inválido" {
+			http.Error(w, "ID do anime inválido", http.StatusBadRequest)
+			return
+		}
 		http.Error(w, "Estatísticas indisponíveis no momento", http.StatusServiceUnavailable)
 		return
 	}

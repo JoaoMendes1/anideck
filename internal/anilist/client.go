@@ -21,12 +21,12 @@ type Client struct {
 func NewClient() *Client {
 	return &Client{
 		httpClient: &http.Client{Timeout: 15 * time.Second},
-		limiter:    rate.NewLimiter(rate.Every(2*time.Second), 1), 
+		limiter:    rate.NewLimiter(rate.Limit(1.5), 10), // Limite ajustado para suportar bursts
 		baseURL:    "https://graphql.anilist.co",
 	}
 }
 
-var stripHTML = bluemonday.StrictPolicy() 
+var stripHTML = bluemonday.StrictPolicy()
 
 func (c *Client) gqlRequest(ctx context.Context, query string, variables map[string]interface{}, out interface{}) error {
 	if err := c.limiter.Wait(ctx); err != nil {
@@ -107,8 +107,30 @@ type aniListMedia struct {
 		Type    string `json:"type"`
 		AllTime bool   `json:"allTime"`
 	} `json:"rankings"`
-	
+
 	NextAiringEpisode *NextAiringEpisode `json:"nextAiringEpisode"`
+
+	Studios struct {
+		Edges []struct {
+			Node struct {
+				Name string `json:"name"`
+			} `json:"node"`
+		} `json:"edges"`
+	} `json:"studios"`
+
+	Relations struct {
+		Edges []struct {
+			RelationType string `json:"relationType"`
+			Node         struct {
+				IDMal int    `json:"idMal"`
+				Type  string `json:"type"`
+				Title struct {
+					Romaji  string `json:"romaji"`
+					English string `json:"english"`
+				} `json:"title"`
+			} `json:"node"`
+		} `json:"edges"`
+	} `json:"relations"`
 }
 
 func (m *aniListMedia) toAnime() Anime {
@@ -148,14 +170,53 @@ func (m *aniListMedia) toAnime() Anime {
 		}
 	}
 
+	var studios []struct{ Name string `json:"name"` }
+	for _, edge := range m.Studios.Edges {
+		studios = append(studios, struct{ Name string `json:"name"` }{Name: edge.Node.Name})
+	}
+
+	var relations []struct {
+		Relation string `json:"relation"`
+		Entry    []struct {
+			MalID int    `json:"mal_id"`
+			Type  string `json:"type"`
+			Name  string `json:"name"`
+		} `json:"entry"`
+	}
+	for _, edge := range m.Relations.Edges {
+		relTitle := edge.Node.Title.Romaji
+		if relTitle == "" {
+			relTitle = edge.Node.Title.English
+		}
+		relations = append(relations, struct {
+			Relation string `json:"relation"`
+			Entry    []struct {
+				MalID int    `json:"mal_id"`
+				Type  string `json:"type"`
+				Name  string `json:"name"`
+			} `json:"entry"`
+		}{
+			Relation: edge.RelationType,
+			Entry: []struct {
+				MalID int    `json:"mal_id"`
+				Type  string `json:"type"`
+				Name  string `json:"name"`
+			}{{
+				MalID: edge.Node.IDMal,
+				Type:  edge.Node.Type,
+				Name:  relTitle,
+			}},
+		})
+	}
+
 	return Anime{
 		MalID:    m.IDMal,
 		Title:    title,
 		Status:   mapStatus(m.Status),
-		Synopsis: stripHTML.Sanitize(m.Description), 
+		Synopsis: stripHTML.Sanitize(m.Description),
 		Episodes: m.Episodes,
-		Score:    float64(m.AverageScore) / 10.0, 
-		Ranking:  bestRanking, 
+		Score:    float64(m.AverageScore) / 10.0,
+		Ranking:  bestRanking,
 		NextAiringEpisode: m.NextAiringEpisode,
 		Images: struct {
 			JPG struct {
@@ -170,16 +231,18 @@ func (m *aniListMedia) toAnime() Anime {
 		},
 		Genres:    genres,
 		Streaming: streaming,
+		Studios:   studios,
+		Relations: relations,
 	}
 }
 
 type SearchFilters struct {
 	Genres     []string
 	Tags       []string
-	Season     string 
-	SeasonYear int    
-	Status     string 
-	Sort       string 
+	Season     string
+	SeasonYear int
+	Status     string
+	Sort       string
 }
 
 func (c *Client) SearchAnime(ctx context.Context, query string, page int, perPage int, f SearchFilters) (*AnimeSearchResponse, error) {
@@ -240,6 +303,8 @@ query ($idMal: Int) {
     genres
     externalLinks { site url }
     nextAiringEpisode { airingAt timeUntilAiring episode }
+    studios { edges { node { name } } }
+    relations { edges { relationType node { idMal type title { romaji english } } } }
   }
 }`
 
@@ -264,7 +329,9 @@ query ($idMal_in: [Int]) {
 
 func (c *Client) GetAnimeById(ctx context.Context, id string) (*AnimeByIdResponse, error) {
 	var malID int
-	fmt.Sscanf(id, "%d", &malID)
+	if _, err := fmt.Sscanf(id, "%d", &malID); err != nil {
+		return nil, fmt.Errorf("ID inválido")
+	}
 
 	var resultado struct {
 		Media aniListMedia `json:"Media"`
@@ -284,7 +351,9 @@ query ($idMal: Int) {
 
 func (c *Client) GetAnimeStatistics(ctx context.Context, id string) (*AnimeStatisticsResponse, error) {
 	var malID int
-	fmt.Sscanf(id, "%d", &malID)
+	if _, err := fmt.Sscanf(id, "%d", &malID); err != nil {
+		return nil, fmt.Errorf("ID inválido")
+	}
 
 	var resultado struct {
 		Media struct {
@@ -340,7 +409,7 @@ func (c *Client) GetTopAnime(ctx context.Context, page int, perPage int, f Searc
 		"page":    page,
 		"perPage": perPage,
 	}
-	
+
 	if f.Sort != "" {
 		variables["sort"] = []string{f.Sort}
 	} else {
