@@ -6,11 +6,27 @@ import (
 	"net/http"
 	"strconv"
 	"strings"
+	"sync"
+	"time"
 
 	"github.com/JoaoMendes1/anideck/internal/anilist"
-	"github.com/JoaoMendes1/anideck/internal/database" 
-	"github.com/JoaoMendes1/anideck/internal/models"   
+	"github.com/JoaoMendes1/anideck/internal/database"
+	"github.com/JoaoMendes1/anideck/internal/models"
 )
+
+var (
+	rankingCache struct {
+		sync.RWMutex
+		data      *anilist.AnimeSearchResponse
+		timestamp time.Time
+	}
+)
+
+func InvalidateRankingCache() {
+	rankingCache.Lock()
+	defer rankingCache.Unlock()
+	rankingCache.data = nil
+}
 
 type RankingHandler struct {
 	AniListClient anilist.Service
@@ -47,6 +63,22 @@ func (h *RankingHandler) HandleGetTopAnime(w http.ResponseWriter, r *http.Reques
 		SeasonYear: seasonYear,
 		Status:     status,
 		Sort:       sortParam,
+	}
+
+	// Verifica se é a query padrão para aplicar cache
+	isDefaultRanking := page == 1 && season == "" && status == "" && sortParam == "POPULARITY_DESC" && len(filters.Genres) == 0 && len(filters.Tags) == 0
+
+	if isDefaultRanking {
+		rankingCache.RLock()
+		if rankingCache.data != nil && time.Since(rankingCache.timestamp) < 5*time.Minute {
+			cachedData := rankingCache.data
+			rankingCache.RUnlock()
+
+			w.Header().Set("Content-Type", "application/json")
+			json.NewEncoder(w).Encode(cachedData)
+			return
+		}
+		rankingCache.RUnlock()
 	}
 
 	resultados, err := h.AniListClient.GetTopAnime(r.Context(), page, perPage, filters)
@@ -99,12 +131,19 @@ func (h *RankingHandler) HandleGetTopAnime(w http.ResponseWriter, r *http.Reques
 
 		var filtered []anilist.Anime
 		for _, a := range resultados.Data {
-			// Aceita "Currently Airing" (AniList) OU "RELEASING" (Admin Panel)
 			if strings.EqualFold(a.Status, expectedStatusMapped) || strings.EqualFold(a.Status, status) {
 				filtered = append(filtered, a)
 			}
 		}
 		resultados.Data = filtered
+	}
+
+	// Salva a cópia no cache caso seja uma busca padrão limpa
+	if isDefaultRanking && errCurado == nil {
+		rankingCache.Lock()
+		rankingCache.data = resultados
+		rankingCache.timestamp = time.Now()
+		rankingCache.Unlock()
 	}
 
 	w.Header().Set("Content-Type", "application/json")

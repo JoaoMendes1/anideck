@@ -7,10 +7,8 @@ import (
 	"github.com/supabase-community/supabase-go"
 )
 
-// Client guarda a conexão global usando a anon_key (usada para ler dados públicos)
 var Client *supabase.Client
 
-// Connect inicializa o cliente global
 func Connect() error {
 	supabaseURL := os.Getenv("SUPABASE_URL")
 	supabaseKey := os.Getenv("SUPABASE_ANON_KEY")
@@ -28,20 +26,15 @@ func Connect() error {
 	return nil
 }
 
-// criar um cliente seguro e descartável por requisição
-// ClientWithToken cria uma conexão que repassa o JWT do usuário logado para o Supabase.
-// Isso delega a segurança ao Row Level Security (RLS) do banco de dados.
 func ClientWithToken(token string) (*supabase.Client, error) {
 	supabaseURL := os.Getenv("SUPABASE_URL")
 	supabaseKey := os.Getenv("SUPABASE_ANON_KEY")
 
-	// Criamos um mapa de cabeçalhos injetando o JWT do usuário
 	options := &supabase.ClientOptions{
 		Headers: map[string]string{
 			"Authorization": "Bearer " + token,
 		},
 	}
 
-	// Retorna uma instância nova e isolada para esta requisição específica
 	return supabase.NewClient(supabaseURL, supabaseKey, options)
 }

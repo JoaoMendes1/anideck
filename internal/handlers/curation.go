@@ -67,6 +67,9 @@ func (h *CurationHandler) HandleCreate(w http.ResponseWriter, r *http.Request) {
 	}
 	_ = json.Unmarshal(data, &resultado)
 
+	// Gatilho que limpa o Cache do Ranking
+	InvalidateRankingCache()
+
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(resultado)
 }
@@ -111,6 +114,9 @@ func (h *CurationHandler) HandleUpdate(w http.ResponseWriter, r *http.Request) {
 	}
 	_ = json.Unmarshal(data, &resultado)
 
+	// Gatilho que limpa o Cache do Ranking
+	InvalidateRankingCache()
+
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(resultado)
 }
@@ -144,6 +150,9 @@ func (h *CurationHandler) HandleDelete(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Erro ao remover destaque", http.StatusInternalServerError)
 		return
 	}
+
+	// Gatilho que limpa o Cache do Ranking
+	InvalidateRankingCache()
 
 	w.WriteHeader(http.StatusNoContent)
 }
