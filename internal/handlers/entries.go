@@ -109,6 +109,7 @@ func (h *EntriesHandler) HandleUpdate(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	entrada.UserID = userID
 	entrada.Anotacao = sanitizer.Sanitize(entrada.Anotacao)
 
 	dbClient, errClient := database.ClientWithToken(token)
