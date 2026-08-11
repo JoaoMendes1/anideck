@@ -1,16 +1,3 @@
-// client/src/lib/filters.ts
-// Fonte única de verdade para os filtros de conteúdo do AniDeck.
-// Centralizado aqui para evitar duplicação entre Busca.tsx e Rankings.tsx.
-
-// Cada item tem:
-//   - label: nome exibido ao usuário (em português)
-//   - value: valor exato que a AniList espera (em inglês)
-//   - type: 'genre' → enviado como ?genre=..., 'tag' → enviado como ?tag=...
-//     A AniList separa gêneros (genre_in) de tags (tag_in) no GraphQL.
-//     Sem essa distinção, categorias como "Artes Marciais" ou "Magia" nunca retornam resultado.
-//
-// Todos os valores foram verificados contra a MediaTagCollection da AniList API em 2026-07-30.
-
 export interface FilterItem {
     label: string
     value: string
@@ -26,6 +13,7 @@ export const CONTENT_FILTERS: FilterItem[] = [
     { label: 'Ecchi',             value: 'Ecchi',         type: 'genre' },
     { label: 'Fantasia',          value: 'Fantasy',       type: 'genre' },
     { label: 'Horror',            value: 'Horror',        type: 'genre' },
+    { label: 'Isekai',            value: 'Isekai',        type: 'genre' },
     { label: 'Mecha',             value: 'Mecha',         type: 'genre' },
     { label: 'Mistério',          value: 'Mystery',       type: 'genre' },
     { label: 'Musical',           value: 'Music',         type: 'genre' },
@@ -91,6 +79,10 @@ export const SEASON_OPTIONS: SeasonOption[] = [
 export function getCategoryTheme(category: string) {
     const cat = category.toLowerCase();
     
+    // 🟪 Outro / Portais (Fuchsia Neon para Isekai)
+    if (cat === 'isekai') {
+        return 'bg-fuchsia-500/15 border-fuchsia-500/40 text-fuchsia-400 shadow-[0_0_10px_rgba(217,70,239,0.2)]';
+    }
     // 🔴 Energia / Combate (Coral)
     if (['ação', 'action', 'shounen', 'artes marciais', 'martial arts', 'militar', 'military'].includes(cat)) {
         return 'bg-coral/10 border-coral/30 text-coral';

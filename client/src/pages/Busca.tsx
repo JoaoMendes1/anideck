@@ -116,7 +116,6 @@ export default function Busca() {
             }
             params.append('sort', selectedSort)
             params.append('page', String(page)) 
-            // 🟢 AQUI: Forçando a trazer 40 de uma vez para encher mais a tela e exigir menos cliques no botão "Carregar mais"
             params.append('perPage', '40') 
 
             try {
@@ -251,7 +250,7 @@ export default function Busca() {
                     🔥 Em Lançamento
                 </button>
 
-                {['Ação', 'Romance', 'Comédia', 'Fantasia'].map(cat => {
+                {['Ação', 'Romance', 'Comédia', 'Fantasia', 'Isekai'].map(cat => {
                     const filterObj = CONTENT_FILTERS.find(f => f.label === cat)
                     if (!filterObj) return null;
                     const isActive = selectedFilters.some(x => x.value === filterObj.value)
@@ -277,7 +276,7 @@ export default function Busca() {
                                 <button onClick={() => { setSelectedSort('POPULARITY_DESC'); setPage(1) }} className="cursor-pointer hover:text-white"><X size={10} /></button>
                             </span>
                         )}
-                        {selectedFilters.filter(f => !['Ação', 'Romance', 'Comédia', 'Fantasia'].includes(f.label)).map(f => (
+                        {selectedFilters.filter(f => !['Ação', 'Romance', 'Comédia', 'Fantasia', 'Isekai'].includes(f.label)).map(f => (
                             <span key={`${f.type}-${f.value}`} className="flex items-center shrink-0 gap-1 px-2.5 py-1.5 rounded-full bg-holo-2/20 border border-holo-2/40 text-holo-2 text-[11px] font-bold">
                                 {f.label}
                                 <button onClick={() => toggleFilter(f)} className="cursor-pointer hover:text-white"><X size={10} /></button>
@@ -317,7 +316,7 @@ export default function Busca() {
                     </div>
 
                     <div>
-                        <p className="font-mono text-[10px] text-muted-2 tracking-widest mb-3">// ORDENAR POR</p>
+                        <p className="font-mono text-[10px] text-muted-2 tracking-widest mb-3 select-none">ORDENAR POR</p>
                         <div className="flex flex-wrap gap-2">
                             {SORT_OPTIONS.map(opt => (
                                 <button
@@ -335,7 +334,7 @@ export default function Busca() {
                     </div>
 
                     <div>
-                        <p className="font-mono text-[10px] text-muted-2 tracking-widest mb-3">// STATUS</p>
+                        <p className="font-mono text-[10px] text-muted-2 tracking-widest mb-3 select-none">STATUS DE LANÇAMENTO</p>
                         <div className="flex flex-wrap gap-2">
                             {STATUS_OPTIONS.map(opt => (
                                 <button
@@ -353,7 +352,7 @@ export default function Busca() {
                     </div>
 
                     <div>
-                        <p className="font-mono text-[10px] text-muted-2 tracking-widest mb-3">// TEMPORADA</p>
+                        <p className="font-mono text-[10px] text-muted-2 tracking-widest mb-3 select-none">TEMPORADA E ANO</p>
                         <div className="flex flex-wrap gap-2 mb-3">
                             {SEASON_OPTIONS.map(opt => (
                                 <button
@@ -387,7 +386,7 @@ export default function Busca() {
                     </div>
 
                     <div>
-                        <p className="font-mono text-[10px] text-muted-2 tracking-widest mb-3">// CATEGORIA</p>
+                        <p className="font-mono text-[10px] text-muted-2 tracking-widest mb-3 select-none">GÊNEROS E TAGS</p>
                         <div className="flex flex-wrap gap-2">
                             {CONTENT_FILTERS.map(f => {
                                 const isActive = selectedFilters.some(x => x.value === f.value)
@@ -417,7 +416,7 @@ export default function Busca() {
 
             {loading && page === 1 && (
                 <>
-                    <p className="font-mono text-xs text-holo-3 tracking-widest mb-4 select-none">// BUSCANDO...</p>
+                    <p className="font-mono text-xs text-holo-3 tracking-widest mb-4 select-none">CARREGANDO CATÁLOGO...</p>
                     <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-4">
                         {[1, 2, 3, 4, 5, 6, 7, 8].map(n => (
                             <div key={n} className="aspect-[2/3] rounded-xl shimmer border border-line" />
@@ -436,7 +435,7 @@ export default function Busca() {
 
             {!error && hasSearched && resultados.length > 0 && (
                 <>
-                    {page === 1 && <p className="font-mono text-xs text-holo-3 tracking-widest mb-4 select-none">// RESULTADOS</p>}
+                    {page === 1 && <p className="font-mono text-xs text-holo-3 tracking-widest mb-4 select-none">RESULTADOS DA BUSCA</p>}
                     <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-4">
                         {resultados.map((anime, index) => {
                             const gradClass = `card-g${(index % 5) + 1}`
@@ -453,18 +452,18 @@ export default function Busca() {
                                     }`}
                                 >
                                     {anime.images?.jpg?.image_url && (
-                                        <img src={anime.images.jpg.image_url} alt={anime.title} className="absolute inset-0 w-full h-full object-cover z-0 group-hover:scale-105 transition-transform duration-500 opacity-90" />
+                                        <img src={anime.images.jpg.image_url} alt={anime.title} className="absolute inset-0 w-full h-full object-cover z-0 group-hover:scale-105 transition-transform duration-500 opacity-80" />
                                     )}
                                     <div className="absolute inset-0 bg-gradient-to-t from-void/95 via-void/40 to-transparent z-10" />
                                     
-                                    <span className={`absolute top-2.5 left-2.5 z-20 text-[9px] md:text-[9.5px] font-extrabold px-2 py-1 rounded-full uppercase tracking-wider backdrop-blur-sm border bg-panel/60 text-holo-3 border-holo-3/40 select-none`}>
+                                    <span className={`absolute top-2.5 left-2.5 z-20 text-[9px] md:text-[9.5px] font-extrabold px-2 py-1 rounded-full uppercase tracking-wider backdrop-blur-md border bg-void/50 text-holo-3 border-holo-3/50 drop-shadow-[0_1px_3px_rgba(0,0,0,1)] select-none`}>
                                         {traduzirStatus(anime.status)}
                                     </span>
 
                                     <button 
                                         onClick={(e) => handleSalvar(e, anime.mal_id)} 
                                         disabled={savingIds.includes(anime.mal_id)}
-                                        className={`absolute top-2.5 right-2.5 w-8 h-8 rounded-full border-[1.5px] flex items-center justify-center font-bold backdrop-blur-sm transition-all z-30 select-none ${
+                                        className={`absolute top-2.5 right-2.5 w-8 h-8 rounded-full border-[1.5px] flex items-center justify-center font-bold backdrop-blur-sm transition-all z-30 select-none shadow-lg ${
                                             isSaved
                                                 ? 'bg-green/20 border-green text-green hover:bg-coral/20 hover:border-coral hover:text-coral cursor-pointer'
                                                 : 'bg-void/70 border-white/40 text-white hover:bg-gradient-to-r hover:from-holo-1 hover:to-holo-2 hover:border-transparent cursor-pointer'
@@ -482,28 +481,30 @@ export default function Busca() {
                                         )}
                                     </button>
                                     
-                                    <div className="relative z-20 mt-auto select-none pointer-events-none">
-                                        <div className="font-anton text-[13px] md:text-[14px] leading-tight mb-1.5 drop-shadow-md text-white line-clamp-2">
+                                    <div className="relative z-20 mt-auto flex flex-col pointer-events-none select-none w-full min-h-[75px] justify-end">
+                                        <div className="font-anton text-[13px] md:text-[14px] leading-tight mb-2 drop-shadow-md text-white overflow-hidden text-ellipsis line-clamp-2 break-words" title={anime.title}>
                                             {isFoil && <span className="text-gold mr-1" title="Favorito">👑</span>}
                                             {anime.title}
                                         </div>
 
-                                        <div className="flex flex-wrap gap-1 mb-2">
-                                            {anime.genres?.slice(0, 2).map(g => (
-                                                <span key={g.name} className={`backdrop-blur-sm border text-[9px] px-1.5 py-0.5 rounded font-bold ${getCategoryTheme(g.name)}`}>
-                                                    {g.name}
-                                                </span>
-                                            ))}
-                                        </div>
-
-                                        <div className="flex items-center justify-between mt-1 pt-2 border-t border-line/50">
-                                            <div className="flex items-center gap-1.5">
-                                                <Star className="text-gold fill-gold" size={12} />
-                                                <span className="font-anton text-[13px] text-gold mt-0.5">{anime.score || 'N/A'}</span>
+                                        <div className="flex flex-wrap justify-between items-end gap-1.5 mt-auto">
+                                            <div className="flex flex-col gap-1 shrink-0 max-w-[50%]">
+                                                {anime.genres?.slice(0, 1).map(g => (
+                                                    <span key={g.name} className={`backdrop-blur-sm border text-[9px] px-1.5 py-0.5 rounded font-bold truncate max-w-full ${getCategoryTheme(g.name)}`}>
+                                                        {g.name}
+                                                    </span>
+                                                ))}
                                             </div>
-                                            <span className="font-mono text-[9px] text-muted-2 font-bold uppercase tracking-wider">
-                                                {anime.episodes ? `${anime.episodes} EP` : '? EP'}
-                                            </span>
+
+                                            <div className="flex flex-wrap items-center justify-end gap-1.5 shrink-0 max-w-[100%] ml-auto pt-1">
+                                                <div className="flex items-center gap-1">
+                                                    <Star className="text-gold fill-gold" size={10} />
+                                                    <span className="font-anton text-[11px] sm:text-[12px] text-gold">{anime.score || 'N/A'}</span>
+                                                </div>
+                                                <span className="font-mono text-[9px] text-muted-2 font-bold uppercase tracking-wider ml-1">
+                                                    {anime.episodes ? `${anime.episodes} EP` : '? EP'}
+                                                </span>
+                                            </div>
                                         </div>
                                     </div>
                                 </Link>

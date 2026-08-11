@@ -116,7 +116,6 @@ export default function MeuDeck() {
 
     const entradasFiltradas = entradas.filter(e => filtroAtivo === 'Todos' || e.status === filtroAtivo)
 
-    // Favoritos sempre puxados para o topo!
     const entradasOrdenadas = useMemo(() => {
         return [...entradasFiltradas].sort((a, b) => {
             if (a.is_favorite && !b.is_favorite) return -1;
@@ -127,19 +126,19 @@ export default function MeuDeck() {
 
     const getStatusTheme = (status: string) => {
         switch(status) {
-            case 'Assistindo': return { bg: 'bg-holo-3/20', text: 'text-holo-3', border: 'border-holo-3/40' }
-            case 'Em Dia': return { bg: 'bg-green/20', text: 'text-green', border: 'border-green/40' }
-            case 'Completo': return { bg: 'bg-gold/20', text: 'text-gold', border: 'border-gold/40' }
-            case 'Quero Assistir': return { bg: 'bg-holo-1/20', text: 'text-holo-1', border: 'border-holo-1/40' }
-            case 'Dropado': return { bg: 'bg-coral/20', text: 'text-coral', border: 'border-coral/40' }
-            default: return { bg: 'bg-muted-2/20', text: 'text-muted-2', border: 'border-muted-2/40' }
+            case 'Assistindo': return { bg: 'bg-void/50 backdrop-blur-sm', text: 'text-holo-3 drop-shadow-[0_1px_3px_rgba(0,0,0,1)]', border: 'border-holo-3/50' }
+            case 'Em Dia': return { bg: 'bg-void/50 backdrop-blur-sm', text: 'text-green drop-shadow-[0_1px_3px_rgba(0,0,0,1)]', border: 'border-green/50' }
+            case 'Completo': return { bg: 'bg-void/50 backdrop-blur-sm', text: 'text-gold drop-shadow-[0_1px_3px_rgba(0,0,0,1)]', border: 'border-gold/50' }
+            case 'Quero Assistir': return { bg: 'bg-void/50 backdrop-blur-sm', text: 'text-holo-1 drop-shadow-[0_1px_3px_rgba(0,0,0,1)]', border: 'border-holo-1/50' }
+            case 'Dropado': return { bg: 'bg-void/50 backdrop-blur-sm', text: 'text-coral drop-shadow-[0_1px_3px_rgba(0,0,0,1)]', border: 'border-coral/50' }
+            default: return { bg: 'bg-void/50 backdrop-blur-sm', text: 'text-muted-2 drop-shadow-[0_1px_3px_rgba(0,0,0,1)]', border: 'border-muted-2/50' }
         }
     }
 
     if (loading) return (
       <div className="min-h-[70vh] flex flex-col items-center justify-center">
         <div className="w-12 h-12 rounded-full border-4 border-line border-t-holo-2 animate-spin mb-4"></div>
-        <p className="font-mono text-muted text-sm tracking-widest">// MONTANDO SEU DECK...</p>
+        <p className="font-mono text-muted text-sm tracking-widest">CARREGANDO DECK...</p>
       </div>
     )
 
@@ -222,22 +221,20 @@ export default function MeuDeck() {
                             const gradClass = `card-g${(index % 5) + 1}`
                             const temaStatus = getStatusTheme(entrada.status)
                             
-                            // SE FOR FAVORITO VIRA UMA CARTA FOIL E TEM BORDA DOURADA
                             const isFoil = entrada.is_favorite
 
                             const streamUrl = animeLocal?.streaming ? animeLocal.streaming.find(s => s.name.toLowerCase().includes('crunchyroll'))?.url || animeLocal.streaming.find(s => s.name.toLowerCase().includes('netflix'))?.url || animeLocal.streaming[0]?.url : null
                             const isAtivo = entrada.status === 'Assistindo' || entrada.status === 'Em dia' || entrada.status === 'Quero Assistir'
-                            const acabouDeLancar = animeLocal?.nextAiringEpisode && animeLocal.nextAiringEpisode.timeUntilAiring > 518400 // 6 dias em segundos
-                            const lancaHoje = animeLocal?.nextAiringEpisode && animeLocal.nextAiringEpisode.timeUntilAiring < 86400 // Faltam menos de 24h
+                            const acabouDeLancar = animeLocal?.nextAiringEpisode && animeLocal.nextAiringEpisode.timeUntilAiring > 518400 
+                            const lancaHoje = animeLocal?.nextAiringEpisode && animeLocal.nextAiringEpisode.timeUntilAiring < 86400 
 
                       return (
                                 <div
                                     key={entrada.id}
-                                    className={`relative aspect-[3/4.2] rounded-[14px] overflow-hidden p-3 md:p-3.5 flex flex-col justify-end border transition-transform hover:-translate-y-1 group ${
+                                    className={`relative aspect-[3/4.2] rounded-[14px] overflow-hidden p-3 flex flex-col justify-end border transition-transform hover:-translate-y-1 group ${
                                         isFoil ? 'foil-card border-gold/50 shadow-[0_0_15px_rgba(255,197,66,0.15)]' : `border-line bg-panel ${gradClass}`
                                     }`}
                                 >
-                                    {/* 🟢 OTIMIZAÇÃO: Se tem streaming e está ativo, o card todo vira botão, se não, vai pro detalhe */}
                                     {streamUrl && isAtivo ? (
                                         <>
                                             <a href={streamUrl} target="_blank" rel="noreferrer" className="absolute inset-0 z-20 flex items-center justify-center bg-void/50 backdrop-blur-[2px] opacity-0 group-hover:opacity-100 transition-all duration-300">
@@ -245,7 +242,6 @@ export default function MeuDeck() {
                                                     <Play fill="currentColor" size={20} className="ml-1" />
                                                 </div>
                                             </a>
-                                            {/* Link invisível por trás do overlay para quem quiser ver os detalhes (clicando no canto) */}
                                             <Link to={`/anime/${entrada.mal_id}`} className="absolute inset-0 z-10"></Link>
                                         </>
                                     ) : (
@@ -258,10 +254,9 @@ export default function MeuDeck() {
                                     <div className="absolute inset-0 bg-gradient-to-t from-void/95 via-void/40 to-transparent z-0" />
                                     
                                     <div className="absolute top-2.5 left-2.5 z-30 flex flex-col gap-1.5 items-start pointer-events-none">
-                                        <span className={`select-none text-[9px] md:text-[9.5px] font-extrabold px-2 py-1 rounded-full uppercase tracking-wider backdrop-blur-sm border ${temaStatus.bg} ${temaStatus.text} ${temaStatus.border}`}>
+                                        <span className={`select-none text-[9px] md:text-[9.5px] font-extrabold px-2 py-1 rounded-full uppercase tracking-wider border ${temaStatus.bg} ${temaStatus.text} ${temaStatus.border}`}>
                                             {entrada.status}
                                         </span>
-                                        {/* 🟢 SMART TRACKING: Badges de Alerta */}
                                         {(entrada.status === 'Assistindo' || entrada.status === 'Em Dia') && (
                                             <>
                                                 {acabouDeLancar && <span className="select-none text-[8.5px] font-black px-2 py-0.5 rounded-sm bg-coral text-white shadow-[0_0_10px_rgba(255,92,108,0.5)] uppercase tracking-widest">Novo EP</span>}
@@ -278,28 +273,28 @@ export default function MeuDeck() {
                                         ✎
                                     </button>
                                     
-                                    <div className="relative z-20 mt-auto pointer-events-none select-none">
-                                        <div className="font-anton text-[12px] sm:text-[13.5px] uppercase leading-tight mb-2 text-white drop-shadow-md line-clamp-2">
+                                    <div className="relative z-20 mt-auto flex flex-col pointer-events-none select-none w-full min-h-[75px] justify-end">
+                                        <div className="font-anton text-[12px] sm:text-[13px] uppercase leading-tight mb-2 text-white drop-shadow-md overflow-hidden text-ellipsis line-clamp-2 break-words" title={animeLocal?.title || `ID: ${entrada.mal_id}`}>
                                             {isFoil && <span className="text-gold mr-1" title="Favorito">👑</span>}
                                             {animeLocal?.title || `ID: ${entrada.mal_id}`}
                                         </div>
                                         
-                                        <div className="flex justify-between items-end">
-                                            <div className="flex flex-col gap-1">
+                                        <div className="flex flex-wrap justify-between items-end gap-1.5 mt-auto">
+                                            <div className="flex flex-col gap-1 shrink-0 max-w-[50%]">
                                                 {animeLocal?.genre && (
-                                                    <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded border w-fit backdrop-blur-sm ${getCategoryTheme(animeLocal.genre)}`}>
+                                                    <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded border w-fit backdrop-blur-sm truncate max-w-full ${getCategoryTheme(animeLocal.genre)}`}>
                                                         {animeLocal.genre}
                                                     </span>
                                                 )}
                                             </div>
                                             
-                                            <div className="flex items-center gap-1.5">
+                                            <div className="flex flex-wrap items-center justify-end gap-1.5 shrink-0 max-w-[100%] ml-auto">
                                                 {animeLocal?.ranking && (
-                                                    <div className="font-anton text-[12px] sm:text-[14px] px-2 py-0.5 rounded-md backdrop-blur-sm border bg-panel-2/90 text-holo-3 border-holo-3/40 shadow-[0_0_8px_rgba(63,224,240,0.15)] flex items-center gap-1" title={`#${animeLocal.ranking} no mundo`}>
+                                                    <div className="font-anton text-[11px] sm:text-[12px] px-1.5 py-0.5 rounded-md backdrop-blur-sm border bg-panel-2/90 text-holo-3 border-holo-3/40 shadow-[0_0_8px_rgba(63,224,240,0.15)] flex items-center gap-1" title={`#${animeLocal.ranking} no mundo`}>
                                                         🏆 #{animeLocal.ranking}
                                                     </div>
                                                 )}
-                                                <div className={`font-anton text-[12px] sm:text-[14px] px-2 py-0.5 rounded-md backdrop-blur-sm border ${entrada.nota !== null && entrada.nota !== undefined ? 'bg-gold/20 text-gold border-gold/40 shadow-[0_0_8px_rgba(255,197,66,0.3)]' : 'bg-panel-2/80 text-muted-2 border-line'}`}>
+                                                <div className={`font-anton text-[11px] sm:text-[12px] px-1.5 py-0.5 rounded-md backdrop-blur-sm border ${entrada.nota !== null && entrada.nota !== undefined ? 'bg-gold/20 text-gold border-gold/40 shadow-[0_0_8px_rgba(255,197,66,0.3)]' : 'bg-panel-2/80 text-muted-2 border-line'}`}>
                                                     {entrada.nota !== null && entrada.nota !== undefined ? `★ ${entrada.nota}` : 'S/N'}
                                                 </div>
                                             </div>
