@@ -238,12 +238,12 @@ export default function Detalhes() {
 
           <div className="flex-1 min-w-0 pb-1">
             <div className="flex items-center justify-center sm:justify-start gap-3 mb-2 group">
-              <h1 className="font-anton text-[clamp(1.4rem,3.5vw,2.4rem)] uppercase leading-[1.05] tracking-wide drop-shadow-md">
+              <h1 className="font-anton text-[clamp(1.4rem,3.5vw,2.4rem)] uppercase leading-[1.05] tracking-wide drop-shadow-md break-words">
                 {anime.title}
               </h1>
               <BotaoCopiar
                 texto={anime.title}
-                className="opacity-70 md:opacity-0 group-hover:opacity-100 focus:opacity-100 transition-opacity"
+                className="opacity-70 md:opacity-0 group-hover:opacity-100 focus:opacity-100 transition-opacity shrink-0"
               />
             </div>
 
@@ -318,7 +318,8 @@ export default function Detalhes() {
         )}
 
         <div className="grid grid-cols-1 lg:grid-cols-[1fr_320px] gap-10" id="visao-geral">
-          <div className="space-y-10">
+          {/* Adicionado min-w-0 para evitar grid blowout com o overflow-x-auto dos carrosseis */}
+          <div className="space-y-10 min-w-0">
 
             <section>
               <h2 className="font-anton text-base uppercase mb-4 flex items-center gap-2 select-none">
@@ -487,7 +488,8 @@ export default function Detalhes() {
             )}
           </div>
 
-          <div className="space-y-10" id="estatisticas">
+          {/* Adicionado min-w-0 também na coluna direita para consistência na responsividade */}
+          <div className="space-y-10 min-w-0" id="estatisticas">
 
             {minhaEntrada && (
               <section>
