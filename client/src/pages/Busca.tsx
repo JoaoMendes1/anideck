@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useToast } from '../contexts/ToastContext'
-import { Link, useNavigate } from 'react-router-dom'
-import { Search, AlertCircle, SlidersHorizontal, X, Check } from 'lucide-react'
+import { useNavigate } from 'react-router-dom'
+import { Search, AlertCircle, SlidersHorizontal, X } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import {
     CONTENT_FILTERS, STATUS_OPTIONS, SEASON_OPTIONS,
