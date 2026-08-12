@@ -7,6 +7,7 @@ import {
     CONTENT_FILTERS, STATUS_OPTIONS, SEASON_OPTIONS,
     type FilterItem, getCategoryTheme
 } from '../lib/filters'
+import SearchResultCard from '../components/SearchResultCard'
 
 interface Anime {
     mal_id: number
@@ -43,16 +44,16 @@ export default function Busca() {
     const [selectedStatus, setSelectedStatus] = useState('')
     const [selectedSeason, setSelectedSeason] = useState('')
     const [selectedYear, setSelectedYear] = useState('')
-    const [selectedSort, setSelectedSort] = useState('POPULARITY_DESC') 
-    const [page, setPage] = useState(1) 
+    const [selectedSort, setSelectedSort] = useState('POPULARITY_DESC')
+    const [page, setPage] = useState(1)
 
     const [resultados, setResultados] = useState<Anime[]>([])
     const [loading, setLoading] = useState(false)
     const [hasSearched, setHasSearched] = useState(false)
     const [error, setError] = useState<string | null>(null)
     const [showFilters, setShowFilters] = useState(false)
-    const [savingIds, setSavingIds] = useState<number[]>([]) 
-    
+    const [savingIds, setSavingIds] = useState<number[]>([])
+
     const [savedEntries, setSavedEntries] = useState<SavedEntry[]>([])
 
     const activeFilterCount =
@@ -115,8 +116,8 @@ export default function Busca() {
                 if (selectedYear) params.set('year', selectedYear)
             }
             params.append('sort', selectedSort)
-            params.append('page', String(page)) 
-            params.append('perPage', '40') 
+            params.append('page', String(page))
+            params.append('perPage', '40')
 
             try {
                 const response = await fetch(`/api/search?${params.toString()}`, {
@@ -125,7 +126,7 @@ export default function Busca() {
 
                 if (!response.ok) throw new Error('Busca indisponível no momento. Tente novamente mais tarde.')
                 const data = await response.json()
-                
+
                 setResultados(prev => page === 1 ? (data.data || []) : [...prev, ...(data.data || [])])
 
             } catch (err: any) {
@@ -153,7 +154,7 @@ export default function Busca() {
         if (!session) { navigate('/login'); return }
 
         setSavingIds(prev => [...prev, malId])
-        
+
         const entrySalva = savedEntries.find(e => e.mal_id === malId)
 
         try {
@@ -176,7 +177,7 @@ export default function Busca() {
                 setSavedEntries(prev => [...prev, { mal_id: malId, id: novaEntrada.id || novaEntrada[0]?.id, is_favorite: false }])
                 showToast('Anime salvo no seu Deck!', 'success')
             }
-        } catch { 
+        } catch {
             showToast('Erro ao processar. Tente novamente.', 'error')
         } finally {
             setSavingIds(prev => prev.filter(id => id !== malId))
@@ -227,8 +228,8 @@ export default function Busca() {
                     onClick={() => setShowFilters(v => !v)}
                     title="Filtros"
                     className={`inline-flex items-center shrink-0 gap-2 px-4 py-2 rounded-full border text-sm font-bold transition-all duration-200 cursor-pointer ${showFilters || activeFilterCount > 0
-                            ? 'border-holo-2 text-holo-2 bg-holo-2/10'
-                            : 'border-line text-muted bg-panel hover:border-holo-2 hover:text-holo-2'
+                        ? 'border-holo-2 text-holo-2 bg-holo-2/10'
+                        : 'border-line text-muted bg-panel hover:border-holo-2 hover:text-holo-2'
                         }`}
                 >
                     <SlidersHorizontal size={16} />
@@ -241,11 +242,10 @@ export default function Busca() {
 
                 <button
                     onClick={() => { setSelectedStatus(selectedStatus === 'RELEASING' ? '' : 'RELEASING'); setPage(1); }}
-                    className={`shrink-0 px-4 py-2 rounded-full text-xs font-bold transition-all duration-150 cursor-pointer border flex items-center gap-1.5 ${
-                        selectedStatus === 'RELEASING'
+                    className={`shrink-0 px-4 py-2 rounded-full text-xs font-bold transition-all duration-150 cursor-pointer border flex items-center gap-1.5 ${selectedStatus === 'RELEASING'
                             ? 'bg-coral/20 border-coral text-coral shadow-[0_0_10px_rgba(255,92,108,0.2)]'
                             : 'bg-panel-2 border-line text-muted hover:border-coral hover:text-text'
-                    }`}
+                        }`}
                 >
                     🔥 Em Lançamento
                 </button>
@@ -260,8 +260,8 @@ export default function Busca() {
                             key={cat}
                             onClick={() => toggleFilter(filterObj)}
                             className={`shrink-0 px-4 py-2 rounded-full text-xs font-bold transition-all duration-150 cursor-pointer border ${isActive
-                                    ? `${getCategoryTheme(cat)} shadow-[0_0_10px_currentColor]`
-                                    : 'bg-panel-2 border-line text-muted hover:border-holo-2 hover:text-text'
+                                ? `${getCategoryTheme(cat)} shadow-[0_0_10px_currentColor]`
+                                : 'bg-panel-2 border-line text-muted hover:border-holo-2 hover:text-text'
                                 }`}
                         >
                             {cat}
@@ -299,18 +299,16 @@ export default function Busca() {
                 )}
             </div>
 
-            <div className={`fixed inset-0 z-[70] flex flex-col justify-end pointer-events-none md:relative md:inset-auto md:z-auto md:block transition-all duration-300 select-none ${
-                showFilters ? 'opacity-100' : 'opacity-0 md:opacity-100 md:hidden'
-            }`}>
-                <div 
-                    className={`absolute inset-0 bg-void/80 backdrop-blur-sm md:hidden transition-opacity duration-300 ${showFilters ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'}`} 
+            <div className={`fixed inset-0 z-[70] flex flex-col justify-end pointer-events-none md:relative md:inset-auto md:z-auto md:block transition-all duration-300 select-none ${showFilters ? 'opacity-100' : 'opacity-0 md:opacity-100 md:hidden'
+                }`}>
+                <div
+                    className={`absolute inset-0 bg-void/80 backdrop-blur-sm md:hidden transition-opacity duration-300 ${showFilters ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'}`}
                     onClick={() => setShowFilters(false)}
                 />
-                
-                <div className={`relative bg-panel md:bg-panel border-t md:border border-line rounded-t-3xl md:rounded-2xl p-6 pb-safe md:pb-6 space-y-6 transition-transform duration-300 transform md:transform-none max-h-[85vh] overflow-y-auto ${
-                    showFilters ? 'translate-y-0 pointer-events-auto' : 'translate-y-full pointer-events-none md:translate-y-0 md:pointer-events-auto'
-                } mb-0 md:mb-6`}>
-                    
+
+                <div className={`relative bg-panel md:bg-panel border-t md:border border-line rounded-t-3xl md:rounded-2xl p-6 pb-safe md:pb-6 space-y-6 transition-transform duration-300 transform md:transform-none max-h-[85vh] overflow-y-auto ${showFilters ? 'translate-y-0 pointer-events-auto' : 'translate-y-full pointer-events-none md:translate-y-0 md:pointer-events-auto'
+                    } mb-0 md:mb-6`}>
+
                     <div className="flex justify-between items-center md:hidden mb-2">
                         <h3 className="font-anton text-lg uppercase text-text">Filtros Avançados</h3>
                         <button onClick={() => setShowFilters(false)} className="text-muted hover:text-text cursor-pointer p-1"><X size={20} /></button>
@@ -324,8 +322,8 @@ export default function Busca() {
                                     key={opt.value}
                                     onClick={() => { setSelectedSort(opt.value); setPage(1); }}
                                     className={`px-3 py-1.5 rounded-full text-xs font-bold transition-all duration-150 cursor-pointer ${selectedSort === opt.value
-                                            ? 'bg-gold/20 text-gold border border-gold/40 shadow-[0_0_12px_rgba(255,197,66,0.2)]'
-                                            : 'bg-panel-2 border border-line text-muted hover:border-gold hover:text-text'
+                                        ? 'bg-gold/20 text-gold border border-gold/40 shadow-[0_0_12px_rgba(255,197,66,0.2)]'
+                                        : 'bg-panel-2 border border-line text-muted hover:border-gold hover:text-text'
                                         }`}
                                 >
                                     {opt.label}
@@ -342,8 +340,8 @@ export default function Busca() {
                                     key={opt.value}
                                     onClick={() => { setSelectedStatus(selectedStatus === opt.value ? '' : opt.value); setPage(1); }}
                                     className={`px-3 py-1.5 rounded-full text-xs font-bold transition-all duration-150 cursor-pointer ${selectedStatus === opt.value
-                                            ? 'bg-gradient-to-r from-holo-1 to-holo-2 text-void shadow-[0_0_12px_rgba(123,92,255,0.4)]'
-                                            : 'bg-panel-2 border border-line text-muted hover:border-holo-2 hover:text-text'
+                                        ? 'bg-gradient-to-r from-holo-1 to-holo-2 text-void shadow-[0_0_12px_rgba(123,92,255,0.4)]'
+                                        : 'bg-panel-2 border border-line text-muted hover:border-holo-2 hover:text-text'
                                         }`}
                                 >
                                     {opt.label}
@@ -359,21 +357,21 @@ export default function Busca() {
                                 {SEASON_OPTIONS.map(opt => (
                                     <button
                                         key={opt.value}
-                                        onClick={() => { 
-                                            setSelectedSeason(selectedSeason === opt.value ? '' : opt.value); 
+                                        onClick={() => {
+                                            setSelectedSeason(selectedSeason === opt.value ? '' : opt.value);
                                             if (selectedSeason === opt.value) setSelectedYear('');
-                                            setPage(1); 
+                                            setPage(1);
                                         }}
                                         className={`px-3 py-1.5 rounded-full text-xs font-bold transition-all duration-150 cursor-pointer ${selectedSeason === opt.value
-                                                ? 'bg-gradient-to-r from-holo-1 to-holo-2 text-void shadow-[0_0_12px_rgba(123,92,255,0.4)]'
-                                                : 'bg-panel-2 border border-line text-muted hover:border-holo-2 hover:text-text'
+                                            ? 'bg-gradient-to-r from-holo-1 to-holo-2 text-void shadow-[0_0_12px_rgba(123,92,255,0.4)]'
+                                            : 'bg-panel-2 border border-line text-muted hover:border-holo-2 hover:text-text'
                                             }`}
                                     >
                                         {opt.emoji} {opt.label}
                                     </button>
                                 ))}
                             </div>
-                            
+
                             {/* Selecionador de Anos sempre visível, mas valida se há temporada escolhida */}
                             <div className="flex flex-wrap gap-2 p-3 bg-panel-2 border border-line rounded-xl">
                                 <span className="text-[11px] font-bold text-muted uppercase w-full mb-1">
@@ -382,20 +380,19 @@ export default function Busca() {
                                 {YEAR_OPTIONS.map(y => (
                                     <button
                                         key={y}
-                                        onClick={() => { 
+                                        onClick={() => {
                                             if (selectedSeason) {
-                                                setSelectedYear(selectedYear === String(y) ? '' : String(y)); 
-                                                setPage(1); 
+                                                setSelectedYear(selectedYear === String(y) ? '' : String(y));
+                                                setPage(1);
                                             } else {
                                                 showToast('Por favor, selecione uma temporada (Inverno, Primavera...) antes de escolher o ano.', 'error');
                                             }
                                         }}
-                                        className={`px-3 py-1.5 rounded-full text-xs font-bold transition-all duration-150 border ${
-                                            !selectedSeason 
-                                            ? 'bg-panel border-line text-muted/50 cursor-not-allowed'
-                                            : selectedYear === String(y)
-                                                ? 'bg-holo-3/20 border-holo-3/50 text-holo-3 cursor-pointer'
-                                                : 'bg-panel border-line text-muted hover:border-holo-3 hover:text-text cursor-pointer'
+                                        className={`px-3 py-1.5 rounded-full text-xs font-bold transition-all duration-150 border ${!selectedSeason
+                                                ? 'bg-panel border-line text-muted/50 cursor-not-allowed'
+                                                : selectedYear === String(y)
+                                                    ? 'bg-holo-3/20 border-holo-3/50 text-holo-3 cursor-pointer'
+                                                    : 'bg-panel border-line text-muted hover:border-holo-3 hover:text-text cursor-pointer'
                                             }`}
                                     >
                                         {y}
@@ -415,8 +412,8 @@ export default function Busca() {
                                         key={`${f.type}-${f.value}`}
                                         onClick={() => toggleFilter(f)}
                                         className={`px-3 py-1.5 rounded-full text-xs font-bold transition-all duration-150 cursor-pointer ${isActive
-                                                ? 'bg-gradient-to-r from-holo-1 to-holo-2 text-void shadow-[0_0_12px_rgba(123,92,255,0.4)]'
-                                                : 'bg-panel-2 border border-line text-muted hover:border-holo-2 hover:text-text'
+                                            ? 'bg-gradient-to-r from-holo-1 to-holo-2 text-void shadow-[0_0_12px_rgba(123,92,255,0.4)]'
+                                            : 'bg-panel-2 border border-line text-muted hover:border-holo-2 hover:text-text'
                                             }`}
                                     >
                                         {f.label}
@@ -459,92 +456,29 @@ export default function Busca() {
                 <>
                     {page === 1 && <p className="font-mono text-xs text-holo-3 tracking-widest mb-4 select-none">// RESULTADOS DA BUSCA</p>}
                     <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-3 md:gap-4">
-                        {resultados.map((anime, index) => {
-                            const gradClass = `card-g${(index % 5) + 1}`
-                            const savedEntry = savedEntries.find(e => e.mal_id === anime.mal_id)
-                            const isSaved = !!savedEntry
-                            const isFoil = savedEntry?.is_favorite
-                            
-                            return (
-                                <Link 
-                                    to={`/anime/${anime.mal_id}`} 
-                                    key={`${anime.mal_id}-${index}`} 
-                                    className={`relative aspect-[3/4.2] rounded-[14px] overflow-hidden border flex flex-col justify-end p-3 group block transition-transform hover:-translate-y-1 ${
-                                        isFoil ? 'foil-card border-gold/50 shadow-[0_0_15px_rgba(255,197,66,0.15)]' : `border-line bg-panel ${gradClass}`
-                                    }`}
-                                >
-                                    {anime.images?.jpg?.image_url && (
-                                        <img src={anime.images.jpg.image_url} alt={anime.title} className="absolute inset-0 w-full h-full object-cover z-0 group-hover:scale-105 transition-transform duration-500 opacity-90" />
-                                    )}
-                                    <div className="absolute inset-0 bg-gradient-to-t from-void via-void/70 to-transparent z-10 opacity-90" />
-                                    
-                                    <div className="absolute top-3 left-3 z-20">
-                                        <span className="text-[9px] md:text-[9.5px] font-extrabold px-2 py-1 rounded-md uppercase tracking-wider backdrop-blur-md border bg-void/70 text-holo-3 border-holo-3/50 drop-shadow-[0_1px_3px_rgba(0,0,0,1)] select-none">
-                                            {traduzirStatus(anime.status)}
-                                        </span>
-                                    </div>
-
-                                    <button 
-                                        onClick={(e) => handleSalvar(e, anime.mal_id)} 
-                                        disabled={savingIds.includes(anime.mal_id)}
-                                        className={`absolute top-3 right-3 w-8 h-8 rounded-full border-[1.5px] flex items-center justify-center font-bold backdrop-blur-md transition-all z-30 select-none shadow-lg ${
-                                            isSaved
-                                                ? 'bg-green/20 border-green text-green hover:bg-coral/20 hover:border-coral hover:text-coral cursor-pointer'
-                                                : 'bg-void/80 border-white/40 text-white hover:bg-gradient-to-r hover:from-holo-1 hover:to-holo-2 hover:border-transparent cursor-pointer opacity-80 md:opacity-0 group-hover:opacity-100'
-                                        }`}
-                                    >
-                                        {savingIds.includes(anime.mal_id) ? (
-                                            <div className="w-3 h-3 border-2 border-current border-t-transparent rounded-full animate-spin"></div>
-                                        ) : isSaved ? (
-                                            <>
-                                                <span className="hover:hidden flex items-center justify-center"><Check size={16} strokeWidth={3} /></span>
-                                                <span className="hidden hover:flex items-center justify-center text-[15px]">×</span>
-                                            </>
-                                        ) : (
-                                            '+'
-                                        )}
-                                    </button>
-                                    
-                                    <div className="relative z-20 mt-auto flex flex-col pointer-events-none select-none w-full justify-end">
-                                        {/* CORREÇÃO AQUI: Remoção do min-h-[36px] para assentar o texto */}
-                                        <h3 className="font-anton text-[13px] md:text-[14px] uppercase leading-tight mb-1.5 drop-shadow-md text-white line-clamp-2 break-words" title={anime.title}>
-                                            {isFoil && <span className="text-gold mr-1 inline-block -translate-y-[1px]" title="Favorito">👑</span>}
-                                            {anime.title}
-                                        </h3>
-
-                                        <div className="flex justify-between items-end gap-2">
-                                            <div className="flex-1 min-w-0 flex flex-col gap-1">
-                                                {anime.genres?.slice(0, 1).map(g => (
-                                                    <span key={g.name} className={`inline-block text-[9px] font-bold px-1.5 py-0.5 rounded border backdrop-blur-sm truncate max-w-full ${getCategoryTheme(g.name)}`}>
-                                                        {g.name}
-                                                    </span>
-                                                ))}
-                                            </div>
-
-                                            <div className="flex items-center justify-end gap-1.5 shrink-0">
-                                                <div className={`font-anton text-[11px] sm:text-[12px] px-1.5 py-0.5 rounded-md backdrop-blur-sm border ${anime.score ? 'bg-gold/20 text-gold border-gold/40 shadow-[0_0_8px_rgba(255,197,66,0.3)]' : 'bg-panel-2/80 text-muted-2 border-line'}`}>
-                                                    {anime.score ? `★ ${anime.score}` : 'S/N'}
-                                                </div>
-                                                <span className="font-mono text-[9px] text-muted-2 font-bold uppercase tracking-wider ml-1">
-                                                    {anime.episodes ? `${anime.episodes} EP` : '? EP'}
-                                                </span>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </Link>
-                            )
-                        })}
+                        {resultados.map((anime, index) => (
+                            <SearchResultCard
+                                key={`${anime.mal_id}-${index}`}
+                                anime={anime}
+                                gradientClass={`card-g${(index % 5) + 1}`}
+                                isSaved={savedEntries.some(e => e.mal_id === anime.mal_id)}
+                                isFavorite={savedEntries.find(e => e.mal_id === anime.mal_id)?.is_favorite}
+                                isSaving={savingIds.includes(anime.mal_id)}
+                                statusLabel={traduzirStatus(anime.status)}
+                                onToggleSave={handleSalvar}
+                            />
+                        ))}
                     </div>
 
                     {!loading && resultados.length >= 20 && (
-                        <button 
-                            onClick={() => setPage(p => p + 1)} 
+                        <button
+                            onClick={() => setPage(p => p + 1)}
                             className="select-none block mx-auto mt-8 px-6 py-3 rounded-full border border-line bg-panel text-text font-bold text-sm hover:border-holo-3 hover:text-holo-3 transition-colors cursor-pointer"
                         >
                             Carregar mais
                         </button>
                     )}
-                    
+
                     {loading && page > 1 && (
                         <div className="py-8 text-center">
                             <div className="inline-block w-6 h-6 rounded-full border-4 border-line border-t-holo-3 animate-spin"></div>
