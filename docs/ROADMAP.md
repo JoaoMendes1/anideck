@@ -40,17 +40,17 @@ Staging sobe já na Fase 1, como projeto esqueleto — mesmo padrão do JVM Syst
 
 ## 🗂️ Fase 2.5: Curadoria Pessoal (Painel Admin)
 
-- [x] Criar tabela `curated_animes` no Supabase para armazenar destaques editados. 
+- [x] Criar tabela `curated_animes` no Supabase para armazenar destaques editados.
 - [x] Criar rotas no backend (`/api/curation`) para gerenciar (CRUD) od destaques.
 - [x] Atualizar rotas de Busca e Ranking para usar a curadoria local como prioridade (Fallback para AniList).
-- [x] Construir a interface do Painel Admin em React e conectar ao Backend. 
+- [x] Construir a interface do Painel Admin em React e conectar ao Backend.
 
 ## 🎨 Fase 3: Identidade Visual — fim do MVP
 
 - [x] Protótipos visuais dedicados (fusão cyberpunk/sci-fi + anime) construídos em HTML/CSS nativo.
 - [x] Aplicação da identidade (Design Tokens) nos componentes React reais.
 - [x] Responsividade e acessibilidade básica.
-- [x] Realizar testes usando Smartphone para ajustes e refinamentos. 
+- [x] Realizar testes usando Smartphone para ajustes e refinamentos.
 
 ## 📊 Fase 4: Dashboard de Estatísticas (Foco em SQL Avançado)
 
@@ -64,19 +64,51 @@ Staging sobe já na Fase 1, como projeto esqueleto — mesmo padrão do JVM Syst
 - [ ] **Agente Olheiro (Automação Background):** Criar um fluxo orquestrado (ex: n8n) que cruza os favoritos do usuário (SQL) com os *trends* da AniList.
 - [ ] **Integração Google Workspace:** O Agente gera recomendações personalizadas em HTML e utiliza a API do Gmail para disparar um relatório automático para a caixa de entrada do usuário.
 
-## 📅 Fase 5: Smart Tracking, Streaming Direto & Calendário (Killer Feature) Finalizado 10/08/2026 
+## 📅 Fase 5: Smart Tracking, Streaming Direto & Calendário (Killer Feature) Finalizado 10/08/2026
 
 - [x] **Backend:** Atualizar a query GraphQL do Go para consumir `nextAiringEpisode` e repassar a janela de tempo ao frontend.
 - [x] **Meu Deck:** Criar lógica visual de Badge "NOVO EP" para obras "Assistindo" ou "Em Dia" com episódios recém-lançados.
 - [x] **Integração de Streaming:** Adicionar botão/ação rápida nos cards do Deck utilizando o campo `externalLinks` da AniList, permitindo pular direto para a Crunchyroll/Netflix.
 - [x] **Calendário Personalizado:** Tela mostrando próximos episódios exclusivos da *watchlist* do usuário, agrupados por dia da semana e com contagem regressiva viva.
-OBS: O Product Owner decidiu que a fase 5 fosse implementada primeiro. 
+OBS: O Product Owner decidiu que a fase 5 fosse implementada primeiro.
 
 ## 📰 Fase 6: Notícias de Anime
 
 - [ ] Avaliar fonte externa de notícias (RSS de Anime News Network, Crunchyroll News, ou similar).
 - [ ] Job de ingestão periódica.
 - [ ] Exibição no frontend.
+
+## ⚖️ Fase 6.5: Ranking Ponderado
+
+> Nasceu da auditoria de UX registrada em `docs/ideias-para-melhorias.md`, item 2.2 (e 2.3).
+> Ainda sem decisão de fórmula fechada — depende de confirmar se a AniList expõe contagem de
+> votos/favoritos junto com a nota antes de estimar esforço real. Não iniciar antes de fechar
+> essa decisão em `DECISIONS.md`.
+
+- [ ] Confirmar se a query GraphQL da AniList retorna contagem de avaliações/favoritos por anime.
+- [ ] Definir e documentar em `DECISIONS.md` a fórmula de ponderação escolhida (ex: média
+      bayesiana ao estilo IMDb, puxando notas com poucos votos em direção à média geral).
+- [ ] Implementar o cálculo (avaliar se fica em Go/handler ou como view/function no Postgres,
+      alinhado à Fase 4).
+- [ ] Como parte da mesma decisão, avaliar o critério de equilíbrio entre animes clássicos e
+      recentes (item 2.3 do documento de ideias).
+- [ ] **Bloqueado por esta fase:** indicador de movimentação de posições no ranking (▲/▼) —
+      só faz sentido rastrear histórico de posição depois que a fórmula final estiver estável,
+      senão todo mundo "sobe ou desce" no dia da troca de fórmula sem ter mudado de posição de
+      verdade.
+
+## 🖼️ Fase 6.6: Enriquecimento da Página de Detalhes
+
+> Nasceu do item 5 do `docs/ideias-para-melhorias.md`. Feature fullstack — depende de mapear
+> campos novos da AniList (elenco, staff, galeria de imagens) antes de desenhar a tela.
+
+- [ ] Levantar quais campos de personagens/elenco (`characters`, `staff`) e imagens adicionais a
+      query GraphQL da AniList expõe.
+- [ ] Avaliar impacto no tamanho/latência da resposta da API externa (cache adicional pode ser
+      necessário para não pesar a Fase 2, que já consome essa mesma API).
+- [ ] Desenhar layout das novas seções (galeria, elenco) alinhado ao `DESIGN_TOKENS.md`.
+- [ ] Implementar consumo dos novos campos no backend + exibição no frontend.
+- [ ] Resolver especificamente a queixa de imagem pequena no mobile registrada no item 5.1.
 
 ## 👥 Fase 7: Multiusuário (futuro, avaliar quando chegar)
 
@@ -92,6 +124,9 @@ OBS: O Product Owner decidiu que a fase 5 fosse implementada primeiro.
 ## 📋 Backlog / Ideias em Avaliação
 
 - [ ] **Notificações de novas temporadas/sequências** — avisar quando uma sequência/temporada nova é anunciada.
+- [ ] **Filtro por ano na Busca, independente de temporada** — hoje o campo de ano só habilita se
+      uma temporada estiver selecionada (ver `docs/ideias-para-melhorias.md`, item 7.1). Aceitável
+      como está por ora; revisar se surgir demanda real de usuário.
 
 ### Avaliado e descartado (documentado pra não reabrir sem contexto)
 - **Fórum, Clubes, Blogs:** equivalem a construir uma rede social inteira.

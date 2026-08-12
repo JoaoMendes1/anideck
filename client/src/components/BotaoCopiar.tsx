@@ -32,7 +32,7 @@ export default function BotaoCopiar({ texto, className = '' }: Props) {
             } ${className}`}
             title="Copiar nome do anime"
         >
-            {copiado ? <Check size={14} /> : <Copy size={14} />}
+            {copiado ? <Check size={10} /> : <Copy size={10} />}
         </button>
     )
 }

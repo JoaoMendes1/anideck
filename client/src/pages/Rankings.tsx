@@ -11,6 +11,7 @@ import {
 import FilterChipGroup from '../components/FilterChipGroup'
 import RankingCard from '../components/RankingCard'
 import RankingSkeleton from '../components/RankingSkeleton'
+import FilterSheet from '../components/FilterSheet'
 
 interface Anime {
     mal_id: number
@@ -188,21 +189,19 @@ export default function Rankings() {
                 <div className="flex gap-2 flex-wrap mb-6 select-none border-b border-line pb-4">
                     <button
                         onClick={() => { setSelectedStatus(''); setSelectedSeason(''); setSelectedYear(''); setSelectedSort('POPULARITY_DESC'); }}
-                        className={`text-[13px] font-bold px-5 py-2.5 rounded-full border transition-colors cursor-pointer ${
-                            selectedStatus === '' && selectedSort === 'POPULARITY_DESC'
-                            ? 'bg-gradient-to-r from-holo-1 to-holo-2 text-white border-transparent shadow-lg'
-                            : 'bg-panel border-line text-muted hover:border-holo-3 hover:text-text'
-                        }`}
+                        className={`text-[13px] font-bold px-5 py-2.5 rounded-full border transition-colors cursor-pointer ${selectedStatus === '' && selectedSort === 'POPULARITY_DESC'
+                                ? 'bg-gradient-to-r from-holo-1 to-holo-2 text-white border-transparent shadow-lg'
+                                : 'bg-panel border-line text-muted hover:border-holo-3 hover:text-text'
+                            }`}
                     >
                         🏆 Top Global
                     </button>
                     <button
                         onClick={() => { setSelectedStatus('RELEASING'); setSelectedSort('TRENDING_DESC'); }}
-                        className={`text-[13px] font-bold px-5 py-2.5 rounded-full border transition-colors cursor-pointer flex items-center gap-2 ${
-                            selectedStatus === 'RELEASING' && selectedSort === 'TRENDING_DESC'
-                            ? 'bg-coral/20 border-coral text-coral shadow-[0_0_15px_rgba(255,92,108,0.2)]'
-                            : 'bg-panel border-line text-muted hover:border-coral hover:text-text'
-                        }`}
+                        className={`text-[13px] font-bold px-5 py-2.5 rounded-full border transition-colors cursor-pointer flex items-center gap-2 ${selectedStatus === 'RELEASING' && selectedSort === 'TRENDING_DESC'
+                                ? 'bg-coral/20 border-coral text-coral shadow-[0_0_15px_rgba(255,92,108,0.2)]'
+                                : 'bg-panel border-line text-muted hover:border-coral hover:text-text'
+                            }`}
                     >
                         🔥 Em Alta / Temporada
                     </button>
@@ -212,8 +211,8 @@ export default function Rankings() {
                     <button
                         onClick={() => setShowFilters(v => !v)}
                         className={`select-none inline-flex items-center gap-2 px-4 py-2 rounded-full border text-sm font-bold transition-all duration-200 cursor-pointer ${showFilters || activeFilterCount > 0
-                                ? 'border-holo-2 text-holo-2 bg-holo-2/10'
-                                : 'border-line text-muted bg-panel hover:border-holo-2 hover:text-holo-2'
+                            ? 'border-holo-2 text-holo-2 bg-holo-2/10'
+                            : 'border-line text-muted bg-panel hover:border-holo-2 hover:text-holo-2'
                             }`}
                     >
                         <SlidersHorizontal size={14} />
@@ -225,96 +224,83 @@ export default function Rankings() {
                         )}
                     </button>
 
-                    {/*
-                      Transição CSS-only pro painel: em vez de montar/desmontar (que faz o painel
-                      "piscar" na tela), a gente anima a grid-template-rows de 0fr pra 1fr.
-                      Não precisa medir altura em JS nem lib nova.
-                    */}
-                    <div
-                        className={`grid transition-all duration-300 ease-out ${
-                            showFilters ? 'grid-rows-[1fr] opacity-100 mt-3' : 'grid-rows-[0fr] opacity-0'
-                        }`}
-                    >
-                        <div className="overflow-hidden">
-                            <div className="bg-panel border border-line rounded-2xl p-5 space-y-6">
-                                <FilterChipGroup
-                                    label="Ordenar por"
-                                    options={SORT_OPTIONS}
-                                    isActive={(v) => selectedSort === v}
-                                    onToggle={(v) => setSelectedSort(v)}
-                                    activeClassName="bg-gold/20 border-gold/40 text-gold shadow-[0_0_12px_rgba(255,197,66,0.3)]"
-                                />
+                    <FilterSheet isOpen={showFilters} onClose={() => setShowFilters(false)} title="Filtros Avançados">
+                        <FilterChipGroup
+                            label="Ordenar por"
+                            options={SORT_OPTIONS}
+                            isActive={(v) => selectedSort === v}
+                            onToggle={(v) => setSelectedSort(v)}
+                            activeClassName="bg-gold/20 border-gold/40 text-gold shadow-[0_0_12px_rgba(255,197,66,0.3)]"
+                        />
 
-                                <FilterChipGroup
-                                    label="Status"
-                                    options={STATUS_OPTIONS}
-                                    isActive={(v) => selectedStatus === v}
-                                    onToggle={(v) => setSelectedStatus(selectedStatus === v ? '' : v)}
-                                />
+                        <FilterChipGroup
+                            label="Status"
+                            options={STATUS_OPTIONS}
+                            isActive={(v) => selectedStatus === v}
+                            onToggle={(v) => setSelectedStatus(selectedStatus === v ? '' : v)}
+                        />
 
-                                <div>
-                                    <FilterChipGroup
-                                        label="Temporada"
-                                        options={SEASON_OPTIONS}
-                                        isActive={(v) => selectedSeason === v}
-                                        onToggle={(v) => {
-                                            setSelectedSeason(selectedSeason === v ? '' : v)
-                                            if (selectedSeason === v) setSelectedYear('')
-                                        }}
-                                    />
+                        <div>
+                            <FilterChipGroup
+                                label="Temporada"
+                                options={SEASON_OPTIONS}
+                                isActive={(v) => selectedSeason === v}
+                                onToggle={(v) => {
+                                    setSelectedSeason(selectedSeason === v ? '' : v)
+                                    if (selectedSeason === v) setSelectedYear('')
+                                }}
+                            />
 
-                                    {selectedSeason && (
-                                        <div className="flex flex-wrap gap-2 p-3 mt-3 bg-panel-2 border border-line rounded-xl">
-                                            <span className="text-[11px] font-bold text-muted uppercase w-full mb-1">Selecione o Ano:</span>
-                                            {YEAR_OPTIONS.map(y => (
-                                                <button
-                                                    key={y}
-                                                    onClick={() => setSelectedYear(selectedYear === String(y) ? '' : String(y))}
-                                                    className={`select-none px-3 py-1.5 rounded-full text-xs font-bold transition-all duration-150 cursor-pointer ${selectedYear === String(y)
-                                                            ? 'bg-holo-3/20 border border-holo-3/50 text-holo-3'
-                                                            : 'bg-panel border border-line text-muted hover:border-holo-3 hover:text-text'
-                                                        }`}
-                                                >
-                                                    {y}
-                                                </button>
-                                            ))}
-                                        </div>
-                                    )}
-                                </div>
-
-                                <div>
-                                    <p className="font-mono text-[10px] text-muted-2 tracking-widest mb-3 select-none uppercase">
-                                        Gêneros e Tags
-                                    </p>
-                                    <div className="flex flex-wrap gap-2">
-                                        {CONTENT_FILTERS.map(f => {
-                                            const isActive = selectedFilters.some(x => x.value === f.value)
-                                            return (
-                                                <button
-                                                    key={`${f.type}-${f.value}`}
-                                                    onClick={() => toggleFilter(f)}
-                                                    className={`select-none px-3 py-1.5 rounded-full text-xs font-bold transition-all duration-150 cursor-pointer border ${isActive
-                                                            ? `${getCategoryTheme(f.label)} shadow-[0_0_10px_currentColor]`
-                                                            : 'bg-panel-2 border-line text-muted hover:border-holo-2 hover:text-text'
-                                                        }`}
-                                                >
-                                                    {f.label}
-                                                </button>
-                                            )
-                                        })}
-                                    </div>
-                                </div>
-
-                                {activeFilterCount > 0 && (
-                                    <div className="pt-4 border-t border-line flex justify-end">
-                                        <button onClick={clearFilters} className="select-none flex items-center gap-1.5 text-coral text-xs font-bold hover:opacity-80 transition-opacity cursor-pointer">
-                                            <X size={14} /> Limpar todos os filtros
+                            {selectedSeason && (
+                                <div className="flex flex-wrap gap-2 p-3 mt-3 bg-panel-2 border border-line rounded-xl">
+                                    <span className="text-[11px] font-bold text-muted uppercase w-full mb-1">Selecione o Ano:</span>
+                                    {YEAR_OPTIONS.map(y => (
+                                        <button
+                                            key={y}
+                                            onClick={() => setSelectedYear(selectedYear === String(y) ? '' : String(y))}
+                                            className={`select-none px-3 py-1.5 rounded-full text-xs font-bold transition-all duration-150 cursor-pointer ${selectedYear === String(y)
+                                                    ? 'bg-holo-3/20 border border-holo-3/50 text-holo-3'
+                                                    : 'bg-panel border border-line text-muted hover:border-holo-3 hover:text-text'
+                                                }`}
+                                        >
+                                            {y}
                                         </button>
-                                    </div>
-                                )}
+                                    ))}
+                                </div>
+                            )}
+                        </div>
+
+                        <div>
+                            <p className="font-mono text-[10px] text-muted-2 tracking-widest mb-3 select-none uppercase">
+                                Gêneros e Tags
+                            </p>
+                            <div className="flex flex-wrap gap-2">
+                                {CONTENT_FILTERS.map(f => {
+                                    const isActive = selectedFilters.some(x => x.value === f.value)
+                                    return (
+                                        <button
+                                            key={`${f.type}-${f.value}`}
+                                            onClick={() => toggleFilter(f)}
+                                            className={`select-none px-3 py-1.5 rounded-full text-xs font-bold transition-all duration-150 cursor-pointer border ${isActive
+                                                    ? `${getCategoryTheme(f.label)} shadow-[0_0_10px_currentColor]`
+                                                    : 'bg-panel-2 border-line text-muted hover:border-holo-2 hover:text-text'
+                                                }`}
+                                        >
+                                            {f.label}
+                                        </button>
+                                    )
+                                })}
                             </div>
                         </div>
-                    </div>
+
+                        {activeFilterCount > 0 && (
+                            <div className="pt-4 border-t border-line flex justify-end">
+                                <button onClick={clearFilters} className="select-none flex items-center gap-1.5 text-coral text-xs font-bold hover:opacity-80 transition-opacity cursor-pointer">
+                                    <X size={14} /> Limpar todos os filtros
+                                </button>
+                            </div>
+                        )}
+                    </FilterSheet>
                 </div>
 
                 {isInitialLoad ? (

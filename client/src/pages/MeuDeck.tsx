@@ -194,11 +194,10 @@ export default function MeuDeck() {
                         <button
                             key={tab}
                             onClick={() => setFiltroAtivo(tab)}
-                            className={`shrink-0 whitespace-nowrap text-[13px] font-bold px-4 py-2 rounded-full border transition-colors cursor-pointer ${
-                                filtroAtivo === tab
-                                ? 'bg-gradient-to-r from-holo-1 to-holo-2 text-white border-transparent shadow-lg'
-                                : 'bg-panel border-line text-muted hover:border-holo-3 hover:text-text'
-                            }`}
+                            className={`shrink-0 whitespace-nowrap text-[13px] font-bold px-4 py-2 rounded-full border transition-colors cursor-pointer ${filtroAtivo === tab
+                                    ? 'bg-gradient-to-r from-holo-1 to-holo-2 text-white border-transparent shadow-lg'
+                                    : 'bg-panel border-line text-muted hover:border-holo-3 hover:text-text'
+                                }`}
                         >
                             {tab}
                         </button>
@@ -225,7 +224,6 @@ export default function MeuDeck() {
                     </div>
                 )}
 
-                {editando && (
                     <EditarEntradaModal
                         entrada={editando}
                         onFechar={() => setEditando(null)}
@@ -236,7 +234,6 @@ export default function MeuDeck() {
                             setEntradas((prev) => prev.filter((e) => e.id !== id))
                         }}
                     />
-                )}
             </div>
         </div>
     )

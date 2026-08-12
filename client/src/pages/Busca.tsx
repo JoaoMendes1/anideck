@@ -8,6 +8,8 @@ import {
     type FilterItem, getCategoryTheme
 } from '../lib/filters'
 import SearchResultCard from '../components/SearchResultCard'
+import FilterSheet from '../components/FilterSheet'
+import FilterChipGroup from '../components/FilterChipGroup'
 
 interface Anime {
     mal_id: number
@@ -243,8 +245,8 @@ export default function Busca() {
                 <button
                     onClick={() => { setSelectedStatus(selectedStatus === 'RELEASING' ? '' : 'RELEASING'); setPage(1); }}
                     className={`shrink-0 px-4 py-2 rounded-full text-xs font-bold transition-all duration-150 cursor-pointer border flex items-center gap-1.5 ${selectedStatus === 'RELEASING'
-                            ? 'bg-coral/20 border-coral text-coral shadow-[0_0_10px_rgba(255,92,108,0.2)]'
-                            : 'bg-panel-2 border-line text-muted hover:border-coral hover:text-text'
+                        ? 'bg-coral/20 border-coral text-coral shadow-[0_0_10px_rgba(255,92,108,0.2)]'
+                        : 'bg-panel-2 border-line text-muted hover:border-coral hover:text-text'
                         }`}
                 >
                     🔥 Em Lançamento
@@ -299,139 +301,83 @@ export default function Busca() {
                 )}
             </div>
 
-            <div className={`fixed inset-0 z-[70] flex flex-col justify-end pointer-events-none md:relative md:inset-auto md:z-auto md:block transition-all duration-300 select-none ${showFilters ? 'opacity-100' : 'opacity-0 md:opacity-100 md:hidden'
-                }`}>
-                <div
-                    className={`absolute inset-0 bg-void/80 backdrop-blur-sm md:hidden transition-opacity duration-300 ${showFilters ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'}`}
-                    onClick={() => setShowFilters(false)}
+            <FilterSheet isOpen={showFilters} onClose={() => setShowFilters(false)} title="Filtros Avançados">
+                <FilterChipGroup
+                    label="Ordenar por"
+                    options={SORT_OPTIONS}
+                    isActive={(v) => selectedSort === v}
+                    onToggle={(v) => { setSelectedSort(v); setPage(1) }}
+                    activeClassName="bg-gold/20 border-gold/40 text-gold shadow-[0_0_12px_rgba(255,197,66,0.2)]"
                 />
 
-                <div className={`relative bg-panel md:bg-panel border-t md:border border-line rounded-t-3xl md:rounded-2xl p-6 pb-safe md:pb-6 space-y-6 transition-transform duration-300 transform md:transform-none max-h-[85vh] overflow-y-auto ${showFilters ? 'translate-y-0 pointer-events-auto' : 'translate-y-full pointer-events-none md:translate-y-0 md:pointer-events-auto'
-                    } mb-0 md:mb-6`}>
+                <FilterChipGroup
+                    label="Status"
+                    options={STATUS_OPTIONS}
+                    isActive={(v) => selectedStatus === v}
+                    onToggle={(v) => { setSelectedStatus(selectedStatus === v ? '' : v); setPage(1) }}
+                />
 
-                    <div className="flex justify-between items-center md:hidden mb-2">
-                        <h3 className="font-anton text-lg uppercase text-text">Filtros Avançados</h3>
-                        <button onClick={() => setShowFilters(false)} className="text-muted hover:text-text cursor-pointer p-1"><X size={20} /></button>
-                    </div>
+                <div className="flex flex-col gap-3">
+                    <FilterChipGroup
+                        label="Temporada"
+                        options={SEASON_OPTIONS}
+                        isActive={(v) => selectedSeason === v}
+                        onToggle={(v) => {
+                            setSelectedSeason(selectedSeason === v ? '' : v)
+                            if (selectedSeason === v) setSelectedYear('')
+                            setPage(1)
+                        }}
+                    />
 
-                    <div>
-                        <p className="font-mono text-[10px] text-muted-2 tracking-widest mb-3 select-none">// ORDENAR POR</p>
-                        <div className="flex flex-wrap gap-2">
-                            {SORT_OPTIONS.map(opt => (
-                                <button
-                                    key={opt.value}
-                                    onClick={() => { setSelectedSort(opt.value); setPage(1); }}
-                                    className={`px-3 py-1.5 rounded-full text-xs font-bold transition-all duration-150 cursor-pointer ${selectedSort === opt.value
-                                        ? 'bg-gold/20 text-gold border border-gold/40 shadow-[0_0_12px_rgba(255,197,66,0.2)]'
-                                        : 'bg-panel-2 border border-line text-muted hover:border-gold hover:text-text'
-                                        }`}
-                                >
-                                    {opt.label}
-                                </button>
-                            ))}
-                        </div>
-                    </div>
-
-                    <div>
-                        <p className="font-mono text-[10px] text-muted-2 tracking-widest mb-3 select-none">// STATUS DE LANÇAMENTO</p>
-                        <div className="flex flex-wrap gap-2">
-                            {STATUS_OPTIONS.map(opt => (
-                                <button
-                                    key={opt.value}
-                                    onClick={() => { setSelectedStatus(selectedStatus === opt.value ? '' : opt.value); setPage(1); }}
-                                    className={`px-3 py-1.5 rounded-full text-xs font-bold transition-all duration-150 cursor-pointer ${selectedStatus === opt.value
-                                        ? 'bg-gradient-to-r from-holo-1 to-holo-2 text-void shadow-[0_0_12px_rgba(123,92,255,0.4)]'
-                                        : 'bg-panel-2 border border-line text-muted hover:border-holo-2 hover:text-text'
-                                        }`}
-                                >
-                                    {opt.label}
-                                </button>
-                            ))}
-                        </div>
-                    </div>
-
-                    <div>
-                        <p className="font-mono text-[10px] text-muted-2 tracking-widest mb-3 select-none">// TEMPORADA E ANO</p>
-                        <div className="flex flex-col gap-3">
-                            <div className="flex flex-wrap gap-2">
-                                {SEASON_OPTIONS.map(opt => (
-                                    <button
-                                        key={opt.value}
-                                        onClick={() => {
-                                            setSelectedSeason(selectedSeason === opt.value ? '' : opt.value);
-                                            if (selectedSeason === opt.value) setSelectedYear('');
-                                            setPage(1);
-                                        }}
-                                        className={`px-3 py-1.5 rounded-full text-xs font-bold transition-all duration-150 cursor-pointer ${selectedSeason === opt.value
-                                            ? 'bg-gradient-to-r from-holo-1 to-holo-2 text-void shadow-[0_0_12px_rgba(123,92,255,0.4)]'
-                                            : 'bg-panel-2 border border-line text-muted hover:border-holo-2 hover:text-text'
-                                            }`}
-                                    >
-                                        {opt.emoji} {opt.label}
-                                    </button>
-                                ))}
-                            </div>
-
-                            {/* Selecionador de Anos sempre visível, mas valida se há temporada escolhida */}
-                            <div className="flex flex-wrap gap-2 p-3 bg-panel-2 border border-line rounded-xl">
-                                <span className="text-[11px] font-bold text-muted uppercase w-full mb-1">
-                                    Selecione o Ano {selectedSeason ? '' : '(Escolha uma temporada primeiro)'}:
-                                </span>
-                                {YEAR_OPTIONS.map(y => (
-                                    <button
-                                        key={y}
-                                        onClick={() => {
-                                            if (selectedSeason) {
-                                                setSelectedYear(selectedYear === String(y) ? '' : String(y));
-                                                setPage(1);
-                                            } else {
-                                                showToast('Por favor, selecione uma temporada (Inverno, Primavera...) antes de escolher o ano.', 'error');
-                                            }
-                                        }}
-                                        className={`px-3 py-1.5 rounded-full text-xs font-bold transition-all duration-150 border ${!selectedSeason
-                                                ? 'bg-panel border-line text-muted/50 cursor-not-allowed'
-                                                : selectedYear === String(y)
-                                                    ? 'bg-holo-3/20 border-holo-3/50 text-holo-3 cursor-pointer'
-                                                    : 'bg-panel border-line text-muted hover:border-holo-3 hover:text-text cursor-pointer'
-                                            }`}
-                                    >
-                                        {y}
-                                    </button>
-                                ))}
-                            </div>
-                        </div>
-                    </div>
-
-                    <div>
-                        <p className="font-mono text-[10px] text-muted-2 tracking-widest mb-3 select-none">// GÊNEROS E TAGS</p>
-                        <div className="flex flex-wrap gap-2">
-                            {CONTENT_FILTERS.map(f => {
-                                const isActive = selectedFilters.some(x => x.value === f.value)
-                                return (
-                                    <button
-                                        key={`${f.type}-${f.value}`}
-                                        onClick={() => toggleFilter(f)}
-                                        className={`px-3 py-1.5 rounded-full text-xs font-bold transition-all duration-150 cursor-pointer ${isActive
-                                            ? 'bg-gradient-to-r from-holo-1 to-holo-2 text-void shadow-[0_0_12px_rgba(123,92,255,0.4)]'
-                                            : 'bg-panel-2 border border-line text-muted hover:border-holo-2 hover:text-text'
-                                            }`}
-                                    >
-                                        {f.label}
-                                    </button>
-                                )
-                            })}
-                        </div>
-                    </div>
-
-                    {activeFilterCount > 0 && (
-                        <div className="pt-4 border-t border-line flex justify-end">
-                            <button onClick={clearFilters} className="flex items-center gap-1.5 text-coral text-xs font-bold hover:opacity-80 cursor-pointer">
-                                <X size={12} /> Limpar todos os filtros
+                    <div className="flex flex-wrap gap-2 p-3 bg-panel-2 border border-line rounded-xl">
+                        <span className="text-[11px] font-bold text-muted uppercase w-full mb-1">
+                            Selecione o Ano {selectedSeason ? '' : '(Escolha uma temporada primeiro)'}:
+                        </span>
+                        {YEAR_OPTIONS.map(y => (
+                            <button
+                                key={y}
+                                onClick={() => {
+                                    if (selectedSeason) {
+                                        setSelectedYear(selectedYear === String(y) ? '' : String(y))
+                                        setPage(1)
+                                    } else {
+                                        showToast('Por favor, selecione uma temporada (Inverno, Primavera...) antes de escolher o ano.', 'error')
+                                    }
+                                }}
+                                className={`px-3 py-1.5 rounded-full text-xs font-bold transition-all duration-150 border ${!selectedSeason
+                                        ? 'bg-panel border-line text-muted/50 cursor-not-allowed'
+                                        : selectedYear === String(y)
+                                            ? 'bg-holo-3/20 border-holo-3/50 text-holo-3 cursor-pointer'
+                                            : 'bg-panel border-line text-muted hover:border-holo-3 hover:text-text cursor-pointer'
+                                    }`}
+                            >
+                                {y}
                             </button>
-                        </div>
-                    )}
+                        ))}
+                    </div>
                 </div>
-            </div>
+
+                <div>
+                    <p className="font-mono text-[10px] text-muted-2 tracking-widest mb-3 select-none uppercase">Gêneros e Tags</p>
+                    <div className="flex flex-wrap gap-2">
+                        {CONTENT_FILTERS.map(f => {
+                            const isActive = selectedFilters.some(x => x.value === f.value)
+                            return (
+                                <button
+                                    key={`${f.type}-${f.value}`}
+                                    onClick={() => toggleFilter(f)}
+                                    className={`px-3 py-1.5 rounded-full text-xs font-bold transition-all duration-150 cursor-pointer ${isActive
+                                            ? 'bg-gradient-to-r from-holo-1 to-holo-2 text-void shadow-[0_0_12px_rgba(123,92,255,0.4)]'
+                                            : 'bg-panel-2 border border-line text-muted hover:border-holo-2 hover:text-text'
+                                        }`}
+                                >
+                                    {f.label}
+                                </button>
+                            )
+                        })}
+                    </div>
+                </div>
+            </FilterSheet>
 
             {loading && page === 1 && (
                 <>
