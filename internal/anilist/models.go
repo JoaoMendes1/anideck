@@ -14,14 +14,23 @@ type NextAiringEpisode struct {
 	Episode         int `json:"episode"`  
 }
 
+type Character struct {
+	ID    int    `json:"id"`
+	Name  string `json:"name"`
+	Image string `json:"image"`
+	Role  string `json:"role"`
+}
+
 type Anime struct {
-	MalID    int     `json:"mal_id"`
-	Title    string  `json:"title"`
-	Status   string  `json:"status"`
-	Synopsis string  `json:"synopsis"`
-	Episodes int     `json:"episodes"`
-	Score    float64 `json:"score"`
-	Ranking  int     `json:"ranking,omitempty"` // ✨ MUDOU AQUI: Propriedade para guardar a posição global
+	MalID       int         `json:"mal_id"`
+	Title       string      `json:"title"`
+	Status      string      `json:"status"`
+	Synopsis    string      `json:"synopsis"`
+	Episodes    int         `json:"episodes"`
+	Score       float64     `json:"score"`
+	Ranking     int         `json:"ranking,omitempty"` 
+	BannerImage string      `json:"bannerImage,omitempty"`
+	Characters  []Character `json:"characters,omitempty"`
 
 	NextAiringEpisode *NextAiringEpisode `json:"nextAiringEpisode,omitempty"`
 

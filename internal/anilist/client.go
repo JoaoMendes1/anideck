@@ -21,7 +21,7 @@ type Client struct {
 func NewClient() *Client {
 	return &Client{
 		httpClient: &http.Client{Timeout: 15 * time.Second},
-		limiter:    rate.NewLimiter(rate.Limit(1.5), 10), // Limite ajustado para suportar bursts
+		limiter:    rate.NewLimiter(rate.Limit(1.5), 10), 
 		baseURL:    "https://graphql.anilist.co",
 	}
 }
@@ -96,6 +96,7 @@ type aniListMedia struct {
 	Description   string                           `json:"description"`
 	Episodes      int                              `json:"episodes"`
 	AverageScore  int                              `json:"averageScore"`
+	BannerImage   string                           `json:"bannerImage"`
 	CoverImage    struct{ Large string }           `json:"coverImage"`
 	Genres        []string                         `json:"genres"`
 	ExternalLinks []struct {
@@ -109,6 +110,21 @@ type aniListMedia struct {
 	} `json:"rankings"`
 
 	NextAiringEpisode *NextAiringEpisode `json:"nextAiringEpisode"`
+
+	Characters struct {
+		Edges []struct {
+			Role string `json:"role"`
+			Node struct {
+				ID   int `json:"id"`
+				Name struct {
+					Full string `json:"full"`
+				} `json:"name"`
+				Image struct {
+					Large string `json:"large"`
+				} `json:"image"`
+			} `json:"node"`
+		} `json:"edges"`
+	} `json:"characters"`
 
 	Studios struct {
 		Edges []struct {
@@ -175,6 +191,16 @@ func (m *aniListMedia) toAnime() Anime {
 		studios = append(studios, struct{ Name string `json:"name"` }{Name: edge.Node.Name})
 	}
 
+	var chars []Character
+	for _, edge := range m.Characters.Edges {
+		chars = append(chars, Character{
+			ID:    edge.Node.ID,
+			Name:  edge.Node.Name.Full,
+			Image: edge.Node.Image.Large,
+			Role:  edge.Role,
+		})
+	}
+
 	var relations []struct {
 		Relation string `json:"relation"`
 		Entry    []struct {
@@ -217,6 +243,8 @@ func (m *aniListMedia) toAnime() Anime {
 		Episodes: m.Episodes,
 		Score:    float64(m.AverageScore) / 10.0,
 		Ranking:  bestRanking,
+		BannerImage: m.BannerImage,
+		Characters:  chars,
 		NextAiringEpisode: m.NextAiringEpisode,
 		Images: struct {
 			JPG struct {
@@ -300,9 +328,16 @@ query ($idMal: Int) {
     episodes
     averageScore
     coverImage { large }
+    bannerImage
     genres
     externalLinks { site url }
     nextAiringEpisode { airingAt timeUntilAiring episode }
+    characters(sort: ROLE, perPage: 15) {
+      edges {
+        role
+        node { id name { full } image { large } }
+      }
+    }
     studios { edges { node { name } } }
     relations { edges { relationType node { idMal type title { romaji english } } } }
   }

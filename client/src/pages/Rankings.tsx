@@ -1,14 +1,13 @@
 import { useState, useEffect, useCallback } from 'react'
-import BotaoCopiar from '../components/BotaoCopiar'
 import { useToast } from '../contexts/ToastContext'
 import { Link, useNavigate } from 'react-router-dom'
 import { AlertCircle, SlidersHorizontal, X, Check } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import {
     CONTENT_FILTERS, STATUS_OPTIONS, SEASON_OPTIONS,
-    type FilterItem
+    type FilterItem, getCategoryTheme
 } from '../lib/filters'
-import { getCategoryTheme } from '../lib/filters'
+import BotaoCopiar from '../components/BotaoCopiar'
 
 interface Anime {
     mal_id: number
@@ -20,7 +19,6 @@ interface Anime {
     genres?: { name: string }[]
 }
 
-// 🟢 Adicionamos o is_favorite aqui para o Rankings saber quem é Carta Rara
 interface SavedEntry {
     mal_id: number
     id: string
@@ -30,6 +28,14 @@ interface SavedEntry {
 const CURRENT_YEAR = new Date().getFullYear()
 const YEAR_OPTIONS = Array.from({ length: 10 }, (_, i) => CURRENT_YEAR - i)
 
+// 🟢 Adicionada as opções de ordenação que estavam faltando
+const SORT_OPTIONS = [
+    { label: 'Mais Populares', value: 'POPULARITY_DESC' },
+    { label: 'Em Alta', value: 'TRENDING_DESC' },
+    { label: 'Maior Nota', value: 'SCORE_DESC' },
+    { label: 'Lançamentos', value: 'START_DATE_DESC' },
+]
+
 export default function Rankings() {
     const navigate = useNavigate()
     const [animes, setAnimes] = useState<Anime[]>([])
@@ -38,21 +44,22 @@ export default function Rankings() {
     const [page, setPage] = useState(1)
     const [showFilters, setShowFilters] = useState(false)
     const { showToast } = useToast()
-    const [savingIds, setSavingIds] = useState<number[]>([])
-
-    // Agora salvamos o ID e o status de Favorito
+    const [savingIds, setSavingIds] = useState<number[]>([]) 
+    
     const [savedEntries, setSavedEntries] = useState<SavedEntry[]>([])
 
     const [selectedFilters, setSelectedFilters] = useState<FilterItem[]>([])
     const [selectedStatus, setSelectedStatus] = useState('')
     const [selectedSeason, setSelectedSeason] = useState('')
     const [selectedYear, setSelectedYear] = useState('')
+    const [selectedSort, setSelectedSort] = useState('POPULARITY_DESC') // 🟢 Estado de ordenação
 
     const activeFilterCount =
         selectedFilters.length +
         (selectedStatus ? 1 : 0) +
         (selectedSeason ? 1 : 0) +
-        (selectedYear ? 1 : 0)
+        (selectedYear ? 1 : 0) +
+        (selectedSort !== 'POPULARITY_DESC' ? 1 : 0) // Contabiliza se mudou a ordenação
 
     useEffect(() => {
         const carregarDeck = async () => {
@@ -66,7 +73,6 @@ export default function Rankings() {
                 if (response.ok) {
                     const entradas = await response.json()
                     if (entradas && entradas.length > 0) {
-                        // 🟢 Salva o is_favorite que vem do banco
                         const idsSalvos = entradas.map((e: any) => ({ mal_id: e.mal_id, id: e.id, is_favorite: e.is_favorite }))
                         setSavedEntries(idsSalvos)
                     }
@@ -81,7 +87,7 @@ export default function Rankings() {
     useEffect(() => {
         setAnimes([])
         setPage(1)
-    }, [selectedFilters, selectedStatus, selectedSeason, selectedYear])
+    }, [selectedFilters, selectedStatus, selectedSeason, selectedYear, selectedSort]) // 🟢 Adicionado sort na dependência
 
     const fetchRanking = useCallback(async (currentPage: number, replace: boolean) => {
         setLoading(true)
@@ -92,6 +98,7 @@ export default function Rankings() {
         if (selectedStatus) params.set('status', selectedStatus)
         if (selectedSeason) params.set('season', selectedSeason)
         if (selectedSeason && selectedYear) params.set('year', selectedYear)
+        params.append('sort', selectedSort) // 🟢 Aplica a ordenação na API
 
         try {
             const response = await fetch(`/api/ranking?${params.toString()}`)
@@ -104,7 +111,7 @@ export default function Rankings() {
         } finally {
             setLoading(false)
         }
-    }, [selectedFilters, selectedStatus, selectedSeason, selectedYear])
+    }, [selectedFilters, selectedStatus, selectedSeason, selectedYear, selectedSort])
 
     useEffect(() => {
         fetchRanking(page, page === 1)
@@ -138,7 +145,7 @@ export default function Rankings() {
                 })
                 if (!res.ok) throw new Error()
                 const novaEntrada = await res.json()
-                // 🟢 Quando adiciona novo, ele entra como is_favorite: false por padrão
+                
                 setSavedEntries(prev => [...prev, { mal_id: malId, id: novaEntrada.id || novaEntrada[0]?.id, is_favorite: false }])
                 showToast('Adicionado ao Deck', 'success')
             }
@@ -161,6 +168,7 @@ export default function Rankings() {
         setSelectedStatus('')
         setSelectedSeason('')
         setSelectedYear('')
+        setSelectedSort('POPULARITY_DESC') // 🟢 Limpa a ordenação também
     }
 
     return (
@@ -172,25 +180,26 @@ export default function Rankings() {
                     <p className="text-muted text-sm select-none">Direto da base pública da AniList — filtros aplicados no servidor.</p>
                 </div>
 
-                {/* Abas de Navegação Rápida no Ranking */}
                 <div className="flex gap-2 flex-wrap mb-6 select-none border-b border-line pb-4">
                     <button
-                        onClick={() => { setSelectedStatus(''); setSelectedSeason(''); setSelectedYear(''); }}
-                        className={`text-[13px] font-bold px-5 py-2.5 rounded-full border transition-colors cursor-pointer ${selectedStatus === ''
-                                ? 'bg-gradient-to-r from-holo-1 to-holo-2 text-white border-transparent shadow-lg'
-                                : 'bg-panel border-line text-muted hover:border-holo-3 hover:text-text'
-                            }`}
+                        onClick={() => { setSelectedStatus(''); setSelectedSeason(''); setSelectedYear(''); setSelectedSort('POPULARITY_DESC'); }}
+                        className={`text-[13px] font-bold px-5 py-2.5 rounded-full border transition-colors cursor-pointer ${
+                            selectedStatus === '' && selectedSort === 'POPULARITY_DESC'
+                            ? 'bg-gradient-to-r from-holo-1 to-holo-2 text-white border-transparent shadow-lg'
+                            : 'bg-panel border-line text-muted hover:border-holo-3 hover:text-text'
+                        }`}
                     >
                         🏆 Top Global
                     </button>
                     <button
-                        onClick={() => setSelectedStatus('RELEASING')}
-                        className={`text-[13px] font-bold px-5 py-2.5 rounded-full border transition-colors cursor-pointer flex items-center gap-2 ${selectedStatus === 'RELEASING'
-                                ? 'bg-coral/20 border-coral text-coral shadow-[0_0_15px_rgba(255,92,108,0.2)]'
-                                : 'bg-panel border-line text-muted hover:border-coral hover:text-text'
-                            }`}
+                        onClick={() => { setSelectedStatus('RELEASING'); setSelectedSort('TRENDING_DESC'); }}
+                        className={`text-[13px] font-bold px-5 py-2.5 rounded-full border transition-colors cursor-pointer flex items-center gap-2 ${
+                            selectedStatus === 'RELEASING' && selectedSort === 'TRENDING_DESC'
+                            ? 'bg-coral/20 border-coral text-coral shadow-[0_0_15px_rgba(255,92,108,0.2)]'
+                            : 'bg-panel border-line text-muted hover:border-coral hover:text-text'
+                        }`}
                     >
-                        🔥 Temporada Atual
+                        🔥 Em Alta / Temporada
                     </button>
                 </div>
 
@@ -198,8 +207,8 @@ export default function Rankings() {
                     <button
                         onClick={() => setShowFilters(v => !v)}
                         className={`select-none inline-flex items-center gap-2 px-4 py-2 rounded-full border text-sm font-bold transition-all duration-200 cursor-pointer ${showFilters || activeFilterCount > 0
-                            ? 'border-holo-2 text-holo-2 bg-holo-2/10'
-                            : 'border-line text-muted bg-panel hover:border-holo-2 hover:text-holo-2'
+                                ? 'border-holo-2 text-holo-2 bg-holo-2/10'
+                                : 'border-line text-muted bg-panel hover:border-holo-2 hover:text-holo-2'
                             }`}
                     >
                         <SlidersHorizontal size={14} />
@@ -213,16 +222,18 @@ export default function Rankings() {
 
                     {showFilters && (
                         <div className="bg-panel border border-line rounded-2xl p-5 space-y-6">
+                            
+                            {/* 🟢 ORDENAÇÃO */}
                             <div>
-                                <p className="font-mono text-[10px] text-muted-2 tracking-widest mb-3 select-none">// STATUS</p>
+                                <p className="font-mono text-[10px] text-muted-2 tracking-widest mb-3 select-none">// ORDENAR POR</p>
                                 <div className="flex flex-wrap gap-2">
-                                    {STATUS_OPTIONS.map(opt => (
+                                    {SORT_OPTIONS.map(opt => (
                                         <button
                                             key={opt.value}
-                                            onClick={() => setSelectedStatus(selectedStatus === opt.value ? '' : opt.value)}
-                                            className={`select-none px-3 py-1.5 rounded-full text-xs font-bold transition-all duration-150 cursor-pointer ${selectedStatus === opt.value
-                                                ? 'bg-gradient-to-r from-holo-1 to-holo-2 text-void shadow-[0_0_12px_rgba(123,92,255,0.4)]'
-                                                : 'bg-panel-2 border border-line text-muted hover:border-holo-2 hover:text-text'
+                                            onClick={() => setSelectedSort(opt.value)}
+                                            className={`select-none px-3 py-1.5 rounded-full text-xs font-bold transition-all duration-150 cursor-pointer ${selectedSort === opt.value
+                                                    ? 'bg-gold/20 border-gold/40 text-gold shadow-[0_0_12px_rgba(255,197,66,0.3)]'
+                                                    : 'bg-panel-2 border border-line text-muted hover:border-gold hover:text-text'
                                                 }`}
                                         >
                                             {opt.label}
@@ -231,31 +242,57 @@ export default function Rankings() {
                                 </div>
                             </div>
 
+                            {/* 🟢 STATUS */}
                             <div>
-                                <p className="font-mono text-[10px] text-muted-2 tracking-widest mb-3 select-none">// TEMPORADA</p>
+                                <p className="font-mono text-[10px] text-muted-2 tracking-widest mb-3 select-none">// STATUS</p>
+                                <div className="flex flex-wrap gap-2">
+                                    {STATUS_OPTIONS.map(opt => (
+                                        <button
+                                            key={opt.value}
+                                            onClick={() => setSelectedStatus(selectedStatus === opt.value ? '' : opt.value)}
+                                            className={`select-none px-3 py-1.5 rounded-full text-xs font-bold transition-all duration-150 cursor-pointer ${selectedStatus === opt.value
+                                                    ? 'bg-gradient-to-r from-holo-1 to-holo-2 text-void shadow-[0_0_12px_rgba(123,92,255,0.4)]'
+                                                    : 'bg-panel-2 border border-line text-muted hover:border-holo-2 hover:text-text'
+                                                }`}
+                                        >
+                                            {opt.label}
+                                        </button>
+                                    ))}
+                                </div>
+                            </div>
+
+                            {/* 🟢 TEMPORADA E ANO (Implementado Ponto 7.1) */}
+                            <div>
+                                <p className="font-mono text-[10px] text-muted-2 tracking-widest mb-3 select-none">// TEMPORADA E ANO</p>
                                 <div className="flex flex-wrap gap-2 mb-3">
                                     {SEASON_OPTIONS.map(opt => (
                                         <button
                                             key={opt.value}
-                                            onClick={() => setSelectedSeason(selectedSeason === opt.value ? '' : opt.value)}
+                                            onClick={() => {
+                                                setSelectedSeason(selectedSeason === opt.value ? '' : opt.value);
+                                                if (selectedSeason === opt.value) setSelectedYear(''); // Reseta ano se desmarcar temporada
+                                            }}
                                             className={`select-none px-3 py-1.5 rounded-full text-xs font-bold transition-all duration-150 cursor-pointer ${selectedSeason === opt.value
-                                                ? 'bg-gradient-to-r from-holo-1 to-holo-2 text-void shadow-[0_0_12px_rgba(123,92,255,0.4)]'
-                                                : 'bg-panel-2 border border-line text-muted hover:border-holo-2 hover:text-text'
+                                                    ? 'bg-gradient-to-r from-holo-1 to-holo-2 text-void shadow-[0_0_12px_rgba(123,92,255,0.4)]'
+                                                    : 'bg-panel-2 border border-line text-muted hover:border-holo-2 hover:text-text'
                                                 }`}
                                         >
                                             {opt.emoji} {opt.label}
                                         </button>
                                     ))}
                                 </div>
+                                
+                                {/* Anos só aparecem se uma temporada for escolhida */}
                                 {selectedSeason && (
-                                    <div className="flex flex-wrap gap-2">
+                                    <div className="flex flex-wrap gap-2 p-3 bg-panel-2 border border-line rounded-xl">
+                                        <span className="text-[11px] font-bold text-muted uppercase w-full mb-1">Selecione o Ano:</span>
                                         {YEAR_OPTIONS.map(y => (
                                             <button
                                                 key={y}
                                                 onClick={() => setSelectedYear(selectedYear === String(y) ? '' : String(y))}
                                                 className={`select-none px-3 py-1.5 rounded-full text-xs font-bold transition-all duration-150 cursor-pointer ${selectedYear === String(y)
-                                                    ? 'bg-holo-3/20 border border-holo-3 text-holo-3'
-                                                    : 'bg-panel-2 border border-line text-muted hover:border-holo-3 hover:text-text'
+                                                        ? 'bg-holo-3/20 border border-holo-3/50 text-holo-3'
+                                                        : 'bg-panel border border-line text-muted hover:border-holo-3 hover:text-text'
                                                     }`}
                                             >
                                                 {y}
@@ -265,8 +302,9 @@ export default function Rankings() {
                                 )}
                             </div>
 
+                            {/* 🟢 CATEGORIAS */}
                             <div>
-                                <p className="font-mono text-[10px] text-muted-2 tracking-widest mb-3 select-none">// CATEGORIA</p>
+                                <p className="font-mono text-[10px] text-muted-2 tracking-widest mb-3 select-none">// GÊNEROS E TAGS</p>
                                 <div className="flex flex-wrap gap-2">
                                     {CONTENT_FILTERS.map(f => {
                                         const isActive = selectedFilters.some(x => x.value === f.value)
@@ -275,8 +313,8 @@ export default function Rankings() {
                                                 key={`${f.type}-${f.value}`}
                                                 onClick={() => toggleFilter(f)}
                                                 className={`select-none px-3 py-1.5 rounded-full text-xs font-bold transition-all duration-150 cursor-pointer border ${isActive
-                                                    ? `${getCategoryTheme(f.label)} shadow-[0_0_10px_currentColor]`
-                                                    : 'bg-panel-2 border-line text-muted hover:border-holo-2 hover:text-text'
+                                                        ? `${getCategoryTheme(f.label)} shadow-[0_0_10px_currentColor]`
+                                                        : 'bg-panel-2 border-line text-muted hover:border-holo-2 hover:text-text'
                                                     }`}
                                             >
                                                 {f.label}
@@ -287,9 +325,11 @@ export default function Rankings() {
                             </div>
 
                             {activeFilterCount > 0 && (
-                                <button onClick={clearFilters} className="select-none flex items-center gap-1.5 text-coral text-xs font-bold hover:opacity-80 transition-opacity cursor-pointer">
-                                    <X size={12} /> Limpar filtros
-                                </button>
+                                <div className="pt-4 border-t border-line flex justify-end">
+                                    <button onClick={clearFilters} className="select-none flex items-center gap-1.5 text-coral text-xs font-bold hover:opacity-80 transition-opacity cursor-pointer">
+                                        <X size={14} /> Limpar todos os filtros
+                                    </button>
+                                </div>
                             )}
                         </div>
                     )}
@@ -307,28 +347,29 @@ export default function Rankings() {
                         const isFoil = savedEntry?.is_favorite
 
                         return (
-                            <Link
+                           <Link
                                 to={`/anime/${anime.mal_id}`}
                                 key={`${anime.mal_id}-${index}`}
-                                className={`relative overflow-hidden grid grid-cols-[24px_44px_1fr_auto_auto] md:grid-cols-[36px_56px_1fr_auto_auto] gap-2 md:gap-4 items-center p-3 rounded-xl transition-colors group ${isFoil
-                                        ? 'foil-card border border-gold/50 shadow-[0_0_15px_rgba(255,197,66,0.15)]'
+                                className={`relative overflow-hidden grid grid-cols-[24px_44px_1fr_auto_auto] md:grid-cols-[36px_56px_1fr_auto_auto] gap-2 md:gap-4 items-center p-3 rounded-xl transition-colors group ${
+                                    isFoil 
+                                        ? 'foil-card border border-gold/50 shadow-[0_0_15px_rgba(255,197,66,0.15)]' 
                                         : 'bg-panel border border-line hover:border-holo-2'
-                                    }`}
+                                }`}
                             >
                                 <span className={`relative z-30 font-anton text-lg md:text-xl text-center select-none ${rankColor}`}>
                                     {rank < 10 ? `0${rank}` : rank}
                                 </span>
-
+                                
                                 <img src={anime.images?.jpg?.image_url} alt={anime.title} className="relative z-30 w-11 h-11 md:w-14 md:h-14 rounded-lg object-cover bg-panel-2 border border-line" />
-
+                                
                                 <div className="relative z-30 min-w-0">
                                     <div className="flex items-center gap-2 mb-1.5">
                                         <div className="font-bold text-sm md:text-[14.5px] truncate">
                                             {isFoil && <span className="text-gold mr-1" title="Favorito">👑</span>}
                                             {anime.title}
                                         </div>
-                                        <BotaoCopiar
-                                            texto={anime.title}
+                                        <BotaoCopiar 
+                                            texto={anime.title} 
                                             className="opacity-70 md:opacity-0 group-hover:opacity-100 transition-opacity relative z-40 shrink-0"
                                         />
                                     </div>
@@ -341,19 +382,20 @@ export default function Rankings() {
                                         <span className="select-none">{anime.status} • {anime.episodes || '?'} EP</span>
                                     </div>
                                 </div>
-
+                                
                                 <div className="relative z-30 text-right select-none">
                                     <div className="font-anton text-sm md:text-base text-gold">★ {anime.score || 'N/A'}</div>
                                     <span className="font-mono text-[9px] text-muted-2 hidden md:block">NOTA</span>
                                 </div>
-
-                                <button
-                                    onClick={(e) => handleSalvar(e, anime.mal_id)}
+                                
+                                <button 
+                                    onClick={(e) => handleSalvar(e, anime.mal_id)} 
                                     disabled={savingIds.includes(anime.mal_id)}
-                                    className={`relative z-30 flex w-8 h-8 rounded-full border-[1.5px] items-center justify-center font-bold text-lg transition-colors select-none ${savedEntry
+                                    className={`relative z-30 flex w-8 h-8 rounded-full border-[1.5px] items-center justify-center font-bold text-lg transition-colors select-none ${
+                                        savedEntry
                                             ? 'bg-green/20 border-green text-green cursor-pointer hover:bg-coral/20 hover:border-coral hover:text-coral'
                                             : 'border-line bg-transparent text-muted group-hover:border-holo-3 group-hover:text-holo-3 cursor-pointer'
-                                        }`}
+                                    }`}
                                 >
                                     {savingIds.includes(anime.mal_id) ? (
                                         <div className="w-3 h-3 border-2 border-current border-t-transparent rounded-full animate-spin"></div>
@@ -374,7 +416,7 @@ export default function Rankings() {
                 {loading && (
                     <div className="py-10 text-center">
                         <div className="inline-block w-8 h-8 rounded-full border-4 border-line border-t-holo-3 animate-spin mb-2"></div>
-                        <p className="font-mono text-muted text-xs tracking-widest select-none">// CARREGANDO...</p>
+                        <p className="font-mono text-muted text-xs tracking-widest select-none">// CARREGANDO DADOS...</p>
                     </div>
                 )}
 

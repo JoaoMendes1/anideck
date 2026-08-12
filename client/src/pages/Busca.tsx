@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useToast } from '../contexts/ToastContext'
 import { Link, useNavigate } from 'react-router-dom'
-import { Search, AlertCircle, SlidersHorizontal, X, Check, Star } from 'lucide-react'
+import { Search, AlertCircle, SlidersHorizontal, X, Check } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import {
     CONTENT_FILTERS, STATUS_OPTIONS, SEASON_OPTIONS,
@@ -250,6 +250,7 @@ export default function Busca() {
                     🔥 Em Lançamento
                 </button>
 
+                {/* Filtros Rápidos - Agora com suporte nativo as Tags graças a atualização em filters.ts */}
                 {['Ação', 'Romance', 'Comédia', 'Fantasia', 'Isekai'].map(cat => {
                     const filterObj = CONTENT_FILTERS.find(f => f.label === cat)
                     if (!filterObj) return null;
@@ -316,7 +317,7 @@ export default function Busca() {
                     </div>
 
                     <div>
-                        <p className="font-mono text-[10px] text-muted-2 tracking-widest mb-3 select-none">ORDENAR POR</p>
+                        <p className="font-mono text-[10px] text-muted-2 tracking-widest mb-3 select-none">// ORDENAR POR</p>
                         <div className="flex flex-wrap gap-2">
                             {SORT_OPTIONS.map(opt => (
                                 <button
@@ -334,7 +335,7 @@ export default function Busca() {
                     </div>
 
                     <div>
-                        <p className="font-mono text-[10px] text-muted-2 tracking-widest mb-3 select-none">STATUS DE LANÇAMENTO</p>
+                        <p className="font-mono text-[10px] text-muted-2 tracking-widest mb-3 select-none">// STATUS DE LANÇAMENTO</p>
                         <div className="flex flex-wrap gap-2">
                             {STATUS_OPTIONS.map(opt => (
                                 <button
@@ -352,41 +353,60 @@ export default function Busca() {
                     </div>
 
                     <div>
-                        <p className="font-mono text-[10px] text-muted-2 tracking-widest mb-3 select-none">TEMPORADA E ANO</p>
-                        <div className="flex flex-wrap gap-2 mb-3">
-                            {SEASON_OPTIONS.map(opt => (
-                                <button
-                                    key={opt.value}
-                                    onClick={() => { setSelectedSeason(selectedSeason === opt.value ? '' : opt.value); setPage(1); }}
-                                    className={`px-3 py-1.5 rounded-full text-xs font-bold transition-all duration-150 cursor-pointer ${selectedSeason === opt.value
-                                            ? 'bg-gradient-to-r from-holo-1 to-holo-2 text-void shadow-[0_0_12px_rgba(123,92,255,0.4)]'
-                                            : 'bg-panel-2 border border-line text-muted hover:border-holo-2 hover:text-text'
-                                        }`}
-                                >
-                                    {opt.emoji} {opt.label}
-                                </button>
-                            ))}
-                        </div>
-                        {selectedSeason && (
+                        <p className="font-mono text-[10px] text-muted-2 tracking-widest mb-3 select-none">// TEMPORADA E ANO</p>
+                        <div className="flex flex-col gap-3">
                             <div className="flex flex-wrap gap-2">
+                                {SEASON_OPTIONS.map(opt => (
+                                    <button
+                                        key={opt.value}
+                                        onClick={() => { 
+                                            setSelectedSeason(selectedSeason === opt.value ? '' : opt.value); 
+                                            if (selectedSeason === opt.value) setSelectedYear('');
+                                            setPage(1); 
+                                        }}
+                                        className={`px-3 py-1.5 rounded-full text-xs font-bold transition-all duration-150 cursor-pointer ${selectedSeason === opt.value
+                                                ? 'bg-gradient-to-r from-holo-1 to-holo-2 text-void shadow-[0_0_12px_rgba(123,92,255,0.4)]'
+                                                : 'bg-panel-2 border border-line text-muted hover:border-holo-2 hover:text-text'
+                                            }`}
+                                    >
+                                        {opt.emoji} {opt.label}
+                                    </button>
+                                ))}
+                            </div>
+                            
+                            {/* Selecionador de Anos sempre visível, mas valida se há temporada escolhida */}
+                            <div className="flex flex-wrap gap-2 p-3 bg-panel-2 border border-line rounded-xl">
+                                <span className="text-[11px] font-bold text-muted uppercase w-full mb-1">
+                                    Selecione o Ano {selectedSeason ? '' : '(Escolha uma temporada primeiro)'}:
+                                </span>
                                 {YEAR_OPTIONS.map(y => (
                                     <button
                                         key={y}
-                                        onClick={() => { setSelectedYear(selectedYear === String(y) ? '' : String(y)); setPage(1); }}
-                                        className={`px-3 py-1.5 rounded-full text-xs font-bold transition-all duration-150 cursor-pointer ${selectedYear === String(y)
-                                                ? 'bg-holo-3/20 border border-holo-3 text-holo-3'
-                                                : 'bg-panel-2 border border-line text-muted hover:border-holo-3 hover:text-text'
+                                        onClick={() => { 
+                                            if (selectedSeason) {
+                                                setSelectedYear(selectedYear === String(y) ? '' : String(y)); 
+                                                setPage(1); 
+                                            } else {
+                                                showToast('Por favor, selecione uma temporada (Inverno, Primavera...) antes de escolher o ano.', 'error');
+                                            }
+                                        }}
+                                        className={`px-3 py-1.5 rounded-full text-xs font-bold transition-all duration-150 border ${
+                                            !selectedSeason 
+                                            ? 'bg-panel border-line text-muted/50 cursor-not-allowed'
+                                            : selectedYear === String(y)
+                                                ? 'bg-holo-3/20 border-holo-3/50 text-holo-3 cursor-pointer'
+                                                : 'bg-panel border-line text-muted hover:border-holo-3 hover:text-text cursor-pointer'
                                             }`}
                                     >
                                         {y}
                                     </button>
                                 ))}
                             </div>
-                        )}
+                        </div>
                     </div>
 
                     <div>
-                        <p className="font-mono text-[10px] text-muted-2 tracking-widest mb-3 select-none">GÊNEROS E TAGS</p>
+                        <p className="font-mono text-[10px] text-muted-2 tracking-widest mb-3 select-none">// GÊNEROS E TAGS</p>
                         <div className="flex flex-wrap gap-2">
                             {CONTENT_FILTERS.map(f => {
                                 const isActive = selectedFilters.some(x => x.value === f.value)
@@ -407,19 +427,21 @@ export default function Busca() {
                     </div>
 
                     {activeFilterCount > 0 && (
-                        <button onClick={clearFilters} className="flex items-center gap-1.5 text-coral text-xs font-bold hover:opacity-80 cursor-pointer">
-                            <X size={12} /> Limpar todos os filtros
-                        </button>
+                        <div className="pt-4 border-t border-line flex justify-end">
+                            <button onClick={clearFilters} className="flex items-center gap-1.5 text-coral text-xs font-bold hover:opacity-80 cursor-pointer">
+                                <X size={12} /> Limpar todos os filtros
+                            </button>
+                        </div>
                     )}
                 </div>
             </div>
 
             {loading && page === 1 && (
                 <>
-                    <p className="font-mono text-xs text-holo-3 tracking-widest mb-4 select-none">CARREGANDO CATÁLOGO...</p>
-                    <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-4">
-                        {[1, 2, 3, 4, 5, 6, 7, 8].map(n => (
-                            <div key={n} className="aspect-[2/3] rounded-xl shimmer border border-line" />
+                    <p className="font-mono text-xs text-holo-3 tracking-widest mb-4 select-none">// CARREGANDO CATÁLOGO...</p>
+                    <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-3 md:gap-4">
+                        {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map(n => (
+                            <div key={n} className="aspect-[3/4.2] rounded-[14px] shimmer border border-line" />
                         ))}
                     </div>
                 </>
@@ -435,8 +457,8 @@ export default function Busca() {
 
             {!error && hasSearched && resultados.length > 0 && (
                 <>
-                    {page === 1 && <p className="font-mono text-xs text-holo-3 tracking-widest mb-4 select-none">RESULTADOS DA BUSCA</p>}
-                    <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-4">
+                    {page === 1 && <p className="font-mono text-xs text-holo-3 tracking-widest mb-4 select-none">// RESULTADOS DA BUSCA</p>}
+                    <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-3 md:gap-4">
                         {resultados.map((anime, index) => {
                             const gradClass = `card-g${(index % 5) + 1}`
                             const savedEntry = savedEntries.find(e => e.mal_id === anime.mal_id)
@@ -447,26 +469,28 @@ export default function Busca() {
                                 <Link 
                                     to={`/anime/${anime.mal_id}`} 
                                     key={`${anime.mal_id}-${index}`} 
-                                    className={`relative aspect-[2/3] rounded-xl overflow-hidden border flex flex-col justify-end p-3 group block transition-transform hover:-translate-y-1 ${
-                                        isFoil ? 'foil-card border-gold/50 shadow-[0_0_15px_rgba(255,197,66,0.15)]' : `border-line ${gradClass}`
+                                    className={`relative aspect-[3/4.2] rounded-[14px] overflow-hidden border flex flex-col justify-end p-3 group block transition-transform hover:-translate-y-1 ${
+                                        isFoil ? 'foil-card border-gold/50 shadow-[0_0_15px_rgba(255,197,66,0.15)]' : `border-line bg-panel ${gradClass}`
                                     }`}
                                 >
                                     {anime.images?.jpg?.image_url && (
-                                        <img src={anime.images.jpg.image_url} alt={anime.title} className="absolute inset-0 w-full h-full object-cover z-0 group-hover:scale-105 transition-transform duration-500 opacity-80" />
+                                        <img src={anime.images.jpg.image_url} alt={anime.title} className="absolute inset-0 w-full h-full object-cover z-0 group-hover:scale-105 transition-transform duration-500 opacity-90" />
                                     )}
-                                    <div className="absolute inset-0 bg-gradient-to-t from-void/95 via-void/40 to-transparent z-10" />
+                                    <div className="absolute inset-0 bg-gradient-to-t from-void via-void/70 to-transparent z-10 opacity-90" />
                                     
-                                    <span className={`absolute top-2.5 left-2.5 z-20 text-[9px] md:text-[9.5px] font-extrabold px-2 py-1 rounded-full uppercase tracking-wider backdrop-blur-md border bg-void/50 text-holo-3 border-holo-3/50 drop-shadow-[0_1px_3px_rgba(0,0,0,1)] select-none`}>
-                                        {traduzirStatus(anime.status)}
-                                    </span>
+                                    <div className="absolute top-3 left-3 z-20">
+                                        <span className="text-[9px] md:text-[9.5px] font-extrabold px-2 py-1 rounded-md uppercase tracking-wider backdrop-blur-md border bg-void/70 text-holo-3 border-holo-3/50 drop-shadow-[0_1px_3px_rgba(0,0,0,1)] select-none">
+                                            {traduzirStatus(anime.status)}
+                                        </span>
+                                    </div>
 
                                     <button 
                                         onClick={(e) => handleSalvar(e, anime.mal_id)} 
                                         disabled={savingIds.includes(anime.mal_id)}
-                                        className={`absolute top-2.5 right-2.5 w-8 h-8 rounded-full border-[1.5px] flex items-center justify-center font-bold backdrop-blur-sm transition-all z-30 select-none shadow-lg ${
+                                        className={`absolute top-3 right-3 w-8 h-8 rounded-full border-[1.5px] flex items-center justify-center font-bold backdrop-blur-md transition-all z-30 select-none shadow-lg ${
                                             isSaved
                                                 ? 'bg-green/20 border-green text-green hover:bg-coral/20 hover:border-coral hover:text-coral cursor-pointer'
-                                                : 'bg-void/70 border-white/40 text-white hover:bg-gradient-to-r hover:from-holo-1 hover:to-holo-2 hover:border-transparent cursor-pointer'
+                                                : 'bg-void/80 border-white/40 text-white hover:bg-gradient-to-r hover:from-holo-1 hover:to-holo-2 hover:border-transparent cursor-pointer opacity-80 md:opacity-0 group-hover:opacity-100'
                                         }`}
                                     >
                                         {savingIds.includes(anime.mal_id) ? (
@@ -481,25 +505,25 @@ export default function Busca() {
                                         )}
                                     </button>
                                     
-                                    <div className="relative z-20 mt-auto flex flex-col pointer-events-none select-none w-full min-h-[75px] justify-end">
-                                        <div className="font-anton text-[13px] md:text-[14px] leading-tight mb-2 drop-shadow-md text-white overflow-hidden text-ellipsis line-clamp-2 break-words" title={anime.title}>
-                                            {isFoil && <span className="text-gold mr-1" title="Favorito">👑</span>}
+                                    <div className="relative z-20 mt-auto flex flex-col pointer-events-none select-none w-full justify-end">
+                                        {/* CORREÇÃO AQUI: Remoção do min-h-[36px] para assentar o texto */}
+                                        <h3 className="font-anton text-[13px] md:text-[14px] uppercase leading-tight mb-1.5 drop-shadow-md text-white line-clamp-2 break-words" title={anime.title}>
+                                            {isFoil && <span className="text-gold mr-1 inline-block -translate-y-[1px]" title="Favorito">👑</span>}
                                             {anime.title}
-                                        </div>
+                                        </h3>
 
-                                        <div className="flex flex-wrap justify-between items-end gap-1.5 mt-auto">
-                                            <div className="flex flex-col gap-1 shrink-0 max-w-[50%]">
+                                        <div className="flex justify-between items-end gap-2">
+                                            <div className="flex-1 min-w-0 flex flex-col gap-1">
                                                 {anime.genres?.slice(0, 1).map(g => (
-                                                    <span key={g.name} className={`backdrop-blur-sm border text-[9px] px-1.5 py-0.5 rounded font-bold truncate max-w-full ${getCategoryTheme(g.name)}`}>
+                                                    <span key={g.name} className={`inline-block text-[9px] font-bold px-1.5 py-0.5 rounded border backdrop-blur-sm truncate max-w-full ${getCategoryTheme(g.name)}`}>
                                                         {g.name}
                                                     </span>
                                                 ))}
                                             </div>
 
-                                            <div className="flex flex-wrap items-center justify-end gap-1.5 shrink-0 max-w-[100%] ml-auto pt-1">
-                                                <div className="flex items-center gap-1">
-                                                    <Star className="text-gold fill-gold" size={10} />
-                                                    <span className="font-anton text-[11px] sm:text-[12px] text-gold">{anime.score || 'N/A'}</span>
+                                            <div className="flex items-center justify-end gap-1.5 shrink-0">
+                                                <div className={`font-anton text-[11px] sm:text-[12px] px-1.5 py-0.5 rounded-md backdrop-blur-sm border ${anime.score ? 'bg-gold/20 text-gold border-gold/40 shadow-[0_0_8px_rgba(255,197,66,0.3)]' : 'bg-panel-2/80 text-muted-2 border-line'}`}>
+                                                    {anime.score ? `★ ${anime.score}` : 'S/N'}
                                                 </div>
                                                 <span className="font-mono text-[9px] text-muted-2 font-bold uppercase tracking-wider ml-1">
                                                     {anime.episodes ? `${anime.episodes} EP` : '? EP'}

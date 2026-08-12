@@ -12,12 +12,14 @@ interface AnimeDetail {
   synopsis: string
   episodes: number
   score: number
+  bannerImage?: string
   images: { jpg: { image_url: string } }
   genres: { name: string }[]
   studios: { name: string }[]
   streaming: { name: string; url: string }[]
   theme: { openings: string[]; endings: string[] }
   relations: { relation: string; entry: { mal_id: number; type: string; name: string }[] }[]
+  characters?: { id: number; name: string; image: string; role: string }[]
 }
 
 interface AnimeStats {
@@ -52,7 +54,7 @@ export default function Detalhes() {
   const [statusInput, setStatusInput] = useState<string>('Quero Assistir')
   const [notaInput, setNotaInput] = useState<string>('')
   const [anotacaoInput, setAnotacaoInput] = useState<string>('')
-  const [isFavorite, setIsFavorite] = useState(false) // 🟢 NOVO ESTADO AQUI
+  const [isFavorite, setIsFavorite] = useState(false)
 
   useEffect(() => {
     const fetchData = async () => {
@@ -86,7 +88,7 @@ export default function Detalhes() {
               setStatusInput(entrada.status)
               setNotaInput(entrada.nota !== null && entrada.nota !== undefined ? entrada.nota.toString() : '')
               setAnotacaoInput(entrada.anotacao || '')
-              setIsFavorite(entrada.is_favorite || false) // 🟢 Puxa do banco
+              setIsFavorite(entrada.is_favorite || false)
             }
           }
         }
@@ -118,7 +120,7 @@ export default function Detalhes() {
       status: statusFinal,
       nota: Number.isNaN(notaFinal) ? null : notaFinal,
       anotacao: anotacaoInput,
-      is_favorite: isFavorite // 🟢 SALVANDO NO BANCO
+      is_favorite: isFavorite
     }
 
     try {
@@ -173,7 +175,7 @@ export default function Detalhes() {
       setStatusInput('Quero Assistir')
       setNotaInput('')
       setAnotacaoInput('')
-      setIsFavorite(false) // 🟢 Zera na remoção
+      setIsFavorite(false)
       showToast('Anime removido do seu Deck.', 'success')
     } catch {
       showToast('Erro ao remover do Deck. Tente novamente.', 'error')
@@ -217,13 +219,27 @@ export default function Detalhes() {
   return (
     <div className="-mt-24 pb-20">
 
-      <div className="relative h-[220px] overflow-hidden bg-gradient-to-br from-[#3a1a4a] to-[#0A0714] after:content-[''] after:absolute after:inset-0 after:bg-gradient-to-t after:from-void after:to-transparent" />
+      {/* HERO BANNER AUMENTADO COM PROTEÇÃO DE CONTRASTE */}
+      <div className="relative h-[300px] md:h-[450px] w-full overflow-hidden bg-panel-2">
+        {anime.bannerImage ? (
+          <div 
+            className="absolute inset-0 bg-cover bg-center bg-no-repeat opacity-90"
+            style={{ backgroundImage: `url(${anime.bannerImage})` }}
+          />
+        ) : (
+          <div className="absolute inset-0 bg-gradient-to-br from-[#3a1a4a] to-[#0A0714]" />
+        )}
+        {/* Degradê superior forte para proteger a legibilidade da Navbar */}
+        <div className="absolute top-0 left-0 right-0 h-36 bg-gradient-to-b from-void/95 via-void/60 to-transparent z-10" />
+        {/* Degradê inferior para suavizar a transição pro corpo da página */}
+        <div className="absolute inset-0 bg-gradient-to-t from-void via-void/40 to-transparent z-10" />
+      </div>
 
-      <div className="max-w-[1040px] mx-auto px-5 -mt-[90px] relative z-20 pb-2">
+      {/* Margens negativas ajustadas para o novo tamanho do banner */}
+      <div className="max-w-[1040px] mx-auto px-5 -mt-[120px] md:-mt-[160px] relative z-20 pb-2">
 
         <div className="flex flex-col sm:flex-row gap-5 sm:items-end mb-8 text-center sm:text-left items-center">
           <div className="relative">
-            {/* COROA DE FAVORITO GIGANTE SE ATIVO */}
             {isFavorite && (
               <div className="absolute -top-4 -right-4 w-10 h-10 bg-void/80 border border-gold/50 rounded-full flex items-center justify-center text-xl shadow-[0_0_15px_rgba(255,197,66,0.4)] z-30">
                 👑
@@ -232,7 +248,7 @@ export default function Detalhes() {
             <img
               src={anime.images?.jpg?.image_url}
               alt={`Poster de ${anime.title}`}
-              className={`w-[140px] h-[198px] rounded-xl shadow-[0_15px_30px_-10px_rgba(0,0,0,0.8)] border-[3px] shrink-0 object-cover bg-panel-2 transition-colors ${isFavorite ? 'border-gold' : 'border-panel'}`}
+              className={`w-[140px] md:w-[170px] h-[198px] md:h-[240px] rounded-xl shadow-[0_15px_30px_-10px_rgba(0,0,0,0.8)] border-[3px] shrink-0 object-cover bg-panel-2 transition-colors ${isFavorite ? 'border-gold' : 'border-panel'}`}
             />
           </div>
 
@@ -294,6 +310,9 @@ export default function Detalhes() {
         <div className="sticky top-[63px] md:top-[73px] z-40 bg-void/95 backdrop-blur-sm border-b border-line overflow-x-auto whitespace-nowrap py-3 mb-8 scrollbar-hide">
           <div className="flex gap-2.5">
             <a href="#visao-geral" className="select-none text-[13px] font-bold text-muted hover:text-text hover:border-holo-3 px-3.5 py-1.5 rounded-full border border-line transition-colors">Visão Geral</a>
+            {anime.characters && anime.characters.length > 0 && (
+              <a href="#personagens" className="select-none text-[13px] font-bold text-muted hover:text-text hover:border-holo-3 px-3.5 py-1.5 rounded-full border border-line transition-colors">Personagens</a>
+            )}
             <a href="#onde-assistir" className="select-none text-[13px] font-bold text-muted hover:text-text hover:border-holo-3 px-3.5 py-1.5 rounded-full border border-line transition-colors">Onde Assistir</a>
             <a href="#estatisticas" className="select-none text-[13px] font-bold text-muted hover:text-text hover:border-holo-3 px-3.5 py-1.5 rounded-full border border-line transition-colors">Estatísticas</a>
             <a href="#relacionados" className="select-none text-[13px] font-bold text-muted hover:text-text hover:border-holo-3 px-3.5 py-1.5 rounded-full border border-line transition-colors">Relacionados</a>
@@ -318,7 +337,6 @@ export default function Detalhes() {
         )}
 
         <div className="grid grid-cols-1 lg:grid-cols-[1fr_320px] gap-10" id="visao-geral">
-          {/* Adicionado min-w-0 para evitar grid blowout com o overflow-x-auto dos carrosseis */}
           <div className="space-y-10 min-w-0">
 
             <section>
@@ -336,7 +354,6 @@ export default function Detalhes() {
                   <span className="font-mono text-[11px] text-holo-3">02</span> Sua Avaliação
                 </h2>
 
-                {/* 🟢 BOTÃO DE CORAÇÃO AQUI NA SESSÃO */}
                 <button
                   type="button"
                   onClick={() => setIsFavorite(!isFavorite)}
@@ -431,10 +448,29 @@ export default function Detalhes() {
               </div>
             </section>
 
+            {anime.characters && anime.characters.length > 0 && (
+              <section id="personagens">
+                <h2 className="font-anton text-base uppercase mb-4 flex items-center gap-2 select-none">
+                  <span className="font-mono text-[11px] text-holo-3">03</span> Personagens
+                </h2>
+                <div className="flex gap-4 overflow-x-auto pb-4 scrollbar-hide snap-x">
+                  {anime.characters.map(char => (
+                    <div key={char.id} className="flex-none w-[110px] sm:w-[130px] snap-start group">
+                      <div className="aspect-[3/4] rounded-xl overflow-hidden mb-2 bg-panel-2 border border-line">
+                         <img src={char.image} alt={char.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
+                      </div>
+                      <div className="font-bold text-[12px] md:text-[13px] leading-tight truncate text-text group-hover:text-holo-3 transition-colors">{char.name}</div>
+                      <div className="font-mono text-[9px] text-muted uppercase tracking-wider truncate mt-0.5">{char.role}</div>
+                    </div>
+                  ))}
+                </div>
+              </section>
+            )}
+
             {anime.streaming?.length > 0 && (
               <section id="onde-assistir">
                 <h2 className="font-anton text-base uppercase mb-4 flex items-center gap-2 select-none">
-                  <span className="font-mono text-[11px] text-holo-3">03</span> Onde Assistir Oficial
+                  <span className="font-mono text-[11px] text-holo-3">04</span> Onde Assistir Oficial
                 </h2>
                 <div className="flex flex-wrap gap-3">
                   {anime.streaming.map(st => (
@@ -450,7 +486,7 @@ export default function Detalhes() {
             {(anime.theme?.openings?.length > 0 || anime.theme?.endings?.length > 0) && (
               <section>
                 <h2 className="font-anton text-base uppercase mb-4 flex items-center gap-2 select-none">
-                  <span className="font-mono text-[11px] text-holo-3">04</span> Temas Musicais
+                  <span className="font-mono text-[11px] text-holo-3">05</span> Temas Musicais
                 </h2>
                 <div className="flex flex-col gap-2">
                   {anime.theme?.openings?.slice(0, 3).map((op, i) => (
@@ -472,7 +508,7 @@ export default function Detalhes() {
             {anime.relations?.length > 0 && (
               <section id="relacionados">
                 <h2 className="font-anton text-base uppercase mb-4 flex items-center gap-2 select-none">
-                  <span className="font-mono text-[11px] text-holo-3">05</span> Títulos Relacionados
+                  <span className="font-mono text-[11px] text-holo-3">06</span> Títulos Relacionados
                 </h2>
                 <div className="flex gap-4 overflow-x-auto pb-4 scrollbar-hide">
                   {anime.relations.map((rel, i) => (
@@ -488,7 +524,6 @@ export default function Detalhes() {
             )}
           </div>
 
-          {/* Adicionado min-w-0 também na coluna direita para consistência na responsividade */}
           <div className="space-y-10 min-w-0" id="estatisticas">
 
             {minhaEntrada && (

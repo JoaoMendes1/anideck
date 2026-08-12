@@ -5,7 +5,7 @@ export interface FilterItem {
 }
 
 export const CONTENT_FILTERS: FilterItem[] = [
-    // ── Gêneros (genre_in na AniList) ─────────────────────────────────────
+    // Gêneros Oficiais (AniList)
     { label: 'Ação',              value: 'Action',        type: 'genre' },
     { label: 'Aventura',          value: 'Adventure',     type: 'genre' },
     { label: 'Comédia',           value: 'Comedy',        type: 'genre' },
@@ -13,7 +13,6 @@ export const CONTENT_FILTERS: FilterItem[] = [
     { label: 'Ecchi',             value: 'Ecchi',         type: 'genre' },
     { label: 'Fantasia',          value: 'Fantasy',       type: 'genre' },
     { label: 'Horror',            value: 'Horror',        type: 'genre' },
-    { label: 'Isekai',            value: 'Isekai',        type: 'genre' },
     { label: 'Mecha',             value: 'Mecha',         type: 'genre' },
     { label: 'Mistério',          value: 'Mystery',       type: 'genre' },
     { label: 'Musical',           value: 'Music',         type: 'genre' },
@@ -25,15 +24,14 @@ export const CONTENT_FILTERS: FilterItem[] = [
     { label: 'Sobrenatural',      value: 'Supernatural',  type: 'genre' },
     { label: 'Suspense',          value: 'Thriller',      type: 'genre' },
 
-    // ── Tags (tag_in na AniList) ───────────────────────────────────────────
-    // Tags são categorias mais granulares que a AniList trata separadamente dos gêneros.
-    // Todos os valores abaixo foram verificados contra a MediaTagCollection da API.
+    // Tags Populares
+    { label: 'Isekai',          value: 'Isekai',        type: 'tag' },
     { label: 'Artes Marciais',  value: 'Martial Arts',  type: 'tag' },
     { label: 'Boys Love',       value: "Boys' Love",    type: 'tag' },
     { label: 'Demônios',        value: 'Demons',        type: 'tag' },
     { label: 'Escolar',         value: 'School',        type: 'tag' },
-    { label: 'Harém (ela)',     value: 'Female Harem',  type: 'tag' }, // protagonista masculino + grupo feminino
-    { label: 'Harém (ele)',     value: 'Male Harem',    type: 'tag' }, // protagonista feminino + grupo masculino
+    { label: 'Harém (ela)',     value: 'Female Harem',  type: 'tag' }, 
+    { label: 'Harém (ele)',     value: 'Male Harem',    type: 'tag' }, 
     { label: 'Histórico',       value: 'Historical',    type: 'tag' },
     { label: 'Jogo',            value: 'Video Games',   type: 'tag' },
     { label: 'Magia',           value: 'Magic',         type: 'tag' },
@@ -44,24 +42,22 @@ export const CONTENT_FILTERS: FilterItem[] = [
     { label: 'Shounen',         value: 'Shounen',       type: 'tag' },
     { label: 'Super Poderes',   value: 'Super Power',   type: 'tag' },
     { label: 'Yuri',            value: 'Yuri',          type: 'tag' },
-    // Nota: "Nudity" (Sem Censura) foi testado mas tem cobertura inconsistente
-    // em requisições sem autenticação — removido para não frustrar o usuário.
 ]
 
-// Status de exibição — enum MediaStatus da AniList
+
 export interface StatusOption {
     label: string
     value: string
 }
 
 export const STATUS_OPTIONS: StatusOption[] = [
-    { label: 'Em Exibição',  value: 'RELEASING'        },
+    { label: 'Em Exibição',  value: 'RELEASING'         },
     { label: 'Finalizado',   value: 'FINISHED'          },
     { label: 'Anunciado',    value: 'NOT_YET_RELEASED'  },
     { label: 'Em Hiato',     value: 'HIATUS'            },
 ]
 
-// Temporadas — enum MediaSeason da AniList
+
 export interface SeasonOption {
     label: string
     value: string
@@ -69,10 +65,10 @@ export interface SeasonOption {
 }
 
 export const SEASON_OPTIONS: SeasonOption[] = [
-    { label: 'Inverno', value: 'WINTER', emoji: '❄️' },
+    { label: 'Inverno',   value: 'WINTER', emoji: '❄️' },
     { label: 'Primavera', value: 'SPRING', emoji: '🌸' },
-    { label: 'Verão',   value: 'SUMMER', emoji: '☀️' },
-    { label: 'Outono',  value: 'FALL',   emoji: '🍂' },
+    { label: 'Verão',     value: 'SUMMER', emoji: '☀️' },
+    { label: 'Outono',    value: 'FALL',   emoji: '🍂' },
 ]
 
 // Mapeamento semântico de cores para categorias
