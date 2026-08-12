@@ -357,27 +357,36 @@ export default function Busca() {
                     </div>
                 </div>
 
-                <div>
-                    <p className="font-mono text-[10px] text-muted-2 tracking-widest mb-3 select-none uppercase">Gêneros e Tags</p>
-                    <div className="flex flex-wrap gap-2">
-                        {CONTENT_FILTERS.map(f => {
-                            const isActive = selectedFilters.some(x => x.value === f.value)
-                            return (
-                                <button
-                                    key={`${f.type}-${f.value}`}
-                                    onClick={() => toggleFilter(f)}
-                                    className={`px-3 py-1.5 rounded-full text-xs font-bold transition-all duration-150 cursor-pointer ${isActive
-                                            ? 'bg-gradient-to-r from-holo-1 to-holo-2 text-void shadow-[0_0_12px_rgba(123,92,255,0.4)]'
-                                            : 'bg-panel-2 border border-line text-muted hover:border-holo-2 hover:text-text'
-                                        }`}
-                                >
-                                    {f.label}
-                                </button>
-                            )
-                        })}
-                    </div>
-                </div>
-            </FilterSheet>
+           <div>
+        <p className="font-mono text-[10px] text-muted-2 tracking-widest mb-3 select-none uppercase">Gêneros e Tags</p>
+        <div className="flex flex-wrap gap-2">
+            {CONTENT_FILTERS.map(f => {
+                const isActive = selectedFilters.some(x => x.value === f.value)
+                return (
+                    <button
+                        key={`${f.type}-${f.value}`}
+                        onClick={() => toggleFilter(f)}
+                        className={`px-3 py-1.5 rounded-full text-xs font-bold transition-all duration-150 cursor-pointer ${
+                            isActive
+                                ? 'bg-gradient-to-r from-holo-1 to-holo-2 text-void shadow-[0_0_12px_rgba(123,92,255,0.4)]'
+                                : 'bg-panel-2 border border-line text-muted hover:border-holo-2 hover:text-text'
+                        }`}
+                    >
+                        {f.label}
+                    </button>
+                )
+            })}
+        </div>
+    </div>
+
+    {activeFilterCount > 0 && (
+        <div className="pt-4 border-t border-line flex justify-end">
+            <button onClick={clearFilters} className="select-none flex items-center gap-1.5 text-coral text-xs font-bold hover:opacity-80 transition-opacity cursor-pointer">
+                <X size={14} /> Limpar todos os filtros
+            </button>
+        </div>
+    )}
+</FilterSheet>
 
             {loading && page === 1 && (
                 <>
