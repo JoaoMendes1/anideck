@@ -1,5 +1,6 @@
 // client/src/components/Sheet.tsx
 import type { ReactNode } from 'react'
+import { createPortal } from 'react-dom'
 import { X } from 'lucide-react'
 import { useSheetBehavior } from '../hooks/useSheetBehavior'
 
@@ -13,9 +14,12 @@ interface SheetProps {
 export default function Sheet({ isOpen, onClose, title, children }: SheetProps) {
     useSheetBehavior(isOpen, onClose)
 
-    return (
-        // items-end no mobile (painel gruda embaixo), items-center no desktop
-        // (painel fica no meio da tela) — o mesmo componente, dois lugares.
+    // Renderiza direto no <body>, fora da árvore de componentes da página.
+    // Isso garante que nenhum wrapper com "relative z-10" (como o do
+    // MeuDeck.tsx) consiga prender o Sheet dentro do próprio contexto de
+    // empilhamento — o z-[100] agora compete de igual pra igual com QUALQUER
+    // coisa da página, incluindo o BottomNav (z-50).
+    return createPortal(
         <div
             className={`fixed inset-0 z-[100] flex items-end justify-center md:items-center transition-opacity duration-300 select-none ${
                 isOpen ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'
@@ -27,7 +31,7 @@ export default function Sheet({ isOpen, onClose, title, children }: SheetProps) 
                 role="dialog"
                 aria-modal="true"
                 aria-label={title}
-                className={`relative bg-panel border-t md:border border-line rounded-t-3xl md:rounded-2xl w-full md:max-w-sm p-6 pb-8 md:pb-6 shadow-2xl max-h-[85vh] overflow-y-auto transition-transform duration-300 transform ${
+                className={`relative bg-panel border-t md:border border-line rounded-t-3xl md:rounded-2xl w-full md:max-w-sm p-6 pb-safe md:pb-6 shadow-2xl max-h-[85vh] overflow-y-auto transition-transform duration-300 transform ${
                     isOpen ? 'translate-y-0' : 'translate-y-full'
                 }`}
             >
@@ -40,6 +44,7 @@ export default function Sheet({ isOpen, onClose, title, children }: SheetProps) 
 
                 {children}
             </div>
-        </div>
+        </div>,
+        document.body
     )
 }
