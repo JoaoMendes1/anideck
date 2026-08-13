@@ -1,6 +1,9 @@
 package anilist
 
-import "context"
+import (
+	"context"
+	"fmt"
+)
 
 type MockClient struct{}
 
@@ -51,12 +54,24 @@ func (m *MockClient) GetTopAnime(ctx context.Context, page int, perPage int, f S
 }
 
 func (m *MockClient) GetAnimesByMalIDs(ctx context.Context, malIDs []int) (*AnimeSearchResponse, error) {
-	return &AnimeSearchResponse{
-		Data: []Anime{
-			{
-				MalID: 20, Title: "Naruto (Mock)", Status: "Currently Airing",
-				NextAiringEpisode: &NextAiringEpisode{AiringAt: 0, TimeUntilAiring: 3600, Episode: 10},
+	var animes []Anime
+	for _, id := range malIDs {
+		animes = append(animes, Anime{
+			MalID:  id,
+			Title:  fmt.Sprintf("Anime Mock ID %d", id),
+			Status: "Currently Airing",
+			Images: struct {
+				JPG struct {
+					ImageURL string `json:"image_url"`
+				} `json:"jpg"`
+			}{
+				JPG: struct {
+					ImageURL string `json:"image_url"`
+				}{
+					ImageURL: "https://via.placeholder.com/150",
+				},
 			},
-		},
-	}, nil
+		})
+	}
+	return &AnimeSearchResponse{Data: animes}, nil
 }

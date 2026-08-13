@@ -5,7 +5,9 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"log"
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/microcosm-cc/bluemonday"
@@ -481,25 +483,115 @@ func (c *Client) GetTopAnime(ctx context.Context, page int, perPage int, f Searc
 	return &AnimeSearchResponse{Data: animes}, nil
 }
 
+// fetchByAliases realiza uma busca em lote via GraphQL Aliases para IDs que falharam no idMal_in.
+func (c *Client) fetchByAliases(ctx context.Context, missingIDs []int) ([]Anime, error) {
+	if len(missingIDs) == 0 {
+		return nil, nil
+	}
+
+	var sb strings.Builder
+	sb.WriteString("query {\n")
+	for _, id := range missingIDs {
+		fmt.Fprintf(&sb, "  a%d: Media(idMal: %d, type: ANIME) {\n", id, id)
+		sb.WriteString(`    idMal
+    title { romaji english }
+    status
+    description
+    episodes
+    averageScore
+    coverImage { large }
+    genres
+    externalLinks { site url }
+    rankings { rank type allTime }
+    nextAiringEpisode { airingAt timeUntilAiring episode }
+  }
+`)
+	}
+	sb.WriteString("}\n")
+
+	var rawMap map[string]*aniListMedia
+	if err := c.gqlRequest(ctx, sb.String(), nil, &rawMap); err != nil {
+		return nil, fmt.Errorf("erro no fallback de aliases: %w", err)
+	}
+
+	var fetched []Anime
+	for _, id := range missingIDs {
+		key := fmt.Sprintf("a%d", id)
+		if media, ok := rawMap[key]; ok && media != nil {
+			if media.IDMal == 0 {
+				media.IDMal = id
+			}
+			fetched = append(fetched, media.toAnime())
+		}
+	}
+
+	return fetched, nil
+}
+
+// GetAnimesByMalIDs busca uma lista de animes por IDs com fallback em lote por Aliases.
 func (c *Client) GetAnimesByMalIDs(ctx context.Context, malIDs []int) (*AnimeSearchResponse, error) {
 	if len(malIDs) == 0 {
 		return &AnimeSearchResponse{Data: []Anime{}}, nil
 	}
 
-	var resultado struct {
-		Page struct{ Media []aniListMedia } `json:"Page"`
-	}
-
-	if err := c.gqlRequest(ctx, byIdsQuery, map[string]interface{}{"idMal_in": malIDs}, &resultado); err != nil {
-		return nil, err
-	}
-
-	var animes []Anime
-	for _, m := range resultado.Page.Media {
-		if m.IDMal == 0 {
-			continue
+	// 1. Sanitização e deduplicação de IDs
+	seen := make(map[int]bool)
+	var uniqueIDs []int
+	for _, id := range malIDs {
+		if id > 0 && !seen[id] {
+			seen[id] = true
+			uniqueIDs = append(uniqueIDs, id)
 		}
-		animes = append(animes, m.toAnime())
 	}
-	return &AnimeSearchResponse{Data: animes}, nil
+
+	var allAnimes []Anime
+	chunkSize := 50
+
+	// 2. Processar em chunks de 50 (limite de paginação da AniList)
+	for i := 0; i < len(uniqueIDs); i += chunkSize {
+		end := i + chunkSize
+		if end > len(uniqueIDs) {
+			end = len(uniqueIDs)
+		}
+		chunk := uniqueIDs[i:end]
+
+		var resultado struct {
+			Page struct{ Media []aniListMedia } `json:"Page"`
+		}
+
+		foundMap := make(map[int]bool)
+
+		// Busca primária por idMal_in
+		if err := c.gqlRequest(ctx, byIdsQuery, map[string]interface{}{"idMal_in": chunk}, &resultado); err == nil {
+			for _, m := range resultado.Page.Media {
+				if m.IDMal > 0 {
+					foundMap[m.IDMal] = true
+					allAnimes = append(allAnimes, m.toAnime())
+				}
+			}
+		} else {
+			log.Printf("[WARN ANILIST] Falha na consulta idMal_in para o chunk %v: %v", chunk, err)
+		}
+
+		// 3. Identificar IDs ausentes no retorno primário
+		var missing []int
+		for _, id := range chunk {
+			if !foundMap[id] {
+				missing = append(missing, id)
+			}
+		}
+
+		// 4. Fallback em lote único por Aliases para recuperar os ausentes
+		if len(missing) > 0 {
+			log.Printf("[INFO ANILIST] %d animes não retornados via idMal_in. Executando fallback por Aliases: %v", len(missing), missing)
+			fallbackAnimes, err := c.fetchByAliases(ctx, missing)
+			if err != nil {
+				log.Printf("[ERRO ANILIST] Falha no fallback por Aliases para os IDs %v: %v", missing, err)
+			} else {
+				allAnimes = append(allAnimes, fallbackAnimes...)
+			}
+		}
+	}
+
+	return &AnimeSearchResponse{Data: allAnimes}, nil
 }

@@ -96,6 +96,12 @@ func (h *AnimeHandler) HandleGetAnimesByIDs(w http.ResponseWriter, r *http.Reque
 		return
 	}
 
+	// Validação de segurança: limitar tamanho máximo da chamada
+	if len(payload.IDs) > 200 {
+		http.Error(w, "Limite de 200 IDs por requisição excedido", http.StatusBadRequest)
+		return
+	}
+
 	if len(payload.IDs) == 0 {
 		w.Header().Set("Content-Type", "application/json")
 		json.NewEncoder(w).Encode(map[string]interface{}{"data": []interface{}{}})
@@ -111,11 +117,11 @@ func (h *AnimeHandler) HandleGetAnimesByIDs(w http.ResponseWriter, r *http.Reque
 
 	var curados []models.CuratedAnime
 	data, _, errCurado := database.Client.From("curated_animes").Select("*", "exact", false).Execute()
-	
+
 	if errCurado == nil {
 		_ = json.Unmarshal(data, &curados)
 	}
-	
+
 	if errCurado == nil && len(curados) > 0 {
 		mapaCuradoria := make(map[int]models.CuratedAnime)
 		for _, c := range curados {
