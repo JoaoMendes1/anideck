@@ -77,6 +77,7 @@ export default function Navbar() {
               <>
                 <Link to="/deck" className={`text-sm font-bold focus:outline-none select-none transition-colors ${location.pathname === '/deck' ? 'text-text' : 'text-muted hover:text-text'}`}>Meu Deck</Link>
                 <Link to="/calendario" className={`text-sm font-bold focus:outline-none select-none transition-colors ${location.pathname === '/calendario' ? 'text-text' : 'text-muted hover:text-text'}`}>Calendário</Link>
+                <Link to="/estatisticas" className={`text-sm font-bold focus:outline-none select-none transition-colors ${location.pathname === '/estatisticas' ? 'text-text' : 'text-muted hover:text-text'}`}>Estatísticas</Link>
 
                 {isAdmin && (
                     <Link to="/admin" className={`text-sm font-bold focus:outline-none select-none transition-colors ${location.pathname === '/admin' ? 'text-text' : 'text-muted hover:text-text'}`}>Admin</Link>

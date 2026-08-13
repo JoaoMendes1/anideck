@@ -1,5 +1,5 @@
 import { Link, useLocation } from 'react-router-dom'
-import { Search, Trophy, LayoutDashboard, User, Settings, LogOut, CalendarDays } from 'lucide-react'
+import { Search, Trophy, LayoutDashboard, User, Settings, LogOut, CalendarDays, BarChart2 } from 'lucide-react'
 import { useState, useEffect } from 'react'
 import { supabase } from '../lib/supabase'
 import type { Session } from '@supabase/supabase-js'
@@ -65,6 +65,12 @@ export default function BottomNav() {
             <Link to="/deck" className={`flex flex-col items-center justify-center w-full h-full space-y-1 ${location.pathname === '/deck' ? 'text-holo-3' : 'text-muted'}`}>
               <LayoutDashboard size={18} />
               <span className="text-[9px] font-bold">Deck</span>
+            </Link>
+
+            {/* AQUI ESTÁ O NOVO BOTÃO DE ESTATÍSTICAS */}
+            <Link to="/estatisticas" className={`flex flex-col items-center justify-center w-full h-full space-y-1 ${location.pathname === '/estatisticas' ? 'text-holo-3' : 'text-muted'}`}>
+              <BarChart2 size={18} />
+              <span className="text-[9px] font-bold">Stats</span>
             </Link>
 
             {isAdmin && (

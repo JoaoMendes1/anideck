@@ -82,6 +82,7 @@ query ($page: Int, $perPage: Int, $search: String, $sort: [MediaSort], $genre_in
       title { romaji english }
       status
       episodes
+	  duration
       averageScore
       coverImage { large }
       genres
@@ -97,6 +98,7 @@ type aniListMedia struct {
 	Status        string                           `json:"status"`
 	Description   string                           `json:"description"`
 	Episodes      int                              `json:"episodes"`
+	Duration      int                              `json:"duration"`
 	AverageScore  int                              `json:"averageScore"`
 	BannerImage   string                           `json:"bannerImage"`
 	CoverImage    struct{ Large string }           `json:"coverImage"`
@@ -243,6 +245,7 @@ func (m *aniListMedia) toAnime() Anime {
 		Status:   mapStatus(m.Status),
 		Synopsis: stripHTML.Sanitize(m.Description),
 		Episodes: m.Episodes,
+		Duration: m.Duration,
 		Score:    float64(m.AverageScore) / 10.0,
 		Ranking:  bestRanking,
 		BannerImage: m.BannerImage,
@@ -328,6 +331,7 @@ query ($idMal: Int) {
     status
     description
     episodes
+	duration
     averageScore
     coverImage { large }
     bannerImage
@@ -354,6 +358,7 @@ query ($idMal_in: [Int]) {
       status
       description
       episodes
+	  duration
       averageScore
       coverImage { large }
       genres
@@ -428,6 +433,7 @@ query ($page: Int, $perPage: Int, $sort: [MediaSort], $genre_in: [String], $tag_
       status
       description
       episodes
+	  duration
       averageScore
       coverImage { large }
       genres
@@ -498,6 +504,7 @@ func (c *Client) fetchByAliases(ctx context.Context, missingIDs []int) ([]Anime,
     status
     description
     episodes
+	duration
     averageScore
     coverImage { large }
     genres

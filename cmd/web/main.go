@@ -44,6 +44,7 @@ func main() {
 	searchHandler := &handlers.SearchHandler{AniListClient: anilistService}
 	animeHandler := &handlers.AnimeHandler{AniListClient: anilistService}
 	entriesHandler := handlers.EntriesHandler{}
+	statsHandler := &handlers.StatsHandler{}
 	rankingHandler := &handlers.RankingHandler{AniListClient: anilistService}
 	curationHandler := &handlers.CurationHandler{}
 
@@ -76,6 +77,7 @@ func main() {
 		protegido.Post("/api/entries", entriesHandler.HandleCreate)
 		protegido.Put("/api/entries/{id}", entriesHandler.HandleUpdate)
 		protegido.Delete("/api/entries/{id}", entriesHandler.HandleDelete)
+		protegido.Get("/api/stats/user", statsHandler.HandleGetUserStats)
 
 	})
 

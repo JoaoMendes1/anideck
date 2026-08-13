@@ -27,6 +27,7 @@ type Anime struct {
 	Status      string      `json:"status"`
 	Synopsis    string      `json:"synopsis"`
 	Episodes    int         `json:"episodes"`
+	Duration    int         `json:"duration"`
 	Score       float64     `json:"score"`
 	Ranking     int         `json:"ranking,omitempty"` 
 	BannerImage string      `json:"bannerImage,omitempty"`

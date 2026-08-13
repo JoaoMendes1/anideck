@@ -1,12 +1,15 @@
 package handlers
 
 import (
+	"context"
 	"encoding/json"
+	"fmt"
 	"log"
 	"net/http"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/microcosm-cc/bluemonday"
+	"github.com/JoaoMendes1/anideck/internal/anilist"
 	"github.com/JoaoMendes1/anideck/internal/database"
 	"github.com/JoaoMendes1/anideck/internal/entries"
 	"github.com/JoaoMendes1/anideck/internal/middleware"
@@ -48,6 +51,8 @@ func (h *EntriesHandler) HandleCreate(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	_ = json.Unmarshal(data, &resultado)
+
+	syncMetadataCacheAsync(entrada.MalID, token)
 
 	w.Header().Set("Content-Type", "application/json")
 	if err := json.NewEncoder(w).Encode(resultado); err != nil {
@@ -132,6 +137,8 @@ func (h *EntriesHandler) HandleUpdate(w http.ResponseWriter, r *http.Request) {
 	}
 	_ = json.Unmarshal(data, &resultado)
 
+	syncMetadataCacheAsync(entrada.MalID, token)
+
 	w.Header().Set("Content-Type", "application/json")
 	if err := json.NewEncoder(w).Encode(resultado); err != nil {
 		log.Printf("[ERRO] HandleUpdate: falha ao serializar resposta: %v", err)
@@ -172,4 +179,44 @@ func (h *EntriesHandler) HandleDelete(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.WriteHeader(http.StatusNoContent)
+}
+func syncMetadataCacheAsync(malID int, token string) {
+	go func() {
+		client := anilist.NewClient()
+		ctx := context.Background()
+		
+		res, err := client.GetAnimeById(ctx, fmt.Sprintf("%d", malID))
+		if err != nil || res == nil {
+			log.Printf("[CACHE METADATA] Erro ao buscar dados na AniList para mal_id %d: %v", malID, err)
+			return
+		}
+		anime := res.Data
+
+		var genres, studios []string
+		for _, g := range anime.Genres { genres = append(genres, g.Name) }
+		for _, s := range anime.Studios { studios = append(studios, s.Name) }
+
+		payload := map[string]interface{}{
+			"mal_id":           anime.MalID,
+			"title":            anime.Title,
+			"episodes":         anime.Episodes,
+			"duration_minutes": anime.Duration,
+			"genres":           genres,
+			"studios":          studios,
+			"average_score":    anime.Score,
+		}
+
+		dbClient, errClient := database.ClientWithToken(token)
+		if errClient != nil {
+			log.Printf("[CACHE METADATA] Erro ao criar cliente com token: %v", errClient)
+			return
+		}
+
+		_, _, err = dbClient.From("anime_metadata_cache").Upsert(payload, "", "exact", "mal_id").Execute()
+		if err != nil {
+			log.Printf("[CACHE METADATA] Erro ao salvar no banco para mal_id %d: %v", malID, err)
+		} else {
+			log.Printf("[CACHE METADATA] Metadados sincronizados com sucesso para: %s", anime.Title)
+		}
+	}()
 }

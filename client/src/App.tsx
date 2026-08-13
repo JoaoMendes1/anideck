@@ -10,6 +10,7 @@ import PainelAdmin from './pages/PainelAdmin'
 import Layout from './components/Layout'
 import { ToastProvider } from './contexts/ToastContext'
 import Landing from './pages/Landing'
+import Estatisticas from './pages/Estatisticas'
 
 function App() {
   return (
@@ -22,6 +23,7 @@ function App() {
       <Route path="/calendario" element={<RotaProtegida><Calendario /></RotaProtegida>} />
       <Route path="/anime/:id" element={<Detalhes />} />
       <Route path="/rankings" element={<Rankings />} />
+      <Route path="/estatisticas" element={<RotaProtegida><Estatisticas /></RotaProtegida>} />
       </Route>
 
         {/* Rotas independentes (sem Navbar) */}

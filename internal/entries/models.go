@@ -8,5 +8,6 @@ type MediaEntry struct {
 	Status     string   `json:"status"`
 	Nota       *float64 `json:"nota,omitempty"`
 	Anotacao   string   `json:"anotacao,omitempty"`
-	IsFavorite bool     `json:"is_favorite"` // ✨ MUDOU AQUI: O banco e o frontend agora se falam!
+	IsFavorite bool     `json:"is_favorite"` 
+	Progress   int      `json:"progress"`
 }
