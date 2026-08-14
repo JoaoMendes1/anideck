@@ -10,6 +10,7 @@ import ImageUploadField from '../components/ImageUploadField'
 import CuradoriaPersonagens from '../components/CuradoriaPersonagens'
 import DestaquesRail from '../components/DestaquesRail'
 import ReorderableTags from '../components/ReorderableTags'
+import imageCompression from 'browser-image-compression'
 import type { CuratedAnime, CuratedCharacter } from '../types/curation'
 
 export default function PainelAdmin() {
@@ -43,9 +44,36 @@ export default function PainelAdmin() {
   const [excluindo, setExcluindo] = useState(false)
   const [uploading, setUploading] = useState(false)
 
+  const [initialStateHash, setInitialStateHash] = useState('')
+  const [isDirty, setIsDirty] = useState(false)
+
   useEffect(() => {
     verificarAcesso()
   }, [])
+
+  useEffect(() => {
+    if (!previewTitulo) return
+    const currentState = JSON.stringify({ titulo, formato, status, ordem, sinopse, tags, coverImage, bannerImage, characters })
+    setIsDirty(currentState !== initialStateHash)
+  }, [titulo, formato, status, ordem, sinopse, tags, coverImage, bannerImage, characters, initialStateHash, previewTitulo])
+
+  useEffect(() => {
+    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+      if (isDirty) {
+        e.preventDefault()
+        e.returnValue = ''
+      }
+    }
+    window.addEventListener('beforeunload', handleBeforeUnload)
+    return () => window.removeEventListener('beforeunload', handleBeforeUnload)
+  }, [isDirty])
+
+  const confirmarSaidaSegura = () => {
+    if (isDirty) {
+      return window.confirm('Você tem alterações não salvas. Tem certeza que deseja descartar tudo e sair?')
+    }
+    return true
+  }
 
   const verificarAcesso = async () => {
     const { data: { session } } = await supabase.auth.getSession()
@@ -85,6 +113,9 @@ export default function PainelAdmin() {
         Page(page: 1, perPage: 5) {
           media(search: $search, type: ANIME) {
             id idMal title { romaji english native } coverImage { large } bannerImage format status genres synopsis: description
+            characters(sort: [ROLE, RELEVANCE], perPage: 15) {
+              edges { role node { name { full } image { large } } }
+            }
           }
         }
       }
@@ -118,26 +149,51 @@ export default function PainelAdmin() {
     setCoverImage(anime.coverImage?.large || '')
     setBannerImage(anime.bannerImage || '')
     setSinopse(anime.synopsis ? anime.synopsis.replace(/<[^>]*>?/gm, '') : '')
-    setCharacters([])
+    
+    const importedChars = (anime as any).characters?.edges?.map((edge: any) => ({
+      name: edge.node.name?.full || 'Desconhecido',
+      image: edge.node.image?.large || '',
+      role: edge.role || 'SUPPORTING'
+    })) || []
+    
+    setCharacters(importedChars)
     setPreviewTitulo(tituloCorreto)
     setResultadosBusca([])
     setTermoBusca('')
+
+    setTimeout(() => {
+      setInitialStateHash(JSON.stringify({ 
+        titulo: tituloCorreto, formato: anime.format || 'TV', status: anime.status || 'RELEASING', 
+        ordem: 0, sinopse: anime.synopsis ? anime.synopsis.replace(/<[^>]*>?/gm, '') : '', 
+        tags: anime.genres || [], coverImage: anime.coverImage?.large || '', 
+        bannerImage: anime.bannerImage || '', characters: importedChars 
+      }))
+    }, 100)
   }
 
   const uploadImagem = async (file: File): Promise<string | null> => {
     setUploading(true)
-    const fileExt = file.name.split('.').pop()
-    const fileName = `${Math.random().toString(36).substring(2, 15)}.${fileExt}`
-    const filePath = `imagens/${fileName}`
-
     try {
-      const { error: uploadError } = await supabase.storage.from('curadoria').upload(filePath, file)
+      const options = {
+        maxSizeMB: 0.3,
+        maxWidthOrHeight: 1920,
+        useWebWorker: true,
+        fileType: 'image/webp'
+      }
+      
+      const compressedFile = await imageCompression(file, options)
+      
+      const fileName = `${Math.random().toString(36).substring(2, 15)}.webp`
+      const filePath = `imagens/${fileName}`
+
+      const { error: uploadError } = await supabase.storage.from('curadoria').upload(filePath, compressedFile)
       if (uploadError) throw uploadError
+      
       const { data: { publicUrl } } = supabase.storage.from('curadoria').getPublicUrl(filePath)
-      showToast('Imagem enviada com sucesso!', 'success')
+      showToast('Imagem otimizada (WebP) e enviada com sucesso!', 'success')
       return publicUrl
     } catch {
-      showToast('Erro ao enviar imagem. Verifique se o bucket é público.', 'error')
+      showToast('Erro ao enviar imagem. Verifique o console ou limite de tamanho.', 'error')
       return null
     } finally {
       setUploading(false)
@@ -180,7 +236,9 @@ export default function PainelAdmin() {
 
       if (!response.ok) throw new Error('Falha ao salvar destaque')
       showToast('Destaque salvo com sucesso!')
-      fecharEditor()
+      
+      setIsDirty(false)
+      fecharEditorForce()
       carregarDestaques()
     } catch {
       showToast('Erro ao salvar o destaque.', 'error')
@@ -198,7 +256,10 @@ export default function PainelAdmin() {
       })
       if (!response.ok) throw new Error()
       showToast('Destaque removido com sucesso.')
-      if (editId === itemParaExcluir.id) fecharEditor()
+      if (editId === itemParaExcluir.id) {
+         setIsDirty(false)
+         fecharEditorForce()
+      }
       carregarDestaques()
     } catch {
       showToast('Erro ao excluir destaque.', 'error')
@@ -222,21 +283,34 @@ export default function PainelAdmin() {
     setBannerImage('')
     setCharacters([])
     setResultadosBusca([])
+    setIsDirty(false)
   }
 
   const abrirNovoDestaque = () => {
+    if (!confirmarSaidaSegura()) return
     limparFormulario()
     setFormularioAberto(true)
-    // Scroll para o topo no mobile ao abrir o form
     window.scrollTo({ top: 0, behavior: 'smooth' })
   }
 
-  const fecharEditor = () => {
+  const fecharEditorForce = () => {
     limparFormulario()
     setFormularioAberto(false)
   }
 
+  const tentarFecharEditor = () => {
+    if (!confirmarSaidaSegura()) return
+    fecharEditorForce()
+  }
+
+  const tentarLimparFormulario = () => {
+    if (!confirmarSaidaSegura()) return
+    limparFormulario()
+  }
+
   const editarDestaque = (anime: CuratedAnime) => {
+    if (!confirmarSaidaSegura()) return
+    
     setEditId(anime.id || null)
     setMalId(anime.mal_id)
     setTitulo(anime.custom_title)
@@ -250,11 +324,19 @@ export default function PainelAdmin() {
     setCharacters(anime.custom_characters || [])
     setPreviewTitulo(anime.custom_title)
     setFormularioAberto(true)
-    // Scroll para o topo no mobile ao abrir edição
     window.scrollTo({ top: 0, behavior: 'smooth' })
+
+    setTimeout(() => {
+      setInitialStateHash(JSON.stringify({ 
+        titulo: anime.custom_title, formato: anime.custom_format || 'TV', status: anime.custom_status || 'RELEASING', 
+        ordem: anime.order_index, sinopse: anime.custom_synopsis || '', tags: anime.custom_tags || [], 
+        coverImage: anime.custom_cover_image || '', bannerImage: anime.custom_banner_image || '', 
+        characters: anime.custom_characters || [] 
+      }))
+      setIsDirty(false)
+    }, 100)
   }
 
-  // Auto-resize do textarea
   const handleSinopseChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     setSinopse(e.target.value)
     e.target.style.height = 'auto'
@@ -286,7 +368,7 @@ export default function PainelAdmin() {
           >
             <Sparkles size={14} /> IA Curadora
           </button>
-          <Link to="/" className="text-sm font-bold text-muted hover:text-text transition-colors">
+          <Link onClick={(e) => { if(!confirmarSaidaSegura()) e.preventDefault() }} to="/" className="text-sm font-bold text-muted hover:text-text transition-colors">
             ← Voltar ao site
           </Link>
         </div>
@@ -300,7 +382,6 @@ export default function PainelAdmin() {
 
         <div className="grid grid-cols-1 lg:grid-cols-[360px_1fr] gap-6 lg:gap-8 items-start">
           
-          {/* Lado Esquerdo: Lista - Oculta no mobile se o formulário estiver aberto */}
           <div className={`lg:block ${formularioAberto ? 'hidden' : 'block'}`}>
             <DestaquesRail
               destaques={destaques}
@@ -312,8 +393,8 @@ export default function PainelAdmin() {
             />
           </div>
 
-          {/* Lado Direito: Formulário - Oculto no mobile se não houver formulário aberto. REMOVIDO OVERFLOW-HIDDEN! */}
-          <div className={`bg-panel border border-line rounded-2xl shadow-xl lg:sticky lg:top-24 ${formularioAberto ? 'block' : 'hidden lg:block'}`}>
+          {/* 🔴 O SEGREDO ESTÁ NESTA LINHA ABAIXO: 'min-w-0' resolve o estouro do layout */}
+          <div className={`bg-panel border border-line rounded-2xl shadow-xl lg:sticky lg:top-24 min-w-0 ${formularioAberto ? 'block' : 'hidden lg:block'}`}>
             {!formularioAberto ? (
               <div className="flex flex-col items-center justify-center text-center py-20 px-6">
                 <div className="w-14 h-14 rounded-2xl bg-panel-2 border border-line flex items-center justify-center mb-4 text-muted">
@@ -333,22 +414,24 @@ export default function PainelAdmin() {
             ) : (
               <div className="p-4 sm:p-6">
                 
-                {/* Botão de voltar exclusivo para Mobile */}
                 <button 
-                  onClick={fecharEditor} 
+                  onClick={tentarFecharEditor} 
                   className="lg:hidden flex items-center gap-1.5 text-xs font-bold text-holo-2 bg-holo-2/10 px-3 py-1.5 rounded-lg mb-6 hover:bg-holo-2/20 transition-colors"
                 >
                   <ArrowLeft size={14} /> Voltar para a lista
                 </button>
 
                 <div className="flex justify-between items-center mb-4">
-                  <h3 className="font-extrabold text-sm">{editId ? '✎ Editando Destaque' : '🔍 Novo Destaque'}</h3>
+                  <h3 className="font-extrabold text-sm flex items-center gap-2">
+                    {editId ? '✎ Editando Destaque' : '🔍 Novo Destaque'}
+                    {isDirty && <span className="w-2 h-2 rounded-full bg-holo-3 animate-pulse" title="Alterações não salvas"></span>}
+                  </h3>
                   <div className="flex items-center gap-3">
-                    <button onClick={limparFormulario} className="text-xs text-muted hover:text-text cursor-pointer">
+                    <button onClick={tentarLimparFormulario} className="text-xs text-muted hover:text-text cursor-pointer">
                       Limpar
                     </button>
                     <button
-                      onClick={fecharEditor}
+                      onClick={tentarFecharEditor}
                       aria-label="Fechar editor"
                       className="w-7 h-7 rounded-lg bg-panel-2 border border-line text-muted hover:text-white hover:border-holo-2 transition-colors cursor-pointer hidden lg:flex items-center justify-center"
                     >
@@ -357,7 +440,6 @@ export default function PainelAdmin() {
                   </div>
                 </div>
 
-                {/* Dropdown de busca agora fica sobreposto sem ser cortado */}
                 <BuscaAniList
                   termoBusca={termoBusca}
                   onChangeTermo={setTermoBusca}
@@ -432,6 +514,13 @@ export default function PainelAdmin() {
                     <CuradoriaPersonagens
                       characters={characters}
                       onAdd={(char) => setCharacters([...characters, char])}
+                      
+                      onUpdate={(index, char) => {
+                        const newChars = [...characters]
+                        newChars[index] = char
+                        setCharacters(newChars)
+                      }}
+                      
                       onRemove={(index) => setCharacters(characters.filter((_, i) => i !== index))}
                       onUploadImage={uploadImagem}
                       uploading={uploading}

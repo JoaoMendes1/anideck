@@ -129,7 +129,8 @@ export default function DestaquesRail({
                     e.stopPropagation()
                     if (anime.id) onDelete(anime.id, anime.custom_title)
                   }}
-                  className="p-2 text-muted hover:text-coral hover:bg-coral/10 rounded-lg opacity-0 group-hover:opacity-100 transition-all"
+                  /* CORREÇÃO DO BUG: Opacidade 100 no mobile, e esconde apenas no desktop (lg:opacity-0) */
+                  className="p-2 text-muted hover:text-coral active:bg-coral/20 lg:hover:bg-coral/10 rounded-lg opacity-100 lg:opacity-0 lg:group-hover:opacity-100 transition-all"
                   aria-label="Excluir destaque"
                 >
                   <Trash2 size={16} />
