@@ -32,7 +32,7 @@ func (h *EntriesHandler) HandleList(w http.ResponseWriter, r *http.Request) {
 
 	data, _, err := dbClient.From("media_entries").Select("*", "exact", false).Eq("user_id", userID).Execute()
 	if err != nil {
-		log.Printf("[ERRO] Falha ao buscar entries do DB: %v", err)
+		log.Printf("[ERRO DB] HandleList Entries (user=%s): %v", userID, err)
 		http.Error(w, "Erro ao buscar entries", http.StatusInternalServerError)
 		return
 	}
@@ -43,7 +43,8 @@ func (h *EntriesHandler) HandleList(w http.ResponseWriter, r *http.Request) {
 
 func (h *EntriesHandler) HandleCreate(w http.ResponseWriter, r *http.Request) {
 	token, ok := r.Context().Value(middleware.TokenKey).(string)
-	if !ok {
+	userID, userOk := r.Context().Value(middleware.UserIDKey).(string)
+	if !ok || !userOk {
 		http.Error(w, "Não autorizado", http.StatusUnauthorized)
 		return
 	}
@@ -54,6 +55,10 @@ func (h *EntriesHandler) HandleCreate(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Sempre derivar o user_id do JWT validado, nunca confiar no payload do cliente.
+	// Isso também garante que o RLS do Supabase (auth.uid() = user_id) seja satisfeito.
+	entrada.UserID = userID
+
 	dbClient, errClient := database.ClientWithToken(token)
 	if errClient != nil {
 		http.Error(w, "Erro interno de conexão", http.StatusInternalServerError)
@@ -62,6 +67,7 @@ func (h *EntriesHandler) HandleCreate(w http.ResponseWriter, r *http.Request) {
 
 	data, _, err := dbClient.From("media_entries").Insert(entrada, false, "exact", "", "").Execute()
 	if err != nil {
+		log.Printf("[ERRO DB] HandleCreate Entries (user=%s, mal_id=%d): %v", userID, entrada.MalID, err)
 		http.Error(w, "Erro ao salvar entry", http.StatusInternalServerError)
 		return
 	}
@@ -75,7 +81,8 @@ func (h *EntriesHandler) HandleCreate(w http.ResponseWriter, r *http.Request) {
 func (h *EntriesHandler) HandleUpdate(w http.ResponseWriter, r *http.Request) {
 	id := chi.URLParam(r, "id")
 	token, ok := r.Context().Value(middleware.TokenKey).(string)
-	if !ok {
+	userID, userOk := r.Context().Value(middleware.UserIDKey).(string)
+	if !ok || !userOk {
 		http.Error(w, "Não autorizado", http.StatusUnauthorized)
 		return
 	}
@@ -86,14 +93,24 @@ func (h *EntriesHandler) HandleUpdate(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Mesma regra do Create: o user_id nunca vem do cliente.
+	entrada.UserID = userID
+
 	dbClient, errClient := database.ClientWithToken(token)
 	if errClient != nil {
 		http.Error(w, "Erro interno de conexão", http.StatusInternalServerError)
 		return
 	}
 
-	data, _, err := dbClient.From("media_entries").Update(entrada, "", "exact").Eq("id", id).Execute()
+	// Filtro por user_id além do id: defesa em profundidade contra IDOR,
+	// independente do RLS estar corretamente configurado no banco.
+	data, _, err := dbClient.From("media_entries").
+		Update(entrada, "", "exact").
+		Eq("id", id).
+		Eq("user_id", userID).
+		Execute()
 	if err != nil {
+		log.Printf("[ERRO DB] HandleUpdate Entries (user=%s, id=%s): %v", userID, id, err)
 		http.Error(w, "Erro ao atualizar entry", http.StatusInternalServerError)
 		return
 	}
@@ -107,7 +124,8 @@ func (h *EntriesHandler) HandleUpdate(w http.ResponseWriter, r *http.Request) {
 func (h *EntriesHandler) HandleDelete(w http.ResponseWriter, r *http.Request) {
 	id := chi.URLParam(r, "id")
 	token, ok := r.Context().Value(middleware.TokenKey).(string)
-	if !ok {
+	userID, userOk := r.Context().Value(middleware.UserIDKey).(string)
+	if !ok || !userOk {
 		http.Error(w, "Não autorizado", http.StatusUnauthorized)
 		return
 	}
@@ -118,8 +136,14 @@ func (h *EntriesHandler) HandleDelete(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	_, _, err := dbClient.From("media_entries").Delete("", "exact").Eq("id", id).Execute()
+	// Mesma defesa em profundidade do Update.
+	_, _, err := dbClient.From("media_entries").
+		Delete("", "exact").
+		Eq("id", id).
+		Eq("user_id", userID).
+		Execute()
 	if err != nil {
+		log.Printf("[ERRO DB] HandleDelete Entries (user=%s, id=%s): %v", userID, id, err)
 		http.Error(w, "Erro ao excluir entry", http.StatusInternalServerError)
 		return
 	}
