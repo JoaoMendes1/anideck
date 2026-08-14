@@ -45,10 +45,11 @@ export default function SearchResultCard({
                     onClick={(e) => onToggleSave(e, anime.mal_id)}
                     disabled={isSaving}
                     aria-label={isSaved ? 'Remover do Deck' : 'Adicionar ao Deck'}
+                    /* BOTÃO SEMPRE VISÍVEL: Removido qualquer 'opacity-0' ou hover para esconder */
                     className={`w-8 h-8 rounded-full border-[1.5px] flex items-center justify-center font-bold backdrop-blur-md transition-all select-none shadow-lg active:scale-90 ${
                         isSaved
                             ? 'bg-green/20 border-green text-green hover:bg-coral/20 hover:border-coral hover:text-coral cursor-pointer'
-                            : 'bg-void/80 border-white/40 text-white hover:bg-gradient-to-r hover:from-holo-1 hover:to-holo-2 hover:border-transparent cursor-pointer opacity-80 md:opacity-0 group-hover:opacity-100'
+                            : 'bg-void/80 border-white/40 text-white hover:bg-gradient-to-r hover:from-holo-1 hover:to-holo-2 hover:border-transparent cursor-pointer opacity-90 hover:opacity-100'
                     }`}
                 >
                     {isSaving ? (

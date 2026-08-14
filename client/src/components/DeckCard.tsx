@@ -62,7 +62,8 @@ export default function DeckCard({ entrada, animeLocal, gradientClass, onEdit }:
             topRightAction={
                 <button
                     onClick={(e) => { e.preventDefault(); e.stopPropagation(); onEdit(entrada) }}
-                    className="w-8 h-8 rounded-full bg-void/80 border border-line text-muted hover:text-holo-3 hover:border-holo-3 flex items-center justify-center backdrop-blur-md cursor-pointer transition-all shadow-lg opacity-70 md:opacity-0 group-hover:opacity-100 active:scale-90"
+                    /* BOTÃO SEMPRE VISÍVEL: Removido qualquer 'opacity-0' ou hover para esconder */
+                    className="w-8 h-8 rounded-full bg-void/80 border border-line text-muted hover:text-holo-3 hover:border-holo-3 flex items-center justify-center backdrop-blur-md cursor-pointer transition-all shadow-lg opacity-90 hover:opacity-100 active:scale-90"
                     title="Editar entrada"
                     aria-label="Editar entrada"
                 >

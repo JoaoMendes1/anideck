@@ -54,9 +54,9 @@ Staging sobe já na Fase 1, como projeto esqueleto — mesmo padrão do JVM Syst
 
 ## 📊 Fase 4: Dashboard de Estatísticas (Foco em SQL Avançado)
 
-- [ ] Migrar a lógica de agregação de dados do client/backend para **VIEWS e FUNCTIONS nativas no Postgres (Supabase)**, exigindo domínio de queries complexas.
-- [ ] Cálculo de métricas pessoais (tempo assistido, gênero favorito, distribuição por status) direto no banco.
-- [ ] Visualização (gráficos) no painel do usuário consumindo essas procedures.
+- [x] Migrar a lógica de agregação de dados do client/backend para **VIEWS e FUNCTIONS nativas no Postgres (Supabase)**, exigindo domínio de queries complexas.
+- [x] Cálculo de métricas pessoais (tempo assistido, gênero favorito, distribuição por status) direto no banco.
+- [x] Visualização (gráficos) no painel do usuário consumindo essas procedures.
 
 ## 🤖 Fase 4.5: Automação e IA Generativa (Integração Google Workspace)
 
