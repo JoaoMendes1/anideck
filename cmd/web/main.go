@@ -17,7 +17,6 @@ import (
 )
 
 func main() {
-	//1. Carrega variáveis de ambiente e valida configuração inicial
 	if err := config.LoadAndValidateEnv(); err != nil {
 		log.Fatalf("Erro crítico no boot: %v", err)
 	}
@@ -26,14 +25,12 @@ func main() {
 	}
 	log.Println("Conexão com o banco de dados estabelecida!")
 
-	// 2. Carrega as chaves públicas da Supabase pra validar token de usuário
 	if err := middleware.InitJWKS(os.Getenv("SUPABASE_URL")); err != nil {
 		log.Fatalf("Erro crítico ao carregar JWKS: %v", err)
 	}
 
-	// 3. Inicializa o cliente da AniList (que contém o rate limiter)
 	var anilistService anilist.Service
-	
+
 	if os.Getenv("MOCK_ANILIST") == "true" {
 		log.Println("[MOCK] Inicializando Mock Client para a AniList (Sem consumo real de API)")
 		anilistService = anilist.NewMockClient()
@@ -43,15 +40,16 @@ func main() {
 
 	searchHandler := &handlers.SearchHandler{AniListClient: anilistService}
 	animeHandler := &handlers.AnimeHandler{AniListClient: anilistService}
-	entriesHandler := handlers.EntriesHandler{}
+	
+	// AQUI ESTAVA O ERRO NO MAIN.GO: Voltando ao normal!
+	entriesHandler := &handlers.EntriesHandler{} 
+	
 	statsHandler := &handlers.StatsHandler{}
 	rankingHandler := &handlers.RankingHandler{AniListClient: anilistService}
 	curationHandler := &handlers.CurationHandler{}
 
-	// 4. Configuração das rotas (chi)
-	// Cria o roteador principal usando o framework Chi
 	r := chi.NewRouter()
-	r.Use(chimw.RequestID) // gera um ID único por requisição (útil para rastrear logs)
+	r.Use(chimw.RequestID)
 	r.Use(chimw.Logger)
 	r.Use(chimw.Recoverer)
 
@@ -60,16 +58,14 @@ func main() {
 		w.Write([]byte("OK"))
 	})
 
-	// Rotas públicas — sem login necessário
 	r.Get("/api/search", searchHandler.HandleSearch)
 	r.Get("/api/anime/{id}", animeHandler.HandleGetAnime)
-	r.Get("/api/anime/{id}/statistics", animeHandler.HandleGetStatistics)
+	r.Get("/api/anime/{id}/statistics", animeHandler.HandleGetStats)
 	r.Get("/api/ranking", rankingHandler.HandleGetTopAnime)
 	r.Get("/api/curation", curationHandler.HandleList)
 
 	r.Post("/api/anime/bulk", animeHandler.HandleGetAnimesByIDs)
 
-	// 5. Rotas protegidas que exigem token válido
 	r.Group(func(protegido chi.Router) {
 		protegido.Use(middleware.RequireAuth)
 
@@ -78,10 +74,8 @@ func main() {
 		protegido.Put("/api/entries/{id}", entriesHandler.HandleUpdate)
 		protegido.Delete("/api/entries/{id}", entriesHandler.HandleDelete)
 		protegido.Get("/api/stats/user", statsHandler.HandleGetUserStats)
-
 	})
 
-	// 6. Rotas de Admin (Requer Login E ser o dono do sistema)
 	r.Group(func(admin chi.Router) {
 		admin.Use(middleware.RequireAuth)
 		admin.Use(middleware.RequireAdmin)
@@ -96,7 +90,6 @@ func main() {
 		admin.Delete("/api/curation/{id}", curationHandler.HandleDelete)
 	})
 
-	// 7. Servindo o Frontend (React/Vite) como Single Page Application
 	workDir, _ := os.Getwd()
 	filesDir := filepath.Join(workDir, "client", "dist")
 
@@ -104,22 +97,17 @@ func main() {
 		path := filepath.Join(filesDir, req.URL.Path)
 		_, err := os.Stat(path)
 
-		// Se o arquivo não existir (ex: usuário digitou /rankings) ou for a raiz (/),
-		// nós devolvemos o index.html e deixamos o React Router cuidar do resto.
 		if os.IsNotExist(err) || req.URL.Path == "/" {
 			http.ServeFile(w, req, filepath.Join(filesDir, "index.html"))
 			return
 		}
 
-		// Se o arquivo existir de fato (ex: um .js ou .css dentro da pasta assets), servimos ele.
 		http.ServeFile(w, req, path)
 	})
-	
-	// Inicia o servidor
+
 	port := os.Getenv("PORT")
 	log.Printf("Servidor rodando na porta %s...", port)
 	if err := http.ListenAndServe(":"+port, r); err != nil {
 		log.Fatalf("Erro ao iniciar o servidor: %v", err)
 	}
-
 }

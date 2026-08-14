@@ -18,7 +18,7 @@ interface AnimeDetail {
   studios: { name: string }[]
   streaming: { name: string; url: string }[]
   theme: { openings: string[]; endings: string[] }
-  relations: { relation: string; entry: { mal_id: number; type: string; name: string }[] }[]
+  relations: { relation: string; entry: { mal_id: number; type: string; name: string; image?: string }[] }[]
   characters?: { id: number; name: string; image: string; role: string }[]
 }
 
@@ -198,7 +198,7 @@ export default function Detalhes() {
     return (
       <div className="min-h-[70vh] flex flex-col items-center justify-center">
         <div className="w-12 h-12 rounded-full border-4 border-line border-t-holo-3 animate-spin mb-4"></div>
-        <p className="font-mono text-muted text-sm tracking-widest">// CARREGANDO DADOS...</p>
+        <p className="font-mono text-muted text-sm tracking-widest">Carregando anime...</p>
       </div>
     )
   }
@@ -219,7 +219,7 @@ export default function Detalhes() {
   return (
     <div className="-mt-24 pb-20">
 
-      {/* HERO BANNER AUMENTADO COM PROTEÇÃO DE CONTRASTE */}
+      {/* BANNER GIGANTE */}
       <div className="relative h-[300px] md:h-[450px] w-full overflow-hidden bg-panel-2">
         {anime.bannerImage ? (
           <div 
@@ -229,13 +229,10 @@ export default function Detalhes() {
         ) : (
           <div className="absolute inset-0 bg-gradient-to-br from-[#3a1a4a] to-[#0A0714]" />
         )}
-        {/* Degradê superior forte para proteger a legibilidade da Navbar */}
         <div className="absolute top-0 left-0 right-0 h-36 bg-gradient-to-b from-void/95 via-void/60 to-transparent z-10" />
-        {/* Degradê inferior para suavizar a transição pro corpo da página */}
         <div className="absolute inset-0 bg-gradient-to-t from-void via-void/40 to-transparent z-10" />
       </div>
 
-      {/* Margens negativas ajustadas para o novo tamanho do banner */}
       <div className="max-w-[1040px] mx-auto px-5 -mt-[120px] md:-mt-[160px] relative z-20 pb-2">
 
         <div className="flex flex-col sm:flex-row gap-5 sm:items-end mb-8 text-center sm:text-left items-center">
@@ -505,20 +502,49 @@ export default function Detalhes() {
               </section>
             )}
 
+            {/* AQUI ESTÁ A CORREÇÃO DAS IMAGENS! */}
             {anime.relations?.length > 0 && (
               <section id="relacionados">
                 <h2 className="font-anton text-base uppercase mb-4 flex items-center gap-2 select-none">
                   <span className="font-mono text-[11px] text-holo-3">06</span> Títulos Relacionados
                 </h2>
                 <div className="flex gap-4 overflow-x-auto pb-4 scrollbar-hide">
-                  {anime.relations.map((rel, i) => (
-                    <div key={i} className="flex-none w-[160px] bg-panel border border-line rounded-xl p-4">
-                      <div className="font-mono text-[10px] text-holo-2 mb-2 uppercase select-none">{rel.relation}</div>
-                      <div className="text-[13px] font-bold leading-tight">
-                        {rel.entry[0]?.name || 'Título Desconhecido'}
-                      </div>
-                    </div>
-                  ))}
+                  {anime.relations
+                    .filter(rel => ['PREQUEL', 'SEQUEL', 'SPIN_OFF', 'ADAPTATION', 'SIDE_STORY', 'PARENT'].includes(rel.relation))
+                    .map((rel, i) => {
+                      
+                      const traduzirRelacao = (r: string) => {
+                        const map: Record<string, string> = {
+                          'PREQUEL': 'Prequela', 'SEQUEL': 'Sequência', 'SPIN_OFF': 'Spin-off',
+                          'ADAPTATION': 'Adaptação', 'SIDE_STORY': 'História Paralela', 'PARENT': 'História Principal'
+                        }
+                        return map[r] || r
+                      }
+                      
+                      const relationAnime = rel.entry[0]
+                      if(!relationAnime) return null
+
+                      return (
+                        <Link 
+                          key={i} 
+                          to={`/anime/${relationAnime.mal_id}`}
+                          className="flex-none w-[220px] bg-panel border border-line rounded-xl p-3 transition-colors hover:border-holo-2 group cursor-pointer flex flex-col justify-between"
+                        >
+                          <div className="font-mono text-[10px] text-holo-2 mb-2 uppercase select-none group-hover:text-holo-3 transition-colors">{traduzirRelacao(rel.relation)}</div>
+                          
+                          <div className="flex items-center gap-3">
+                            {relationAnime.image ? (
+                              <img src={relationAnime.image} alt={relationAnime.name} className="w-12 h-16 object-cover rounded-md border border-line shrink-0 bg-panel-2" />
+                            ) : (
+                              <div className="w-12 h-16 rounded-md border border-line shrink-0 bg-panel-2 flex items-center justify-center text-muted-2 text-[9px] text-center leading-tight">Sem foto</div>
+                            )}
+                            <div className="text-[12px] font-bold leading-tight text-text group-hover:opacity-80 transition-opacity line-clamp-3">
+                              {relationAnime.name}
+                            </div>
+                          </div>
+                        </Link>
+                      )
+                  })}
                 </div>
               </section>
             )}

@@ -82,7 +82,7 @@ query ($page: Int, $perPage: Int, $search: String, $sort: [MediaSort], $genre_in
       title { romaji english }
       status
       episodes
-	  duration
+      duration
       averageScore
       coverImage { large }
       genres
@@ -98,7 +98,7 @@ type aniListMedia struct {
 	Status        string                           `json:"status"`
 	Description   string                           `json:"description"`
 	Episodes      int                              `json:"episodes"`
-	Duration      int                              `json:"duration"`
+	Duration      int                              `json:"duration"` // Duração do EP
 	AverageScore  int                              `json:"averageScore"`
 	BannerImage   string                           `json:"bannerImage"`
 	CoverImage    struct{ Large string }           `json:"coverImage"`
@@ -148,6 +148,9 @@ type aniListMedia struct {
 					Romaji  string `json:"romaji"`
 					English string `json:"english"`
 				} `json:"title"`
+				CoverImage struct {
+					Large string `json:"large"`
+				} `json:"coverImage"` // Imagem da Relação
 			} `json:"node"`
 		} `json:"edges"`
 	} `json:"relations"`
@@ -211,6 +214,7 @@ func (m *aniListMedia) toAnime() Anime {
 			MalID int    `json:"mal_id"`
 			Type  string `json:"type"`
 			Name  string `json:"name"`
+			Image string `json:"image"`
 		} `json:"entry"`
 	}
 	for _, edge := range m.Relations.Edges {
@@ -224,6 +228,7 @@ func (m *aniListMedia) toAnime() Anime {
 				MalID int    `json:"mal_id"`
 				Type  string `json:"type"`
 				Name  string `json:"name"`
+				Image string `json:"image"`
 			} `json:"entry"`
 		}{
 			Relation: edge.RelationType,
@@ -231,10 +236,12 @@ func (m *aniListMedia) toAnime() Anime {
 				MalID int    `json:"mal_id"`
 				Type  string `json:"type"`
 				Name  string `json:"name"`
+				Image string `json:"image"`
 			}{{
 				MalID: edge.Node.IDMal,
 				Type:  edge.Node.Type,
 				Name:  relTitle,
+				Image: edge.Node.CoverImage.Large, // Extraindo a imagem da API
 			}},
 		})
 	}
@@ -331,7 +338,7 @@ query ($idMal: Int) {
     status
     description
     episodes
-	duration
+    duration
     averageScore
     coverImage { large }
     bannerImage
@@ -345,7 +352,7 @@ query ($idMal: Int) {
       }
     }
     studios { edges { node { name } } }
-    relations { edges { relationType node { idMal type title { romaji english } } } }
+    relations { edges { relationType node { idMal type title { romaji english } coverImage { large } } } }
   }
 }`
 
@@ -358,7 +365,7 @@ query ($idMal_in: [Int]) {
       status
       description
       episodes
-	  duration
+      duration
       averageScore
       coverImage { large }
       genres
@@ -433,7 +440,7 @@ query ($page: Int, $perPage: Int, $sort: [MediaSort], $genre_in: [String], $tag_
       status
       description
       episodes
-	  duration
+      duration
       averageScore
       coverImage { large }
       genres
@@ -489,7 +496,6 @@ func (c *Client) GetTopAnime(ctx context.Context, page int, perPage int, f Searc
 	return &AnimeSearchResponse{Data: animes}, nil
 }
 
-// fetchByAliases realiza uma busca em lote via GraphQL Aliases para IDs que falharam no idMal_in.
 func (c *Client) fetchByAliases(ctx context.Context, missingIDs []int) ([]Anime, error) {
 	if len(missingIDs) == 0 {
 		return nil, nil
@@ -504,7 +510,7 @@ func (c *Client) fetchByAliases(ctx context.Context, missingIDs []int) ([]Anime,
     status
     description
     episodes
-	duration
+    duration
     averageScore
     coverImage { large }
     genres
@@ -535,13 +541,11 @@ func (c *Client) fetchByAliases(ctx context.Context, missingIDs []int) ([]Anime,
 	return fetched, nil
 }
 
-// GetAnimesByMalIDs busca uma lista de animes por IDs com fallback em lote por Aliases.
 func (c *Client) GetAnimesByMalIDs(ctx context.Context, malIDs []int) (*AnimeSearchResponse, error) {
 	if len(malIDs) == 0 {
 		return &AnimeSearchResponse{Data: []Anime{}}, nil
 	}
 
-	// 1. Sanitização e deduplicação de IDs
 	seen := make(map[int]bool)
 	var uniqueIDs []int
 	for _, id := range malIDs {
@@ -554,7 +558,6 @@ func (c *Client) GetAnimesByMalIDs(ctx context.Context, malIDs []int) (*AnimeSea
 	var allAnimes []Anime
 	chunkSize := 50
 
-	// 2. Processar em chunks de 50 (limite de paginação da AniList)
 	for i := 0; i < len(uniqueIDs); i += chunkSize {
 		end := i + chunkSize
 		if end > len(uniqueIDs) {
@@ -568,7 +571,6 @@ func (c *Client) GetAnimesByMalIDs(ctx context.Context, malIDs []int) (*AnimeSea
 
 		foundMap := make(map[int]bool)
 
-		// Busca primária por idMal_in
 		if err := c.gqlRequest(ctx, byIdsQuery, map[string]interface{}{"idMal_in": chunk}, &resultado); err == nil {
 			for _, m := range resultado.Page.Media {
 				if m.IDMal > 0 {
@@ -580,7 +582,6 @@ func (c *Client) GetAnimesByMalIDs(ctx context.Context, malIDs []int) (*AnimeSea
 			log.Printf("[WARN ANILIST] Falha na consulta idMal_in para o chunk %v: %v", chunk, err)
 		}
 
-		// 3. Identificar IDs ausentes no retorno primário
 		var missing []int
 		for _, id := range chunk {
 			if !foundMap[id] {
@@ -588,7 +589,6 @@ func (c *Client) GetAnimesByMalIDs(ctx context.Context, malIDs []int) (*AnimeSea
 			}
 		}
 
-		// 4. Fallback em lote único por Aliases para recuperar os ausentes
 		if len(missing) > 0 {
 			log.Printf("[INFO ANILIST] %d animes não retornados via idMal_in. Executando fallback por Aliases: %v", len(missing), missing)
 			fallbackAnimes, err := c.fetchByAliases(ctx, missing)

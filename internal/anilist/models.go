@@ -27,7 +27,7 @@ type Anime struct {
 	Status      string      `json:"status"`
 	Synopsis    string      `json:"synopsis"`
 	Episodes    int         `json:"episodes"`
-	Duration    int         `json:"duration"`
+	Duration    int         `json:"duration"` // Duração do episódio em minutos (Estatísticas)
 	Score       float64     `json:"score"`
 	Ranking     int         `json:"ranking,omitempty"` 
 	BannerImage string      `json:"bannerImage,omitempty"`
@@ -55,6 +55,7 @@ type Anime struct {
 			MalID int    `json:"mal_id"`
 			Type  string `json:"type"`
 			Name  string `json:"name"`
+			Image string `json:"image"` // Imagem da Capa do anime relacionado
 		} `json:"entry"`
 	} `json:"relations"`
 

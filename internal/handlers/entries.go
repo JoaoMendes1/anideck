@@ -7,35 +7,52 @@ import (
 	"log"
 	"net/http"
 
-	"github.com/go-chi/chi/v5"
-	"github.com/microcosm-cc/bluemonday"
 	"github.com/JoaoMendes1/anideck/internal/anilist"
 	"github.com/JoaoMendes1/anideck/internal/database"
 	"github.com/JoaoMendes1/anideck/internal/entries"
 	"github.com/JoaoMendes1/anideck/internal/middleware"
+	"github.com/go-chi/chi/v5"
 )
-
-var sanitizer = bluemonday.StrictPolicy()
 
 type EntriesHandler struct{}
 
-func (h *EntriesHandler) HandleCreate(w http.ResponseWriter, r *http.Request) {
-	userID, ok := r.Context().Value(middleware.UserIDKey).(string)
-	token, tokenOk := r.Context().Value(middleware.TokenKey).(string)
+func (h *EntriesHandler) HandleList(w http.ResponseWriter, r *http.Request) {
+	token, ok := r.Context().Value(middleware.TokenKey).(string)
+	userID, userOk := r.Context().Value(middleware.UserIDKey).(string)
+	if !ok || !userOk {
+		http.Error(w, "Não autorizado", http.StatusUnauthorized)
+		return
+	}
 
-	if !ok || !tokenOk || userID == "" {
-		http.Error(w, "Não autenticado", http.StatusUnauthorized)
+	dbClient, errClient := database.ClientWithToken(token)
+	if errClient != nil {
+		http.Error(w, "Erro interno de conexão", http.StatusInternalServerError)
+		return
+	}
+
+	data, _, err := dbClient.From("media_entries").Select("*", "exact", false).Eq("user_id", userID).Execute()
+	if err != nil {
+		log.Printf("[ERRO] Falha ao buscar entries do DB: %v", err)
+		http.Error(w, "Erro ao buscar entries", http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.Write(data)
+}
+
+func (h *EntriesHandler) HandleCreate(w http.ResponseWriter, r *http.Request) {
+	token, ok := r.Context().Value(middleware.TokenKey).(string)
+	if !ok {
+		http.Error(w, "Não autorizado", http.StatusUnauthorized)
 		return
 	}
 
 	var entrada entries.MediaEntry
 	if err := json.NewDecoder(r.Body).Decode(&entrada); err != nil {
-		http.Error(w, "Corpo da requisição inválido", http.StatusBadRequest)
+		http.Error(w, "Payload inválido", http.StatusBadRequest)
 		return
 	}
-
-	entrada.UserID = userID
-	entrada.Anotacao = sanitizer.Sanitize(entrada.Anotacao)
 
 	dbClient, errClient := database.ClientWithToken(token)
 	if errClient != nil {
@@ -43,79 +60,31 @@ func (h *EntriesHandler) HandleCreate(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var resultado []entries.MediaEntry
-	data, _, err := dbClient.From("media_entries").Insert(entrada, false, "", "representation", "exact").Execute()
+	data, _, err := dbClient.From("media_entries").Insert(entrada, false, "exact", "", "").Execute()
 	if err != nil {
-		log.Printf("[ERRO DB] HandleCreate: %v", err)
-		http.Error(w, "Erro ao salvar entrada", http.StatusInternalServerError)
+		http.Error(w, "Erro ao salvar entry", http.StatusInternalServerError)
 		return
 	}
-	_ = json.Unmarshal(data, &resultado)
 
 	syncMetadataCacheAsync(entrada.MalID, token)
 
 	w.Header().Set("Content-Type", "application/json")
-	if err := json.NewEncoder(w).Encode(resultado); err != nil {
-		log.Printf("[ERRO] HandleCreate: falha ao serializar resposta: %v", err)
-	}
-}
-
-func (h *EntriesHandler) HandleList(w http.ResponseWriter, r *http.Request) {
-	userID, ok := r.Context().Value(middleware.UserIDKey).(string)
-	token, tokenOk := r.Context().Value(middleware.TokenKey).(string)
-
-	if !ok || !tokenOk || userID == "" {
-		http.Error(w, "Não autenticado", http.StatusUnauthorized)
-		return
-	}
-
-	dbClient, errClient := database.ClientWithToken(token)
-	if errClient != nil {
-		http.Error(w, "Erro interno de conexão", http.StatusInternalServerError)
-		return
-	}
-
-	var resultado []entries.MediaEntry
-	data, _, err := dbClient.From("media_entries").
-		Select("*", "exact", false).
-		Eq("user_id", userID).
-		Execute()
-
-	if err != nil {
-		log.Printf("[ERRO DB] HandleList: %v", err)
-		http.Error(w, "Erro ao buscar lista", http.StatusInternalServerError)
-		return
-	}
-	_ = json.Unmarshal(data, &resultado)
-
-	w.Header().Set("Content-Type", "application/json")
-	if err := json.NewEncoder(w).Encode(resultado); err != nil {
-		log.Printf("[ERRO] HandleList: falha ao serializar resposta: %v", err)
-	}
+	w.Write(data)
 }
 
 func (h *EntriesHandler) HandleUpdate(w http.ResponseWriter, r *http.Request) {
-	userID, ok := r.Context().Value(middleware.UserIDKey).(string)
-	token, tokenOk := r.Context().Value(middleware.TokenKey).(string)
-
-	if !ok || !tokenOk || userID == "" {
-		http.Error(w, "Não autenticado", http.StatusUnauthorized)
-		return
-	}
-
 	id := chi.URLParam(r, "id")
-	if id == "" {
-		http.Error(w, "ID da entrada é obrigatório", http.StatusBadRequest)
+	token, ok := r.Context().Value(middleware.TokenKey).(string)
+	if !ok {
+		http.Error(w, "Não autorizado", http.StatusUnauthorized)
 		return
 	}
+
 	var entrada entries.MediaEntry
 	if err := json.NewDecoder(r.Body).Decode(&entrada); err != nil {
-		http.Error(w, "Corpo da requisição inválido!", http.StatusBadRequest)
+		http.Error(w, "Payload inválido", http.StatusBadRequest)
 		return
 	}
-
-	entrada.UserID = userID
-	entrada.Anotacao = sanitizer.Sanitize(entrada.Anotacao)
 
 	dbClient, errClient := database.ClientWithToken(token)
 	if errClient != nil {
@@ -123,40 +92,23 @@ func (h *EntriesHandler) HandleUpdate(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var resultado []entries.MediaEntry
-	data, _, err := dbClient.From("media_entries").
-		Update(entrada, "representation", "exact").
-		Eq("id", id).
-		Eq("user_id", userID).
-		Execute()
-
+	data, _, err := dbClient.From("media_entries").Update(entrada, "", "exact").Eq("id", id).Execute()
 	if err != nil {
-		log.Printf("[ERRO DB] HandleUpdate (id=%s): %v", id, err)
-		http.Error(w, "Erro ao atualizar entrada", http.StatusInternalServerError)
+		http.Error(w, "Erro ao atualizar entry", http.StatusInternalServerError)
 		return
 	}
-	_ = json.Unmarshal(data, &resultado)
 
 	syncMetadataCacheAsync(entrada.MalID, token)
 
 	w.Header().Set("Content-Type", "application/json")
-	if err := json.NewEncoder(w).Encode(resultado); err != nil {
-		log.Printf("[ERRO] HandleUpdate: falha ao serializar resposta: %v", err)
-	}
+	w.Write(data)
 }
 
 func (h *EntriesHandler) HandleDelete(w http.ResponseWriter, r *http.Request) {
-	userID, ok := r.Context().Value(middleware.UserIDKey).(string)
-	token, tokenOk := r.Context().Value(middleware.TokenKey).(string)
-
-	if !ok || !tokenOk || userID == "" {
-		http.Error(w, "Não autenticado", http.StatusUnauthorized)
-		return
-	}
-
 	id := chi.URLParam(r, "id")
-	if id == "" {
-		http.Error(w, "ID da entrada é obrigatório", http.StatusBadRequest)
+	token, ok := r.Context().Value(middleware.TokenKey).(string)
+	if !ok {
+		http.Error(w, "Não autorizado", http.StatusUnauthorized)
 		return
 	}
 
@@ -166,25 +118,20 @@ func (h *EntriesHandler) HandleDelete(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	_, _, err := dbClient.From("media_entries").
-		Delete("", "exact").
-		Eq("id", id).
-		Eq("user_id", userID).
-		Execute()
-
+	_, _, err := dbClient.From("media_entries").Delete("", "exact").Eq("id", id).Execute()
 	if err != nil {
-		log.Printf("[ERRO DB] HandleDelete (id=%s): %v", id, err)
-		http.Error(w, "Erro ao remover entrada", http.StatusInternalServerError)
+		http.Error(w, "Erro ao excluir entry", http.StatusInternalServerError)
 		return
 	}
 
 	w.WriteHeader(http.StatusNoContent)
 }
+
 func syncMetadataCacheAsync(malID int, token string) {
 	go func() {
 		client := anilist.NewClient()
 		ctx := context.Background()
-		
+
 		res, err := client.GetAnimeById(ctx, fmt.Sprintf("%d", malID))
 		if err != nil || res == nil {
 			log.Printf("[CACHE METADATA] Erro ao buscar dados na AniList para mal_id %d: %v", malID, err)
@@ -193,8 +140,12 @@ func syncMetadataCacheAsync(malID int, token string) {
 		anime := res.Data
 
 		var genres, studios []string
-		for _, g := range anime.Genres { genres = append(genres, g.Name) }
-		for _, s := range anime.Studios { studios = append(studios, s.Name) }
+		for _, g := range anime.Genres {
+			genres = append(genres, g.Name)
+		}
+		for _, s := range anime.Studios {
+			studios = append(studios, s.Name)
+		}
 
 		payload := map[string]interface{}{
 			"mal_id":           anime.MalID,

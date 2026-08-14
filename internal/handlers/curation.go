@@ -11,7 +11,11 @@ import (
 	"github.com/JoaoMendes1/anideck/internal/middleware"
 	"github.com/JoaoMendes1/anideck/internal/models"
 	"github.com/go-chi/chi/v5"
+	"github.com/microcosm-cc/bluemonday"
 )
+
+// Inicia o higienizador para evitar ataques XSS nos textos de curadoria
+var sanitizer = bluemonday.StrictPolicy()
 
 type CurationHandler struct{}
 
@@ -67,7 +71,6 @@ func (h *CurationHandler) HandleCreate(w http.ResponseWriter, r *http.Request) {
 	}
 	_ = json.Unmarshal(data, &resultado)
 
-	// Gatilho que limpa o Cache do Ranking
 	InvalidateRankingCache()
 
 	w.Header().Set("Content-Type", "application/json")
@@ -114,7 +117,6 @@ func (h *CurationHandler) HandleUpdate(w http.ResponseWriter, r *http.Request) {
 	}
 	_ = json.Unmarshal(data, &resultado)
 
-	// Gatilho que limpa o Cache do Ranking
 	InvalidateRankingCache()
 
 	w.Header().Set("Content-Type", "application/json")
@@ -151,7 +153,6 @@ func (h *CurationHandler) HandleDelete(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Gatilho que limpa o Cache do Ranking
 	InvalidateRankingCache()
 
 	w.WriteHeader(http.StatusNoContent)
