@@ -1,15 +1,22 @@
+
+
+# File Contents
+
+## client/src/pages/PainelAdmin.tsx
+
+```tsx
 import { useState, useEffect } from 'react'
 import { supabase } from '../lib/supabase'
 import { Link, Navigate } from 'react-router-dom'
 import { useToast } from '../contexts/ToastContext'
-import { Sparkles, X, LayoutList, ArrowLeft } from 'lucide-react'
+import { Sparkles, X, LayoutList } from 'lucide-react'
 import { LogoMark } from '../components/Brand'
+import { getCategoryTheme } from '../lib/filters'
 import Sheet from '../components/Sheet'
 import BuscaAniList, { type AniListMedia } from '../components/BuscaAniList'
 import ImageUploadField from '../components/ImageUploadField'
 import CuradoriaPersonagens from '../components/CuradoriaPersonagens'
 import DestaquesRail from '../components/DestaquesRail'
-import ReorderableTags from '../components/ReorderableTags'
 import type { CuratedAnime, CuratedCharacter } from '../types/curation'
 
 export default function PainelAdmin() {
@@ -19,6 +26,7 @@ export default function PainelAdmin() {
   const [error, setError] = useState<string | null>(null)
   const [isAdmin, setIsAdmin] = useState<boolean | null>(null)
 
+  
   const [formularioAberto, setFormularioAberto] = useState(false)
 
   const [termoBusca, setTermoBusca] = useState('')
@@ -34,6 +42,7 @@ export default function PainelAdmin() {
   const [ordem, setOrdem] = useState(0)
   const [sinopse, setSinopse] = useState('')
   const [tags, setTags] = useState<string[]>([])
+  const [tagInput, setTagInput] = useState('')
 
   const [coverImage, setCoverImage] = useState('')
   const [bannerImage, setBannerImage] = useState('')
@@ -48,7 +57,9 @@ export default function PainelAdmin() {
   }, [])
 
   const verificarAcesso = async () => {
-    const { data: { session } } = await supabase.auth.getSession()
+    const {
+      data: { session },
+    } = await supabase.auth.getSession()
     if (!session) {
       setIsAdmin(false)
       return
@@ -90,7 +101,7 @@ export default function PainelAdmin() {
       }
     `
     try {
-      const res = await fetch('https://graphql.anilist.co', {
+      const res = await fetch('https:
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ query, variables: { search: termoBusca } }),
@@ -124,6 +135,19 @@ export default function PainelAdmin() {
     setTermoBusca('')
   }
 
+  const adicionarTag = (valor: string) => {
+    const novaTag = valor.trim().replace(/,/g, '')
+    if (novaTag && !tags.includes(novaTag)) setTags([...tags, novaTag])
+    setTagInput('')
+  }
+  const handleKeyDownTag = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter' || e.key === ',') {
+      e.preventDefault()
+      adicionarTag(tagInput)
+    }
+  }
+  const removerTag = (tagRemover: string) => setTags(tags.filter((t) => t !== tagRemover))
+
   const uploadImagem = async (file: File): Promise<string | null> => {
     setUploading(true)
     const fileExt = file.name.split('.').pop()
@@ -133,7 +157,11 @@ export default function PainelAdmin() {
     try {
       const { error: uploadError } = await supabase.storage.from('curadoria').upload(filePath, file)
       if (uploadError) throw uploadError
-      const { data: { publicUrl } } = supabase.storage.from('curadoria').getPublicUrl(filePath)
+
+      const {
+        data: { publicUrl },
+      } = supabase.storage.from('curadoria').getPublicUrl(filePath)
+
       showToast('Imagem enviada com sucesso!', 'success')
       return publicUrl
     } catch {
@@ -164,7 +192,9 @@ export default function PainelAdmin() {
     }
 
     try {
-      const { data: { session } } = await supabase.auth.getSession()
+      const {
+        data: { session },
+      } = await supabase.auth.getSession()
       if (!session) {
         showToast('Sessão expirada. Faça login novamente.', 'error')
         return
@@ -191,7 +221,9 @@ export default function PainelAdmin() {
     if (!itemParaExcluir) return
     setExcluindo(true)
     try {
-      const { data: { session } } = await supabase.auth.getSession()
+      const {
+        data: { session },
+      } = await supabase.auth.getSession()
       const response = await fetch(`/api/curation/${itemParaExcluir.id}`, {
         method: 'DELETE',
         headers: { Authorization: `Bearer ${session?.access_token}` },
@@ -224,13 +256,13 @@ export default function PainelAdmin() {
     setResultadosBusca([])
   }
 
+  
   const abrirNovoDestaque = () => {
     limparFormulario()
     setFormularioAberto(true)
-    // Scroll para o topo no mobile ao abrir o form
-    window.scrollTo({ top: 0, behavior: 'smooth' })
   }
 
+  
   const fecharEditor = () => {
     limparFormulario()
     setFormularioAberto(false)
@@ -250,15 +282,6 @@ export default function PainelAdmin() {
     setCharacters(anime.custom_characters || [])
     setPreviewTitulo(anime.custom_title)
     setFormularioAberto(true)
-    // Scroll para o topo no mobile ao abrir edição
-    window.scrollTo({ top: 0, behavior: 'smooth' })
-  }
-
-  // Auto-resize do textarea
-  const handleSinopseChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
-    setSinopse(e.target.value)
-    e.target.style.height = 'auto'
-    e.target.style.height = `${e.target.scrollHeight}px`
   }
 
   if (isAdmin === false) return <Navigate to="/deck" replace />
@@ -293,27 +316,22 @@ export default function PainelAdmin() {
       </div>
 
       <div className="max-w-[1400px] mx-auto p-4 sm:p-6 lg:p-8 mt-2 relative z-10">
-        <div className={`mb-8 ${formularioAberto ? 'hidden lg:block' : 'block'}`}>
+        <div className="mb-8">
           <h1 className="font-anton text-3xl uppercase">Painel de Curadoria</h1>
           <p className="text-muted text-sm mt-1">Gerencie os "Destaques AniDeck" e refine a exibição de capas e personagens.</p>
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-[360px_1fr] gap-6 lg:gap-8 items-start">
-          
-          {/* Lado Esquerdo: Lista - Oculta no mobile se o formulário estiver aberto */}
-          <div className={`lg:block ${formularioAberto ? 'hidden' : 'block'}`}>
-            <DestaquesRail
-              destaques={destaques}
-              selectedId={editId}
-              onSelect={editarDestaque}
-              onDelete={(id, titulo) => setItemParaExcluir({ id, titulo })}
-              onNovo={abrirNovoDestaque}
-              novoAtivo={formularioAberto && !editId}
-            />
-          </div>
+          <DestaquesRail
+            destaques={destaques}
+            selectedId={editId}
+            onSelect={editarDestaque}
+            onDelete={(id, titulo) => setItemParaExcluir({ id, titulo })}
+            onNovo={abrirNovoDestaque}
+            novoAtivo={formularioAberto && !editId}
+          />
 
-          {/* Lado Direito: Formulário - Oculto no mobile se não houver formulário aberto. REMOVIDO OVERFLOW-HIDDEN! */}
-          <div className={`bg-panel border border-line rounded-2xl shadow-xl lg:sticky lg:top-24 ${formularioAberto ? 'block' : 'hidden lg:block'}`}>
+          <div className="bg-panel border border-line rounded-2xl shadow-xl lg:sticky lg:top-24 overflow-hidden">
             {!formularioAberto ? (
               <div className="flex flex-col items-center justify-center text-center py-20 px-6">
                 <div className="w-14 h-14 rounded-2xl bg-panel-2 border border-line flex items-center justify-center mb-4 text-muted">
@@ -332,15 +350,6 @@ export default function PainelAdmin() {
               </div>
             ) : (
               <div className="p-4 sm:p-6">
-                
-                {/* Botão de voltar exclusivo para Mobile */}
-                <button 
-                  onClick={fecharEditor} 
-                  className="lg:hidden flex items-center gap-1.5 text-xs font-bold text-holo-2 bg-holo-2/10 px-3 py-1.5 rounded-lg mb-6 hover:bg-holo-2/20 transition-colors"
-                >
-                  <ArrowLeft size={14} /> Voltar para a lista
-                </button>
-
                 <div className="flex justify-between items-center mb-4">
                   <h3 className="font-extrabold text-sm">{editId ? '✎ Editando Destaque' : '🔍 Novo Destaque'}</h3>
                   <div className="flex items-center gap-3">
@@ -350,14 +359,13 @@ export default function PainelAdmin() {
                     <button
                       onClick={fecharEditor}
                       aria-label="Fechar editor"
-                      className="w-7 h-7 rounded-lg bg-panel-2 border border-line text-muted hover:text-white hover:border-holo-2 transition-colors cursor-pointer hidden lg:flex items-center justify-center"
+                      className="w-7 h-7 rounded-lg bg-panel-2 border border-line text-muted hover:text-white hover:border-holo-2 transition-colors cursor-pointer flex items-center justify-center"
                     >
                       <X size={14} />
                     </button>
                   </div>
                 </div>
 
-                {/* Dropdown de busca agora fica sobreposto sem ser cortado */}
                 <BuscaAniList
                   termoBusca={termoBusca}
                   onChangeTermo={setTermoBusca}
@@ -438,14 +446,42 @@ export default function PainelAdmin() {
                       onValidationError={(msg) => showToast(msg, 'error')}
                     />
 
-                    <ReorderableTags tags={tags} onChange={setTags} />
+                    <div>
+                      <label className="block text-xs font-bold text-muted mb-2 uppercase">Tags Customizadas</label>
+                      <div className="flex flex-wrap gap-2 p-2 border border-line rounded-xl bg-panel-2 min-h-[44px] items-center">
+                        {tags.map((tag) => (
+                          <span
+                            key={tag}
+                            className={`flex items-center gap-1 px-2 py-1 rounded-md text-[11px] font-bold border ${getCategoryTheme(tag)}`}
+                          >
+                            {tag}{' '}
+                            <button
+                              type="button"
+                              onClick={() => removerTag(tag)}
+                              className="hover:text-white opacity-70 ml-1 cursor-pointer"
+                            >
+                              ×
+                            </button>
+                          </span>
+                        ))}
+                        <input
+                          type="text"
+                          value={tagInput}
+                          onChange={(e) => setTagInput(e.target.value)}
+                          onKeyDown={handleKeyDownTag}
+                          onBlur={() => adicionarTag(tagInput)}
+                          placeholder="Nova tag..."
+                          className="bg-transparent border-none outline-none text-sm w-32 flex-1"
+                        />
+                      </div>
+                    </div>
 
                     <div>
                       <label className="block text-xs font-bold text-muted uppercase mb-2">Sinopse Curada</label>
                       <textarea
                         value={sinopse}
-                        onChange={handleSinopseChange}
-                        className="w-full bg-panel-2 border border-line rounded-xl px-4 py-3 text-sm outline-none min-h-[120px] focus:border-holo-2 resize-none custom-scrollbar"
+                        onChange={(e) => setSinopse(e.target.value)}
+                        className="w-full bg-panel-2 border border-line rounded-xl px-4 py-3 text-sm outline-none min-h-[100px] focus:border-holo-2"
                       />
                     </div>
 
@@ -499,3 +535,38 @@ export default function PainelAdmin() {
     </div>
   )
 }
+```
+
+
+# File Contents
+
+## client/src/types/curation.ts
+
+```typescript
+
+
+
+
+
+
+export interface CuratedCharacter {
+  name: string
+  image: string
+  role: string
+}
+
+export interface CuratedAnime {
+  id?: string
+  mal_id: number
+  custom_title: string
+  custom_synopsis?: string
+  custom_format?: string
+  custom_status?: string
+  custom_tags?: string[]
+  custom_cover_image?: string
+  custom_banner_image?: string
+  custom_characters?: CuratedCharacter[]
+  order_index: number
+}
+```
+
