@@ -4,6 +4,7 @@ import { PlayCircle, Star, AlertCircle, Save, Trash2, Bookmark } from 'lucide-re
 import { supabase } from '../lib/supabase'
 import { useToast } from '../contexts/ToastContext'
 import BotaoCopiar from '../components/BotaoCopiar'
+import ReactMarkdown from 'react-markdown'
 
 interface AnimeDetail {
   mal_id: number
@@ -340,8 +341,24 @@ export default function Detalhes() {
               <h2 className="font-anton text-base uppercase mb-4 flex items-center gap-2 select-none">
                 <span className="font-mono text-[11px] text-holo-3">01</span> Sinopse
               </h2>
-              <div className="text-muted text-[14.5px] leading-[1.7] whitespace-pre-line bg-panel border border-line rounded-2xl p-6">
-                {anime.synopsis || 'Sinopse não disponível nesta base de dados.'}
+              <div className="text-muted text-[14.5px] leading-[1.7] bg-panel border border-line rounded-2xl p-6">
+                {anime.synopsis ? (
+                  <ReactMarkdown
+                    components={{
+                      // Mapeamos os parágrafos para manter o espaçamento
+                      p: ({node, ...props}) => <p className="mb-4 last:mb-0" {...props} />,
+                      // Mapeamos o Negrito (**) para ficar branco e com peso extra
+                      strong: ({node, ...props}) => <strong className="font-extrabold text-text" {...props} />,
+                      // Mapeamos o Itálico (*) para pegar a cor ciano (holo-3) do nosso tema
+                      em: ({node, ...props}) => <em className="italic text-holo-3" {...props} />
+                    }}
+                  >
+                    {/* Limpamos as aspas que o Bluemonday (Go) encodou antes de passar pro Markdown */}
+                    {anime.synopsis.replace(/&#34;/g, '"').replace(/&#39;/g, "'")}
+                  </ReactMarkdown>
+                ) : (
+                  'Sinopse não disponível nesta base de dados.'
+                )}
               </div>
             </section>
 

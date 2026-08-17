@@ -116,6 +116,9 @@ parênteses (`ui`, `auth`, `db`, etc.) e sempre referenciando a issue com `close
    segurança, legibilidade) antes do commit. Para ajustes pequenos (texto, estilo, correção
    simples), não é necessário parar o fluxo pra isso — o objetivo é ganhar prática de revisão
    real sem travar o ritmo do dia a dia.
+10. **Verificação Cronológica de Dependências (Anti-Legacy):** 
+    Antes de propor a importação de qualquer SDK, pacote externo ou API, você deve **obrigatoriamente cruzar a sua resposta com a linha do tempo atual do projeto**. 
+    Não confie em dados de treinamento defasados. É terminantemente proibido introduzir pacotes obsoletos (deprecated), legados ou em End-of-Life (EOL). Se o ecossistema da ferramenta sofreu unificações ou mudanças estruturais recentes, exija e utilize a versão moderna e oficial. Se não tiver certeza absoluta do pacote atual, avise ou faça uma pesquisa antes de gerar o código.
 
 ## Tom da conversa
 

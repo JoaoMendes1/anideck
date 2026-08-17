@@ -18,6 +18,7 @@ func LoadAndValidateEnv() error {
 		"SUPABASE_PUBLIC_KEY", 
 		"SUPABASE_ANON_KEY",
 		"ADMIN_USER_ID",
+		"GEMINI_API_KEY",
 	}
 
 	for _, v := range requiredVars {

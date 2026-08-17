@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { supabase } from '../lib/supabase'
 import { Link, Navigate } from 'react-router-dom'
 import { useToast } from '../contexts/ToastContext'
@@ -12,6 +12,7 @@ import DestaquesRail from '../components/DestaquesRail'
 import ReorderableTags from '../components/ReorderableTags'
 import imageCompression from 'browser-image-compression'
 import type { CuratedAnime, CuratedCharacter } from '../types/curation'
+import ConfigIAModal from '../components/ConfigIAModal'
 
 export default function PainelAdmin() {
   const { showToast } = useToast()
@@ -43,6 +44,10 @@ export default function PainelAdmin() {
   const [itemParaExcluir, setItemParaExcluir] = useState<{ id: string; titulo: string } | null>(null)
   const [excluindo, setExcluindo] = useState(false)
   const [uploading, setUploading] = useState(false)
+  const [gerandoIA, setGerandoIA] = useState(false)
+  const textareaRef = useRef<HTMLTextAreaElement>(null)
+
+  const [configModalAberto, setConfigModalAberto] = useState(false)
 
   const [initialStateHash, setInitialStateHash] = useState('')
   const [isDirty, setIsDirty] = useState(false)
@@ -67,6 +72,14 @@ export default function PainelAdmin() {
     window.addEventListener('beforeunload', handleBeforeUnload)
     return () => window.removeEventListener('beforeunload', handleBeforeUnload)
   }, [isDirty])
+
+  // Auto-expansão do textarea sempre que a sinopse mudar
+  useEffect(() => {
+    if (textareaRef.current) {
+      textareaRef.current.style.height = 'auto'
+      textareaRef.current.style.height = `${textareaRef.current.scrollHeight}px`
+    }
+  }, [sinopse])
 
   const confirmarSaidaSegura = () => {
     if (isDirty) {
@@ -149,24 +162,24 @@ export default function PainelAdmin() {
     setCoverImage(anime.coverImage?.large || '')
     setBannerImage(anime.bannerImage || '')
     setSinopse(anime.synopsis ? anime.synopsis.replace(/<[^>]*>?/gm, '') : '')
-    
+
     const importedChars = (anime as any).characters?.edges?.map((edge: any) => ({
       name: edge.node.name?.full || 'Desconhecido',
       image: edge.node.image?.large || '',
       role: edge.role || 'SUPPORTING'
     })) || []
-    
+
     setCharacters(importedChars)
     setPreviewTitulo(tituloCorreto)
     setResultadosBusca([])
     setTermoBusca('')
 
     setTimeout(() => {
-      setInitialStateHash(JSON.stringify({ 
-        titulo: tituloCorreto, formato: anime.format || 'TV', status: anime.status || 'RELEASING', 
-        ordem: 0, sinopse: anime.synopsis ? anime.synopsis.replace(/<[^>]*>?/gm, '') : '', 
-        tags: anime.genres || [], coverImage: anime.coverImage?.large || '', 
-        bannerImage: anime.bannerImage || '', characters: importedChars 
+      setInitialStateHash(JSON.stringify({
+        titulo: tituloCorreto, formato: anime.format || 'TV', status: anime.status || 'RELEASING',
+        ordem: 0, sinopse: anime.synopsis ? anime.synopsis.replace(/<[^>]*>?/gm, '') : '',
+        tags: anime.genres || [], coverImage: anime.coverImage?.large || '',
+        bannerImage: anime.bannerImage || '', characters: importedChars
       }))
     }, 100)
   }
@@ -180,15 +193,15 @@ export default function PainelAdmin() {
         useWebWorker: true,
         fileType: 'image/webp'
       }
-      
+
       const compressedFile = await imageCompression(file, options)
-      
+
       const fileName = `${Math.random().toString(36).substring(2, 15)}.webp`
       const filePath = `imagens/${fileName}`
 
       const { error: uploadError } = await supabase.storage.from('curadoria').upload(filePath, compressedFile)
       if (uploadError) throw uploadError
-      
+
       const { data: { publicUrl } } = supabase.storage.from('curadoria').getPublicUrl(filePath)
       showToast('Imagem otimizada (WebP) e enviada com sucesso!', 'success')
       return publicUrl
@@ -236,12 +249,56 @@ export default function PainelAdmin() {
 
       if (!response.ok) throw new Error('Falha ao salvar destaque')
       showToast('Destaque salvo com sucesso!')
-      
+
       setIsDirty(false)
       fecharEditorForce()
       carregarDestaques()
     } catch {
       showToast('Erro ao salvar o destaque.', 'error')
+    }
+  }
+
+  const reescreverComIA = async () => {
+    if (!titulo || !sinopse) {
+      showToast('É necessário ter um título e uma sinopse base para a IA trabalhar.', 'error')
+      return
+    }
+
+    setGerandoIA(true)
+    try {
+      const { data: { session } } = await supabase.auth.getSession()
+      if (!session) throw new Error('Sessão expirada')
+
+      const response = await fetch('/api/admin/curation/ai/rewrite', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${session.access_token}`
+        },
+        body: JSON.stringify({ title: titulo, synopsis: sinopse })
+      })
+
+      if (!response.ok) throw new Error('Falha no endpoint da IA')
+
+      const data = await response.json()
+
+      // Injeta a resposta do Gemini direto nos inputs do formulário
+      if (data.sinopse) {
+        setSinopse(data.sinopse)
+      }
+
+      if (data.tags && Array.isArray(data.tags)) {
+        // Junta as tags que você já digitou com as sugeridas pela IA, sem duplicatas
+        setTags(data.tags)
+      }
+
+      setIsDirty(true)
+      showToast('Sinopse reescrita com sucesso!', 'success')
+
+    } catch (err) {
+      showToast('Erro ao se comunicar com a IA. Tente novamente.', 'error')
+    } finally {
+      setGerandoIA(false)
     }
   }
 
@@ -257,8 +314,8 @@ export default function PainelAdmin() {
       if (!response.ok) throw new Error()
       showToast('Destaque removido com sucesso.')
       if (editId === itemParaExcluir.id) {
-         setIsDirty(false)
-         fecharEditorForce()
+        setIsDirty(false)
+        fecharEditorForce()
       }
       carregarDestaques()
     } catch {
@@ -310,7 +367,7 @@ export default function PainelAdmin() {
 
   const editarDestaque = (anime: CuratedAnime) => {
     if (!confirmarSaidaSegura()) return
-    
+
     setEditId(anime.id || null)
     setMalId(anime.mal_id)
     setTitulo(anime.custom_title)
@@ -327,11 +384,11 @@ export default function PainelAdmin() {
     window.scrollTo({ top: 0, behavior: 'smooth' })
 
     setTimeout(() => {
-      setInitialStateHash(JSON.stringify({ 
-        titulo: anime.custom_title, formato: anime.custom_format || 'TV', status: anime.custom_status || 'RELEASING', 
-        ordem: anime.order_index, sinopse: anime.custom_synopsis || '', tags: anime.custom_tags || [], 
-        coverImage: anime.custom_cover_image || '', bannerImage: anime.custom_banner_image || '', 
-        characters: anime.custom_characters || [] 
+      setInitialStateHash(JSON.stringify({
+        titulo: anime.custom_title, formato: anime.custom_format || 'TV', status: anime.custom_status || 'RELEASING',
+        ordem: anime.order_index, sinopse: anime.custom_synopsis || '', tags: anime.custom_tags || [],
+        coverImage: anime.custom_cover_image || '', bannerImage: anime.custom_banner_image || '',
+        characters: anime.custom_characters || []
       }))
       setIsDirty(false)
     }, 100)
@@ -339,8 +396,6 @@ export default function PainelAdmin() {
 
   const handleSinopseChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     setSinopse(e.target.value)
-    e.target.style.height = 'auto'
-    e.target.style.height = `${e.target.scrollHeight}px`
   }
 
   if (isAdmin === false) return <Navigate to="/deck" replace />
@@ -362,11 +417,11 @@ export default function PainelAdmin() {
         <div className="flex gap-4 items-center">
           <button
             type="button"
-            disabled
-            title="Em breve na Fase 4.5"
-            className="hidden sm:flex items-center gap-2 px-4 py-1.5 bg-gradient-to-r from-holo-1/40 to-holo-2/40 border border-holo-1/30 text-white text-xs font-bold rounded-full cursor-not-allowed opacity-60"
+            onClick={() => setConfigModalAberto(true)}
+            title="Configurar a personalidade da IA"
+            className="hidden sm:flex items-center gap-2 px-4 py-1.5 bg-gradient-to-r from-holo-1/10 to-holo-2/10 border border-holo-1/30 text-holo-1 hover:text-white hover:bg-gradient-to-r hover:from-holo-1 hover:to-holo-2 text-xs font-bold rounded-full cursor-pointer transition-all shadow-[0_0_15px_rgba(255,79,216,0.15)]"
           >
-            <Sparkles size={14} /> IA Curadora
+            <Sparkles size={14} /> Configurar IA
           </button>
           <Link onClick={(e) => { if(!confirmarSaidaSegura()) e.preventDefault() }} to="/" className="text-sm font-bold text-muted hover:text-text transition-colors">
             ← Voltar ao site
@@ -381,7 +436,7 @@ export default function PainelAdmin() {
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-[360px_1fr] gap-6 lg:gap-8 items-start">
-          
+
           <div className={`lg:block ${formularioAberto ? 'hidden' : 'block'}`}>
             <DestaquesRail
               destaques={destaques}
@@ -413,9 +468,9 @@ export default function PainelAdmin() {
               </div>
             ) : (
               <div className="p-4 sm:p-6">
-                
-                <button 
-                  onClick={tentarFecharEditor} 
+
+                <button
+                  onClick={tentarFecharEditor}
                   className="lg:hidden flex items-center gap-1.5 text-xs font-bold text-holo-2 bg-holo-2/10 px-3 py-1.5 rounded-lg mb-6 hover:bg-holo-2/20 transition-colors"
                 >
                   <ArrowLeft size={14} /> Voltar para a lista
@@ -472,9 +527,8 @@ export default function PainelAdmin() {
                               key={opt.value}
                               type="button"
                               onClick={() => setStatus(opt.value)}
-                              className={`px-3 py-1.5 rounded-full text-xs font-bold border cursor-pointer transition-colors ${
-                                status === opt.value ? 'bg-coral/20 border-coral text-coral' : 'bg-panel-2 border-line text-muted'
-                              }`}
+                              className={`px-3 py-1.5 rounded-full text-xs font-bold border cursor-pointer transition-colors ${status === opt.value ? 'bg-coral/20 border-coral text-coral' : 'bg-panel-2 border-line text-muted'
+                                }`}
                             >
                               {opt.label}
                             </button>
@@ -514,13 +568,13 @@ export default function PainelAdmin() {
                     <CuradoriaPersonagens
                       characters={characters}
                       onAdd={(char) => setCharacters([...characters, char])}
-                      
+
                       onUpdate={(index, char) => {
                         const newChars = [...characters]
                         newChars[index] = char
                         setCharacters(newChars)
                       }}
-                      
+
                       onRemove={(index) => setCharacters(characters.filter((_, i) => i !== index))}
                       onUploadImage={uploadImagem}
                       uploading={uploading}
@@ -530,11 +584,31 @@ export default function PainelAdmin() {
                     <ReorderableTags tags={tags} onChange={setTags} />
 
                     <div>
-                      <label className="block text-xs font-bold text-muted uppercase mb-2">Sinopse Curada</label>
+                      <div className="flex justify-between items-center mb-2">
+                        <label className="block text-xs font-bold text-muted uppercase">Sinopse Curada</label>
+
+                        {/* NOVO BOTÃO DA IA */}
+                        <button
+                          type="button"
+                          onClick={reescreverComIA}
+                          disabled={gerandoIA || !sinopse}
+                          className="flex items-center gap-1.5 text-[10px] font-bold bg-holo-1/10 text-holo-1 border border-holo-1/30 px-2.5 py-1 rounded-md hover:bg-holo-1/20 transition-colors disabled:opacity-50 cursor-pointer"
+                        >
+                          {gerandoIA ? (
+                            <div className="w-3 h-3 border-2 border-current border-t-transparent rounded-full animate-spin"></div>
+                          ) : (
+                            <Sparkles size={12} />
+                          )}
+                          {gerandoIA ? 'Reescrevendo...' : 'Reescrever com IA'}
+                        </button>
+                      </div>
+
                       <textarea
+                        ref={textareaRef} 
                         value={sinopse}
                         onChange={handleSinopseChange}
-                        className="w-full bg-panel-2 border border-line rounded-xl px-4 py-3 text-sm outline-none min-h-[120px] focus:border-holo-2 resize-none custom-scrollbar"
+                        disabled={gerandoIA}
+                        className="w-full bg-panel-2 border border-line rounded-xl px-4 py-3 text-sm outline-none min-h-[120px] focus:border-holo-2 resize-none custom-scrollbar disabled:opacity-60"
                       />
                     </div>
 
@@ -585,6 +659,10 @@ export default function PainelAdmin() {
           </button>
         </div>
       </Sheet>
+      <ConfigIAModal 
+        isOpen={configModalAberto} 
+        onClose={() => setConfigModalAberto(false)} 
+      />
     </div>
   )
 }

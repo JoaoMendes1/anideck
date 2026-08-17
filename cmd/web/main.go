@@ -85,9 +85,14 @@ func main() {
 			w.Write([]byte(`{"admin": true}`))
 		})
 
+		// Rotas de CRUD da curadoria
 		admin.Post("/api/curation", curationHandler.HandleCreate)
 		admin.Put("/api/curation/{id}", curationHandler.HandleUpdate)
 		admin.Delete("/api/curation/{id}", curationHandler.HandleDelete)
+
+		admin.Post("/api/admin/curation/ai/rewrite", curationHandler.HandleAIRewrite)
+		admin.Get("/api/admin/settings/ai-prompt", curationHandler.HandleGetAIPrompt)
+		admin.Put("/api/admin/settings/ai-prompt", curationHandler.HandleUpdateAIPrompt)
 	})
 
 	workDir, _ := os.Getwd()

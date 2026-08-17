@@ -9,9 +9,10 @@ interface SheetProps {
     onClose: () => void
     title: string
     children: ReactNode
+    maxWidthClass?: string // NOVO PROP
 }
 
-export default function Sheet({ isOpen, onClose, title, children }: SheetProps) {
+export default function Sheet({ isOpen, onClose, title, children, maxWidthClass = 'md:max-w-sm' }: SheetProps) {
     useSheetBehavior(isOpen, onClose)
 
     // Renderiza direto no <body>, fora da árvore de componentes da página.
@@ -27,11 +28,12 @@ export default function Sheet({ isOpen, onClose, title, children }: SheetProps) 
         >
             <div className="absolute inset-0 bg-void/80 backdrop-blur-sm" onClick={onClose} aria-hidden="true" />
 
-            <div
+           <div
                 role="dialog"
                 aria-modal="true"
                 aria-label={title}
-                className={`relative bg-panel border-t md:border border-line rounded-t-3xl md:rounded-2xl w-full md:max-w-sm p-6 pb-safe md:pb-6 shadow-2xl max-h-[85vh] overflow-y-auto transition-transform duration-300 transform ${
+                // Trocamos o 'md:max-w-sm' fixo pela variável genérica
+                className={`relative bg-panel border-t md:border border-line rounded-t-3xl md:rounded-2xl w-full ${maxWidthClass} p-6 pb-safe md:pb-6 shadow-2xl max-h-[85vh] overflow-y-auto transition-transform duration-300 transform ${
                     isOpen ? 'translate-y-0' : 'translate-y-full'
                 }`}
             >
