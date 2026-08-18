@@ -23,7 +23,7 @@ type Client struct {
 func NewClient() *Client {
 	return &Client{
 		httpClient: &http.Client{Timeout: 15 * time.Second},
-		limiter:    rate.NewLimiter(rate.Limit(1.5), 10), 
+		limiter:    rate.NewLimiter(rate.Limit(1.5), 10),
 		baseURL:    "https://graphql.anilist.co",
 	}
 }
@@ -154,6 +154,13 @@ type aniListMedia struct {
 			} `json:"node"`
 		} `json:"edges"`
 	} `json:"relations"`
+
+	StreamingEpisodes []struct {
+		Title     string `json:"title"`
+		Thumbnail string `json:"thumbnail"`
+		URL       string `json:"url"`
+		Site      string `json:"site"`
+	} `json:"streamingEpisodes"`
 }
 
 func (m *aniListMedia) toAnime() Anime {
@@ -193,9 +200,13 @@ func (m *aniListMedia) toAnime() Anime {
 		}
 	}
 
-	var studios []struct{ Name string `json:"name"` }
+	var studios []struct {
+		Name string `json:"name"`
+	}
 	for _, edge := range m.Studios.Edges {
-		studios = append(studios, struct{ Name string `json:"name"` }{Name: edge.Node.Name})
+		studios = append(studios, struct {
+			Name string `json:"name"`
+		}{Name: edge.Node.Name})
 	}
 
 	var chars []Character
@@ -246,17 +257,27 @@ func (m *aniListMedia) toAnime() Anime {
 		})
 	}
 
+		var streamingEps []StreamingEpisode
+	for _, ep := range m.StreamingEpisodes {
+		streamingEps = append(streamingEps, StreamingEpisode{
+			Title:     ep.Title,
+			Thumbnail: ep.Thumbnail,
+			URL:       ep.URL,
+			Site:      ep.Site,
+		})
+	}
+
 	return Anime{
-		MalID:    m.IDMal,
-		Title:    title,
-		Status:   mapStatus(m.Status),
-		Synopsis: stripHTML.Sanitize(m.Description),
-		Episodes: m.Episodes,
-		Duration: m.Duration,
-		Score:    float64(m.AverageScore) / 10.0,
-		Ranking:  bestRanking,
-		BannerImage: m.BannerImage,
-		Characters:  chars,
+		MalID:             m.IDMal,
+		Title:             title,
+		Status:            mapStatus(m.Status),
+		Synopsis:          stripHTML.Sanitize(m.Description),
+		Episodes:          m.Episodes,
+		Duration:          m.Duration,
+		Score:             float64(m.AverageScore) / 10.0,
+		Ranking:           bestRanking,
+		BannerImage:       m.BannerImage,
+		Characters:        chars,
 		NextAiringEpisode: m.NextAiringEpisode,
 		Images: struct {
 			JPG struct {
@@ -273,6 +294,7 @@ func (m *aniListMedia) toAnime() Anime {
 		Streaming: streaming,
 		Studios:   studios,
 		Relations: relations,
+		StreamingEpisodes: streamingEps,
 	}
 }
 
@@ -344,6 +366,7 @@ query ($idMal: Int) {
     bannerImage
     genres
     externalLinks { site url }
+	streamingEpisodes { title thumbnail url site }
     nextAiringEpisode { airingAt timeUntilAiring episode }
     characters(sort: ROLE, perPage: 15) {
       edges {

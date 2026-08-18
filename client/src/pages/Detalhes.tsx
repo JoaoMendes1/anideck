@@ -5,6 +5,7 @@ import { supabase } from '../lib/supabase'
 import { useToast } from '../contexts/ToastContext'
 import BotaoCopiar from '../components/BotaoCopiar'
 import ReactMarkdown from 'react-markdown'
+import EpisodeGrid from '../components/EpisodeGrid'
 
 interface AnimeDetail {
   mal_id: number
@@ -21,6 +22,8 @@ interface AnimeDetail {
   theme: { openings: string[]; endings: string[] }
   relations: { relation: string; entry: { mal_id: number; type: string; name: string; image?: string }[] }[]
   characters?: { id: number; name: string; image: string; role: string }[]
+  streamingEpisodes?: { title: string; thumbnail: string; url: string; site: string }[]
+  nextAiringEpisode?: { airingAt: number; timeUntilAiring: number; episode: number }
 }
 
 interface AnimeStats {
@@ -49,6 +52,7 @@ export default function Detalhes() {
   const [error, setError] = useState<string | null>(null)
 
   const [minhaEntrada, setMinhaEntrada] = useState<MinhaEntrada | null>(null)
+  const [episodiosAssistidos, setEpisodiosAssistidos] = useState<number[]>([])
   const [salvando, setSalvando] = useState(false)
   const [excluindo, setExcluindo] = useState(false)
 
@@ -91,6 +95,17 @@ export default function Detalhes() {
               setAnotacaoInput(entrada.anotacao || '')
               setIsFavorite(entrada.is_favorite || false)
             }
+          }
+          try {
+            const resEps = await fetch(`/api/entries/${id}/episodes`, {
+              headers: { 'Authorization': `Bearer ${session.access_token}` }
+            })
+            if (resEps.ok) {
+              const epsData = await resEps.json()
+              setEpisodiosAssistidos(epsData || [])
+            }
+          } catch (e) {
+            console.error('Erro ao carregar progresso dos episódios:', e)
           }
         }
       } catch (err: any) {
@@ -361,6 +376,17 @@ export default function Detalhes() {
                 )}
               </div>
             </section>
+
+            {(anime.episodes > 0 || (anime.streamingEpisodes?.length ?? 0) > 0) && (
+              <EpisodeGrid 
+                malId={anime.mal_id}
+                totalEpisodes={anime.episodes}
+                streamingEpisodes={anime.streamingEpisodes}
+                initialWatched={episodiosAssistidos}
+                isLoggedIn={!!minhaEntrada || episodiosAssistidos.length > 0}
+                nextAiringEpisode={anime.nextAiringEpisode} 
+              />
+            )}
 
             <section>
               <div className="flex items-center justify-between mb-4">

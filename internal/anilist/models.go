@@ -68,6 +68,8 @@ type Anime struct {
 		Name string `json:"name"`
 		URL  string `json:"url"`
 	} `json:"streaming"`
+
+	StreamingEpisodes []StreamingEpisode `json:"streamingEpisodes,omitempty"`
 }
 
 type AnimeStatisticsResponse struct {
@@ -82,4 +84,11 @@ type ScoreDistribution struct {
 	Score      int     `json:"score"`
 	Votes      int     `json:"votes"`
 	Percentage float64 `json:"percentage"`
+}
+
+type StreamingEpisode struct {
+	Title     string `json:"title"`
+	Thumbnail string `json:"thumbnail"`
+	URL       string `json:"url"`
+	Site      string `json:"site"`
 }
