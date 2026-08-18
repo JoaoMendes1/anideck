@@ -71,6 +71,7 @@ func (h *NotificationsHandler) HandleGetNotifications(w http.ResponseWriter, r *
 		Execute()
 
 	if err != nil {
+		log.Printf("[ERRO DB] HandleGetNotifications (user=%s): %v", userID, err)
 		http.Error(w, "Erro DB", http.StatusInternalServerError)
 		return
 	}
@@ -93,6 +94,7 @@ func (h *NotificationsHandler) HandleReadNotification(w http.ResponseWriter, r *
 		Execute()
 
 	if err != nil {
+		log.Printf("[ERRO DB] HandleReadNotification (id=%s): %v", id, err)
 		http.Error(w, "Erro DB", http.StatusInternalServerError)
 		return
 	}
@@ -107,29 +109,55 @@ func (h *NotificationsHandler) HandleCheckNewEpisodes(w http.ResponseWriter, r *
 		return
 	}
 
-	// Instancia um cliente isolado com a Service Role APENAS para esta automação
-	serviceClient, _ := supabase.NewClient(os.Getenv("SUPABASE_URL"), os.Getenv("SUPABASE_SERVICE_ROLE_KEY"), nil)
+	serviceKey := os.Getenv("SUPABASE_SERVICE_ROLE_KEY")
+	if serviceKey == "" {
+		log.Println("[ERRO CRON] SUPABASE_SERVICE_ROLE_KEY ausente no ambiente (Render).")
+		http.Error(w, "Configuração Ausente", http.StatusInternalServerError)
+		return
+	}
 
-	// 1. Busca todos os usuários e animes que estão sendo acompanhados ignorando RLS
+	serviceClient, errClient := supabase.NewClient(os.Getenv("SUPABASE_URL"), serviceKey, nil)
+	if errClient != nil || serviceClient == nil {
+		log.Printf("[ERRO CRON] Falha ao criar cliente Supabase: %v", errClient)
+		http.Error(w, "Erro de Cliente", http.StatusInternalServerError)
+		return
+	}
+
 	data, _, err := serviceClient.From("media_entries").
 		Select("user_id, mal_id", "exact", false).
 		In("status", []string{"Assistindo", "Em Dia"}).
 		Execute()
 
 	if err != nil {
+		log.Printf("[ERRO CRON] Falha ao buscar media_entries: %v | Retorno: %s", err, string(data))
 		http.Error(w, "Erro DB", http.StatusInternalServerError)
 		return
 	}
 
 	var entries []map[string]interface{}
-	_ = json.Unmarshal(data, &entries)
+	if err := json.Unmarshal(data, &entries); err != nil {
+		log.Printf("[ERRO CRON] Falha ao converter JSON: %v", err)
+		http.Error(w, "Erro JSON", http.StatusInternalServerError)
+		return
+	}
 
 	malIDsMap := make(map[int]bool)
 	userAnimes := make(map[int][]string)
 
 	for _, e := range entries {
-		malID := int(e["mal_id"].(float64))
-		userID := e["user_id"].(string)
+		if e["mal_id"] == nil || e["user_id"] == nil {
+			continue
+		}
+		
+		malIDFloat, okID := e["mal_id"].(float64)
+		userID, okUser := e["user_id"].(string)
+		
+		if !okID || !okUser {
+			log.Printf("[AVISO CRON] Falha de tipagem ignorada: mal_id=%v, user_id=%v", e["mal_id"], e["user_id"])
+			continue
+		}
+		
+		malID := int(malIDFloat)
 		malIDsMap[malID] = true
 		userAnimes[malID] = append(userAnimes[malID], userID)
 	}
