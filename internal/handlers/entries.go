@@ -6,6 +6,8 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"strconv"
+	"strings"
 
 	"github.com/JoaoMendes1/anideck/internal/anilist"
 	"github.com/JoaoMendes1/anideck/internal/database"
@@ -194,4 +196,122 @@ func syncMetadataCacheAsync(malID int, token string) {
 			log.Printf("[CACHE METADATA] Metadados sincronizados com sucesso para: %s", anime.Title)
 		}
 	}()
+}
+
+// HandleGetEpisodes retorna a lista de episódios assistidos de um anime específico
+func (h *EntriesHandler) HandleGetEpisodes(w http.ResponseWriter, r *http.Request) {
+	token, ok := r.Context().Value(middleware.TokenKey).(string)
+	userID, userOk := r.Context().Value(middleware.UserIDKey).(string)
+	malID := chi.URLParam(r, "mal_id")
+
+	if !ok || !userOk {
+		http.Error(w, "Não autorizado", http.StatusUnauthorized)
+	}
+
+	dbClient, errClient := database.ClientWithToken(token)
+	if errClient != nil {
+		http.Error(w, "Erro interno de conexão", http.StatusInternalServerError)
+		return 
+	}
+
+	// Trazendo apenas o número do episódio para economizar banda e processamento 
+	data, _, err := dbClient.From("episode_progress"). 
+		Select("episode_number", "exact", false).  
+		Eq("user_id", userID). 
+		Eq("mal_id", malID). 
+		Execute()
+
+	if err != nil {
+		log.Printf("[ERRO DB] HandleGetEpisodes (user=%s, mal_id=%s): %v", userID, malID, err)
+		http.Error(w, "Erro ao buscar episódios", http.StatusInternalServerError)
+		return
+	}
+
+	// Mapeia o JSON retornado para um slice simples de inteiros pro Frontend
+	var raw []map[string]int
+	_ = json.Unmarshal(data, &raw)
+
+	episodes := make([]int, 0)
+	for _, row := range raw {
+		episodes = append(episodes, row["episode_number"])
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(episodes)
+}
+
+// HandleMarkEpisode marca um episódio como assistido
+func (h *EntriesHandler) HandleMarkEpisode(w http.ResponseWriter, r *http.Request) {
+	token, ok := r.Context().Value(middleware.TokenKey).(string)
+	userID, userOk := r.Context().Value(middleware.UserIDKey).(string)
+
+	if !ok || !userOk {
+		http.Error(w, "Não autorizado", http.StatusUnauthorized)
+		return 
+	}
+
+	malID, _ := strconv.Atoi(chi.URLParam(r, "mal_id"))
+	episodeNumber, _ := strconv.Atoi(chi.URLParam(r, "number"))
+
+	progresso := entries.EpisodeProgress{
+		UserID:       userID, // Garantia Estrutural 
+		MalID:        malID,
+		EpisodeNumber: episodeNumber,
+	}
+
+	dbClient, errClient := database.ClientWithToken(token)
+	if errClient != nil {
+		http.Error(w, "Erro interno de conexão", http.StatusInternalServerError)
+		return
+	}
+
+	_, _, err := dbClient.From("episode_progress").Insert(progresso, false, "exact", "", "").Execute()
+
+	// Tratamento de Idempotência: Se der erro de chave duplicada, ignoramos e retornamos sucesso.
+	if err != nil {
+		if strings.Contains(err.Error(), "duplicate key value vilates unique constraint") || strings.Contains(err.Error(), "23505") {
+			w.WriteHeader(http.StatusOK)
+			return 
+		}
+		log.Printf("[ERRO DB] HandleMarkEpisode (user=%s, mal_id=%d, ep=%d): %v", userID, malID, episodeNumber, err)
+		http.Error(w, "Erro ao marcar episódio", http.StatusInternalServerError)
+		return
+	}
+
+	w.WriteHeader(http.StatusCreated)
+}
+
+// HandleUnmarkEpisode desmarca um episódio
+func (h *EntriesHandler) HandleUnmarkEpisode(w http.ResponseWriter, r *http.Request) {
+	token, ok := r.Context().Value(middleware.TokenKey).(string)
+	userID, userOk := r.Context().Value(middleware.UserIDKey).(string)
+
+	if !ok || !userOk {
+		http.Error(w, "Não autorizado", http.StatusUnauthorized)
+		return
+	}
+
+	malID := chi.URLParam(r, "mal_id")
+	episodeNumber := chi.URLParam(r, "number")
+
+	dbClient, errClient := database.ClientWithToken(token)
+	if errClient != nil {
+		http.Error(w, "Erro interno de conexão", http.StatusInternalServerError)
+		return
+	}
+
+	_, _, err := dbClient.From("episode_progress").
+		Delete("", "exact").
+		Eq("user_id", userID).
+		Eq("mal_id", malID).
+		Eq("episode_number", episodeNumber).
+		Execute()
+
+	if err != nil {
+		log.Printf("[ERRO DB] HandleUnmarkEpisode (user=%s, mal_id=%s, ep=%s): %v", userID, malID, episodeNumber, err)
+		http.Error(w, "Erro ao desmarcar episódio", http.StatusInternalServerError)
+		return
+	}
+
+	w.WriteHeader(http.StatusNoContent)
 }

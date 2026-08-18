@@ -73,6 +73,11 @@ func main() {
 		protegido.Post("/api/entries", entriesHandler.HandleCreate)
 		protegido.Put("/api/entries/{id}", entriesHandler.HandleUpdate)
 		protegido.Delete("/api/entries/{id}", entriesHandler.HandleDelete)
+
+		protegido.Get("/api/entries/{mal_id}/episodes", entriesHandler.HandleGetEpisodes)
+		protegido.Post("/api/entries/{mal_id}/episodes/{number}", entriesHandler.HandleMarkEpisode)
+		protegido.Delete("/api/entries/{mal_id}/episodes/{number}", entriesHandler.HandleUnmarkEpisode)
+
 		protegido.Get("/api/stats/user", statsHandler.HandleGetUserStats)
 	})
 

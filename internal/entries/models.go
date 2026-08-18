@@ -11,3 +11,11 @@ type MediaEntry struct {
 	IsFavorite bool     `json:"is_favorite"` 
 	Progress   int      `json:"progress"`
 }
+
+type EpisodeProgress struct {
+	ID            string `json:"id,omitempty"`
+	UserID        string `json:"user_id,omitempty"`
+	MalID         int    `json:"mal_id"`
+	EpisodeNumber int    `json:"episode_number"`
+	WatchedAt     string `json:"watched_at,omitempty"`
+}

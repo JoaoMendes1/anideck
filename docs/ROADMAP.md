@@ -138,13 +138,11 @@ OBS: O Product Owner decidiu que a fase 5 fosse implementada primeiro.
 > temporadas já são separadas por `mal_id` — não precisa de agrupamento manual) e mitigação de
 > timeout de cold-start documentados em `FASE_6.7_EPISODIOS.md`.
 
-- [ ] Criar tabela `episode_progress` (Supabase) + endpoints Go para marcar/desmarcar episódio
-      assistido, com RLS e o mesmo padrão de segurança já usado em `media_entries` (`user_id`
-      sempre extraído do JWT, nunca do payload).
-- [ ] Grade visual de episódios na página de detalhe/Meu Deck, usando `streamingEpisodes` da
-      AniList (com fallback para anime sem esse dado).
-- [ ] Notificação de episódio novo lançado, reaproveitando `nextAiringEpisode` (já usado na
-      Fase 5), com checagem diária via endpoint interno + agendador externo gratuito.
+- [ ]  Criar tabela `episode_progress` (Supabase) + endpoints Go para marcar/desmarcar episódio assistido, com RLS extraindo o `user_id` sempre do JWT.
+- [ ]  Grade visual de episódios na página de detalhe/Meu Deck, usando `streamingEpisodes` da AniList (com fallback).
+- [ ]  **[NOVO] Antecipação PWA:** Adicionar `manifest.json` e registrar o `Service Worker` no frontend React (trazido da Fase 8).
+- [ ]  **[NOVO]** Criar tabela `push_subscriptions` (Supabase) para armazenar os endpoints, chaves `p256dh` e `auth` dos navegadores dos usuários.
+- [ ]  Notificação de episódio novo lançado (checagem diária via cron-job.org batendo em endpoint interno). O backend deverá gravar o histórico na tabela `notifications` **e simultaneamente** disparar o alerta para o sistema operacional via `webpush-go` usando chaves VAPID.
 
 ## 👥 Fase 7: Multiusuário (futuro, avaliar quando chegar)
 
@@ -155,8 +153,9 @@ OBS: O Product Owner decidiu que a fase 5 fosse implementada primeiro.
 
 ## 📱 Fase 8: Publicação como App (futuro, avaliar quando chegar)
 
-- [ ] Transformar o frontend num PWA completo (manifest, service worker, instalável).
-- [ ] Empacotar via TWA (Trusted Web Activity, usando Bubblewrap/PWABuilder) para publicar na Play Store.
+- [ ]  *(Concluído na Fase 6.7: manifest.json e service worker base)*.
+- [ ]  Adicionar suporte a cache offline completo e estratégias de *Network First/Cache First* no Service Worker.
+- [ ]  Empacotar via TWA (Trusted Web Activity, usando Bubblewrap/PWABuilder) para publicar na Play Store.
 
 ---
 
