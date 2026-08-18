@@ -7,63 +7,62 @@ import type { Session } from '@supabase/supabase-js'
 import { LogoMark } from './Brand'
 
 export default function Navbar() {
-      const [session, setSession] = useState<Session | null>(null)
-    const [isAdmin, setIsAdmin] = useState(false)
-    const [scrolled, setScrolled] = useState(false)
-    const location = useLocation()
+  const [session, setSession] = useState<Session | null>(null)
+  const [isAdmin, setIsAdmin] = useState(false)
+  const [scrolled, setScrolled] = useState(false)
+  const location = useLocation()
 
-    const verificarAdmin = async (currentSession: Session | null) => {
-        if (!currentSession) {
-            setIsAdmin(false)
-            return
-        }
-        try {
-            const res = await fetch('/api/admin/verify', {
-                headers: { 'Authorization': `Bearer ${currentSession.access_token}` }
-            })
-            setIsAdmin(res.ok)
-        } catch {
-            setIsAdmin(false)
-        }
+  const verificarAdmin = async (currentSession: Session | null) => {
+    if (!currentSession) {
+      setIsAdmin(false)
+      return
     }
-
-    // Gerencia o estado de Autenticação
-    useEffect(() => {
-        supabase.auth.getSession().then(({ data: {session }}) => {
-            setSession(session)
-            verificarAdmin(session)
-        })
-
-        const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-            setSession(session)
-            verificarAdmin(session)
-        })
-
-        return () => subscription.unsubscribe()
-    }, [])
-
-    // Gerencia do efeito de Scroll da Navbar
-    useEffect(() => {
-        const handleScroll = () => {
-            setScrolled(window.scrollY > 20)
-        }
-        window.addEventListener('scroll', handleScroll)
-        return () => window.removeEventListener('scroll', handleScroll)
-    }, [])
-
-    const handleLogout= async () => {
-        await supabase.auth.signOut()
+    try {
+      const res = await fetch('/api/admin/verify', {
+        headers: { 'Authorization': `Bearer ${currentSession.access_token}` }
+      })
+      setIsAdmin(res.ok)
+    } catch {
+      setIsAdmin(false)
     }
+  }
 
-   return (
+  // Gerencia o estado de Autenticação
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setSession(session)
+      verificarAdmin(session)
+    })
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      setSession(session)
+      verificarAdmin(session)
+    })
+
+    return () => subscription.unsubscribe()
+  }, [])
+
+  // Gerencia do efeito de Scroll da Navbar
+  useEffect(() => {
+    const handleScroll = () => {
+      setScrolled(window.scrollY > 20)
+    }
+    window.addEventListener('scroll', handleScroll)
+    return () => window.removeEventListener('scroll', handleScroll)
+  }, [])
+
+  const handleLogout = async () => {
+    await supabase.auth.signOut()
+  }
+
+  return (
     <>
       <nav
-        className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
-          scrolled ? 'py-3 bg-void/85 backdrop-blur-md border-b border-line' : 'py-5 bg-transparent'
-        }`}
+        className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${scrolled ? 'py-3 bg-void/85 backdrop-blur-md border-b border-line' : 'py-5 bg-transparent'
+          }`}
       >
         <div className="max-w-[1140px] mx-auto px-5 flex items-center justify-between gap-4">
-          
+
           {/* Logo */}
           <Link to="/" className="flex items-center gap-2.5 z-50 group">
             <LogoMark />
@@ -71,8 +70,13 @@ export default function Navbar() {
               Ani<span className="text-holo">Deck</span>
             </div>
           </Link>
+          {session && (
+            <div className="flex md:hidden items-center">
+              <NotificationBell />
+            </div>
+          )}
 
-               {/* Links Principais (Desktop) */}
+          {/* LINKS DE NAVEGAÇÃO DESKTOP */}
           <div className="hidden md:flex items-center gap-7">
             {session && (
               <>
@@ -81,7 +85,7 @@ export default function Navbar() {
                 <Link to="/estatisticas" className={`text-sm font-bold focus:outline-none select-none transition-colors ${location.pathname === '/estatisticas' ? 'text-text' : 'text-muted hover:text-text'}`}>Estatísticas</Link>
 
                 {isAdmin && (
-                    <Link to="/admin" className={`text-sm font-bold focus:outline-none select-none transition-colors ${location.pathname === '/admin' ? 'text-text' : 'text-muted hover:text-text'}`}>Admin</Link>
+                  <Link to="/admin" className={`text-sm font-bold focus:outline-none select-none transition-colors ${location.pathname === '/admin' ? 'text-text' : 'text-muted hover:text-text'}`}>Admin</Link>
                 )}
               </>
             )}
@@ -93,7 +97,7 @@ export default function Navbar() {
             <Link to="/descobrir" className="w-9 h-9 rounded-full border border-line bg-panel text-muted flex items-center justify-center transition-all hover:border-holo-3 hover:text-holo-3" title="Buscar">
               <Search size={16} />
             </Link>
-            
+
             {session && <NotificationBell />}
 
             {session ? (

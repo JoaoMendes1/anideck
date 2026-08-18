@@ -14,6 +14,7 @@ import (
 	"github.com/JoaoMendes1/anideck/internal/middleware"
 	webpush "github.com/SherClockHolmes/webpush-go"
 	"github.com/go-chi/chi/v5"
+	"github.com/supabase-community/supabase-go"
 )
 
 type NotificationsHandler struct {
@@ -106,8 +107,11 @@ func (h *NotificationsHandler) HandleCheckNewEpisodes(w http.ResponseWriter, r *
 		return
 	}
 
-	// 1. Busca todos os usuários e animes que estão sendo acompanhados
-	data, _, err := database.Client.From("media_entries").
+	// Instancia um cliente isolado com a Service Role APENAS para esta automação
+	serviceClient, _ := supabase.NewClient(os.Getenv("SUPABASE_URL"), os.Getenv("SUPABASE_SERVICE_ROLE_KEY"), nil)
+
+	// 1. Busca todos os usuários e animes que estão sendo acompanhados ignorando RLS
+	data, _, err := serviceClient.From("media_entries").
 		Select("user_id, mal_id", "exact", false).
 		In("status", []string{"Assistindo", "Em Dia"}).
 		Execute()
@@ -153,8 +157,7 @@ func (h *NotificationsHandler) HandleCheckNewEpisodes(w http.ResponseWriter, r *
 			continue
 		}
 
-		// Se faltam mais de 6 dias (518400s) pro próximo, significa que o anterior recém lançou (janela de 24h)
-		if anime.NextAiringEpisode.TimeUntilAiring > 518400 {
+		if anime.NextAiringEpisode.TimeUntilAiring > 432000 {
 			episodeAired := anime.NextAiringEpisode.Episode - 1
 			if episodeAired < 1 {
 				continue
@@ -167,12 +170,12 @@ func (h *NotificationsHandler) HandleCheckNewEpisodes(w http.ResponseWriter, r *
 					"episode_number": episodeAired,
 				}
 
-				// Tenta inserir no histórico. O ON CONFLICT do Supabase rejeitará duplicatas.
-				_, _, err := database.Client.From("notifications").Insert(notif, false, "exact", "", "").Execute()
+				// Tenta inserir no histórico com o Service Client. O UNIQUE do Postgres rejeitará duplicatas.
+				_, _, err := serviceClient.From("notifications").Insert(notif, false, "exact", "", "").Execute()
 
 				// Se inseriu sem erro (novo episódio detectado para este usuário)
 				if err == nil {
-					go h.sendWebPush(userID, anime.Title, episodeAired)
+					go h.sendWebPush(serviceClient, userID, anime.Title, episodeAired)
 				}
 			}
 		}
@@ -182,8 +185,8 @@ func (h *NotificationsHandler) HandleCheckNewEpisodes(w http.ResponseWriter, r *
 }
 
 // sendWebPush dispara o alerta nativo para os dispositivos cadastrados
-func (h *NotificationsHandler) sendWebPush(userID string, animeTitle string, episode int) {
-	data, _, err := database.Client.From("push_subscriptions").
+func (h *NotificationsHandler) sendWebPush(serviceClient *supabase.Client, userID string, animeTitle string, episode int) {
+	data, _, err := serviceClient.From("push_subscriptions").
 		Select("endpoint, p256dh, auth", "exact", false).
 		Eq("user_id", userID).
 		Execute()
@@ -196,7 +199,7 @@ func (h *NotificationsHandler) sendWebPush(userID string, animeTitle string, epi
 	_ = json.Unmarshal(data, &subs)
 
 	// O payload que o Service Worker no React vai ler para criar o Card da Notificação
-	message := []byte(fmt.Sprintf(`{"title": "Novo Episódio!", "body": "%s — Episódio %d acabou de lançar!"}`, animeTitle, episode))
+	message := fmt.Appendf(nil, `{"title": "Novo Episódio!", "body": "%s — Episódio %d acabou de lançar!"}`, animeTitle, episode)
 
 	for _, s := range subs {
 		sub := &webpush.Subscription{
