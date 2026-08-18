@@ -62,8 +62,21 @@ Staging sobe já na Fase 1, como projeto esqueleto — mesmo padrão do JVM Syst
 
 - [x] **Agente Curador (IA no Admin):** Integrar um LLM para reescrever sinopses frias da AniList de forma autônoma, adotando o tom de voz "AniDeck".
 - [x] **Engenharia de Prompt Dinâmica e Resiliência:** Criação de cache em memória no Go (`sync.RWMutex`) consultando tabela genérica no Supabase para editar as regras da IA sem mexer no código, suporte a Markdown, e fallback automático (`3.7-flash` -> `3.6-flash`).
-- [ ] **Agente Olheiro (Automação Background):** Criar um fluxo orquestrado (ex: n8n) que cruza os favoritos do usuário (SQL) com os *trends* da AniList.
-- [ ] **Integração Google Workspace:** O Agente gera recomendações personalizadas em HTML e utiliza a API do Gmail para disparar um relatório automático para a caixa de entrada do usuário.
+- [ ] ⏸️ **PAUSADO (17/08/2026): Agente Olheiro (Automação Background).** Cruzar os favoritos do
+      usuário (SQL) com os *trends* da AniList só faz sentido produzir recomendação confiável
+      depois de resolver **o que significa "melhor anime"** — problema estrutural documentado em
+      `VISAO_RANKING_CREDIVEL.md`. Retomar só depois de decidir, ao menos, a versão simples da
+      Fase 6.5 (ranking ponderado).
+- [ ] 🚨 **DECISÃO ARQUITETURAL (17/08/2026):** descartado o uso de **n8n** como orquestrador —
+      exigiria hospedar/manter mais um serviço com custo recorrente, incompatível com o estágio
+      atual do projeto (ver critério de não gastar recursos em projeto que ainda não está
+      pronto). Quando o Agente Olheiro for retomado, a implementação fica **nativa em Go**
+      (mesmo backend, sem serviço novo), disparada por agendador externo gratuito
+      (cron-job.org) batendo num endpoint interno protegido por chave secreta — mesmo padrão
+      adotado na Fase 6.7 para notificação de episódios.
+- [ ] **Integração Google Workspace:** O Agente gera recomendações personalizadas em HTML e
+      utiliza a API do Gmail (SDK oficial, direto em Go — não via n8n) para disparar um relatório
+      automático para a caixa de entrada do usuário.
 
 ## 📅 Fase 5: Smart Tracking, Streaming Direto & Calendário (Killer Feature) Finalizado 10/08/2026
 
@@ -85,6 +98,11 @@ OBS: O Product Owner decidiu que a fase 5 fosse implementada primeiro.
 > Ainda sem decisão de fórmula fechada — depende de confirmar se a AniList expõe contagem de
 > votos/favoritos junto com a nota antes de estimar esforço real. Não iniciar antes de fechar
 > essa decisão em `DECISIONS.md`.
+>
+> **Nota (17/08/2026):** a versão simples desta fase (média bayesiana com dado que a AniList já
+> fornece hoje) **não depende** do sistema de credibilidade de longo prazo descrito em
+> `VISAO_RANKING_CREDIVEL.md` — pode ser implementada de forma independente, a qualquer momento,
+> sem esperar Fase 7 (Multiusuário).
 
 - [ ] Confirmar se a query GraphQL da AniList retorna contagem de avaliações/favoritos por anime.
 - [ ] Definir e documentar em `DECISIONS.md` a fórmula de ponderação escolhida (ex: média
@@ -111,9 +129,29 @@ OBS: O Product Owner decidiu que a fase 5 fosse implementada primeiro.
 - [ ] Implementar consumo dos novos campos no backend + exibição no frontend.
 - [ ] Resolver especificamente a queixa de imagem pequena no mobile registrada no item 5.1.
 
+## 📺 Fase 6.7: Progresso por Episódio & Notificação de Lançamento
+
+> Nasceu de uma sessão de planejamento em 17/08/2026, ao discutir os pré-requisitos técnicos
+> para a visão de longo prazo do ranking com credibilidade (`VISAO_RANKING_CREDIVEL.md`).
+> Planejamento completo, com issues detalhadas em formato `AGENTS.md`, motivação, gargalos
+> identificados (cobertura variável do campo `streamingEpisodes` da AniList, e o fato de que
+> temporadas já são separadas por `mal_id` — não precisa de agrupamento manual) e mitigação de
+> timeout de cold-start documentados em `FASE_6.7_EPISODIOS.md`.
+
+- [ ] Criar tabela `episode_progress` (Supabase) + endpoints Go para marcar/desmarcar episódio
+      assistido, com RLS e o mesmo padrão de segurança já usado em `media_entries` (`user_id`
+      sempre extraído do JWT, nunca do payload).
+- [ ] Grade visual de episódios na página de detalhe/Meu Deck, usando `streamingEpisodes` da
+      AniList (com fallback para anime sem esse dado).
+- [ ] Notificação de episódio novo lançado, reaproveitando `nextAiringEpisode` (já usado na
+      Fase 5), com checagem diária via endpoint interno + agendador externo gratuito.
+
 ## 👥 Fase 7: Multiusuário (futuro, avaliar quando chegar)
 
 - [ ] Reavaliar modelo de dados e permissões antes de abrir para outras pessoas.
+- [ ] **Pré-requisito para retomar o Agente Olheiro e a visão completa de ranking com
+      credibilidade** — ver `VISAO_RANKING_CREDIVEL.md` (documento de visão, não compromisso de
+      escopo; sistema de peso de voto por XP de gênero só faz sentido com base de usuários real).
 
 ## 📱 Fase 8: Publicação como App (futuro, avaliar quando chegar)
 

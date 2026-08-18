@@ -419,12 +419,12 @@ export default function PainelAdmin() {
             type="button"
             onClick={() => setConfigModalAberto(true)}
             title="Configurar a personalidade da IA"
-            className="hidden sm:flex items-center gap-2 px-4 py-1.5 bg-gradient-to-r from-holo-1/10 to-holo-2/10 border border-holo-1/30 text-holo-1 hover:text-white hover:bg-gradient-to-r hover:from-holo-1 hover:to-holo-2 text-xs font-bold rounded-full cursor-pointer transition-all shadow-[0_0_15px_rgba(255,79,216,0.15)]"
+            className="flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-1.5 bg-gradient-to-r from-holo-1/10 to-holo-2/10 border border-holo-1/30 text-holo-1 hover:text-white hover:bg-gradient-to-r hover:from-holo-1 hover:to-holo-2 text-[11px] sm:text-xs font-bold rounded-full cursor-pointer transition-all shadow-[0_0_15px_rgba(255,79,216,0.15)] shrink-0"
           >
-            <Sparkles size={14} /> Configurar IA
+            <Sparkles size={14} /> IA
           </button>
           <Link onClick={(e) => { if(!confirmarSaidaSegura()) e.preventDefault() }} to="/" className="text-sm font-bold text-muted hover:text-text transition-colors">
-            ← Voltar ao site
+            ← Voltar
           </Link>
         </div>
       </div>
@@ -448,7 +448,7 @@ export default function PainelAdmin() {
             />
           </div>
 
-          {/* 🔴 O SEGREDO ESTÁ NESTA LINHA ABAIXO: 'min-w-0' resolve o estouro do layout */}
+          {/* 'min-w-0' resolve o estouro do layout */}
           <div className={`bg-panel border border-line rounded-2xl shadow-xl lg:sticky lg:top-24 min-w-0 ${formularioAberto ? 'block' : 'hidden lg:block'}`}>
             {!formularioAberto ? (
               <div className="flex flex-col items-center justify-center text-center py-20 px-6">
