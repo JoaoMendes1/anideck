@@ -7,9 +7,8 @@ import (
 	"github.com/joho/godotenv"
 )
 
-// LoadAndValidateEnv carrega o .env local (se existir) e verifica as chaves obrigatórias.
 func LoadAndValidateEnv() error {
-	// Tentativa carregar arquivo .env
+	
 	_ = godotenv.Load()
 
 	requiredVars := []string{
@@ -31,5 +30,4 @@ func LoadAndValidateEnv() error {
 	}
 
 	return nil
-
 }

@@ -8,23 +8,27 @@ import (
 	"net/http"
 	"os"
 	"strings"
+	"time"
 
 	"github.com/JoaoMendes1/anideck/internal/anilist"
 	"github.com/JoaoMendes1/anideck/internal/database"
 	"github.com/JoaoMendes1/anideck/internal/middleware"
 	webpush "github.com/SherClockHolmes/webpush-go"
 	"github.com/go-chi/chi/v5"
-	"github.com/supabase-community/supabase-go"
 )
 
 type NotificationsHandler struct {
 	AniListClient anilist.Service
 }
 
-// HandleSubscribePush salva a inscrição do dispositivo do usuário (Web Push)
 func (h *NotificationsHandler) HandleSubscribePush(w http.ResponseWriter, r *http.Request) {
-	token, _ := r.Context().Value(middleware.TokenKey).(string)
-	userID, _ := r.Context().Value(middleware.UserIDKey).(string)
+	token, tokenOk := r.Context().Value(middleware.TokenKey).(string)
+	userID, userOk := r.Context().Value(middleware.UserIDKey).(string)
+
+	if !tokenOk || !userOk {
+		http.Error(w, "Não autenticado", http.StatusUnauthorized)
+		return
+	}
 
 	var payload struct {
 		Endpoint string `json:"endpoint"`
@@ -46,10 +50,14 @@ func (h *NotificationsHandler) HandleSubscribePush(w http.ResponseWriter, r *htt
 		"auth":     payload.Keys.Auth,
 	}
 
-	dbClient, _ := database.ClientWithToken(token)
+	dbClient, errClient := database.ClientWithToken(token)
+	if errClient != nil {
+		http.Error(w, "Erro interno de conexão", http.StatusInternalServerError)
+		return
+	}
+
 	_, _, err := dbClient.From("push_subscriptions").Insert(sub, false, "exact", "", "").Execute()
 
-	// Se for erro de duplicidade de endpoint, apenas retornamos sucesso
 	if err != nil && (strings.Contains(err.Error(), "duplicate key") || strings.Contains(err.Error(), "23505")) {
 		w.WriteHeader(http.StatusOK)
 		return
@@ -58,12 +66,21 @@ func (h *NotificationsHandler) HandleSubscribePush(w http.ResponseWriter, r *htt
 	w.WriteHeader(http.StatusCreated)
 }
 
-// HandleGetNotifications lista o histórico de notificações In-App
 func (h *NotificationsHandler) HandleGetNotifications(w http.ResponseWriter, r *http.Request) {
-	token, _ := r.Context().Value(middleware.TokenKey).(string)
-	userID, _ := r.Context().Value(middleware.UserIDKey).(string)
+	token, tokenOk := r.Context().Value(middleware.TokenKey).(string)
+	userID, userOk := r.Context().Value(middleware.UserIDKey).(string)
 
-	dbClient, _ := database.ClientWithToken(token)
+	if !tokenOk || !userOk {
+		http.Error(w, "Não autenticado", http.StatusUnauthorized)
+		return
+	}
+
+	dbClient, errClient := database.ClientWithToken(token)
+	if errClient != nil {
+		http.Error(w, "Erro interno de conexão", http.StatusInternalServerError)
+		return
+	}
+
 	data, _, err := dbClient.From("notifications").
 		Select("*", "exact", false).
 		Eq("user_id", userID).
@@ -80,17 +97,28 @@ func (h *NotificationsHandler) HandleGetNotifications(w http.ResponseWriter, r *
 	w.Write(data)
 }
 
-// HandleReadNotification marca o aviso como lido
 func (h *NotificationsHandler) HandleReadNotification(w http.ResponseWriter, r *http.Request) {
 	id := chi.URLParam(r, "id")
-	token, _ := r.Context().Value(middleware.TokenKey).(string)
+	token, tokenOk := r.Context().Value(middleware.TokenKey).(string)
+	userID, userOk := r.Context().Value(middleware.UserIDKey).(string)
 
-	dbClient, _ := database.ClientWithToken(token)
-	update := map[string]interface{}{"read_at": "now()"}
+	if !tokenOk || !userOk {
+		http.Error(w, "Não autenticado", http.StatusUnauthorized)
+		return
+	}
+
+	dbClient, errClient := database.ClientWithToken(token)
+	if errClient != nil {
+		http.Error(w, "Erro interno de conexão", http.StatusInternalServerError)
+		return
+	}
+
+	update := map[string]interface{}{"read_at": time.Now().Format(time.RFC3339)}
 
 	_, _, err := dbClient.From("notifications").
 		Update(update, "", "exact").
 		Eq("id", id).
+		Eq("user_id", userID).
 		Execute()
 
 	if err != nil {
@@ -102,28 +130,13 @@ func (h *NotificationsHandler) HandleReadNotification(w http.ResponseWriter, r *
 	w.WriteHeader(http.StatusOK)
 }
 
-// HandleCheckNewEpisodes é o Cron Job diário que varre novos lançamentos
 func (h *NotificationsHandler) HandleCheckNewEpisodes(w http.ResponseWriter, r *http.Request) {
 	if r.Header.Get("X-Cron-Secret") != os.Getenv("CRON_SECRET") {
 		http.Error(w, "Acesso Negado", http.StatusForbidden)
 		return
 	}
 
-	serviceKey := os.Getenv("SUPABASE_SERVICE_ROLE_KEY")
-	if serviceKey == "" {
-		log.Println("[ERRO CRON] SUPABASE_SERVICE_ROLE_KEY ausente no ambiente (Render).")
-		http.Error(w, "Configuração Ausente", http.StatusInternalServerError)
-		return
-	}
-
-	serviceClient, errClient := supabase.NewClient(os.Getenv("SUPABASE_URL"), serviceKey, nil)
-	if errClient != nil || serviceClient == nil {
-		log.Printf("[ERRO CRON] Falha ao criar cliente Supabase: %v", errClient)
-		http.Error(w, "Erro de Cliente", http.StatusInternalServerError)
-		return
-	}
-
-	data, _, err := serviceClient.From("media_entries").
+	data, _, err := database.Client.From("media_entries").
 		Select("user_id, mal_id", "exact", false).
 		In("status", []string{"Assistindo", "Em Dia"}).
 		Execute()
@@ -172,14 +185,12 @@ func (h *NotificationsHandler) HandleCheckNewEpisodes(w http.ResponseWriter, r *
 		return
 	}
 
-	// 2. Busca na AniList os detalhes desses animes
 	animes, _ := h.AniListClient.GetAnimesByMalIDs(context.Background(), malIDs)
 	if animes == nil {
 		w.WriteHeader(http.StatusOK)
 		return
 	}
 
-	// 3. Processa e dispara as notificações
 	for _, anime := range animes.Data {
 		if anime.NextAiringEpisode == nil {
 			continue
@@ -198,12 +209,10 @@ func (h *NotificationsHandler) HandleCheckNewEpisodes(w http.ResponseWriter, r *
 					"episode_number": episodeAired,
 				}
 
-				// Tenta inserir no histórico com o Service Client. O UNIQUE do Postgres rejeitará duplicatas.
-				_, _, err := serviceClient.From("notifications").Insert(notif, false, "exact", "", "").Execute()
+				_, _, err := database.Client.From("notifications").Insert(notif, false, "exact", "", "").Execute()
 
-				// Se inseriu sem erro (novo episódio detectado para este usuário)
 				if err == nil {
-					go h.sendWebPush(serviceClient, userID, anime.Title, episodeAired)
+					go h.sendWebPush(userID, anime.Title, episodeAired)
 				}
 			}
 		}
@@ -212,9 +221,8 @@ func (h *NotificationsHandler) HandleCheckNewEpisodes(w http.ResponseWriter, r *
 	w.WriteHeader(http.StatusOK)
 }
 
-// sendWebPush dispara o alerta nativo para os dispositivos cadastrados
-func (h *NotificationsHandler) sendWebPush(serviceClient *supabase.Client, userID string, animeTitle string, episode int) {
-	data, _, err := serviceClient.From("push_subscriptions").
+func (h *NotificationsHandler) sendWebPush(userID string, animeTitle string, episode int) {
+	data, _, err := database.Client.From("push_subscriptions").
 		Select("endpoint, p256dh, auth", "exact", false).
 		Eq("user_id", userID).
 		Execute()
@@ -226,8 +234,7 @@ func (h *NotificationsHandler) sendWebPush(serviceClient *supabase.Client, userI
 	var subs []map[string]string
 	_ = json.Unmarshal(data, &subs)
 
-	// O payload que o Service Worker no React vai ler para criar o Card da Notificação
-	message := fmt.Appendf(nil, `{"title": "Novo Episódio!", "body": "%s — Episódio %d acabou de lançar!"}`, animeTitle, episode)
+	message := []byte(fmt.Sprintf(`{"title": "Novo Episódio!", "body": "%s — Episódio %d acabou de lançar!"}`, animeTitle, episode))
 
 	for _, s := range subs {
 		sub := &webpush.Subscription{
@@ -239,7 +246,7 @@ func (h *NotificationsHandler) sendWebPush(serviceClient *supabase.Client, userI
 		}
 
 		_, err := webpush.SendNotification(message, sub, &webpush.Options{
-			Subscriber:      "mailto:admin@anideck.com.br", // Substitua pelo seu e-mail real depois
+			Subscriber:      "mailto:admin@anideck.com.br",
 			VAPIDPublicKey:  os.Getenv("VAPID_PUBLIC_KEY"),
 			VAPIDPrivateKey: os.Getenv("VAPID_PRIVATE_KEY"),
 			TTL:             30,

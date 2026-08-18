@@ -57,8 +57,6 @@ func (h *EntriesHandler) HandleCreate(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Sempre derivar o user_id do JWT validado, nunca confiar no payload do cliente.
-	// Isso também garante que o RLS do Supabase (auth.uid() = user_id) seja satisfeito.
 	entrada.UserID = userID
 
 	dbClient, errClient := database.ClientWithToken(token)
@@ -95,7 +93,6 @@ func (h *EntriesHandler) HandleUpdate(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Mesma regra do Create: o user_id nunca vem do cliente.
 	entrada.UserID = userID
 
 	dbClient, errClient := database.ClientWithToken(token)
@@ -104,8 +101,6 @@ func (h *EntriesHandler) HandleUpdate(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Filtro por user_id além do id: defesa em profundidade contra IDOR,
-	// independente do RLS estar corretamente configurado no banco.
 	data, _, err := dbClient.From("media_entries").
 		Update(entrada, "", "exact").
 		Eq("id", id).
@@ -138,7 +133,6 @@ func (h *EntriesHandler) HandleDelete(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Mesma defesa em profundidade do Update.
 	_, _, err := dbClient.From("media_entries").
 		Delete("", "exact").
 		Eq("id", id).
@@ -198,7 +192,6 @@ func syncMetadataCacheAsync(malID int, token string) {
 	}()
 }
 
-// HandleGetEpisodes retorna a lista de episódios assistidos de um anime específico
 func (h *EntriesHandler) HandleGetEpisodes(w http.ResponseWriter, r *http.Request) {
 	token, ok := r.Context().Value(middleware.TokenKey).(string)
 	userID, userOk := r.Context().Value(middleware.UserIDKey).(string)
@@ -206,19 +199,19 @@ func (h *EntriesHandler) HandleGetEpisodes(w http.ResponseWriter, r *http.Reques
 
 	if !ok || !userOk {
 		http.Error(w, "Não autorizado", http.StatusUnauthorized)
+		return
 	}
 
 	dbClient, errClient := database.ClientWithToken(token)
 	if errClient != nil {
 		http.Error(w, "Erro interno de conexão", http.StatusInternalServerError)
-		return 
+		return
 	}
 
-	// Trazendo apenas o número do episódio para economizar banda e processamento 
-	data, _, err := dbClient.From("episode_progress"). 
-		Select("episode_number", "exact", false).  
-		Eq("user_id", userID). 
-		Eq("mal_id", malID). 
+	data, _, err := dbClient.From("episode_progress").
+		Select("episode_number", "exact", false).
+		Eq("user_id", userID).
+		Eq("mal_id", malID).
 		Execute()
 
 	if err != nil {
@@ -227,7 +220,6 @@ func (h *EntriesHandler) HandleGetEpisodes(w http.ResponseWriter, r *http.Reques
 		return
 	}
 
-	// Mapeia o JSON retornado para um slice simples de inteiros pro Frontend
 	var raw []map[string]int
 	_ = json.Unmarshal(data, &raw)
 
@@ -240,22 +232,21 @@ func (h *EntriesHandler) HandleGetEpisodes(w http.ResponseWriter, r *http.Reques
 	json.NewEncoder(w).Encode(episodes)
 }
 
-// HandleMarkEpisode marca um episódio como assistido
 func (h *EntriesHandler) HandleMarkEpisode(w http.ResponseWriter, r *http.Request) {
 	token, ok := r.Context().Value(middleware.TokenKey).(string)
 	userID, userOk := r.Context().Value(middleware.UserIDKey).(string)
 
 	if !ok || !userOk {
 		http.Error(w, "Não autorizado", http.StatusUnauthorized)
-		return 
+		return
 	}
 
 	malID, _ := strconv.Atoi(chi.URLParam(r, "mal_id"))
 	episodeNumber, _ := strconv.Atoi(chi.URLParam(r, "number"))
 
 	progresso := entries.EpisodeProgress{
-		UserID:       userID, // Garantia Estrutural 
-		MalID:        malID,
+		UserID:        userID,
+		MalID:         malID,
 		EpisodeNumber: episodeNumber,
 	}
 
@@ -267,11 +258,10 @@ func (h *EntriesHandler) HandleMarkEpisode(w http.ResponseWriter, r *http.Reques
 
 	_, _, err := dbClient.From("episode_progress").Insert(progresso, false, "exact", "", "").Execute()
 
-	// Tratamento de Idempotência: Se der erro de chave duplicada, ignoramos e retornamos sucesso.
 	if err != nil {
-		if strings.Contains(err.Error(), "duplicate key value vilates unique constraint") || strings.Contains(err.Error(), "23505") {
+		if strings.Contains(err.Error(), "duplicate key value violates unique constraint") || strings.Contains(err.Error(), "23505") {
 			w.WriteHeader(http.StatusOK)
-			return 
+			return
 		}
 		log.Printf("[ERRO DB] HandleMarkEpisode (user=%s, mal_id=%d, ep=%d): %v", userID, malID, episodeNumber, err)
 		http.Error(w, "Erro ao marcar episódio", http.StatusInternalServerError)
@@ -281,7 +271,6 @@ func (h *EntriesHandler) HandleMarkEpisode(w http.ResponseWriter, r *http.Reques
 	w.WriteHeader(http.StatusCreated)
 }
 
-// HandleUnmarkEpisode desmarca um episódio
 func (h *EntriesHandler) HandleUnmarkEpisode(w http.ResponseWriter, r *http.Request) {
 	token, ok := r.Context().Value(middleware.TokenKey).(string)
 	userID, userOk := r.Context().Value(middleware.UserIDKey).(string)
