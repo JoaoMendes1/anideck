@@ -1,0 +1,21 @@
+{
+  "name": "AniDeck",
+  "short_name": "AniDeck",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0A0714",
+  "theme_color": "#0A0714",
+  "description": "Seu deck de animes, do seu jeito.",
+  "icons": [
+    {
+      "src": "/favicon.svg",
+      "sizes": "192x192",
+      "type": "image/svg+xml"
+    },
+    {
+      "src": "/favicon.svg",
+      "sizes": "512x512",
+      "type": "image/svg+xml"
+    }
+  ]
+}

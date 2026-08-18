@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { Link, useLocation } from 'react-router-dom'
 import { Search, LogOut } from 'lucide-react'
 import { supabase } from '../lib/supabase'
+import NotificationBell from './NotificationBell'
 import type { Session } from '@supabase/supabase-js'
 import { LogoMark } from './Brand'
 
@@ -92,6 +93,8 @@ export default function Navbar() {
             <Link to="/descobrir" className="w-9 h-9 rounded-full border border-line bg-panel text-muted flex items-center justify-center transition-all hover:border-holo-3 hover:text-holo-3" title="Buscar">
               <Search size={16} />
             </Link>
+            
+            {session && <NotificationBell />}
 
             {session ? (
               <div className="flex items-center gap-2.5 px-1.5 py-1.5 pr-3 rounded-full bg-panel border border-line">
