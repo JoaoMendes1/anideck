@@ -47,6 +47,7 @@ func main() {
 	statsHandler := &handlers.StatsHandler{}
 	rankingHandler := &handlers.RankingHandler{AniListClient: anilistService}
 	curationHandler := &handlers.CurationHandler{}
+	notificationsHandler := &handlers.NotificationsHandler{AniListClient: anilistService}
 
 	r := chi.NewRouter()
 	r.Use(chimw.RequestID)
@@ -63,8 +64,8 @@ func main() {
 	r.Get("/api/anime/{id}/statistics", animeHandler.HandleGetStats)
 	r.Get("/api/ranking", rankingHandler.HandleGetTopAnime)
 	r.Get("/api/curation", curationHandler.HandleList)
-
 	r.Post("/api/anime/bulk", animeHandler.HandleGetAnimesByIDs)
+	r.Post("/api/internal/check-new-episodes", notificationsHandler.HandleCheckNewEpisodes)
 
 	r.Group(func(protegido chi.Router) {
 		protegido.Use(middleware.RequireAuth)
@@ -77,6 +78,10 @@ func main() {
 		protegido.Get("/api/entries/{mal_id}/episodes", entriesHandler.HandleGetEpisodes)
 		protegido.Post("/api/entries/{mal_id}/episodes/{number}", entriesHandler.HandleMarkEpisode)
 		protegido.Delete("/api/entries/{mal_id}/episodes/{number}", entriesHandler.HandleUnmarkEpisode)
+
+		protegido.Post("/api/push/subscribe", notificationsHandler.HandleSubscribePush)
+		protegido.Get("/api/notifications", notificationsHandler.HandleGetNotifications)
+		protegido.Put("/api/notifications/{id}/read", notificationsHandler.HandleReadNotification)
 
 		protegido.Get("/api/stats/user", statsHandler.HandleGetUserStats)
 	})
