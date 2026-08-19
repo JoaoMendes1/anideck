@@ -8,6 +8,7 @@ interface AppNotification {
   id: string;
   mal_id: number;
   anime_title: string | null;
+  anime_image: string | null; // <-- Adicionado para a imagem do pôster
   episode_number: number;
   read_at: string | null;
   created_at: string;
@@ -175,7 +176,11 @@ export default function NotificationBell() {
               </div>
             ) : (
               notifications.map(n => (
-                <div key={n.id} className="p-3 border-b border-line hover:bg-panel transition-colors flex items-start gap-3">
+                <div key={n.id} className="p-3 border-b border-line hover:bg-panel transition-colors flex items-center gap-3">
+                  {/* Pôster do anime adicionado aqui */}
+                  {n.anime_image && (
+                    <img src={n.anime_image} alt="" className="w-10 h-14 object-cover rounded-md flex-shrink-0" />
+                  )}
                   <Link
                     to={`/anime/${n.mal_id}`}
                     onClick={() => setIsOpen(false)}

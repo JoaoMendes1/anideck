@@ -245,6 +245,7 @@ func (h *NotificationsHandler) HandleCheckNewEpisodes(w http.ResponseWriter, r *
 					"p_mal_id":         anime.MalID,
 					"p_episode_number": episodeAired,
 					"p_anime_title":    anime.Title,
+					"p_anime_image":    anime.Images.JPG.ImageURL,
 				}
 
 				// RPC que insere a notificação e devolve as assinaturas Web Push via helper nativo
@@ -265,7 +266,7 @@ func (h *NotificationsHandler) HandleCheckNewEpisodes(w http.ResponseWriter, r *
 }
 
 func (h *NotificationsHandler) sendWebPush(subs []map[string]string, animeTitle string, malID int, episode int) {
-	message := fmt.Appendf(nil, `{"title": "Novo Episódio!", "body": "%s — Episódio %d acabou de lançar!", "url": "/anime/%d"}`, animeTitle, episode, malID)
+	message := []byte(fmt.Sprintf(`{"title": "Novo Episódio!", "body": "%s — Episódio %d acabou de lançar!", "url": "/anime/%d"}`, animeTitle, episode, malID))
 
 	for _, s := range subs {
 		sub := &webpush.Subscription{
