@@ -1,10 +1,10 @@
 package handlers
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
-	"bytes"
 	"io"
 	"log"
 	"net/http"
@@ -23,6 +23,8 @@ type NotificationsHandler struct {
 	AniListClient anilist.Service
 }
 
+// callRPC é um helper nativo para contornar um bug na SDK supabase-go (v0.0.4)
+// onde o método Rpc retorna uma string em vez do QueryBuilder real.
 func callRPC(rpcName string, payload interface{}) ([]byte, error) {
 	url := os.Getenv("SUPABASE_URL") + "/rest/v1/rpc/" + rpcName
 	var bodyReader io.Reader
@@ -44,7 +46,8 @@ func callRPC(rpcName string, payload interface{}) ([]byte, error) {
 	req.Header.Set("Authorization", "Bearer "+anonKey)
 	req.Header.Set("Content-Type", "application/json")
 
-	resp, err := http.DefaultClient.Do(req)
+	var httpClient = &http.Client{Timeout: 15 * time.Second}
+	resp, err := httpClient.Do(req)
 	if err != nil {
 		return nil, err
 	}
@@ -56,6 +59,51 @@ func callRPC(rpcName string, payload interface{}) ([]byte, error) {
 	}
 
 	return io.ReadAll(resp.Body)
+}
+
+func (h *NotificationsHandler) HandleSubscribePush(w http.ResponseWriter, r *http.Request) {
+	token, tokenOk := r.Context().Value(middleware.TokenKey).(string)
+	userID, userOk := r.Context().Value(middleware.UserIDKey).(string)
+
+	if !tokenOk || !userOk {
+		http.Error(w, "Não autenticado", http.StatusUnauthorized)
+		return
+	}
+
+	var payload struct {
+		Endpoint string `json:"endpoint"`
+		Keys     struct {
+			P256dh string `json:"p256dh"`
+			Auth   string `json:"auth"`
+		} `json:"keys"`
+	}
+
+	if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
+		http.Error(w, "Payload inválido", http.StatusBadRequest)
+		return
+	}
+
+	sub := map[string]interface{}{
+		"user_id":  userID,
+		"endpoint": payload.Endpoint,
+		"p256dh":   payload.Keys.P256dh,
+		"auth":     payload.Keys.Auth,
+	}
+
+	dbClient, errClient := database.ClientWithToken(token)
+	if errClient != nil {
+		http.Error(w, "Erro interno de conexão", http.StatusInternalServerError)
+		return
+	}
+
+	_, _, err := dbClient.From("push_subscriptions").Insert(sub, false, "exact", "", "").Execute()
+
+	if err != nil && (strings.Contains(err.Error(), "duplicate key") || strings.Contains(err.Error(), "23505")) {
+		w.WriteHeader(http.StatusOK)
+		return
+	}
+
+	w.WriteHeader(http.StatusCreated)
 }
 
 func (h *NotificationsHandler) HandleGetNotifications(w http.ResponseWriter, r *http.Request) {
@@ -128,6 +176,7 @@ func (h *NotificationsHandler) HandleCheckNewEpisodes(w http.ResponseWriter, r *
 		return
 	}
 
+	// Executa a Function segura no Postgres via helper nativo (contornando o RLS)
 	data, err := callRPC("get_cron_media_entries", nil)
 
 	if err != nil {
@@ -197,12 +246,11 @@ func (h *NotificationsHandler) HandleCheckNewEpisodes(w http.ResponseWriter, r *
 					"p_episode_number": episodeAired,
 				}
 
-			if errRpc == nil && string(subData) != "null" && string(subData) != "[]" {
 				// RPC que insere a notificação e devolve as assinaturas Web Push via helper nativo
 				subData, errRpc := callRPC("process_cron_notification", payload)
 
 				// Se a RPC retornou dados (significa que o episódio era inédito para este usuário)
-				if errRpc == nil && string(subData) != "null" && string(subData) != "[]" {
+				if errRpc == nil && string(subData) != "null" && string(subData) != "[]" && string(subData) != "" {
 					var subs []map[string]string
 					if errJson := json.Unmarshal(subData, &subs); errJson == nil {
 						go h.sendWebPush(subs, anime.Title, episodeAired)
