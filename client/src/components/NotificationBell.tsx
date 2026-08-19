@@ -26,18 +26,36 @@ export default function NotificationBell() {
   const { showToast } = useToast();
   const [notifications, setNotifications] = useState<AppNotification[]>([]);
   const [isOpen, setIsOpen] = useState(false);
-  const [pushEnabled, setPushEnabled] = useState(
-    'Notification' in window ? Notification.permission === 'granted' : false
-  );
+  // BUG CORRIGIDO: antes checava só Notification.permission === 'granted' — isso
+  // reflete se o navegador TEM PERMISSÃO de notificar, não se existe uma inscrição
+  // de push de verdade salva no servidor. Num Android/Xiaomi com a notificação já
+  // liberada nas configurações do sistema, isso fazia pushEnabled começar "true"
+  // sem nenhuma inscrição real ter sido criada, escondendo o botão "Ativar Nativo"
+  // pra sempre. Agora começamos assumindo false e confirmamos de verdade no mount.
+  const [pushEnabled, setPushEnabled] = useState(false);
 
   useEffect(() => {
     fetchNotifications();
     if ('serviceWorker' in navigator) {
-      navigator.serviceWorker.register('/sw.js').catch((err) => {
-        console.error('Service Worker registration failed:', err);
-      });
+      navigator.serviceWorker.register('/sw.js')
+        .then(() => checkExistingSubscription())
+        .catch((err) => {
+          console.error('Service Worker registration failed:', err);
+        });
     }
   }, []);
+
+  // Confirma se já existe uma inscrição de push ATIVA neste navegador/dispositivo
+  // (diferente de só ter permissão concedida).
+  const checkExistingSubscription = async () => {
+    try {
+      const registration = await navigator.serviceWorker.ready;
+      const subscription = await registration.pushManager.getSubscription();
+      setPushEnabled(subscription !== null);
+    } catch (e) {
+      console.error('Erro ao checar inscrição de push existente:', e);
+    }
+  };
 
   const fetchNotifications = async () => {
     try {
