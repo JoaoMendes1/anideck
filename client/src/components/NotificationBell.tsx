@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { Link } from 'react-router-dom';
 import { Bell, Check } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { useToast } from '../contexts/ToastContext';
@@ -6,6 +7,7 @@ import { useToast } from '../contexts/ToastContext';
 interface AppNotification {
   id: string;
   mal_id: number;
+  anime_title: string | null;
   episode_number: number;
   read_at: string | null;
   created_at: string;
@@ -173,11 +175,24 @@ export default function NotificationBell() {
               </div>
             ) : (
               notifications.map(n => (
-                <div key={n.id} className="p-3 border-b border-line hover:bg-panel transition-colors flex items-start gap-3 group">
-                  <div className="flex-1 min-w-0">
-                    <p className="text-xs text-text mb-1">O <b>Episódio {n.episode_number}</b> do anime que você acompanha já está disponível.</p>
-                  </div>
-                  <button onClick={() => markAsRead(n.id)} className="text-muted hover:text-green opacity-0 group-hover:opacity-100 transition-opacity p-1 cursor-pointer" title="Marcar como lido">
+                <div key={n.id} className="p-3 border-b border-line hover:bg-panel transition-colors flex items-start gap-3">
+                  <Link
+                    to={`/anime/${n.mal_id}`}
+                    onClick={() => setIsOpen(false)}
+                    className="flex-1 min-w-0"
+                  >
+                    <p className="text-xs text-text mb-1">
+                      <b>{n.anime_title || 'Anime'}</b> — Episódio {n.episode_number} já está disponível.
+                    </p>
+                  </Link>
+                  {/* BUG CORRIGIDO: antes ficava escondido atrás de opacity-0 group-hover:opacity-100,
+                      que nunca aparece em tela de toque (não existe :hover no celular). Agora fica
+                      sempre visível. */}
+                  <button
+                    onClick={() => markAsRead(n.id)}
+                    className="text-muted hover:text-green transition-opacity p-1 cursor-pointer flex-shrink-0"
+                    title="Marcar como lido"
+                  >
                     <Check size={14} />
                   </button>
                 </div>
