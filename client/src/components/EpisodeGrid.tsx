@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Check, Play, ImageOff, Lock } from 'lucide-react'
+import { Check, Play, ImageOff, Lock, ChevronDown } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import { useToast } from '../contexts/ToastContext'
 
@@ -16,16 +16,21 @@ interface EpisodeGridProps {
   streamingEpisodes?: StreamingEpisode[]
   initialWatched: number[]
   isLoggedIn: boolean
-  // NOVA PROP: Recebe os dados de lançamento do backend
   nextAiringEpisode?: { airingAt: number; timeUntilAiring: number; episode: number }
+  startDate?: { year: number; month: number; day: number }
 }
 
-export default function EpisodeGrid({ malId, totalEpisodes, streamingEpisodes = [], initialWatched, isLoggedIn, nextAiringEpisode }: EpisodeGridProps) {
+export default function EpisodeGrid({ malId, totalEpisodes, streamingEpisodes = [], initialWatched, isLoggedIn, nextAiringEpisode, startDate }: EpisodeGridProps) {
   const { showToast } = useToast()
   const [watched, setWatched] = useState<number[]>(initialWatched)
+  
+  // PAGINAÇÃO: Estado para limitar a quantidade inicial de episódios no DOM
+  const [visibleCount, setVisibleCount] = useState(24) 
 
   const episodesCount = totalEpisodes > 0 ? totalEpisodes : streamingEpisodes.length
-  const displayEpisodes = Array.from({ length: episodesCount || 12 }, (_, i) => {
+  
+  // Array total
+  const allEpisodes = Array.from({ length: episodesCount || 12 }, (_, i) => {
     const epNum = i + 1
     const data = streamingEpisodes[i]
     return {
@@ -36,6 +41,9 @@ export default function EpisodeGrid({ malId, totalEpisodes, streamingEpisodes = 
     }
   })
 
+  // Array fatiado para renderização
+  const displayEpisodes = allEpisodes.slice(0, visibleCount)
+
   const toggleEpisode = async (episodeNumber: number) => {
     if (!isLoggedIn) {
       showToast('Faça login para salvar seu progresso.', 'error')
@@ -43,10 +51,7 @@ export default function EpisodeGrid({ malId, totalEpisodes, streamingEpisodes = 
     }
 
     const isWatched = watched.includes(episodeNumber)
-    
-    setWatched(prev => 
-      isWatched ? prev.filter(num => num !== episodeNumber) : [...prev, episodeNumber]
-    )
+    setWatched(prev => isWatched ? prev.filter(num => num !== episodeNumber) : [...prev, episodeNumber])
 
     try {
       const { data: { session } } = await supabase.auth.getSession()
@@ -60,11 +65,16 @@ export default function EpisodeGrid({ malId, totalEpisodes, streamingEpisodes = 
 
       if (!response.ok) throw new Error()
     } catch (err) {
-      setWatched(prev => 
-        isWatched ? [...prev, episodeNumber] : prev.filter(num => num !== episodeNumber)
-      )
+      setWatched(prev => isWatched ? [...prev, episodeNumber] : prev.filter(num => num !== episodeNumber))
       showToast('Erro ao sincronizar episódio. Verifique sua conexão.', 'error')
     }
+  }
+
+  const getEpisodeDate = (epNumber: number) => {
+    if (!startDate?.year || !startDate?.month || !startDate?.day) return null;
+    const baseDate = new Date(startDate.year, startDate.month - 1, startDate.day);
+    baseDate.setDate(baseDate.getDate() + (epNumber - 1) * 7); // Soma 7 dias por episódio
+    return baseDate.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric' });
   }
 
   return (
@@ -74,21 +84,18 @@ export default function EpisodeGrid({ malId, totalEpisodes, streamingEpisodes = 
           <span className="font-mono text-[11px] text-holo-3">EP</span> Progresso
         </h2>
         <span className="font-mono text-[11px] text-muted-2 font-bold bg-panel border border-line px-2 py-1 rounded-md">
-          {watched.length} / {displayEpisodes.length}
+          {watched.length} / {allEpisodes.length}
         </span>
       </div>
 
-      {/* Grid atualizado para cards maiores: 1 col no mobile, 2 no tablet, 3 ou 4 no desktop */}
       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-5">
         {displayEpisodes.map((ep) => {
           const isWatched = watched.includes(ep.number)
-          // Lógica: Se existe um próximo episódio e o número deste card for maior ou igual a ele, não lançou ainda.
           const isUnreleased = nextAiringEpisode ? ep.number >= nextAiringEpisode.episode : false
 
           return (
             <div 
               key={ep.number} 
-              // Desativa o hover e o cursor se não lançou
               className={`relative flex flex-col group rounded-xl overflow-hidden border transition-all select-none ${
                 isUnreleased ? 'bg-panel/50 border-line/50 opacity-60' : 
                 isWatched ? 'bg-panel-2 border-green/40 shadow-[0_0_15px_rgba(160,255,120,0.1)] cursor-pointer' : 
@@ -116,7 +123,6 @@ export default function EpisodeGrid({ malId, totalEpisodes, streamingEpisodes = 
                   </div>
                 )}
 
-                {/* Overlay de Bloqueio para episódios futuros */}
                 {isUnreleased && (
                   <div className="absolute inset-0 flex flex-col items-center justify-center bg-void/80 backdrop-blur-[2px]">
                     <Lock size={20} className="text-muted-2 mb-1" />
@@ -127,7 +133,14 @@ export default function EpisodeGrid({ malId, totalEpisodes, streamingEpisodes = 
 
               <div className="p-3">
                 <div className="flex justify-between items-start gap-2">
-                  <div className="font-mono text-[11px] text-muted-2 font-bold leading-none">EP {ep.number}</div>
+                  <div className="flex flex-col">
+                     <div className="font-mono text-[11px] text-holo-3 font-bold leading-none mb-1">EP {ep.number}</div>
+                     {/* Aqui a data aparece se existir */}
+                     {getEpisodeDate(ep.number) && (
+                        <div className="font-mono text-[9px] text-muted-2 leading-none">{getEpisodeDate(ep.number)}</div>
+                     )}
+                  </div>
+                  
                   {ep.url && !isUnreleased && (
                     <a 
                       href={ep.url} 
@@ -149,6 +162,15 @@ export default function EpisodeGrid({ malId, totalEpisodes, streamingEpisodes = 
           )
         })}
       </div>
+
+      {visibleCount < allEpisodes.length && (
+        <button
+          onClick={() => setVisibleCount(prev => prev + 24)}
+          className="w-full mt-6 py-3 rounded-xl bg-panel border border-line text-sm font-bold hover:bg-panel-2 hover:border-holo-3 transition-colors text-muted hover:text-white flex items-center justify-center gap-2 cursor-pointer"
+        >
+          <ChevronDown size={16} /> Mostrar próximos episódios
+        </button>
+      )}
     </section>
   )
 }

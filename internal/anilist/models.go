@@ -32,6 +32,7 @@ type Anime struct {
 	Ranking     int         `json:"ranking,omitempty"` 
 	BannerImage string      `json:"bannerImage,omitempty"`
 	Characters  []Character `json:"characters,omitempty"`
+	StartDate   *FuzzyDate  `json:"startDate,omitempty"`
 
 	NextAiringEpisode *NextAiringEpisode `json:"nextAiringEpisode,omitempty"`
 
@@ -77,7 +78,13 @@ type AnimeStatisticsResponse struct {
 }
 
 type AnimeStatistics struct {
-	Scores []ScoreDistribution `json:"scores"` 
+	Scores   []ScoreDistribution  `json:"scores"` 
+	Statuses []StatusDistribution `json:"statuses"`
+}
+
+type StatusDistribution struct {
+	Status string `json:"status"`
+	Amount int    `json:"amount"`
 }
 
 type ScoreDistribution struct {
@@ -91,4 +98,9 @@ type StreamingEpisode struct {
 	Thumbnail string `json:"thumbnail"`
 	URL       string `json:"url"`
 	Site      string `json:"site"`
+}
+type FuzzyDate struct {
+	Year  int `json:"year"`
+	Month int `json:"month"`
+	Day   int `json:"day"`
 }

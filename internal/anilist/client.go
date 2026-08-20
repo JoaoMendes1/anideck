@@ -96,6 +96,7 @@ type aniListMedia struct {
 	IDMal         int                              `json:"idMal"`
 	Title         struct{ Romaji, English string } `json:"title"`
 	Status        string                           `json:"status"`
+	StartDate     struct{ Year, Month, Day int }   `json:"startDate"`
 	Description   string                           `json:"description"`
 	Episodes      int                              `json:"episodes"`
 	Duration      int                              `json:"duration"` // Duração do EP
@@ -267,10 +268,16 @@ func (m *aniListMedia) toAnime() Anime {
 		})
 	}
 
+	var startDate *FuzzyDate
+	if m.StartDate.Year > 0 && m.StartDate.Month > 0 && m.StartDate.Day > 0 {
+		startDate = &FuzzyDate{Year: m.StartDate.Year, Month: m.StartDate.Month, Day: m.StartDate.Day}
+	}
+
 	return Anime{
 		MalID:             m.IDMal,
 		Title:             title,
 		Status:            mapStatus(m.Status),
+		StartDate:         startDate,
 		Synopsis:          stripHTML.Sanitize(m.Description),
 		Episodes:          m.Episodes,
 		Duration:          m.Duration,
@@ -358,6 +365,7 @@ query ($idMal: Int) {
     idMal
     title { romaji english }
     status
+	startDate { year month day }
     description
     episodes
     duration
@@ -366,6 +374,8 @@ query ($idMal: Int) {
     bannerImage
     genres
     externalLinks { site url }
+	rankings { rank type allTime }
+	streamingEpisodes { title thumbnail url site }
 	streamingEpisodes { title thumbnail url site }
     nextAiringEpisode { airingAt timeUntilAiring episode }
     characters(sort: ROLE, perPage: 15) {
@@ -417,7 +427,10 @@ func (c *Client) GetAnimeById(ctx context.Context, id string) (*AnimeByIdRespons
 const statsQuery = `
 query ($idMal: Int) {
   Media(idMal: $idMal, type: ANIME) {
-    stats { scoreDistribution { score amount } }
+    stats { 
+        scoreDistribution { score amount } 
+        statusDistribution { status amount }
+    }
   }
 }`
 
@@ -430,11 +443,14 @@ func (c *Client) GetAnimeStatistics(ctx context.Context, id string) (*AnimeStati
 	var resultado struct {
 		Media struct {
 			Stats struct {
-				ScoreDistribution []struct{ Score, Amount int }
+				ScoreDistribution  []struct{ Score, Amount int }
+				StatusDistribution []struct{ Status string; Amount int }
 			}
 		}
 	}
+	
 	if err := c.gqlRequest(ctx, statsQuery, map[string]interface{}{"idMal": malID}, &resultado); err != nil {
+		log.Printf("[ERRO ANILIST] Falha ao buscar estatísticas do anime %d: %v", malID, err)
 		return nil, err
 	}
 
@@ -451,7 +467,13 @@ func (c *Client) GetAnimeStatistics(ctx context.Context, id string) (*AnimeStati
 		}
 		scores = append(scores, ScoreDistribution{Score: s.Score / 10, Votes: s.Amount, Percentage: pct})
 	}
-	return &AnimeStatisticsResponse{Data: AnimeStatistics{Scores: scores}}, nil
+
+	var statuses []StatusDistribution
+	for _, s := range resultado.Media.Stats.StatusDistribution {
+		statuses = append(statuses, StatusDistribution{Status: s.Status, Amount: s.Amount})
+	}
+
+	return &AnimeStatisticsResponse{Data: AnimeStatistics{Scores: scores, Statuses: statuses}}, nil
 }
 
 const topAnimeQuery = `
