@@ -8,7 +8,7 @@ import ReactMarkdown from 'react-markdown'
 import EpisodeGrid from '../components/EpisodeGrid'
 import EditarEntradaModal from '../components/EditarEntradaModal'
 import { getCategoryTheme } from '../lib/filters'
-import { motion } from 'framer-motion' // Nova importação
+import { motion } from 'framer-motion'
 
 interface AnimeDetail {
   mal_id: number
@@ -19,6 +19,7 @@ interface AnimeDetail {
   score: number
   ranking?: number
   bannerImage?: string
+  startDate?: { year: number; month: number; day: number }
   images: { jpg: { image_url: string } }
   genres: { name: string }[]
   studios: { name: string }[]
@@ -28,7 +29,6 @@ interface AnimeDetail {
   characters?: { id: number; name: string; image: string; role: string }[]
   streamingEpisodes?: { title: string; thumbnail: string; url: string; site: string }[]
   nextAiringEpisode?: { airingAt: number; timeUntilAiring: number; episode: number }
-  startDate?: { year: number; month: number; day: number }
 }
 
 interface AnimeStats {
@@ -58,9 +58,10 @@ export default function Detalhes() {
   const [minhaEntrada, setMinhaEntrada] = useState<MinhaEntrada | null>(null)
   const [episodiosAssistidos, setEpisodiosAssistidos] = useState<number[]>([])
   
-  // Controle do novo modal
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [salvandoStatus, setSalvandoStatus] = useState(false)
+  
+  const [isLoggedIn, setIsLoggedIn] = useState(false)
 
   useEffect(() => {
     const fetchData = async () => {
@@ -81,6 +82,8 @@ export default function Detalhes() {
 
         const { data: { session } } = await supabase.auth.getSession()
         if (session) {
+          setIsLoggedIn(true)
+          
           const resEntries = await fetch('/api/entries', {
             headers: { 'Authorization': `Bearer ${session.access_token}` }
           })
@@ -110,7 +113,6 @@ export default function Detalhes() {
     if (id) fetchData()
   }, [id])
 
-  // Atalho exclusivo para "Marcar como Completo"
   const handleAtualizarEntradaRapida = async (novoStatus: string) => {
     setSalvandoStatus(true)
     const { data: { session } } = await supabase.auth.getSession()
@@ -189,13 +191,10 @@ export default function Detalhes() {
   }
 
   const maxPercentage = stats?.scores ? Math.max(...stats.scores.map(s => s.percentage)) : 100
-
-  // Total de status para formatar as stats
   const totalStatus = stats?.statuses?.reduce((acc, curr) => acc + curr.amount, 0) || 1
   const completedStatus = stats?.statuses?.find(s => s.status === 'COMPLETED')?.amount || 0
   const droppedStatus = stats?.statuses?.find(s => s.status === 'DROPPED')?.amount || 0
 
-  // Instância vazia mockada para abrir o modal para quem ainda NÃO tem no deck
   const novaEntradaFake = {
     id: 'nova',
     mal_id: anime.mal_id,
@@ -206,7 +205,6 @@ export default function Detalhes() {
   return (
     <div className="-mt-24 pb-20">
       
-      {/* CAPA E GRADIENTES */}
       <div className="relative h-[300px] md:h-[450px] w-full overflow-hidden bg-panel-2">
         {anime.bannerImage ? (
           <div className="absolute inset-0 bg-cover bg-center bg-no-repeat opacity-90" style={{ backgroundImage: `url(${anime.bannerImage})` }} />
@@ -219,7 +217,6 @@ export default function Detalhes() {
 
       <div className="max-w-[1040px] mx-auto px-5 -mt-[120px] md:-mt-[160px] relative z-20 pb-2">
 
-        {/* HEADER / PÔSTER */}
         <div className="flex flex-col sm:flex-row gap-5 sm:items-end mb-8 text-center sm:text-left items-center">
           <div className="relative">
             {minhaEntrada?.is_favorite && (
@@ -233,7 +230,6 @@ export default function Detalhes() {
           </div>
 
           <div className="flex-1 min-w-0 pb-1">
-            {/* RANKING GLOBAL (NOVO) */}
             {anime.ranking && (
                <div className="inline-flex items-center gap-1.5 mb-2 font-anton text-[11px] px-2 py-0.5 rounded-md border bg-gold/20 text-gold border-gold/40 shadow-[0_0_8px_rgba(255,197,66,0.2)]">
                   <Trophy size={12} /> #{anime.ranking} GLOBAL
@@ -256,7 +252,6 @@ export default function Detalhes() {
               )}
             </div>
 
-            {/* TAGS COLORIDAS (NOVO) */}
             <div className="flex flex-wrap gap-2 justify-center sm:justify-start mb-4">
               {anime.genres?.map(g => (
                 <span key={g.name} className={`text-[10px] font-bold px-3 py-1 rounded-full border select-none ${getCategoryTheme(g.name)}`}>
@@ -289,7 +284,6 @@ export default function Detalhes() {
           </div>
         </div>
 
-        {/* NAVEGAÇÃO STICKY */}
         <div className="sticky top-[63px] md:top-[73px] z-40 bg-void/95 backdrop-blur-sm border-b border-line overflow-x-auto whitespace-nowrap py-3 mb-8 scrollbar-hide">
           <div className="flex gap-2.5">
             <a href="#visao-geral" className="select-none text-[13px] font-bold text-muted hover:text-text hover:border-holo-3 px-3.5 py-1.5 rounded-full border border-line transition-colors">Visão Geral</a>
@@ -316,7 +310,6 @@ export default function Detalhes() {
           </div>
         )}
 
-        {/* LAYOUT PRINCIPAL (2 COLUNAS) */}
         <div className="grid grid-cols-1 lg:grid-cols-[1fr_320px] gap-10" id="visao-geral">
           <div className="space-y-10 min-w-0">
 
@@ -339,7 +332,6 @@ export default function Detalhes() {
               </div>
             </section>
 
-            {/* PERSONAGENS MOVIDO PARA CIMA (UX) */}
             {anime.characters && anime.characters.length > 0 && (
               <section id="personagens">
                 <h2 className="font-anton text-base uppercase mb-4 flex items-center gap-2 select-none">
@@ -359,13 +351,13 @@ export default function Detalhes() {
               </section>
             )}
 
-          {(anime.episodes > 0 || (anime.streamingEpisodes?.length ?? 0) > 0) && (
+            {(anime.episodes > 0 || (anime.streamingEpisodes?.length ?? 0) > 0) && (
               <EpisodeGrid 
                 malId={anime.mal_id}
                 totalEpisodes={anime.episodes}
                 streamingEpisodes={anime.streamingEpisodes}
                 initialWatched={episodiosAssistidos}
-                isLoggedIn={!!minhaEntrada || episodiosAssistidos.length > 0}
+                isLoggedIn={isLoggedIn} 
                 nextAiringEpisode={anime.nextAiringEpisode} 
                 startDate={anime.startDate}
               />
@@ -378,7 +370,6 @@ export default function Detalhes() {
                 </h2>
                 <div className="flex flex-wrap gap-3">
                   {anime.streaming.map(st => (
-                    // Mudança da key para evitar duplicatas da AniList
                     <a key={`${st.name}-${st.url}`} href={st.url} target="_blank" rel="noreferrer" className="select-none flex items-center gap-2 bg-panel border border-line rounded-xl px-5 py-3 text-[13px] font-bold hover:border-holo-1 hover:text-holo-1 transition-colors">
                       <PlayCircle size={16} />
                       {st.name}
@@ -388,7 +379,6 @@ export default function Detalhes() {
               </section>
             )}
 
-            {/* RELACIONADOS ESTILO CRUNCHYROLL (NOVO PÔSTER GIGANTE) */}
             {anime.relations?.length > 0 && (
               <section id="relacionados">
                 <h2 className="font-anton text-base uppercase mb-4 flex items-center gap-2 select-none">
@@ -432,7 +422,6 @@ export default function Detalhes() {
 
           <div className="space-y-10 min-w-0" id="estatisticas">
             
-            {/* NOVO CARD COMPACTO "MEU DECK" ACIONANDO O MODAL */}
             <section>
               <h2 className="font-anton text-base uppercase mb-4 flex items-center gap-2 select-none">
                 <span className="font-mono text-[11px] text-holo-3">MEU DECK</span>
@@ -466,14 +455,12 @@ export default function Detalhes() {
               )}
             </section>
 
-            {/* ESTATÍSTICAS ANIMADAS (NOVO) */}
             {stats && stats.scores && (
               <section>
                 <h2 className="font-anton text-base uppercase mb-4 flex items-center gap-2 select-none">
                   <span className="font-mono text-[11px] text-holo-3">ESTATÍSTICAS</span> Comunidade
                 </h2>
                 
-                {/* Status Gerais */}
                 <div className="grid grid-cols-2 gap-3 mb-4">
                   <div className="bg-panel border border-line rounded-xl p-4">
                     <div className="font-mono text-[9px] text-green mb-1 font-bold">COMPLETARAM</div>
@@ -485,7 +472,6 @@ export default function Detalhes() {
                   </div>
                 </div>
 
-                {/* Histograma Animado */}
                 <div className="bg-panel border border-line rounded-2xl p-5">
                   <div className="flex items-end gap-1.5 h-[120px] mb-2">
                     {stats.scores.slice().reverse().map(s => {
@@ -526,19 +512,18 @@ export default function Detalhes() {
         </div>
       </div>
 
-     {/* MODAL DE EDIÇÃO INTEGRADO */}
       <EditarEntradaModal
         entrada={isModalOpen ? (minhaEntrada || (novaEntradaFake as any)) : null}
         onFechar={() => setIsModalOpen(false)}
         onSalvar={(atualizada) => {
           setMinhaEntrada(atualizada)
           showToast(minhaEntrada ? 'Alterações salvas!' : 'Adicionado ao Deck com sucesso!', 'success')
-          setIsModalOpen(false) // Garante que o modal feche após salvar
+          setIsModalOpen(false)
         }}
         onExcluir={() => {
           setMinhaEntrada(null)
           showToast('Removido do Deck.', 'success')
-          setIsModalOpen(false) // Garante que o modal feche após excluir
+          setIsModalOpen(false)
         }}
       />
     </div>
