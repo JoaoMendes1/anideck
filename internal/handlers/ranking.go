@@ -1,9 +1,11 @@
 package handlers
 
 import (
+	"context"
 	"encoding/json"
 	"log"
 	"net/http"
+	"sort"
 	"strconv"
 	"strings"
 	"sync"
@@ -14,18 +16,99 @@ import (
 	"github.com/JoaoMendes1/anideck/internal/models"
 )
 
-var (
-	rankingCache struct {
-		sync.RWMutex
-		data      *anilist.AnimeSearchResponse
-		timestamp time.Time
-	}
-)
+// GlobalRankingState guarda o Top Global calculado na memória RAM.
+type GlobalRankingState struct {
+	sync.RWMutex
+	Animes      []anilist.Anime
+	LastUpdated time.Time
+	GlobalC     float64 
+	GlobalM     float64 
+}
 
-func InvalidateRankingCache() {
-	rankingCache.Lock()
-	defer rankingCache.Unlock()
-	rankingCache.data = nil
+
+var globalRanking GlobalRankingState
+
+// StartRankingEngine inicia o Worker de Background que calcula o Ranking a cada 12 horas.
+// DEVE SER CHAMADO NO main.go: `go handlers.StartRankingEngine(aniListClient)`
+func StartRankingEngine(client anilist.Service) {
+	log.Println("[RANKING ENGINE] Worker iniciado. Primeira carga Bayesiana em andamento...")
+	updateGlobalCache(client) // Executa na hora que o servidor sobe
+
+	ticker := time.NewTicker(12 * time.Hour)
+	for range ticker.C {
+		updateGlobalCache(client)
+	}
+}
+
+func updateGlobalCache(client anilist.Service) {
+	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Minute)
+	defer cancel()
+
+	var allAnimes []anilist.Anime
+	filters := anilist.SearchFilters{Sort: "POPULARITY_DESC"}
+
+	// Buscamos o Top 500 mais popular (10 páginas de 50) para aplicar o cálculo
+	for page := 1; page <= 10; page++ {
+		res, err := client.GetTopAnime(ctx, page, 50, filters)
+		if err != nil {
+			log.Printf("[RANKING ENGINE] Falha ao buscar página %d: %v", page, err)
+			continue
+		}
+		allAnimes = append(allAnimes, res.Data...)
+		time.Sleep(1 * time.Second) // Evitar rate limit da AniList
+	}
+
+	// 1. Extrair 'C' (Média Geral) e 'm' (Volume Mínimo)
+	var totalScore, totalPop float64
+	var validCount float64
+
+	for _, a := range allAnimes {
+		if a.Score > 0 {
+			totalScore += a.Score
+			totalPop += float64(a.Popularity)
+			validCount++
+		}
+	}
+
+	if validCount == 0 {
+		return
+	}
+
+	C := totalScore / validCount
+	m := totalPop / validCount // Usando a popularidade média como threshold
+
+	// 2. Aplicar Fórmula Bayesiana: (v / (v+m) * R) + (m / (v+m) * C)
+	for i := range allAnimes {
+		if allAnimes[i].Score == 0 {
+			allAnimes[i].BayesianScore = 0
+			continue
+		}
+		v := float64(allAnimes[i].Popularity)
+		R := allAnimes[i].Score
+		allAnimes[i].BayesianScore = (v/(v+m))*R + (m/(v+m))*C
+	}
+
+	// 3. Ordenar matematicamente pelo Score Bayesiano
+	sort.Slice(allAnimes, func(i, j int) bool {
+		return allAnimes[i].BayesianScore > allAnimes[j].BayesianScore
+	})
+
+	// 4. Assinalar posições (Preparando terreno para o ▲/▼)
+	for i := range allAnimes {
+		// O PreviousRank nascerá copiando o CurrentRank anterior (isso será evoluído depois)
+		allAnimes[i].CurrentRank = i + 1
+		allAnimes[i].PreviousRank = i + 1 
+	}
+
+	// 5. Salvar na Memória (Lock seguro)
+	globalRanking.Lock()
+	globalRanking.Animes = allAnimes
+	globalRanking.LastUpdated = time.Now()
+	globalRanking.GlobalC = C
+	globalRanking.GlobalM = m
+	globalRanking.Unlock()
+
+	log.Printf("[RANKING ENGINE] Atualização concluída com sucesso. %d animes reordenados na memória.", len(allAnimes))
 }
 
 type RankingHandler struct {
@@ -48,46 +131,93 @@ func (h *RankingHandler) HandleGetTopAnime(w http.ResponseWriter, r *http.Reques
 	season := strings.ToUpper(strings.TrimSpace(r.URL.Query().Get("season")))
 	status := strings.ToUpper(strings.TrimSpace(r.URL.Query().Get("status")))
 	sortParam := r.URL.Query().Get("sort")
-
-	seasonYear := 0
-	if season != "" {
-		if y, err := strconv.Atoi(r.URL.Query().Get("year")); err == nil && y > 0 {
-			seasonYear = y
-		}
-	}
-
+	
 	filters := anilist.SearchFilters{
-		Genres:     r.URL.Query()["genre"],
-		Tags:       r.URL.Query()["tag"],
-		Season:     season,
-		SeasonYear: seasonYear,
-		Status:     status,
-		Sort:       sortParam,
+		Genres: r.URL.Query()["genre"],
+		Tags:   r.URL.Query()["tag"],
+		Season: season,
+		Status: status,
+		Sort:   sortParam,
 	}
 
-	// Verifica se é a query padrão para aplicar cache
-	isDefaultRanking := page == 1 && season == "" && status == "" && sortParam == "POPULARITY_DESC" && len(filters.Genres) == 0 && len(filters.Tags) == 0
+	// Se for o ranking principal limpo, servimos a nossa Paginação Virtual Bayesiana em memória!
+	isDefaultRanking := page >= 1 && season == "" && status == "" && sortParam == "POPULARITY_DESC" && len(filters.Genres) == 0 && len(filters.Tags) == 0
+
+	w.Header().Set("Content-Type", "application/json")
 
 	if isDefaultRanking {
-		rankingCache.RLock()
-		if rankingCache.data != nil && time.Since(rankingCache.timestamp) < 5*time.Minute {
-			cachedData := rankingCache.data
-			rankingCache.RUnlock()
+		globalRanking.RLock()
+		defer globalRanking.RUnlock()
 
-			w.Header().Set("Content-Type", "application/json")
-			json.NewEncoder(w).Encode(cachedData)
+		if len(globalRanking.Animes) > 0 {
+			start := (page - 1) * perPage
+			end := start + perPage
+
+			if start > len(globalRanking.Animes) {
+				start = len(globalRanking.Animes)
+			}
+			if end > len(globalRanking.Animes) {
+				end = len(globalRanking.Animes)
+			}
+
+			response := anilist.AnimeSearchResponse{
+				Data:        globalRanking.Animes[start:end],
+				LastUpdated: globalRanking.LastUpdated.Format(time.RFC3339),
+			}
+
+			applyCuradoria(&response) // Reaplica edições manuais (nomes pt-br, etc)
+			json.NewEncoder(w).Encode(response)
 			return
 		}
-		rankingCache.RUnlock()
 	}
 
+	// Fallback inteligente: se usou filtros (ex: Lançamentos de Verão), passamos direto pra AniList
 	resultados, err := h.AniListClient.GetTopAnime(r.Context(), page, perPage, filters)
 	if err != nil {
-		log.Printf("[ERRO ANILIST] Falha ao buscar top animes: %v", err)
-		http.Error(w, "Ranking indisponível no momento. Tente novamente mais tarde.", http.StatusServiceUnavailable)
+		log.Printf("[ERRO ANILIST] Falha ao buscar top animes filtrados: %v", err)
+		http.Error(w, "Ranking indisponível no momento.", http.StatusServiceUnavailable)
 		return
 	}
 
+	if status != "" {
+		expectedStatusMapped := mapStatusForFilter(status)
+		var filtered []anilist.Anime
+		for _, a := range resultados.Data {
+			if strings.EqualFold(a.Status, expectedStatusMapped) || strings.EqualFold(a.Status, status) {
+				filtered = append(filtered, a)
+			}
+		}
+		resultados.Data = filtered
+	}
+
+	globalRanking.RLock()
+	C := globalRanking.GlobalC
+	m := globalRanking.GlobalM
+	globalRanking.RUnlock()
+
+	// Se o motor já rodou pelo menos uma vez, temos C e m válidos
+	if C > 0 && m > 0 {
+		for i := range resultados.Data {
+			if resultados.Data[i].Score > 0 {
+				v := float64(resultados.Data[i].Popularity)
+				R := resultados.Data[i].Score
+				resultados.Data[i].BayesianScore = (v/(v+m))*R + (m/(v+m))*C
+			}
+		}
+
+		// Reordena a página atual localmente para garantir que 
+		// a nota AniDeck dite a ordem visual do que acabou de chegar
+		sort.Slice(resultados.Data, func(i, j int) bool {
+			return resultados.Data[i].BayesianScore > resultados.Data[j].BayesianScore
+		})
+	}
+
+	applyCuradoria(resultados)
+	json.NewEncoder(w).Encode(resultados)
+}
+
+// applyCuradoria isolada para não duplicar código (Data Enrichment)
+func applyCuradoria(res *anilist.AnimeSearchResponse) {
 	var curados []models.CuratedAnime
 	data, _, errCurado := database.Client.From("curated_animes").Select("*", "exact", false).Execute()
 
@@ -98,56 +228,47 @@ func (h *RankingHandler) HandleGetTopAnime(w http.ResponseWriter, r *http.Reques
 			curadosMap[c.MalID] = c
 		}
 
-		for i, animeAniList := range resultados.Data {
-			if curado, ok := curadosMap[animeAniList.MalID]; ok {
-				resultados.Data[i].Title = curado.CustomTitle
-				if curado.CustomSynopsis != "" {
-					resultados.Data[i].Synopsis = curado.CustomSynopsis
-				}
-				if curado.CustomStatus != "" {
-					resultados.Data[i].Status = curado.CustomStatus
-				}
-				if len(curado.CustomTags) > 0 {
-					var novasTags []struct{ Name string `json:"name"` }
-					for _, tag := range curado.CustomTags {
-						novasTags = append(novasTags, struct{ Name string `json:"name"` }{Name: tag})
-					}
-					resultados.Data[i].Genres = novasTags
-				}
+		for i, anime := range res.Data {
+			if curado, ok := curadosMap[anime.MalID]; ok {
+				res.Data[i].Title = curado.CustomTitle
+				if curado.CustomSynopsis != "" { res.Data[i].Synopsis = curado.CustomSynopsis }
+				if curado.CustomStatus != "" { res.Data[i].Status = curado.CustomStatus }
 			}
 		}
 	}
+}
 
-	if status != "" {
-		expectedStatusMapped := ""
-		switch status {
-		case "FINISHED":
-			expectedStatusMapped = "Finished Airing"
-		case "RELEASING":
-			expectedStatusMapped = "Currently Airing"
-		case "NOT_YET_RELEASED":
-			expectedStatusMapped = "Not yet aired"
+func mapStatusForFilter(status string) string {
+	switch status {
+	case "FINISHED": return "Finished Airing"
+	case "RELEASING": return "Currently Airing"
+	case "NOT_YET_RELEASED": return "Not yet aired"
+	default: return status
+	}
+}
+
+// InvalidateRankingCache força a limpeza da memória. 
+// Usado pelo curation.go quando o Admin edita um anime manualmente.
+func InvalidateRankingCache() {
+	globalRanking.Lock()
+	defer globalRanking.Unlock()
+	globalRanking.Animes = nil // Limpa a lista
+
+	go func() {
+		client := anilist.NewClient()
+		updateGlobalCache(client)
+	}()
+}
+
+// GetAniDeckStats busca a posição oficial e a nota do nosso motor Bayesiano em memória
+func GetAniDeckStats(malID int) (rank int, bayesianScore float64, found bool) {
+	globalRanking.RLock()
+	defer globalRanking.RUnlock()
+
+	for i, a := range globalRanking.Animes {
+		if a.MalID == malID {
+			return i + 1, a.BayesianScore, true
 		}
-
-		var filtered []anilist.Anime
-		for _, a := range resultados.Data {
-			if strings.EqualFold(a.Status, expectedStatusMapped) || strings.EqualFold(a.Status, status) {
-				filtered = append(filtered, a)
-			}
-		}
-		resultados.Data = filtered
 	}
-
-	// Salva a cópia no cache caso seja uma busca padrão limpa
-	if isDefaultRanking && errCurado == nil {
-		rankingCache.Lock()
-		rankingCache.data = resultados
-		rankingCache.timestamp = time.Now()
-		rankingCache.Unlock()
-	}
-
-	w.Header().Set("Content-Type", "application/json")
-	if err := json.NewEncoder(w).Encode(resultados); err != nil {
-		log.Printf("[ERRO] HandleGetTopAnime: falha ao serializar resposta: %v", err)
-	}
+	return 0, 0, false
 }

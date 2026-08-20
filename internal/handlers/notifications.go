@@ -266,7 +266,7 @@ func (h *NotificationsHandler) HandleCheckNewEpisodes(w http.ResponseWriter, r *
 }
 
 func (h *NotificationsHandler) sendWebPush(subs []map[string]string, animeTitle string, malID int, episode int) {
-	message := []byte(fmt.Sprintf(`{"title": "Novo Episódio!", "body": "%s — Episódio %d acabou de lançar!", "url": "/anime/%d"}`, animeTitle, episode, malID))
+	message := fmt.Appendf(nil, `{"title": "Novo Episódio!", "body": "%s — Episódio %d acabou de lançar!", "url": "/anime/%d"}`, animeTitle, episode, malID)
 
 	for _, s := range subs {
 		sub := &webpush.Subscription{

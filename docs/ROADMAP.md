@@ -104,12 +104,12 @@ OBS: O Product Owner decidiu que a fase 5 fosse implementada primeiro.
 > `VISAO_RANKING_CREDIVEL.md` — pode ser implementada de forma independente, a qualquer momento,
 > sem esperar Fase 7 (Multiusuário).
 
-- [ ] Confirmar se a query GraphQL da AniList retorna contagem de avaliações/favoritos por anime.
-- [ ] Definir e documentar em `DECISIONS.md` a fórmula de ponderação escolhida (ex: média
+- [x] Confirmar se a query GraphQL da AniList retorna contagem de avaliações/favoritos por anime.
+- [x] Definir e documentar em `DECISIONS.md` a fórmula de ponderação escolhida (ex: média
       bayesiana ao estilo IMDb, puxando notas com poucos votos em direção à média geral).
-- [ ] Implementar o cálculo (avaliar se fica em Go/handler ou como view/function no Postgres,
+- [x] Implementar o cálculo (avaliar se fica em Go/handler ou como view/function no Postgres,
       alinhado à Fase 4).
-- [ ] Como parte da mesma decisão, avaliar o critério de equilíbrio entre animes clássicos e
+- [x] Como parte da mesma decisão, avaliar o critério de equilíbrio entre animes clássicos e
       recentes (item 2.3 do documento de ideias).
 - [ ] **Bloqueado por esta fase:** indicador de movimentação de posições no ranking (▲/▼) —
       só faz sentido rastrear histórico de posição depois que a fórmula final estiver estável,

@@ -37,6 +37,7 @@ func main() {
 	} else {
 		anilistService = anilist.NewClient()
 	}
+	go handlers.StartRankingEngine(anilistService)
 
 	searchHandler := &handlers.SearchHandler{AniListClient: anilistService}
 	animeHandler := &handlers.AnimeHandler{AniListClient: anilistService}

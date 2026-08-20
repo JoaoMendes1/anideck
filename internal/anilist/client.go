@@ -84,6 +84,7 @@ query ($page: Int, $perPage: Int, $search: String, $sort: [MediaSort], $genre_in
       episodes
       duration
       averageScore
+	  popularity
       coverImage { large }
       genres
       externalLinks { site url }
@@ -101,6 +102,7 @@ type aniListMedia struct {
 	Episodes      int                              `json:"episodes"`
 	Duration      int                              `json:"duration"` // Duração do EP
 	AverageScore  int                              `json:"averageScore"`
+	Popularity    int                              `json:"popularity"`
 	BannerImage   string                           `json:"bannerImage"`
 	CoverImage    struct{ Large string }           `json:"coverImage"`
 	Genres        []string                         `json:"genres"`
@@ -282,6 +284,7 @@ func (m *aniListMedia) toAnime() Anime {
 		Episodes:          m.Episodes,
 		Duration:          m.Duration,
 		Score:             float64(m.AverageScore) / 10.0,
+		Popularity:        m.Popularity,
 		Ranking:           bestRanking,
 		BannerImage:       m.BannerImage,
 		Characters:        chars,
@@ -370,6 +373,7 @@ query ($idMal: Int) {
     episodes
     duration
     averageScore
+	popularity
     coverImage { large }
     bannerImage
     genres
@@ -400,6 +404,7 @@ query ($idMal_in: [Int]) {
       episodes
       duration
       averageScore
+	  popularity
       coverImage { large }
       genres
       externalLinks { site url }
@@ -487,6 +492,7 @@ query ($page: Int, $perPage: Int, $sort: [MediaSort], $genre_in: [String], $tag_
       episodes
       duration
       averageScore
+	  popularity
       coverImage { large }
       genres
       externalLinks { site url }

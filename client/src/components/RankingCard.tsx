@@ -1,8 +1,3 @@
-// client/src/components/RankingCard.tsx
-// Mudança principal pro mobile: rank virou badge sobreposto no canto da capa
-// (em vez de coluna própria de 24-36px), e nota+botão viraram uma pilha vertical
-// única (em vez de 2 colunas "auto" separadas). Resultado: grid de 5 colunas -> 3,
-// e o título ganha bem mais largura em telas pequenas.
 import { Link } from 'react-router-dom'
 import { Check } from 'lucide-react'
 import BotaoCopiar from './BotaoCopiar'
@@ -13,6 +8,10 @@ interface Anime {
     title: string
     status: string
     score: number
+    popularity?: number
+    bayesian_score?: number
+    current_rank?: number
+    previous_rank?: number
     episodes: number
     images: { jpg: { image_url: string } }
     genres?: { name: string }[]
@@ -27,7 +26,6 @@ interface RankingCardProps {
     onToggleSave: (e: React.MouseEvent, malId: number) => void
 }
 
-// Ouro/prata/bronze pros top 3; resto usa um badge neutro discreto.
 const RANK_STYLES: Record<number, string> = {
     1: 'bg-gradient-to-b from-gold to-[#e08a1a] text-void shadow-[0_0_10px_rgba(255,197,66,0.6)]',
     2: 'bg-gradient-to-b from-[#E8ECF5] to-[#B9C0D4] text-void',
@@ -59,6 +57,7 @@ export default function RankingCard({ anime, rank, isSaved, isFavorite, isSaving
                 </span>
             </div>
 
+            {/* COLUNA DO MEIO: Título e Metadados */}
             <div className="relative z-30 min-w-0 flex-1">
                 <div className="flex items-center gap-1.5 mb-1">
                     <span className="font-bold text-sm truncate">
@@ -70,18 +69,38 @@ export default function RankingCard({ anime, rank, isSaved, isFavorite, isSaving
                         className="opacity-70 md:opacity-0 group-hover:opacity-100 transition-opacity relative z-40 shrink-0"
                     />
                 </div>
-                <div className="flex items-center gap-2 font-mono text-[10px] text-muted-2">
-                    {anime.genres?.[0] && (
-                        <span className={`px-1.5 py-0.5 rounded border font-bold font-manrope shrink-0 ${getCategoryTheme(anime.genres[0].name)}`}>
-                            {anime.genres[0].name}
-                        </span>
+                
+                <div className="flex flex-col gap-1">
+                    <div className="flex items-center gap-2 font-mono text-[10px] text-muted">
+                        {anime.genres?.[0] && (
+                            <span className={`px-1.5 py-0.5 rounded border font-bold font-manrope shrink-0 ${getCategoryTheme(anime.genres[0].name)}`}>
+                                {anime.genres[0].name}
+                            </span>
+                        )}
+                        <span className="select-none truncate">{anime.status} • {anime.episodes || '?'} EP</span>
+                    </div>
+
+                    {/* Transparência das notas: Nomeando claramente o que é a métrica da AniList */}
+                    {anime.bayesian_score && (
+                         <div className="flex items-center gap-1 font-mono text-[10px] mt-0.5 select-none">
+                             <span className="font-bold text-muted-2">AniList: ★ {anime.score.toFixed(1)}</span>
+                             <span className="text-muted opacity-70">({anime.popularity?.toLocaleString('pt-BR')} usuários)</span>
+                         </div>
                     )}
-                    <span className="select-none truncate">{anime.status} • {anime.episodes || '?'} EP</span>
                 </div>
             </div>
 
-            <div className="relative z-30 flex flex-col items-center gap-1.5 shrink-0">
-                <div className="font-anton text-sm text-gold select-none">★ {anime.score || 'N/A'}</div>
+            {/* COLUNA DA DIREITA: A estrela principal do card leva o nome do AniDeck */}
+            <div className="relative z-30 flex flex-col items-center gap-1.5 shrink-0 min-w-[36px]">
+                <div className="flex flex-col items-center justify-center pt-1">
+                    <span className="font-anton text-sm text-gold select-none leading-none">
+                        ★ {anime.bayesian_score ? anime.bayesian_score.toFixed(1) : (anime.score || 'N/A')}
+                    </span>
+                    {/* Etiqueta minimalista embaixo da nota principal */}
+                    {anime.bayesian_score && (
+                        <span className="text-[8px] font-bold text-gold/70 uppercase mt-1 leading-none tracking-widest select-none">AniDeck</span>
+                    )}
+                </div>
                 <button
                     onClick={(e) => onToggleSave(e, anime.mal_id)}
                     disabled={isSaving}

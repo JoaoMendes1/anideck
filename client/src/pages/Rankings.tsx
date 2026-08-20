@@ -2,7 +2,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useToast } from '../contexts/ToastContext'
 import { useNavigate } from 'react-router-dom'
-import { AlertCircle, SlidersHorizontal, X } from 'lucide-react'
+import { AlertCircle, SlidersHorizontal, X, Info } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import {
     CONTENT_FILTERS, STATUS_OPTIONS, SEASON_OPTIONS,
@@ -50,6 +50,9 @@ export default function Rankings() {
     const [savingIds, setSavingIds] = useState<number[]>([])
 
     const [savedEntries, setSavedEntries] = useState<SavedEntry[]>([])
+
+    const [lastUpdated, setLastUpdated] = useState<string | null>(null)
+    const [showCredibilityInfo, setShowCredibilityInfo] = useState(false)
 
     const [selectedFilters, setSelectedFilters] = useState<FilterItem[]>([])
     const [selectedStatus, setSelectedStatus] = useState('')
@@ -107,6 +110,9 @@ export default function Rankings() {
             const response = await fetch(`/api/ranking?${params.toString()}`)
             if (!response.ok) throw new Error('Ranking indisponível no momento.')
             const data = await response.json()
+        if (data.last_updated) {
+                setLastUpdated(data.last_updated)
+            }
             const incoming: Anime[] = data.data || []
             setAnimes(prev => replace ? incoming : [...prev, ...incoming])
         } catch (err: any) {
@@ -179,12 +185,49 @@ export default function Rankings() {
     return (
         <div className="pb-20">
             <div className="max-w-[900px] mx-auto px-5 pt-10">
+                
+                {/* --- CABEÇALHO NOVO COM ÍCONE DE INFO E CAIXA DE CREDIBILIDADE --- */}
                 <div className="mb-6">
-                    {/* TEXTO ASSUMIDO — confirme se bate com o original, se vier de algum lugar que não te mandei */}
                     <p className="font-mono text-xs text-holo-3 tracking-widest mb-2 select-none">RANKING GLOBAL</p>
-                    <h1 className="font-anton text-3xl md:text-4xl uppercase text-text mb-2 select-none">Os mais aclamados</h1>
-                    <p className="text-muted text-sm select-none">Direto da base pública da AniList — filtros aplicados no servidor.</p>
+                    
+                    <div className="flex items-center gap-3 mb-2">
+                        <h1 className="font-anton text-3xl md:text-4xl uppercase text-text select-none">Os mais aclamados</h1>
+                        <button
+                            onClick={() => setShowCredibilityInfo(!showCredibilityInfo)}
+                            className={`p-1.5 rounded-full transition-colors cursor-pointer ${
+                                showCredibilityInfo ? 'bg-holo-3/20 text-holo-3' : 'text-muted hover:bg-panel-2 hover:text-holo-3'
+                            }`}
+                            aria-label="Entenda o nosso cálculo"
+                            title="Por que nosso ranking é diferente?"
+                        >
+                            <Info size={22} />
+                        </button>
+                    </div>
+
+                    {showCredibilityInfo && (
+                        <div className="bg-panel-2 border border-holo-3/30 shadow-[0_0_15px_rgba(63,224,240,0.05)] rounded-xl p-4 mb-4 text-sm text-muted-2 animate-in fade-in slide-in-from-top-2">
+                            <p className="text-holo-3 font-bold mb-1 font-mono tracking-wide">A MATEMÁTICA DA CREDIBILIDADE 🧠</p>
+                            <p className="mb-2 leading-relaxed">
+                                Em rankings comuns, obras de nicho com pouquíssimos votos "nota 10" acabam ultrapassando clássicos globais injustamente. 
+                                Para resolver isso, o AniDeck aplica uma <strong className="text-text">Média Bayesiana</strong>.
+                            </p>
+                            <p className="leading-relaxed">
+                                Nós cruzamos a nota do público com o volume de engajamento (usuários). Isso ajusta a nota de animes com poucos votos em direção à média global, 
+                                criando um <strong className="text-text">ranking à prova de distorções</strong>. Mais justo, mais inteligente e com muito mais credibilidade.
+                            </p>
+                        </div>
+                    )}
+
+                    <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between text-muted text-sm select-none">
+                        <p>Direto da base pública da AniList — filtros aplicados no servidor.</p>
+                        {lastUpdated && selectedSort === 'POPULARITY_DESC' && activeFilterCount === 0 && (
+                            <p className="flex items-center gap-1.5 text-xs font-mono text-holo-3 bg-holo-3/10 px-3 py-1 rounded-full border border-holo-3/20 w-fit mt-2 sm:mt-0">
+                                ⏳ Atualizado às {new Date(lastUpdated).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
+                            </p>
+                        )}
+                    </div>
                 </div>
+                {/* ---------------------------------------------------------------- */}
 
                 <div className="flex gap-2 flex-wrap mb-6 select-none border-b border-line pb-4">
                     <button

@@ -2,6 +2,7 @@ package anilist
 
 type AnimeSearchResponse struct {
 	Data []Anime `json:"data"`
+	LastUpdated string `json:"last_updated,omitempty"`
 }
 
 type AnimeByIdResponse struct {
@@ -29,7 +30,11 @@ type Anime struct {
 	Episodes    int         `json:"episodes"`
 	Duration    int         `json:"duration"` // Duração do episódio em minutos (Estatísticas)
 	Score       float64     `json:"score"`
-	Ranking     int         `json:"ranking,omitempty"` 
+	Ranking     int         `json:"ranking,omitempty"`
+	Popularity    int     `json:"popularity,omitempty"`
+	BayesianScore float64 `json:"bayesian_score,omitempty"`
+	CurrentRank   int     `json:"current_rank,omitempty"`
+	PreviousRank  int     `json:"previous_rank,omitempty"`
 	BannerImage string      `json:"bannerImage,omitempty"`
 	Characters  []Character `json:"characters,omitempty"`
 	StartDate   *FuzzyDate  `json:"startDate,omitempty"`

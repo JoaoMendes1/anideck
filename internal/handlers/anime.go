@@ -114,6 +114,15 @@ func (h *AnimeHandler) HandleGetAnime(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	if rank, bScore, ok := GetAniDeckStats(resultados.Data.MalID); ok {
+		resultados.Data.Ranking = rank            // Substitui pelo rank do AniDeck!
+		resultados.Data.BayesianScore = bScore    // Injeta a nossa nota
+		resultados.Data.Score = bScore            // Força a nota principal a ser a nossa (Consistência Global)
+	} else {
+		// Se não estiver no nosso Top 1000, não mostramos troféu falso da AniList
+		resultados.Data.Ranking = 0
+	}
+
 	dbClient := database.Client
 	if dbClient != nil {
 		data, _, errCurado := dbClient.From("curated_animes").Select("*", "exact", false).Eq("mal_id", id).Execute()
