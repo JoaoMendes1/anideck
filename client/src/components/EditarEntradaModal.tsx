@@ -1,4 +1,3 @@
-// client/src/components/EditarEntradaModal.tsx
 import { useState, useEffect } from 'react'
 import { supabase } from '../lib/supabase'
 import { useToast } from '../contexts/ToastContext'
@@ -27,12 +26,7 @@ export default function EditarEntradaModal({ entrada, onFechar, onSalvar, onExcl
     const { showToast } = useToast()
     const isOpen = entrada !== null
 
-    // Guarda a última entrada válida. Enquanto o sheet desliza pra fora da tela
-    // (isOpen já virou false, mas a animação ainda está rodando), continuamos
-    // mostrando esses dados em vez de deixar o formulário ficar em branco de
-    // repente. Só atualiza quando `entrada` chega não-nula.
-    const [entradaCache, setEntradaCache] = useState<Entrada | null>(entrada)
-
+    const [entradaCache, setEntradaCache] = useState<Entrada | null>(null)
     const [status, setStatus] = useState('')
     const [nota, setNota] = useState('')
     const [anotacao, setAnotacao] = useState('')
@@ -42,17 +36,21 @@ export default function EditarEntradaModal({ entrada, onFechar, onSalvar, onExcl
     const [erro, setErro] = useState<string | null>(null)
     const [confirmandoExclusao, setConfirmandoExclusao] = useState(false)
 
+    // Toda vez que o modal é aberto com um novo anime, limpamos tudo
     useEffect(() => {
-        if (!entrada) return
-        setEntradaCache(entrada)
-        setStatus(entrada.status)
-        setNota(entrada.nota !== null && entrada.nota !== undefined ? entrada.nota.toString() : '')
-        setAnotacao(entrada.anotacao || '')
-        setIsFavorite(entrada.is_favorite || false)
-        setErro(null)
-        setConfirmandoExclusao(false)
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [entrada?.id])
+        if (entrada) {
+            setEntradaCache(entrada)
+            setStatus(entrada.status)
+            setNota(entrada.nota !== null && entrada.nota !== undefined ? entrada.nota.toString() : '')
+            setAnotacao(entrada.anotacao || '')
+            setIsFavorite(entrada.is_favorite || false)
+            setErro(null)
+            
+            // Garante que a tela de confirmação e o spinner sumam ao iniciar
+            setConfirmandoExclusao(false)
+            setSalvando(false)
+        }
+    }, [entrada])
 
     const handleSalvar = async () => {
         if (!entradaCache) return
@@ -89,7 +87,6 @@ export default function EditarEntradaModal({ entrada, onFechar, onSalvar, onExcl
             onFechar()
         } catch (err) {
             setErro('Não foi possível salvar. Tente de novo.')
-        } finally {
             setSalvando(false)
         }
     }
@@ -97,8 +94,13 @@ export default function EditarEntradaModal({ entrada, onFechar, onSalvar, onExcl
     const handleExcluir = async () => {
         if (!entradaCache) return
         setSalvando(true)
+        setErro(null)
+
         const { data: { session } } = await supabase.auth.getSession()
-        if (!session) return
+        if (!session) {
+            setSalvando(false)
+            return
+        }
 
         try {
             const response = await fetch(`/api/entries/${entradaCache.id}`, {
@@ -106,42 +108,53 @@ export default function EditarEntradaModal({ entrada, onFechar, onSalvar, onExcl
                 headers: { 'Authorization': `Bearer ${session.access_token}` },
             })
             if (!response.ok) throw new Error('Falha ao excluir')
+            
             onExcluir(entradaCache.id)
             showToast('Anime removido do seu Deck.')
-            onFechar()
+            
+            // Quando a API dá sucesso, nós APENAS mandamos o modal fechar.
+            // O próprio ato de fechar destrói o componente de forma limpa.
+            onFechar() 
         } catch (err) {
             setErro('Não foi possível excluir. Tente de novo.')
             setSalvando(false)
         }
     }
 
-    if (confirmandoExclusao) {
-        return (
-            <div className="fixed inset-0 bg-void/80 flex items-center justify-center z-[110] p-4 backdrop-blur-sm">
-                <div className="bg-panel border border-coral/30 rounded-2xl p-6 max-w-sm w-full text-center shadow-2xl">
-                    <h3 className="font-anton text-coral text-xl uppercase mb-2">Remover anime?</h3>
-                    <p className="text-sm text-muted mb-6">Tem certeza que deseja remover este anime do seu Deck? Esta ação não pode ser desfeita.</p>
+    return (
+        <Sheet 
+            isOpen={isOpen} 
+            onClose={() => { if (!salvando) onFechar() }} 
+            title={confirmandoExclusao ? "Remover anime?" : "Editar entrada"}
+        >
+            {/* CONDIÇÃO: Se o usuário clicou em excluir, mostramos apenas esta tela dentro do Modal */}
+            {confirmandoExclusao ? (
+                <div className="text-center py-4">
+                    <p className="text-sm text-muted mb-8">Tem certeza que deseja remover este anime do seu Deck? Esta ação não pode ser desfeita.</p>
                     <div className="flex gap-3 justify-center">
-                        <button onClick={() => setConfirmandoExclusao(false)} disabled={salvando} className="flex-1 px-4 py-2.5 rounded-xl border border-line text-sm font-bold cursor-pointer hover:border-muted transition-colors disabled:opacity-50">
+                        <button 
+                            onClick={() => setConfirmandoExclusao(false)} 
+                            disabled={salvando} 
+                            className="flex-1 px-4 py-3 rounded-xl border border-line text-sm font-bold cursor-pointer hover:border-muted transition-colors disabled:opacity-50"
+                        >
                             Cancelar
                         </button>
-                        <button onClick={handleExcluir} disabled={salvando} className="flex-1 px-4 py-2.5 rounded-xl bg-coral/10 border border-coral text-coral text-sm font-bold cursor-pointer hover:bg-coral hover:text-void transition-colors disabled:opacity-50 flex items-center justify-center">
+                        <button 
+                            onClick={handleExcluir} 
+                            disabled={salvando} 
+                            className="flex-1 px-4 py-3 rounded-xl bg-coral/10 border border-coral text-coral text-sm font-bold cursor-pointer hover:bg-coral hover:text-void transition-colors disabled:opacity-50 flex items-center justify-center"
+                        >
                             {salvando ? (
-                                <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin"></div>
+                                <div className="w-5 h-5 border-2 border-current border-t-transparent rounded-full animate-spin"></div>
                             ) : (
                                 'Sim, remover'
                             )}
                         </button>
                     </div>
                 </div>
-            </div>
-        )
-    }
-
-    return (
-        <Sheet isOpen={isOpen} onClose={onFechar} title="Editar entrada">
-            {entradaCache && (
+            ) : entradaCache && (
                 <>
+                    {/* FORMULÁRIO PADRÃO DE EDIÇÃO */}
                     <button
                         type="button"
                         onClick={() => setIsFavorite(!isFavorite)}

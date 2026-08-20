@@ -116,18 +116,14 @@ OBS: O Product Owner decidiu que a fase 5 fosse implementada primeiro.
       senão todo mundo "sobe ou desce" no dia da troca de fórmula sem ter mudado de posição de
       verdade.
 
-## 🖼️ Fase 6.6: Enriquecimento da Página de Detalhes
+## 🖼️ Fase 6.6: Enriquecimento da Página de Detalhes (Concluída)
 
-> Nasceu do item 5 do `docs/ideias-para-melhorias.md`. Feature fullstack — depende de mapear
-> campos novos da AniList (elenco, staff, galeria de imagens) antes de desenhar a tela.
+> **Decisão de Produto (Agosto/2026):** O escopo original previa adicionar Dubladores, Staff e Galerias de Imagens. Pivotamos essa decisão e descartamos esses dados para evitar poluição visual e lentidão na query GraphQL. O foco da fase tornou-se a imersão (UX Premium), as datas de lançamento e o refinamento das estatísticas.
 
-- [ ] Levantar quais campos de personagens/elenco (`characters`, `staff`) e imagens adicionais a
-      query GraphQL da AniList expõe.
-- [ ] Avaliar impacto no tamanho/latência da resposta da API externa (cache adicional pode ser
-      necessário para não pesar a Fase 2, que já consome essa mesma API).
-- [ ] Desenhar layout das novas seções (galeria, elenco) alinhado ao `DESIGN_TOKENS.md`.
-- [ ] Implementar consumo dos novos campos no backend + exibição no frontend.
-- [ ] Resolver especificamente a queixa de imagem pequena no mobile registrada no item 5.1.
+- [x] **Refatoração de UX/UI:** Substituição do formulário de avaliação estático por um Modal (BottomSheet) integrado, aplicação de cores dinâmicas no Design System das tags e adoção de pôsteres verticais contínuos para a seção de títulos relacionados.
+- [x] **Performance e Datas de Episódios (Killer Feature):** Paginação virtual (chunks de 24 episódios) no `EpisodeGrid` para evitar travamento em animes muito longos e cálculo dinâmico da data de lançamento exata (passada e futura) baseado na `startDate` do anime.
+- [x] **Estatísticas Vivas:** Consumo do `statusDistribution` da AniList (revelando a % da comunidade que completou ou dropou a obra) e histograma animado com marcação destacada da nota do próprio usuário.
+- [x] **Correções de Acessibilidade:** Implementação de `custom-scrollbar` para navegação por mouse no desktop na lista de personagens.
 
 ## 📺 Fase 6.7: Progresso por Episódio & Notificação de Lançamento
 
