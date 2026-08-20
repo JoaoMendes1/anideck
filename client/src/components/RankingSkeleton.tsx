@@ -1,4 +1,3 @@
-// client/src/components/RankingSkeleton.tsx
 export default function RankingSkeleton({ count = 8 }: { count?: number }) {
     return (
         <div className="flex flex-col gap-3" aria-hidden="true">
@@ -9,6 +8,7 @@ export default function RankingSkeleton({ count = 8 }: { count?: number }) {
                         <div className="h-3.5 w-3/4 rounded-full shimmer" />
                         <div className="h-2.5 w-1/3 rounded-full shimmer" />
                     </div>
+                    {/* Voltou para o w-8 h-9 original da sua interface */}
                     <div className="w-8 h-9 rounded-lg shimmer shrink-0" />
                 </div>
             ))}
