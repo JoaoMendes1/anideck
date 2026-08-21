@@ -605,15 +605,18 @@ export default function Estatisticas() {
               Episódios marcados como assistidos, por semana
               {variacao.valida && ' — a variação compara as últimas 4 semanas com as 4 anteriores'}
             </p>
+            {/* justify-center + max-w nas barras: com uma semana só de histórico, `flex-1`
+                sozinho esticava a única barra pra largura inteira do card e o gráfico virava
+                um retângulo gigante sem significado nenhum. Vale pros três gráficos de barra. */}
             {activityRecente.length === 0 ? (
               <p className="text-[12.5px] text-muted-2">Marque episódios pra ver sua atividade por semana aqui.</p>
             ) : (
-              <div className="flex items-end gap-2 h-[140px]">
+              <div className="flex items-end justify-center gap-2 h-[140px]">
                 {activityRecente.map((a, i) => {
                   const heightPct = (a.episodios_assistidos / maxEpisodios) * 100
                   return (
-                    <div key={a.semana} className="flex-1 flex flex-col items-center gap-2 h-full justify-end">
-                      <span className="font-mono text-[10px] text-muted-2 whitespace-nowrap tabular-nums">{a.episodios_assistidos} eps</span>
+                    <div key={a.semana} className="flex-1 max-w-[64px] flex flex-col items-center gap-2 h-full justify-end">
+                      <span className="font-mono text-[10px] text-muted-2 whitespace-nowrap tabular-nums">{a.episodios_assistidos}</span>
                       <div
                         className="anim-crescer barra-hover w-full bg-gradient-to-t from-holo-3 to-holo-2 rounded-t-md min-h-[4px]"
                         style={{ height: desenhado ? `${heightPct}%` : '0%', ...atrasoBarra(i) }}
@@ -633,21 +636,27 @@ export default function Estatisticas() {
             {ratings.length === 0 ? (
               <p className="text-[12.5px] text-muted-2">Avalie alguns animes pra ver o histograma aqui.</p>
             ) : (
-              <div className="flex items-end gap-2 h-[140px]">
-                {ratings.map((r, i) => {
-                  const heightPct = (r.total / maxRatingTotal) * 100
-                  return (
-                    <div key={r.nota} className="flex-1 flex flex-col items-center gap-2 h-full justify-end" title={`${r.total} ${r.total === 1 ? 'anime' : 'animes'} com nota ${r.nota}`}>
-                      <span className="font-mono text-[10px] text-muted-2 whitespace-nowrap tabular-nums">{r.total} {r.total === 1 ? 'anime' : 'animes'}</span>
-                      <div
-                        className="anim-crescer barra-hover w-full bg-gold rounded-t-md min-h-[4px]"
-                        style={{ height: desenhado ? `${heightPct}%` : '0%', ...atrasoBarra(i) }}
-                      ></div>
-                      <span className="font-mono text-[9.5px] text-muted-2 whitespace-nowrap">nota {r.nota}</span>
-                    </div>
-                  )
-                })}
-              </div>
+              <>
+                {/* Rótulo é só o número: "4 animes" repetido seis vezes é largo demais pra
+                    caber no celular, e a palavra é a mesma em todas as barras — ela vira
+                    legenda embaixo do eixo, e o texto completo fica no title. */}
+                <div className="flex items-end justify-center gap-2 h-[140px]">
+                  {ratings.map((r, i) => {
+                    const heightPct = (r.total / maxRatingTotal) * 100
+                    return (
+                      <div key={r.nota} className="flex-1 max-w-[64px] flex flex-col items-center gap-2 h-full justify-end" title={`${r.total} ${r.total === 1 ? 'anime' : 'animes'} com nota ${r.nota}`}>
+                        <span className="font-mono text-[10px] text-muted-2 tabular-nums">{r.total}</span>
+                        <div
+                          className="anim-crescer barra-hover w-full bg-gold rounded-t-md min-h-[4px]"
+                          style={{ height: desenhado ? `${heightPct}%` : '0%', ...atrasoBarra(i) }}
+                        ></div>
+                        <span className="font-mono text-[9.5px] text-muted-2 tabular-nums">{r.nota}</span>
+                      </div>
+                    )
+                  })}
+                </div>
+                <p className="text-center font-mono text-[9.5px] text-muted-2 mt-2">animes por nota</p>
+              </>
             )}
           </div>
         </div>
@@ -660,11 +669,11 @@ export default function Estatisticas() {
               Ainda não temos o ano de lançamento no cache dos seus animes — assim que isso for sincronizado, esse gráfico aparece aqui.
             </p>
           ) : (
-            <div className="flex items-end gap-2 h-[140px] overflow-x-auto custom-scrollbar">
+            <div className="flex items-end justify-center gap-2 h-[140px] overflow-x-auto custom-scrollbar">
               {years.map((y, i) => {
                 const heightPct = (y.total / maxYearTotal) * 100
                 return (
-                  <div key={y.season_year} className="min-w-[36px] flex-1 flex flex-col items-center gap-2 h-full justify-end" title={`${y.total} ${y.total === 1 ? 'anime' : 'animes'} de ${y.season_year}`}>
+                  <div key={y.season_year} className="min-w-[36px] max-w-[64px] flex-1 flex flex-col items-center gap-2 h-full justify-end" title={`${y.total} ${y.total === 1 ? 'anime' : 'animes'} de ${y.season_year}`}>
                     <span className="font-mono text-[10px] text-muted-2 tabular-nums">{y.total}</span>
                     <div
                       className="anim-crescer barra-hover w-full bg-gradient-to-t from-holo-1 to-holo-2 rounded-t-md min-h-[4px]"
