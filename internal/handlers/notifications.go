@@ -199,14 +199,14 @@ func (h *NotificationsHandler) HandleCheckNewEpisodes(w http.ResponseWriter, r *
 		if e["mal_id"] == nil || e["user_id"] == nil {
 			continue
 		}
-		
+
 		malIDFloat, okID := e["mal_id"].(float64)
 		userID, okUser := e["user_id"].(string)
-		
+
 		if !okID || !okUser {
 			continue
 		}
-		
+
 		malID := int(malIDFloat)
 		malIDsMap[malID] = true
 		userAnimes[malID] = append(userAnimes[malID], userID)
@@ -283,7 +283,7 @@ func (h *NotificationsHandler) sendWebPush(subs []map[string]string, animeTitle 
 			VAPIDPrivateKey: os.Getenv("VAPID_PRIVATE_KEY"),
 			TTL:             30,
 		})
-		
+
 		if err != nil {
 			log.Printf("[WEB PUSH] Erro ao disparar notificação: %v", err)
 		}

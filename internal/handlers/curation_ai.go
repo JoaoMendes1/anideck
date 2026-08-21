@@ -44,7 +44,7 @@ func (h *CurationHandler) HandleGetAIPrompt(w http.ResponseWriter, r *http.Reque
 
 		var results []map[string]interface{}
 		data, _, err := dbClient.From("app_settings").Select("value", "exact", false).Eq("key", "ai_curation_prompt").Execute()
-		
+
 		if err == nil {
 			_ = json.Unmarshal(data, &results)
 			if len(results) > 0 {
@@ -83,7 +83,7 @@ func (h *CurationHandler) HandleUpdateAIPrompt(w http.ResponseWriter, r *http.Re
 
 	updateData := map[string]string{"value": req.Prompt}
 	_, _, err := dbClient.From("app_settings").Update(updateData, "representation", "exact").Eq("key", "ai_curation_prompt").Execute()
-	
+
 	if err != nil {
 		log.Printf("[ERRO SUPABASE] Falha ao atualizar prompt: %v", err)
 		http.Error(w, "Erro ao salvar no banco", http.StatusInternalServerError)

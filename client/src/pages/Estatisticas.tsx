@@ -1,8 +1,11 @@
 import { useState, useEffect } from 'react'
+import { Link } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
-import { AlertCircle, Flame, Trophy } from 'lucide-react'
+import { AlertCircle, Flame, Trophy, Compass, Target, Clock } from 'lucide-react'
 import { useRevealOnScroll } from '../hooks/useRevealOnScroll'
 import { useContagemAnimada } from '../hooks/useContagemAnimada'
+import QuadranteAfinidade from '../components/QuadranteAfinidade'
+import SheetAnimesDoGenero, { type AnimeDoGenero } from '../components/SheetAnimesDoGenero'
 
 interface StatsOverview {
   total_animes: number
@@ -60,10 +63,34 @@ interface RecordeAnime {
   horas_gastas?: number
 }
 
+interface AnimeEsquecido {
+  mal_id: number
+  title: string
+  ultimo_episodio: string
+  episodios_assistidos: number
+  total_episodios: number | null
+}
+
 interface Records {
   longest_anime: RecordeAnime | null
   top_rated: RecordeAnime | null
   fastest_binge: RecordeAnime | null
+  forgotten: AnimeEsquecido | null
+}
+
+interface Variacao {
+  pct: number
+  valida: boolean
+}
+
+interface Perfil {
+  tipo: '' | 'especialista' | 'explorador' | 'equilibrado'
+  concentracao: number
+}
+
+interface Conclusao {
+  taxa: number
+  valida: boolean
 }
 
 export default function Estatisticas() {
@@ -76,8 +103,25 @@ export default function Estatisticas() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [watchHours, setWatchHours] = useState<WatchHour[]>([])
-  const [records, setRecords] = useState<Records>({ longest_anime: null, top_rated: null, fastest_binge: null })
+  const [records, setRecords] = useState<Records>({ longest_anime: null, top_rated: null, fastest_binge: null, forgotten: null })
   const [abaAfinidade, setAbaAfinidade] = useState<'genero' | 'demografia'>('genero')
+
+  // Sessões de assistir (marcações agrupadas por proximidade no tempo, calculadas no Go).
+  // Chegam como timestamps ISO justamente pra hora local ser resolvida aqui no navegador.
+  const [sessions, setSessions] = useState<string[]>([])
+  const [diasComAtividade, setDiasComAtividade] = useState(0)
+  const [variacao, setVariacao] = useState<Variacao>({ pct: 0, valida: false })
+  const [perfil, setPerfil] = useState<Perfil>({ tipo: '', concentracao: 0 })
+  const [conclusao, setConclusao] = useState<Conclusao>({ taxa: 0, valida: false })
+
+  // "Agora" congelado na primeira renderização: chamar Date.now() no meio do render tornaria
+  // o cálculo de "parado há N dias" instável entre re-renderizações.
+  const [agora] = useState(() => Date.now())
+
+  // Drill-down: qual gênero está aberto no Sheet e os animes dele.
+  const [generoAberto, setGeneroAberto] = useState<string | null>(null)
+  const [animesDoGenero, setAnimesDoGenero] = useState<AnimeDoGenero[]>([])
+  const [carregandoGenero, setCarregandoGenero] = useState(false)
 
   // Dispara o crescimento das barras. Elas nascem com tamanho 0 e só recebem o valor real
   // depois que os dados chegaram — é a transição do CSS que faz o resto.
@@ -105,7 +149,12 @@ export default function Estatisticas() {
         setYears(data.years || [])
         setStreak(data.streak || { current: 0, longest: 0 })
         setWatchHours(data.watch_hours || [])
-        setRecords(data.records || { longest_anime: null, top_rated: null, fastest_binge: null })
+        setRecords(data.records || { longest_anime: null, top_rated: null, fastest_binge: null, forgotten: null })
+        setSessions(data.sessions || [])
+        setDiasComAtividade(data.dias_com_atividade || 0)
+        setVariacao(data.variacao_semanal || { pct: 0, valida: false })
+        setPerfil(data.perfil || { tipo: '', concentracao: 0 })
+        setConclusao(data.conclusao || { taxa: 0, valida: false })
       } catch (err) {
         setError(err instanceof Error ? err.message : 'Não foi possível carregar suas estatísticas.')
       } finally {
@@ -114,6 +163,54 @@ export default function Estatisticas() {
     }
     fetchStats()
   }, [])
+
+  // Busca os animes do gênero clicado. Roda só quando o Sheet abre — não faz sentido
+  // carregar a lista de todos os gêneros de antemão se o usuário talvez não clique em nenhum.
+  useEffect(() => {
+    if (!generoAberto) return
+
+    let cancelado = false
+    const buscar = async () => {
+      setCarregandoGenero(true)
+      try {
+        const { data: { session } } = await supabase.auth.getSession()
+        if (!session) return
+
+        const res = await fetch(`/api/stats/genre?nome=${encodeURIComponent(generoAberto)}`, {
+          headers: { 'Authorization': `Bearer ${session.access_token}` }
+        })
+        if (!res.ok) throw new Error('Falha ao carregar os animes do gênero')
+        const lista: AnimeDoGenero[] = await res.json()
+
+        // As capas não vivem no nosso banco (regra de não armazenar catálogo), então vêm
+        // da AniList num segundo passo — mesmo caminho que o Meu Deck já usa.
+        let comCapas = lista || []
+        if (comCapas.length > 0) {
+          const capas = await fetch('/api/anime/bulk', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ ids: comCapas.map(a => a.mal_id) })
+          })
+          const json = await capas.json()
+          const mapa: Record<number, string> = {}
+          for (const m of json.data || []) {
+            mapa[m.mal_id] = m.images?.jpg?.image_url || ''
+          }
+          comCapas = comCapas.map(a => ({ ...a, image_url: mapa[a.mal_id] }))
+        }
+
+        // Ignora a resposta se o usuário já fechou o Sheet ou clicou noutro gênero.
+        if (!cancelado) setAnimesDoGenero(comCapas)
+      } catch {
+        if (!cancelado) setAnimesDoGenero([])
+      } finally {
+        if (!cancelado) setCarregandoGenero(false)
+      }
+    }
+
+    buscar()
+    return () => { cancelado = true }
+  }, [generoAberto])
 
   // Um frame de atraso depois que o loading sai: sem isso o React pintaria o tamanho final
   // de uma vez e não haveria transição nenhuma pra ver.
@@ -162,8 +259,25 @@ export default function Estatisticas() {
     { label: 'Noite', range: [18, 23], icon: '🌃' },
   ]
 
+  // Sessão em vez de episódio solto: 20 episódios marcados em 5 minutos são UMA maratona,
+  // não 20 eventos independentes de comportamento. Sem isso, quem cadastra o backlog inteiro
+  // numa sentada às 23h recebe um gráfico afirmando que é espectador noturno.
+  //
+  // A hora é lida com getHours(), que é a hora local do navegador. O Postgres extraía a hora
+  // em UTC — para quem está em UTC-3, isso deslocava o gráfico inteiro em 3 horas.
+  const usandoSessoes = sessions.length > 0
+
   const getPeriodoTotais = () => {
     return PERIODOS.map(p => {
+      if (usandoSessoes) {
+        const total = sessions.filter(iso => {
+          const hora = new Date(iso).getHours()
+          return hora >= p.range[0] && hora <= p.range[1]
+        }).length
+        return { ...p, total }
+      }
+
+      // Fallback para a contagem antiga enquanto a view de sessões não existir no banco.
       const total = watchHours
         .filter(w => w.hora >= p.range[0] && w.hora <= p.range[1])
         .reduce((acc, w) => acc + w.total, 0)
@@ -172,6 +286,12 @@ export default function Estatisticas() {
   }
 
   const periodoTotais = getPeriodoTotais()
+  const unidadePeriodo = usandoSessoes ? 'sessões' : 'eps'
+
+  // Cold-start: com pouco histórico, qualquer padrão é ruído. Dez dias distintos de atividade
+  // é o mínimo pra frase de insight não estar falando de uma tarde de cadastro em lote.
+  const DIAS_MINIMOS_PADRAO = 10
+  const padraoConfiavel = diasComAtividade >= DIAS_MINIMOS_PADRAO
   const maxPeriodoTotal = Math.max(...periodoTotais.map(p => p.total), 1)
   const periodoDominante = periodoTotais.reduce((a, b) => (b.total > a.total ? b : a), periodoTotais[0])
 
@@ -247,6 +367,15 @@ export default function Estatisticas() {
   // esquerda pra direita em vez de todas de uma vez, o que lê como um gráfico "montando".
   const atrasoBarra = (indice: number) => ({ transitionDelay: `${indice * 45}ms` })
 
+  // Anime esquecido: só vira alerta depois de uma semana parado. Antes disso é só uma pausa
+  // normal, e cutucar alguém por não ter assistido ontem seria irritante, não útil.
+  const DIAS_PARA_ESQUECIDO = 7
+  const esquecido = records.forgotten
+  const diasParado = esquecido
+    ? Math.floor((agora - new Date(esquecido.ultimo_episodio).getTime()) / 86400000)
+    : 0
+  const mostrarEsquecido = Boolean(esquecido) && diasParado >= DIAS_PARA_ESQUECIDO
+
   return (
     <div className="pb-20">
       <div className="max-w-[980px] mx-auto px-5 pt-8 relative z-10">
@@ -277,7 +406,7 @@ export default function Estatisticas() {
 
         {/* Streak: markup próprio em grid-cols-2 em vez do StatCard, que tem largura fixa
             pensada pra lista com scroll horizontal e cortava na borda da tela no mobile. */}
-        <div ref={registrar} className="reveal grid grid-cols-2 gap-2.5 sm:gap-4 mb-8" style={{ transitionDelay: '.1s' }}>
+        <div ref={registrar} className="reveal grid grid-cols-2 lg:grid-cols-4 gap-2.5 sm:gap-4 mb-8" style={{ transitionDelay: '.1s' }}>
           <div className="bg-panel border border-line border-t-[3px] border-t-coral rounded-[14px] p-4 sm:p-[18px]">
             <div className="w-7 h-7 rounded-lg bg-coral/20 text-coral flex items-center justify-center mb-2">
               <Flame size={18} />
@@ -291,6 +420,47 @@ export default function Estatisticas() {
             </div>
             <b className="block font-anton text-2xl mb-0.5 tabular-nums">{Math.round(streakRecordeAnimado)}</b>
             <span className="text-[10px] sm:text-[11px] text-muted-2 font-bold uppercase tracking-wider">Recorde de Streak (dias)</span>
+          </div>
+
+          {/* Perfil de gosto — concentração do consumo nos dois rótulos mais assistidos.
+              É heurística assumida, não estatística: o texto explica o número que a gerou
+              pra não virar rótulo misterioso. */}
+          <div className="bg-panel border border-line border-t-[3px] border-t-holo-2 rounded-[14px] p-4 sm:p-[18px]">
+            <div className="w-7 h-7 rounded-lg bg-holo-2/20 text-holo-2 flex items-center justify-center mb-2">
+              <Compass size={18} />
+            </div>
+            {perfil.tipo ? (
+              <>
+                <b className="block font-anton text-xl sm:text-2xl mb-0.5 capitalize">{perfil.tipo}</b>
+                <span className="text-[10px] sm:text-[11px] text-muted-2 font-bold uppercase tracking-wider">
+                  {perfil.concentracao.toFixed(0)}% em 2 categorias
+                </span>
+              </>
+            ) : (
+              <>
+                <b className="block font-anton text-xl sm:text-2xl mb-0.5 text-muted-2">—</b>
+                <span className="text-[10px] sm:text-[11px] text-muted-2 font-bold uppercase tracking-wider">Perfil de gosto</span>
+              </>
+            )}
+          </div>
+
+          {/* Taxa de conclusão — enquadrada como curiosidade, nunca como cobrança.
+              Ninguém abre estatística do próprio hobby pra ser lembrado do que abandonou. */}
+          <div className="bg-panel border border-line border-t-[3px] border-t-green rounded-[14px] p-4 sm:p-[18px]">
+            <div className="w-7 h-7 rounded-lg bg-green/20 text-green flex items-center justify-center mb-2">
+              <Target size={18} />
+            </div>
+            {conclusao.valida ? (
+              <>
+                <b className="block font-anton text-xl sm:text-2xl mb-0.5 tabular-nums">{conclusao.taxa.toFixed(0)} de 10</b>
+                <span className="text-[10px] sm:text-[11px] text-muted-2 font-bold uppercase tracking-wider">Você termina</span>
+              </>
+            ) : (
+              <>
+                <b className="block font-anton text-xl sm:text-2xl mb-0.5 text-muted-2">—</b>
+                <span className="text-[10px] sm:text-[11px] text-muted-2 font-bold uppercase tracking-wider">Taxa de conclusão</span>
+              </>
+            )}
           </div>
         </div>
 
@@ -351,19 +521,31 @@ export default function Estatisticas() {
                 {afinidadeAtiva.slice(0, 5).map((g, i) => {
                   const widthPct = (g.total_watched / maxGenreWatched) * 100
                   return (
-                    <div key={g.genre} className="grid grid-cols-[90px_1fr_40px] gap-3 items-center group">
-                      <span className="text-[12.5px] font-bold truncate" title={traduzirGenero(g.genre)}>{traduzirGenero(g.genre)}</span>
-                      <div className="h-2 bg-panel-2 rounded-full overflow-hidden" title={`Nota média: ${g.media_nota_genero ?? '—'}`}>
+                    // Botão de verdade, não div com onClick: assim funciona por teclado e
+                    // leitor de tela anuncia que a linha faz alguma coisa.
+                    <button
+                      key={g.genre}
+                      type="button"
+                      onClick={() => setGeneroAberto(g.genre)}
+                      className="grid grid-cols-[90px_1fr_40px] gap-3 items-center text-left cursor-pointer rounded-md -mx-1 px-1 py-0.5 transition-colors hover:bg-panel-2/60 focus-visible:outline-2 focus-visible:outline-holo-3"
+                      title={`Ver seus animes de ${traduzirGenero(g.genre)}`}
+                    >
+                      <span className="text-[12.5px] font-bold truncate">{traduzirGenero(g.genre)}</span>
+                      <div className="h-2 bg-panel-2 rounded-full overflow-hidden">
                         <div
                           className="anim-crescer barra-hover h-full bg-gradient-to-r from-holo-1 to-holo-2 rounded-full"
                           style={{ width: desenhado ? `${widthPct}%` : '0%', ...atrasoBarra(i) }}
                         ></div>
                       </div>
                       <span className="font-mono text-[11px] text-muted-2 text-right tabular-nums">{g.total_watched}</span>
-                    </div>
+                    </button>
                   )
                 })}
               </div>
+            )}
+
+            {afinidadeAtiva.length > 0 && (
+              <p className="text-[10px] text-muted-2 mt-4 font-mono">Toque numa categoria pra ver os animes</p>
             )}
           </div>
         </div>
@@ -390,11 +572,39 @@ export default function Estatisticas() {
           </div>
         )}
 
+        {/* Volume x Satisfação — a view já calculava os dois números, mas eles nunca tinham
+            sido cruzados. Responde "que gênero eu assisto muito mas não curto tanto?". */}
+        <div ref={registrar} className="reveal bg-panel border border-line rounded-2xl p-6 mb-5">
+          <h2 className="font-anton uppercase text-[15px] mb-1">Volume × Satisfação</h2>
+          <p className="text-[11px] text-muted-2 mb-6">Quanto você assiste de cada categoria, cruzado com a nota que costuma dar</p>
+          <QuadranteAfinidade
+            generos={[...demografias, ...generosNarrativos]}
+            notaMedia={overview?.nota_media || 0}
+          />
+        </div>
+
         <div className="grid grid-cols-1 md:grid-cols-2 gap-5 mb-5">
           {/* Atividade por Semana */}
           <div ref={registrar} className="reveal bg-panel border border-line rounded-2xl p-6">
-            <h2 className="font-anton uppercase text-[15px] mb-1">Atividade Recente</h2>
-            <p className="text-[11px] text-muted-2 mb-6">Episódios marcados como assistidos, por semana</p>
+            <div className="flex items-start justify-between gap-3 mb-1">
+              <h2 className="font-anton uppercase text-[15px]">Atividade Recente</h2>
+              {variacao.valida && (
+                <span
+                  className={`shrink-0 font-mono text-[10.5px] font-bold px-2 py-1 rounded-md border tabular-nums ${
+                    variacao.pct >= 0
+                      ? 'text-green border-green/40 bg-green/10'
+                      : 'text-coral border-coral/40 bg-coral/10'
+                  }`}
+                  title="Últimas 4 semanas comparadas com as 4 anteriores"
+                >
+                  {variacao.pct >= 0 ? '↑' : '↓'} {Math.abs(variacao.pct).toFixed(0)}%
+                </span>
+              )}
+            </div>
+            <p className="text-[11px] text-muted-2 mb-6">
+              Episódios marcados como assistidos, por semana
+              {variacao.valida && ' — a variação compara as últimas 4 semanas com as 4 anteriores'}
+            </p>
             {activityRecente.length === 0 ? (
               <p className="text-[12.5px] text-muted-2">Marque episódios pra ver sua atividade por semana aqui.</p>
             ) : (
@@ -471,14 +681,28 @@ export default function Estatisticas() {
         {/* Padrão de Horário */}
         <div ref={registrar} className="reveal bg-panel border border-line rounded-2xl p-6 mt-5">
           <h2 className="font-anton uppercase text-[15px] mb-1">Padrão de Horário</h2>
-          <p className="text-[11px] text-muted-2 mb-6">Em que período do dia você mais assiste</p>
-          {watchHours.length === 0 ? (
+          <p className="text-[11px] text-muted-2 mb-6">
+            {usandoSessoes
+              ? 'Em que período do dia você começa a assistir — contando sessões, não episódios soltos'
+              : 'Em que período do dia você mais assiste'}
+          </p>
+          {periodoTotais.every(p => p.total === 0) ? (
             <p className="text-[12.5px] text-muted-2">Marque episódios pra ver seu padrão de horário aqui.</p>
           ) : (
             <>
-              <p className="text-[13px] mb-5">
-                Você costuma assistir mais de <b className="text-holo-3">{periodoDominante.icon} {periodoDominante.label.toLowerCase()}</b>.
-              </p>
+              {padraoConfiavel ? (
+                <p className="text-[13px] mb-5">
+                  Você costuma assistir mais de <b className="text-holo-3">{periodoDominante.icon} {periodoDominante.label.toLowerCase()}</b>.
+                </p>
+              ) : (
+                // Sem histórico suficiente a tela mostra os dados mas não afirma nada sobre
+                // hábito: `watched_at` grava quando o episódio foi MARCADO, e quem cadastrou
+                // o backlog de uma vez ainda não revelou padrão nenhum.
+                <p className="text-[13px] mb-5 text-muted">
+                  Continue registrando episódios pra desbloquear seu padrão de horário —
+                  <b className="text-muted-2 font-mono text-[12px]"> {diasComAtividade}/{DIAS_MINIMOS_PADRAO} dias</b> de atividade até agora.
+                </p>
+              )}
               <div className="grid grid-cols-4 gap-3">
                 {periodoTotais.map((p, i) => {
                   const heightPct = (p.total / maxPeriodoTotal) * 100
@@ -487,12 +711,12 @@ export default function Estatisticas() {
                     <div key={p.label} className="flex flex-col items-center gap-2">
                       <div className="w-full h-[80px] bg-panel-2 rounded-lg overflow-hidden flex items-end">
                         <div
-                          className={`anim-crescer barra-hover w-full rounded-t-lg min-h-[4px] bg-gradient-to-t from-holo-1 to-holo-3 ${dominante ? '' : 'opacity-45'}`}
+                          className={`anim-crescer barra-hover w-full rounded-t-lg min-h-[4px] bg-gradient-to-t from-holo-1 to-holo-3 ${dominante && padraoConfiavel ? '' : 'opacity-45'}`}
                           style={{ height: desenhado ? `${heightPct}%` : '0%', ...atrasoBarra(i) }}
                         ></div>
                       </div>
-                      <span className={`font-mono text-[10px] text-center ${dominante ? 'text-holo-3' : 'text-muted-2'}`}>{p.label}</span>
-                      <span className="font-mono text-[9.5px] text-muted-2 tabular-nums">{p.total} eps</span>
+                      <span className={`font-mono text-[10px] text-center ${dominante && padraoConfiavel ? 'text-holo-3' : 'text-muted-2'}`}>{p.label}</span>
+                      <span className="font-mono text-[9.5px] text-muted-2 tabular-nums">{p.total} {unidadePeriodo}</span>
                     </div>
                   )
                 })}
@@ -500,6 +724,31 @@ export default function Estatisticas() {
             </>
           )}
         </div>
+
+        {/* Anime esquecido — o único bloco acionável da página: não conta o que passou,
+            aponta pra algo que dá pra fazer agora. Por isso o card inteiro é um link. */}
+        {mostrarEsquecido && esquecido && (
+          <div ref={registrar} className="reveal mt-5">
+            <Link
+              to={`/anime/${esquecido.mal_id}`}
+              className="block bg-gradient-to-br from-coral/10 to-panel border border-coral/30 rounded-2xl p-6 transition-all duration-200 hover:border-coral/60 hover:-translate-y-0.5"
+            >
+              <div className="flex items-start gap-4">
+                <div className="w-9 h-9 shrink-0 rounded-lg bg-coral/20 text-coral flex items-center justify-center">
+                  <Clock size={18} />
+                </div>
+                <div className="min-w-0">
+                  <div className="font-mono text-[10.5px] text-coral tracking-widest mb-1.5 uppercase">Parado há {diasParado} dias</div>
+                  <div className="font-anton text-lg leading-tight line-clamp-2 mb-1">{esquecido.title}</div>
+                  <div className="text-[12px] text-muted tabular-nums">
+                    Você viu {esquecido.episodios_assistidos}
+                    {esquecido.total_episodios ? ` de ${esquecido.total_episodios}` : ''} episódios — retomar?
+                  </div>
+                </div>
+              </div>
+            </Link>
+          </div>
+        )}
 
         {/* Recordes Pessoais */}
         <div ref={registrar} className="reveal grid grid-cols-1 sm:grid-cols-3 gap-4 mt-5">
@@ -545,6 +794,13 @@ export default function Estatisticas() {
         </div>
 
       </div>
+
+      <SheetAnimesDoGenero
+        genero={generoAberto}
+        animes={animesDoGenero}
+        carregando={carregandoGenero}
+        onClose={() => { setGeneroAberto(null); setAnimesDoGenero([]) }}
+      />
     </div>
   )
 }

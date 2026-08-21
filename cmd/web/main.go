@@ -86,6 +86,8 @@ func main() {
 		protegido.Put("/api/notifications/{id}/read", notificationsHandler.HandleReadNotification)
 
 		protegido.Get("/api/stats/user", statsHandler.HandleGetUserStats)
+		// Drill-down: os animes por trás de uma barra do gráfico de afinidade
+		protegido.Get("/api/stats/genre", statsHandler.HandleGetGenreAnimes)
 	})
 
 	r.Group(func(admin chi.Router) {

@@ -167,27 +167,32 @@ OBS: O Product Owner decidiu que a fase 5 fosse implementada primeiro.
       badges reagem ao mouse. Tudo respeitando `prefers-reduced-motion`. O observer de scroll
       virou o hook `useRevealOnScroll`, compartilhado com a Landing (que tinha o mesmo código
       inline), e a contagem virou `useContagemAnimada`.
-- [ ] **Cold-start do Padrão de Horário** — `watched_at` registra quando o episódio foi
-      *marcado*, não quando foi *assistido*. Quem importa o backlog inteiro numa sentada às 23h
-      recebe um gráfico dizendo que é espectador noturno. Curto prazo: só exibir a frase de
-      insight depois de ~10 dias distintos de atividade. Médio prazo: contar **sessões** em vez
-      de episódios individuais (agrupamento por gap de tempo, parecido com o do streak).
-- [ ] **Drill-down clicável** — clicar num gênero abre um `Sheet` com os animes daquela
-      categoria (reaproveita `Sheet.tsx` + `AnimeCard`). Responde ao "assisti 30 de Fantasia,
-      mas quais?". A Distribuição por Status não precisa: o Meu Deck já faz isso.
-- [ ] **Gráfico de quadrantes (volume × satisfação)** — a view já calcula `media_nota_genero`
-      junto de `total_watched`, os dois dados nunca foram cruzados. **Decisão em aberto:** o
-      quadrante é mais rico, mas exige mais do usuário para ler; a alternativa simples são dois
-      cards separados ("gênero que menos assiste" + "gênero com pior nota").
-- [ ] **Comparação temporal** — "↑ 40% em relação ao mês passado" em vez de foto estática.
-- [ ] **Anime esquecido** — de tudo que está "Assistindo", qual está há mais tempo parado.
-      Diferencial: é acionável, vira lembrete com link direto, não estatística sobre o passado.
-- [ ] **Taxa de conclusão** — "de cada 10 animes que você começa, você termina 7". Cuidado de
-      UX: enquadrar como curiosidade, não como cobrança.
-- [ ] **Perfil Especialista vs Explorador** — baseado em quão concentrada é a afinidade.
-      Ponto em aberto: definir o threshold sem que fique arbitrário.
-- [ ] **Avaliar remoção da coluna órfã `media_entries.progress`** — não é mais lida por nada
-      desde a correção do tempo assistido. Conferir se ainda é escrita em algum lugar.
+- [x] **Cold-start do Padrão de Horário** — resolvido nas duas camadas de uma vez: a frase de
+      insight só aparece com 10+ dias distintos de atividade, e a contagem passou a ser por
+      **sessão** (marcações a menos de 2h de distância viram um bloco só), o que corrige o
+      problema na raiz e não só no primeiro uso. **Bônus:** o gráfico estava 3 horas deslocado
+      porque o Postgres extraía a hora em UTC — a conversão para hora local foi para o navegador.
+- [x] **Drill-down clicável** — clicar numa categoria abre um `Sheet` com os animes dela,
+      reaproveitando `Sheet.tsx` + `AnimeCard`. Endpoint `GET /api/stats/genre?nome=` sobre a
+      view `view_user_genre_animes`, que repete a mesma lógica de rótulos da afinidade para a
+      contagem da barra bater com o tamanho da lista.
+- [x] **Gráfico de quadrantes (volume × satisfação)** — decisão fechada pelo quadrante; o
+      motivo está no `DECISIONS.md`. A divisória horizontal é a nota média do próprio usuário.
+- [x] **Comparação temporal** — selo de variação no card de Atividade Recente, comparando as
+      últimas 4 semanas com as 4 anteriores. Só aparece com 8+ semanas de histórico e nunca
+      quando o período anterior é zero (evita o "↑ infinito%").
+- [x] **Anime esquecido** — card acionável com link direto pra obra, via
+      `view_user_forgotten_anime`. Só aparece depois de 7 dias parado: cutucar alguém por não
+      ter assistido ontem seria irritante, não útil.
+- [x] **Taxa de conclusão** — "você termina 7 de 10", enquadrado como curiosidade. Conta só
+      animes já decididos (completos + dropados): quem tem muita coisa em dia não deve ver a
+      taxa cair por causa disso.
+- [x] **Perfil Especialista vs Explorador** — fatia dos 2 rótulos mais assistidos, com faixas
+      assumidas e uma zona "equilibrado" no meio. Tags temáticas ficam fora da conta (apareceriam
+      em quase todo anime e achatariam a concentração).
+- [x] **Coluna órfã `media_entries.progress`** — auditoria confirmou que nenhuma tela envia o
+      campo; ele só ia no payload por existir na struct Go. Removido da struct; o `DROP COLUMN`
+      está em `sql/005`, para rodar **depois** do deploy (a ordem inversa quebraria o insert).
 
 ## 👥 Fase 7: Multiusuário (futuro, avaliar quando chegar)
 
