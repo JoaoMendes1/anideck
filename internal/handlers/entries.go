@@ -147,47 +147,70 @@ func (h *EntriesHandler) HandleDelete(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusNoContent)
 }
 
+// buildMetadataPayload traduz o anime da AniList para as colunas de anime_metadata_cache.
+// Fica separado da função de I/O justamente pra poder ser testado sem rede nem banco.
+func buildMetadataPayload(anime anilist.Anime) map[string]interface{} {
+	var genres, studios []string
+	for _, g := range anime.Genres {
+		genres = append(genres, g.Name)
+	}
+	for _, s := range anime.Studios {
+		studios = append(studios, s.Name)
+	}
+
+	payload := map[string]interface{}{
+		"mal_id":           anime.MalID,
+		"title":            anime.Title,
+		"episodes":         anime.Episodes,
+		"duration_minutes": anime.Duration,
+		"genres":           genres,
+		"studios":          studios,
+		"average_score":    anime.Score,
+		// As tags da AniList são a fonte de categorias como Isekai, que não existem
+		// como "genre". Sem elas a taxonomia do AniDeck não consegue classificar o anime.
+		"tags": anime.Tags,
+	}
+
+	// Só grava o ano quando a AniList realmente devolveu um. Enviar 0 sobrescreveria
+	// um ano correto que já estivesse no cache por um valor sem sentido.
+	if anime.SeasonYear > 0 {
+		payload["season_year"] = anime.SeasonYear
+	}
+
+	return payload
+}
+
+// syncMetadataCache busca o anime na AniList e grava os metadados no cache local.
+//
+// O client vem de fora de propósito: ele carrega o rate limiter da AniList. Numa
+// re-sincronização em lote, criar um client por anime daria a cada chamada um limiter
+// zerado — o limite deixaria de valer e a API responderia 429. Reaproveitando o mesmo
+// client, as chamadas entram todas na mesma fila.
+func syncMetadataCache(ctx context.Context, client anilist.Service, malID int, token string) error {
+	res, err := client.GetAnimeById(ctx, fmt.Sprintf("%d", malID))
+	if err != nil || res == nil {
+		return fmt.Errorf("erro ao buscar dados na AniList para mal_id %d: %w", malID, err)
+	}
+	anime := res.Data
+
+	dbClient, errClient := database.ClientWithToken(token)
+	if errClient != nil {
+		return fmt.Errorf("erro ao criar cliente com token: %w", errClient)
+	}
+
+	payload := buildMetadataPayload(anime)
+	if _, _, err := dbClient.From("anime_metadata_cache").Upsert(payload, "", "exact", "mal_id").Execute(); err != nil {
+		return fmt.Errorf("erro ao salvar no banco para mal_id %d: %w", malID, err)
+	}
+
+	log.Printf("[CACHE METADATA] Metadados sincronizados com sucesso para: %s", anime.Title)
+	return nil
+}
+
 func syncMetadataCacheAsync(malID int, token string) {
 	go func() {
-		client := anilist.NewClient()
-		ctx := context.Background()
-
-		res, err := client.GetAnimeById(ctx, fmt.Sprintf("%d", malID))
-		if err != nil || res == nil {
-			log.Printf("[CACHE METADATA] Erro ao buscar dados na AniList para mal_id %d: %v", malID, err)
-			return
-		}
-		anime := res.Data
-
-		var genres, studios []string
-		for _, g := range anime.Genres {
-			genres = append(genres, g.Name)
-		}
-		for _, s := range anime.Studios {
-			studios = append(studios, s.Name)
-		}
-
-		payload := map[string]interface{}{
-			"mal_id":           anime.MalID,
-			"title":            anime.Title,
-			"episodes":         anime.Episodes,
-			"duration_minutes": anime.Duration,
-			"genres":           genres,
-			"studios":          studios,
-			"average_score":    anime.Score,
-		}
-
-		dbClient, errClient := database.ClientWithToken(token)
-		if errClient != nil {
-			log.Printf("[CACHE METADATA] Erro ao criar cliente com token: %v", errClient)
-			return
-		}
-
-		_, _, err = dbClient.From("anime_metadata_cache").Upsert(payload, "", "exact", "mal_id").Execute()
-		if err != nil {
-			log.Printf("[CACHE METADATA] Erro ao salvar no banco para mal_id %d: %v", malID, err)
-		} else {
-			log.Printf("[CACHE METADATA] Metadados sincronizados com sucesso para: %s", anime.Title)
+		if err := syncMetadataCache(context.Background(), anilist.NewClient(), malID, token); err != nil {
+			log.Printf("[CACHE METADATA] %v", err)
 		}
 	}()
 }

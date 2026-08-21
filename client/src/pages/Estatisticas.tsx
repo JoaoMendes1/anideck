@@ -13,8 +13,15 @@ interface StatsOverview {
   tempo_total_minutos: number
 }
 
+// As três camadas da taxonomia do AniDeck. Demografias e Gêneros competem no ranking;
+// Tags Temáticas ficam de fora dele, como badge informativo.
+type Tier = 'demografia' | 'genero' | 'tag_tematica'
+
 interface GenreAffinity {
   genre: string
+  // Opcional de propósito: enquanto a migration 003 não for aplicada no Supabase, a view
+  // antiga não devolve essa coluna — e aí tudo cai em 'genero' e a tela segue funcionando.
+  tier?: Tier
   total_watched: number
   media_nota_genero: number
 }
@@ -69,6 +76,7 @@ export default function Estatisticas() {
   const [error, setError] = useState<string | null>(null)
   const [watchHours, setWatchHours] = useState<WatchHour[]>([])
   const [records, setRecords] = useState<Records>({ longest_anime: null, top_rated: null, fastest_binge: null })
+  const [abaAfinidade, setAbaAfinidade] = useState<'genero' | 'demografia'>('genero')
 
   useEffect(() => {
     const fetchStats = async () => {
@@ -171,8 +179,22 @@ export default function Estatisticas() {
     return dicionario[genre] || genre
   }
 
-  const generoFavorito = genres.length > 0 ? genres[0].genre : 'N/A'
-  const maxGenreWatched = genres.length > 0 ? Math.max(...genres.map(g => g.total_watched)) : 1
+  const tierDe = (g: GenreAffinity): Tier => g.tier ?? 'genero'
+
+  const demografias = genres.filter(g => tierDe(g) === 'demografia')
+  const generosNarrativos = genres.filter(g => tierDe(g) === 'genero')
+  const tagsTematicas = genres.filter(g => tierDe(g) === 'tag_tematica')
+
+  // O favorito sai do ranking competitivo (Demografias + Gêneros). Tag temática não
+  // disputa esse posto: "Escolar" não é uma resposta pra "que tipo de anime você assiste".
+  // A view já devolve ordenado por total_watched, então o primeiro que sobra é o topo.
+  const favorito = genres.find(g => tierDe(g) !== 'tag_tematica')
+  const generoFavorito = favorito ? favorito.genre : 'N/A'
+
+  const afinidadeAtiva = abaAfinidade === 'demografia' ? demografias : generosNarrativos
+  const maxGenreWatched = afinidadeAtiva.length > 0
+    ? Math.max(...afinidadeAtiva.map(g => g.total_watched))
+    : 1
 
   // --- Matemática do Gráfico Donut (SVG) ---
   const totalAnimes = overview?.total_animes || 1
@@ -257,23 +279,77 @@ export default function Estatisticas() {
           </div>
 
           <div className="bg-panel border border-line rounded-2xl p-6">
-            <h2 className="font-anton uppercase text-[15px] mb-6">Afinidade de Gêneros</h2>
-            <div className="flex flex-col gap-3">
-              {genres.slice(0, 5).map(g => {
-                const widthPct = (g.total_watched / maxGenreWatched) * 100
-                return (
-                  <div key={g.genre} className="grid grid-cols-[90px_1fr_40px] gap-3 items-center">
-                    <span className="text-[12.5px] font-bold truncate" title={traduzirGenero(g.genre)}>{traduzirGenero(g.genre)}</span>
-                    <div className="h-2 bg-panel-2 rounded-full overflow-hidden">
-                      <div className="h-full bg-gradient-to-r from-holo-1 to-holo-2 rounded-full" style={{ width: `${widthPct}%` }}></div>
-                    </div>
-                    <span className="font-mono text-[11px] text-muted-2 text-right">{g.total_watched}</span>
-                  </div>
-                )
-              })}
+            <h2 className="font-anton uppercase text-[15px] mb-1">Afinidade</h2>
+            <p className="text-[11px] text-muted-2 mb-4">
+              Demografia é o mercado da obra (Isekai, Shounen); gênero é a narrativa (Ação, Drama)
+            </p>
+
+            <div className="flex gap-2 mb-5">
+              {([
+                { valor: 'genero', label: 'Gêneros' },
+                { valor: 'demografia', label: 'Demografias' },
+              ] as const).map(aba => (
+                <button
+                  key={aba.valor}
+                  type="button"
+                  onClick={() => setAbaAfinidade(aba.valor)}
+                  className={`select-none px-3 py-1.5 rounded-full text-[11px] font-bold transition-all duration-150 cursor-pointer border ${
+                    abaAfinidade === aba.valor
+                      ? 'bg-gradient-to-r from-holo-1 to-holo-2 text-void border-transparent'
+                      : 'bg-panel-2 border-line text-muted hover:border-holo-2 hover:text-text'
+                  }`}
+                >
+                  {aba.label}
+                </button>
+              ))}
             </div>
+
+            {afinidadeAtiva.length === 0 ? (
+              <p className="text-[12.5px] text-muted-2">
+                {abaAfinidade === 'demografia'
+                  ? 'Nenhuma demografia identificada ainda nos seus animes.'
+                  : 'Cadastre animes no seu Deck pra ver sua afinidade aqui.'}
+              </p>
+            ) : (
+              <div className="flex flex-col gap-3">
+                {afinidadeAtiva.slice(0, 5).map(g => {
+                  const widthPct = (g.total_watched / maxGenreWatched) * 100
+                  return (
+                    <div key={g.genre} className="grid grid-cols-[90px_1fr_40px] gap-3 items-center">
+                      <span className="text-[12.5px] font-bold truncate" title={traduzirGenero(g.genre)}>{traduzirGenero(g.genre)}</span>
+                      <div className="h-2 bg-panel-2 rounded-full overflow-hidden">
+                        <div className="h-full bg-gradient-to-r from-holo-1 to-holo-2 rounded-full" style={{ width: `${widthPct}%` }}></div>
+                      </div>
+                      <span className="font-mono text-[11px] text-muted-2 text-right">{g.total_watched}</span>
+                    </div>
+                  )
+                })}
+              </div>
+            )}
           </div>
         </div>
+
+        {/* Tags Temáticas — fora do ranking competitivo de propósito: elas descrevem
+            cenário e ferramenta da obra ("Escolar", "Magia"), não uma categoria que
+            disputa a atenção do usuário. Por isso viram badge, e não gráfico de barra. */}
+        {tagsTematicas.length > 0 && (
+          <div className="bg-panel border border-line rounded-2xl p-6 mb-5">
+            <h2 className="font-anton uppercase text-[15px] mb-1">Tags Temáticas</h2>
+            <p className="text-[11px] text-muted-2 mb-5">Elementos que mais aparecem nos seus animes</p>
+            <div className="flex flex-wrap gap-2">
+              {tagsTematicas.slice(0, 14).map(t => (
+                <span
+                  key={t.genre}
+                  className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-panel-2 border border-line text-[11.5px] font-bold"
+                  title={`${t.total_watched} ${t.total_watched === 1 ? 'anime' : 'animes'}`}
+                >
+                  {traduzirGenero(t.genre)}
+                  <b className="font-mono text-[10px] text-muted-2">{t.total_watched}</b>
+                </span>
+              ))}
+            </div>
+          </div>
+        )}
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-5 mb-5">
           {/* Atividade por Semana */}

@@ -98,6 +98,8 @@ type aniListMedia struct {
 	Title         struct{ Romaji, English string } `json:"title"`
 	Status        string                           `json:"status"`
 	StartDate     struct{ Year, Month, Day int }   `json:"startDate"`
+	Season        string                           `json:"season"`
+	SeasonYear    int                              `json:"seasonYear"`
 	Description   string                           `json:"description"`
 	Episodes      int                              `json:"episodes"`
 	Duration      int                              `json:"duration"` // Duração do EP
@@ -115,6 +117,8 @@ type aniListMedia struct {
 		Type    string `json:"type"`
 		AllTime bool   `json:"allTime"`
 	} `json:"rankings"`
+
+	Tags []anilistTag `json:"tags"`
 
 	NextAiringEpisode *NextAiringEpisode `json:"nextAiringEpisode"`
 
@@ -164,6 +168,49 @@ type aniListMedia struct {
 		URL       string `json:"url"`
 		Site      string `json:"site"`
 	} `json:"streamingEpisodes"`
+}
+
+// anilistTag é uma tag crua como a AniList devolve, antes de qualquer filtro.
+type anilistTag struct {
+	Name             string `json:"name"`
+	Rank             int    `json:"rank"`
+	IsGeneralSpoiler bool   `json:"isGeneralSpoiler"`
+	IsMediaSpoiler   bool   `json:"isMediaSpoiler"`
+}
+
+// tagRankMinimo é o corte de relevância das tags da AniList. O campo `rank` é um voto
+// da comunidade (0 a 100) sobre o quanto aquela tag descreve a obra: "Isekai" num isekai
+// de verdade vem acima de 80, enquanto tags marginais ("Male Protagonist" com rank 12)
+// só poluiriam as Estatísticas. 50 é o meio-termo: mantém o que a comunidade reconhece
+// como característica real da obra e descarta o ruído da cauda longa.
+const tagRankMinimo = 50
+
+// relevantTags filtra as tags que valem a pena guardar no cache.
+// Além do corte de relevância, tags marcadas como spoiler ficam de fora: elas revelariam
+// reviravoltas da trama e não têm valor de classificação.
+func (m *aniListMedia) relevantTags() []string {
+	var tags []string
+	for _, t := range m.Tags {
+		if t.IsGeneralSpoiler || t.IsMediaSpoiler {
+			continue
+		}
+		if t.Rank < tagRankMinimo {
+			continue
+		}
+		tags = append(tags, t.Name)
+	}
+	return tags
+}
+
+// resolveSeasonYear devolve o ano de estreia do anime.
+// A AniList deixa `seasonYear` nulo em parte do catálogo antigo (obras cadastradas antes
+// de o campo existir), então caímos no ano da data de estreia — que costuma estar
+// preenchido mesmo nesses casos.
+func (m *aniListMedia) resolveSeasonYear() int {
+	if m.SeasonYear > 0 {
+		return m.SeasonYear
+	}
+	return m.StartDate.Year
 }
 
 func (m *aniListMedia) toAnime() Anime {
@@ -280,6 +327,9 @@ func (m *aniListMedia) toAnime() Anime {
 		Title:             title,
 		Status:            mapStatus(m.Status),
 		StartDate:         startDate,
+		Season:            m.Season,
+		SeasonYear:        m.resolveSeasonYear(),
+		Tags:              m.relevantTags(),
 		Synopsis:          stripHTML.Sanitize(m.Description),
 		Episodes:          m.Episodes,
 		Duration:          m.Duration,
@@ -369,6 +419,8 @@ query ($idMal: Int) {
     title { romaji english }
     status
 	startDate { year month day }
+	season
+	seasonYear
     description
     episodes
     duration
@@ -377,6 +429,7 @@ query ($idMal: Int) {
     coverImage { large }
     bannerImage
     genres
+	tags { name rank isGeneralSpoiler isMediaSpoiler }
     externalLinks { site url }
 	rankings { rank type allTime }
 	streamingEpisodes { title thumbnail url site }
