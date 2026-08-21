@@ -9,13 +9,43 @@ import (
 	"os"
 	"sort"
 	"strings"
+	"time"
+
+	"github.com/go-chi/chi/v5"
+	"github.com/supabase-community/postgrest-go"
 
 	"github.com/JoaoMendes1/anideck/internal/anilist"
+	"github.com/JoaoMendes1/anideck/internal/database"
+	"github.com/JoaoMendes1/anideck/internal/middleware"
 )
 
 // Quantos candidatos o scan grava por execução. Menos que isso deixa a aba
 // vazia; mais vira lista que ninguém revisa.
 const limiteSugestoesPorScan = 10
+
+// tagsDesejadas é o gosto declarado do dono do AniDeck — o que a afinidade
+// calculada não captura sozinha.
+//
+// Por que uma lista fixa em vez de deduzir das Estatísticas: a view de
+// afinidade exclui tag_tematica de propósito (ver DECISIONS.md), então "Level
+// Up" e "Guilds" nunca chegariam até aqui. Declarar à mão é honesto para uma
+// v1 — vira tabela quando existir a tela de configuração do Olheiro.
+//
+// A chave é o nome exato da AniList (em inglês, é assim que chega da API).
+// O Label é o que aparece para o usuário no motivo da sugestão.
+var tagsDesejadas = map[string]struct {
+	Peso  float64
+	Label string
+}{
+	"Isekai":       {3.0, "isekai"},
+	"Level Up":     {3.0, "progressão"},
+	"Magic":        {2.0, "magia"},
+	"Dungeon":      {2.0, "dungeon"},
+	"Guilds":       {2.0, "guildas"},
+	"Female Harem": {1.5, "harém"},
+	"Cultivation":  {1.5, "cultivo"},
+	"Martial Arts": {1.0, "luta"},
+}
 
 // PerfilOlheiro é o retrato do gosto do usuário no momento do scan.
 // Fica separado da requisição HTTP de propósito: é o que a função de
@@ -47,27 +77,41 @@ type Sugestao struct {
 	Score     float64 `json:"score"`
 }
 
+// SugestaoPendente é o que a aba do Admin recebe para montar cada card.
+type SugestaoPendente struct {
+	ID        int64   `json:"id"`
+	MalID     int     `json:"mal_id"`
+	Titulo    string  `json:"titulo"`
+	ImagemURL string  `json:"imagem_url"`
+	Motivo    string  `json:"motivo"`
+	Score     float64 `json:"score"`
+}
+
 // PontuarCandidato decide o quanto um anime combina com o gosto do usuário.
 //
 // Função pura: sem banco, sem rede, sem relógio. Entra dado, sai número —
 // por isso dá para testar isoladamente e refinar sem medo.
 //
-// Retorna o score e o motivo em português, que aparece no card do Admin.
-// Motivo vazio ou score <= 0 significa "não vale sugerir".
-//
-// TODO(joão): implementar. Ideias de ponto de partida, todas ajustáveis:
-//   - somar peso por gênero em comum com PerfilOlheiro.GenerosFavoritos,
-//     dando mais peso aos primeiros da lista (são os mais assistidos)
-//   - somar algo pela nota do anime, mas só se estiver acima da NotaMedia
-//   - cuidado com Popularity: sozinha ela só sugere blockbuster, que o
-//     usuário provavelmente já conhece
-//   - o motivo é tão importante quanto o número: "3 dos seus 5 gêneros
-//     favoritos" explica a sugestão; "score 8.4" não explica nada
+// Score 0 e motivo vazio significam "não vale sugerir".
 func PontuarCandidato(c Candidato, p PerfilOlheiro) (score float64, motivo string) {
-	return 0, ""
+	var labels []string
+
+	for _, g := range c.Generos {
+		if tag, existe := tagsDesejadas[g]; existe {
+			score += tag.Peso
+			labels = append(labels, tag.Label)
+		}
+	}
+
+	if len(labels) == 0 {
+		return 0, ""
+	}
+
+	return score, "Tem " + strings.Join(labels, ", ")
 }
 
-// OlheiroHandler roda o scan. Disparado por cron, não por usuário logado.
+// OlheiroHandler concentra o scan (disparado por cron) e a revisão da fila
+// (feita por você no Painel Admin).
 type OlheiroHandler struct {
 	AniListClient anilist.Service
 }
@@ -78,7 +122,8 @@ type OlheiroHandler struct {
 // o cron-job.org não tem JWT de usuário, então a policy de RLS não se aplica —
 // a gravação acontece via RPC SECURITY DEFINER (ver sql/009).
 func (h *OlheiroHandler) HandleScan(w http.ResponseWriter, r *http.Request) {
-		if os.Getenv("CRON_SECRET") == "" || r.Header.Get("X-Cron-Secret") != os.Getenv("CRON_SECRET") {
+	segredo := os.Getenv("CRON_SECRET")
+	if segredo == "" || r.Header.Get("X-Cron-Secret") != segredo {
 		http.Error(w, "Não autorizado", http.StatusUnauthorized)
 		return
 	}
@@ -92,7 +137,7 @@ func (h *OlheiroHandler) HandleScan(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	candidatos, err := h.buscarCandidatos(ctx, perfil)
+	candidatos, err := h.buscarCandidatos(ctx)
 	if err != nil {
 		log.Printf("[OLHEIRO] Falha ao buscar candidatos: %v", err)
 		http.Error(w, "Erro ao consultar a AniList", http.StatusBadGateway)
@@ -107,6 +152,7 @@ func (h *OlheiroHandler) HandleScan(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var sugestoes []Sugestao
+
 	for _, c := range candidatos {
 		if jaConhecidos[c.MalID] {
 			continue
@@ -161,9 +207,11 @@ func (h *OlheiroHandler) HandleScan(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
-// buscarCandidatos consulta a AniList uma vez por gênero favorito, mais uma
-// busca de trending geral como rede de segurança para o cold start.
-func (h *OlheiroHandler) buscarCandidatos(ctx context.Context, p PerfilOlheiro) ([]Candidato, error) {
+// buscarCandidatos consulta a AniList uma vez por tag desejada. Buscar
+// "melhores Isekai" traz o que interessa; o top geral só devolveria os
+// campeões de todos os tempos (Shingeki, One Piece), que não têm relação
+// nenhuma com o gosto declarado.
+func (h *OlheiroHandler) buscarCandidatos(ctx context.Context) ([]Candidato, error) {
 	vistos := make(map[int]bool)
 	var candidatos []Candidato
 
@@ -177,6 +225,8 @@ func (h *OlheiroHandler) buscarCandidatos(ctx context.Context, p PerfilOlheiro) 
 			}
 			vistos[a.MalID] = true
 
+			// Gêneros e tags entram na mesma lista: para a pontuação, ambos são
+			// apenas rótulos que podem ou não bater com o gosto declarado.
 			generos := make([]string, 0, len(a.Genres)+len(a.Tags))
 			for _, g := range a.Genres {
 				generos = append(generos, g.Name)
@@ -194,30 +244,24 @@ func (h *OlheiroHandler) buscarCandidatos(ctx context.Context, p PerfilOlheiro) 
 		}
 	}
 
-	// Cold start: sem perfil de gosto, cai no trending puro em vez de
-	// devolver lista vazia.
-	generos := p.GenerosFavoritos
-	if len(generos) > 3 {
-		generos = generos[:3]
-	}
-
-	for _, g := range generos {
-		res, err := h.AniListClient.GetTopAnime(ctx, 1, 20, anilist.SearchFilters{
-			Genres: []string{g},
+	sucessos := 0
+	for tag := range tagsDesejadas {
+		res, err := h.AniListClient.GetTopAnime(ctx, 1, 10, anilist.SearchFilters{
+			Tags: []string{tag},
+			Sort: "SCORE_DESC",
 		})
 		if err != nil {
-			// Um gênero que falha não derruba o scan inteiro.
-			log.Printf("[OLHEIRO] Busca por gênero %q falhou: %v", g, err)
+			// Uma tag que falha não derruba o scan inteiro.
+			log.Printf("[OLHEIRO] Busca por tag %q falhou: %v", tag, err)
 			continue
 		}
+		sucessos++
 		coletar(res)
 	}
 
-	res, err := h.AniListClient.GetTopAnime(ctx, 1, 20, anilist.SearchFilters{})
-	if err != nil && len(candidatos) == 0 {
-		return nil, fmt.Errorf("nenhuma busca teve sucesso: %w", err)
+	if sucessos == 0 {
+		return nil, fmt.Errorf("nenhuma busca na AniList teve sucesso")
 	}
-	coletar(res)
 
 	return candidatos, nil
 }
@@ -242,6 +286,7 @@ func malIDsJaConhecidos() (map[int]bool, error) {
 	}
 	return conhecidos, nil
 }
+
 // carregarPerfilOlheiro lê a afinidade de gêneros já calculada pelas views das
 // Estatísticas — não recalcula nada aqui, para não ter duas fontes de verdade.
 func carregarPerfilOlheiro() (PerfilOlheiro, error) {
@@ -270,4 +315,89 @@ func carregarPerfilOlheiro() (PerfilOlheiro, error) {
 	}
 
 	return perfil, nil
+}
+
+// HandleListarSugestoes devolve a fila pendente, melhor pontuada primeiro.
+//
+// Diferente do scan, aqui quem chama é você pelo navegador — então usa o JWT
+// normal e a RLS do sql/009 decide se pode ver. Sem RPC, sem SECURITY DEFINER:
+// código que passa pela RLS é sempre mais seguro que código que a contorna.
+func (h *OlheiroHandler) HandleListarSugestoes(w http.ResponseWriter, r *http.Request) {
+	token, ok := r.Context().Value(middleware.TokenKey).(string)
+	if !ok {
+		http.Error(w, "Não autorizado", http.StatusUnauthorized)
+		return
+	}
+
+	dbClient, err := database.ClientWithToken(token)
+	if err != nil {
+		http.Error(w, "Erro interno de conexão", http.StatusInternalServerError)
+		return
+	}
+
+	data, _, err := dbClient.From("curation_suggestions").
+		Select("id,mal_id,titulo,imagem_url,motivo,score", "exact", false).
+		Eq("status", "pendente").
+		Order("score", &postgrest.OrderOpts{Ascending: false}).
+		Execute()
+	if err != nil {
+		log.Printf("[ERRO DB] HandleListarSugestoes: %v", err)
+		http.Error(w, "Erro ao listar sugestões", http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.Write(data)
+}
+
+// HandleRevisarSugestao marca uma sugestão como curada ou dispensada.
+//
+// Os dois casos viraram um endpoint só porque a operação é idêntica — muda
+// apenas o valor gravado. O CHECK do sql/009 rejeita qualquer outro status,
+// mas a validação aqui devolve 400 em vez de deixar o banco dar 500.
+func (h *OlheiroHandler) HandleRevisarSugestao(w http.ResponseWriter, r *http.Request) {
+	token, ok := r.Context().Value(middleware.TokenKey).(string)
+	if !ok {
+		http.Error(w, "Não autorizado", http.StatusUnauthorized)
+		return
+	}
+
+	id := chi.URLParam(r, "id")
+	if id == "" {
+		http.Error(w, "ID ausente", http.StatusBadRequest)
+		return
+	}
+
+	var body struct {
+		Status string `json:"status"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		http.Error(w, "Corpo inválido", http.StatusBadRequest)
+		return
+	}
+	if body.Status != "curado" && body.Status != "dispensado" {
+		http.Error(w, "Status deve ser 'curado' ou 'dispensado'", http.StatusBadRequest)
+		return
+	}
+
+	dbClient, err := database.ClientWithToken(token)
+	if err != nil {
+		http.Error(w, "Erro interno de conexão", http.StatusInternalServerError)
+		return
+	}
+
+	_, _, err = dbClient.From("curation_suggestions").
+		Update(map[string]interface{}{
+			"status":      body.Status,
+			"reviewed_at": time.Now().UTC().Format(time.RFC3339),
+		}, "minimal", "exact").
+		Eq("id", id).
+		Execute()
+	if err != nil {
+		log.Printf("[ERRO DB] HandleRevisarSugestao (id=%s): %v", id, err)
+		http.Error(w, "Erro ao atualizar sugestão", http.StatusInternalServerError)
+		return
+	}
+
+	w.WriteHeader(http.StatusNoContent)
 }

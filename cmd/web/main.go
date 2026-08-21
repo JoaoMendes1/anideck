@@ -41,10 +41,10 @@ func main() {
 
 	searchHandler := &handlers.SearchHandler{AniListClient: anilistService}
 	animeHandler := &handlers.AnimeHandler{AniListClient: anilistService}
-	
+
 	// AQUI ESTAVA O ERRO NO MAIN.GO: Voltando ao normal!
-	entriesHandler := &handlers.EntriesHandler{} 
-	
+	entriesHandler := &handlers.EntriesHandler{}
+
 	statsHandler := &handlers.StatsHandler{}
 	rankingHandler := &handlers.RankingHandler{AniListClient: anilistService}
 	curationHandler := &handlers.CurationHandler{}
@@ -91,6 +91,9 @@ func main() {
 		// Drill-down: os animes por trás de uma barra do gráfico de afinidade
 		protegido.Get("/api/stats/genre", statsHandler.HandleGetGenreAnimes)
 		protegido.Get("/api/stats/year", statsHandler.HandleGetYearAnimes)
+
+		protegido.Get("/api/admin/olheiro/sugestoes", olheiroHandler.HandleListarSugestoes)
+		protegido.Patch("/api/admin/olheiro/sugestoes/{id}", olheiroHandler.HandleRevisarSugestao)
 	})
 
 	r.Group(func(admin chi.Router) {

@@ -13,6 +13,7 @@ import ReorderableTags from '../components/ReorderableTags'
 import imageCompression from 'browser-image-compression'
 import type { CuratedAnime, CuratedCharacter } from '../types/curation'
 import ConfigIAModal from '../components/ConfigIAModal'
+import { AbaOlheiro } from '../components/AbaOlheiro'
 
 export default function PainelAdmin() {
   const { showToast } = useToast()
@@ -48,6 +49,7 @@ export default function PainelAdmin() {
   const textareaRef = useRef<HTMLTextAreaElement>(null)
 
   const [configModalAberto, setConfigModalAberto] = useState(false)
+  const [olheiroAberto, setOlheiroAberto] = useState(false)
 
   const [initialStateHash, setInitialStateHash] = useState('')
   const [isDirty, setIsDirty] = useState(false)
@@ -423,6 +425,14 @@ export default function PainelAdmin() {
           >
             <Sparkles size={14} /> IA
           </button>
+                    <button
+            type="button"
+            onClick={() => setOlheiroAberto(true)}
+            title="Sugestões do Agente Olheiro"
+            className="flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-1.5 bg-panel-2 border border-line text-muted hover:text-text text-[11px] sm:text-xs font-bold rounded-full cursor-pointer transition-all shrink-0"
+          >
+            🔭 Olheiro
+          </button>
           <Link onClick={(e) => { if(!confirmarSaidaSegura()) e.preventDefault() }} to="/" className="text-sm font-bold text-muted hover:text-text transition-colors">
             ← Voltar
           </Link>
@@ -658,6 +668,21 @@ export default function PainelAdmin() {
             {excluindo ? <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin"></div> : 'Remover'}
           </button>
         </div>
+      </Sheet>
+            <Sheet
+        isOpen={olheiroAberto}
+        onClose={() => setOlheiroAberto(false)}
+        title="Agente Olheiro"
+      >
+        <AbaOlheiro
+          onCurar={(malId, titulo) => {
+            setOlheiroAberto(false)
+            abrirNovoDestaque()
+            setMalId(malId)
+            setTitulo(titulo)
+            setPreviewTitulo(titulo)
+          }}
+        />
       </Sheet>
       <ConfigIAModal 
         isOpen={configModalAberto} 
