@@ -2,17 +2,36 @@
 
 > ✅ **Aviso de Migração (28/07/2026):** O projeto pivotou inteiramente para a **AniList API (GraphQL)** devido à descontinuação iminente do Jikan. Todo o planejamento abaixo reflete essa nova realidade. Ver `DECISIONS.md`.
 
-Segue os mesmos princípios do `AGENTS.md` (issue antes de código, staging antes de produção,
-testes em issues com lógica, segurança desde o início, fases numeradas cronologicamente com
-espaço para fases `.5` intermediárias).
+> 🎯 **Escopo fechado da v1 (21/08/2026):** as fases abertas abaixo são as únicas que faltam
+> para o AniDeck ser considerado **concluído**. Ideia nova entra no Backlog e só vira fase
+> depois do beta, com base em uso real — não antes. Ver `DECISIONS.md`.
 
 ## 🎯 Onde está o MVP
 
 **Fases 1, 2 e 3** = MVP publicável: fundação + catálogo pessoal (salvar, status, notas, filtro)
-+ identidade visual mínima aplicada. Fases 4, 5 e 6 são incrementos sobre um produto já no ar.
++ identidade visual mínima aplicada. Fases 4, 5 e 6.x são incrementos sobre um produto já no ar.
 
 ## 🚀 Deploy contínuo
 Staging sobe já na Fase 1, como projeto esqueleto — mesmo padrão do JVM Systems.
+
+## 📍 Status atual (21/08/2026)
+
+| Fase | Status |
+|---|---|
+| 1 · Fundação & Arquitetura | ✅ Concluída |
+| 2 · Catálogo Pessoal | ✅ Concluída |
+| 2.5 · Curadoria Pessoal (Admin) | ✅ Concluída |
+| 3 · Identidade Visual | ✅ Concluída |
+| 4 · Dashboard de Estatísticas | ✅ Concluída |
+| 4.5 · Automação e IA Generativa | 🔄 **Em aberto** — Agente Olheiro v1 |
+| 5 · Smart Tracking & Calendário | ✅ Concluída |
+| 6.5 · Ranking Ponderado | 🔄 **Em aberto** — indicador ▲/▼ |
+| 6.6 · Página de Detalhes | ✅ Concluída |
+| 6.7 · Progresso por Episódio | ✅ Concluída |
+| 6.8 · Taxonomia & Estatísticas | ✅ Concluída |
+| 7 · Multiusuário | 🔜 Próxima — beta fechado |
+| 8 · App Instalável | ✅ Concluída (escopo reduzido) |
+
 ---
 
 ## 🏗️ Fase 1: Fundação & Arquitetura — início do MVP
@@ -41,7 +60,7 @@ Staging sobe já na Fase 1, como projeto esqueleto — mesmo padrão do JVM Syst
 ## 🗂️ Fase 2.5: Curadoria Pessoal (Painel Admin)
 
 - [x] Criar tabela `curated_animes` no Supabase para armazenar destaques editados.
-- [x] Criar rotas no backend (`/api/curation`) para gerenciar (CRUD) od destaques.
+- [x] Criar rotas no backend (`/api/curation`) para gerenciar (CRUD) os destaques.
 - [x] Atualizar rotas de Busca e Ranking para usar a curadoria local como prioridade (Fallback para AniList).
 - [x] Construir a interface do Painel Admin em React e conectar ao Backend.
 
@@ -58,51 +77,47 @@ Staging sobe já na Fase 1, como projeto esqueleto — mesmo padrão do JVM Syst
 - [x] Cálculo de métricas pessoais (tempo assistido, gênero favorito, distribuição por status) direto no banco.
 - [x] Visualização (gráficos) no painel do usuário consumindo essas procedures.
 
-## 🤖 Fase 4.5: Automação e IA Generativa (Integração Google Workspace)
+## 🤖 Fase 4.5: Automação e IA Generativa
+
+> **Nota (21/08/2026):** o Agente Olheiro estava pausado desde 17/08 aguardando a definição da
+> Fase 6.5 (ranking ponderado). Esse pré-requisito foi cumprido — a fórmula bayesiana está
+> implementada e documentada. O Olheiro foi **retomado** com escopo reduzido: v1 sugere,
+> não decide. O relatório por Gmail saiu do escopo desta fase (ver Backlog).
 
 - [x] **Agente Curador (IA no Admin):** Integrar um LLM para reescrever sinopses frias da AniList de forma autônoma, adotando o tom de voz "AniDeck".
 - [x] **Engenharia de Prompt Dinâmica e Resiliência:** Criação de cache em memória no Go (`sync.RWMutex`) consultando tabela genérica no Supabase para editar as regras da IA sem mexer no código, suporte a Markdown, e fallback automático (`3.7-flash` -> `3.6-flash`).
-- [ ] ⏸️ **PAUSADO (17/08/2026): Agente Olheiro (Automação Background).** Cruzar os favoritos do
-      usuário (SQL) com os *trends* da AniList só faz sentido produzir recomendação confiável
-      depois de resolver **o que significa "melhor anime"** — problema estrutural documentado em
-      `VISAO_RANKING_CREDIVEL.md`. Retomar só depois de decidir, ao menos, a versão simples da
-      Fase 6.5 (ranking ponderado).
-- [ ] 🚨 **DECISÃO ARQUITETURAL (17/08/2026):** descartado o uso de **n8n** como orquestrador —
-      exigiria hospedar/manter mais um serviço com custo recorrente, incompatível com o estágio
-      atual do projeto (ver critério de não gastar recursos em projeto que ainda não está
-      pronto). Quando o Agente Olheiro for retomado, a implementação fica **nativa em Go**
-      (mesmo backend, sem serviço novo), disparada por agendador externo gratuito
-      (cron-job.org) batendo num endpoint interno protegido por chave secreta — mesmo padrão
-      adotado na Fase 6.7 para notificação de episódios.
-- [ ] **Integração Google Workspace:** O Agente gera recomendações personalizadas em HTML e
-      utiliza a API do Gmail (SDK oficial, direto em Go — não via n8n) para disparar um relatório
-      automático para a caixa de entrada do usuário.
+- [x] **Decisão arquitetural (17/08/2026): n8n descartado** — exigiria hospedar/manter mais um
+      serviço com custo recorrente, incompatível com o estágio atual do projeto. Implementação
+      fica **nativa em Go** (mesmo backend, sem serviço novo), disparada por agendador externo
+      gratuito (cron-job.org) batendo num endpoint interno protegido por chave secreta — mesmo
+      padrão adotado na Fase 6.7. Registrado em `DECISIONS.md`.
+- [ ] 🔄 **Agente Olheiro v1 (fila de sugestões de curadoria).** Cruza o perfil de gosto do
+      usuário com os *trends* da AniList e grava candidatos em `curation_suggestions`, revisados
+      manualmente numa aba nova do Painel Admin (botões "Curar" / "Dispensar"). Endpoint
+      `POST /api/admin/olheiro/scan` protegido por chave secreta, agendado semanalmente.
+      A função de pontuação fica pura e testável em `internal/handlers/olheiro.go`, para ser
+      refinada incrementalmente conforme o projeto evolui. Issue detalhada no GitHub Projects.
 
-## 📅 Fase 5: Smart Tracking, Streaming Direto & Calendário (Killer Feature) Finalizado 10/08/2026
+## 📅 Fase 5: Smart Tracking, Streaming Direto & Calendário (Killer Feature) — Finalizada 10/08/2026
 
 - [x] **Backend:** Atualizar a query GraphQL do Go para consumir `nextAiringEpisode` e repassar a janela de tempo ao frontend.
 - [x] **Meu Deck:** Criar lógica visual de Badge "NOVO EP" para obras "Assistindo" ou "Em Dia" com episódios recém-lançados.
 - [x] **Integração de Streaming:** Adicionar botão/ação rápida nos cards do Deck utilizando o campo `externalLinks` da AniList, permitindo pular direto para a Crunchyroll/Netflix.
 - [x] **Calendário Personalizado:** Tela mostrando próximos episódios exclusivos da *watchlist* do usuário, agrupados por dia da semana e com contagem regressiva viva.
-OBS: O Product Owner decidiu que a fase 5 fosse implementada primeiro.
 
-## 📰 Fase 6: Notícias de Anime
-
-- [ ] Avaliar fonte externa de notícias (RSS de Anime News Network, Crunchyroll News, ou similar).
-- [ ] Job de ingestão periódica.
-- [ ] Exibição no frontend.
+OBS: O Product Owner decidiu que a Fase 5 fosse implementada primeiro.
 
 ## ⚖️ Fase 6.5: Ranking Ponderado
 
 > Nasceu da auditoria de UX registrada em `docs/ideias-para-melhorias.md`, item 2.2 (e 2.3).
-> Ainda sem decisão de fórmula fechada — depende de confirmar se a AniList expõe contagem de
-> votos/favoritos junto com a nota antes de estimar esforço real. Não iniciar antes de fechar
-> essa decisão em `DECISIONS.md`.
 >
 > **Nota (17/08/2026):** a versão simples desta fase (média bayesiana com dado que a AniList já
 > fornece hoje) **não depende** do sistema de credibilidade de longo prazo descrito em
-> `VISAO_RANKING_CREDIVEL.md` — pode ser implementada de forma independente, a qualquer momento,
-> sem esperar Fase 7 (Multiusuário).
+> `VISAO_RANKING_CREDIVEL.md` — pode ser implementada de forma independente, sem esperar a
+> Fase 7 (Multiusuário).
+>
+> **Nota (21/08/2026):** fórmula fechada e implementada. O indicador ▲/▼ abaixo estava
+> bloqueado por essa definição e **foi destravado** — é o último item aberto da fase.
 
 - [x] Confirmar se a query GraphQL da AniList retorna contagem de avaliações/favoritos por anime.
 - [x] Definir e documentar em `DECISIONS.md` a fórmula de ponderação escolhida (ex: média
@@ -111,10 +126,9 @@ OBS: O Product Owner decidiu que a fase 5 fosse implementada primeiro.
       alinhado à Fase 4).
 - [x] Como parte da mesma decisão, avaliar o critério de equilíbrio entre animes clássicos e
       recentes (item 2.3 do documento de ideias).
-- [ ] **Bloqueado por esta fase:** indicador de movimentação de posições no ranking (▲/▼) —
-      só faz sentido rastrear histórico de posição depois que a fórmula final estiver estável,
-      senão todo mundo "sobe ou desce" no dia da troca de fórmula sem ter mudado de posição de
-      verdade.
+- [ ] 🔄 **Indicador de movimentação de posições no ranking (▲/▼).** Destravado em 21/08/2026
+      com o fechamento da fórmula. Exige tabela de snapshot diário de posições, job agendado
+      (mesmo padrão de cron externo da Fase 6.7) e as setas na UI de Rankings.
 
 ## 🖼️ Fase 6.6: Enriquecimento da Página de Detalhes (Concluída)
 
@@ -125,7 +139,7 @@ OBS: O Product Owner decidiu que a fase 5 fosse implementada primeiro.
 - [x] **Estatísticas Vivas:** Consumo do `statusDistribution` da AniList (revelando a % da comunidade que completou ou dropou a obra) e histograma animado com marcação destacada da nota do próprio usuário.
 - [x] **Correções de Acessibilidade:** Implementação de `custom-scrollbar` para navegação por mouse no desktop na lista de personagens.
 
-## 📺 Fase 6.7: Progresso por Episódio & Notificação de Lançamento
+## 📺 Fase 6.7: Progresso por Episódio & Notificação de Lançamento (Concluída)
 
 > Nasceu de uma sessão de planejamento em 17/08/2026, ao discutir os pré-requisitos técnicos
 > para a visão de longo prazo do ranking com credibilidade (`VISAO_RANKING_CREDIVEL.md`).
@@ -134,16 +148,20 @@ OBS: O Product Owner decidiu que a fase 5 fosse implementada primeiro.
 > temporadas já são separadas por `mal_id` — não precisa de agrupamento manual) e mitigação de
 > timeout de cold-start documentados em `FASE_6.7_EPISODIOS.md`.
 
-- [X]  Criar tabela `episode_progress` (Supabase) + endpoints Go para marcar/desmarcar episódio assistido, com RLS extraindo o `user_id` sempre do JWT.
-- [X]  Grade visual de episódios na página de detalhe/Meu Deck, usando `streamingEpisodes` da AniList (com fallback).
-- [X]  **[NOVO] Antecipação PWA:** Adicionar `manifest.json` e registrar o `Service Worker` no frontend React (trazido da Fase 8).
-- [X]  **[NOVO]** Criar tabela `push_subscriptions` (Supabase) para armazenar os endpoints, chaves `p256dh` e `auth` dos navegadores dos usuários.
-- [X]  Notificação de episódio novo lançado (checagem diária via cron-job.org batendo em endpoint interno). O backend deverá gravar o histórico na tabela `notifications` **e simultaneamente** disparar o alerta para o sistema operacional via `webpush-go` usando chaves VAPID.
+- [x] Criar tabela `episode_progress` (Supabase) + endpoints Go para marcar/desmarcar episódio assistido, com RLS extraindo o `user_id` sempre do JWT.
+- [x] Grade visual de episódios na página de detalhe/Meu Deck, usando `streamingEpisodes` da AniList (com fallback).
+- [x] **Antecipação PWA:** Adicionar `manifest.json` e registrar o `Service Worker` no frontend React (trazido da Fase 8).
+- [x] Criar tabela `push_subscriptions` (Supabase) para armazenar os endpoints, chaves `p256dh` e `auth` dos navegadores dos usuários.
+- [x] Notificação de episódio novo lançado (checagem diária via cron-job.org batendo em endpoint interno). O backend grava o histórico na tabela `notifications` **e simultaneamente** dispara o alerta para o sistema operacional via `webpush-go` usando chaves VAPID.
 
-## 🏷️ Fase 6.8: Taxonomia Própria & Evolução das Estatísticas
+## 🏷️ Fase 6.8: Taxonomia Própria & Evolução das Estatísticas (Concluída)
 
 > Nasceu da sessão de 20/08/2026, revisando a página de Estatísticas depois que a Fase 6.7
 > mudou a fonte de verdade do progresso.
+>
+> **Verificação de estado (21/08/2026):** todos os arquivos `sql/001` a `sql/008` aplicados no
+> Supabase e o `POST /api/admin/metadata/resync` executado uma vez. Confirmado em tela pelo
+> gráfico de Distribuição por Ano populado e pelo Isekai aparecendo na Afinidade de Gêneros.
 
 - [x] **Tempo assistido usando `episode_progress` como fonte de verdade** (a view contava o
       total teórico de episódios em vez do que foi realmente marcado).
@@ -196,30 +214,84 @@ OBS: O Product Owner decidiu que a fase 5 fosse implementada primeiro.
       campo; ele só ia no payload por existir na struct Go. Removido da struct; o `DROP COLUMN`
       está em `sql/005`, para rodar **depois** do deploy (a ordem inversa quebraria o insert).
 
-## 👥 Fase 7: Multiusuário (futuro, avaliar quando chegar)
+## 👥 Fase 7: Multiusuário — Beta Fechado
 
-- [ ] Reavaliar modelo de dados e permissões antes de abrir para outras pessoas.
-- [ ] **Pré-requisito para retomar o Agente Olheiro e a visão completa de ranking com
-      credibilidade** — ver `VISAO_RANKING_CREDIVEL.md` (documento de visão, não compromisso de
-      escopo; sistema de peso de voto por XP de gênero só faz sentido com base de usuários real).
+> **Nota (21/08/2026):** a fase deixou de ser "futuro, avaliar quando chegar" e ganhou objetivo
+> concreto: abrir o AniDeck para um grupo pequeno de convidados, gratuitamente, com o propósito
+> de observar como o sistema se comporta com gente que não é o autor. **Não há monetização
+> nesta fase.** Número de convidados é o que aparecer — duas ou três pessoas já cumprem o
+> objetivo técnico de sair da amostra de um usuário só.
 
-## 📱 Fase 8: Publicação como App (futuro, avaliar quando chegar)
+- [ ] Cadastro fechado (convite ou confirmação de e-mail) para evitar bot.
+- [ ] Teste de isolamento entre contas: validar com uma segunda conta que `media_entries`,
+      `episode_progress`, `push_subscriptions` e `notifications` não vazam dado entre usuários.
+- [ ] Esconder o acesso ao Painel Admin na UI para quem não é admin (o backend já bloqueia).
+- [ ] Caminho para exclusão de conta, mesmo que operado manualmente no início.
+- [ ] Política de privacidade curta (LGPD).
+- [ ] Canal de reporte de bug (grupo de mensagens já resolve).
+- [ ] Ativar backup automático no Supabase e validar o procedimento de restauração —
+      pré-requisito inegociável antes do primeiro convite.
+- [ ] Reavaliar modelo de dados e permissões à luz do que o beta revelar.
+- [ ] **Pré-requisito para a visão completa de ranking com credibilidade** — ver
+      `VISAO_RANKING_CREDIVEL.md` (documento de visão, não compromisso de escopo; peso de voto
+      por XP de gênero só faz sentido com base de usuários real).
 
-- [x]  *(Concluído na Fase 6.7: manifest.json e service worker base)*.
-- [ ]  Adicionar suporte a cache offline completo e estratégias de *Network First/Cache First* no Service Worker.
-- [ ]  Empacotar via TWA (Trusted Web Activity, usando Bubblewrap/PWABuilder) para publicar na Play Store.
+## 📱 Fase 8: App Instalável — ✅ Concluída (escopo reduzido)
+
+> **Decisão (21/08/2026):** fase encerrada. O objetivo real — o AniDeck instalar no celular,
+> aparecer na gaveta de aplicativos e abrir em tela cheia — foi entregue pelo PWA na Fase 6.7.
+> Os dois itens restantes do escopo original foram avaliados e descartados (ver seção abaixo).
+
+- [x] `manifest.json`, Service Worker, ícones e display standalone *(entregues na Fase 6.7)*.
 
 ---
 
 ## 📋 Backlog / Ideias em Avaliação
 
+> Nada aqui é compromisso de escopo. Reavaliar depois do beta da Fase 7, com base em uso real.
+
+- [ ] **Agente Olheiro — evolução da pontuação.** A v1 nasce com fórmula simples e proposital;
+      refinar incrementalmente conforme o catálogo e a base de usuários crescerem.
+- [ ] **Relatório semanal por e-mail (Gmail API, SDK oficial em Go).** Removido do escopo da
+      Fase 4.5 em 21/08/2026 — depende do Agente Olheiro estar validado e produzindo sugestões
+      de qualidade. Mandar e-mail com recomendação ruim é pior que não mandar.
+- [ ] **Importação de lista via OAuth da AniList.** Opção (não obrigatória) para quem não quiser
+      cadastrar o deck manualmente. Tem um efeito colateral relevante: sincronização sustentada
+      com contas AniList é justamente o critério que os ToS deles citam para autorizar serviços
+      da mesma natureza. Reavaliar após o beta.
 - [ ] **Notificações de novas temporadas/sequências** — avisar quando uma sequência/temporada nova é anunciada.
 - [ ] **Filtro por ano na Busca, independente de temporada** — hoje o campo de ano só habilita se
       uma temporada estiver selecionada (ver `docs/ideias-para-melhorias.md`, item 7.1). Aceitável
       como está por ora; revisar se surgir demanda real de usuário.
 
 ### Avaliado e descartado (documentado pra não reabrir sem contexto)
+
 - **Fórum, Clubes, Blogs:** equivalem a construir uma rede social inteira.
 - **Mensageria direta (Inbox):** pressupõe comunidade ativa.
 - **News / Featured Articles / MALxJapan:** conteúdo editorial que o MAL produz com equipe própria.
 - **Mini-página de Pessoa/Estúdio** — ao clicar num dublador/estúdio na página de Detalhe, ver outros trabalhos dele.
+- **Fase 6 — Notícias de Anime (descartada em 21/08/2026):** exigiria avaliar e manter fontes RSS,
+  um job de ingestão periódica e curadoria contínua, sem resolver nenhuma dor real de quem usa o
+  AniDeck para organizar o que assiste. Mesmo motivo do descarte anterior de "News / Featured
+  Articles" — a diferença é que ali era conteúdo editorial de terceiro e aqui seria agregação
+  automática, mas o custo de manutenção recai igual sobre um projeto de um desenvolvedor só.
+- **Publicação na Play Store via TWA (descartada em 21/08/2026):** exige conta de desenvolvedor
+  Google com custo em dólar, conformidade com política de loja, ciclo de review a cada
+  atualização e manutenção permanente. O PWA já entrega instalação, ícone e tela cheia — o
+  ganho marginal não paga o custo recorrente no estágio atual.
+- **Cache offline completo no Service Worker (descartada em 21/08/2026):** o AniDeck depende de
+  dado vivo da AniList (episódio no ar, calendário, contagem regressiva). Offline entregaria uma
+  versão degradada do produto e adicionaria uma classe inteira de bugs de sincronização entre o
+  cache e o servidor. O Service Worker segue existindo apenas para viabilizar o PWA e o push.
+
+---
+
+## 🧭 Notas de manutenção deste arquivo
+
+- Fases são numeradas cronologicamente. Dívida técnica ou requisito novo vira fase `.5`
+  intermediária, inserida entre as duas fases que a originaram — nunca empilhada no final.
+- Fase concluída não é apagada — vira registro histórico com os itens marcados.
+- Item abandonado não é apagado — vai para "Avaliado e descartado" **com a justificativa**,
+  para não ser reaberto sem contexto meses depois.
+- Ideia nova vai para o Backlog. Só vira fase quando houver decisão explícita de fazer.
+- Decisão estrutural (arquitetura, framework, banco, auth) não mora aqui: vai para `DECISIONS.md`.
