@@ -156,7 +156,8 @@ OBS: O Product Owner decidiu que a fase 5 fosse implementada primeiro.
       como tag e por isso nunca chegava até as Estatísticas.
 - [x] **`tags` e `season_year` no cache de metadados** — o client da AniList não pedia nenhum
       dos dois. Destrava o gráfico de Distribuição por Ano, que estava permanentemente vazio.
-- [x] **DDL versionado em `sql/`** (dívida técnica: as views existiam só no painel do Supabase).
+- [x] **DDL versionado em `sql/`** — dívida técnica 2.1 fechada por completo: o `sql/006` traz
+      o SQL real das 9 views antigas, extraído com `pg_get_viewdef`, não reconstruído de memória.
 - [x] **Endpoint de re-sincronização em lote** (`POST /api/admin/metadata/resync`) — sem ele,
       só animes salvos depois da mudança teriam os campos novos.
 - [x] **Refinamento de layout mobile** — cards de Streak não cortam mais na borda (`StatCard`
@@ -172,10 +173,11 @@ OBS: O Product Owner decidiu que a fase 5 fosse implementada primeiro.
       **sessão** (marcações a menos de 2h de distância viram um bloco só), o que corrige o
       problema na raiz e não só no primeiro uso. **Bônus:** o gráfico estava 3 horas deslocado
       porque o Postgres extraía a hora em UTC — a conversão para hora local foi para o navegador.
-- [x] **Drill-down clicável** — clicar numa categoria abre um `Sheet` com os animes dela,
-      reaproveitando `Sheet.tsx` + `AnimeCard`. Endpoint `GET /api/stats/genre?nome=` sobre a
-      view `view_user_genre_animes`, que repete a mesma lógica de rótulos da afinidade para a
-      contagem da barra bater com o tamanho da lista.
+- [x] **Drill-down clicável** — clicar numa categoria **ou numa barra de ano** abre um `Sheet`
+      com os animes, reaproveitando `Sheet.tsx` + `AnimeCard`. Endpoints
+      `GET /api/stats/genre?nome=` e `GET /api/stats/year?ano=`, sobre views que repetem a
+      mesma lógica de recorte dos gráficos — a contagem da barra tem que bater com o tamanho
+      da lista.
 - [x] **Gráfico de quadrantes (volume × satisfação)** — decisão fechada pelo quadrante; o
       motivo está no `DECISIONS.md`. A divisória horizontal é a nota média do próprio usuário.
 - [x] **Comparação temporal** — selo de variação no card de Atividade Recente, comparando as

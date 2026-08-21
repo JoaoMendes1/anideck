@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"log"
 	"net/http"
+	"strconv"
 	"time"
 
 	"github.com/JoaoMendes1/anideck/internal/database"
@@ -153,6 +154,45 @@ func (h *StatsHandler) HandleGetUserStats(w http.ResponseWriter, r *http.Request
 
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(response)
+}
+
+// HandleGetYearAnimes é o drill-down da Distribuição por Ano: "2010: 1 anime" não diz qual
+// anime é, e era essa a informação que a pessoa queria ao olhar a barra.
+func (h *StatsHandler) HandleGetYearAnimes(w http.ResponseWriter, r *http.Request) {
+	userID, ok := r.Context().Value(middleware.UserIDKey).(string)
+	token, tokenOk := r.Context().Value(middleware.TokenKey).(string)
+
+	if !ok || !tokenOk || userID == "" {
+		http.Error(w, "Não autenticado", http.StatusUnauthorized)
+		return
+	}
+
+	// Ano vira inteiro antes de chegar ao banco: além de validar, isso descarta qualquer
+	// coisa que não seja um número antes de virar filtro.
+	ano, err := strconv.Atoi(r.URL.Query().Get("ano"))
+	if err != nil || ano < 1900 || ano > 2200 {
+		http.Error(w, "Ano inválido", http.StatusBadRequest)
+		return
+	}
+
+	dbClient, errClient := database.ClientWithToken(token)
+	if errClient != nil {
+		http.Error(w, "Erro interno de conexão", http.StatusInternalServerError)
+		return
+	}
+
+	data, _, err := dbClient.From("view_user_year_animes").
+		Select("*", "exact", false).
+		Eq("season_year", strconv.Itoa(ano)).
+		Execute()
+	if err != nil {
+		log.Printf("[ERRO DB] HandleGetYearAnimes (user=%s, ano=%d): %v", userID, ano, err)
+		http.Error(w, "Erro ao buscar animes do ano", http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.Write(data)
 }
 
 // HandleGetGenreAnimes alimenta o drill-down: quais animes estão por trás daquela barra.

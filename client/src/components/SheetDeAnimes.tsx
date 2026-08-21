@@ -1,5 +1,7 @@
-// client/src/components/SheetAnimesDoGenero.tsx
-// O drill-down da Afinidade: responde "assisti 30 de Fantasia — mas quais?".
+// client/src/components/SheetDeAnimes.tsx
+// O drill-down dos gráficos: responde "assisti 30 de Fantasia — mas quais?" e o mesmo para
+// "2010: 1 anime — qual?". Recebe o título pronto justamente pra servir aos dois casos sem
+// precisar saber se o recorte é gênero, ano ou o que vier depois.
 //
 // É apresentacional de propósito. Quem busca os dados é a página de Estatísticas, que já
 // tem o token e o controle de qual gênero está aberto; assim este componente não precisa
@@ -16,19 +18,19 @@ export interface AnimeDoGenero {
     image_url?: string
 }
 
-interface SheetAnimesDoGeneroProps {
-    genero: string | null
+interface SheetDeAnimesProps {
+    titulo: string | null
     animes: AnimeDoGenero[]
     carregando: boolean
     onClose: () => void
 }
 
-export default function SheetAnimesDoGenero({ genero, animes, carregando, onClose }: SheetAnimesDoGeneroProps) {
+export default function SheetDeAnimes({ titulo, animes, carregando, onClose }: SheetDeAnimesProps) {
     return (
         <Sheet
-            isOpen={genero !== null}
+            isOpen={titulo !== null}
             onClose={onClose}
-            title={genero ? `Seus animes de ${genero}` : ''}
+            title={titulo ?? ''}
             maxWidthClass="md:max-w-2xl"
         >
             {carregando ? (
