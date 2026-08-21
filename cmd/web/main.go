@@ -50,6 +50,7 @@ func main() {
 	curationHandler := &handlers.CurationHandler{}
 	notificationsHandler := &handlers.NotificationsHandler{AniListClient: anilistService}
 	metadataHandler := &handlers.MetadataHandler{AniListClient: anilistService}
+	olheiroHandler := &handlers.OlheiroHandler{AniListClient: anilistService}
 
 	r := chi.NewRouter()
 	r.Use(chimw.RequestID)
@@ -68,6 +69,7 @@ func main() {
 	r.Get("/api/curation", curationHandler.HandleList)
 	r.Post("/api/anime/bulk", animeHandler.HandleGetAnimesByIDs)
 	r.Post("/api/internal/check-new-episodes", notificationsHandler.HandleCheckNewEpisodes)
+	r.Post("/api/admin/olheiro/scan", olheiroHandler.HandleScan)
 
 	r.Group(func(protegido chi.Router) {
 		protegido.Use(middleware.RequireAuth)
