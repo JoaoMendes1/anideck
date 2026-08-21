@@ -599,6 +599,7 @@ query ($page: Int, $perPage: Int, $sort: [MediaSort], $genre_in: [String], $tag_
 	  popularity
       coverImage { large }
       genres
+	  tags { name rank isGeneralSpoiler isMediaSpoiler }
       externalLinks { site url }
       nextAiringEpisode { airingAt timeUntilAiring episode }
     }
