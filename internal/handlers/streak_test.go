@@ -9,10 +9,10 @@ func TestCalculateStreak(t *testing.T) {
 	today := time.Date(2026, 8, 20, 0, 0, 0, 0, time.UTC) // quinta-feira, 20/08/2026
 
 	tests := []struct {
-		name            string
-		dates           []string
-		wantCurrent     int
-		wantLongest     int
+		name        string
+		dates       []string
+		wantCurrent int
+		wantLongest int
 	}{
 		{
 			name:        "sem dados",

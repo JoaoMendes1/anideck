@@ -103,19 +103,25 @@ func (h *SearchHandler) HandleSearch(w http.ResponseWriter, r *http.Request) {
 
 				existingIDs := make(map[int]bool)
 				var combined []anilist.Anime
-				
+
 				for _, a := range localAnimes.Data {
 					if curado, ok := curadosMap[a.MalID]; ok {
-						a.Title = curado.CustomTitle 
+						a.Title = curado.CustomTitle
 						if curado.CustomSynopsis != "" {
-							a.Synopsis = curado.CustomSynopsis 
+							a.Synopsis = curado.CustomSynopsis
 						}
-						
-						if curado.CustomStatus != "" { a.Status = curado.CustomStatus }
+
+						if curado.CustomStatus != "" {
+							a.Status = curado.CustomStatus
+						}
 						if len(curado.CustomTags) > 0 {
-							var novasTags []struct{ Name string `json:"name"` }
+							var novasTags []struct {
+								Name string `json:"name"`
+							}
 							for _, tag := range curado.CustomTags {
-								novasTags = append(novasTags, struct{ Name string `json:"name"` }{Name: tag})
+								novasTags = append(novasTags, struct {
+									Name string `json:"name"`
+								}{Name: tag})
 							}
 							a.Genres = novasTags
 						}
@@ -126,19 +132,25 @@ func (h *SearchHandler) HandleSearch(w http.ResponseWriter, r *http.Request) {
 						hasGenre := false
 						for _, animeG := range a.Genres {
 							if genreMap[strings.ToLower(animeG.Name)] {
-								hasGenre = true; break
+								hasGenre = true
+								break
 							}
 						}
-						if !hasGenre { match = false }
+						if !hasGenre {
+							match = false
+						}
 					}
 					if match && len(tags) > 0 {
 						hasTag := false
 						for _, animeG := range a.Genres {
 							if tagMap[strings.ToLower(animeG.Name)] {
-								hasTag = true; break
+								hasTag = true
+								break
 							}
 						}
-						if !hasTag { match = false }
+						if !hasTag {
+							match = false
+						}
 					}
 
 					if match {
@@ -146,7 +158,7 @@ func (h *SearchHandler) HandleSearch(w http.ResponseWriter, r *http.Request) {
 						existingIDs[a.MalID] = true
 					}
 				}
-				
+
 				for _, a := range resultados.Data {
 					if !existingIDs[a.MalID] {
 						combined = append(combined, a)
@@ -179,9 +191,13 @@ func (h *SearchHandler) HandleSearch(w http.ResponseWriter, r *http.Request) {
 				resultados.Data[i].Status = curado.CustomStatus
 			}
 			if len(curado.CustomTags) > 0 {
-				var novasTags []struct{ Name string `json:"name"` }
+				var novasTags []struct {
+					Name string `json:"name"`
+				}
 				for _, tag := range curado.CustomTags {
-					novasTags = append(novasTags, struct{ Name string `json:"name"` }{Name: tag})
+					novasTags = append(novasTags, struct {
+						Name string `json:"name"`
+					}{Name: tag})
 				}
 				resultados.Data[i].Genres = novasTags
 			}
@@ -192,11 +208,14 @@ func (h *SearchHandler) HandleSearch(w http.ResponseWriter, r *http.Request) {
 	if status != "" {
 		expectedStatus := status
 		switch status {
-		case "FINISHED": expectedStatus = "Finished Airing"
-		case "RELEASING": expectedStatus = "Currently Airing"
-		case "NOT_YET_RELEASED": expectedStatus = "Not yet aired"
+		case "FINISHED":
+			expectedStatus = "Finished Airing"
+		case "RELEASING":
+			expectedStatus = "Currently Airing"
+		case "NOT_YET_RELEASED":
+			expectedStatus = "Not yet aired"
 		}
-		
+
 		var filtered []anilist.Anime
 		for _, a := range resultados.Data {
 			if strings.EqualFold(a.Status, expectedStatus) {

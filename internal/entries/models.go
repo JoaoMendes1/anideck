@@ -8,8 +8,7 @@ type MediaEntry struct {
 	Status     string   `json:"status"`
 	Nota       *float64 `json:"nota,omitempty"`
 	Anotacao   string   `json:"anotacao,omitempty"`
-	IsFavorite bool     `json:"is_favorite"` 
-	Progress   int      `json:"progress"`
+	IsFavorite bool     `json:"is_favorite"`
 }
 
 type EpisodeProgress struct {

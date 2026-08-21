@@ -18,6 +18,8 @@ Rode os arquivos em ordem numérica. Todos foram escritos para ser idempotentes
 | `001_anime_metadata_cache_tags.sql` | Adiciona `tags` e `season_year` ao cache de metadados |
 | `002_genre_taxonomy.sql` | Cria e popula a taxonomia própria do AniDeck (3 camadas) |
 | `003_view_user_genre_affinity.sql` | Reescreve a view de afinidade usando a taxonomia (reconciliado com a definição real que estava no Supabase) |
+| `004_estatisticas_avancadas.sql` | Views novas: animes por gênero (drill-down), marcações cruas (sessões) e anime esquecido |
+| `005_remove_coluna_progress.sql` | ⚠️ Destrutivo e fora de ordem — só depois do deploy, ver instruções no próprio arquivo |
 
 Depois de aplicar, rode uma vez `POST /api/admin/metadata/resync` (autenticado como admin)
 para reprocessar os animes que já estavam no deck. Sem isso, só animes salvos **depois** da

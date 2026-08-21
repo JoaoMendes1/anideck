@@ -21,10 +21,9 @@ type GlobalRankingState struct {
 	sync.RWMutex
 	Animes      []anilist.Anime
 	LastUpdated time.Time
-	GlobalC     float64 
-	GlobalM     float64 
+	GlobalC     float64
+	GlobalM     float64
 }
-
 
 var globalRanking GlobalRankingState
 
@@ -97,7 +96,7 @@ func updateGlobalCache(client anilist.Service) {
 	for i := range allAnimes {
 		// O PreviousRank nascerá copiando o CurrentRank anterior (isso será evoluído depois)
 		allAnimes[i].CurrentRank = i + 1
-		allAnimes[i].PreviousRank = i + 1 
+		allAnimes[i].PreviousRank = i + 1
 	}
 
 	// 5. Salvar na Memória (Lock seguro)
@@ -131,7 +130,7 @@ func (h *RankingHandler) HandleGetTopAnime(w http.ResponseWriter, r *http.Reques
 	season := strings.ToUpper(strings.TrimSpace(r.URL.Query().Get("season")))
 	status := strings.ToUpper(strings.TrimSpace(r.URL.Query().Get("status")))
 	sortParam := r.URL.Query().Get("sort")
-	
+
 	filters := anilist.SearchFilters{
 		Genres: r.URL.Query()["genre"],
 		Tags:   r.URL.Query()["tag"],
@@ -205,7 +204,7 @@ func (h *RankingHandler) HandleGetTopAnime(w http.ResponseWriter, r *http.Reques
 			}
 		}
 
-		// Reordena a página atual localmente para garantir que 
+		// Reordena a página atual localmente para garantir que
 		// a nota AniDeck dite a ordem visual do que acabou de chegar
 		sort.Slice(resultados.Data, func(i, j int) bool {
 			return resultados.Data[i].BayesianScore > resultados.Data[j].BayesianScore
@@ -231,8 +230,12 @@ func applyCuradoria(res *anilist.AnimeSearchResponse) {
 		for i, anime := range res.Data {
 			if curado, ok := curadosMap[anime.MalID]; ok {
 				res.Data[i].Title = curado.CustomTitle
-				if curado.CustomSynopsis != "" { res.Data[i].Synopsis = curado.CustomSynopsis }
-				if curado.CustomStatus != "" { res.Data[i].Status = curado.CustomStatus }
+				if curado.CustomSynopsis != "" {
+					res.Data[i].Synopsis = curado.CustomSynopsis
+				}
+				if curado.CustomStatus != "" {
+					res.Data[i].Status = curado.CustomStatus
+				}
 			}
 		}
 	}
@@ -240,14 +243,18 @@ func applyCuradoria(res *anilist.AnimeSearchResponse) {
 
 func mapStatusForFilter(status string) string {
 	switch status {
-	case "FINISHED": return "Finished Airing"
-	case "RELEASING": return "Currently Airing"
-	case "NOT_YET_RELEASED": return "Not yet aired"
-	default: return status
+	case "FINISHED":
+		return "Finished Airing"
+	case "RELEASING":
+		return "Currently Airing"
+	case "NOT_YET_RELEASED":
+		return "Not yet aired"
+	default:
+		return status
 	}
 }
 
-// InvalidateRankingCache força a limpeza da memória. 
+// InvalidateRankingCache força a limpeza da memória.
 // Usado pelo curation.go quando o Admin edita um anime manualmente.
 func InvalidateRankingCache() {
 	globalRanking.Lock()

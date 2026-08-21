@@ -1,0 +1,23 @@
+-- 005 — Remoção da coluna órfã media_entries.progress
+--
+-- ⚠️ DESTRUTIVO E COM ORDEM OBRIGATÓRIA. Não rode este arquivo junto com os outros.
+--
+-- Contexto: desde que o tempo assistido passou a derivar de `episode_progress`, a coluna
+-- `progress` deixou de ser lida por qualquer coisa. Uma auditoria no código confirmou que
+-- ela também nunca é escrita com valor real — nenhuma tela do frontend manda esse campo;
+-- ele só ia junto no payload porque existia na struct Go, sempre valendo 0.
+--
+-- A ordem importa: o campo foi removido da struct `entries.MediaEntry`, então o backend
+-- novo não envia mais `progress` no insert. Se a coluna for NOT NULL sem default, o insert
+-- quebra no exato momento em que o deploy sobe. Por isso:
+--
+--   1. Suba o deploy com o backend novo (que já não envia o campo).
+--   2. Confirme que criar e editar uma entrada continua funcionando.
+--   3. Só então rode o DROP abaixo.
+--
+-- Se preferir uma rede de segurança antes do passo 3, este comando torna a coluna opcional
+-- sem apagar nada — reversível, ao contrário do DROP:
+--
+--   ALTER TABLE media_entries ALTER COLUMN progress DROP NOT NULL;
+
+ALTER TABLE media_entries DROP COLUMN IF EXISTS progress;

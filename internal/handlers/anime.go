@@ -115,9 +115,9 @@ func (h *AnimeHandler) HandleGetAnime(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if rank, bScore, ok := GetAniDeckStats(resultados.Data.MalID); ok {
-		resultados.Data.Ranking = rank            // Substitui pelo rank do AniDeck!
-		resultados.Data.BayesianScore = bScore    // Injeta a nossa nota
-		resultados.Data.Score = bScore            // Força a nota principal a ser a nossa (Consistência Global)
+		resultados.Data.Ranking = rank         // Substitui pelo rank do AniDeck!
+		resultados.Data.BayesianScore = bScore // Injeta a nossa nota
+		resultados.Data.Score = bScore         // Força a nota principal a ser a nossa (Consistência Global)
 	} else {
 		// Se não estiver no nosso Top 1000, não mostramos troféu falso da AniList
 		resultados.Data.Ranking = 0
@@ -142,9 +142,13 @@ func (h *AnimeHandler) HandleGetAnime(w http.ResponseWriter, r *http.Request) {
 				resultados.Data.Status = curado.CustomStatus
 			}
 			if len(curado.CustomTags) > 0 {
-				var novasTags []struct{ Name string `json:"name"` }
+				var novasTags []struct {
+					Name string `json:"name"`
+				}
 				for _, tag := range curado.CustomTags {
-					novasTags = append(novasTags, struct{ Name string `json:"name"` }{Name: tag})
+					novasTags = append(novasTags, struct {
+						Name string `json:"name"`
+					}{Name: tag})
 				}
 				resultados.Data.Genres = novasTags
 			}
