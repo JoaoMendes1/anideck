@@ -5,7 +5,7 @@ import { AlertCircle, Flame, Trophy, Compass, Target, Clock } from 'lucide-react
 import { useRevealOnScroll } from '../hooks/useRevealOnScroll'
 import { useContagemAnimada } from '../hooks/useContagemAnimada'
 import QuadranteAfinidade from '../components/QuadranteAfinidade'
-import SheetAnimesDoGenero, { type AnimeDoGenero } from '../components/SheetAnimesDoGenero'
+import SheetDeAnimes, { type AnimeDoGenero } from '../components/SheetDeAnimes'
 
 interface StatsOverview {
   total_animes: number
@@ -118,10 +118,11 @@ export default function Estatisticas() {
   // o cálculo de "parado há N dias" instável entre re-renderizações.
   const [agora] = useState(() => Date.now())
 
-  // Drill-down: qual gênero está aberto no Sheet e os animes dele.
-  const [generoAberto, setGeneroAberto] = useState<string | null>(null)
-  const [animesDoGenero, setAnimesDoGenero] = useState<AnimeDoGenero[]>([])
-  const [carregandoGenero, setCarregandoGenero] = useState(false)
+  // Drill-down: qual recorte está aberto no Sheet. Guardar o tipo junto do valor deixa o
+  // mesmo fluxo servir a gênero e a ano sem duplicar estado nem componente.
+  const [recorte, setRecorte] = useState<{ tipo: 'genero' | 'ano'; valor: string } | null>(null)
+  const [animesDoRecorte, setAnimesDoRecorte] = useState<AnimeDoGenero[]>([])
+  const [carregandoRecorte, setCarregandoRecorte] = useState(false)
 
   // Dispara o crescimento das barras. Elas nascem com tamanho 0 e só recebem o valor real
   // depois que os dados chegaram — é a transição do CSS que faz o resto.
@@ -167,19 +168,23 @@ export default function Estatisticas() {
   // Busca os animes do gênero clicado. Roda só quando o Sheet abre — não faz sentido
   // carregar a lista de todos os gêneros de antemão se o usuário talvez não clique em nenhum.
   useEffect(() => {
-    if (!generoAberto) return
+    if (!recorte) return
 
     let cancelado = false
     const buscar = async () => {
-      setCarregandoGenero(true)
+      setCarregandoRecorte(true)
       try {
         const { data: { session } } = await supabase.auth.getSession()
         if (!session) return
 
-        const res = await fetch(`/api/stats/genre?nome=${encodeURIComponent(generoAberto)}`, {
+        const url = recorte.tipo === 'genero'
+          ? `/api/stats/genre?nome=${encodeURIComponent(recorte.valor)}`
+          : `/api/stats/year?ano=${encodeURIComponent(recorte.valor)}`
+
+        const res = await fetch(url, {
           headers: { 'Authorization': `Bearer ${session.access_token}` }
         })
-        if (!res.ok) throw new Error('Falha ao carregar os animes do gênero')
+        if (!res.ok) throw new Error('Falha ao carregar os animes')
         const lista: AnimeDoGenero[] = await res.json()
 
         // As capas não vivem no nosso banco (regra de não armazenar catálogo), então vêm
@@ -199,18 +204,18 @@ export default function Estatisticas() {
           comCapas = comCapas.map(a => ({ ...a, image_url: mapa[a.mal_id] }))
         }
 
-        // Ignora a resposta se o usuário já fechou o Sheet ou clicou noutro gênero.
-        if (!cancelado) setAnimesDoGenero(comCapas)
+        // Ignora a resposta se o usuário já fechou o Sheet ou clicou noutro recorte.
+        if (!cancelado) setAnimesDoRecorte(comCapas)
       } catch {
-        if (!cancelado) setAnimesDoGenero([])
+        if (!cancelado) setAnimesDoRecorte([])
       } finally {
-        if (!cancelado) setCarregandoGenero(false)
+        if (!cancelado) setCarregandoRecorte(false)
       }
     }
 
     buscar()
     return () => { cancelado = true }
-  }, [generoAberto])
+  }, [recorte])
 
   // Um frame de atraso depois que o loading sai: sem isso o React pintaria o tamanho final
   // de uma vez e não haveria transição nenhuma pra ver.
@@ -526,7 +531,7 @@ export default function Estatisticas() {
                     <button
                       key={g.genre}
                       type="button"
-                      onClick={() => setGeneroAberto(g.genre)}
+                      onClick={() => setRecorte({ tipo: 'genero', valor: g.genre })}
                       className="grid grid-cols-[90px_1fr_40px] gap-3 items-center text-left cursor-pointer rounded-md -mx-1 px-1 py-0.5 transition-colors hover:bg-panel-2/60 focus-visible:outline-2 focus-visible:outline-holo-3"
                       title={`Ver seus animes de ${traduzirGenero(g.genre)}`}
                     >
@@ -663,7 +668,7 @@ export default function Estatisticas() {
 
         <div ref={registrar} className="reveal bg-panel border border-line rounded-2xl p-6">
           <h2 className="font-anton uppercase text-[15px] mb-1">Distribuição por Ano de Lançamento</h2>
-          <p className="text-[11px] text-muted-2 mb-6">Quantos animes assistidos por ano de estreia</p>
+          <p className="text-[11px] text-muted-2 mb-6">Quantos animes assistidos por ano de estreia — toque numa barra pra ver quais</p>
           {years.length === 0 ? (
             <p className="text-[12.5px] text-muted-2">
               Ainda não temos o ano de lançamento no cache dos seus animes — assim que isso for sincronizado, esse gráfico aparece aqui.
@@ -673,14 +678,20 @@ export default function Estatisticas() {
               {years.map((y, i) => {
                 const heightPct = (y.total / maxYearTotal) * 100
                 return (
-                  <div key={y.season_year} className="min-w-[36px] max-w-[64px] flex-1 flex flex-col items-center gap-2 h-full justify-end" title={`${y.total} ${y.total === 1 ? 'anime' : 'animes'} de ${y.season_year}`}>
+                  <button
+                    key={y.season_year}
+                    type="button"
+                    onClick={() => setRecorte({ tipo: 'ano', valor: String(y.season_year) })}
+                    className="min-w-[36px] max-w-[64px] flex-1 flex flex-col items-center gap-2 h-full justify-end cursor-pointer rounded-md transition-colors hover:bg-panel-2/60 focus-visible:outline-2 focus-visible:outline-holo-3"
+                    title={`Ver os ${y.total} ${y.total === 1 ? 'anime' : 'animes'} de ${y.season_year}`}
+                  >
                     <span className="font-mono text-[10px] text-muted-2 tabular-nums">{y.total}</span>
                     <div
                       className="anim-crescer barra-hover w-full bg-gradient-to-t from-holo-1 to-holo-2 rounded-t-md min-h-[4px]"
                       style={{ height: desenhado ? `${heightPct}%` : '0%', ...atrasoBarra(i) }}
                     ></div>
                     <span className="font-mono text-[9.5px] text-muted-2 tabular-nums">{y.season_year}</span>
-                  </div>
+                  </button>
                 )
               })}
             </div>
@@ -804,11 +815,11 @@ export default function Estatisticas() {
 
       </div>
 
-      <SheetAnimesDoGenero
-        genero={generoAberto}
-        animes={animesDoGenero}
-        carregando={carregandoGenero}
-        onClose={() => { setGeneroAberto(null); setAnimesDoGenero([]) }}
+      <SheetDeAnimes
+        titulo={recorte && `Seus animes de ${recorte.valor}`}
+        animes={animesDoRecorte}
+        carregando={carregandoRecorte}
+        onClose={() => { setRecorte(null); setAnimesDoRecorte([]) }}
       />
     </div>
   )

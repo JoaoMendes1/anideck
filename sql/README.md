@@ -20,6 +20,8 @@ Rode os arquivos em ordem numérica. Todos foram escritos para ser idempotentes
 | `003_view_user_genre_affinity.sql` | Reescreve a view de afinidade usando a taxonomia (reconciliado com a definição real que estava no Supabase) |
 | `004_estatisticas_avancadas.sql` | Views novas: animes por gênero (drill-down), marcações cruas (sessões) e anime esquecido |
 | `005_remove_coluna_progress.sql` | ⚠️ Destrutivo e fora de ordem — só depois do deploy, ver instruções no próprio arquivo |
+| `006_views_existentes.sql` | DDL real das 9 views que só existiam no painel (fecha a dívida 2.1) |
+| `007_drilldown_por_ano.sql` | View que lista os animes de cada ano de estreia |
 
 Depois de aplicar, rode uma vez `POST /api/admin/metadata/resync` (autenticado como admin)
 para reprocessar os animes que já estavam no deck. Sem isso, só animes salvos **depois** da
@@ -33,14 +35,13 @@ mudança teriam tags e ano de estreia no cache.
 2. **Alteração nova em banco vira arquivo aqui**, numerado na sequência, antes de ser
    aplicada no Supabase.
 
-## Ainda não versionado
+## Cobertura
 
-O DDL destas views continua existindo apenas no Supabase. Não foram recriadas aqui porque
-reconstruí-las de memória correria o risco de gerar SQL diferente do que está no ar:
+Todas as views e tabelas de estatísticas estão versionadas. O `006` foi extraído com
+`pg_get_viewdef` direto do banco, não reconstruído de memória — é o SQL real.
 
-`view_user_stats` · `view_user_activity` · `view_user_rating_distribution` ·
-`view_user_year_distribution` · `view_user_watch_hours` · `view_user_watch_dates` ·
-`view_user_longest_anime` · `view_user_top_rated` · `view_user_fastest_binge`
+Para trazer uma view nova (ou conferir se alguma divergiu do que está aqui):
 
-O jeito certo de trazer cada uma para cá é copiar o SQL real do painel do Supabase
-(`Database → Views → ⋮ → Definition`) e salvar como um arquivo novo nesta pasta.
+```sql
+SELECT pg_get_viewdef('nome_da_view'::regclass, true);
+```

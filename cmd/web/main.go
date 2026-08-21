@@ -88,6 +88,7 @@ func main() {
 		protegido.Get("/api/stats/user", statsHandler.HandleGetUserStats)
 		// Drill-down: os animes por trás de uma barra do gráfico de afinidade
 		protegido.Get("/api/stats/genre", statsHandler.HandleGetGenreAnimes)
+		protegido.Get("/api/stats/year", statsHandler.HandleGetYearAnimes)
 	})
 
 	r.Group(func(admin chi.Router) {

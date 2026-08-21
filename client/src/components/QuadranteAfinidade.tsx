@@ -26,12 +26,17 @@ const LARGURA = 420
 const ALTURA = 250
 const MARGEM = { topo: 14, direita: 14, base: 30, esquerda: 38 }
 
+// Folga entre a moldura e o ponto mais extremo. Sem isso, um gênero com a maior nota do
+// deck era desenhado exatamente em cima da borda superior e o rótulo saía do quadro —
+// foi o que aconteceu com "Mecha" (nota 10) e "Fantasia" (o mais assistido).
+const FOLGA = 16
+
 export default function QuadranteAfinidade({ generos, notaMedia }: QuadranteAfinidadeProps) {
     // Sem nota não há eixo Y: um gênero que você nunca avaliou não tem posição vertical.
     const pontos = generos
         .filter(g => g.media_nota_genero !== null && g.media_nota_genero !== undefined)
         .sort((a, b) => b.total_watched - a.total_watched)
-        .slice(0, 10)
+        .slice(0, 8)
 
     if (pontos.length < 3) {
         return (
@@ -59,11 +64,11 @@ export default function QuadranteAfinidade({ generos, notaMedia }: QuadranteAfin
     const notaMax = Math.min(10, Math.max(...notas, corteNota) + 0.5)
     const faixaNota = notaMax - notaMin || 1
 
-    const areaLargura = LARGURA - MARGEM.esquerda - MARGEM.direita
-    const areaAltura = ALTURA - MARGEM.topo - MARGEM.base
+    const areaLargura = LARGURA - MARGEM.esquerda - MARGEM.direita - FOLGA
+    const areaAltura = ALTURA - MARGEM.topo - MARGEM.base - FOLGA * 2
 
     const posX = (volume: number) => MARGEM.esquerda + (volume / maxVolume) * areaLargura
-    const posY = (nota: number) => MARGEM.topo + areaAltura - ((nota - notaMin) / faixaNota) * areaAltura
+    const posY = (nota: number) => MARGEM.topo + FOLGA + areaAltura - ((nota - notaMin) / faixaNota) * areaAltura
 
     const cortaX = posX(corteVolume)
     const cortaY = posY(corteNota)
@@ -106,12 +111,38 @@ export default function QuadranteAfinidade({ generos, notaMedia }: QuadranteAfin
     }
 
     // Retângulos de fundo de cada zona, com o nome escrito dentro.
+    // O nome de cada zona vai no canto mais EXTERNO dela — as de cima encostadas no topo, as
+    // de baixo encostadas na base. Antes todas ficavam no topo do próprio retângulo, o que
+    // jogava os nomes das zonas de baixo exatamente na linha divisória, onde os pontos se
+    // acumulam: era o "Slice of Life" escrito por cima de "não é pra você".
     const zonas = [
-        { x: cortaX, y: MARGEM.topo, w: LARGURA - MARGEM.direita - cortaX, h: cortaY - MARGEM.topo, cor: '#a0ff78', nome: 'zona de conforto', ancora: 'end' as const },
-        { x: cortaX, y: cortaY, w: LARGURA - MARGEM.direita - cortaX, h: ALTURA - MARGEM.base - cortaY, cor: '#FF5C6C', nome: 'assiste por hábito', ancora: 'end' as const },
-        { x: MARGEM.esquerda, y: MARGEM.topo, w: cortaX - MARGEM.esquerda, h: cortaY - MARGEM.topo, cor: '#3FE0F0', nome: 'vale explorar', ancora: 'start' as const },
-        { x: MARGEM.esquerda, y: cortaY, w: cortaX - MARGEM.esquerda, h: ALTURA - MARGEM.base - cortaY, cor: '#6B5F94', nome: 'não é pra você', ancora: 'start' as const },
+        { x: cortaX, y: MARGEM.topo, w: LARGURA - MARGEM.direita - cortaX, h: cortaY - MARGEM.topo, cor: '#a0ff78', nome: 'zona de conforto', ancora: 'end' as const, base: false },
+        { x: cortaX, y: cortaY, w: LARGURA - MARGEM.direita - cortaX, h: ALTURA - MARGEM.base - cortaY, cor: '#FF5C6C', nome: 'assiste por hábito', ancora: 'end' as const, base: true },
+        { x: MARGEM.esquerda, y: MARGEM.topo, w: cortaX - MARGEM.esquerda, h: cortaY - MARGEM.topo, cor: '#3FE0F0', nome: 'vale explorar', ancora: 'start' as const, base: false },
+        { x: MARGEM.esquerda, y: cortaY, w: cortaX - MARGEM.esquerda, h: ALTURA - MARGEM.base - cortaY, cor: '#6B5F94', nome: 'não é pra você', ancora: 'start' as const, base: true },
     ]
+
+    // Posiciona os rótulos evitando sobreposição: percorre de cima pra baixo e empurra pra
+    // baixo qualquer rótulo que cairia colado num já posicionado. Não é um algoritmo de
+    // rotulagem de verdade, mas resolve o caso real (categorias com nota parecida, que
+    // ficam quase na mesma altura) sem trazer biblioteca nenhuma.
+    const limiteDireito = LARGURA - MARGEM.direita
+    const rotulos = pontos
+        .map(p => ({
+            genre: p.genre,
+            x: posX(p.total_watched),
+            y: posY(p.media_nota_genero as number),
+        }))
+        .sort((a, b) => a.y - b.y)
+        .reduce((acc, ponto) => {
+            const paraEsquerda = ponto.x > limiteDireito - 78
+            let alturaRotulo = ponto.y + 3
+            while (acc.some(r => Math.abs(r.alturaRotulo - alturaRotulo) < 11 && Math.abs(r.x - ponto.x) < 88)) {
+                alturaRotulo += 11
+            }
+            acc.push({ ...ponto, alturaRotulo, paraEsquerda })
+            return acc
+        }, [] as { genre: string; x: number; y: number; alturaRotulo: number; paraEsquerda: boolean }[])
 
     return (
         <div>
@@ -125,7 +156,7 @@ export default function QuadranteAfinidade({ generos, notaMedia }: QuadranteAfin
                         <rect x={z.x} y={z.y} width={Math.max(0, z.w)} height={Math.max(0, z.h)} fill={z.cor} opacity="0.06" />
                         <text
                             x={z.ancora === 'end' ? z.x + Math.max(0, z.w) - 6 : z.x + 6}
-                            y={z.y + 13}
+                            y={z.base ? z.y + Math.max(0, z.h) - 5 : z.y + 11}
                             textAnchor={z.ancora}
                             fill={z.cor}
                             opacity="0.6"
@@ -159,26 +190,31 @@ export default function QuadranteAfinidade({ generos, notaMedia }: QuadranteAfin
                     {notaMin.toFixed(1)}
                 </text>
 
-                {pontos.map(p => {
-                    const x = posX(p.total_watched)
-                    const y = posY(p.media_nota_genero as number)
-                    // Rótulo vira pra dentro quando o ponto está perto da borda direita,
-                    // senão o nome do gênero sai do desenho.
-                    const perto = x > LARGURA - MARGEM.direita - 70
+                {rotulos.map(r => {
+                    const dados = pontos.find(p => p.genre === r.genre)
                     return (
-                        <g key={p.genre}>
-                            <title>{`${p.genre}: ${p.total_watched} animes, nota média ${p.media_nota_genero}`}</title>
-                            <circle cx={x} cy={y} r="10" fill="#F1EEFA" opacity="0.08" />
-                            <circle cx={x} cy={y} r="4.5" fill="#F1EEFA" />
+                        <g key={r.genre}>
+                            <title>{`${r.genre}: ${dados?.total_watched} animes, nota média ${dados?.media_nota_genero}`}</title>
+                            {/* Fio ligando o ponto ao rótulo, para quando o rótulo tiver
+                                sido empurrado pra baixo e deixar de estar na mesma linha. */}
+                            {Math.abs(r.alturaRotulo - (r.y + 3)) > 2 && (
+                                <line
+                                    x1={r.x} y1={r.y}
+                                    x2={r.paraEsquerda ? r.x - 7 : r.x + 7} y2={r.alturaRotulo - 3}
+                                    stroke="#6B5F94" strokeWidth="0.75" opacity="0.6"
+                                />
+                            )}
+                            <circle cx={r.x} cy={r.y} r="7" fill="#F1EEFA" opacity="0.1" />
+                            <circle cx={r.x} cy={r.y} r="3.5" fill="#F1EEFA" />
                             <text
-                                x={perto ? x - 9 : x + 9}
-                                y={y + 3.5}
-                                textAnchor={perto ? 'end' : 'start'}
+                                x={r.paraEsquerda ? r.x - 8 : r.x + 8}
+                                y={r.alturaRotulo}
+                                textAnchor={r.paraEsquerda ? 'end' : 'start'}
                                 fill="#F1EEFA"
-                                fontSize="9.5"
+                                fontSize="9"
                                 fontWeight="700"
                             >
-                                {p.genre}
+                                {r.genre}
                             </text>
                         </g>
                     )
