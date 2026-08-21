@@ -140,6 +140,52 @@ OBS: O Product Owner decidiu que a fase 5 fosse implementada primeiro.
 - [X]  **[NOVO]** Criar tabela `push_subscriptions` (Supabase) para armazenar os endpoints, chaves `p256dh` e `auth` dos navegadores dos usuários.
 - [X]  Notificação de episódio novo lançado (checagem diária via cron-job.org batendo em endpoint interno). O backend deverá gravar o histórico na tabela `notifications` **e simultaneamente** disparar o alerta para o sistema operacional via `webpush-go` usando chaves VAPID.
 
+## 🏷️ Fase 6.8: Taxonomia Própria & Evolução das Estatísticas
+
+> Nasceu da sessão de 20/08/2026, revisando a página de Estatísticas depois que a Fase 6.7
+> mudou a fonte de verdade do progresso.
+
+- [x] **Tempo assistido usando `episode_progress` como fonte de verdade** (a view contava o
+      total teórico de episódios em vez do que foi realmente marcado).
+- [x] **Correção de segurança:** filtro `user_id = auth.uid()` explícito em todas as views —
+      uma view no Postgres não herda a RLS da tabela base.
+- [x] **Novos indicadores:** atividade recente, distribuição de notas, streak (em Go),
+      padrão de horário e recordes pessoais.
+- [x] **Taxonomia própria do AniDeck em 3 camadas** (`genre_taxonomy`): demografias/mercados,
+      gêneros narrativos e tags temáticas. Resolve o caso do Isekai, que a AniList classifica
+      como tag e por isso nunca chegava até as Estatísticas.
+- [x] **`tags` e `season_year` no cache de metadados** — o client da AniList não pedia nenhum
+      dos dois. Destrava o gráfico de Distribuição por Ano, que estava permanentemente vazio.
+- [x] **DDL versionado em `sql/`** (dívida técnica: as views existiam só no painel do Supabase).
+- [x] **Endpoint de re-sincronização em lote** (`POST /api/admin/metadata/resync`) — sem ele,
+      só animes salvos depois da mudança teriam os campos novos.
+- [ ] **Refinamento de layout mobile** — código já pensado, falta aplicar: cards de Streak
+      cortando na borda (trocar `StatCard` por markup próprio em `grid-cols-2`), cards do topo
+      em `grid-cols-3` sempre, e `line-clamp-2` nos títulos dos Recordes.
+- [ ] **Cold-start do Padrão de Horário** — `watched_at` registra quando o episódio foi
+      *marcado*, não quando foi *assistido*. Quem importa o backlog inteiro numa sentada às 23h
+      recebe um gráfico dizendo que é espectador noturno. Curto prazo: só exibir a frase de
+      insight depois de ~10 dias distintos de atividade. Médio prazo: contar **sessões** em vez
+      de episódios individuais (agrupamento por gap de tempo, parecido com o do streak).
+- [ ] **Drill-down clicável** — clicar num gênero abre um `Sheet` com os animes daquela
+      categoria (reaproveita `Sheet.tsx` + `AnimeCard`). Responde ao "assisti 30 de Fantasia,
+      mas quais?". A Distribuição por Status não precisa: o Meu Deck já faz isso.
+- [ ] **Gráfico de quadrantes (volume × satisfação)** — a view já calcula `media_nota_genero`
+      junto de `total_watched`, os dois dados nunca foram cruzados. **Decisão em aberto:** o
+      quadrante é mais rico, mas exige mais do usuário para ler; a alternativa simples são dois
+      cards separados ("gênero que menos assiste" + "gênero com pior nota").
+- [ ] **Comparação temporal** — "↑ 40% em relação ao mês passado" em vez de foto estática.
+- [ ] **Anime esquecido** — de tudo que está "Assistindo", qual está há mais tempo parado.
+      Diferencial: é acionável, vira lembrete com link direto, não estatística sobre o passado.
+- [ ] **Taxa de conclusão** — "de cada 10 animes que você começa, você termina 7". Cuidado de
+      UX: enquadrar como curiosidade, não como cobrança.
+- [ ] **Perfil Especialista vs Explorador** — baseado em quão concentrada é a afinidade.
+      Ponto em aberto: definir o threshold sem que fique arbitrário.
+- [ ] **Animação e microinterações nos gráficos** — prioridade baixa de propósito: é o item que
+      menos muda a substância da página. Depois que o conteúdo estiver certo.
+- [ ] **Avaliar remoção da coluna órfã `media_entries.progress`** — não é mais lida por nada
+      desde a correção do tempo assistido. Conferir se ainda é escrita em algum lugar.
+
 ## 👥 Fase 7: Multiusuário (futuro, avaliar quando chegar)
 
 - [ ] Reavaliar modelo de dados e permissões antes de abrir para outras pessoas.

@@ -12,10 +12,10 @@
 | 5 | Detalhe do anime (sinopse, personagens, staff, relacionados, streaming, reviews) | ✅ Prototipada | Fase 2 |
 | 6 | Calendário de lançamentos (completo) | ✅ Prototipada | Fase 5.5 |
 | 7 | Rankings (completo) | ✅ Prototipada | Fase 2 |
-| 8 | Estatísticas/Dashboard analítico (gráficos) | ✅ Prototipada | Fase 4 |
+| 8 | Estatísticas/Dashboard analítico (gráficos) | ✅ Implementada | Fase 4 / 6.8 |
 | 9 | Configurações & Ajuda (unificadas em uma só página) | ✅ Prototipada | Fase 2 |
 
-**Total: 9 páginas prototipadas, 2 delas já com implementação confirmada (Login/Cadastro e Busca).** 🎉
+**Total: 9 páginas prototipadas, 3 delas já com implementação confirmada (Login/Cadastro, Busca e Estatísticas).** 🎉
 
 > ⚠️ Nota de revisão: as duas linhas acima (2 e 4) foram atualizadas de "🔧 Em implementação"
 > para "✅ Implementada" com base no código real de `Auth.tsx` e `Busca.tsx` já em produção

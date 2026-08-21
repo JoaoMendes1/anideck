@@ -49,6 +49,7 @@ func main() {
 	rankingHandler := &handlers.RankingHandler{AniListClient: anilistService}
 	curationHandler := &handlers.CurationHandler{}
 	notificationsHandler := &handlers.NotificationsHandler{AniListClient: anilistService}
+	metadataHandler := &handlers.MetadataHandler{AniListClient: anilistService}
 
 	r := chi.NewRouter()
 	r.Use(chimw.RequestID)
@@ -100,6 +101,9 @@ func main() {
 		admin.Post("/api/curation", curationHandler.HandleCreate)
 		admin.Put("/api/curation/{id}", curationHandler.HandleUpdate)
 		admin.Delete("/api/curation/{id}", curationHandler.HandleDelete)
+
+		// Reprocessa o cache de metadados do deck inteiro (tags, ano de estreia, etc)
+		admin.Post("/api/admin/metadata/resync", metadataHandler.HandleResyncMetadata)
 
 		admin.Post("/api/admin/curation/ai/rewrite", curationHandler.HandleAIRewrite)
 		admin.Get("/api/admin/settings/ai-prompt", curationHandler.HandleGetAIPrompt)

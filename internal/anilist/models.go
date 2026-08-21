@@ -39,6 +39,16 @@ type Anime struct {
 	Characters  []Character `json:"characters,omitempty"`
 	StartDate   *FuzzyDate  `json:"startDate,omitempty"`
 
+	// Temporada de estreia. season_year alimenta o gráfico de Distribuição por Ano
+	// nas Estatísticas; Season fica disponível para agrupamentos futuros por temporada.
+	Season     string `json:"season,omitempty"`
+	SeasonYear int    `json:"season_year,omitempty"`
+
+	// Tags da AniList (Isekai, Escolar, Magia...). Diferente de Genres: a AniList trata
+	// Isekai como tag secundária, mas na taxonomia do AniDeck ele é categoria principal —
+	// por isso as tags precisam chegar até o cache, e não só os genres.
+	Tags []string `json:"tags,omitempty"`
+
 	NextAiringEpisode *NextAiringEpisode `json:"nextAiringEpisode,omitempty"`
 
 	Images struct {
