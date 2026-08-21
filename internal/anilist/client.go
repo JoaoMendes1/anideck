@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"strconv"
 	"strings"
 	"time"
 
@@ -30,35 +31,82 @@ func NewClient() *Client {
 
 var stripHTML = bluemonday.StrictPolicy()
 
+// maxTentativas limita o reenvio após 429. Três é suficiente para atravessar a janela de
+// um minuto do limite da AniList sem transformar uma indisponibilidade real em espera longa.
+const maxTentativas = 3
+
+// esperaPadraoRateLimit é usada quando a AniList devolve 429 sem o cabeçalho Retry-After.
+// Um minuto é a janela do limite deles, então é o menor tempo que garante a reabertura.
+const esperaPadraoRateLimit = 60 * time.Second
+
+// parseRetryAfter lê o cabeçalho Retry-After, que a AniList manda em segundos.
+// Cabeçalho ausente ou ilegível cai no padrão — nunca em zero, que viraria um laço apertado
+// de requisições justamente contra um servidor que acabou de pedir para diminuir o ritmo.
+func parseRetryAfter(header string, padrao time.Duration) time.Duration {
+	segundos, err := strconv.Atoi(strings.TrimSpace(header))
+	if err != nil || segundos <= 0 {
+		return padrao
+	}
+	return time.Duration(segundos) * time.Second
+}
+
 func (c *Client) gqlRequest(ctx context.Context, query string, variables map[string]interface{}, out interface{}) error {
-	if err := c.limiter.Wait(ctx); err != nil {
-		return fmt.Errorf("erro no rate limiter: %w", err)
-	}
-
 	body, _ := json.Marshal(map[string]interface{}{"query": query, "variables": variables})
-	req, err := http.NewRequestWithContext(ctx, http.MethodPost, c.baseURL, bytes.NewReader(body))
-	if err != nil {
-		return fmt.Errorf("erro ao criar requisição: %w", err)
-	}
-	req.Header.Set("Content-Type", "application/json")
 
-	resp, err := c.httpClient.Do(req)
-	if err != nil {
-		return fmt.Errorf("erro ao executar requisição HTTP: %w", err)
-	}
-	defer resp.Body.Close()
+	for tentativa := 1; ; tentativa++ {
+		if err := c.limiter.Wait(ctx); err != nil {
+			return fmt.Errorf("erro no rate limiter: %w", err)
+		}
 
-	if resp.StatusCode != http.StatusOK {
-		return fmt.Errorf("erro inesperado da AniList: status %d", resp.StatusCode)
-	}
+		// A requisição é remontada a cada tentativa: o corpo é um leitor, e depois de
+		// enviado uma vez ele já foi consumido até o fim.
+		req, err := http.NewRequestWithContext(ctx, http.MethodPost, c.baseURL, bytes.NewReader(body))
+		if err != nil {
+			return fmt.Errorf("erro ao criar requisição: %w", err)
+		}
+		req.Header.Set("Content-Type", "application/json")
 
-	var envelope struct {
-		Data json.RawMessage `json:"data"`
+		resp, err := c.httpClient.Do(req)
+		if err != nil {
+			return fmt.Errorf("erro ao executar requisição HTTP: %w", err)
+		}
+
+		// 429 não é erro do nosso lado: é a AniList pedindo para esperar. Sem tratar isso,
+		// uma sincronização em lote morria silenciosamente no meio — o limite deles cai
+		// para 30 requisições por minuto quando o serviço está degradado, bem abaixo do
+		// ritmo que o nosso limiter permite.
+		if resp.StatusCode == http.StatusTooManyRequests {
+			espera := parseRetryAfter(resp.Header.Get("Retry-After"), esperaPadraoRateLimit)
+			resp.Body.Close()
+
+			if tentativa >= maxTentativas {
+				return fmt.Errorf("AniList recusou por excesso de requisições após %d tentativas", tentativa)
+			}
+
+			log.Printf("[ANILIST] Limite de requisições atingido; aguardando %s antes da tentativa %d", espera, tentativa+1)
+			select {
+			case <-time.After(espera):
+				continue
+			case <-ctx.Done():
+				return ctx.Err()
+			}
+		}
+
+		if resp.StatusCode != http.StatusOK {
+			resp.Body.Close()
+			return fmt.Errorf("erro inesperado da AniList: status %d", resp.StatusCode)
+		}
+
+		var envelope struct {
+			Data json.RawMessage `json:"data"`
+		}
+		err = json.NewDecoder(resp.Body).Decode(&envelope)
+		resp.Body.Close()
+		if err != nil {
+			return fmt.Errorf("erro ao decodificar JSON: %w", err)
+		}
+		return json.Unmarshal(envelope.Data, out)
 	}
-	if err := json.NewDecoder(resp.Body).Decode(&envelope); err != nil {
-		return fmt.Errorf("erro ao decodificar JSON: %w", err)
-	}
-	return json.Unmarshal(envelope.Data, out)
 }
 
 func mapStatus(s string) string {
@@ -307,7 +355,7 @@ func (m *aniListMedia) toAnime() Anime {
 		})
 	}
 
-		var streamingEps []StreamingEpisode
+	var streamingEps []StreamingEpisode
 	for _, ep := range m.StreamingEpisodes {
 		streamingEps = append(streamingEps, StreamingEpisode{
 			Title:     ep.Title,
@@ -350,10 +398,10 @@ func (m *aniListMedia) toAnime() Anime {
 				ImageURL: m.CoverImage.Large,
 			},
 		},
-		Genres:    genres,
-		Streaming: streaming,
-		Studios:   studios,
-		Relations: relations,
+		Genres:            genres,
+		Streaming:         streaming,
+		Studios:           studios,
+		Relations:         relations,
 		StreamingEpisodes: streamingEps,
 	}
 }
@@ -502,11 +550,14 @@ func (c *Client) GetAnimeStatistics(ctx context.Context, id string) (*AnimeStati
 		Media struct {
 			Stats struct {
 				ScoreDistribution  []struct{ Score, Amount int }
-				StatusDistribution []struct{ Status string; Amount int }
+				StatusDistribution []struct {
+					Status string
+					Amount int
+				}
 			}
 		}
 	}
-	
+
 	if err := c.gqlRequest(ctx, statsQuery, map[string]interface{}{"idMal": malID}, &resultado); err != nil {
 		log.Printf("[ERRO ANILIST] Falha ao buscar estatísticas do anime %d: %v", malID, err)
 		return nil, err

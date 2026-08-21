@@ -22,6 +22,7 @@ Rode os arquivos em ordem numérica. Todos foram escritos para ser idempotentes
 | `005_remove_coluna_progress.sql` | ⚠️ Destrutivo e fora de ordem — só depois do deploy, ver instruções no próprio arquivo |
 | `006_views_existentes.sql` | DDL real das 9 views que só existiam no painel (fecha a dívida 2.1) |
 | `007_drilldown_por_ano.sql` | View que lista os animes de cada ano de estreia |
+| `008_correcoes_maratona_e_taxonomia.sql` | Filtra maratonas implausíveis e cria a camada `ignorado` para tags de metadado |
 
 Depois de aplicar, rode uma vez `POST /api/admin/metadata/resync` (autenticado como admin)
 para reprocessar os animes que já estavam no deck. Sem isso, só animes salvos **depois** da
