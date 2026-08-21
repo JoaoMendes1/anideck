@@ -45,6 +45,21 @@ func ApplyCurationToAnimeList(animes []anilist.Anime) []anilist.Anime {
 			if c.CustomBannerImage != "" {
 				animes[i].BannerImage = c.CustomBannerImage
 			}
+			// As categorias editadas no Painel Admin substituem os genres da AniList.
+			// Sem isso, o card do Meu Deck (que mostra genres[0]) continuava exibindo a
+			// categoria original mesmo depois da edição — as Estatísticas já respeitavam
+			// a curadoria, e o deck não, o que fazia as duas telas discordarem.
+			if len(c.CustomTags) > 0 {
+				generos := make([]struct {
+					Name string `json:"name"`
+				}, 0, len(c.CustomTags))
+				for _, tag := range c.CustomTags {
+					generos = append(generos, struct {
+						Name string `json:"name"`
+					}{Name: tag})
+				}
+				animes[i].Genres = generos
+			}
 		}
 	}
 	return animes

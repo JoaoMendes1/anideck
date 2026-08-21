@@ -3,6 +3,7 @@ package anilist
 import (
 	"reflect"
 	"testing"
+	"time"
 )
 
 // tagFixture descreve uma tag da AniList de forma legível nos testes.
@@ -123,5 +124,32 @@ func TestToAnimeCarregaTemporadaETags(t *testing.T) {
 	}
 	if !reflect.DeepEqual(anime.Tags, []string{"Isekai"}) {
 		t.Errorf("Tags = %v, queria [Isekai]", anime.Tags)
+	}
+}
+
+func TestParseRetryAfter(t *testing.T) {
+	const padrao = 60 * time.Second
+
+	tests := []struct {
+		name   string
+		header string
+		quero  time.Duration
+	}{
+		{name: "cabeçalho ausente cai no padrão", header: "", quero: padrao},
+		{name: "segundos válidos", header: "30", quero: 30 * time.Second},
+		{name: "com espaços em volta", header: " 15 ", quero: 15 * time.Second},
+		{name: "texto ilegível cai no padrão", header: "daqui a pouco", quero: padrao},
+		// Zero ou negativo viraria um laço apertado de requisições contra um servidor que
+		// acabou de pedir para diminuir o ritmo — tem que cair no padrão.
+		{name: "zero cai no padrão", header: "0", quero: padrao},
+		{name: "negativo cai no padrão", header: "-5", quero: padrao},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := parseRetryAfter(tt.header, padrao); got != tt.quero {
+				t.Errorf("parseRetryAfter(%q) = %v, queria %v", tt.header, got, tt.quero)
+			}
+		})
 	}
 }

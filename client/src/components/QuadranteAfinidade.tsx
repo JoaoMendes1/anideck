@@ -122,11 +122,30 @@ export default function QuadranteAfinidade({ generos, notaMedia }: QuadranteAfin
         { x: MARGEM.esquerda, y: cortaY, w: cortaX - MARGEM.esquerda, h: ALTURA - MARGEM.base - cortaY, cor: '#6B5F94', nome: 'não é pra você', ancora: 'start' as const, base: true },
     ]
 
-    // Posiciona os rótulos evitando sobreposição: percorre de cima pra baixo e empurra pra
-    // baixo qualquer rótulo que cairia colado num já posicionado. Não é um algoritmo de
-    // rotulagem de verdade, mas resolve o caso real (categorias com nota parecida, que
-    // ficam quase na mesma altura) sem trazer biblioteca nenhuma.
+    // Posiciona os rótulos evitando sobreposição.
+    //
+    // A primeira versão comparava só a distância horizontal entre os PONTOS, com um número
+    // fixo. Isso falha porque quem se sobrepõe é o texto, não o ponto: "Male Protagonist"
+    // ocupa o triplo da largura de "Ação", então dois pontos distantes podiam ter rótulos
+    // colados. Agora a checagem usa a caixa que cada texto ocupa de verdade.
+    //
+    // A largura é estimada por contagem de caracteres em vez de medida no DOM: dá pra
+    // errar alguns pixels, mas medir exigiria renderizar antes de decidir a posição, e a
+    // margem de erro de uma fonte proporcional nesse tamanho é menor que o espaçamento.
     const limiteDireito = LARGURA - MARGEM.direita
+    const larguraTexto = (texto: string) => texto.length * 5.2 + 6
+    const ALTURA_TEXTO = 12
+
+    interface Rotulo {
+        genre: string
+        x: number
+        y: number
+        alturaRotulo: number
+        paraEsquerda: boolean
+        inicio: number
+        fim: number
+    }
+
     const rotulos = pontos
         .map(p => ({
             genre: p.genre,
@@ -134,15 +153,26 @@ export default function QuadranteAfinidade({ generos, notaMedia }: QuadranteAfin
             y: posY(p.media_nota_genero as number),
         }))
         .sort((a, b) => a.y - b.y)
-        .reduce((acc, ponto) => {
-            const paraEsquerda = ponto.x > limiteDireito - 78
+        .reduce<Rotulo[]>((acc, ponto) => {
+            const largura = larguraTexto(ponto.genre)
+            // Rótulo vira pra esquerda quando não cabe à direita do ponto.
+            const paraEsquerda = ponto.x + 8 + largura > limiteDireito
+            const inicio = paraEsquerda ? ponto.x - 8 - largura : ponto.x + 8
+            const fim = inicio + largura
+
+            // Dois rótulos colidem quando estão próximos na vertical E suas caixas de texto
+            // se cruzam na horizontal. Empurra pra baixo até achar folga.
             let alturaRotulo = ponto.y + 3
-            while (acc.some(r => Math.abs(r.alturaRotulo - alturaRotulo) < 11 && Math.abs(r.x - ponto.x) < 88)) {
-                alturaRotulo += 11
+            while (acc.some(r =>
+                Math.abs(r.alturaRotulo - alturaRotulo) < ALTURA_TEXTO &&
+                inicio < r.fim && r.inicio < fim
+            )) {
+                alturaRotulo += ALTURA_TEXTO
             }
-            acc.push({ ...ponto, alturaRotulo, paraEsquerda })
+
+            acc.push({ ...ponto, alturaRotulo, paraEsquerda, inicio, fim })
             return acc
-        }, [] as { genre: string; x: number; y: number; alturaRotulo: number; paraEsquerda: boolean }[])
+        }, [])
 
     return (
         <div>
