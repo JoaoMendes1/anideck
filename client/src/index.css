@@ -126,6 +126,38 @@
 @media(prefers-reduced-motion: reduce) { .reveal { opacity: 1; transform: none; transition: none; } .stack-card { transition: none; } }
 
 /* =========================================
+   ESTATÍSTICAS — CRESCIMENTO DE GRÁFICOS
+   ========================================= */
+
+/* Barras e arcos crescem do zero até o valor real. O tamanho vem do style inline
+   (React calcula a porcentagem); aqui fica só a transição, porque Tailwind não gera
+   classe pra transicionar width/height/stroke-dasharray com valor dinâmico. */
+.anim-crescer {
+  transition: width .8s cubic-bezier(.22, 1, .36, 1),
+              height .8s cubic-bezier(.22, 1, .36, 1);
+}
+
+.anim-donut {
+  transition: stroke-dasharray .9s cubic-bezier(.22, 1, .36, 1);
+}
+
+/* Barra do gráfico reage ao mouse sem deslocar o layout (só brilho, não tamanho). */
+.barra-hover {
+  transition: filter .2s ease, opacity .2s ease;
+}
+.barra-hover:hover {
+  filter: brightness(1.25) saturate(1.1);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .anim-crescer,
+  .anim-donut,
+  .barra-hover {
+    transition: none;
+  }
+}
+
+/* =========================================
    CARTAS RARAS (FAVORITOS) - EFEITO SUTIL
    ========================================= */
 .foil-card {

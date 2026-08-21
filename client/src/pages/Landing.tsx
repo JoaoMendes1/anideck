@@ -1,12 +1,15 @@
-import { useEffect, useRef } from 'react'
+import { useEffect } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
 import { MonitorPlay, Sparkles, Layers } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import { FullLogo } from '../components/Brand'
+import { useRevealOnScroll } from '../hooks/useRevealOnScroll'
 
 export default function Landing() {
   const navigate = useNavigate()
-  const sectionRefs = useRef<HTMLElement[]>([])
+
+  // Mesma animação de entrada usada nas Estatísticas — o observer vive no hook.
+  const addToRefs = useRevealOnScroll()
 
   // Roteamento Inteligente: Redireciona usuários logados
   useEffect(() => {
@@ -16,27 +19,6 @@ export default function Landing() {
       }
     })
   }, [navigate])
-
-  // Lógica do Scroll Reveal (Animação de entrada dos blocos)
-  useEffect(() => {
-    const observer = new IntersectionObserver((entries) => {
-      entries.forEach(e => {
-        if (e.isIntersecting) e.target.classList.add('in')
-      })
-    }, { threshold: 0.12 })
-
-    sectionRefs.current.forEach(el => {
-      if (el) observer.observe(el)
-    })
-
-    return () => observer.disconnect()
-  }, [])
-
-  const addToRefs = (el: HTMLElement | null) => {
-    if (el && !sectionRefs.current.includes(el)) {
-      sectionRefs.current.push(el)
-    }
-  }
 
   return (
     <div className="relative pt-10 pb-20">

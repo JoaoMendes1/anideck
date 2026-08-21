@@ -159,9 +159,14 @@ OBS: O Product Owner decidiu que a fase 5 fosse implementada primeiro.
 - [x] **DDL versionado em `sql/`** (dívida técnica: as views existiam só no painel do Supabase).
 - [x] **Endpoint de re-sincronização em lote** (`POST /api/admin/metadata/resync`) — sem ele,
       só animes salvos depois da mudança teriam os campos novos.
-- [ ] **Refinamento de layout mobile** — código já pensado, falta aplicar: cards de Streak
-      cortando na borda (trocar `StatCard` por markup próprio em `grid-cols-2`), cards do topo
-      em `grid-cols-3` sempre, e `line-clamp-2` nos títulos dos Recordes.
+- [x] **Refinamento de layout mobile** — cards de Streak não cortam mais na borda (`StatCard`
+      trocado por markup próprio em `grid-cols-2`), cards do topo em `grid-cols-3` sempre com
+      fonte/padding reduzidos via `sm:`, e `line-clamp-2` nos títulos dos Recordes.
+- [x] **Animação e microinterações nos gráficos** — barras e arcos crescem do zero, números dos
+      cards de destaque contam até o valor, cards entram com fade conforme a rolagem e barras/
+      badges reagem ao mouse. Tudo respeitando `prefers-reduced-motion`. O observer de scroll
+      virou o hook `useRevealOnScroll`, compartilhado com a Landing (que tinha o mesmo código
+      inline), e a contagem virou `useContagemAnimada`.
 - [ ] **Cold-start do Padrão de Horário** — `watched_at` registra quando o episódio foi
       *marcado*, não quando foi *assistido*. Quem importa o backlog inteiro numa sentada às 23h
       recebe um gráfico dizendo que é espectador noturno. Curto prazo: só exibir a frase de
@@ -181,8 +186,6 @@ OBS: O Product Owner decidiu que a fase 5 fosse implementada primeiro.
       UX: enquadrar como curiosidade, não como cobrança.
 - [ ] **Perfil Especialista vs Explorador** — baseado em quão concentrada é a afinidade.
       Ponto em aberto: definir o threshold sem que fique arbitrário.
-- [ ] **Animação e microinterações nos gráficos** — prioridade baixa de propósito: é o item que
-      menos muda a substância da página. Depois que o conteúdo estiver certo.
 - [ ] **Avaliar remoção da coluna órfã `media_entries.progress`** — não é mais lida por nada
       desde a correção do tempo assistido. Conferir se ainda é escrita em algum lugar.
 
