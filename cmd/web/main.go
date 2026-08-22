@@ -69,7 +69,6 @@ func main() {
 	r.Get("/api/curation", curationHandler.HandleList)
 	r.Post("/api/anime/bulk", animeHandler.HandleGetAnimesByIDs)
 	r.Post("/api/internal/check-new-episodes", notificationsHandler.HandleCheckNewEpisodes)
-	r.Post("/api/admin/olheiro/scan", olheiroHandler.HandleScan)
 
 	r.Group(func(protegido chi.Router) {
 		protegido.Use(middleware.RequireAuth)
@@ -91,9 +90,6 @@ func main() {
 		// Drill-down: os animes por trás de uma barra do gráfico de afinidade
 		protegido.Get("/api/stats/genre", statsHandler.HandleGetGenreAnimes)
 		protegido.Get("/api/stats/year", statsHandler.HandleGetYearAnimes)
-
-		protegido.Get("/api/admin/olheiro/sugestoes", olheiroHandler.HandleListarSugestoes)
-		protegido.Patch("/api/admin/olheiro/sugestoes/{id}", olheiroHandler.HandleRevisarSugestao)
 	})
 
 	r.Group(func(admin chi.Router) {
@@ -116,6 +112,11 @@ func main() {
 		admin.Post("/api/admin/curation/ai/rewrite", curationHandler.HandleAIRewrite)
 		admin.Get("/api/admin/settings/ai-prompt", curationHandler.HandleGetAIPrompt)
 		admin.Put("/api/admin/settings/ai-prompt", curationHandler.HandleUpdateAIPrompt)
+
+		// Agente Olheiro: scan sob demanda e revisão da fila de sugestões
+		admin.Post("/api/admin/olheiro/scan", olheiroHandler.HandleScan)
+		admin.Get("/api/admin/olheiro/sugestoes", olheiroHandler.HandleListarSugestoes)
+		admin.Patch("/api/admin/olheiro/sugestoes/{id}", olheiroHandler.HandleRevisarSugestao)
 	})
 
 	workDir, _ := os.Getwd()
