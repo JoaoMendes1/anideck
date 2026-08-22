@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"log"
 	"net/http"
-	"os"
 	"sort"
 	"strings"
 	"time"
@@ -17,6 +16,7 @@ import (
 	"github.com/JoaoMendes1/anideck/internal/anilist"
 	"github.com/JoaoMendes1/anideck/internal/database"
 	"github.com/JoaoMendes1/anideck/internal/middleware"
+	"github.com/supabase-community/supabase-go"
 )
 
 // Quantos candidatos o scan grava por execução. Menos que isso deixa a aba
@@ -110,27 +110,34 @@ func PontuarCandidato(c Candidato, p PerfilOlheiro) (score float64, motivo strin
 	return score, "Tem " + strings.Join(labels, ", ")
 }
 
-// OlheiroHandler concentra o scan (disparado por cron) e a revisão da fila
-// (feita por você no Painel Admin).
+// OlheiroHandler concentra o scan e a revisão da fila. Todas as rotas rodam
+// autenticadas como admin — não existe caminho de cron, e por isso nenhuma
+// função no banco precisa contornar a RLS (ver sql/011).
 type OlheiroHandler struct {
 	AniListClient anilist.Service
 }
 
 // HandleScan busca candidatos na AniList, pontua e grava os melhores na fila.
 //
-// Autorização por chave secreta no header, mesmo padrão da Fase 6.7:
-// o cron-job.org não tem JWT de usuário, então a policy de RLS não se aplica —
-// a gravação acontece via RPC SECURITY DEFINER (ver sql/009).
+// Disparado pelo botão "Buscar sugestões" no Painel Admin. Roda com o JWT do
+// admin, então a policy do sql/009 autoriza a escrita — sem RPC, sem
+// SECURITY DEFINER, sem chave secreta compartilhada.
 func (h *OlheiroHandler) HandleScan(w http.ResponseWriter, r *http.Request) {
-	segredo := os.Getenv("CRON_SECRET")
-	if segredo == "" || r.Header.Get("X-Cron-Secret") != segredo {
+	token, ok := r.Context().Value(middleware.TokenKey).(string)
+	if !ok {
 		http.Error(w, "Não autorizado", http.StatusUnauthorized)
+		return
+	}
+
+	dbClient, err := database.ClientWithToken(token)
+	if err != nil {
+		http.Error(w, "Erro interno de conexão", http.StatusInternalServerError)
 		return
 	}
 
 	ctx := r.Context()
 
-	perfil, err := carregarPerfilOlheiro()
+	perfil, err := carregarPerfilOlheiro(dbClient)
 	if err != nil {
 		log.Printf("[OLHEIRO] Falha ao carregar perfil: %v", err)
 		http.Error(w, "Erro ao carregar perfil de gosto", http.StatusInternalServerError)
@@ -144,7 +151,7 @@ func (h *OlheiroHandler) HandleScan(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	jaConhecidos, err := malIDsJaConhecidos()
+	jaConhecidos, err := malIDsJaConhecidos(dbClient)
 	if err != nil {
 		log.Printf("[OLHEIRO] Falha ao ler o que já é conhecido: %v", err)
 		http.Error(w, "Erro ao consultar o catálogo", http.StatusInternalServerError)
@@ -180,30 +187,27 @@ func (h *OlheiroHandler) HandleScan(w http.ResponseWriter, r *http.Request) {
 		sugestoes = sugestoes[:limiteSugestoesPorScan]
 	}
 
-	inseridas := 0
 	if len(sugestoes) > 0 {
-		resp, errRPC := callRPC("olheiro_registrar_sugestoes", map[string]interface{}{
-			"sugestoes": sugestoes,
-		})
-		if errRPC != nil {
-			log.Printf("[OLHEIRO] Falha ao gravar sugestões: %v", errRPC)
+		// O UNIQUE(mal_id) do sql/009 garante a idempotência: rodar o scan duas
+		// vezes não duplica nem ressuscita dispensado. O upsert faz o Postgres
+		// ignorar o conflito em vez de devolver erro.
+		_, _, err := dbClient.From("curation_suggestions").
+			Insert(sugestoes, true, "mal_id", "minimal", "exact").
+			Execute()
+		if err != nil {
+			log.Printf("[OLHEIRO] Falha ao gravar sugestões: %v", err)
 			http.Error(w, "Erro ao gravar sugestões", http.StatusInternalServerError)
 			return
 		}
-		if err := json.Unmarshal(resp, &inseridas); err != nil {
-			// A gravação funcionou; só não deu para ler quantas entraram.
-			log.Printf("[OLHEIRO] Resposta inesperada da RPC: %v", err)
-		}
 	}
 
-	log.Printf("[OLHEIRO] Scan concluído: %d candidatos, %d pontuados, %d gravados",
-		len(candidatos), len(sugestoes), inseridas)
+	log.Printf("[OLHEIRO] Scan concluído: %d candidatos, %d pontuados",
+		len(candidatos), len(sugestoes))
 
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(map[string]interface{}{
 		"candidatos": len(candidatos),
 		"pontuados":  len(sugestoes),
-		"gravados":   inseridas,
 	})
 }
 
@@ -269,59 +273,82 @@ func (h *OlheiroHandler) buscarCandidatos(ctx context.Context) ([]Candidato, err
 // malIDsJaConhecidos junta o catálogo curado com tudo que já passou pela fila.
 // O UNIQUE em curation_suggestions já impediria a duplicata, mas filtrar aqui
 // evita gastar pontuação com quem seria descartado de qualquer forma.
-func malIDsJaConhecidos() (map[int]bool, error) {
-	resp, err := callRPC("olheiro_mal_ids_conhecidos", nil)
-	if err != nil {
-		return nil, err
+func malIDsJaConhecidos(dbClient *supabase.Client) (map[int]bool, error) {
+	conhecidos := make(map[int]bool)
+
+	for _, tabela := range []string{"curated_animes", "curation_suggestions"} {
+		data, _, err := dbClient.From(tabela).
+			Select("mal_id", "exact", false).
+			Execute()
+		if err != nil {
+			return nil, fmt.Errorf("tabela %s: %w", tabela, err)
+		}
+
+		var linhas []struct {
+			MalID int `json:"mal_id"`
+		}
+		if err := json.Unmarshal(data, &linhas); err != nil {
+			return nil, fmt.Errorf("tabela %s: payload inesperado: %w", tabela, err)
+		}
+		for _, l := range linhas {
+			conhecidos[l.MalID] = true
+		}
 	}
 
-	var ids []int
-	if err := json.Unmarshal(resp, &ids); err != nil {
-		return nil, fmt.Errorf("payload inesperado: %w", err)
-	}
-
-	conhecidos := make(map[int]bool, len(ids))
-	for _, id := range ids {
-		conhecidos[id] = true
-	}
 	return conhecidos, nil
 }
 
-// carregarPerfilOlheiro lê a afinidade de gêneros já calculada pelas views das
-// Estatísticas — não recalcula nada aqui, para não ter duas fontes de verdade.
-func carregarPerfilOlheiro() (PerfilOlheiro, error) {
-	resp, err := callRPC("olheiro_perfil_de_gosto", nil)
+// carregarPerfilOlheiro lê a view de afinidade que já alimenta as Estatísticas.
+// Como o scan agora roda com o JWT do admin, o auth.uid() dentro da view
+// resolve sozinho — não precisa de função parametrizada nem de RPC.
+//
+// Tags temáticas ficam de fora pelo mesmo motivo documentado no DECISIONS.md
+// para o Perfil Especialista/Explorador: aparecem em quase todo anime e não
+// discriminam gosto.
+func carregarPerfilOlheiro(dbClient *supabase.Client) (PerfilOlheiro, error) {
+	data, _, err := dbClient.From("view_user_genre_affinity").
+		Select("genre,tier,total_watched,media_nota_genero", "exact", false).
+		Order("total_watched", &postgrest.OrderOpts{Ascending: false}).
+		Execute()
 	if err != nil {
 		return PerfilOlheiro{}, err
 	}
 
 	var linhas []struct {
-		Genero    string  `json:"genero"`
-		NotaMedia float64 `json:"nota_media"`
+		Genre           string  `json:"genre"`
+		Tier            string  `json:"tier"`
+		TotalWatched    int     `json:"total_watched"`
+		MediaNotaGenero float64 `json:"media_nota_genero"`
 	}
-	if err := json.Unmarshal(resp, &linhas); err != nil {
+	if err := json.Unmarshal(data, &linhas); err != nil {
 		return PerfilOlheiro{}, fmt.Errorf("payload inesperado: %w", err)
 	}
 
 	perfil := PerfilOlheiro{}
+	var soma float64
+	var contados int
+
 	for _, l := range linhas {
-		if strings.TrimSpace(l.Genero) == "" {
+		if l.Tier == "tag_tematica" || strings.TrimSpace(l.Genre) == "" {
 			continue
 		}
-		perfil.GenerosFavoritos = append(perfil.GenerosFavoritos, l.Genero)
-		if l.NotaMedia > 0 {
-			perfil.NotaMedia = l.NotaMedia
+		if len(perfil.GenerosFavoritos) < 5 {
+			perfil.GenerosFavoritos = append(perfil.GenerosFavoritos, l.Genre)
 		}
+		if l.MediaNotaGenero > 0 {
+			soma += l.MediaNotaGenero
+			contados++
+		}
+	}
+
+	if contados > 0 {
+		perfil.NotaMedia = soma / float64(contados)
 	}
 
 	return perfil, nil
 }
 
 // HandleListarSugestoes devolve a fila pendente, melhor pontuada primeiro.
-//
-// Diferente do scan, aqui quem chama é você pelo navegador — então usa o JWT
-// normal e a RLS do sql/009 decide se pode ver. Sem RPC, sem SECURITY DEFINER:
-// código que passa pela RLS é sempre mais seguro que código que a contorna.
 func (h *OlheiroHandler) HandleListarSugestoes(w http.ResponseWriter, r *http.Request) {
 	token, ok := r.Context().Value(middleware.TokenKey).(string)
 	if !ok {
