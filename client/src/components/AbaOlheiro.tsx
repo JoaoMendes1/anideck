@@ -17,17 +17,15 @@ export function AbaOlheiro({ onCurar }: Props) {
     </button>
   )
 
-  if (carregando) {
-    return <p className="text-sm text-muted p-4">Carregando sugestões...</p>
-  }
-
   return (
     <div className="p-1">
       {botaoBuscar}
 
       {erro && <p className="text-sm text-red-400 mb-3">{erro}</p>}
 
-      {sugestoes.length === 0 ? (
+      {carregando ? (
+        <p className="text-sm text-muted py-8 text-center">Carregando sugestões...</p>
+      ) : sugestoes.length === 0 ? (
         <div className="py-8 text-center">
           <p className="text-muted">Nenhuma sugestão pendente.</p>
           <p className="text-sm text-muted/70 mt-2">
@@ -35,7 +33,7 @@ export function AbaOlheiro({ onCurar }: Props) {
           </p>
         </div>
       ) : (
-        <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
           {sugestoes.map(s => (
             <article
               key={s.id}

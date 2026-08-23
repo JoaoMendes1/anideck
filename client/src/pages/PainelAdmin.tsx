@@ -673,6 +673,7 @@ export default function PainelAdmin() {
         isOpen={olheiroAberto}
         onClose={() => setOlheiroAberto(false)}
         title="Agente Olheiro"
+        maxWidthClass="md:max-w-4xl"
       >
         <AbaOlheiro
           onCurar={(malId, titulo) => {
