@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
 import { supabase } from '../lib/supabase'
-import { Link, Navigate } from 'react-router-dom'
+import { Navigate, useNavigate } from 'react-router-dom'
 import { useToast } from '../contexts/ToastContext'
 import { Sparkles, X, LayoutList, ArrowLeft } from 'lucide-react'
 import { LogoMark } from '../components/Brand'
@@ -17,6 +17,7 @@ import { AbaOlheiro } from '../components/AbaOlheiro'
 
 export default function PainelAdmin() {
   const { showToast } = useToast()
+  const navigate = useNavigate()
   const [destaques, setDestaques] = useState<CuratedAnime[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -83,11 +84,21 @@ export default function PainelAdmin() {
     }
   }, [sinopse])
 
-  const confirmarSaidaSegura = () => {
-    if (isDirty) {
-      return window.confirm('Você tem alterações não salvas. Tem certeza que deseja descartar tudo e sair?')
-    }
-    return true
+  // Guarda a ação que será executada SE o usuário confirmar. Como o Sheet
+  // é assíncrono, não dá pra decidir na hora como o window.confirm fazia.
+  const [acaoPendente, setAcaoPendente] = useState<(() => void) | null>(null)
+
+  const pedirConfirmacao = (acao: () => void) => {
+    if (!isDirty) { acao(); return }
+    // O "() => acao" é obrigatório. Se você passar a função direto, o React
+    // acha que é um updater (aquele padrão setX(valorAntigo => novo)) e
+    // EXECUTA ela na hora — a ação aconteceria antes de você confirmar.
+    setAcaoPendente(() => acao)
+  }
+
+  const confirmarAcaoPendente = () => {
+    acaoPendente?.()
+    setAcaoPendente(null)
   }
 
   const verificarAcesso = async () => {
@@ -346,10 +357,11 @@ export default function PainelAdmin() {
   }
 
   const abrirNovoDestaque = () => {
-    if (!confirmarSaidaSegura()) return
-    limparFormulario()
-    setFormularioAberto(true)
-    window.scrollTo({ top: 0, behavior: 'smooth' })
+    pedirConfirmacao(() => {
+      limparFormulario()
+      setFormularioAberto(true)
+      window.scrollTo({ top: 0, behavior: 'smooth' })
+    })
   }
 
   const fecharEditorForce = () => {
@@ -358,42 +370,40 @@ export default function PainelAdmin() {
   }
 
   const tentarFecharEditor = () => {
-    if (!confirmarSaidaSegura()) return
-    fecharEditorForce()
+    pedirConfirmacao(() => fecharEditorForce())
   }
 
   const tentarLimparFormulario = () => {
-    if (!confirmarSaidaSegura()) return
-    limparFormulario()
+    pedirConfirmacao(() => limparFormulario())
   }
 
   const editarDestaque = (anime: CuratedAnime) => {
-    if (!confirmarSaidaSegura()) return
+    pedirConfirmacao(() => {
+      setEditId(anime.id || null)
+      setMalId(anime.mal_id)
+      setTitulo(anime.custom_title)
+      setFormato(anime.custom_format || 'TV')
+      setStatus(anime.custom_status || 'RELEASING')
+      setSinopse(anime.custom_synopsis || '')
+      setTags(anime.custom_tags || [])
+      setOrdem(anime.order_index)
+      setCoverImage(anime.custom_cover_image || '')
+      setBannerImage(anime.custom_banner_image || '')
+      setCharacters(anime.custom_characters || [])
+      setPreviewTitulo(anime.custom_title)
+      setFormularioAberto(true)
+      window.scrollTo({ top: 0, behavior: 'smooth' })
 
-    setEditId(anime.id || null)
-    setMalId(anime.mal_id)
-    setTitulo(anime.custom_title)
-    setFormato(anime.custom_format || 'TV')
-    setStatus(anime.custom_status || 'RELEASING')
-    setSinopse(anime.custom_synopsis || '')
-    setTags(anime.custom_tags || [])
-    setOrdem(anime.order_index)
-    setCoverImage(anime.custom_cover_image || '')
-    setBannerImage(anime.custom_banner_image || '')
-    setCharacters(anime.custom_characters || [])
-    setPreviewTitulo(anime.custom_title)
-    setFormularioAberto(true)
-    window.scrollTo({ top: 0, behavior: 'smooth' })
-
-    setTimeout(() => {
-      setInitialStateHash(JSON.stringify({
-        titulo: anime.custom_title, formato: anime.custom_format || 'TV', status: anime.custom_status || 'RELEASING',
-        ordem: anime.order_index, sinopse: anime.custom_synopsis || '', tags: anime.custom_tags || [],
-        coverImage: anime.custom_cover_image || '', bannerImage: anime.custom_banner_image || '',
-        characters: anime.custom_characters || []
-      }))
-      setIsDirty(false)
-    }, 100)
+      setTimeout(() => {
+        setInitialStateHash(JSON.stringify({
+          titulo: anime.custom_title, formato: anime.custom_format || 'TV', status: anime.custom_status || 'RELEASING',
+          ordem: anime.order_index, sinopse: anime.custom_synopsis || '', tags: anime.custom_tags || [],
+          coverImage: anime.custom_cover_image || '', bannerImage: anime.custom_banner_image || '',
+          characters: anime.custom_characters || []
+        }))
+        setIsDirty(false)
+      }, 100)
+    })
   }
 
   const handleSinopseChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
@@ -425,7 +435,7 @@ export default function PainelAdmin() {
           >
             <Sparkles size={14} /> IA
           </button>
-                    <button
+          <button
             type="button"
             onClick={() => setOlheiroAberto(true)}
             title="Sugestões do Agente Olheiro"
@@ -433,9 +443,13 @@ export default function PainelAdmin() {
           >
             🔭 Olheiro
           </button>
-          <Link onClick={(e) => { if(!confirmarSaidaSegura()) e.preventDefault() }} to="/" className="text-sm font-bold text-muted hover:text-text transition-colors">
+          <button
+            type="button"
+            onClick={() => pedirConfirmacao(() => navigate('/'))}
+            className="text-sm font-bold text-muted hover:text-text transition-colors cursor-pointer"
+          >
             ← Voltar
-          </Link>
+          </button>
         </div>
       </div>
 
@@ -614,7 +628,7 @@ export default function PainelAdmin() {
                       </div>
 
                       <textarea
-                        ref={textareaRef} 
+                        ref={textareaRef}
                         value={sinopse}
                         onChange={handleSinopseChange}
                         disabled={gerandoIA}
@@ -669,7 +683,7 @@ export default function PainelAdmin() {
           </button>
         </div>
       </Sheet>
-            <Sheet
+      <Sheet
         isOpen={olheiroAberto}
         onClose={() => setOlheiroAberto(false)}
         title="Agente Olheiro"
@@ -677,17 +691,47 @@ export default function PainelAdmin() {
       >
         <AbaOlheiro
           onCurar={(malId, titulo) => {
-            setOlheiroAberto(false)
-            abrirNovoDestaque()
-            setMalId(malId)
-            setTitulo(titulo)
-            setPreviewTitulo(titulo)
+            pedirConfirmacao(() => {
+              setOlheiroAberto(false)
+              limparFormulario()
+              setFormularioAberto(true)
+              window.scrollTo({ top: 0, behavior: 'smooth' })
+              setMalId(malId)
+              setTitulo(titulo)
+              setPreviewTitulo(titulo)
+            })
           }}
         />
       </Sheet>
-      <ConfigIAModal 
-        isOpen={configModalAberto} 
-        onClose={() => setConfigModalAberto(false)} 
+      {/* Declarado por último de propósito: todos os Sheets usam z-[100], e
+          empate no z-index é resolvido pela ordem no DOM — quem renderiza
+          depois fica por cima. */}
+      <Sheet
+        isOpen={acaoPendente !== null}
+        onClose={() => setAcaoPendente(null)}
+        title="Descartar alterações?"
+      >
+        <p className="text-sm text-muted mb-6">
+          Você tem alterações não salvas neste destaque. Se continuar, elas serão perdidas.
+        </p>
+        <div className="flex gap-3 justify-center">
+          <button
+            onClick={() => setAcaoPendente(null)}
+            className="flex-1 px-4 py-2.5 rounded-xl border border-line text-sm font-bold cursor-pointer hover:border-muted transition-colors"
+          >
+            Continuar editando
+          </button>
+          <button
+            onClick={confirmarAcaoPendente}
+            className="flex-1 px-4 py-2.5 rounded-xl bg-coral/10 border border-coral text-coral text-sm font-bold cursor-pointer hover:bg-coral hover:text-void transition-colors"
+          >
+            Descartar
+          </button>
+        </div>
+      </Sheet>
+      <ConfigIAModal
+        isOpen={configModalAberto}
+        onClose={() => setConfigModalAberto(false)}
       />
     </div>
   )
