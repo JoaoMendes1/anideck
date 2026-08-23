@@ -1,4 +1,11 @@
-// client/src/components/BuscaAniList.tsx
+export interface AniListCharacterEdge {
+  role?: string
+  node: {
+    name?: { full?: string }
+    image?: { large?: string }
+  }
+}
+
 export interface AniListMedia {
   id: number
   idMal: number
@@ -9,6 +16,7 @@ export interface AniListMedia {
   status?: string
   genres?: string[]
   synopsis?: string
+  characters?: { edges?: AniListCharacterEdge[] }
 }
 
 interface BuscaAniListProps {

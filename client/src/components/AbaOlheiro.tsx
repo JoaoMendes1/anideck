@@ -1,11 +1,12 @@
-import { useOlheiro } from '../hooks/useOlheiro'
+import { useOlheiro, type SugestaoPendente } from '../hooks/useOlheiro'
 
 type Props = {
-  onCurar: (malId: number, titulo: string) => void
+  onCurar: (sugestao: SugestaoPendente) => void
 }
 
+
 export function AbaOlheiro({ onCurar }: Props) {
-  const { sugestoes, carregando, erro, revisar, buscarNovas, buscando } = useOlheiro()
+  const { sugestoes, carregando, erro, revisar, remover, buscarNovas, buscando } = useOlheiro()
 
   const botaoBuscar = (
     <button
@@ -56,8 +57,8 @@ export function AbaOlheiro({ onCurar }: Props) {
                 <div className="flex gap-1.5 mt-1">
                   <button
                     onClick={() => {
-                      onCurar(s.mal_id, s.titulo)
-                      revisar(s.id, 'curado')
+                      onCurar(s)
+                      remover(s.id)
                     }}
                     className="flex-1 text-[11px] font-bold py-1.5 rounded-full bg-gradient-to-r from-holo-1 to-holo-2 text-void hover:opacity-90 cursor-pointer transition-opacity"
                   >

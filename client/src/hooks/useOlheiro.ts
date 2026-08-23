@@ -67,6 +67,13 @@ export function useOlheiro() {
   // isso o estado próprio: o botão precisa mostrar que está trabalhando.
   const [buscando, setBuscando] = useState(false)
 
+  // Tira o card da tela sem gravar nada no servidor. Usado pelo Curar: a
+  // sugestão só vira 'curado' depois que o destaque for salvo de verdade —
+  // assim, desistir no meio não queima o candidato para sempre.
+  const remover = useCallback((id: number) => {
+    setSugestoes(atual => atual.filter(s => s.id !== id))
+  }, [])
+
   const buscarNovas = useCallback(async () => {
     setBuscando(true)
     setErro(null)
@@ -89,5 +96,5 @@ export function useOlheiro() {
     carregar()
   }, [carregar])
 
-    return { sugestoes, carregando, erro, revisar, recarregar: carregar, buscarNovas, buscando }
+      return { sugestoes, carregando, erro, revisar, remover, recarregar: carregar, buscarNovas, buscando }
 }
