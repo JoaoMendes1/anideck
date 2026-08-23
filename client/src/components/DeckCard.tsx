@@ -38,7 +38,7 @@ export default function DeckCard({ entrada, animeLocal, gradientClass, onEdit }:
     return (
         <AnimeCard
             malId={entrada.mal_id}
-            title={animeLocal?.title || `ID: ${entrada.mal_id}`}
+            title={animeLocal?.title || 'Título indisponível'}
             imageUrl={animeLocal?.image_url}
             genre={animeLocal?.genre}
             score={entrada.nota}
