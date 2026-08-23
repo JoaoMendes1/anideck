@@ -14,6 +14,23 @@ import imageCompression from 'browser-image-compression'
 import type { CuratedAnime, CuratedCharacter } from '../types/curation'
 import ConfigIAModal from '../components/ConfigIAModal'
 import { AbaOlheiro } from '../components/AbaOlheiro'
+import type { SugestaoPendente } from '../hooks/useOlheiro'
+
+// Uma query serve os dois caminhos: busca por nome (search) e importação
+// direta pelo ID do Olheiro (idMal). A AniList ignora variável que chega
+// nula, então não precisa de duas queries quase idênticas.
+const QUERY_ANILIST = `
+  query ($search: String, $idMal: Int) {
+    Page(page: 1, perPage: 5) {
+      media(search: $search, idMal: $idMal, type: ANIME) {
+        id idMal title { romaji english native } coverImage { large } bannerImage format status genres synopsis: description
+        characters(sort: [ROLE, RELEVANCE], perPage: 15) {
+          edges { role node { name { full } image { large } } }
+        }
+      }
+    }
+  }
+`
 
 export default function PainelAdmin() {
   const { showToast } = useToast()
@@ -150,7 +167,7 @@ export default function PainelAdmin() {
       const res = await fetch('https://graphql.anilist.co', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ query, variables: { search: termoBusca } }),
+        body: JSON.stringify({ query: QUERY_ANILIST, variables: { search: termoBusca } }),
       })
       const { data } = await res.json()
       if (data?.Page?.media && data.Page.media.length > 0) {
@@ -164,37 +181,86 @@ export default function PainelAdmin() {
       setBuscando(false)
     }
   }
-
-  const selecionarAnimeDaBusca = (anime: AniListMedia) => {
-    setMalId(anime.idMal)
+  // Preenche o formulário a partir de um anime da AniList e grava o hash na
+  // mesma passada. Serve os dois caminhos de entrada — busca por nome e Curar
+  // do Olheiro — para que o formulário nasça idêntico nos dois casos.
+  const aplicarAnimeNoFormulario = (anime: AniListMedia) => {
     const tituloCorreto = anime.title.romaji || anime.title.english || anime.title.native || ''
-    setTitulo(tituloCorreto)
-    setFormato(anime.format || 'TV')
-    setStatus(anime.status || 'RELEASING')
-    setTags(anime.genres || [])
-    setCoverImage(anime.coverImage?.large || '')
-    setBannerImage(anime.bannerImage || '')
-    setSinopse(anime.synopsis ? anime.synopsis.replace(/<[^>]*>?/gm, '') : '')
+    const formatoAnime = anime.format || 'TV'
+    const statusAnime = anime.status || 'RELEASING'
+    const sinopseLimpa = anime.synopsis ? anime.synopsis.replace(/<[^>]*>?/gm, '') : ''
+    const tagsAnime = anime.genres || []
+    const capa = anime.coverImage?.large || ''
+    const banner = anime.bannerImage || ''
 
-    const importedChars = (anime as any).characters?.edges?.map((edge: any) => ({
+    const importedChars = anime.characters?.edges?.map((edge) => ({
       name: edge.node.name?.full || 'Desconhecido',
       image: edge.node.image?.large || '',
       role: edge.role || 'SUPPORTING'
     })) || []
 
+    setMalId(anime.idMal)
+    setTitulo(tituloCorreto)
+    setFormato(formatoAnime)
+    setStatus(statusAnime)
+    setSinopse(sinopseLimpa)
+    setTags(tagsAnime)
+    setOrdem(0)
+    setCoverImage(capa)
+    setBannerImage(banner)
     setCharacters(importedChars)
     setPreviewTitulo(tituloCorreto)
     setResultadosBusca([])
     setTermoBusca('')
 
-    setTimeout(() => {
-      setInitialStateHash(JSON.stringify({
-        titulo: tituloCorreto, formato: anime.format || 'TV', status: anime.status || 'RELEASING',
-        ordem: 0, sinopse: anime.synopsis ? anime.synopsis.replace(/<[^>]*>?/gm, '') : '',
-        tags: anime.genres || [], coverImage: anime.coverImage?.large || '',
-        bannerImage: anime.bannerImage || '', characters: importedChars
-      }))
-    }, 100)
+    // Sem setTimeout: o hash é montado a partir das constantes acima, não do
+    // state. O React aplica tudo no mesmo lote, então o efeito de comparação
+    // roda uma vez só — já com hash e state batendo — e o formulário nasce
+    // limpo, sem a bolinha de "alterações não salvas".
+    setInitialStateHash(JSON.stringify({
+      titulo: tituloCorreto, formato: formatoAnime, status: statusAnime,
+      ordem: 0, sinopse: sinopseLimpa, tags: tagsAnime,
+      coverImage: capa, bannerImage: banner, characters: importedChars
+    }))
+  }
+
+    // Guarda o id da sugestão que originou a edição atual. Só é usado no
+  // salvarDestaque, para marcar 'curado' depois que o destaque existir.
+  const [sugestaoEmCuradoria, setSugestaoEmCuradoria] = useState<number | null>(null)
+
+  const buscarAnimePorIdMal = async (idMal: number): Promise<AniListMedia | null> => {
+    try {
+      const res = await fetch('https://graphql.anilist.co', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ query: QUERY_ANILIST, variables: { idMal } }),
+      })
+      const { data } = await res.json()
+      return data?.Page?.media?.[0] || null
+    } catch {
+      return null
+    }
+  }
+
+  const curarSugestao = async (sugestao: SugestaoPendente) => {
+    setOlheiroAberto(false)
+    limparFormulario()
+    setFormularioAberto(true)
+    window.scrollTo({ top: 0, behavior: 'smooth' })
+
+    // Reaproveita o "buscando" da BuscaAniList: o botão mostra "Buscando..."
+    // e fica desabilitado enquanto o anime não chega.
+    setBuscando(true)
+    const anime = await buscarAnimePorIdMal(sugestao.mal_id)
+    setBuscando(false)
+
+    if (!anime) {
+      showToast('Não foi possível carregar os dados na AniList. Tente de novo.', 'error')
+      return
+    }
+
+    aplicarAnimeNoFormulario(anime)
+    setSugestaoEmCuradoria(sugestao.id)
   }
 
   const uploadImagem = async (file: File): Promise<string | null> => {
@@ -263,6 +329,21 @@ export default function PainelAdmin() {
       if (!response.ok) throw new Error('Falha ao salvar destaque')
       showToast('Destaque salvo com sucesso!')
 
+      // Só agora a sugestão sai da fila em definitivo. Se você tivesse
+      // desistido no meio, ela continuaria 'pendente' e voltaria a aparecer.
+      if (sugestaoEmCuradoria !== null) {
+        try {
+          await fetch(`/api/admin/olheiro/sugestoes/${sugestaoEmCuradoria}`, {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session.access_token}` },
+            body: JSON.stringify({ status: 'curado' }),
+          })
+        } catch {
+          // O destaque já foi salvo — falhar aqui não é erro de salvamento.
+          // A sugestão só reaparece na fila, que é o comportamento seguro.
+        }
+      }
+
       setIsDirty(false)
       fecharEditorForce()
       carregarDestaques()
@@ -301,7 +382,10 @@ export default function PainelAdmin() {
       }
 
       if (data.tags && Array.isArray(data.tags)) {
-        // Junta as tags que você já digitou com as sugeridas pela IA, sem duplicatas
+        // Substitui as tags atuais pelas sugeridas pela IA. O comentário
+        // anterior dizia que juntava sem duplicar, mas o código sempre
+        // substituiu — a IA propõe o conjunto inteiro, e o ReorderableTags
+        // fica ali para você ajustar depois.
         setTags(data.tags)
       }
 
@@ -353,6 +437,7 @@ export default function PainelAdmin() {
     setBannerImage('')
     setCharacters([])
     setResultadosBusca([])
+    setSugestaoEmCuradoria(null)
     setIsDirty(false)
   }
 
@@ -525,7 +610,7 @@ export default function PainelAdmin() {
                   buscando={buscando}
                   resultados={resultadosBusca}
                   onBuscar={buscarNaAniList}
-                  onSelecionar={selecionarAnimeDaBusca}
+                  onSelecionar={aplicarAnimeNoFormulario}
                 />
 
                 {previewTitulo && (
@@ -689,19 +774,12 @@ export default function PainelAdmin() {
         title="Agente Olheiro"
         maxWidthClass="md:max-w-4xl"
       >
-        <AbaOlheiro
-          onCurar={(malId, titulo) => {
-            pedirConfirmacao(() => {
-              setOlheiroAberto(false)
-              limparFormulario()
-              setFormularioAberto(true)
-              window.scrollTo({ top: 0, behavior: 'smooth' })
-              setMalId(malId)
-              setTitulo(titulo)
-              setPreviewTitulo(titulo)
-            })
-          }}
-        />
+               {/* Só monta quando o Sheet abre: o hook recarrega a fila a cada
+            abertura (sugestões abandonadas reaparecem) e o painel deixa de
+            fazer a requisição para quem nunca abre o Olheiro. */}
+        {olheiroAberto && (
+          <AbaOlheiro onCurar={(sugestao) => pedirConfirmacao(() => curarSugestao(sugestao))} />
+        )}
       </Sheet>
       {/* Declarado por último de propósito: todos os Sheets usam z-[100], e
           empate no z-index é resolvido pela ordem no DOM — quem renderiza
