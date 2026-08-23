@@ -316,6 +316,36 @@ CREATE TABLE IF NOT EXISTS "public"."push_subscriptions" (
 ALTER TABLE "public"."push_subscriptions" OWNER TO "postgres";
 
 
+CREATE TABLE IF NOT EXISTS "public"."ranking_snapshots" (
+    "id" bigint NOT NULL,
+    "captured_at" timestamp with time zone DEFAULT "now"() NOT NULL,
+    "mal_id" bigint NOT NULL,
+    "position" integer NOT NULL
+);
+
+
+ALTER TABLE "public"."ranking_snapshots" OWNER TO "postgres";
+
+
+COMMENT ON TABLE "public"."ranking_snapshots" IS 'Fotos periódicas (30 dias) do Top Global Bayesiano. Base do indicador de variação de posição. Escrita apenas pela service role, via motor de ranking — sem policy, nenhum acesso pela API pública.';
+
+
+
+CREATE SEQUENCE IF NOT EXISTS "public"."ranking_snapshots_id_seq"
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+ALTER SEQUENCE "public"."ranking_snapshots_id_seq" OWNER TO "postgres";
+
+
+ALTER SEQUENCE "public"."ranking_snapshots_id_seq" OWNED BY "public"."ranking_snapshots"."id";
+
+
+
 CREATE OR REPLACE VIEW "public"."view_user_activity" AS
  SELECT "user_id",
     ("date_trunc"('week'::"text", "watched_at"))::"date" AS "semana",
@@ -555,6 +585,10 @@ ALTER TABLE ONLY "public"."curation_suggestions" ALTER COLUMN "id" SET DEFAULT "
 
 
 
+ALTER TABLE ONLY "public"."ranking_snapshots" ALTER COLUMN "id" SET DEFAULT "nextval"('"public"."ranking_snapshots_id_seq"'::"regclass");
+
+
+
 ALTER TABLE ONLY "public"."anime_metadata_cache"
     ADD CONSTRAINT "anime_metadata_cache_pkey" PRIMARY KEY ("mal_id");
 
@@ -615,6 +649,16 @@ ALTER TABLE ONLY "public"."push_subscriptions"
 
 
 
+ALTER TABLE ONLY "public"."ranking_snapshots"
+    ADD CONSTRAINT "ranking_snapshots_pkey" PRIMARY KEY ("id");
+
+
+
+ALTER TABLE ONLY "public"."ranking_snapshots"
+    ADD CONSTRAINT "ranking_snapshots_unico_por_medicao" UNIQUE ("captured_at", "mal_id");
+
+
+
 ALTER TABLE ONLY "public"."push_subscriptions"
     ADD CONSTRAINT "unique_endpoint" UNIQUE ("endpoint");
 
@@ -643,6 +687,10 @@ CREATE INDEX "idx_ep_user_mal" ON "public"."episode_progress" USING "btree" ("us
 
 
 
+CREATE INDEX "idx_ranking_snapshots_recentes" ON "public"."ranking_snapshots" USING "btree" ("captured_at" DESC);
+
+
+
 ALTER TABLE ONLY "public"."app_admins"
     ADD CONSTRAINT "app_admins_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "auth"."users"("id") ON DELETE CASCADE;
 
@@ -668,15 +716,7 @@ ALTER TABLE ONLY "public"."push_subscriptions"
 
 
 
-CREATE POLICY "Admin Full Access" ON "public"."curated_animes" USING (("auth"."uid"() = 'bb751d21-ba19-4ddf-9c85-1e86e8e6b5f7'::"uuid"));
-
-
-
 CREATE POLICY "Leitura Pública Destaques" ON "public"."curated_animes" FOR SELECT USING (true);
-
-
-
-CREATE POLICY "Leitura pública" ON "public"."curated_animes" FOR SELECT USING (true);
 
 
 
@@ -736,6 +776,10 @@ CREATE POLICY "Usuários podem ver suas próprias entradas" ON "public"."media_e
 
 
 
+CREATE POLICY "admin_gerencia_curadoria" ON "public"."curated_animes" USING ("public"."is_admin"()) WITH CHECK ("public"."is_admin"());
+
+
+
 CREATE POLICY "admin_gerencia_sugestoes" ON "public"."curation_suggestions" USING ("public"."is_admin"()) WITH CHECK ("public"."is_admin"());
 
 
@@ -768,6 +812,9 @@ ALTER TABLE "public"."notifications" ENABLE ROW LEVEL SECURITY;
 
 
 ALTER TABLE "public"."push_subscriptions" ENABLE ROW LEVEL SECURITY;
+
+
+ALTER TABLE "public"."ranking_snapshots" ENABLE ROW LEVEL SECURITY;
 
 
 GRANT USAGE ON SCHEMA "public" TO "postgres";
@@ -870,6 +917,18 @@ GRANT ALL ON TABLE "public"."notifications" TO "service_role";
 GRANT ALL ON TABLE "public"."push_subscriptions" TO "anon";
 GRANT ALL ON TABLE "public"."push_subscriptions" TO "authenticated";
 GRANT ALL ON TABLE "public"."push_subscriptions" TO "service_role";
+
+
+
+GRANT ALL ON TABLE "public"."ranking_snapshots" TO "anon";
+GRANT ALL ON TABLE "public"."ranking_snapshots" TO "authenticated";
+GRANT ALL ON TABLE "public"."ranking_snapshots" TO "service_role";
+
+
+
+GRANT ALL ON SEQUENCE "public"."ranking_snapshots_id_seq" TO "anon";
+GRANT ALL ON SEQUENCE "public"."ranking_snapshots_id_seq" TO "authenticated";
+GRANT ALL ON SEQUENCE "public"."ranking_snapshots_id_seq" TO "service_role";
 
 
 
