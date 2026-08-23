@@ -8,6 +8,7 @@ import DeckSkeleton from '../components/DeckSkeleton'
 import StatCard from '../components/StatCard'
 import { Play, CheckCircle2, Bookmark, MonitorPlay, Star, XCircle, AlertCircle } from 'lucide-react'
 import type { AiringInfo } from '../lib/deckHelpers'
+import { useCatalogoStatus } from '../contexts/CatalogoStatusContext'
 
 interface Entrada {
     id: string
@@ -39,11 +40,12 @@ export default function MeuDeck() {
     const [editando, setEditando] = useState<Entrada | null>(null)
     const [filtroAtivo, setFiltroAtivo] = useState('Todos')
     const [userName, setUserName] = useState('Usuário')
+    const { reportarFalha, reportarSucesso } = useCatalogoStatus()
 
     useEffect(() => {
         const carregarDeck = async () => {
             const { data: { session } } = await supabase.auth.getSession()
-            if (!session) return
+            if (!session) { setLoading(false); return }
 
             setUserName(session.user.user_metadata?.display_name || 'Usuário')
 
@@ -63,22 +65,30 @@ export default function MeuDeck() {
                         body: JSON.stringify({ ids: malIds })
                     })
 
-                    const apiJson = await apiResponse.json()
-                    const media = apiJson.data || []
+                    if (!apiResponse.ok) {
+                        // O deck é seu e já veio do Supabase — ele fica na tela.
+                        // Só a camada de catálogo (capa, título, gênero) não veio.
+                        reportarFalha()
+                    } else {
+                        reportarSucesso()
 
-                    const mapaAnimes: Record<number, HydratedAnime> = {}
-                    media.forEach((m: any) => {
-                        mapaAnimes[m.mal_id] = {
-                            mal_id: m.mal_id,
-                            title: m.title || 'Título Desconhecido',
-                            image_url: m.images?.jpg?.image_url || '',
-                            genre: m.genres && m.genres.length > 0 ? m.genres[0].name : undefined,
-                            ranking: m.ranking,
-                            nextAiringEpisode: m.nextAiringEpisode,
-                            streaming: m.streaming
-                        }
-                    })
-                    setAnimesData(mapaAnimes)
+                        const apiJson = await apiResponse.json()
+                        const media = apiJson.data || []
+
+                        const mapaAnimes: Record<number, HydratedAnime> = {}
+                        media.forEach((m: any) => {
+                            mapaAnimes[m.mal_id] = {
+                                mal_id: m.mal_id,
+                                title: m.title || 'Título indisponível',
+                                image_url: m.images?.jpg?.image_url || '',
+                                genre: m.genres && m.genres.length > 0 ? m.genres[0].name : undefined,
+                                ranking: m.ranking,
+                                nextAiringEpisode: m.nextAiringEpisode,
+                                streaming: m.streaming
+                            }
+                        })
+                        setAnimesData(mapaAnimes)
+                    }
                 }
             } catch (err) {
                 setError('Não foi possível carregar seu deck. Tente novamente.')
@@ -195,8 +205,8 @@ export default function MeuDeck() {
                             key={tab}
                             onClick={() => setFiltroAtivo(tab)}
                             className={`shrink-0 whitespace-nowrap text-[13px] font-bold px-4 py-2 rounded-full border transition-colors cursor-pointer ${filtroAtivo === tab
-                                    ? 'bg-gradient-to-r from-holo-1 to-holo-2 text-white border-transparent shadow-lg'
-                                    : 'bg-panel border-line text-muted hover:border-holo-3 hover:text-text'
+                                ? 'bg-gradient-to-r from-holo-1 to-holo-2 text-white border-transparent shadow-lg'
+                                : 'bg-panel border-line text-muted hover:border-holo-3 hover:text-text'
                                 }`}
                         >
                             {tab}
@@ -224,16 +234,16 @@ export default function MeuDeck() {
                     </div>
                 )}
 
-                    <EditarEntradaModal
-                        entrada={editando}
-                        onFechar={() => setEditando(null)}
-                        onSalvar={(atualizada) => {
-                            setEntradas((prev) => prev.map((e) => (e.id === atualizada.id ? atualizada : e)))
-                        }}
-                        onExcluir={(id) => {
-                            setEntradas((prev) => prev.filter((e) => e.id !== id))
-                        }}
-                    />
+                <EditarEntradaModal
+                    entrada={editando}
+                    onFechar={() => setEditando(null)}
+                    onSalvar={(atualizada) => {
+                        setEntradas((prev) => prev.map((e) => (e.id === atualizada.id ? atualizada : e)))
+                    }}
+                    onExcluir={(id) => {
+                        setEntradas((prev) => prev.filter((e) => e.id !== id))
+                    }}
+                />
             </div>
         </div>
     )

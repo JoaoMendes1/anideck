@@ -3,6 +3,7 @@ import { useParams, Link } from 'react-router-dom'
 import { PlayCircle, Star, AlertCircle, Bookmark, Trophy } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import { useToast } from '../contexts/ToastContext'
+import { useCatalogoStatus } from '../contexts/CatalogoStatusContext'
 import BotaoCopiar from '../components/BotaoCopiar'
 import ReactMarkdown from 'react-markdown'
 import EpisodeGrid from '../components/EpisodeGrid'
@@ -49,41 +50,59 @@ interface MinhaEntrada {
 export default function Detalhes() {
   const { id } = useParams<{ id: string }>()
   const { showToast } = useToast()
+  const { reportarFalha, reportarSucesso } = useCatalogoStatus()
 
   const [anime, setAnime] = useState<AnimeDetail | null>(null)
   const [stats, setStats] = useState<AnimeStats | null>(null)
   const [loading, setLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
+  type TipoErro = 'fonte-externa' | 'nao-encontrado' | 'generico'
+  const [erro, setErro] = useState<TipoErro | null>(null)
 
   const [minhaEntrada, setMinhaEntrada] = useState<MinhaEntrada | null>(null)
   const [episodiosAssistidos, setEpisodiosAssistidos] = useState<number[]>([])
-  
+
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [salvandoStatus, setSalvandoStatus] = useState(false)
-  
+
   const [isLoggedIn, setIsLoggedIn] = useState(false)
 
   useEffect(() => {
     const fetchData = async () => {
       setLoading(true)
-      setError(null)
+      setErro(null)
       try {
         const [resAnime, resStats] = await Promise.all([
           fetch(`/api/anime/${id}`),
           fetch(`/api/anime/${id}/statistics`)
         ])
 
-        if (!resAnime.ok || !resStats.ok) throw new Error('Falha ao carregar os dados do anime.')
+        if (!resAnime.ok) {
+          // 5xx = a fonte externa (AniList) falhou. 404 = anime não existe.
+          if (resAnime.status >= 500) { reportarFalha(); setErro('fonte-externa') }
+          else if (resAnime.status === 404) setErro('nao-encontrado')
+          else setErro('generico')
+          return
+        }
+        if (!resAnime.ok) {
+          // 5xx = a fonte externa (AniList) falhou. 404 = anime não existe.
+          if (resAnime.status >= 500) { reportarFalha(); setErro('fonte-externa') }
+          else if (resAnime.status === 404) setErro('nao-encontrado')
+          else setErro('generico')
+          return
+        }
 
-        const dataAnime = await resAnime.json()
-        const dataStats = await resStats.json()
-        setAnime(dataAnime.data)
-        setStats(dataStats.data)
+        setAnime((await resAnime.json()).data)
+        reportarSucesso()
+
+        // Estatística é secundária: se falhar, a página continua de pé.
+        if (resStats.ok) {
+          setStats((await resStats.json()).data)
+        }
 
         const { data: { session } } = await supabase.auth.getSession()
         if (session) {
           setIsLoggedIn(true)
-          
+
           const resEntries = await fetch('/api/entries', {
             headers: { 'Authorization': `Bearer ${session.access_token}` }
           })
@@ -104,8 +123,8 @@ export default function Detalhes() {
             console.error('Erro ao carregar progresso:', e)
           }
         }
-      } catch (err: any) {
-        setError(err.message)
+      } catch {
+        setErro('generico')
       } finally {
         setLoading(false)
       }
@@ -179,13 +198,29 @@ export default function Detalhes() {
     )
   }
 
-  if (error || !anime) {
+    if (erro || !anime) {
+    const mensagens = {
+      'fonte-externa': {
+        titulo: 'Catálogo indisponível',
+        texto: 'A base de dados de anime não está respondendo no momento. Seu deck, suas notas e seu progresso continuam salvos — tente de novo daqui a pouco.',
+      },
+      'nao-encontrado': {
+        titulo: 'Anime não encontrado',
+        texto: 'Não achamos esse título no catálogo.',
+      },
+      'generico': {
+        titulo: 'Algo deu errado',
+        texto: 'Não foi possível carregar este anime.',
+      },
+    }
+    const { titulo, texto } = mensagens[erro ?? 'generico']
+
     return (
       <div className="min-h-[70vh] flex flex-col items-center justify-center px-4 text-center">
         <AlertCircle className="text-coral mb-4" size={48} />
-        <h2 className="font-anton text-2xl text-text uppercase mb-2">Erro de Conexão</h2>
-        <p className="text-muted mb-6">{error || 'Anime não encontrado.'}</p>
-        <Link to="/" className="text-holo-3 font-bold hover:underline">Voltar para a Busca</Link>
+        <h2 className="font-anton text-2xl text-text uppercase mb-2">{titulo}</h2>
+        <p className="text-muted mb-6 max-w-md">{texto}</p>
+        <Link to="/" className="text-holo-3 font-bold hover:underline">Voltar para o início</Link>
       </div>
     )
   }
@@ -204,7 +239,7 @@ export default function Detalhes() {
 
   return (
     <div className="-mt-24 pb-20">
-      
+
       <div className="relative h-[300px] md:h-[450px] w-full overflow-hidden bg-panel-2">
         {anime.bannerImage ? (
           <div className="absolute inset-0 bg-cover bg-center bg-no-repeat opacity-90" style={{ backgroundImage: `url(${anime.bannerImage})` }} />
@@ -231,9 +266,9 @@ export default function Detalhes() {
 
           <div className="flex-1 min-w-0 pb-1">
             {anime.ranking && (
-               <div className="inline-flex items-center gap-1.5 mb-2 font-anton text-[11px] px-2 py-0.5 rounded-md border bg-gold/20 text-gold border-gold/40 shadow-[0_0_8px_rgba(255,197,66,0.2)]">
-                  <Trophy size={12} /> #{anime.ranking} GLOBAL
-               </div>
+              <div className="inline-flex items-center gap-1.5 mb-2 font-anton text-[11px] px-2 py-0.5 rounded-md border bg-gold/20 text-gold border-gold/40 shadow-[0_0_8px_rgba(255,197,66,0.2)]">
+                <Trophy size={12} /> #{anime.ranking} GLOBAL
+              </div>
             )}
 
             <div className="flex items-center justify-center sm:justify-start gap-3 mb-2 group">
@@ -321,9 +356,9 @@ export default function Detalhes() {
                 {anime.synopsis ? (
                   <ReactMarkdown
                     components={{
-                      p: ({node, ...props}) => <p className="mb-4 last:mb-0" {...props} />,
-                      strong: ({node, ...props}) => <strong className="font-extrabold text-text" {...props} />,
-                      em: ({node, ...props}) => <em className="italic text-holo-3" {...props} />
+                      p: ({ node, ...props }) => <p className="mb-4 last:mb-0" {...props} />,
+                      strong: ({ node, ...props }) => <strong className="font-extrabold text-text" {...props} />,
+                      em: ({ node, ...props }) => <em className="italic text-holo-3" {...props} />
                     }}
                   >
                     {anime.synopsis.replace(/&#34;/g, '"').replace(/&#39;/g, "'")}
@@ -341,7 +376,7 @@ export default function Detalhes() {
                   {anime.characters.map(char => (
                     <div key={char.id} className="flex-none w-[110px] sm:w-[130px] snap-start group">
                       <div className="aspect-[3/4] rounded-xl overflow-hidden mb-2 bg-panel-2 border border-line">
-                         <img src={char.image} alt={char.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
+                        <img src={char.image} alt={char.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
                       </div>
                       <div className="font-bold text-[12px] md:text-[13px] leading-tight truncate text-text group-hover:text-holo-3 transition-colors">{char.name}</div>
                       <div className="font-mono text-[9px] text-muted uppercase tracking-wider truncate mt-0.5">{char.role}</div>
@@ -352,13 +387,13 @@ export default function Detalhes() {
             )}
 
             {(anime.episodes > 0 || (anime.streamingEpisodes?.length ?? 0) > 0) && (
-              <EpisodeGrid 
+              <EpisodeGrid
                 malId={anime.mal_id}
                 totalEpisodes={anime.episodes}
                 streamingEpisodes={anime.streamingEpisodes}
                 initialWatched={episodiosAssistidos}
-                isLoggedIn={isLoggedIn} 
-                nextAiringEpisode={anime.nextAiringEpisode} 
+                isLoggedIn={isLoggedIn}
+                nextAiringEpisode={anime.nextAiringEpisode}
                 startDate={anime.startDate}
               />
             )}
@@ -389,11 +424,11 @@ export default function Detalhes() {
                     .filter(rel => ['PREQUEL', 'SEQUEL', 'SPIN_OFF', 'ADAPTATION', 'SIDE_STORY', 'PARENT'].includes(rel.relation))
                     .map((rel, i) => {
                       const relationAnime = rel.entry[0]
-                      if(!relationAnime) return null
+                      if (!relationAnime) return null
 
                       return (
-                        <Link 
-                          key={i} 
+                        <Link
+                          key={i}
                           to={`/anime/${relationAnime.mal_id}`}
                           className="flex-none w-[160px] md:w-[180px] group cursor-pointer snap-start"
                         >
@@ -403,25 +438,25 @@ export default function Detalhes() {
                             ) : (
                               <div className="w-full h-full flex items-center justify-center text-muted-2 text-xs">Sem foto</div>
                             )}
-                             <div className="absolute top-2 left-2 bg-void/80 backdrop-blur-sm border border-line/50 font-mono text-[9px] text-holo-3 uppercase px-2 py-0.5 rounded shadow-lg">
-                                {traduzirRelacao(rel.relation)}
-                             </div>
-                             <div className="absolute inset-0 bg-gradient-to-t from-void/90 via-transparent to-transparent opacity-60"></div>
+                            <div className="absolute top-2 left-2 bg-void/80 backdrop-blur-sm border border-line/50 font-mono text-[9px] text-holo-3 uppercase px-2 py-0.5 rounded shadow-lg">
+                              {traduzirRelacao(rel.relation)}
+                            </div>
+                            <div className="absolute inset-0 bg-gradient-to-t from-void/90 via-transparent to-transparent opacity-60"></div>
                           </div>
-                          
+
                           <div className="font-bold text-[13px] md:text-[14px] leading-tight text-text group-hover:text-holo-3 transition-colors line-clamp-2">
                             {relationAnime.name}
                           </div>
                         </Link>
                       )
-                  })}
+                    })}
                 </div>
               </section>
             )}
           </div>
 
           <div className="space-y-10 min-w-0" id="estatisticas">
-            
+
             <section>
               <h2 className="font-anton text-base uppercase mb-4 flex items-center gap-2 select-none">
                 <span className="font-mono text-[11px] text-holo-3">MEU DECK</span>
@@ -432,11 +467,11 @@ export default function Detalhes() {
                   <div className="font-anton text-2xl text-text mb-4 tracking-wide flex items-center gap-2">
                     {minhaEntrada.status}
                   </div>
-                  
+
                   {minhaEntrada.anotacao && (
                     <div className="mb-4 p-3 bg-void/50 border border-line rounded-lg">
-                       <p className="font-mono text-[9px] text-muted-2 uppercase mb-1">Sua Anotação:</p>
-                       <p className="text-[13px] text-muted italic break-words leading-relaxed">"{minhaEntrada.anotacao}"</p>
+                      <p className="font-mono text-[9px] text-muted-2 uppercase mb-1">Sua Anotação:</p>
+                      <p className="text-[13px] text-muted italic break-words leading-relaxed">"{minhaEntrada.anotacao}"</p>
                     </div>
                   )}
 
@@ -445,13 +480,13 @@ export default function Detalhes() {
                   </button>
                 </div>
               ) : (
-                 <div className="bg-panel border border-dashed border-line rounded-2xl p-6 text-center">
-                    <Bookmark size={24} className="mx-auto mb-3 text-muted-2" />
-                    <p className="text-sm font-bold text-text mb-4">Ainda não está no seu Deck.</p>
-                    <button onClick={() => setIsModalOpen(true)} className="select-none bg-gradient-to-r from-holo-1 to-holo-3 text-void w-full py-2.5 rounded-xl font-extrabold text-sm hover:opacity-90 transition-opacity cursor-pointer">
-                      + Adicionar ao Deck
-                    </button>
-                 </div>
+                <div className="bg-panel border border-dashed border-line rounded-2xl p-6 text-center">
+                  <Bookmark size={24} className="mx-auto mb-3 text-muted-2" />
+                  <p className="text-sm font-bold text-text mb-4">Ainda não está no seu Deck.</p>
+                  <button onClick={() => setIsModalOpen(true)} className="select-none bg-gradient-to-r from-holo-1 to-holo-3 text-void w-full py-2.5 rounded-xl font-extrabold text-sm hover:opacity-90 transition-opacity cursor-pointer">
+                    + Adicionar ao Deck
+                  </button>
+                </div>
               )}
             </section>
 
@@ -460,7 +495,7 @@ export default function Detalhes() {
                 <h2 className="font-anton text-base uppercase mb-4 flex items-center gap-2 select-none">
                   <span className="font-mono text-[11px] text-holo-3">ESTATÍSTICAS</span> Comunidade
                 </h2>
-                
+
                 <div className="grid grid-cols-2 gap-3 mb-4">
                   <div className="bg-panel border border-line rounded-xl p-4">
                     <div className="font-mono text-[9px] text-green mb-1 font-bold">COMPLETARAM</div>
@@ -487,9 +522,9 @@ export default function Detalhes() {
                             transition={{ duration: 0.6, ease: "easeOut" }}
                             className={`rounded-t-sm w-full transition-colors relative ${isUserScore ? 'bg-holo-3 border border-holo-3/50' : 'bg-gradient-to-t from-holo-2/50 to-holo-2 opacity-80 group-hover:opacity-100'}`}
                           >
-                             {isUserScore && (
-                                <div className="absolute -top-6 left-1/2 -translate-x-1/2 bg-holo-3 text-void text-[8px] font-black px-1 rounded">VOCÊ</div>
-                             )}
+                            {isUserScore && (
+                              <div className="absolute -top-6 left-1/2 -translate-x-1/2 bg-holo-3 text-void text-[8px] font-black px-1 rounded">VOCÊ</div>
+                            )}
                           </motion.div>
                         </div>
                       )

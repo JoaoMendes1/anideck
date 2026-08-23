@@ -1,7 +1,7 @@
 // client/src/components/AnimeCard.tsx
 // Casco genérico do card em formato pôster. Usado pelo DeckCard (Meu Deck)
 // e pelo SearchResultCard (Busca) — cada um só monta os "slots" diferentes.
-import type { ReactNode } from 'react'
+import { useState, type ReactNode } from 'react'
 import { Link } from 'react-router-dom'
 import { getCategoryTheme } from '../lib/filters'
 
@@ -23,6 +23,8 @@ export default function AnimeCard({
     malId, title, imageUrl, genre, score, ranking, isFavorite,
     gradientClass, statusBadge, extraBadges, topRightAction,
 }: AnimeCardProps) {
+    const [imagemFalhou, setImagemFalhou] = useState(false)
+    const semCapa = !imageUrl || imagemFalhou
     const temNota = score !== null && score !== undefined
 
     return (
@@ -33,12 +35,20 @@ export default function AnimeCard({
         >
             <Link to={`/anime/${malId}`} className="absolute inset-0 z-10" aria-label={title} />
 
-            {imageUrl && (
+                        {semCapa && (
+                <div className="absolute inset-0 z-0 flex items-center justify-center bg-panel-2">
+                    <span className="font-mono text-[8px] text-muted-2 uppercase tracking-widest text-center px-2">
+                        Capa indisponível
+                    </span>
+                </div>
+            )}
+
+            {imageUrl && !imagemFalhou && (
                 <img
                     src={imageUrl}
                     alt={title}
                     loading="lazy"
-                    onError={(e) => { e.currentTarget.style.visibility = 'hidden' }}
+                    onError={() => setImagemFalhou(true)}
                     className="absolute inset-0 w-full h-full object-cover z-0 opacity-90 group-hover:opacity-100 transition-opacity"
                 />
             )}

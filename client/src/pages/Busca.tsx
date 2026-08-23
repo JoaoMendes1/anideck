@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useToast } from '../contexts/ToastContext'
+import { useCatalogoStatus } from '../contexts/CatalogoStatusContext'
 import { useNavigate } from 'react-router-dom'
 import { Search, AlertCircle, SlidersHorizontal, X } from 'lucide-react'
 import { supabase } from '../lib/supabase'
@@ -40,6 +41,7 @@ const SORT_OPTIONS = [
 export default function Busca() {
     const navigate = useNavigate()
     const { showToast } = useToast()
+    const { reportarFalha, reportarSucesso } = useCatalogoStatus()
 
     const [query, setQuery] = useState('')
     const [selectedFilters, setSelectedFilters] = useState<FilterItem[]>([])
@@ -68,7 +70,7 @@ export default function Busca() {
     useEffect(() => {
         const carregarDeck = async () => {
             const { data: { session } } = await supabase.auth.getSession()
-            if (!session) return
+            if (!session) { setLoading(false); return }
 
             try {
                 const response = await fetch('/api/entries', {
@@ -126,8 +128,12 @@ export default function Busca() {
                     signal: controller.signal
                 })
 
-                if (!response.ok) throw new Error('Busca indisponível no momento. Tente novamente mais tarde.')
+                if (!response.ok) {
+                    if (response.status >= 500) reportarFalha()
+                    throw new Error('Busca indisponível no momento. Tente novamente mais tarde.')
+                }
                 const data = await response.json()
+                reportarSucesso()
 
                 setResultados(prev => page === 1 ? (data.data || []) : [...prev, ...(data.data || [])])
 
@@ -146,7 +152,7 @@ export default function Busca() {
             clearTimeout(timer)
             controller.abort()
         }
-    }, [query, selectedFilters, selectedStatus, selectedSeason, selectedYear, selectedSort, page, hasAnyFilter])
+    }, [query, selectedFilters, selectedStatus, selectedSeason, selectedYear, selectedSort, page, hasAnyFilter, reportarFalha, reportarSucesso])
 
     const handleSalvar = async (e: React.MouseEvent, malId: number) => {
         e.preventDefault()
@@ -345,10 +351,10 @@ export default function Busca() {
                                     }
                                 }}
                                 className={`px-3 py-1.5 rounded-full text-xs font-bold transition-all duration-150 border ${!selectedSeason
-                                        ? 'bg-panel border-line text-muted/50 cursor-not-allowed'
-                                        : selectedYear === String(y)
-                                            ? 'bg-holo-3/20 border-holo-3/50 text-holo-3 cursor-pointer'
-                                            : 'bg-panel border-line text-muted hover:border-holo-3 hover:text-text cursor-pointer'
+                                    ? 'bg-panel border-line text-muted/50 cursor-not-allowed'
+                                    : selectedYear === String(y)
+                                        ? 'bg-holo-3/20 border-holo-3/50 text-holo-3 cursor-pointer'
+                                        : 'bg-panel border-line text-muted hover:border-holo-3 hover:text-text cursor-pointer'
                                     }`}
                             >
                                 {y}
@@ -357,36 +363,35 @@ export default function Busca() {
                     </div>
                 </div>
 
-           <div>
-        <p className="font-mono text-[10px] text-muted-2 tracking-widest mb-3 select-none uppercase">Gêneros e Tags</p>
-        <div className="flex flex-wrap gap-2">
-            {CONTENT_FILTERS.map(f => {
-                const isActive = selectedFilters.some(x => x.value === f.value)
-                return (
-                    <button
-                        key={`${f.type}-${f.value}`}
-                        onClick={() => toggleFilter(f)}
-                        className={`px-3 py-1.5 rounded-full text-xs font-bold transition-all duration-150 cursor-pointer ${
-                            isActive
-                                ? 'bg-gradient-to-r from-holo-1 to-holo-2 text-void shadow-[0_0_12px_rgba(123,92,255,0.4)]'
-                                : 'bg-panel-2 border border-line text-muted hover:border-holo-2 hover:text-text'
-                        }`}
-                    >
-                        {f.label}
-                    </button>
-                )
-            })}
-        </div>
-    </div>
+                <div>
+                    <p className="font-mono text-[10px] text-muted-2 tracking-widest mb-3 select-none uppercase">Gêneros e Tags</p>
+                    <div className="flex flex-wrap gap-2">
+                        {CONTENT_FILTERS.map(f => {
+                            const isActive = selectedFilters.some(x => x.value === f.value)
+                            return (
+                                <button
+                                    key={`${f.type}-${f.value}`}
+                                    onClick={() => toggleFilter(f)}
+                                    className={`px-3 py-1.5 rounded-full text-xs font-bold transition-all duration-150 cursor-pointer ${isActive
+                                        ? 'bg-gradient-to-r from-holo-1 to-holo-2 text-void shadow-[0_0_12px_rgba(123,92,255,0.4)]'
+                                        : 'bg-panel-2 border border-line text-muted hover:border-holo-2 hover:text-text'
+                                        }`}
+                                >
+                                    {f.label}
+                                </button>
+                            )
+                        })}
+                    </div>
+                </div>
 
-    {activeFilterCount > 0 && (
-        <div className="pt-4 border-t border-line flex justify-end">
-            <button onClick={clearFilters} className="select-none flex items-center gap-1.5 text-coral text-xs font-bold hover:opacity-80 transition-opacity cursor-pointer">
-                <X size={14} /> Limpar todos os filtros
-            </button>
-        </div>
-    )}
-</FilterSheet>
+                {activeFilterCount > 0 && (
+                    <div className="pt-4 border-t border-line flex justify-end">
+                        <button onClick={clearFilters} className="select-none flex items-center gap-1.5 text-coral text-xs font-bold hover:opacity-80 transition-opacity cursor-pointer">
+                            <X size={14} /> Limpar todos os filtros
+                        </button>
+                    </div>
+                )}
+            </FilterSheet>
 
             {loading && page === 1 && (
                 <>
@@ -402,7 +407,7 @@ export default function Busca() {
             {!loading && error && page === 1 && (
                 <div className="text-center py-16 text-coral select-none">
                     <AlertCircle className="mx-auto mb-4 opacity-80" size={34} />
-                    <h3 className="font-anton uppercase text-xl mb-2">Ops, problema de conexão</h3>
+                    <h3 className="font-anton uppercase text-xl mb-2">Busca indisponível</h3>
                     <p className="text-sm">{error}</p>
                 </div>
             )}

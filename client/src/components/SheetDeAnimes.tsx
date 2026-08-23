@@ -55,7 +55,7 @@ export default function SheetDeAnimes({ titulo, animes, carregando, onClose }: S
                                 <AnimeCard
                                     key={anime.mal_id}
                                     malId={anime.mal_id}
-                                    title={anime.title || `ID: ${anime.mal_id}`}
+                                    title={anime.title || 'Título indisponível'}
                                     imageUrl={anime.image_url}
                                     score={anime.nota}
                                     gradientClass={`card-g${(index % 5) + 1}`}
