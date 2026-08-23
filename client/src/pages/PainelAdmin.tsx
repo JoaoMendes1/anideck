@@ -151,18 +151,6 @@ export default function PainelAdmin() {
     setBuscando(true)
     setResultadosBusca([])
 
-    const query = `
-      query ($search: String) {
-        Page(page: 1, perPage: 5) {
-          media(search: $search, type: ANIME) {
-            id idMal title { romaji english native } coverImage { large } bannerImage format status genres synopsis: description
-            characters(sort: [ROLE, RELEVANCE], perPage: 15) {
-              edges { role node { name { full } image { large } } }
-            }
-          }
-        }
-      }
-    `
     try {
       const res = await fetch('https://graphql.anilist.co', {
         method: 'POST',
