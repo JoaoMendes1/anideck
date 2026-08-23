@@ -33,7 +33,7 @@ export default function Sheet({ isOpen, onClose, title, children, maxWidthClass 
                 aria-modal="true"
                 aria-label={title}
                 // Trocamos o 'md:max-w-sm' fixo pela variável genérica
-                className={`relative bg-panel border-t md:border border-line rounded-t-3xl md:rounded-2xl w-full ${maxWidthClass} p-6 pb-safe md:pb-6 shadow-2xl max-h-[85vh] overflow-y-auto transition-transform duration-300 transform ${
+                className={`relative bg-panel border-t md:border border-line rounded-t-3xl md:rounded-2xl w-full ${maxWidthClass} p-6 pb-safe md:pb-6 shadow-2xl max-h-[85vh] overflow-y-auto max-h-[85vh] overflow-y-auto custom-scrollbar transition-transform duration-300 transform ${
                     isOpen ? 'translate-y-0' : 'translate-y-full'
                 }`}
             >
