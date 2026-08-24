@@ -91,7 +91,7 @@ Staging sobe já na Fase 1, como projeto esqueleto — mesmo padrão do JVM Syst
       fica **nativa em Go** (mesmo backend, sem serviço novo), disparada por agendador externo
       gratuito (cron-job.org) batendo num endpoint interno protegido por chave secreta — mesmo
       padrão adotado na Fase 6.7. Registrado em `DECISIONS.md`.
-- [ ] 🔄 **Agente Olheiro v1 (fila de sugestões de curadoria).** Cruza o perfil de gosto do
+- [x] 🔄 **Agente Olheiro v1 (fila de sugestões de curadoria).** Cruza o perfil de gosto do
       usuário com os *trends* da AniList e grava candidatos em `curation_suggestions`, revisados
       manualmente numa aba nova do Painel Admin (botões "Curar" / "Dispensar"). Endpoint
       `POST /api/admin/olheiro/scan` protegido por chave secreta, agendado semanalmente.
@@ -126,7 +126,7 @@ OBS: O Product Owner decidiu que a Fase 5 fosse implementada primeiro.
       alinhado à Fase 4).
 - [x] Como parte da mesma decisão, avaliar o critério de equilíbrio entre animes clássicos e
       recentes (item 2.3 do documento de ideias).
-- [ ] 🔄 **Indicador de movimentação de posições no ranking (▲/▼).** Destravado em 21/08/2026
+- [x] 🔄 **Indicador de movimentação de posições no ranking (▲/▼).** Destravado em 21/08/2026
       com o fechamento da fórmula. Exige tabela de snapshot diário de posições, job agendado
       (mesmo padrão de cron externo da Fase 6.7) e as setas na UI de Rankings.
 
