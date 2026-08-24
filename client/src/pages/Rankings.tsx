@@ -18,6 +18,8 @@ interface Anime {
     title: string
     status: string
     score: number
+    current_rank?: number
+    previous_rank?: number
     episodes: number
     images: { jpg: { image_url: string } }
     genres?: { name: string }[]
@@ -357,6 +359,7 @@ export default function Rankings() {
                                     key={`${anime.mal_id}-${index}`}
                                     anime={anime}
                                     rank={index + 1}
+                                    mostrarVariacao={activeFilterCount === 0}
                                     isSaved={!!savedEntry}
                                     isFavorite={savedEntry?.is_favorite}
                                     isSaving={savingIds.includes(anime.mal_id)}
