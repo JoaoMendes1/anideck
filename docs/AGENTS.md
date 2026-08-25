@@ -121,7 +121,7 @@ parênteses (`ui`, `auth`, `db`, etc.) e sempre referenciando a issue com `close
     Não confie em dados de treinamento defasados. É terminantemente proibido introduzir pacotes obsoletos (deprecated), legados ou em End-of-Life (EOL). Se o ecossistema da ferramenta sofreu unificações ou mudanças estruturais recentes, exija e utilize a versão moderna e oficial. Se não tiver certeza absoluta do pacote atual, avise ou faça uma pesquisa antes de gerar o código.
 
 11. **Armadilhas conhecidas.** Antes de mexer em SQL, view, JOIN, handler de leitura ou schema,
-    leia `docs/ARMADILHAS.md`. Se a tarefa toca a área de um item, responda a pergunta
+    leia `docs/PITFALLS.md`. Se a tarefa toca a área de um item, responda a pergunta
     obrigatória dele explicitamente na resposta, com o arquivo real na mão — não de memória.
     Bug silencioso novo (o que não quebra, só devolve dado errado) vira item novo lá.
 

@@ -134,14 +134,16 @@ func (h *AnimeHandler) HandleGetAnime(w http.ResponseWriter, r *http.Request) {
 		if errCurado == nil && len(curados) > 0 {
 			curado := curados[0]
 
-			resultados.Data.Title = curado.CustomTitle
+			if curado.CustomTitle != "" {
+				resultados.Data.Title = curado.CustomTitle
+			}
 			if curado.CustomSynopsis != "" {
 				resultados.Data.Synopsis = curado.CustomSynopsis
 			}
 			if curado.CustomStatus != "" {
 				resultados.Data.Status = curado.CustomStatus
 			}
-			if len(curado.CustomTags) > 0 {
+			if curado.CustomTags != nil {
 				var novasTags []struct {
 					Name string `json:"name"`
 				}
