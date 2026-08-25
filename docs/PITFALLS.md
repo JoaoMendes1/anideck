@@ -1,4 +1,4 @@
-# ⚠️ ARMADILHAS.md — AniDeck
+# ⚠️ PITFALLS.md — AniDeck
 
 > **Para que serve:** este arquivo não ensina postura ("seja rigoroso", "investigue antes").
 > Ele lista os modos de falha que **este projeto já sofreu de verdade**, cada um com o sintoma

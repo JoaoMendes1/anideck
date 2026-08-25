@@ -1,0 +1,39 @@
+{
+  "name": "AniDeck",
+  "image": "mcr.microsoft.com/devcontainers/base:ubuntu",
+
+  "features": {
+    "ghcr.io/devcontainers/features/go:1": {
+      "version": "1.26.4"
+    },
+    "ghcr.io/devcontainers/features/node:1": {
+      "version": "24"
+    }
+  },
+
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "golang.go",
+        "LeonKohli.snapsource",
+        "anthropic.claude-code",
+        "bradlc.vscode-tailwindcss",
+        "dbaeumer.vscode-eslint"
+      ]
+    }
+  },
+
+  "forwardPorts": [8080, 5173],
+  "portsAttributes": {
+    "8080": {
+      "label": "API Go",
+      "visibility": "public"
+    },
+    "5173": {
+      "label": "Frontend Vite",
+      "visibility": "public"
+    }
+  },
+
+  "postCreateCommand": "go mod download && cd client && npm install"
+}

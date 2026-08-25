@@ -9,7 +9,7 @@ type CuratedAnime struct {
 	CustomSynopsis string   `json:"custom_synopsis,omitempty"`
 	CustomFormat   string   `json:"custom_format,omitempty"`
 	CustomStatus   string   `json:"custom_status,omitempty"`
-	CustomTags     []string `json:"custom_tags,omitempty"`
+	CustomTags     []string `json:"custom_tags"`
 
 	CustomCoverImage  string          `json:"custom_cover_image"`
 	CustomBannerImage string          `json:"custom_banner_image"`
