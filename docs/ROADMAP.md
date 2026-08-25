@@ -254,23 +254,23 @@ Isso é o que permite curadoria parcial: um anime com só a capa curada continua
 puxando sinopse e personagens da AniList, sem precisar de flag nem de estado
 especial. E é o que torna viável a estratégia de catálogo (ver Bloco 5).
 
-- [ ] **Corrigir a soma de tags nas Estatísticas (bug ativo).** A Afinidade
+- [x] **Corrigir a soma de tags nas Estatísticas (bug ativo).** A Afinidade
       hoje soma `curated_animes.custom_tags` com `anime_metadata_cache.tags`.
       Sintoma observado com **um único anime, curado com 3 tags**: a tela
       exibiu 5+ rótulos em inglês (Environmental, Assassins, Crime, Mafia,
       Philosophy) e elegeu "Environmental" como Gênero Favorito no card de
       topo. Confirmar a causa em `sql/003` e `sql/008` antes de corrigir.
-- [ ] **Rótulo sem correspondência na `genre_taxonomy` não entra no ranking
+- [x] **Rótulo sem correspondência na `genre_taxonomy` não entra no ranking
       competitivo.** Verificar se hoje ele cai em `genero` por padrão — é a
       segunda causa provável do sintoma acima. Tag temática já deveria ficar
       fora por decisão de 21/08.
-- [ ] **Padronizar `NULL` como "não curado" e valor vazio como "curei e está
+- [x] **Padronizar `NULL` como "não curado" e valor vazio como "curei e está
       vazio de propósito".** Vale para todos os campos de array
       (`custom_tags`, `custom_characters`, e os novos do Bloco 2). O
       `salvarDestaque` já faz isso certo para personagens — generalizar.
-- [ ] **Aplicar a precedência em todos os handlers de leitura**, não só na
+- [x] **Aplicar a precedência em todos os handlers de leitura**, não só na
       busca e no ranking (que já têm o fallback parcial de 30/07).
-- [ ] **Registrar a regra no `DECISIONS.md`.**
+- [x] **Registrar a regra no `DECISIONS.md`.**
 
 ---
 

@@ -39,6 +39,23 @@ Título: <tipo>: <descrição curta> #<número>
       issue envolver lógica (handlers, validação, cálculo); dispensável em issues de
       texto/estilo/documentação
 ```
+> **Emenda (25/08/2026):** issue é obrigatória quando a alteração:
+> - mexe em **schema, dado de usuário, autenticação ou regra de negócio**;
+> - é **correção de bug**, qualquer que seja o tamanho — bug pequeno costuma ter
+>   causa interessante, e é ela que some se não for escrita;
+> - envolve **escolha estrutural no visual**: trocar biblioteca, alterar design
+>   tokens, refazer navegação ou padrão de componente. Não pela quantidade de
+>   código, mas porque existe um "por quê" que precisa ficar registrado.
+>
+> Dispensam issue: texto de interface, ajuste visual dentro dos tokens já
+> existentes, documentação e refatoração sem mudança de comportamento. Nesses
+> casos, commit direto na `staging` basta.
+>
+> **Na dúvida, o teste:** daqui a três meses, alguém (inclusive eu) vai perguntar
+> "por que foi feito assim?". Se sim, abre issue.
+>
+> O critério é o rastro: issue existe para registrar investigação, decisão e como
+> foi verificado. Onde não há decisão a registrar, ela é burocracia.
 
 2. **Toda alteração é feita primeiro na branch `staging`**, nunca direto em produção.
    Ambientes de produção e homologação sobem desde o início do projeto (não só no final).
