@@ -1,50 +1,57 @@
 # `sql/` — DDL versionado
 
-Até agora as views e tabelas do AniDeck viviam **só no painel do Supabase**. Se o projeto
-fosse perdido ou precisasse ser recriado do zero, essa lógica sumiria junto — é a dívida
-técnica 2.1 do backlog de Estatísticas.
-
-Esta pasta começa a pagar essa dívida. Ela **não** é um sistema de migrations automático:
-nada aqui roda sozinho no deploy. É um registro em ordem de aplicação, para ser colado no
-SQL Editor do Supabase.
+Registro em ordem de aplicação das alterações de banco do AniDeck. **Não é um sistema de
+migrations automático:** nada roda sozinho no deploy. Cada arquivo é colado à mão no SQL
+Editor do Supabase.
 
 ## Como usar
 
-Rode os arquivos em ordem numérica. Todos foram escritos para ser idempotentes
-(`IF NOT EXISTS`, `CREATE OR REPLACE`, `ON CONFLICT`), então reexecutar não quebra nada.
+> ⚠️ **Estes arquivos NÃO são idempotentes em conjunto.**
+> Rodar tudo do começo reverte correções: o `008` conserta a view que o `006` cria, e o
+> `015` acrescenta uma coluna que o `006` não tem. Reaplicar o `006` desfaz os dois, sem
+> erro nenhum.
+>
+> Aplique **apenas** os arquivos ainda não aplicados, na ordem numérica, e registre a data
+> na tabela abaixo.
 
-| Arquivo | O que faz |
-|---|---|
-| `001_anime_metadata_cache_tags.sql` | Adiciona `tags` e `season_year` ao cache de metadados |
-| `002_genre_taxonomy.sql` | Cria e popula a taxonomia própria do AniDeck (3 camadas) |
-| `003_view_user_genre_affinity.sql` | Reescreve a view de afinidade usando a taxonomia (reconciliado com a definição real que estava no Supabase) |
-| `004_estatisticas_avancadas.sql` | Views novas: animes por gênero (drill-down), marcações cruas (sessões) e anime esquecido |
-| `005_remove_coluna_progress.sql` | ⚠️ Destrutivo e fora de ordem — só depois do deploy, ver instruções no próprio arquivo |
-| `006_views_existentes.sql` | DDL real das 9 views que só existiam no painel (fecha a dívida 2.1) |
-| `007_drilldown_por_ano.sql` | View que lista os animes de cada ano de estreia |
-| `008_correcoes_maratona_e_taxonomia.sql` | Filtra maratonas implausíveis e cria a camada `ignorado` para tags de 
-metadado |
-
-Depois de aplicar, rode uma vez `POST /api/admin/metadata/resync` (autenticado como admin)
-para reprocessar os animes que já estavam no deck. Sem isso, só animes salvos **depois** da
-mudança teriam tags e ano de estreia no cache.
-
-## Regras
-
-1. **Toda view que expõe dado de usuário precisa de `WHERE user_id = auth.uid()` explícito.**
-   Uma view no Postgres roda no contexto de quem a criou, não de quem consulta — ela não
-   herda a RLS da tabela base. Sem o filtro, um usuário enxerga as linhas dos outros.
-2. **Alteração nova em banco vira arquivo aqui**, numerado na sequência, antes de ser
-   aplicada no Supabase.
-
-## Cobertura
-
-Todas as views e tabelas de estatísticas estão versionadas. O `006` foi extraído com
-`pg_get_viewdef` direto do banco, não reconstruído de memória — é o SQL real.
-
-Para trazer uma view nova (ou conferir se alguma divergiu do que está aqui):
+Para saber a definição real de uma view no banco agora:
 
 ```sql
 SELECT pg_get_viewdef('nome_da_view'::regclass, true);
 ```
-013_precedencia_rotulos.sql — aplicado em 24/08/2026
+
+## Arquivos
+
+| Arquivo | O que faz | Aplicado |
+|---|---|---|
+| `001_anime_metadata_cache_tags.sql` | Adiciona `tags` e `season_year` ao cache de metadados | 21/08/2026 |
+| `002_genre_taxonomy.sql` | Cria e popula a taxonomia própria (3 camadas) | 21/08/2026 |
+| `003_view_user_genre_affinity.sql` | ⚰️ **Morto.** Redefinido pelo `008` e de novo pelo `013` | 21/08/2026 |
+| `004_estatisticas_avancadas.sql` | Views de drill-down, marcações cruas e anime esquecido | 21/08/2026 |
+| `005_remove_coluna_progress.sql` | ⚠️ Destrutivo — ver instruções no próprio arquivo | 21/08/2026 |
+| `006_views_existentes.sql` | DDL das 9 views que só existiam no painel | 21/08/2026 |
+| `007_drilldown_por_ano.sql` | View que lista os animes de cada ano de estreia | 21/08/2026 |
+| `008_correcoes_maratona_e_taxonomia.sql` | Filtra maratonas implausíveis; camada `ignorado` | 21/08/2026 |
+| `009_curation_suggestions.sql` | Fila de sugestões do Olheiro + tabela `app_admins` (espelha o admin no banco para a RLS) | ~21/08/2026 |
+| `010_olheiro_rpcs.sql` | ⚰️ **Morto.** A view voltou a ter lógica própria no `013`; as RPCs perderam uso com o `011` | ~21/08/2026 |
+| `011_olheiro_remove_cron.sql` | Remove o caminho de cron do `010`: o scan passou a rodar com o JWT do admin | ~22/08/2026 |
+| `012_ranking_snapshots.sql` | Tabela de fotos do Top Global (indicador ▲/▼) | ~23/08/2026 |
+| `013_precedencia_rotulos.sql` | Precedência campo a campo nos rótulos; `'ignorado'` como default | 24/08/2026 |
+| `014_campos_curadoria.sql` | Colunas novas de curadoria (`custom_episodes` e outras), todas NULLABLE — NULL cai para a fonte seguinte | ~25/08/2026 |
+| `015_quero_assistir_nas_stats.sql` | Acrescenta `quero_assistir` à `view_user_stats` | 26/08/2026 |
+
+Datas com `~` são a data do commit, não da aplicação no Supabase.
+
+`snapshot_schema.sql` está fora desta lista de propósito — é retrato para consulta, não
+migration. Ver o cabeçalho do arquivo.
+
+## Regras
+
+1. **Toda view que expõe dado de usuário precisa de `WHERE user_id = auth.uid()`
+   explícito.** View no Postgres roda no contexto de quem a criou, não de quem consulta.
+2. **Alteração nova vira arquivo novo**, numerado na sequência. Nunca editar arquivo já
+   aplicado — quem já rodou não roda de novo, e a correção se perde.
+3. **Registrar a data na tabela** no mesmo commit da aplicação.
+4. **Passos manuais fora dos arquivos:** o `009` exige um `INSERT` em `app_admins` com o
+   UUID do `ADMIN_USER_ID`, rodado à mão (o valor não entra no repositório, que é público).
+   Banco recriado do zero sem esse passo tem a curadoria bloqueada pela RLS.
