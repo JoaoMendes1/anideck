@@ -363,7 +363,9 @@ func applyCuradoria(res *anilist.AnimeSearchResponse) {
 
 		for i, anime := range res.Data {
 			if curado, ok := curadosMap[anime.MalID]; ok {
-				res.Data[i].Title = curado.CustomTitle
+				if curado.CustomTitle != "" {
+					res.Data[i].Title = curado.CustomTitle
+				}
 				if curado.CustomSynopsis != "" {
 					res.Data[i].Synopsis = curado.CustomSynopsis
 				}
