@@ -9,6 +9,9 @@
 .DS_Store
 Thumbs.db
 
-# Build do frontend (React) que faremos no futuro
 /client/dist/
-/client/node_modules/
+/client/node_modules/supabase/.temp/
+
+# Cache local da CLI do Supabase
+supabase/.temp/
+
