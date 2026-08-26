@@ -253,6 +253,19 @@ tela é dado real, não defeito.
 > **Pergunta obrigatória:** as categorias que este gráfico desenha cobrem **todas** as que
 > o denominador conta? Se eu somar as fatias, dá 100%?
 
+## 14. 🧪 Teste que valida o caminho errado depois de mudança no handler
+
+**Incidente (26/08/2026):** `TestHandleCreate_CorpoInvalido` esperava 400 e recebia 401.
+O teste montava o contexto só com `UserIDKey`, mas o handler passou a exigir também
+`TokenKey` — e cortava em 401 antes de chegar na validação do corpo.
+
+**O que torna isso silencioso:** o teste falha, mas pela razão errada. Lido rápido, parece
+bug de autenticação no handler. Na prática o handler estava certo e o teste é que ficou
+para trás.
+
+> **Pergunta obrigatória:** quando um handler ganha uma dependência nova do contexto, quais
+> testes montam esse contexto à mão e precisam acompanhar?
+
 ## 🧭 Como manter este arquivo
 
 - Toda vez que um bug **silencioso** chegar a produção (não quebrou, só devolveu dado errado),
