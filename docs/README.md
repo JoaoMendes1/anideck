@@ -101,7 +101,7 @@ depois concatenava o cache incondicionalmente — um anime curado com 3 tags exi
 inglês. O operador foi para dentro do `COALESCE`; o caso virou item permanente no `PITFALLS.md`.
 
 **Segurança e qualidade**
-- Isolamento de dados por **RLS nativo do Postgres**, não por filtro no código Go. O `user_id`
+- Isolamento de dados por Row Level Security nativo do Postgres: toda requisição usa a chave pública anexada ao JWT do usuário, e o user_id nunca vem do corpo da requisição. Um client de service role existe apenas para trabalho de background sem usuário logado, com a justificativa documentada no código.
   vem sempre do JWT validado, nunca do corpo da requisição.
 - Sanitização de todo texto livre do usuário (`bluemonday`) contra XSS.
 - **CI no push para `staging`:** `golangci-lint` e `go test ./...` via GitHub Actions.
