@@ -9,6 +9,7 @@ import (
 	"strconv"
 	"strings"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"github.com/supabase-community/postgrest-go"
@@ -390,16 +391,31 @@ func mapStatusForFilter(status string) string {
 	}
 }
 
+// recarregandoRanking impede que várias edições seguidas no Admin disparem
+// recargas simultâneas. Cada updateGlobalCache faz 10 chamadas à AniList, que
+// hoje aceita 30 por minuto (ver PITFALLS.md) — cinco recargas concorrentes
+// estouram o limite e ainda podem terminar fora de ordem, deixando o cache com
+// o resultado da execução mais antiga.
+var recarregandoRanking atomic.Bool
+
 // InvalidateRankingCache força a limpeza da memória.
 // Usado pelo curation.go quando o Admin edita um anime manualmente.
 func InvalidateRankingCache() {
 	globalRanking.Lock()
-	defer globalRanking.Unlock()
-	globalRanking.Animes = nil // Limpa a lista
+	globalRanking.Animes = nil
+	globalRanking.Unlock()
+
+	// CompareAndSwap devolve false se já existe uma recarga em andamento.
+	// Nesse caso não agenda outra: a que está rodando já vai buscar os dados
+	// atualizados, incluindo esta edição.
+	if !recarregandoRanking.CompareAndSwap(false, true) {
+		log.Println("[RANKING ENGINE] Recarga já em andamento, edição será coberta por ela.")
+		return
+	}
 
 	go func() {
-		client := anilist.NewClient()
-		updateGlobalCache(client)
+		defer recarregandoRanking.Store(false)
+		updateGlobalCache(anilist.NewClient())
 	}()
 }
 
