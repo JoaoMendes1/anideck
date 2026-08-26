@@ -23,9 +23,9 @@ Staging sobe já na Fase 1, como projeto esqueleto — mesmo padrão do JVM Syst
 | 2.5 · Curadoria Pessoal (Admin) | ✅ Concluída |
 | 3 · Identidade Visual | ✅ Concluída |
 | 4 · Dashboard de Estatísticas | ✅ Concluída |
-| 4.5 · Automação e IA Generativa | 🔄 **Em aberto** — Agente Olheiro v1 |
+| 4.5 · Automação e IA Generativa | ✅ Concluída |
 | 5 · Smart Tracking & Calendário | ✅ Concluída |
-| 6.5 · Ranking Ponderado | 🔄 **Em aberto** — indicador ▲/▼ |
+| 6.5 · Ranking Ponderado | ✅ Concluída |
 | 6.6 · Página de Detalhes | ✅ Concluída |
 | 6.7 · Progresso por Episódio | ✅ Concluída |
 | 6.8 · Taxonomia & Estatísticas | ✅ Concluída |
@@ -118,6 +118,11 @@ OBS: O Product Owner decidiu que a Fase 5 fosse implementada primeiro.
 >
 > **Nota (21/08/2026):** fórmula fechada e implementada. O indicador ▲/▼ abaixo estava
 > bloqueado por essa definição e **foi destravado** — é o último item aberto da fase.
+>
+> **Nota (26/08/2026):** fase encerrada. O indicador ▲/▼ foi implementado (issue #73):
+> `ranking_snapshots` grava uma foto a cada 30 dias, e o `updateGlobalCache` lê a foto
+> anterior antes de gravar a nova. Anime sem histórico não exibe indicador; quem manteve
+> a posição exibe `–`.
 
 - [x] Confirmar se a query GraphQL da AniList retorna contagem de avaliações/favoritos por anime.
 - [x] Definir e documentar em `DECISIONS.md` a fórmula de ponderação escolhida (ex: média
@@ -371,8 +376,8 @@ reordenáveis, sinopse com reescrita por IA, título, formato e status.
 ### 🚧 Pendente de decisão antes de começar
 
 - **Esta fase entra antes ou depois do beta da Fase 7?** O escopo da v1 foi
-  fechado em 21/08 e faltam dois checkboxes (Olheiro v1 e indicador ▲/▼).
-  Encaixar esta fase antes adia a v1; encaixar depois significa convidar
+  fechado em 21/08 e **todos os checkboxes foram concluídos em 26/08**.
+  Encaixar esta fase antes adia o beta; encaixar depois significa convidar
   10 pessoas para um site que morre junto com a AniList.
 - **Fila de pedidos de catálogo:** quando a busca não encontra, o usuário
   pede e entra numa fila no Admin. Mesma mecânica da fila do Olheiro, mesmo

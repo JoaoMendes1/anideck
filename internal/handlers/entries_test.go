@@ -39,8 +39,11 @@ func TestHandleCreate_SemAutenticacao(t *testing.T) {
 func TestHandleCreate_CorpoInvalido(t *testing.T) {
 	handler := &EntriesHandler{}
 
-	// Contexto COM usuário válido, mas corpo da requisição quebrado
+	// Contexto COM usuário válido, mas corpo da requisição quebrado.
+	// O handler exige UserIDKey e TokenKey: sem os dois ele corta em 401
+	// antes de tentar ler o corpo, e o teste nunca chegaria no 400.
 	ctx := context.WithValue(context.Background(), middleware.UserIDKey, "usuario-teste-123")
+	ctx = context.WithValue(ctx, middleware.TokenKey, "token-teste")
 	req := httptest.NewRequest(http.MethodPost, "/api/entries", strings.NewReader(`{corpo quebrado`))
 	req = req.WithContext(ctx)
 	w := httptest.NewRecorder()
