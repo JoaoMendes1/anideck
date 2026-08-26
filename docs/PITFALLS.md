@@ -228,6 +228,31 @@ antigo. Editar o `003` para corrigir a afinidade teria revertido o tier `'ignora
 
 ---
 
+## 13. 🥧 Gráfico de fatias que não cobre o denominador
+
+**Incidente (26/08/2026, issue #76):** a Distribuição por Status somava ~60% em vez de
+100%. Um pedaço escuro do donut ficava sem legenda nenhuma.
+
+**Causa:** o denominador era `total_animes` — a contagem de **todas** as entradas do deck —
+mas a `view_user_stats` só devolvia quatro dos cinco status. Os 27 animes em
+"Quero Assistir" (40% do deck) não tinham fatia nem linha na legenda. O React estava
+correto: ele não desenha um campo que nunca chega.
+
+**O que torna isso silencioso:** cada fatia individualmente estava certa, e a soma errada
+só aparece para quem para e soma. Um status novo criado no futuro reproduz o mesmo bug do
+mesmo jeito.
+
+**Detalhe de implementação que vai reaparecer:** `CREATE OR REPLACE VIEW` só permite
+acrescentar coluna **no fim**. Por isso `quero_assistir` ficou depois de
+`tempo_total_minutos`, fora da ordem lógica. Inserir no meio exige `DROP VIEW` + recriar,
+o que derruba as permissões e qualquer view que dependa dela.
+
+**Nota de estado:** não existe nenhuma entrada com status `Dropado` no banco. O `0%` na
+tela é dado real, não defeito.
+
+> **Pergunta obrigatória:** as categorias que este gráfico desenha cobrem **todas** as que
+> o denominador conta? Se eu somar as fatias, dá 100%?
+
 ## 🧭 Como manter este arquivo
 
 - Toda vez que um bug **silencioso** chegar a produção (não quebrou, só devolveu dado errado),
