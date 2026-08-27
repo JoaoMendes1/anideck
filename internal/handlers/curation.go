@@ -56,6 +56,13 @@ func (h *CurationHandler) HandleCreate(w http.ResponseWriter, r *http.Request) {
 
 	entrada.CustomSynopsis = sanitizer.Sanitize(entrada.CustomSynopsis)
 
+	// Os campos JSONB precisam de validação própria: o Postgres aceita qualquer JSON bem
+	// formado, inclusive episódio repetido ou link com esquema perigoso.
+	if err := SanitizarCuradoria(&entrada); err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
 	dbClient, errClient := database.ClientWithToken(token)
 	if errClient != nil {
 		http.Error(w, "Erro interno de conexão", http.StatusInternalServerError)
@@ -97,6 +104,13 @@ func (h *CurationHandler) HandleUpdate(w http.ResponseWriter, r *http.Request) {
 	}
 
 	entrada.CustomSynopsis = sanitizer.Sanitize(entrada.CustomSynopsis)
+
+	// Os campos JSONB precisam de validação própria: o Postgres aceita qualquer JSON bem
+	// formado, inclusive episódio repetido ou link com esquema perigoso.
+	if err := SanitizarCuradoria(&entrada); err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
 
 	dbClient, errClient := database.ClientWithToken(token)
 	if errClient != nil {
