@@ -21,6 +21,8 @@ interface AnimeDetail {
   ranking?: number
   bannerImage?: string
   startDate?: { year: number; month: number; day: number }
+  /** Instante exato da estreia, vindo da curadoria. Mais preciso que o startDate. */
+  first_aired_at?: string
   images: { jpg: { image_url: string } }
   genres: { name: string }[]
   studios: { name: string }[]
@@ -198,7 +200,7 @@ export default function Detalhes() {
     )
   }
 
-    if (erro || !anime) {
+  if (erro || !anime) {
     const mensagens = {
       'fonte-externa': {
         titulo: 'Catálogo indisponível',
@@ -299,7 +301,7 @@ export default function Detalhes() {
               <div className="flex items-center gap-3">
                 <Star className="text-gold fill-gold w-6 h-6" />
                 <div className="text-left">
-                  <div className="font-anton text-[22px] text-gold leading-none">{anime.score || 'N/A'}</div>
+                  <div className="font-anton text-[22px] text-gold leading-none">{anime.score ? anime.score.toFixed(1) : 'N/A'}</div>
                   <div className="text-[10px] font-bold text-muted-2 mt-1 uppercase tracking-wide">Nota Geral</div>
                 </div>
               </div>
@@ -395,6 +397,7 @@ export default function Detalhes() {
                 isLoggedIn={isLoggedIn}
                 nextAiringEpisode={anime.nextAiringEpisode}
                 startDate={anime.startDate}
+                firstAiredAt={anime.first_aired_at}
               />
             )}
 

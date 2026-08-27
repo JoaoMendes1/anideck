@@ -4,6 +4,7 @@ import { Link } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import EditarEntradaModal from '../components/EditarEntradaModal'
 import DeckCard from '../components/DeckCard'
+import VitrineDestaques from '../components/VitrineDestaques'
 import DeckSkeleton from '../components/DeckSkeleton'
 import StatCard from '../components/StatCard'
 import { Play, CheckCircle2, Bookmark, MonitorPlay, Star, XCircle, AlertCircle } from 'lucide-react'
@@ -192,6 +193,8 @@ export default function MeuDeck() {
                     <StatCard icon={<XCircle size={14} />} value={stats.dropados} label="Dropados" accentColor="coral" />
                     <StatCard icon={<Star size={14} />} value={stats.notaMedia} label="Sua Nota Média" accentColor="holo-1" />
                 </div>
+
+                <VitrineDestaques />
 
                 <div className="flex items-center justify-between mb-5 select-none">
                     <h2 className="font-anton text-[17px] uppercase m-0">Meu Deck</h2>

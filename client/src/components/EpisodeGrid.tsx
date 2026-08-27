@@ -8,6 +8,8 @@ interface StreamingEpisode {
   thumbnail: string
   url: string
   site: string
+  // Só vem da curadoria: a AniList não informa data por episódio.
+  aired_at?: string
 }
 
 interface EpisodeGridProps {
@@ -18,9 +20,11 @@ interface EpisodeGridProps {
   isLoggedIn: boolean
   nextAiringEpisode?: { airingAt: number; timeUntilAiring: number; episode: number }
   startDate?: { year: number; month: number; day: number }
+  /** Instante exato da estreia, vindo da curadoria. Ganha do startDate quando existe. */
+  firstAiredAt?: string
 }
 
-export default function EpisodeGrid({ malId, totalEpisodes, streamingEpisodes = [], initialWatched, isLoggedIn, nextAiringEpisode, startDate }: EpisodeGridProps) {
+export default function EpisodeGrid({ malId, totalEpisodes, streamingEpisodes = [], initialWatched, isLoggedIn, nextAiringEpisode, startDate, firstAiredAt }: EpisodeGridProps) {
   const { showToast } = useToast()
   const [watched, setWatched] = useState<number[]>(initialWatched)
   
@@ -37,7 +41,8 @@ export default function EpisodeGrid({ malId, totalEpisodes, streamingEpisodes = 
       number: epNum,
       title: data?.title || `Episódio ${epNum}`,
       thumbnail: data?.thumbnail || null,
-      url: data?.url || null
+      url: data?.url || null,
+      airedAt: data?.aired_at || null
     }
   })
 
@@ -70,11 +75,50 @@ export default function EpisodeGrid({ malId, totalEpisodes, streamingEpisodes = 
     }
   }
 
-  const getEpisodeDate = (epNumber: number) => {
+  const formatarData = (data: Date) =>
+    data.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric' })
+
+  // Converte o aired_at da curadoria numa data no fuso de quem está olhando.
+  //
+  // O cuidado aqui não é preciosismo: `new Date("2023-10-13")` interpreta data-sem-hora como
+  // meia-noite UTC, e em UTC-3 isso vira 12/10 às 21h — o episódio aparece um dia antes do
+  // que foi cadastrado. Por isso a data pura é montada pelo construtor por componentes, que
+  // trabalha em horário local (é o que o cálculo por startDate abaixo sempre fez).
+  //
+  // Já um texto com hora e fuso ("2023-10-13T14:00:00Z") tem o instante definido sem
+  // ambiguidade, e aí o parse normal é o certo.
+  const lerDataDoEpisodio = (airedAt: string) => {
+    const soData = /^(\d{4})-(\d{2})-(\d{2})$/.exec(airedAt)
+    if (soData) {
+      const [, ano, mes, dia] = soData
+      return new Date(Number(ano), Number(mes) - 1, Number(dia))
+    }
+    return new Date(airedAt)
+  }
+
+  // A data curada do episódio ganha da estimativa. A estimativa soma 7 dias por episódio a
+  // partir da estreia, o que erra em qualquer obra com hiato, recap ou especial no meio —
+  // e o erro se acumula: no episódio 20, uma semana de pausa vira uma semana de defasagem
+  // em todas as datas seguintes.
+  const getEpisodeDate = (epNumber: number, airedAt?: string | null) => {
+    if (airedAt) {
+      const dataCurada = lerDataDoEpisodio(airedAt)
+      if (!isNaN(dataCurada.getTime())) return formatarData(dataCurada)
+    }
+
+    // A estreia curada tem hora e fuso, então é mais precisa que o startDate (que é só
+    // ano/mês/dia e já chega convertido para UTC pelo servidor). Quando ela existe, é dela
+    // que a estimativa parte.
+    const base = firstAiredAt ? new Date(firstAiredAt) : null
+    if (base && !isNaN(base.getTime())) {
+      base.setDate(base.getDate() + (epNumber - 1) * 7)
+      return formatarData(base)
+    }
+
     if (!startDate?.year || !startDate?.month || !startDate?.day) return null;
     const baseDate = new Date(startDate.year, startDate.month - 1, startDate.day);
     baseDate.setDate(baseDate.getDate() + (epNumber - 1) * 7); // Soma 7 dias por episódio
-    return baseDate.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric' });
+    return formatarData(baseDate);
   }
 
   return (
@@ -136,8 +180,8 @@ export default function EpisodeGrid({ malId, totalEpisodes, streamingEpisodes = 
                   <div className="flex flex-col">
                      <div className="font-mono text-[11px] text-holo-3 font-bold leading-none mb-1">EP {ep.number}</div>
                      {/* Aqui a data aparece se existir */}
-                     {getEpisodeDate(ep.number) && (
-                        <div className="font-mono text-[9px] text-muted-2 leading-none">{getEpisodeDate(ep.number)}</div>
+                     {getEpisodeDate(ep.number, ep.airedAt) && (
+                        <div className="font-mono text-[9px] text-muted-2 leading-none">{getEpisodeDate(ep.number, ep.airedAt)}</div>
                      )}
                   </div>
                   

@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"os"
 	"sync"
+	"time"
 
 	"github.com/JoaoMendes1/anideck/internal/database"
 	"github.com/JoaoMendes1/anideck/internal/middleware"
@@ -165,9 +166,12 @@ func (h *CurationHandler) HandleAIRewrite(w http.ResponseWriter, r *http.Request
 	var apiErr error
 
 	for _, modelName := range modelsToTry {
-		resp, apiErr = client.Models.GenerateContent(ctx, modelName, genai.Text(prompt), config)
+		attemptCtx, cancel := context.WithTimeout(r.Context(), 30*time.Second)
+		resp, apiErr = client.Models.GenerateContent(attemptCtx, modelName, genai.Text(prompt), config)
+		cancel()
+
 		if apiErr == nil {
-			log.Printf("[INFO AI] Sucesso utilizando o modelo: %s", modelName)
+			log.Printf("[INFO AI] Sucesso utilizando o modelo %s", modelName)
 			break
 		}
 		log.Printf("[WARN AI] Falha no modelo %s: %v. Tentando fallback...", modelName, apiErr)

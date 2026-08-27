@@ -13,6 +13,7 @@ interface StatsOverview {
   em_dia: number
   completos: number
   dropados: number
+  quero_assistir: number
   nota_media: number
   tempo_total_minutos: number
 }
@@ -350,10 +351,12 @@ export default function Estatisticas() {
   const pctEmDia = getPct(overview?.em_dia || 0)
   const pctCompleto = getPct(overview?.completos || 0)
   const pctDropado = getPct(overview?.dropados || 0)
+  const pctQuero = getPct(overview?.quero_assistir || 0)
 
   const offEmDia = 25 - pctAssistindo
   const offCompleto = offEmDia - pctEmDia
   const offDropado = offCompleto - pctCompleto
+  const offQuero = offDropado - pctDropado
 
   // Cada arco começa com comprimento 0 e cresce até a fatia real.
   const arco = (pct: number) => (desenhado ? `${pct} ${100 - pct}` : `0 100`)
@@ -479,12 +482,14 @@ export default function Estatisticas() {
                 {pctEmDia > 0 && <circle className="anim-donut" cx="21" cy="21" r="15.9" fill="transparent" stroke="#a0ff78" strokeWidth="6" strokeDasharray={arco(pctEmDia)} strokeDashoffset={offEmDia} />}
                 {pctCompleto > 0 && <circle className="anim-donut" cx="21" cy="21" r="15.9" fill="transparent" stroke="#FFC542" strokeWidth="6" strokeDasharray={arco(pctCompleto)} strokeDashoffset={offCompleto} />}
                 {pctDropado > 0 && <circle className="anim-donut" cx="21" cy="21" r="15.9" fill="transparent" stroke="#6B5F94" strokeWidth="6" strokeDasharray={arco(pctDropado)} strokeDashoffset={offDropado} />}
+                {pctQuero > 0 && <circle className="anim-donut" cx="21" cy="21" r="15.9" fill="transparent" stroke="#FF4FD8" strokeWidth="6" strokeDasharray={arco(pctQuero)} strokeDashoffset={offQuero} />}
               </svg>
               <div className="flex flex-col gap-2 flex-1 min-w-[140px]">
                 <div className="flex items-center gap-2 text-[12.5px]"><span className="w-2.5 h-2.5 rounded-sm bg-holo-3"></span>Assistindo <b className="ml-auto font-mono tabular-nums">{pctAssistindo.toFixed(0)}%</b></div>
                 <div className="flex items-center gap-2 text-[12.5px]"><span className="w-2.5 h-2.5 rounded-sm bg-green"></span>Em Dia <b className="ml-auto font-mono tabular-nums">{pctEmDia.toFixed(0)}%</b></div>
                 <div className="flex items-center gap-2 text-[12.5px]"><span className="w-2.5 h-2.5 rounded-sm bg-gold"></span>Completo <b className="ml-auto font-mono tabular-nums">{pctCompleto.toFixed(0)}%</b></div>
                 <div className="flex items-center gap-2 text-[12.5px]"><span className="w-2.5 h-2.5 rounded-sm bg-muted-2"></span>Dropado <b className="ml-auto font-mono tabular-nums">{pctDropado.toFixed(0)}%</b></div>
+                <div className="flex items-center gap-2 text-[12.5px]"><span className="w-2.5 h-2.5 rounded-sm bg-holo-1"></span>Quero Assistir <b className="ml-auto font-mono tabular-nums">{pctQuero.toFixed(0)}%</b></div>
               </div>
             </div>
           </div>
