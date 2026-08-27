@@ -8,10 +8,12 @@ import Sheet from '../components/Sheet'
 import BuscaAniList, { type AniListMedia } from '../components/BuscaAniList'
 import ImageUploadField from '../components/ImageUploadField'
 import CuradoriaPersonagens from '../components/CuradoriaPersonagens'
+import CuradoriaEpisodios from '../components/CuradoriaEpisodios'
+import CuradoriaLinks from '../components/CuradoriaLinks'
 import DestaquesRail from '../components/DestaquesRail'
 import ReorderableTags from '../components/ReorderableTags'
 import imageCompression from 'browser-image-compression'
-import type { CuratedAnime, CuratedCharacter } from '../types/curation'
+import type { CuratedAnime, CuratedCharacter, CuratedEpisode, CuratedExternalLink, CurationStatus } from '../types/curation'
 import ConfigIAModal from '../components/ConfigIAModal'
 import { AbaOlheiro } from '../components/AbaOlheiro'
 import type { SugestaoPendente } from '../hooks/useOlheiro'
@@ -24,6 +26,8 @@ const QUERY_ANILIST = `
     Page(page: 1, perPage: 5) {
       media(search: $search, idMal: $idMal, type: ANIME) {
         id idMal title { romaji english native } coverImage { large } bannerImage format status genres synopsis: description
+        episodes
+        streamingEpisodes { title thumbnail }
         characters(sort: [ROLE, RELEVANCE], perPage: 15) {
           edges { role node { name { full } image { large } } }
         }
@@ -60,6 +64,15 @@ export default function PainelAdmin() {
   const [bannerImage, setBannerImage] = useState('')
   const [characters, setCharacters] = useState<CuratedCharacter[]>([])
 
+  // Campos do Bloco 2
+  const [episodios, setEpisodios] = useState<CuratedEpisode[]>([])
+  const [links, setLinks] = useState<CuratedExternalLink[]>([])
+  const [estreia, setEstreia] = useState('')
+  const [duracao, setDuracao] = useState('')
+  const [importandoEpisodios, setImportandoEpisodios] = useState(false)
+  const [isDestaque, setIsDestaque] = useState(true)
+  const [curationStatus, setCurationStatus] = useState<CurationStatus>('parcial')
+
   const [itemParaExcluir, setItemParaExcluir] = useState<{ id: string; titulo: string } | null>(null)
   const [excluindo, setExcluindo] = useState(false)
   const [uploading, setUploading] = useState(false)
@@ -78,9 +91,14 @@ export default function PainelAdmin() {
 
   useEffect(() => {
     if (!previewTitulo) return
-    const currentState = JSON.stringify({ titulo, formato, status, ordem, sinopse, tags, coverImage, bannerImage, characters })
+    const currentState = JSON.stringify({
+      titulo, formato, status, ordem, sinopse, tags, coverImage, bannerImage, characters,
+      episodios, links, estreia, duracao, isDestaque, curationStatus,
+    })
     setIsDirty(currentState !== initialStateHash)
-  }, [titulo, formato, status, ordem, sinopse, tags, coverImage, bannerImage, characters, initialStateHash, previewTitulo])
+  }, [titulo, formato, status, ordem, sinopse, tags, coverImage, bannerImage, characters,
+      episodios, links, estreia, duracao, isDestaque, curationStatus,
+      initialStateHash, previewTitulo])
 
   useEffect(() => {
     const handleBeforeUnload = (e: BeforeUnloadEvent) => {
@@ -208,7 +226,9 @@ export default function PainelAdmin() {
     setInitialStateHash(JSON.stringify({
       titulo: tituloCorreto, formato: formatoAnime, status: statusAnime,
       ordem: 0, sinopse: sinopseLimpa, tags: tagsAnime,
-      coverImage: capa, bannerImage: banner, characters: importedChars
+      coverImage: capa, bannerImage: banner, characters: importedChars,
+      episodios: [], links: [], estreia: '', duracao: '',
+      isDestaque: true, curationStatus: 'parcial'
     }))
   }
 
@@ -227,6 +247,41 @@ export default function PainelAdmin() {
       return data?.Page?.media?.[0] || null
     } catch {
       return null
+    }
+  }
+
+  // Traz os episódios da AniList para o editor. Devolve null quando falha — quem chama já
+  // recebeu a mensagem e não deve mexer na lista.
+  //
+  // Monta a lista a partir do total anunciado (`episodes`) e não do tamanho de
+  // `streamingEpisodes`: a cobertura desse último é irregular e muitos animes vêm com ele
+  // vazio, o que geraria uma grade menor que o anime de verdade. Título e capa entram quando
+  // existem, posicionados pelo índice.
+  const importarEpisodiosDaAniList = async (): Promise<CuratedEpisode[] | null> => {
+    if (!malId) {
+      showToast('Busque um anime antes de importar os episódios.', 'error')
+      return null
+    }
+
+    setImportandoEpisodios(true)
+    try {
+      const anime = await buscarAnimePorIdMal(malId)
+      if (!anime) {
+        showToast('A AniList não respondeu. Ela está fora do ar desde 22/08 — use "Gerar vazios" enquanto isso.', 'error')
+        return null
+      }
+
+      const comTitulo = anime.streamingEpisodes || []
+      const total = anime.episodes || comTitulo.length
+
+      return Array.from({ length: total }, (_, i) => ({
+        number: i + 1,
+        title: comTitulo[i]?.title || '',
+        image: comTitulo[i]?.thumbnail || '',
+        aired_at: '',
+      }))
+    } finally {
+      setImportandoEpisodios(false)
     }
   }
 
@@ -280,6 +335,25 @@ export default function PainelAdmin() {
     }
   }
 
+  // O <input type="datetime-local"> fala em horário local e sem fuso; a coluna é TIMESTAMPTZ.
+  // As duas funções abaixo fazem a ponte, e existem separadas porque o erro clássico é usar
+  // toISOString().slice(0,16) para preencher o input — isso devolve UTC, e o campo mostraria
+  // a estreia com o fuso do servidor em vez do de quem está cadastrando.
+  const estreiaParaInput = (iso?: string | null) => {
+    if (!iso) return ''
+    const data = new Date(iso)
+    if (isNaN(data.getTime())) return ''
+    const doisDigitos = (n: number) => String(n).padStart(2, '0')
+    return `${data.getFullYear()}-${doisDigitos(data.getMonth() + 1)}-${doisDigitos(data.getDate())}` +
+      `T${doisDigitos(data.getHours())}:${doisDigitos(data.getMinutes())}`
+  }
+
+  const estreiaParaBanco = (valorDoInput: string) => {
+    if (!valorDoInput) return null
+    const data = new Date(valorDoInput)
+    return isNaN(data.getTime()) ? null : data.toISOString()
+  }
+
   const salvarDestaque = async () => {
     if (!malId || !titulo) {
       showToast('Busque um anime e defina um título antes de salvar!', 'error')
@@ -297,6 +371,16 @@ export default function PainelAdmin() {
       custom_cover_image: coverImage,
       custom_banner_image: bannerImage,
       custom_characters: characters.length > 0 ? characters : null,
+
+      // Campos do Bloco 2. `null` quando vazio, nunca array vazio: pela convenção do
+      // Bloco 1, `null` significa "não curei, cai para a AniList", enquanto array vazio
+      // significa "curei e está vazio de propósito" — e limparia o dado da AniList junto.
+      custom_episodes: episodios.length > 0 ? episodios : null,
+      custom_external_links: links.length > 0 ? links : null,
+      custom_first_aired_at: estreiaParaBanco(estreia),
+      custom_duration_minutes: duracao ? Number(duracao) : null,
+      is_destaque: isDestaque,
+      curation_status: curationStatus,
     }
 
     try {
@@ -424,6 +508,12 @@ export default function PainelAdmin() {
     setCoverImage('')
     setBannerImage('')
     setCharacters([])
+    setEpisodios([])
+    setLinks([])
+    setEstreia('')
+    setDuracao('')
+    setIsDestaque(true)
+    setCurationStatus('parcial')
     setResultadosBusca([])
     setSugestaoEmCuradoria(null)
     setIsDirty(false)
@@ -463,6 +553,14 @@ export default function PainelAdmin() {
       setCoverImage(anime.custom_cover_image || '')
       setBannerImage(anime.custom_banner_image || '')
       setCharacters(anime.custom_characters || [])
+      setEpisodios(anime.custom_episodes || [])
+      setLinks(anime.custom_external_links || [])
+      setEstreia(estreiaParaInput(anime.custom_first_aired_at))
+      setDuracao(anime.custom_duration_minutes ? String(anime.custom_duration_minutes) : '')
+      // `?? true` e não `|| true`: o banco tem DEFAULT true, mas um false gravado de
+      // propósito precisa sobreviver — com `||` ele viraria true de novo.
+      setIsDestaque(anime.is_destaque ?? true)
+      setCurationStatus(anime.curation_status || 'parcial')
       setPreviewTitulo(anime.custom_title)
       setFormularioAberto(true)
       window.scrollTo({ top: 0, behavior: 'smooth' })
@@ -472,7 +570,11 @@ export default function PainelAdmin() {
           titulo: anime.custom_title, formato: anime.custom_format || 'TV', status: anime.custom_status || 'RELEASING',
           ordem: anime.order_index, sinopse: anime.custom_synopsis || '', tags: anime.custom_tags || [],
           coverImage: anime.custom_cover_image || '', bannerImage: anime.custom_banner_image || '',
-          characters: anime.custom_characters || []
+          characters: anime.custom_characters || [],
+          episodios: anime.custom_episodes || [], links: anime.custom_external_links || [],
+          estreia: estreiaParaInput(anime.custom_first_aired_at),
+          duracao: anime.custom_duration_minutes ? String(anime.custom_duration_minutes) : '',
+          isDestaque: anime.is_destaque ?? true, curationStatus: anime.curation_status || 'parcial'
         }))
         setIsDirty(false)
       }, 100)
@@ -677,6 +779,101 @@ export default function PainelAdmin() {
                       uploading={uploading}
                       onValidationError={(msg) => showToast(msg, 'error')}
                     />
+
+                    <CuradoriaEpisodios
+                      episodes={episodios}
+                      onAdd={(ep) => setEpisodios([...episodios, ep])}
+                      onUpdate={(index, ep) => {
+                        const novos = [...episodios]
+                        novos[index] = ep
+                        setEpisodios(novos)
+                      }}
+                      onRemove={(index) => setEpisodios(episodios.filter((_, i) => i !== index))}
+                      onUploadImage={uploadImagem}
+                      uploading={uploading}
+                      onValidationError={(msg) => showToast(msg, 'error')}
+                      onImportar={importarEpisodiosDaAniList}
+                      importando={importandoEpisodios}
+                      onDefinirLista={setEpisodios}
+                    />
+
+                    <CuradoriaLinks
+                      links={links}
+                      onAdd={(link) => setLinks([...links, link])}
+                      onUpdate={(index, link) => {
+                        const novos = [...links]
+                        novos[index] = link
+                        setLinks(novos)
+                      }}
+                      onRemove={(index) => setLinks(links.filter((_, i) => i !== index))}
+                      onValidationError={(msg) => showToast(msg, 'error')}
+                    />
+
+                    {/* Exibição e curadoria: campos que não descrevem a obra, e sim como ela
+                        é tratada pelo AniDeck. Por isso ficam juntos e separados do resto. */}
+                    <div className="p-4 border border-line bg-panel-2 rounded-xl">
+                      <h4 className="text-xs font-bold text-muted uppercase mb-4">Exibição &amp; Controle</h4>
+
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
+                        <div>
+                          <label className="block text-[10px] mb-1 font-bold text-muted">Estreia do episódio 1 (data e hora)</label>
+                          <input
+                            type="datetime-local"
+                            value={estreia}
+                            onChange={(e) => setEstreia(e.target.value)}
+                            className="w-full bg-panel border border-line rounded px-2 py-1.5 text-xs outline-none focus:border-holo-2 text-text"
+                          />
+                          <p className="text-[9.5px] text-muted-2 mt-1">
+                            No <b className="text-muted">seu</b> horário — a conversão é automática. É a hora que permite
+                            calcular a contagem regressiva sem a AniList.
+                          </p>
+                        </div>
+
+                        <div>
+                          <label className="block text-[10px] mb-1 font-bold text-muted">Duração do episódio (min)</label>
+                          <input
+                            type="number"
+                            min="1"
+                            step="1"
+                            value={duracao}
+                            onChange={(e) => setDuracao(e.target.value)}
+                            placeholder="24"
+                            className="w-full bg-panel border border-line rounded px-2 py-1.5 text-xs outline-none focus:border-holo-2 text-text tabular-nums"
+                          />
+                          <p className="text-[9.5px] text-muted-2 mt-1">Sem isso, o tempo assistido usa uma estimativa de 24 min.</p>
+                        </div>
+                      </div>
+
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div>
+                          <label className="block text-[10px] mb-1 font-bold text-muted">Estado da curadoria</label>
+                          <select
+                            value={curationStatus}
+                            onChange={(e) => setCurationStatus(e.target.value as CurationStatus)}
+                            className="w-full bg-panel border border-line rounded px-2 py-1.5 text-xs outline-none text-text"
+                          >
+                            <option value="parcial">Parcial — ainda falta coisa</option>
+                            <option value="completo">Completo — nada pendente</option>
+                            <option value="revisar">Revisar — tem algo errado</option>
+                          </select>
+                        </div>
+
+                        <div className="flex items-end">
+                          <label className="flex items-center gap-2.5 cursor-pointer select-none w-full bg-panel border border-line rounded px-3 py-2 hover:border-holo-2 transition-colors">
+                            <input
+                              type="checkbox"
+                              checked={isDestaque}
+                              onChange={(e) => setIsDestaque(e.target.checked)}
+                              className="w-4 h-4 accent-holo-2 cursor-pointer"
+                            />
+                            <span className="text-xs font-bold text-text">Exibir como destaque</span>
+                          </label>
+                        </div>
+                      </div>
+                      <p className="text-[9.5px] text-muted-2 mt-2">
+                        Desmarcar mantém o anime curado e com os dados aplicados — só tira ele da vitrine de destaques.
+                      </p>
+                    </div>
 
                     <ReorderableTags tags={tags} onChange={setTags} />
 

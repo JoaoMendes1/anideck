@@ -39,6 +39,23 @@ Título: <tipo>: <descrição curta> #<número>
       issue envolver lógica (handlers, validação, cálculo); dispensável em issues de
       texto/estilo/documentação
 ```
+> **Emenda (25/08/2026):** issue é obrigatória quando a alteração:
+> - mexe em **schema, dado de usuário, autenticação ou regra de negócio**;
+> - é **correção de bug**, qualquer que seja o tamanho — bug pequeno costuma ter
+>   causa interessante, e é ela que some se não for escrita;
+> - envolve **escolha estrutural no visual**: trocar biblioteca, alterar design
+>   tokens, refazer navegação ou padrão de componente. Não pela quantidade de
+>   código, mas porque existe um "por quê" que precisa ficar registrado.
+>
+> Dispensam issue: texto de interface, ajuste visual dentro dos tokens já
+> existentes, documentação e refatoração sem mudança de comportamento. Nesses
+> casos, commit direto na `staging` basta.
+>
+> **Na dúvida, o teste:** daqui a três meses, alguém (inclusive eu) vai perguntar
+> "por que foi feito assim?". Se sim, abre issue.
+>
+> O critério é o rastro: issue existe para registrar investigação, decisão e como
+> foi verificado. Onde não há decisão a registrar, ela é burocracia.
 
 2. **Toda alteração é feita primeiro na branch `staging`**, nunca direto em produção.
    Ambientes de produção e homologação sobem desde o início do projeto (não só no final).
@@ -121,7 +138,7 @@ parênteses (`ui`, `auth`, `db`, etc.) e sempre referenciando a issue com `close
     Não confie em dados de treinamento defasados. É terminantemente proibido introduzir pacotes obsoletos (deprecated), legados ou em End-of-Life (EOL). Se o ecossistema da ferramenta sofreu unificações ou mudanças estruturais recentes, exija e utilize a versão moderna e oficial. Se não tiver certeza absoluta do pacote atual, avise ou faça uma pesquisa antes de gerar o código.
 
 11. **Armadilhas conhecidas.** Antes de mexer em SQL, view, JOIN, handler de leitura ou schema,
-    leia `docs/ARMADILHAS.md`. Se a tarefa toca a área de um item, responda a pergunta
+    leia `docs/PITFALLS.md`. Se a tarefa toca a área de um item, responda a pergunta
     obrigatória dele explicitamente na resposta, com o arquivo real na mão — não de memória.
     Bug silencioso novo (o que não quebra, só devolve dado errado) vira item novo lá.
 

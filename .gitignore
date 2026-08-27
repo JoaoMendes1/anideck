@@ -9,6 +9,11 @@
 .DS_Store
 Thumbs.db
 
-# Build do frontend (React) que faremos no futuro
 /client/dist/
-/client/node_modules/
+/client/node_modules/supabase/.temp/
+
+# CLI do Supabase — artefatos locais (.temp, .branches) e config gerado.
+# A pasta inteira fica de fora por escolha: é um projeto de um dev só, e o
+# config.toml é regenerável com `supabase init`.
+supabase/
+

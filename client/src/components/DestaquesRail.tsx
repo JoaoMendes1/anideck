@@ -13,6 +13,15 @@ interface DestaquesRailProps {
 
 type FiltroTipo = 'ALL' | 'RELEASING' | 'FINISHED' | 'NO_COVER'
 
+// O estado de curadoria existe para responder "onde eu parei?" com 100+ animes cadastrados.
+// Sem aparecer aqui na lista, ele só era visível abrindo cada anime um por um — que é
+// exatamente o problema que ele deveria resolver.
+const TEMA_STATUS: Record<string, { rotulo: string; classe: string }> = {
+  completo: { rotulo: 'completo', classe: 'text-green border-green/40 bg-green/10' },
+  revisar: { rotulo: 'revisar', classe: 'text-coral border-coral/40 bg-coral/10' },
+  parcial: { rotulo: 'parcial', classe: 'text-muted-2 border-line bg-panel-2' },
+}
+
 export default function DestaquesRail({
   destaques,
   selectedId,
@@ -118,9 +127,28 @@ export default function DestaquesRail({
                   <h4 className={`text-sm font-bold truncate ${isSelected ? 'text-white' : 'text-text'}`}>
                     {anime.custom_title}
                   </h4>
-                  <p className="text-[10px] font-mono text-muted mt-0.5">
-                    {anime.custom_characters?.length || 0} personagens
-                  </p>
+                  <div className="flex items-center gap-2 mt-0.5 flex-wrap">
+                    <p className="text-[10px] font-mono text-muted">
+                      {anime.custom_characters?.length || 0} personagens
+                      {(anime.custom_episodes?.length ?? 0) > 0 && ` · ${anime.custom_episodes?.length} eps`}
+                    </p>
+                    {(() => {
+                      const tema = TEMA_STATUS[anime.curation_status || 'parcial']
+                      return (
+                        <span className={`text-[9px] font-mono uppercase tracking-wider px-1.5 py-0.5 rounded border ${tema.classe}`}>
+                          {tema.rotulo}
+                        </span>
+                      )
+                    })()}
+                    {anime.is_destaque === false && (
+                      <span
+                        className="text-[9px] font-mono uppercase tracking-wider px-1.5 py-0.5 rounded border text-muted-2 border-line"
+                        title="Curado, mas fora da vitrine de destaques"
+                      >
+                        oculto
+                      </span>
+                    )}
+                  </div>
                 </div>
 
                 <button

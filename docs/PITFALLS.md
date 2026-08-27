@@ -1,4 +1,4 @@
-# ⚠️ ARMADILHAS.md — AniDeck
+# ⚠️ PITFALLS.md — AniDeck
 
 > **Para que serve:** este arquivo não ensina postura ("seja rigoroso", "investigue antes").
 > Ele lista os modos de falha que **este projeto já sofreu de verdade**, cada um com o sintoma
@@ -23,13 +23,21 @@ animes, outra com 5.
 e em português pelo `curated_animes.custom_tags` (`'Fantasia'`, digitado à mão no Painel Admin).
 O `GROUP BY` acontecia antes da tradução, então viravam duas chaves distintas.
 
-**Onde mora o risco hoje:** a `genre_taxonomy` é chaveada por `raw_name` — o nome **como vem da
-AniList**, em inglês. Qualquer `JOIN` entre um rótulo curado e essa tabela precisa resolver o
-idioma antes, ou o rótulo curado simplesmente não encontra correspondência.
+**Onde mora o risco hoje:** a `genre_taxonomy` é chaveada por `raw_name`, e o seed do `sql/002`
+já cadastra os dois idiomas apontando para o mesmo `display_name_pt` — `'Fantasy'` e
+`'Fantasia'` ambos resolvem para "Fantasia". **Não assuma que só o inglês existe.**
 
-> **Pergunta obrigatória:** neste `JOIN` / `GROUP BY` / comparação de rótulos, de qual fonte vem
-> cada lado e em que idioma? O que acontece com um rótulo em português que não bate com nenhum
-> `raw_name`?
+O que ainda quebra:
+
+- **A cobertura em português é parcial.** Existe `'Harém'`, mas não `'Harém Reverso'`.
+- **O campo de tags no Admin é texto livre.** O `curation.go` não valida nada contra a
+  taxonomia, então erro de digitação (`'Fantasía'`, `'Aventuras'`) vira rótulo órfão.
+- **Desde o `sql/013`, órfão cai em `'ignorado'` e some da tela em silêncio.** A
+  `view_unmapped_labels` existe justamente para tornar isso visível.
+
+> **Pergunta obrigatória:** o rótulo desta ponta está cadastrado na `genre_taxonomy`, nos dois
+> idiomas? Confira o seed do `sql/002`. Rótulo ausente não aparece em lugar nenhum — consulte a
+> `view_unmapped_labels` antes de concluir que "sumiu sem motivo".
 
 ---
 
@@ -43,6 +51,10 @@ não de quem consulta. Confiar na RLS da tabela base é vazamento garantido.
 
 **Regra:** toda view que expõe dado de usuário precisa de `WHERE user_id = auth.uid()`
 **explícito**. Sem exceção, inclusive em views novas.
+
+**Efeito colateral no teste:** por causa desse filtro, rodar essas views no SQL Editor do
+Supabase devolve **zero linhas** — lá você é `postgres` e `auth.uid()` volta `NULL`. Parece que
+a query quebrou, mas não quebrou. Teste pelo Postman com o JWT ou pela tela.
 
 > **Pergunta obrigatória:** esta view expõe dado de usuário? Tem `auth.uid()` explícito? E as
 > views que ela consulta por dentro, têm?
@@ -69,8 +81,12 @@ devem ser independentes de fuso (contar intervalos, não horas absolutas).
 **Incidente (21/08/2026):** quem cadastrava o backlog inteiro numa sentada às 23h gerava 40
 eventos noturnos, e o gráfico concluía que a pessoa era espectadora noturna.
 
-**Correção adotada:** marcações separadas por menos de 2h contam como **uma sessão só**, e a
-frase de insight só aparece com 10+ dias distintos de atividade.
+**Segundo sintoma da mesma raiz:** o recorde de "maratona mais rápida" exibia "2 eps em 0min" —
+resultado de clicar dois episódios em sequência na grade, não de uma maratona.
+
+**Correções adotadas:** marcações separadas por menos de 2h contam como **uma sessão só**; a
+frase de insight só aparece com 10+ dias distintos de atividade; e a maratona exige 3+ episódios
+com pelo menos 5 min de intervalo médio.
 
 > **Pergunta obrigatória:** esta métrica trata cada linha de `episode_progress` como um evento de
 > comportamento independente? O que ela conclui de um import em lote de 40 episódios em 5 minutos?
@@ -98,10 +114,14 @@ O `salvarDestaque` já faz isso certo para personagens. Generalizar é item aber
 ganha; se estiver vazio, cai para o cache; se o cache não tiver, cai para a AniList ao vivo.
 **Nunca soma as fontes.**
 
-**Incidente:** `COALESCE(cur.custom_tags, c.genres, '{}') || COALESCE(c.tags, '{}')` — o
-`COALESCE` respeita a precedência sobre `c.genres`, mas o `||` concatena `c.tags`
-incondicionalmente. Sintoma: um anime curado com 3 tags exibiu 5+ rótulos em inglês, e
-"Environmental" virou o card "Gênero Favorito".
+**Incidente (24/08/2026, corrigido no `sql/013`):**
+`COALESCE(cur.custom_tags, c.genres, '{}') || COALESCE(c.tags, '{}')` — o `COALESCE` respeitava
+a precedência sobre `c.genres`, mas o `||` concatenava `c.tags` incondicionalmente. Sintoma: um
+anime curado com 3 tags exibiu 5+ rótulos em inglês, e "Environmental" virou o card "Gênero
+Favorito".
+
+**A forma correta:** o `||` vai **dentro** do `COALESCE`, não por fora —
+`COALESCE(cur.custom_tags, COALESCE(c.genres,'{}') || COALESCE(c.tags,'{}'))`.
 
 > **Pergunta obrigatória:** neste ponto o dado curado **substitui** a fonte anterior ou é
 > **somado** a ela? Tem algum `||`, `UNION` ou `array_cat` depois do `COALESCE`?
@@ -168,9 +188,8 @@ marcado pelos usuários. Não há erro, não há aviso — o usuário só vê ep
 
 ## 11. 🗄️ O `sql/` não é sistema de migrations — a ORDEM importa
 
-Os arquivos em `sql/` são numerados e aplicados **à mão** no painel do Supabase, todos
-idempotentes. Não há aplicação automática no deploy (isso exigiria credencial de owner do banco
-no pipeline).
+Os arquivos em `sql/` são numerados e aplicados **à mão** no painel do Supabase. Não há aplicação
+automática no deploy (isso exigiria credencial de owner do banco no pipeline).
 
 **Consequência:** a ordem entre deploy de código e aplicação de SQL é responsabilidade humana e
 pode quebrar. Exemplo real: o `DROP COLUMN` do `sql/005` tinha que rodar **depois** do deploy —
@@ -179,10 +198,73 @@ a ordem inversa quebraria o insert.
 **Agravante:** homologação e produção **compartilham o mesmo projeto Supabase**. Não existe
 ambiente onde errar sem custo. Teste em homologação altera dado de produção.
 
+**Segundo agravante:** o repositório não sabe quais arquivos já foram aplicados. Registre a data
+de aplicação no `sql/README.md` — sem isso, você não descobre em outra máquina.
+
 > **Pergunta obrigatória:** este SQL precisa rodar antes ou depois do deploy do código? É
 > reversível? Se não for, qual é o rollback?
 
 ---
+
+## 12. 🔁 Arquivo "idempotente" que deixou de ser
+
+**Incidente (descoberto em 24/08/2026, ainda não corrigido):** o cabeçalho do `sql/006` afirma
+que reaplicá-lo é um no-op, porque foi extraído do banco com `pg_get_viewdef`. Deixou de ser
+verdade: o `sql/008` redefiniu a `view_user_fastest_binge` com filtros de plausibilidade (3+
+episódios, 5 min de intervalo). **Reaplicar o `006` hoje reverteria essa correção** e traria de
+volta o recorde falso de "2 eps em 0min", sem erro nenhum.
+
+O mesmo vale para o `sql/003`: redefinido pelo `008`, e de novo pelo `013`.
+
+**Regra:** antes de editar ou reaplicar qualquer arquivo antigo do `sql/`, procure por
+`CREATE OR REPLACE VIEW <nome>` em **todos** os arquivos de número maior. O número mais alto é a
+definição viva — não o arquivo onde a view nasceu.
+
+**Corolário para correções:** correção de view vai sempre num arquivo **novo**, nunca editando o
+antigo. Editar o `003` para corrigir a afinidade teria revertido o tier `'ignorado'` do `008`.
+
+> **Pergunta obrigatória:** este objeto é redefinido em algum arquivo `sql/` de número maior?
+> Estou editando a definição viva ou uma cópia morta?
+
+---
+
+## 13. 🥧 Gráfico de fatias que não cobre o denominador
+
+**Incidente (26/08/2026, issue #76):** a Distribuição por Status somava ~60% em vez de
+100%. Um pedaço escuro do donut ficava sem legenda nenhuma.
+
+**Causa:** o denominador era `total_animes` — a contagem de **todas** as entradas do deck —
+mas a `view_user_stats` só devolvia quatro dos cinco status. Os 27 animes em
+"Quero Assistir" (40% do deck) não tinham fatia nem linha na legenda. O React estava
+correto: ele não desenha um campo que nunca chega.
+
+**O que torna isso silencioso:** cada fatia individualmente estava certa, e a soma errada
+só aparece para quem para e soma. Um status novo criado no futuro reproduz o mesmo bug do
+mesmo jeito.
+
+**Detalhe de implementação que vai reaparecer:** `CREATE OR REPLACE VIEW` só permite
+acrescentar coluna **no fim**. Por isso `quero_assistir` ficou depois de
+`tempo_total_minutos`, fora da ordem lógica. Inserir no meio exige `DROP VIEW` + recriar,
+o que derruba as permissões e qualquer view que dependa dela.
+
+**Nota de estado:** não existe nenhuma entrada com status `Dropado` no banco. O `0%` na
+tela é dado real, não defeito.
+
+> **Pergunta obrigatória:** as categorias que este gráfico desenha cobrem **todas** as que
+> o denominador conta? Se eu somar as fatias, dá 100%?
+
+## 14. 🧪 Teste que valida o caminho errado depois de mudança no handler
+
+**Incidente (26/08/2026):** `TestHandleCreate_CorpoInvalido` esperava 400 e recebia 401.
+O teste montava o contexto só com `UserIDKey`, mas o handler passou a exigir também
+`TokenKey` — e cortava em 401 antes de chegar na validação do corpo.
+
+**O que torna isso silencioso:** o teste falha, mas pela razão errada. Lido rápido, parece
+bug de autenticação no handler. Na prática o handler estava certo e o teste é que ficou
+para trás.
+
+> **Pergunta obrigatória:** quando um handler ganha uma dependência nova do contexto, quais
+> testes montam esse contexto à mão e precisam acompanhar?
 
 ## 🧭 Como manter este arquivo
 
@@ -190,5 +272,9 @@ ambiente onde errar sem custo. Teste em homologação altera dado de produção.
   ele vira um item aqui — com o sintoma real observado, não com a descrição teórica.
 - Bug que quebra alto e claro **não** entra aqui. Este arquivo é sobre o que passa despercebido.
 - A justificativa longa continua no `DECISIONS.md`. Aqui fica só o gatilho e a pergunta.
-- Item que deixou de ser risco (código removido, coluna dropada) não é apagado — vira nota
-  histórica, para não ser reintroduzido por alguém que não viveu o incidente.
+- **Armadilha corrigida é atualizada, não apagada.** Se o risco mudou de forma — como o item 1,
+  onde a cobertura de idioma passou a existir mas ficou parcial — reescreva o "onde mora o risco
+  hoje". Armadilha desatualizada é pior que armadilha ausente: manda a próxima pessoa investigar
+  um problema que não existe mais.
+- Item que deixou de ser risco de vez (código removido, coluna dropada) vira nota histórica, para
+  não ser reintroduzido por alguém que não viveu o incidente.

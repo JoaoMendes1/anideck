@@ -9,11 +9,13 @@ import (
 	"strconv"
 	"strings"
 	"sync"
+	"sync/atomic"
 	"time"
+
+	"github.com/supabase-community/postgrest-go"
 
 	"github.com/JoaoMendes1/anideck/internal/anilist"
 	"github.com/JoaoMendes1/anideck/internal/database"
-	"github.com/JoaoMendes1/anideck/internal/models"
 )
 
 // GlobalRankingState guarda o Top Global calculado na memória RAM.
@@ -26,6 +28,122 @@ type GlobalRankingState struct {
 }
 
 var globalRanking GlobalRankingState
+
+// intervaloEntreFotos é a cadência do indicador ▲/▼. Trinta dias foi escolhido
+// pelo rótulo: "desde o mês passado" é legível, "nos últimos 20 dias" não é.
+const intervaloEntreFotos = 30 * 24 * time.Hour
+
+// limiteFotoTopGlobal é quantas linhas ler da tabela de fotos. O Top Global tem
+// 500 animes (10 páginas × 50), então uma foto inteira cabe aqui. Se uma foto
+// antiga tiver menos linhas, o laço de agrupamento para na virada de
+// captured_at e ignora o excedente — por isso ler "a mais" é seguro.
+const limiteFotoTopGlobal = 500
+
+// linhaSnapshot espelha uma linha de ranking_snapshots.
+type linhaSnapshot struct {
+	CapturedAt string `json:"captured_at"`
+	MalID      int    `json:"mal_id"`
+	Position   int    `json:"position"`
+}
+
+// calcularVariacao preenche PreviousRank a partir da foto anterior.
+//
+// Função pura de propósito: entra a lista já ordenada e o mapa da foto, sai a
+// lista com o campo preenchido. Sem banco, sem rede, sem relógio — dá para
+// testar isoladamente, mesmo padrão do PontuarCandidato do Olheiro.
+//
+// Anime ausente da foto (entrou na lista depois, ou é a primeira medição)
+// recebe 0. O `omitempty` da struct faz esse zero sumir do JSON, e o frontend
+// recebe undefined — que é o sinal de "não exibir indicador".
+func calcularVariacao(animes []anilist.Anime, foto map[int]int) {
+	for i := range animes {
+		// Busca em mapa nil devolve o zero do tipo. Foto ausente não quebra.
+		animes[i].PreviousRank = foto[animes[i].MalID]
+	}
+}
+
+// carregarUltimaFoto devolve o mapa mal_id → posição da medição mais recente,
+// e quando ela foi tirada. Tabela vazia devolve mapa nil e tempo zero, sem erro.
+func carregarUltimaFoto() (map[int]int, time.Time, error) {
+	client, err := database.ServiceRoleClient()
+	if err != nil {
+		return nil, time.Time{}, err
+	}
+
+	data, _, err := client.From("ranking_snapshots").
+		Select("captured_at,mal_id,position", "exact", false).
+		Order("captured_at", &postgrest.OrderOpts{Ascending: false}).
+		Limit(limiteFotoTopGlobal, "").
+		Execute()
+	if err != nil {
+		return nil, time.Time{}, err
+	}
+
+	var linhas []linhaSnapshot
+	if err := json.Unmarshal(data, &linhas); err != nil {
+		return nil, time.Time{}, err
+	}
+	if len(linhas) == 0 {
+		return nil, time.Time{}, nil
+	}
+
+	// Todas as linhas de uma mesma medição compartilham o captured_at. Como a
+	// consulta veio ordenada do mais recente para o mais antigo, a virada desse
+	// valor marca o fim da foto atual.
+	maisRecente := linhas[0].CapturedAt
+	foto := make(map[int]int, len(linhas))
+	for _, l := range linhas {
+		if l.CapturedAt != maisRecente {
+			break
+		}
+		foto[l.MalID] = l.Position
+	}
+
+	var quando time.Time
+	for _, formato := range formatosDeTimestamp {
+		if t, errParse := time.Parse(formato, maisRecente); errParse == nil {
+			quando = t.UTC()
+			break
+		}
+	}
+
+	return foto, quando, nil
+}
+
+// gravarFoto persiste as posições atuais como uma nova medição.
+//
+// O carimbo de tempo é definido aqui em Go, e não pelo DEFAULT now() da coluna,
+// para garantir que todas as linhas do lote compartilhem exatamente o mesmo
+// captured_at — é ele que agrupa a foto na leitura.
+func gravarFoto(animes []anilist.Anime, quando time.Time) error {
+	client, err := database.ServiceRoleClient()
+	if err != nil {
+		return err
+	}
+
+	carimbo := quando.UTC().Format(time.RFC3339)
+	linhas := make([]linhaSnapshot, 0, len(animes))
+	for _, a := range animes {
+		if a.MalID <= 0 || a.CurrentRank <= 0 {
+			continue
+		}
+		linhas = append(linhas, linhaSnapshot{
+			CapturedAt: carimbo,
+			MalID:      a.MalID,
+			Position:   a.CurrentRank,
+		})
+	}
+	if len(linhas) == 0 {
+		return nil
+	}
+
+	// Upsert no UNIQUE(captured_at, mal_id): se o motor reiniciar no meio da
+	// gravação, repetir o lote não duplica nem estoura erro.
+	_, _, err = client.From("ranking_snapshots").
+		Insert(linhas, true, "captured_at,mal_id", "minimal", "exact").
+		Execute()
+	return err
+}
 
 // StartRankingEngine inicia o Worker de Background que calcula o Ranking a cada 12 horas.
 // DEVE SER CHAMADO NO main.go: `go handlers.StartRankingEngine(aniListClient)`
@@ -92,11 +210,27 @@ func updateGlobalCache(client anilist.Service) {
 		return allAnimes[i].BayesianScore > allAnimes[j].BayesianScore
 	})
 
-	// 4. Assinalar posições (Preparando terreno para o ▲/▼)
+	// 4. Posições atuais e comparação com a foto anterior
 	for i := range allAnimes {
-		// O PreviousRank nascerá copiando o CurrentRank anterior (isso será evoluído depois)
 		allAnimes[i].CurrentRank = i + 1
-		allAnimes[i].PreviousRank = i + 1
+	}
+
+	// A leitura vem ANTES da gravação, e a ordem
+	foto, capturadaEm, errFoto := carregarUltimaFoto()
+	if errFoto != nil {
+		log.Printf("[RANKING ENGINE] Falha ao ler a última foto: %v", errFoto)
+	}
+	calcularVariacao(allAnimes, foto)
+
+	// Só grava se a leitura deu certo. Sem saber a idade da foto atual, gravar
+	// poderia criar uma medição fora de cadência e zerar o indicador.
+	agora := time.Now().UTC()
+	if errFoto == nil && (capturadaEm.IsZero() || agora.Sub(capturadaEm) >= intervaloEntreFotos) {
+		if err := gravarFoto(allAnimes, agora); err != nil {
+			log.Printf("[RANKING ENGINE] Falha ao gravar foto: %v", err)
+		} else {
+			log.Printf("[RANKING ENGINE] Foto gravada: %d posições.", len(allAnimes))
+		}
 	}
 
 	// 5. Salvar na Memória (Lock seguro)
@@ -215,30 +349,11 @@ func (h *RankingHandler) HandleGetTopAnime(w http.ResponseWriter, r *http.Reques
 	json.NewEncoder(w).Encode(resultados)
 }
 
-// applyCuradoria isolada para não duplicar código (Data Enrichment)
+// applyCuradoria aplica as edições do Painel Admin ao resultado do ranking.
+// A regra de sobreposição vive em AplicarCuradoria (curation_utils.go), compartilhada com a
+// busca, o detalhe e o deck — antes cada tela tinha a sua cópia e elas divergiram.
 func applyCuradoria(res *anilist.AnimeSearchResponse) {
-	var curados []models.CuratedAnime
-	data, _, errCurado := database.Client.From("curated_animes").Select("*", "exact", false).Execute()
-
-	if errCurado == nil {
-		_ = json.Unmarshal(data, &curados)
-		curadosMap := make(map[int]models.CuratedAnime)
-		for _, c := range curados {
-			curadosMap[c.MalID] = c
-		}
-
-		for i, anime := range res.Data {
-			if curado, ok := curadosMap[anime.MalID]; ok {
-				res.Data[i].Title = curado.CustomTitle
-				if curado.CustomSynopsis != "" {
-					res.Data[i].Synopsis = curado.CustomSynopsis
-				}
-				if curado.CustomStatus != "" {
-					res.Data[i].Status = curado.CustomStatus
-				}
-			}
-		}
-	}
+	AplicarCuradoriaEmLista(res.Data, CarregarCuradoria(database.Client))
 }
 
 func mapStatusForFilter(status string) string {
@@ -254,16 +369,31 @@ func mapStatusForFilter(status string) string {
 	}
 }
 
+// recarregandoRanking impede que várias edições seguidas no Admin disparem
+// recargas simultâneas. Cada updateGlobalCache faz 10 chamadas à AniList, que
+// hoje aceita 30 por minuto (ver PITFALLS.md) — cinco recargas concorrentes
+// estouram o limite e ainda podem terminar fora de ordem, deixando o cache com
+// o resultado da execução mais antiga.
+var recarregandoRanking atomic.Bool
+
 // InvalidateRankingCache força a limpeza da memória.
 // Usado pelo curation.go quando o Admin edita um anime manualmente.
 func InvalidateRankingCache() {
 	globalRanking.Lock()
-	defer globalRanking.Unlock()
-	globalRanking.Animes = nil // Limpa a lista
+	globalRanking.Animes = nil
+	globalRanking.Unlock()
+
+	// CompareAndSwap devolve false se já existe uma recarga em andamento.
+	// Nesse caso não agenda outra: a que está rodando já vai buscar os dados
+	// atualizados, incluindo esta edição.
+	if !recarregandoRanking.CompareAndSwap(false, true) {
+		log.Println("[RANKING ENGINE] Recarga já em andamento, edição será coberta por ela.")
+		return
+	}
 
 	go func() {
-		client := anilist.NewClient()
-		updateGlobalCache(client)
+		defer recarregandoRanking.Store(false)
+		updateGlobalCache(anilist.NewClient())
 	}()
 }
 

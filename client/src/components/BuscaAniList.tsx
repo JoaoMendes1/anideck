@@ -17,6 +17,11 @@ export interface AniListMedia {
   genres?: string[]
   synopsis?: string
   characters?: { edges?: AniListCharacterEdge[] }
+
+  /** Total de episódios anunciado pela AniList. Nulo em obras ainda sem contagem definida. */
+  episodes?: number | null
+  /** Episódios com título e capa. Cobertura irregular: muitos animes vêm com a lista vazia. */
+  streamingEpisodes?: { title?: string; thumbnail?: string }[]
 }
 
 interface BuscaAniListProps {
