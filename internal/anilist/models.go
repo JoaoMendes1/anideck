@@ -46,6 +46,11 @@ type Anime struct {
 	Characters  []Character `json:"characters,omitempty"`
 	StartDate   *FuzzyDate  `json:"startDate,omitempty"`
 
+	// FirstAiredAt é o instante exato em que o episódio 1 foi ao ar, vindo da curadoria.
+	// Guardado como texto ISO 8601 para o navegador converter ao fuso de quem está olhando.
+	// É o que permite calcular a contagem regressiva sem consultar a AniList.
+	FirstAiredAt string `json:"first_aired_at,omitempty"`
+
 	// Temporada de estreia. season_year alimenta o gráfico de Distribuição por Ano
 	// nas Estatísticas; Season fica disponível para agrupamentos futuros por temporada.
 	Season     string `json:"season,omitempty"`
@@ -85,10 +90,7 @@ type Anime struct {
 		Endings  []string `json:"endings"`
 	} `json:"theme"`
 
-	Streaming []struct {
-		Name string `json:"name"`
-		URL  string `json:"url"`
-	} `json:"streaming"`
+	Streaming []StreamingLink `json:"streaming"`
 
 	StreamingEpisodes []StreamingEpisode `json:"streamingEpisodes,omitempty"`
 }
@@ -113,11 +115,23 @@ type ScoreDistribution struct {
 	Percentage float64 `json:"percentage"`
 }
 
+// StreamingLink é uma plataforma onde a obra pode ser assistida.
+// Tipo nomeado pelo mesmo motivo do Genre: o valor é construído em mais de um ponto.
+type StreamingLink struct {
+	Name string `json:"name"`
+	URL  string `json:"url"`
+}
+
 type StreamingEpisode struct {
 	Title     string `json:"title"`
 	Thumbnail string `json:"thumbnail"`
 	URL       string `json:"url"`
 	Site      string `json:"site"`
+
+	// AiredAt é a data de exibição do episódio, no formato AAAA-MM-DD. Só vem da curadoria:
+	// a AniList não informa data por episódio, e sem ela a grade precisa derivar tudo da
+	// estreia do anime, o que erra em obras com hiato ou episódio especial no meio.
+	AiredAt string `json:"aired_at,omitempty"`
 }
 type FuzzyDate struct {
 	Year  int `json:"year"`
