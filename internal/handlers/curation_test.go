@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"encoding/json"
 	"reflect"
 	"testing"
 
@@ -141,5 +142,58 @@ func TestAplicarCuradoriaEmLista(t *testing.T) {
 	// Com curadoria, a alteração precisa chegar ao elemento da lista, não a uma cópia.
 	if animes[1].Title != "Curado 2" {
 		t.Errorf("anime curado ficou %q, queria \"Curado 2\"", animes[1].Title)
+	}
+}
+
+// Os campos do Bloco 2 chegam por AplicarCuradoria. A regra de cada um é testada em
+// curation_conversao_test.go; aqui o que importa é que estão ligados de verdade — declarar
+// o campo na struct e esquecer de aplicá-lo seria um erro silencioso.
+func TestAplicarCuradoriaLigaOsCamposDoBloco2(t *testing.T) {
+	anime := animeDaAniList()
+	anime.Duration = 24
+	anime.StartDate = &anilist.FuzzyDate{Year: 2013, Month: 4, Day: 7}
+	anime.Streaming = []anilist.StreamingLink{{Name: "Crunchyroll", URL: "https://quebrado.com"}}
+
+	duracao := 47
+	estreia := "2023-09-29T14:00:00Z"
+
+	AplicarCuradoria(&anime, models.CuratedAnime{
+		MalID:                 1,
+		CustomEpisodes:        json.RawMessage(`[{"number": 1, "title": "Episódio curado"}]`),
+		CustomExternalLinks:   json.RawMessage(`[{"platform": "Netflix", "url": "https://netflix.com/x"}]`),
+		CustomFirstAiredAt:    &estreia,
+		CustomDurationMinutes: &duracao,
+	})
+
+	if len(anime.StreamingEpisodes) != 1 || anime.StreamingEpisodes[0].Title != "Episódio curado" {
+		t.Errorf("episódios = %+v, queria o curado", anime.StreamingEpisodes)
+	}
+	querido := []anilist.StreamingLink{{Name: "Netflix", URL: "https://netflix.com/x"}}
+	if !reflect.DeepEqual(anime.Streaming, querido) {
+		t.Errorf("streaming = %+v, queria %+v", anime.Streaming, querido)
+	}
+	if anime.StartDate.Year != 2023 || anime.StartDate.Month != 9 || anime.StartDate.Day != 29 {
+		t.Errorf("startDate = %+v, queria 2023-09-29", anime.StartDate)
+	}
+	if anime.FirstAiredAt != "2023-09-29T14:00:00Z" {
+		t.Errorf("firstAiredAt = %q, queria o instante completo", anime.FirstAiredAt)
+	}
+	if anime.Duration != 47 {
+		t.Errorf("duration = %d, queria 47", anime.Duration)
+	}
+}
+
+// Duração zero ou negativa é dado errado, não "curei e quero zero": aceitar zeraria o tempo
+// assistido nas Estatísticas, pior do que a estimativa que já existe.
+func TestAplicarCuradoriaIgnoraDuracaoInvalida(t *testing.T) {
+	for _, invalida := range []int{0, -10} {
+		anime := animeDaAniList()
+		anime.Duration = 24
+
+		AplicarCuradoria(&anime, models.CuratedAnime{MalID: 1, CustomDurationMinutes: &invalida})
+
+		if anime.Duration != 24 {
+			t.Errorf("com duração curada %d, o anime ficou com %d — queria manter 24", invalida, anime.Duration)
+		}
 	}
 }

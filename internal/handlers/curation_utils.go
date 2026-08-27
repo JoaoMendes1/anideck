@@ -50,6 +50,18 @@ func AplicarCuradoria(anime *anilist.Anime, curado models.CuratedAnime) {
 		}
 		anime.Genres = generos
 	}
+
+	// Campos do Bloco 2. A regra de cada um mora em curation_conversao.go, que trata o JSON
+	// cru e decide o que fazer quando ele está ausente ou malformado.
+	anime.StreamingEpisodes = ConverterEpisodios(curado.CustomEpisodes, anime.StreamingEpisodes)
+	anime.Streaming = ConverterLinks(curado.CustomExternalLinks, anime.Streaming)
+	anime.StartDate, anime.FirstAiredAt = ConverterEstreia(curado.CustomFirstAiredAt, anime.StartDate)
+
+	// Duração só é sobrescrita quando é um número que faz sentido: zero ou negativo viraria
+	// tempo assistido zerado nas Estatísticas, pior do que a estimativa de 24 min do cache.
+	if curado.CustomDurationMinutes != nil && *curado.CustomDurationMinutes > 0 {
+		anime.Duration = *curado.CustomDurationMinutes
+	}
 }
 
 // CarregarCuradoria lê a tabela de curadoria e devolve indexada por mal_id.
