@@ -267,13 +267,9 @@ func (m *aniListMedia) toAnime() Anime {
 		title = m.Title.English
 	}
 
-	var genres []struct {
-		Name string `json:"name"`
-	}
+	genres := make([]Genre, 0, len(m.Genres))
 	for _, g := range m.Genres {
-		genres = append(genres, struct {
-			Name string `json:"name"`
-		}{Name: g})
+		genres = append(genres, Genre{Name: g})
 	}
 
 	var streaming []struct {

@@ -17,9 +17,7 @@ func animeDeTeste() anilist.Anime {
 		SeasonYear: 2016,
 		Tags:       []string{"Isekai", "Time Loop"},
 	}
-	a.Genres = []struct {
-		Name string `json:"name"`
-	}{{Name: "Drama"}, {Name: "Fantasy"}}
+	a.Genres = []anilist.Genre{{Name: "Drama"}, {Name: "Fantasy"}}
 	a.Studios = []struct {
 		Name string `json:"name"`
 	}{{Name: "White Fox"}}

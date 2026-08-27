@@ -133,33 +133,11 @@ func (h *AnimeHandler) HandleGetAnime(w http.ResponseWriter, r *http.Request) {
 
 		if errCurado == nil && len(curados) > 0 {
 			curado := curados[0]
+			AplicarCuradoria(&resultados.Data, curado)
 
-			if curado.CustomTitle != "" {
-				resultados.Data.Title = curado.CustomTitle
-			}
-			if curado.CustomSynopsis != "" {
-				resultados.Data.Synopsis = curado.CustomSynopsis
-			}
-			if curado.CustomStatus != "" {
-				resultados.Data.Status = curado.CustomStatus
-			}
-			if curado.CustomTags != nil {
-				var novasTags []struct {
-					Name string `json:"name"`
-				}
-				for _, tag := range curado.CustomTags {
-					novasTags = append(novasTags, struct {
-						Name string `json:"name"`
-					}{Name: tag})
-				}
-				resultados.Data.Genres = novasTags
-			}
-			if curado.CustomCoverImage != "" {
-				resultados.Data.Images.JPG.ImageURL = curado.CustomCoverImage
-			}
-			if curado.CustomBannerImage != "" {
-				resultados.Data.BannerImage = curado.CustomBannerImage
-			}
+			// O elenco customizado fica fora de AplicarCuradoria de propósito: é o único
+			// campo exclusivo da tela de detalhe (as listas nem pedem personagens à AniList)
+			// e o único guardado como JSON cru, que precisa ser decodificado antes de usar.
 			if len(curado.CustomCharacters) > 0 && string(curado.CustomCharacters) != "null" {
 				var chars []anilist.Character
 				if err := json.Unmarshal(curado.CustomCharacters, &chars); err == nil {

@@ -16,7 +16,6 @@ import (
 
 	"github.com/JoaoMendes1/anideck/internal/anilist"
 	"github.com/JoaoMendes1/anideck/internal/database"
-	"github.com/JoaoMendes1/anideck/internal/models"
 )
 
 // GlobalRankingState guarda o Top Global calculado na memória RAM.
@@ -211,7 +210,7 @@ func updateGlobalCache(client anilist.Service) {
 		return allAnimes[i].BayesianScore > allAnimes[j].BayesianScore
 	})
 
-		// 4. Posições atuais e comparação com a foto anterior
+	// 4. Posições atuais e comparação com a foto anterior
 	for i := range allAnimes {
 		allAnimes[i].CurrentRank = i + 1
 	}
@@ -350,32 +349,11 @@ func (h *RankingHandler) HandleGetTopAnime(w http.ResponseWriter, r *http.Reques
 	json.NewEncoder(w).Encode(resultados)
 }
 
-// applyCuradoria isolada para não duplicar código (Data Enrichment)
+// applyCuradoria aplica as edições do Painel Admin ao resultado do ranking.
+// A regra de sobreposição vive em AplicarCuradoria (curation_utils.go), compartilhada com a
+// busca, o detalhe e o deck — antes cada tela tinha a sua cópia e elas divergiram.
 func applyCuradoria(res *anilist.AnimeSearchResponse) {
-	var curados []models.CuratedAnime
-	data, _, errCurado := database.Client.From("curated_animes").Select("*", "exact", false).Execute()
-
-	if errCurado == nil {
-		_ = json.Unmarshal(data, &curados)
-		curadosMap := make(map[int]models.CuratedAnime)
-		for _, c := range curados {
-			curadosMap[c.MalID] = c
-		}
-
-		for i, anime := range res.Data {
-			if curado, ok := curadosMap[anime.MalID]; ok {
-				if curado.CustomTitle != "" {
-					res.Data[i].Title = curado.CustomTitle
-				}
-				if curado.CustomSynopsis != "" {
-					res.Data[i].Synopsis = curado.CustomSynopsis
-				}
-				if curado.CustomStatus != "" {
-					res.Data[i].Status = curado.CustomStatus
-				}
-			}
-		}
-	}
+	AplicarCuradoriaEmLista(res.Data, CarregarCuradoria(database.Client))
 }
 
 func mapStatusForFilter(status string) string {
