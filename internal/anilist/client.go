@@ -9,10 +9,17 @@ import (
 	"net/http"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/microcosm-cc/bluemonday"
 	"golang.org/x/time/rate"
+)
+
+var (
+	ForceOffline bool
+	ApiHealth    string = "OK" 
+	StateMutex   sync.RWMutex
 )
 
 type Client struct {
@@ -51,6 +58,13 @@ func parseRetryAfter(header string, padrao time.Duration) time.Duration {
 }
 
 func (c *Client) gqlRequest(ctx context.Context, query string, variables map[string]interface{}, out interface{}) error {
+	StateMutex.RLock()
+	offline := ForceOffline
+	StateMutex.RUnlock()
+
+	if offline {
+		return fmt.Errorf("503: Kill Swith ativado (modo offline forçado)")
+	}
 	body, _ := json.Marshal(map[string]interface{}{"query": query, "variables": variables})
 
 	for tentativa := 1; ; tentativa++ {
@@ -68,6 +82,9 @@ func (c *Client) gqlRequest(ctx context.Context, query string, variables map[str
 
 		resp, err := c.httpClient.Do(req)
 		if err != nil {
+			StateMutex.Lock()
+			ApiHealth = "OFFLINE"
+			StateMutex.Unlock()
 			return fmt.Errorf("erro ao executar requisição HTTP: %w", err)
 		}
 
@@ -76,6 +93,10 @@ func (c *Client) gqlRequest(ctx context.Context, query string, variables map[str
 		// para 30 requisições por minuto quando o serviço está degradado, bem abaixo do
 		// ritmo que o nosso limiter permite.
 		if resp.StatusCode == http.StatusTooManyRequests {
+			StateMutex.Lock()
+			ApiHealth = "Warning"
+			StateMutex.Unlock()
+
 			espera := parseRetryAfter(resp.Header.Get("Retry-After"), esperaPadraoRateLimit)
 			resp.Body.Close()
 
@@ -94,8 +115,15 @@ func (c *Client) gqlRequest(ctx context.Context, query string, variables map[str
 
 		if resp.StatusCode != http.StatusOK {
 			resp.Body.Close()
+			StateMutex.Lock()
+			ApiHealth = "OFFLINE"
+			StateMutex.Unlock()
 			return fmt.Errorf("erro inesperado da AniList: status %d", resp.StatusCode)
 		}
+
+		StateMutex.Lock()
+		ApiHealth = "OK"
+		StateMutex.Unlock()
 
 		var envelope struct {
 			Data json.RawMessage `json:"data"`

@@ -48,6 +48,7 @@ func main() {
 	statsHandler := &handlers.StatsHandler{}
 	rankingHandler := &handlers.RankingHandler{AniListClient: anilistService}
 	curationHandler := &handlers.CurationHandler{}
+	systemHandler := &handlers.SystemHandler{}
 	notificationsHandler := &handlers.NotificationsHandler{AniListClient: anilistService}
 	metadataHandler := &handlers.MetadataHandler{AniListClient: anilistService}
 	olheiroHandler := &handlers.OlheiroHandler{AniListClient: anilistService}
@@ -112,6 +113,9 @@ func main() {
 		admin.Post("/api/admin/curation/ai/rewrite", curationHandler.HandleAIRewrite)
 		admin.Get("/api/admin/settings/ai-prompt", curationHandler.HandleGetAIPrompt)
 		admin.Put("/api/admin/settings/ai-prompt", curationHandler.HandleUpdateAIPrompt)
+		// Status do Sistema (Infra/AniList)
+		admin.Get("/api/admin/system/status", systemHandler.HandleGetSystemStatus)
+		admin.Post("/api/admin/system/kill-switch", systemHandler.HandleToggleKillSwitch)
 
 		// Agente Olheiro: scan sob demanda e revisão da fila de sugestões
 		admin.Post("/api/admin/olheiro/scan", olheiroHandler.HandleScan)
