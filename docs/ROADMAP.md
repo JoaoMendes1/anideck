@@ -281,29 +281,42 @@ especial. E é o que torna viável a estratégia de catálogo (ver Bloco 5).
 
 ### Bloco 2 — Campos novos de curadoria
 
-- [ ] **`custom_episodes`** (JSONB, mesmo molde de `custom_characters`):
+> **Concluído em 27/08/2026.** As colunas e a struct Go já existiam (`sql/014`); o que
+> faltava era ligar as duas pontas — a leitura, que faz o dado curado chegar na tela, e a
+> escrita, que dá o meio de cadastrá-lo. Feito em duas issues, leitura e Painel Admin.
+
+- [x] **`custom_episodes`** (JSONB, mesmo molde de `custom_characters`):
       número, título, imagem, data de exibição. Resolve o caso de anime que
       a AniList entrega sem episódios cadastrados, sem imagem ou em inglês.
-      ⚠️ Manter a numeração 1..N intacta — `episode_progress` referencia o
-      número do episódio, e renumerar dessincroniza o progresso já marcado.
-- [ ] **`custom_external_links`** (JSONB): plataforma + URL. Os links da
-      AniList quebram com frequência (Crunchyroll confirmado na prática), e
-      link morto mata a Ação Rápida "Assistir" da Fase 5.
-- [ ] **Dados de estreia:** data de estreia, dia da semana e horário (JST).
-      É o que permite calcular a contagem regressiva **sem a AniList** — a
-      Fase 6.6 já sabe derivar as datas dos episódios a partir da `startDate`.
-      Cadastro pontual: ~10-15 títulos por temporada, os que alguém do grupo
-      realmente acompanha.
-- [ ] **`custom_duration_minutes`:** hoje as Estatísticas usam a duração do
-      cache com fallback de 24 min. Sem o cache sendo alimentado, o tempo
-      assistido vira estimativa.
-- [ ] **`is_destaque BOOLEAN DEFAULT true`:** hoje curar um anime coloca ele
-      na home, porque `curated_animes` significa "tem dado customizado" **e**
-      "é Destaque" ao mesmo tempo. Quando curar virar o caminho normal, isso
-      atrapalha todo dia. Coluna explícita, não convenção no `order_index`.
-- [ ] **Estado de completude** (ex: `curation_status`): qual anime já está
-      pronto e qual ainda falta. Com 100+ animes curados, não dá para lembrar
-      onde parou.
+      A sobreposição é **por número do episódio**, nunca por ordem no array —
+      `episode_progress` referencia esse número e compactar a lista faria o
+      progresso já marcado apontar para o episódio errado, em silêncio. Travado
+      dos dois lados: teste na leitura, campo desabilitado ao editar.
+      O editor tem **"Importar da AniList"** e **"Gerar vazios"** (que funciona
+      com a API fora do ar), e nenhum dos dois sobrescreve o que já foi curado.
+- [x] **`custom_external_links`** (JSONB): plataforma + URL. Diferente dos
+      episódios, aqui a curadoria **substitui** a AniList em vez de somar: o
+      motivo de cadastrar um link é o de lá estar quebrado. URL que não comece
+      com `http`/`https` é recusada no servidor, não só no formulário.
+- [x] **Dados de estreia:** guardado como um `TIMESTAMPTZ` único em vez de data +
+      dia da semana + horário separados — os outros dois derivam dele, e o tipo
+      converte corretamente para o fuso de quem está olhando. O Painel captura
+      data **e hora** no horário local de quem cadastra, e a grade de episódios
+      usa esse instante no lugar da estimativa quando ele existe.
+- [x] **`custom_duration_minutes`:** aplicado sobre a duração da AniList. Valor
+      zero ou negativo é ignorado — zeraria o tempo assistido, pior do que a
+      estimativa de 24 min que já existia.
+- [x] **`curation_status`:** editável no formulário e visível como selo colorido
+      na lista lateral do Painel, junto da contagem de episódios curados. Sem
+      aparecer na lista ele não resolveria o problema que motivou sua criação.
+- [x] **`is_destaque BOOLEAN DEFAULT true`:** coluna criada, editável no Painel e
+      sinalizada na lista com o selo "oculto". A vitrine que faltava foi construída
+      junto: uma faixa de Destaques no topo do Meu Deck, alimentada por
+      `GET /api/curation?destaques=true`. Sem o parâmetro o endpoint continua
+      devolvendo tudo, que é o que o Painel precisa — filtrar por padrão esconderia
+      dele justamente os animes ocultos que ele precisa reencontrar para reexibir.
+      **A vitrine não depende da AniList:** título e capa saem de `curated_animes`,
+      então ela fica de pé mesmo com a API fora do ar.
 
 ---
 
@@ -337,14 +350,28 @@ especial. E é o que torna viável a estratégia de catálogo (ver Bloco 5).
 
 ### Bloco 4 — Painel Admin completo
 
-- [ ] **Editor de episódios** (adicionar, editar, remover, reordenar),
-      reaproveitando o padrão do `CuradoriaPersonagens`.
-- [ ] **Editor de links de streaming.**
-- [ ] **Campos de estreia e duração** no formulário.
-- [ ] **Lista de curadoria com filtro por completude**, para saber o que
-      ainda falta preencher.
-- [ ] **Botão de importar da AniList por `idMal`** — reaproveita o que a
-      issue #70 vai construir para o Olheiro.
+> **Parcialmente concluído em 27/08/2026, sem ter sido planejado assim.** O Bloco 2
+> precisava de um lugar para cadastrar os campos novos, e esse lugar era o Painel — então
+> três itens daqui saíram junto. Validado item a item contra o código, não por memória.
+
+- [x] **Editor de episódios** — adicionar, editar e remover, no padrão do
+      `CuradoriaPersonagens`, com "Importar da AniList" e "Gerar vazios".
+      **Reordenar foi recusado de propósito:** reordenar significa renumerar, e
+      `episode_progress` referencia o número do episódio — renumerar dessincroniza
+      o progresso já marcado, sem erro e sem aviso. É a "Armadilha 9" documentada
+      no `sql/014`, escrita depois deste item do ROADMAP. O campo de número fica
+      travado ao editar; trocar de número exige excluir e recriar, que é uma ação
+      consciente.
+- [x] **Editor de links de streaming** — `CuradoriaLinks.tsx`, com recusa de URL
+      que não seja `http`/`https` tanto no formulário quanto no servidor.
+- [x] **Campos de estreia e duração** no formulário.
+- [ ] **Lista de curadoria com filtro por completude.** O `curation_status` já
+      aparece como selo colorido na lista lateral, mas **os chips de filtro
+      continuam sendo `Todos / Lançamento / Finalizado / Sem Capa`** — dá para ver
+      o estado, não para filtrar por ele, que era o ponto do item.
+- [ ] **Botão de importar da AniList por `idMal`.** A função `buscarAnimePorIdMal`
+      existe e já é reusada em dois lugares (o Olheiro e o importador de episódios),
+      mas não há campo onde digitar um `idMal` e importar. Falta só a interface.
 
 *Já existente, não refazer:* criar/editar/excluir, upload de capa e banner com
 compressão WebP e preview, personagens com nome/imagem/função, tags

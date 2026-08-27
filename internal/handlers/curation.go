@@ -22,9 +22,17 @@ type CurationHandler struct{}
 func (h *CurationHandler) HandleList(w http.ResponseWriter, r *http.Request) {
 	var resultado []models.CuratedAnime
 
-	data, _, err := database.Client.From("curated_animes").
-		Select("*", "exact", false).
-		Execute()
+	consulta := database.Client.From("curated_animes").Select("*", "exact", false)
+
+	// `?destaques=true` devolve só o que deve aparecer na vitrine. Sem o parâmetro vem tudo,
+	// que é o que o Painel Admin precisa: lá o objetivo é gerenciar inclusive o que está
+	// oculto. Filtrar por padrão esconderia do Admin justamente os animes que ele precisa
+	// reencontrar para voltar a exibir.
+	if r.URL.Query().Get("destaques") == "true" {
+		consulta = consulta.Eq("is_destaque", "true")
+	}
+
+	data, _, err := consulta.Execute()
 
 	if err != nil {
 		log.Printf("[ERRO DB] HandleList Curation: %v", err)

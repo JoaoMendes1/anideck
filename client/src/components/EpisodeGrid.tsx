@@ -20,9 +20,11 @@ interface EpisodeGridProps {
   isLoggedIn: boolean
   nextAiringEpisode?: { airingAt: number; timeUntilAiring: number; episode: number }
   startDate?: { year: number; month: number; day: number }
+  /** Instante exato da estreia, vindo da curadoria. Ganha do startDate quando existe. */
+  firstAiredAt?: string
 }
 
-export default function EpisodeGrid({ malId, totalEpisodes, streamingEpisodes = [], initialWatched, isLoggedIn, nextAiringEpisode, startDate }: EpisodeGridProps) {
+export default function EpisodeGrid({ malId, totalEpisodes, streamingEpisodes = [], initialWatched, isLoggedIn, nextAiringEpisode, startDate, firstAiredAt }: EpisodeGridProps) {
   const { showToast } = useToast()
   const [watched, setWatched] = useState<number[]>(initialWatched)
   
@@ -102,6 +104,15 @@ export default function EpisodeGrid({ malId, totalEpisodes, streamingEpisodes = 
     if (airedAt) {
       const dataCurada = lerDataDoEpisodio(airedAt)
       if (!isNaN(dataCurada.getTime())) return formatarData(dataCurada)
+    }
+
+    // A estreia curada tem hora e fuso, então é mais precisa que o startDate (que é só
+    // ano/mês/dia e já chega convertido para UTC pelo servidor). Quando ela existe, é dela
+    // que a estimativa parte.
+    const base = firstAiredAt ? new Date(firstAiredAt) : null
+    if (base && !isNaN(base.getTime())) {
+      base.setDate(base.getDate() + (epNumber - 1) * 7)
+      return formatarData(base)
     }
 
     if (!startDate?.year || !startDate?.month || !startDate?.day) return null;
