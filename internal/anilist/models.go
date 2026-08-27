@@ -15,6 +15,13 @@ type NextAiringEpisode struct {
 	Episode         int `json:"episode"`  
 }
 
+// Genre é uma categoria do anime. Tipo nomeado (e não struct anônima) porque o valor é
+// construído em vários pontos do app — com struct anônima, cada um precisa repetir a
+// declaração inteira só para criar um item da lista.
+type Genre struct {
+	Name string `json:"name"`
+}
+
 type Character struct {
 	ID    int    `json:"id"`
 	Name  string `json:"name"`
@@ -57,9 +64,7 @@ type Anime struct {
 		} `json:"jpg"`
 	} `json:"images"`
 
-	Genres []struct {
-		Name string `json:"name"`
-	} `json:"genres"`
+	Genres []Genre `json:"genres"`
 
 	Studios []struct {
 		Name string `json:"name"`

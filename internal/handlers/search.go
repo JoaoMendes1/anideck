@@ -106,25 +106,7 @@ func (h *SearchHandler) HandleSearch(w http.ResponseWriter, r *http.Request) {
 
 				for _, a := range localAnimes.Data {
 					if curado, ok := curadosMap[a.MalID]; ok {
-						a.Title = curado.CustomTitle
-						if curado.CustomSynopsis != "" {
-							a.Synopsis = curado.CustomSynopsis
-						}
-
-						if curado.CustomStatus != "" {
-							a.Status = curado.CustomStatus
-						}
-						if len(curado.CustomTags) > 0 {
-							var novasTags []struct {
-								Name string `json:"name"`
-							}
-							for _, tag := range curado.CustomTags {
-								novasTags = append(novasTags, struct {
-									Name string `json:"name"`
-								}{Name: tag})
-							}
-							a.Genres = novasTags
-						}
+						AplicarCuradoria(&a, curado)
 					}
 
 					match := true
@@ -183,24 +165,7 @@ func (h *SearchHandler) HandleSearch(w http.ResponseWriter, r *http.Request) {
 
 	for i, animeAniList := range resultados.Data {
 		if curado, ok := curadosMap[animeAniList.MalID]; ok {
-			resultados.Data[i].Title = curado.CustomTitle
-			if curado.CustomSynopsis != "" {
-				resultados.Data[i].Synopsis = curado.CustomSynopsis
-			}
-			if curado.CustomStatus != "" {
-				resultados.Data[i].Status = curado.CustomStatus
-			}
-			if len(curado.CustomTags) > 0 {
-				var novasTags []struct {
-					Name string `json:"name"`
-				}
-				for _, tag := range curado.CustomTags {
-					novasTags = append(novasTags, struct {
-						Name string `json:"name"`
-					}{Name: tag})
-				}
-				resultados.Data[i].Genres = novasTags
-			}
+			AplicarCuradoria(&resultados.Data[i], curado)
 		}
 	}
 

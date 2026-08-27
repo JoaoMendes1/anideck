@@ -1,3 +1,10 @@
+// Aplicação da curadoria manual (Data Enrichment) sobre os dados vindos da AniList.
+//
+// Tudo que sobrepõe dado do catálogo com o que foi editado no Painel Admin passa por aqui.
+// Antes existiam cinco implementações espalhadas (ranking, busca em dois pontos, detalhe e
+// deck), cada uma aplicando um subconjunto diferente dos campos — o resultado é que o mesmo
+// anime aparecia com a capa curada numa tela e a capa da AniList em outra, e correções de bug
+// feitas numa cópia não chegavam às demais.
 package handlers
 
 import (
@@ -7,60 +14,89 @@ import (
 	"github.com/JoaoMendes1/anideck/internal/anilist"
 	"github.com/JoaoMendes1/anideck/internal/database"
 	"github.com/JoaoMendes1/anideck/internal/models"
+	"github.com/supabase-community/supabase-go"
 )
 
-// ApplyCurationToAnimeList varre uma lista de animes e substitui as capas/títulos pelos do Painel Admin
-func ApplyCurationToAnimeList(animes []anilist.Anime) []anilist.Anime {
-	dbClient := database.Client
-	if dbClient == nil {
-		log.Printf("[CURATION_UTILS] Erro DB: Cliente não inicializado")
-		return animes
+// AplicarCuradoria sobrepõe a um anime da AniList os campos editados no Painel Admin.
+//
+// Todo campo só é sobrescrito quando tem conteúdo, e essa guarda é o ponto central da função:
+// atribuir um `custom_title` vazio apaga o título real da obra. Esse bug já tinha sido
+// corrigido uma vez, mas só na cópia do ranking — seguia vivo na busca e no detalhe.
+func AplicarCuradoria(anime *anilist.Anime, curado models.CuratedAnime) {
+	if curado.CustomTitle != "" {
+		anime.Title = curado.CustomTitle
+	}
+	if curado.CustomSynopsis != "" {
+		anime.Synopsis = curado.CustomSynopsis
+	}
+	if curado.CustomStatus != "" {
+		anime.Status = curado.CustomStatus
+	}
+	if curado.CustomCoverImage != "" {
+		anime.Images.JPG.ImageURL = curado.CustomCoverImage
+	}
+	if curado.CustomBannerImage != "" {
+		anime.BannerImage = curado.CustomBannerImage
 	}
 
-	data, _, err := dbClient.From("curated_animes").Select("*", "exact", false).Execute()
+	// As categorias editadas à mão substituem os genres da AniList.
+	//
+	// A guarda é `len(...) > 0` e não `!= nil` de propósito: um array vazio vindo do banco
+	// não é nulo, passaria num teste de nulidade e zeraria os gêneros do anime.
+	if len(curado.CustomTags) > 0 {
+		generos := make([]anilist.Genre, 0, len(curado.CustomTags))
+		for _, tag := range curado.CustomTags {
+			generos = append(generos, anilist.Genre{Name: tag})
+		}
+		anime.Genres = generos
+	}
+}
+
+// CarregarCuradoria lê a tabela de curadoria e devolve indexada por mal_id.
+//
+// O client vem por parâmetro porque as rotas não usam o mesmo: o detalhe do anime consulta
+// com o token do usuário e as demais com o client global. Manter essa escolha em quem chama
+// evita alterar, de lado, o comportamento de RLS de alguma rota.
+//
+// Falha de leitura devolve mapa vazio em vez de erro: curadoria é enriquecimento opcional, e
+// perder o acesso a ela deve degradar para os dados da AniList, não derrubar a requisição.
+func CarregarCuradoria(client *supabase.Client) map[int]models.CuratedAnime {
+	curadosMap := make(map[int]models.CuratedAnime)
+
+	if client == nil {
+		log.Printf("[CURADORIA] Cliente de banco não inicializado")
+		return curadosMap
+	}
+
+	data, _, err := client.From("curated_animes").Select("*", "exact", false).Execute()
 	if err != nil {
-		return animes
+		log.Printf("[CURADORIA] Erro ao carregar curadoria: %v", err)
+		return curadosMap
 	}
 
 	var curados []models.CuratedAnime
 	if err := json.Unmarshal(data, &curados); err != nil {
-		return animes
+		log.Printf("[CURADORIA] Erro ao decodificar curadoria: %v", err)
+		return curadosMap
 	}
 
-	// Cria um mapa rápido por mal_id
-	cmap := make(map[int]models.CuratedAnime)
 	for _, c := range curados {
-		cmap[c.MalID] = c
+		curadosMap[c.MalID] = c
 	}
+	return curadosMap
+}
 
-	// Varre a lista original da AniList e injeta a curadoria se existir
-	for i, a := range animes {
-		if c, ok := cmap[a.MalID]; ok {
-			if c.CustomTitle != "" {
-				animes[i].Title = c.CustomTitle
-			}
-			if c.CustomCoverImage != "" {
-				animes[i].Images.JPG.ImageURL = c.CustomCoverImage
-			}
-			if c.CustomBannerImage != "" {
-				animes[i].BannerImage = c.CustomBannerImage
-			}
-			// As categorias editadas no Painel Admin substituem os genres da AniList.
-			// Sem isso, o card do Meu Deck (que mostra genres[0]) continuava exibindo a
-			// categoria original mesmo depois da edição — as Estatísticas já respeitavam
-			// a curadoria, e o deck não, o que fazia as duas telas discordarem.
-			if c.CustomTags != nil {
-				generos := make([]struct {
-					Name string `json:"name"`
-				}, 0, len(c.CustomTags))
-				for _, tag := range c.CustomTags {
-					generos = append(generos, struct {
-						Name string `json:"name"`
-					}{Name: tag})
-				}
-				animes[i].Genres = generos
-			}
+// AplicarCuradoriaEmLista percorre uma lista de animes aplicando a curadoria de cada um.
+func AplicarCuradoriaEmLista(animes []anilist.Anime, curados map[int]models.CuratedAnime) {
+	for i := range animes {
+		if curado, ok := curados[animes[i].MalID]; ok {
+			AplicarCuradoria(&animes[i], curado)
 		}
 	}
+}
+
+// ApplyCurationToAnimeList mantém a assinatura antiga usada pelos handlers de anime.
+func ApplyCurationToAnimeList(animes []anilist.Anime) []anilist.Anime {
+	AplicarCuradoriaEmLista(animes, CarregarCuradoria(database.Client))
 	return animes
 }
