@@ -21,6 +21,8 @@ interface AnimeDetail {
   ranking?: number
   bannerImage?: string
   startDate?: { year: number; month: number; day: number }
+  /** Instante exato da estreia, vindo da curadoria. Mais preciso que o startDate. */
+  first_aired_at?: string
   images: { jpg: { image_url: string } }
   genres: { name: string }[]
   studios: { name: string }[]
@@ -395,6 +397,7 @@ export default function Detalhes() {
                 isLoggedIn={isLoggedIn}
                 nextAiringEpisode={anime.nextAiringEpisode}
                 startDate={anime.startDate}
+                firstAiredAt={anime.first_aired_at}
               />
             )}
 

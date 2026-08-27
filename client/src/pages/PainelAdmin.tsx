@@ -335,6 +335,25 @@ export default function PainelAdmin() {
     }
   }
 
+  // O <input type="datetime-local"> fala em horário local e sem fuso; a coluna é TIMESTAMPTZ.
+  // As duas funções abaixo fazem a ponte, e existem separadas porque o erro clássico é usar
+  // toISOString().slice(0,16) para preencher o input — isso devolve UTC, e o campo mostraria
+  // a estreia com o fuso do servidor em vez do de quem está cadastrando.
+  const estreiaParaInput = (iso?: string | null) => {
+    if (!iso) return ''
+    const data = new Date(iso)
+    if (isNaN(data.getTime())) return ''
+    const doisDigitos = (n: number) => String(n).padStart(2, '0')
+    return `${data.getFullYear()}-${doisDigitos(data.getMonth() + 1)}-${doisDigitos(data.getDate())}` +
+      `T${doisDigitos(data.getHours())}:${doisDigitos(data.getMinutes())}`
+  }
+
+  const estreiaParaBanco = (valorDoInput: string) => {
+    if (!valorDoInput) return null
+    const data = new Date(valorDoInput)
+    return isNaN(data.getTime()) ? null : data.toISOString()
+  }
+
   const salvarDestaque = async () => {
     if (!malId || !titulo) {
       showToast('Busque um anime e defina um título antes de salvar!', 'error')
@@ -358,8 +377,7 @@ export default function PainelAdmin() {
       // significa "curei e está vazio de propósito" — e limparia o dado da AniList junto.
       custom_episodes: episodios.length > 0 ? episodios : null,
       custom_external_links: links.length > 0 ? links : null,
-      // O input date devolve AAAA-MM-DD; a coluna é TIMESTAMPTZ.
-      custom_first_aired_at: estreia ? `${estreia}T00:00:00Z` : null,
+      custom_first_aired_at: estreiaParaBanco(estreia),
       custom_duration_minutes: duracao ? Number(duracao) : null,
       is_destaque: isDestaque,
       curation_status: curationStatus,
@@ -537,8 +555,7 @@ export default function PainelAdmin() {
       setCharacters(anime.custom_characters || [])
       setEpisodios(anime.custom_episodes || [])
       setLinks(anime.custom_external_links || [])
-      // O input date só aceita AAAA-MM-DD; o banco devolve o timestamp completo.
-      setEstreia(anime.custom_first_aired_at ? anime.custom_first_aired_at.slice(0, 10) : '')
+      setEstreia(estreiaParaInput(anime.custom_first_aired_at))
       setDuracao(anime.custom_duration_minutes ? String(anime.custom_duration_minutes) : '')
       // `?? true` e não `|| true`: o banco tem DEFAULT true, mas um false gravado de
       // propósito precisa sobreviver — com `||` ele viraria true de novo.
@@ -555,7 +572,7 @@ export default function PainelAdmin() {
           coverImage: anime.custom_cover_image || '', bannerImage: anime.custom_banner_image || '',
           characters: anime.custom_characters || [],
           episodios: anime.custom_episodes || [], links: anime.custom_external_links || [],
-          estreia: anime.custom_first_aired_at ? anime.custom_first_aired_at.slice(0, 10) : '',
+          estreia: estreiaParaInput(anime.custom_first_aired_at),
           duracao: anime.custom_duration_minutes ? String(anime.custom_duration_minutes) : '',
           isDestaque: anime.is_destaque ?? true, curationStatus: anime.curation_status || 'parcial'
         }))
@@ -799,14 +816,17 @@ export default function PainelAdmin() {
 
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
                         <div>
-                          <label className="block text-[10px] mb-1 font-bold text-muted">Estreia do episódio 1</label>
+                          <label className="block text-[10px] mb-1 font-bold text-muted">Estreia do episódio 1 (data e hora)</label>
                           <input
-                            type="date"
+                            type="datetime-local"
                             value={estreia}
                             onChange={(e) => setEstreia(e.target.value)}
                             className="w-full bg-panel border border-line rounded px-2 py-1.5 text-xs outline-none focus:border-holo-2 text-text"
                           />
-                          <p className="text-[9.5px] text-muted-2 mt-1">Permite calcular a contagem regressiva sem a AniList.</p>
+                          <p className="text-[9.5px] text-muted-2 mt-1">
+                            No <b className="text-muted">seu</b> horário — a conversão é automática. É a hora que permite
+                            calcular a contagem regressiva sem a AniList.
+                          </p>
                         </div>
 
                         <div>
