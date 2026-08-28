@@ -147,7 +147,7 @@ func (h *OlheiroHandler) HandleScan(w http.ResponseWriter, r *http.Request) {
 	candidatos, err := h.buscarCandidatos(ctx)
 	if err != nil {
 		log.Printf("[OLHEIRO] Falha ao buscar candidatos: %v", err)
-		http.Error(w, "Erro ao consultar a AniList", http.StatusBadGateway)
+		http.Error(w, "Serviço da AniList indisponível no momento", http.StatusServiceUnavailable)
 		return
 	}
 
@@ -261,6 +261,7 @@ func (h *OlheiroHandler) buscarCandidatos(ctx context.Context) ([]Candidato, err
 		}
 		sucessos++
 		coletar(res)
+		time.Sleep(2 * time.Second) // BLOCO 3: Respeita o limite de 30 req/min da AniList
 	}
 
 	if sucessos == 0 {

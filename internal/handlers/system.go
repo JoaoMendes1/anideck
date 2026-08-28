@@ -4,6 +4,7 @@ package handlers
 import (
 	"encoding/json"
 	"net/http"
+	"log"
 
 	"github.com/JoaoMendes1/anideck/internal/anilist"
 	"github.com/JoaoMendes1/anideck/internal/database"
@@ -41,9 +42,7 @@ func (h *SystemHandler) HandleToggleKillSwitch(w http.ResponseWriter, r *http.Re
 	}
 
 	// Altera imediatamente na RAM do Go para efeito instantâneo
-	anilist.StateMutex.Lock()
-	anilist.ForceOffline = req.ForceOffline
-	anilist.StateMutex.Unlock()
+	anilist.SetForceOffline(req.ForceOffline)
 
 	// Tenta persistir no Supabase (em background/silencioso para não travar a UI)
 	dbClient, errClient := database.ClientWithToken(token)
@@ -52,8 +51,13 @@ func (h *SystemHandler) HandleToggleKillSwitch(w http.ResponseWriter, r *http.Re
 		if req.ForceOffline {
 			valStr = "true"
 		}
-		updateData := map[string]string{"value": valStr}
-		_, _, _ = dbClient.From("app_settings").Update(updateData, "representation", "exact").Eq("key", "anilist_force_offline").Execute()
+				updateData := map[string]string{"value": valStr}
+		if _, _, errUp := dbClient.From("app_settings").
+			Update(updateData, "minimal", "exact").
+			Eq("key", "anilist_force_offline").
+			Execute(); errUp != nil {
+			log.Printf("[KILL SWITCH] Falha ao persistir o estado: %v", errUp)
+		}
 	}
 
 	w.Header().Set("Content-Type", "application/json")

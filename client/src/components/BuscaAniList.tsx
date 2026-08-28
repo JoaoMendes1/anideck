@@ -48,7 +48,7 @@ export default function BuscaAniList({
           type="text"
           value={termoBusca}
           onChange={(e) => onChangeTermo(e.target.value)}
-          placeholder="Busque o título na AniList para importar a base..."
+          placeholder="Busque por título ou cole o ID (ex: 16498)..."
           className="flex-1 min-w-0 bg-panel-2 border border-line rounded-xl px-4 py-2 text-sm outline-none focus:border-holo-3 transition-colors relative z-20"
           onKeyDown={(e) => e.key === 'Enter' && onBuscar()}
         />

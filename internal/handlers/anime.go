@@ -110,8 +110,39 @@ func (h *AnimeHandler) HandleGetAnime(w http.ResponseWriter, r *http.Request) {
 
 	resultados, err := h.AniListClient.GetAnimeById(r.Context(), id)
 	if err != nil {
-		http.Error(w, "Erro ao buscar na AniList", http.StatusInternalServerError)
-		return
+		// FALLBACK (BLOCO 3): Tenta recuperar do cache local e curadoria
+		malID, _ := strconv.Atoi(id)
+		dbClient := database.Client
+		
+		if dbClient == nil {
+			http.Error(w, "Catálogo indisponível no momento.", http.StatusServiceUnavailable)
+			return
+		}
+
+		dataCache, _, errM := dbClient.From("anime_metadata_cache").Select("*", "exact", false).Eq("mal_id", id).Execute()
+		var cached []map[string]interface{}
+		if errM == nil { json.Unmarshal(dataCache, &cached) }
+
+		dataCurado, _, errC := dbClient.From("curated_animes").Select("*", "exact", false).Eq("mal_id", id).Execute()
+		var curados []models.CuratedAnime
+		if errC == nil { json.Unmarshal(dataCurado, &curados) }
+
+		// Se não tem no cache nem na curadoria, aí sim dá erro
+		if len(cached) == 0 && len(curados) == 0 {
+			http.Error(w, "Catálogo indisponível", http.StatusServiceUnavailable)
+			return
+		}
+
+		// Reconstrói o anime usando os dados salvos localmente
+		animeFallback := anilist.Anime{MalID: malID}
+		if len(cached) > 0 {
+			c := cached[0]
+			if title, ok := c["title"].(string); ok { animeFallback.Title = title }
+			if epFloat, ok := c["episodes"].(float64); ok { animeFallback.Episodes = int(epFloat) }
+			if score, ok := c["average_score"].(float64); ok { animeFallback.Score = score }
+		}
+
+		resultados = &anilist.AnimeByIdResponse{Data: animeFallback}
 	}
 
 	if rank, bScore, ok := GetAniDeckStats(resultados.Data.MalID); ok {
@@ -156,7 +187,7 @@ func (h *AnimeHandler) HandleGetStats(w http.ResponseWriter, r *http.Request) {
 
 	stats, err := h.AniListClient.GetAnimeStatistics(r.Context(), id)
 	if err != nil {
-		http.Error(w, "Erro ao buscar estatísticas na AniList", http.StatusInternalServerError)
+		http.Error(w, "Estatísticas indisponíveis no momento", http.StatusServiceUnavailable)
 		return
 	}
 
@@ -174,9 +205,32 @@ func (h *AnimeHandler) HandleGetAnimesByIDs(w http.ResponseWriter, r *http.Reque
 	}
 
 	resultados, err := h.AniListClient.GetAnimesByMalIDs(r.Context(), payload.IDs)
-	if err != nil {
-		http.Error(w, "Erro ao buscar na AniList", http.StatusInternalServerError)
-		return
+	if err != nil || resultados == nil || (len(resultados.Data) == 0 && len(payload.IDs) > 0) {
+		// FALLBACK (BLOCO 3): Monta o array base usando o cache local para o Deck não quebrar
+		resultados = &anilist.AnimeSearchResponse{Data: []anilist.Anime{}}
+		dbClient := database.Client
+		if dbClient != nil {
+			dataCache, _, _ := dbClient.From("anime_metadata_cache").Select("*", "exact", false).Execute()
+			var cached []map[string]interface{}
+			json.Unmarshal(dataCache, &cached)
+			
+			cacheMap := make(map[int]map[string]interface{})
+			for _, c := range cached {
+				if m, ok := c["mal_id"].(float64); ok { cacheMap[int(m)] = c }
+			}
+
+			// Para cada ID que a tela pediu, criamos um "esqueleto" que a Curadoria vai preencher
+			for _, id := range payload.IDs {
+				anime := anilist.Anime{MalID: id}
+				if c, ok := cacheMap[id]; ok {
+					if t, ok := c["title"].(string); ok { anime.Title = t }
+					if e, ok := c["episodes"].(float64); ok { anime.Episodes = int(e) }
+					if s, ok := c["average_score"].(float64); ok { anime.Score = s }
+					if st, ok := c["status"].(string); ok { anime.Status = st }
+				}
+				resultados.Data = append(resultados.Data, anime)
+			}
+		}
 	}
 
 	// Injeta a Curadoria (Capa e Título)

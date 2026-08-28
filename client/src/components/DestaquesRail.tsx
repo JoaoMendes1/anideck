@@ -1,5 +1,5 @@
 import { useState, useMemo } from 'react'
-import { Search, Trash2, ImageOff, CheckCircle2, PlayCircle } from 'lucide-react'
+import { Search, Trash2, ImageOff, CheckCircle2, AlertCircle } from 'lucide-react'
 import type { CuratedAnime } from '../types/curation'
 
 interface DestaquesRailProps {
@@ -11,7 +11,7 @@ interface DestaquesRailProps {
   novoAtivo: boolean
 }
 
-type FiltroTipo = 'ALL' | 'RELEASING' | 'FINISHED' | 'NO_COVER'
+type FiltroTipo = 'ALL' | 'PARCIAL' | 'COMPLETO' | 'REVISAR' | 'NO_COVER'
 
 // O estado de curadoria existe para responder "onde eu parei?" com 100+ animes cadastrados.
 // Sem aparecer aqui na lista, ele só era visível abrindo cada anime um por um — que é
@@ -38,8 +38,9 @@ export default function DestaquesRail({
       const matchBusca = d.custom_title.toLowerCase().includes(busca.toLowerCase())
       if (!matchBusca) return false
 
-      if (filtro === 'RELEASING') return d.custom_status === 'RELEASING'
-      if (filtro === 'FINISHED') return d.custom_status === 'FINISHED'
+      if (filtro === 'PARCIAL') return d.curation_status === 'parcial'
+      if (filtro === 'COMPLETO') return d.curation_status === 'completo'
+      if (filtro === 'REVISAR') return d.curation_status === 'revisar'
       if (filtro === 'NO_COVER') return !d.custom_cover_image
 
       return true
@@ -83,8 +84,9 @@ export default function DestaquesRail({
         
         <div className="flex flex-wrap gap-2">
           <FilterChip active={filtro === 'ALL'} onClick={() => setFiltro('ALL')} label="Todos" />
-          <FilterChip active={filtro === 'RELEASING'} onClick={() => setFiltro('RELEASING')} label="Lançamento" icon={<PlayCircle size={10} />} />
-          <FilterChip active={filtro === 'FINISHED'} onClick={() => setFiltro('FINISHED')} label="Finalizado" icon={<CheckCircle2 size={10} />} />
+          <FilterChip active={filtro === 'PARCIAL'} onClick={() => setFiltro('PARCIAL')} label="Parcial" />
+          <FilterChip active={filtro === 'COMPLETO'} onClick={() => setFiltro('COMPLETO')} label="Completo" icon={<CheckCircle2 size={10} />} />
+          <FilterChip active={filtro === 'REVISAR'} onClick={() => setFiltro('REVISAR')} label="Revisar" icon={<AlertCircle size={10} />} />
           <FilterChip active={filtro === 'NO_COVER'} onClick={() => setFiltro('NO_COVER')} label="Sem Capa" icon={<ImageOff size={10} />} />
         </div>
       </div>

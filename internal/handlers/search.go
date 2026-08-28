@@ -72,14 +72,109 @@ func (h *SearchHandler) HandleSearch(w http.ResponseWriter, r *http.Request) {
 	}
 
 	resultados, err := h.AniListClient.SearchAnime(r.Context(), query, page, perPage, filters)
-	if err != nil {
-		log.Printf("[ERRO ANILIST] Falha ao buscar '%s': %v", query, err)
-		http.Error(w, "Busca indisponível no momento. Tente novamente mais tarde.", http.StatusServiceUnavailable)
-		return
+	
+// FALLBACK (BLOCO 3): Se a AniList cair, montamos a busca inteira unindo Curadoria e Cache
+	if err != nil || resultados == nil {
+		log.Printf("[ERRO ANILIST] Fallback ativado para busca: %v", err)
+		resultados = &anilist.AnimeSearchResponse{Data: []anilist.Anime{}}
+		
+		dataCurados, _, _ := database.Client.From("curated_animes").Select("*", "exact", false).Execute()
+		var curados []models.CuratedAnime
+		json.Unmarshal(dataCurados, &curados)
+
+		dataCache, _, _ := database.Client.From("anime_metadata_cache").Select("*", "exact", false).Execute()
+		var cached []map[string]interface{}
+		json.Unmarshal(dataCache, &cached)
+
+		unified := make(map[int]anilist.Anime)
+
+		// 1. Popula com cache (preserva Gêneros e Tags originais em Inglês)
+		for _, c := range cached {
+			idFloat, ok := c["mal_id"].(float64)
+			if !ok { continue }
+			id := int(idFloat)
+			
+			anime := anilist.Anime{MalID: id}
+			if t, ok := c["title"].(string); ok { anime.Title = t }
+			if st, ok := c["status"].(string); ok { anime.Status = st }
+			
+			if gList, ok := c["genres"].([]interface{}); ok {
+				for _, g := range gList {
+					if gStr, isStr := g.(string); isStr { anime.Genres = append(anime.Genres, anilist.Genre{Name: gStr}) }
+				}
+			}
+			if tList, ok := c["tags"].([]interface{}); ok {
+				for _, t := range tList {
+					if tStr, isStr := t.(string); isStr { anime.Tags = append(anime.Tags, tStr) }
+				}
+			}
+			unified[id] = anime
+		}
+
+		// 2. Mescla e Filtra tudo
+		for _, cur := range curados {
+			anime, exists := unified[cur.MalID]
+			if !exists { anime = anilist.Anime{MalID: cur.MalID, Title: cur.CustomTitle} }
+			
+			originalGenres := make([]string, len(anime.Genres))
+			for i, g := range anime.Genres { originalGenres[i] = g.Name }
+			originalTags := append([]string{}, anime.Tags...)
+
+			AplicarCuradoria(&anime, cur)
+
+			if query != "" && !strings.Contains(strings.ToLower(anime.Title), strings.ToLower(query)) { continue }
+
+			match := true
+			if len(genres) > 0 {
+				has := false
+				for _, gReq := range genres {
+					// Compara com os originais (em Inglês)
+					for _, og := range originalGenres { if strings.EqualFold(gReq, og) { has = true; break } }
+					// Compara com os curados (em Português)
+					for _, ag := range anime.Genres { if strings.EqualFold(gReq, ag.Name) { has = true; break } }
+				}
+				if !has { match = false }
+			}
+
+			if match && len(tags) > 0 {
+				has := false
+				for _, tReq := range tags {
+					for _, ot := range originalTags { if strings.EqualFold(tReq, ot) { has = true; break } }
+					for _, ag := range anime.Genres { if strings.EqualFold(tReq, ag.Name) { has = true; break } }
+				}
+				if !has { match = false }
+			}
+
+			if match { resultados.Data = append(resultados.Data, anime) }
+			delete(unified, cur.MalID) // Remove para não duplicar no loop abaixo
+		}
+
+		// 3. Processa o que sobrou apenas no cache
+		for _, anime := range unified {
+			if query != "" && !strings.Contains(strings.ToLower(anime.Title), strings.ToLower(query)) { continue }
+
+			match := true
+			if len(genres) > 0 {
+				has := false
+				for _, gReq := range genres {
+					for _, ag := range anime.Genres { if strings.EqualFold(gReq, ag.Name) { has = true; break } }
+				}
+				if !has { match = false }
+			}
+			if match && len(tags) > 0 {
+				has := false
+				for _, tReq := range tags {
+					for _, at := range anime.Tags { if strings.EqualFold(tReq, at) { has = true; break } }
+				}
+				if !has { match = false }
+			}
+
+			if match { resultados.Data = append(resultados.Data, anime) }
+		}
 	}
 
 	// Injeta a curadoria local APENAS na primeira página para não repetir
-	if query != "" && page == 1 {
+	if err == nil && query != "" && page == 1 {
 		var localHits []models.CuratedAnime
 		data, _, errLocal := database.Client.From("curated_animes").Select("*", "exact", false).Filter("custom_title", "ilike", "%"+query+"%").Execute()
 
@@ -95,7 +190,18 @@ func (h *SearchHandler) HandleSearch(w http.ResponseWriter, r *http.Request) {
 
 			localAnimes, errAniListIds := h.AniListClient.GetAnimesByMalIDs(r.Context(), localMalIDs)
 
-			if errAniListIds == nil && localAnimes != nil {
+			// FALLBACK (BLOCO 3): Se a AniList cair, montamos os animes usando a curadoria local
+			if errAniListIds != nil || localAnimes == nil {
+				localAnimes = &anilist.AnimeSearchResponse{Data: []anilist.Anime{}}
+				for _, hit := range localHits {
+					localAnimes.Data = append(localAnimes.Data, anilist.Anime{
+						MalID: hit.MalID,
+						Title: hit.CustomTitle,
+					})
+				}
+			}
+
+			if localAnimes != nil {
 				curadosMap := make(map[int]models.CuratedAnime)
 				for _, hit := range localHits {
 					curadosMap[hit.MalID] = hit

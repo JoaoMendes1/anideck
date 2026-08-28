@@ -39,6 +39,7 @@ SELECT pg_get_viewdef('nome_da_view'::regclass, true);
 | `013_precedencia_rotulos.sql` | Precedência campo a campo nos rótulos; `'ignorado'` como default | 24/08/2026 |
 | `014_campos_curadoria.sql` | Colunas novas de curadoria (`custom_episodes` e outras), todas NULLABLE — NULL cai para a fonte seguinte | ~25/08/2026 |
 | `015_quero_assistir_nas_stats.sql` | Acrescenta `quero_assistir` à `view_user_stats` | 26/08/2026 |
+| `016_app_settings_rls.sql` | Fecha a escrita da `app_settings` a `is_admin()`; leitura segue pública | 28/08/2026 |
 
 Datas com `~` são a data do commit, não da aplicação no Supabase.
 
