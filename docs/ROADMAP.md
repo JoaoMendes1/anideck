@@ -425,6 +425,33 @@ reordenáveis, sinopse com reescrita por IA, título, formato e status.
 - [ ] **Filtro por ano na Busca, independente de temporada** — hoje o campo de ano só habilita se
       uma temporada estiver selecionada (ver `docs/ideias-para-melhorias.md`, item 7.1). Aceitável
       como está por ora; revisar se surgir demanda real de usuário.
+- [ ] **Página de Configurações e Ajuda.** É a única das dez do `PAGES.md` que nunca
+      saiu do protótipo (`prototipos/config-ajuda-prototipo.html`). Precisa conter
+      exclusão de conta e redefinição de senha: hoje um usuário cadastrado não
+      consegue apagar a própria conta — só o admin, direto no banco. Exclusão de
+      conta é item da Fase 7 e requisito de LGPD, então esta página é pré-requisito
+      do beta, não enfeite.
+
+- [ ] **Criar anime do zero no Painel Admin.** Toda entrada em `curated_animes` hoje
+      nasce de um `mal_id` da AniList — não existe caminho para cadastrar obra que
+      ela não tem. **Trava principal:** o `mal_id` é a chave que liga
+      `curated_animes`, `anime_metadata_cache`, `media_entries` e `episode_progress`.
+      Um anime sem `mal_id` precisa de identidade própria, e isso é decisão de
+      schema, não de tela. Duas saídas possíveis: ID próprio para obras locais, ou
+      tornar o `mal_id` opcional e usar o `id` de `curated_animes` como chave real.
+      A segunda é mais correta e mais cara — mexe em tabelas com dado de usuário.
+
+- [ ] **Agente de inconsistências.** Compara o que já existe no banco em vez de
+      buscar fora: data em `curated_animes` contra `anime_metadata_cache`, contagem
+      de episódios contra a AniList, numeração de `custom_episodes` fora de sequência.
+      Divergência vira sugestão na fila do Olheiro, que já existe. Quase tudo é SQL —
+      IA só entraria se você quisesse que ele fosse buscar a versão correta.
+
+- [ ] **Feeds RSS do LiveChart como fonte de calendário.** O LiveChart tem os dados
+      de agenda melhor estruturados que a AniList (horário com fuso explícito), mas
+      não tem API pública e bloqueia acesso automatizado por `robots.txt`. Oferece
+      feeds RSS. Vale investigar se dá para alimentar o Calendário sem IA e sem
+      depender de fonte única.
 
 ### Avaliado e descartado (documentado pra não reabrir sem contexto)
 
