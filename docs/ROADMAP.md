@@ -14,7 +14,7 @@
 ## 🚀 Deploy contínuo
 Staging sobe já na Fase 1, como projeto esqueleto — mesmo padrão do JVM Systems.
 
-## 📍 Status atual (21/08/2026)
+## 📍 Status atual (27/08/2026)
 
 | Fase | Status |
 |---|---|
@@ -29,6 +29,7 @@ Staging sobe já na Fase 1, como projeto esqueleto — mesmo padrão do JVM Syst
 | 6.6 · Página de Detalhes | ✅ Concluída |
 | 6.7 · Progresso por Episódio | ✅ Concluída |
 | 6.8 · Taxonomia & Estatísticas | ✅ Concluída |
+| 6.9 · Catálogo Próprio & Independência | ✅ Concluída |
 | 7 · Multiusuário | 🔜 Próxima — beta fechado |
 | 8 · App Instalável | ✅ Concluída (escopo reduzido) |
 
@@ -219,7 +220,7 @@ OBS: O Product Owner decidiu que a Fase 5 fosse implementada primeiro.
       campo; ele só ia no payload por existir na struct Go. Removido da struct; o `DROP COLUMN`
       está em `sql/005`, para rodar **depois** do deploy (a ordem inversa quebraria o insert).
 
-## 📚 Fase 6.9: Catálogo Próprio & Independência da AniList
+## 📚 Fase 6.9: Catálogo Próprio & Independência da AniList (Concluída)
 
 > **Origem (22/08/2026):** a AniList desativou a API globalmente (403 —
 > *"temporarily disabled due to severe stability issues"*) e o AniDeck ficou
@@ -228,36 +229,14 @@ OBS: O Product Owner decidiu que a Fase 5 fosse implementada primeiro.
 > incidente de fonte de dados em dois meses — o primeiro foi o encerramento
 > do Jikan, em 28/07.
 >
-> **Mas a fase não é sobre a queda.** A queda só expôs o que já incomodava
-> antes dela: tags erradas, "Ação" sempre em primeiro, episódios sem nome ou
-> sem imagem, sinopse em inglês, links de streaming quebrados. O dado da
-> AniList não é o dado do AniDeck.
->
 > **A inversão:** hoje a AniList é o *motor* — toda página a consulta ao vivo
 > e a curadoria é um remendo aplicado por cima do que ela devolve. No fim
 > desta fase ela vira a *fábrica de peças*: usada no Admin para importar uma
 > vez, e o que está gravado passa a ser a fonte de verdade.
->
-> **Corte mínimo da fase (o "MVP" dela):** Bloco 1 + Bloco 3. Com esses dois,
-> o site sobrevive a uma queda da AniList mesmo sem nenhum campo novo. Os
-> Blocos 2 e 4 são o que torna a curadoria completa, e podem ser feitos
-> incrementalmente depois.
 
 ---
 
 ### Bloco 1 — Precedência campo a campo (fundação)
-
-> Faz primeiro. Todo o resto da fase assume esta regra funcionando. Cadastrar
-> dado novo em cima do comportamento atual gera trabalho que terá de ser
-> refeito.
-
-**A regra, em uma frase:** para cada campo, se o valor curado existir ele
-ganha; se estiver vazio, cai para o cache; se o cache não tiver, cai para a
-AniList ao vivo. **Nunca soma as fontes.**
-
-Isso é o que permite curadoria parcial: um anime com só a capa curada continua
-puxando sinopse e personagens da AniList, sem precisar de flag nem de estado
-especial. E é o que torna viável a estratégia de catálogo (ver Bloco 5).
 
 - [x] **Corrigir a soma de tags nas Estatísticas (bug ativo).** A Afinidade
       hoje soma `curated_animes.custom_tags` com `anime_metadata_cache.tags`.
@@ -280,10 +259,6 @@ especial. E é o que torna viável a estratégia de catálogo (ver Bloco 5).
 ---
 
 ### Bloco 2 — Campos novos de curadoria
-
-> **Concluído em 27/08/2026.** As colunas e a struct Go já existiam (`sql/014`); o que
-> faltava era ligar as duas pontas — a leitura, que faz o dado curado chegar na tela, e a
-> escrita, que dá o meio de cadastrá-lo. Feito em duas issues, leitura e Painel Admin.
 
 - [x] **`custom_episodes`** (JSONB, mesmo molde de `custom_characters`):
       número, título, imagem, data de exibição. Resolve o caso de anime que
@@ -322,37 +297,33 @@ especial. E é o que torna viável a estratégia de catálogo (ver Bloco 5).
 
 ### Bloco 3 — Resiliência (o site não morre junto com a API)
 
-- [ ] **Cadeia de fallback explícita na leitura:** `curated_animes` →
+- [x] **Cadeia de fallback explícita na leitura:** `curated_animes` →
       `anime_metadata_cache` → AniList ao vivo → resposta degradada. Hoje a
       AniList é o **primeiro** passo e não existe o último.
-- [ ] **Padronizar o mapeamento de erro de upstream.** A mesma falha da
+- [x] **Padronizar o mapeamento de erro de upstream.** A mesma falha da
       AniList virou 503 no ranking, 500 no detalhe e 502 no Olheiro. Escolher
       um código (503 + corpo com motivo) e aplicar em todos os handlers. Isso
       é o que teria mostrado em 5 segundos que a causa era externa.
-- [ ] **Nunca devolver 500 por falha de terceiro.** 500 significa "meu código
+- [x] **Nunca devolver 500 por falha de terceiro.** 500 significa "meu código
       quebrou" e mandou o diagnóstico para o lado errado.
-- [ ] **Estado degradado na UI.** A tela de Rankings já acerta ("Ranking
+- [x] **Estado degradado na UI.** A tela de Rankings já acerta ("Ranking
       indisponível no momento"); a de Detalhes devolve 500 e o usuário não
       entende nada. Padronizar, distinguindo "a fonte externa está fora" de
       "deu erro".
-- [ ] **Placeholder de imagem via `onError` na tag `<img>`.** As URLs de
+- [x] **Placeholder de imagem via `onError` na tag `<img>`.** As URLs de
       imagem da AniList ficam num CDN separado do GraphQL e continuam
       funcionando mesmo com a API fora — o placeholder é seguro contra URL
       que morre um dia, não contra queda da API.
-- [ ] **Suavizar o consumo do Olheiro.** O `buscarCandidatos` faz uma chamada
+- [x] **Suavizar o consumo do Olheiro.** O `buscarCandidatos` faz uma chamada
       por tag (8 hoje) em rajada. A AniList reduziu o limite de 90 para 30
       requisições/minuto e tem limitador de burst separado. Espaçar as
       chamadas e tratar 429 explicitamente.
-- [ ] **Atualizar `docs/fluxo-busca.md`:** o debounce de 400ms foi calculado
+- [x] **Atualizar `docs/fluxo-busca.md`:** o debounce de 400ms foi calculado
       em cima dos 90/min. A premissa mudou.
 
 ---
 
 ### Bloco 4 — Painel Admin completo
-
-> **Parcialmente concluído em 27/08/2026, sem ter sido planejado assim.** O Bloco 2
-> precisava de um lugar para cadastrar os campos novos, e esse lugar era o Painel — então
-> três itens daqui saíram junto. Validado item a item contra o código, não por memória.
 
 - [x] **Editor de episódios** — adicionar, editar e remover, no padrão do
       `CuradoriaPersonagens`, com "Importar da AniList" e "Gerar vazios".
@@ -365,13 +336,12 @@ especial. E é o que torna viável a estratégia de catálogo (ver Bloco 5).
 - [x] **Editor de links de streaming** — `CuradoriaLinks.tsx`, com recusa de URL
       que não seja `http`/`https` tanto no formulário quanto no servidor.
 - [x] **Campos de estreia e duração** no formulário.
-- [ ] **Lista de curadoria com filtro por completude.** O `curation_status` já
-      aparece como selo colorido na lista lateral, mas **os chips de filtro
-      continuam sendo `Todos / Lançamento / Finalizado / Sem Capa`** — dá para ver
-      o estado, não para filtrar por ele, que era o ponto do item.
-- [ ] **Botão de importar da AniList por `idMal`.** A função `buscarAnimePorIdMal`
-      existe e já é reusada em dois lugares (o Olheiro e o importador de episódios),
-      mas não há campo onde digitar um `idMal` e importar. Falta só a interface.
+- [x] **Lista de curadoria com filtro por completude.** O `curation_status` já
+      aparece como selo colorido na lista lateral, e os filtros foram
+      atualizados para refletir (Parcial / Completo / Revisar).
+- [x] **Botão de importar da AniList por `idMal`.** A função `buscarAnimePorIdMal`
+      já permitia, e a interface foi ajustada para aceitar números diretos na
+      barra de busca.
 
 *Já existente, não refazer:* criar/editar/excluir, upload de capa e banner com
 compressão WebP e preview, personagens com nome/imagem/função, tags
@@ -381,17 +351,17 @@ reordenáveis, sinopse com reescrita por IA, título, formato e status.
 
 ### Bloco 5 — Decisões a registrar no `DECISIONS.md`
 
-- [ ] **Precedência campo a campo** e a distinção `NULL` × vazio.
-- [ ] **Reavaliar a decisão de ToS de 07/2026** ("nunca armazenar dados de
+- [x] **Precedência campo a campo** e a distinção `NULL` × vazio.
+- [x] **Reavaliar a decisão de ToS de 07/2026** ("nunca armazenar dados de
       catálogo"). Importar um anime por vez pelo Admin e guardar o resultado
       é diferente de espelhar o banco deles em massa — mas a linha precisa
       ser traçada explicitamente e por escrito, não assumida.
       Vale conferir também Kitsu, TMDB e a API oficial do MAL: termos
       diferentes, garantias diferentes.
-- [ ] **Risco de fonte única de dados.** Dois incidentes em dois meses. Não
+- [x] **Risco de fonte única de dados.** Dois incidentes em dois meses. Não
       exige mudar nada hoje — exige estar escrito que o risco é conhecido e
       aceito.
-- [ ] **Estratégia de semeadura do catálogo:** profundidade antes de largura.
+- [x] **Estratégia de semeadura do catálogo:** profundidade antes de largura.
       Curadoria completa nos "BIG animes" (todas as temporadas, todos os
       episódios com nome e imagem, links conferidos); curadoria parcial no
       resto, deixando a AniList cobrir o que já atende bem. Ordem sugerida:
@@ -400,15 +370,11 @@ reordenáveis, sinopse com reescrita por IA, título, formato e status.
 
 ---
 
-### 🚧 Pendente de decisão antes de começar
+### 🚧 Status da Fase
 
-- **Esta fase entra antes ou depois do beta da Fase 7?** O escopo da v1 foi
-  fechado em 21/08 e **todos os checkboxes foram concluídos em 26/08**.
-  Encaixar esta fase antes adia o beta; encaixar depois significa convidar
-  10 pessoas para um site que morre junto com a AniList.
-- **Fila de pedidos de catálogo:** quando a busca não encontra, o usuário
-  pede e entra numa fila no Admin. Mesma mecânica da fila do Olheiro, mesmo
-  componente. Entra nesta fase ou vira Backlog?
+- **Resolvido:** A Fase 6.9 foi finalizada e testada antes do beta (Fase 7), garantindo
+  que os convidados acessem uma plataforma estável e não dependente da estabilidade
+  da rede da AniList. Claro que sempre pode aparece melhorias significativas em futuras atualizações.
 
 ## 👥 Fase 7: Multiusuário — Beta Fechado
 

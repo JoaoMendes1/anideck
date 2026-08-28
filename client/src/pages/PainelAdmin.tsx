@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from 'react'
 import { supabase } from '../lib/supabase'
 import { Navigate, useNavigate } from 'react-router-dom'
 import { useToast } from '../contexts/ToastContext'
-import { Sparkles, X, LayoutList, ArrowLeft } from 'lucide-react'
+import { Sparkles, X, LayoutList, ArrowLeft, Activity, PowerOff } from 'lucide-react'
 import { LogoMark } from '../components/Brand'
 import Sheet from '../components/Sheet'
 import BuscaAniList, { type AniListMedia } from '../components/BuscaAniList'
@@ -43,6 +43,8 @@ export default function PainelAdmin() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [isAdmin, setIsAdmin] = useState<boolean | null>(null)
+  const [apiHealth, setApiHealth] = useState<'OK' | 'WARNING' | 'OFFLINE'>('OK')
+  const [forceOffline, setForceOffline] = useState(false)
 
   const [formularioAberto, setFormularioAberto] = useState(false)
 
@@ -135,8 +137,8 @@ export default function PainelAdmin() {
     acaoPendente?.()
     setAcaoPendente(null)
   }
-
-  const verificarAcesso = async () => {
+   //	Verifica admin, carrega destaques e status da API, além de permitir alternar kill switch
+ const verificarAcesso = async () => {
     const { data: { session } } = await supabase.auth.getSession()
     if (!session) {
       setIsAdmin(false)
@@ -145,9 +147,48 @@ export default function PainelAdmin() {
     try {
       const response = await fetch('/api/admin/verify', { headers: { Authorization: `Bearer ${session.access_token}` } })
       setIsAdmin(response.ok)
-      if (response.ok) carregarDestaques()
+      if (response.ok) {
+        carregarDestaques()
+        carregarStatusSistema(session.access_token)
+      }
     } catch {
       setIsAdmin(false)
+    }
+  }
+  // 	Verifica admin, carrega destaques e status da API, além de permitir alternar kill switch
+  const carregarStatusSistema = async (token: string) => {
+    try {
+      const res = await fetch('/api/admin/system/status', {
+        headers: { Authorization: `Bearer ${token}` }
+      })
+      if (res.ok) {
+        const data = await res.json()
+        setApiHealth(data.api_health)
+        setForceOffline(data.force_offline)
+      }
+    } catch (e) {
+      console.error("Erro ao ler status do sistema", e)
+    }
+  }
+
+  const toggleKillSwitch = async () => {
+    const novoStatus = !forceOffline
+    setForceOffline(novoStatus) // Atualização otimista na tela
+    try {
+      const { data: { session } } = await supabase.auth.getSession()
+      const res = await fetch('/api/admin/system/kill-switch', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${session?.access_token}`
+        },
+        body: JSON.stringify({ force_offline: novoStatus })
+      })
+      if (!res.ok) throw new Error()
+      showToast(novoStatus ? 'Modo Offline Forçado (AniList Desconectada)' : 'Conexão com AniList Restaurada', novoStatus ? 'error' : 'success')
+    } catch {
+      setForceOffline(!novoStatus) // Reverte se a API falhar
+      showToast('Erro ao alterar status do sistema', 'error')
     }
   }
 
@@ -173,7 +214,10 @@ export default function PainelAdmin() {
       const res = await fetch('https://graphql.anilist.co', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ query: QUERY_ANILIST, variables: { search: termoBusca } }),
+        body: JSON.stringify({ 
+          query: QUERY_ANILIST, 
+          variables: /^\d+$/.test(termoBusca.trim()) ? { idMal: parseInt(termoBusca.trim(), 10) } : { search: termoBusca } 
+        }),
       })
       const { data } = await res.json()
       if (data?.Page?.media && data.Page.media.length > 0) {
@@ -602,6 +646,23 @@ export default function PainelAdmin() {
           <span className="font-mono text-[10px] font-bold text-gold bg-gold/10 border border-gold/40 px-2 py-1 rounded-full">⚙ ADMIN</span>
         </div>
         <div className="flex gap-4 items-center">
+          <div className="hidden sm:flex items-center gap-2 bg-panel-2 border border-line rounded-full px-3 py-1.5 select-none">
+            <span className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wider text-muted-2 border-r border-line pr-2" title="Saúde Passiva da API AniList">
+              <Activity size={12} />
+              <span className={apiHealth === 'OK' ? 'text-green' : apiHealth === 'WARNING' ? 'text-gold' : 'text-coral'}>
+                {apiHealth}
+              </span>
+            </span>
+            <button
+              type="button"
+              onClick={toggleKillSwitch}
+              className={`flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wider transition-colors cursor-pointer ${forceOffline ? 'text-coral hover:text-coral/80' : 'text-muted hover:text-text'}`}
+              title={forceOffline ? "Reconectar AniList" : "Desconectar AniList (Forçar Offline)"}
+            >
+              <PowerOff size={12} />
+              {forceOffline ? 'OFFLINE' : 'ONLINE'}
+            </button>
+          </div>
           <button
             type="button"
             onClick={() => setConfigModalAberto(true)}

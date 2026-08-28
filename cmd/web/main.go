@@ -2,6 +2,7 @@ package main
 
 import (
 	"log"
+	"encoding/json"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -24,6 +25,26 @@ func main() {
 		log.Fatalf("Erro crítico ao conectar ao banco de dados: %v", err)
 	}
 	log.Println("Conexão com o banco de dados estabelecida!")
+		// O Kill Switch vive em memória para ser instantâneo, mas é gravado em app_settings
+	// para sobreviver a um restart. Sem esta leitura ele voltaria a false toda vez que o
+	// serviço subisse — e no free tier do Render isso acontece a cada hibernação, então
+	// o painel mostraria "ligado" enquanto o backend já estaria consultando a AniList.
+	if data, _, err := database.Client.From("app_settings").
+		Select("value", "exact", false).
+		Eq("key", "anilist_force_offline").
+		Execute(); err == nil {
+		var linhas []struct {
+			Value string `json:"value"`
+		}
+		if err := json.Unmarshal(data, &linhas); err == nil && len(linhas) > 0 {
+			if linhas[0].Value == "true" {
+				anilist.SetForceOffline(true)
+				log.Println("[BOOT] Kill Switch estava ativo: AniList em modo offline forçado.")
+			}
+		}
+	} else {
+		log.Printf("[BOOT] Não foi possível ler o estado do Kill Switch: %v", err)
+	}
 
 	if err := middleware.InitJWKS(os.Getenv("SUPABASE_URL")); err != nil {
 		log.Fatalf("Erro crítico ao carregar JWKS: %v", err)

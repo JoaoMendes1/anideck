@@ -12,7 +12,7 @@ Uma prateleira limpa convidando o usuário a explorar.
 
 ### 2. Estado "digitando" (busca instantânea com debounce e curadoria)
 Conforme o usuário digita, o backend faz o cruzamento: busca primeiro na tabela local `curated_animes` (enriquecimento de dados) e combina com a busca na AniList. 
-**Detalhe técnico importante:** Como consumimos a AniList (GraphQL), limitamos as requisições a ~90/minuto. Para não sermos bloqueados, o frontend aplica um **debounce de ~400ms** nas teclas digitadas, enquanto exibe *skeletons* na UI.
+**Detalhe técnico importante:** Como consumimos a AniList (GraphQL), limitamos as requisições a **~30/minuto** (novo rate limit estrito da API). Para não sermos bloqueados, o frontend aplica um debounce nas teclas digitadas, enquanto exibe *skeletons* na UI. Em caso de falha externa, a busca funde automaticamente a nossa curadoria (em português) com o cache (em inglês) na memória do servidor para entregar resultados sem depender da rede.
 
 ### 3. Estado "sem resultados"
 Mensagem simples amigável caso a combinação de filtros e termos não retorne nada.

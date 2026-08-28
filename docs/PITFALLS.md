@@ -266,6 +266,21 @@ para trás.
 > **Pergunta obrigatória:** quando um handler ganha uma dependência nova do contexto, quais
 > testes montam esse contexto à mão e precisam acompanhar?
 
+## 15. 🔓 Policy `USING (true)` numa tabela de configuração
+
+**Incidente (28/08/2026):** a `app_settings` tinha policies de SELECT e UPDATE com
+`USING (true)`. Qualquer visitante podia reescrever a tabela com a ANON_KEY, que é pública.
+
+**O que torna isso silencioso:** RLS estava **habilitada**. O painel do Supabase mostra a
+tabela como protegida, e existem policies — elas só não restringem nada. Uma tabela sem RLS
+chama atenção; uma com RLS e policy permissiva parece resolvida.
+
+**Como foi descoberto:** por acidente. Um upsert falhou porque não havia policy de INSERT,
+e essa ausência era o único obstáculo real à escrita anônima.
+
+> **Pergunta obrigatória:** as policies desta tabela restringem alguma coisa, ou só existem?
+> Rodar `SET ROLE anon` e tentar escrever responde em 10 segundos.
+
 ## 🧭 Como manter este arquivo
 
 - Toda vez que um bug **silencioso** chegar a produção (não quebrou, só devolveu dado errado),

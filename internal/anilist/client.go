@@ -22,6 +22,15 @@ var (
 	StateMutex   sync.RWMutex
 )
 
+// SetForceOffline ajusta o Kill Switch de fora do pacote sem expor a variável.
+// Existe porque o estado é global e protegido por mutex: escrever direto de outro
+// pacote significaria replicar o Lock/Unlock em cada ponto de escrita.
+func SetForceOffline(v bool) {
+	StateMutex.Lock()
+	ForceOffline = v
+	StateMutex.Unlock()
+}
+
 type Client struct {
 	httpClient *http.Client
 	limiter    *rate.Limiter
