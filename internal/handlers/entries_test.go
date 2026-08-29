@@ -8,6 +8,7 @@ import (
 	"testing"
 
 	"github.com/JoaoMendes1/anideck/internal/middleware"
+	"github.com/go-chi/chi/v5"
 )
 
 func TestSanitizacaoRemoveTagsHTML(t *testing.T) {
@@ -52,5 +53,51 @@ func TestHandleCreate_CorpoInvalido(t *testing.T) {
 
 	if w.Code != http.StatusBadRequest {
 		t.Errorf("esperava 400 com corpo inválido, recebeu: %d", w.Code)
+	}
+
+}
+
+// contextoAutenticado monta o contexto que o middleware montaria em produção,
+// junto do parâmetro de rota que o chi extrairia da URL.
+//
+// Os dois valores de autenticação são obrigatórios: sem eles o handler corta em
+// 401 antes de chegar na validação do id, e o teste passaria a medir outra coisa.
+func contextoAutenticado(idDaRota string) context.Context {
+	ctx := context.WithValue(context.Background(), middleware.UserIDKey, "usuario-teste-123")
+	ctx = context.WithValue(ctx, middleware.TokenKey, "token-teste")
+
+	rctx := chi.NewRouteContext()
+	rctx.URLParams.Add("id", idDaRota)
+	return context.WithValue(ctx, chi.RouteCtxKey, rctx)
+}
+
+func TestHandleUpdate_IDInvalido(t *testing.T) {
+	handler := &EntriesHandler{}
+
+	// "nova" é exatamente o valor que o frontend enviava antes da correção.
+	// O corpo é JSON válido de propósito: se o teste passasse por causa de um
+	// corpo quebrado, ele estaria verificando a validação errada.
+	req := httptest.NewRequest(http.MethodPut, "/api/entries/nova", strings.NewReader(`{"mal_id": 20}`))
+	req = req.WithContext(contextoAutenticado("nova"))
+	w := httptest.NewRecorder()
+
+	handler.HandleUpdate(w, req)
+
+	if w.Code != http.StatusBadRequest {
+		t.Errorf("esperava 400 com id que não é UUID, recebeu: %d", w.Code)
+	}
+}
+
+func TestHandleDelete_IDInvalido(t *testing.T) {
+	handler := &EntriesHandler{}
+
+	req := httptest.NewRequest(http.MethodDelete, "/api/entries/nova", nil)
+	req = req.WithContext(contextoAutenticado("nova"))
+	w := httptest.NewRecorder()
+
+	handler.HandleDelete(w, req)
+
+	if w.Code != http.StatusBadRequest {
+		t.Errorf("esperava 400 com id que não é UUID, recebeu: %d", w.Code)
 	}
 }
