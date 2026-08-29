@@ -232,8 +232,7 @@ export default function Detalhes() {
   const completedStatus = stats?.statuses?.find(s => s.status === 'COMPLETED')?.amount || 0
   const droppedStatus = stats?.statuses?.find(s => s.status === 'DROPPED')?.amount || 0
 
-  const novaEntradaFake = {
-    id: 'nova',
+  const novaEntrada = {
     mal_id: anime.mal_id,
     tipo: 'anime',
     status: 'Quero Assistir',
@@ -551,11 +550,10 @@ export default function Detalhes() {
       </div>
 
       <EditarEntradaModal
-        entrada={isModalOpen ? (minhaEntrada || (novaEntradaFake as any)) : null}
+        entrada={isModalOpen ? (minhaEntrada || novaEntrada) : null}
         onFechar={() => setIsModalOpen(false)}
         onSalvar={(atualizada) => {
           setMinhaEntrada(atualizada)
-          showToast(minhaEntrada ? 'Alterações salvas!' : 'Adicionado ao Deck com sucesso!', 'success')
           setIsModalOpen(false)
         }}
         onExcluir={() => {

@@ -14,7 +14,9 @@ import (
 	"github.com/JoaoMendes1/anideck/internal/entries"
 	"github.com/JoaoMendes1/anideck/internal/middleware"
 	"github.com/go-chi/chi/v5"
+	"github.com/google/uuid"
 )
+
 
 type EntriesHandler struct{}
 
@@ -87,6 +89,14 @@ func (h *EntriesHandler) HandleUpdate(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Recusa aqui o que o Postgres recusaria depois com 22P02. Deixar passar faz o
+	// handler devolver 500, que significa "meu código quebrou" e manda o diagnóstico
+	// para o lado errado — o dado veio do cliente, então é 400.
+	if err := uuid.Validate(id); err != nil {
+		http.Error(w, "ID de entrada inválido", http.StatusBadRequest)
+		return
+	}
+
 	var entrada entries.MediaEntry
 	if err := json.NewDecoder(r.Body).Decode(&entrada); err != nil {
 		http.Error(w, "Payload inválido", http.StatusBadRequest)
@@ -121,9 +131,14 @@ func (h *EntriesHandler) HandleUpdate(w http.ResponseWriter, r *http.Request) {
 func (h *EntriesHandler) HandleDelete(w http.ResponseWriter, r *http.Request) {
 	id := chi.URLParam(r, "id")
 	token, ok := r.Context().Value(middleware.TokenKey).(string)
-	userID, userOk := r.Context().Value(middleware.UserIDKey).(string)
+		userID, userOk := r.Context().Value(middleware.UserIDKey).(string)
 	if !ok || !userOk {
 		http.Error(w, "Não autorizado", http.StatusUnauthorized)
+		return
+	}
+
+	if err := uuid.Validate(id); err != nil {
+		http.Error(w, "ID de entrada inválido", http.StatusBadRequest)
 		return
 	}
 

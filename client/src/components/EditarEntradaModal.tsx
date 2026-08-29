@@ -5,7 +5,7 @@ import { useToast } from '../contexts/ToastContext'
 import Sheet from './Sheet'
 
 interface Entrada {
-    id: string
+    id?: string
     mal_id: number
     tipo: string
     status: string
@@ -13,11 +13,12 @@ interface Entrada {
     anotacao?: string
     is_favorite?: boolean
 }
+type EntradaSalva = Entrada & { id: string }
 
 interface Props {
     entrada: Entrada | null
     onFechar: () => void
-    onSalvar: (atualizada: Entrada) => void
+    onSalvar: (atualizada: EntradaSalva) => void
     onExcluir: (id: string) => void
 }
 
@@ -44,7 +45,7 @@ export default function EditarEntradaModal({ entrada, onFechar, onSalvar, onExcl
             setNota(entrada.nota !== null && entrada.nota !== undefined ? entrada.nota.toString() : '')
             setAnotacao(entrada.anotacao || '')
             setIsFavorite(entrada.is_favorite || false)
-            
+
             // Garante que inicie limpo
             setErro(null)
             setConfirmandoExclusao(false)
@@ -63,13 +64,19 @@ export default function EditarEntradaModal({ entrada, onFechar, onSalvar, onExcl
         setErro(null)
 
         const { data: { session } } = await supabase.auth.getSession()
-        if (!session) return
+        if (!session) {
+            setSalvando(false)
+            return
+        }
 
         const notaFormatada = nota.trim() === '' ? null : Number(nota.replace(',', '.'))
 
+        // Sem id, a entrada ainda não existe: cria (POST) em vez de atualizar (PUT).
+        const isNova = !entradaCache.id
+
         try {
-            const response = await fetch(`/api/entries/${entradaCache.id}`, {
-                method: 'PUT',
+            const response = await fetch(isNova ? '/api/entries' : `/api/entries/${entradaCache.id}`, {
+                method: isNova ? 'POST' : 'PUT',
                 headers: {
                     'Content-Type': 'application/json',
                     'Authorization': `Bearer ${session.access_token}`,
@@ -88,7 +95,7 @@ export default function EditarEntradaModal({ entrada, onFechar, onSalvar, onExcl
 
             const atualizada = await response.json()
             onSalvar(Array.isArray(atualizada) ? atualizada[0] : atualizada)
-            showToast('Alterações salvas com sucesso!')
+            showToast(isNova ? 'Adicionado ao seu Deck!' : 'Alterações salvas com sucesso!')
             onFechar()
         } catch (err) {
             setErro('Não foi possível salvar. Tente de novo.')
@@ -97,7 +104,10 @@ export default function EditarEntradaModal({ entrada, onFechar, onSalvar, onExcl
     }
 
     const handleExcluir = async () => {
-        if (!entradaCache) return
+        // Guarda o id numa variável local: além de proteger em tempo de execução,
+        // o TypeScript passa a saber que aqui ele é string, não string | undefined.
+        const id = entradaCache?.id
+        if (!id) return
         setSalvando(true)
         setErro(null)
 
@@ -108,15 +118,15 @@ export default function EditarEntradaModal({ entrada, onFechar, onSalvar, onExcl
         }
 
         try {
-            const response = await fetch(`/api/entries/${entradaCache.id}`, {
+            const response = await fetch(`/api/entries/${id}`, {
                 method: 'DELETE',
                 headers: { 'Authorization': `Bearer ${session.access_token}` },
             })
             if (!response.ok) throw new Error('Falha ao excluir')
-            
-            onExcluir(entradaCache.id)
+
+            onExcluir(id)
             showToast('Anime removido do seu Deck.')
-            onFechar() 
+            onFechar()
         } catch (err) {
             setErro('Não foi possível excluir. Tente de novo.')
             setSalvando(false)
@@ -129,20 +139,20 @@ export default function EditarEntradaModal({ entrada, onFechar, onSalvar, onExcl
             <div className="bg-panel border border-coral/30 rounded-2xl p-6 max-w-sm w-full text-center shadow-2xl animate-in zoom-in-95 duration-200">
                 <h3 className="font-anton text-coral text-xl uppercase mb-2">Remover anime?</h3>
                 <p className="text-sm text-muted mb-6">Tem certeza que deseja remover este anime do seu Deck? Esta ação não pode ser desfeita.</p>
-                
+
                 {erro && <p className="text-coral text-xs mb-6 font-bold bg-coral/10 py-2 rounded-lg">{erro}</p>}
 
                 <div className="flex gap-3 justify-center">
-                    <button 
-                        onClick={() => setConfirmandoExclusao(false)} 
-                        disabled={salvando} 
+                    <button
+                        onClick={() => setConfirmandoExclusao(false)}
+                        disabled={salvando}
                         className="flex-1 px-4 py-3 rounded-xl border border-line text-sm font-bold cursor-pointer hover:border-muted transition-colors disabled:opacity-50"
                     >
                         Cancelar
                     </button>
-                    <button 
-                        onClick={handleExcluir} 
-                        disabled={salvando} 
+                    <button
+                        onClick={handleExcluir}
+                        disabled={salvando}
                         className="flex-1 px-4 py-3 rounded-xl bg-coral/10 border border-coral text-coral text-sm font-bold cursor-pointer hover:bg-coral hover:text-void transition-colors disabled:opacity-50 flex items-center justify-center"
                     >
                         {salvando ? (
@@ -160,9 +170,9 @@ export default function EditarEntradaModal({ entrada, onFechar, onSalvar, onExcl
     return (
         <>
             {modalConfirmacao}
-            <Sheet 
-                isOpen={isOpen} 
-                onClose={() => { if (!salvando && !confirmandoExclusao) onFechar() }} 
+            <Sheet
+                isOpen={isOpen}
+                onClose={() => { if (!salvando && !confirmandoExclusao) onFechar() }}
                 title="Editar entrada"
             >
                 {entradaCache && (
@@ -184,11 +194,10 @@ export default function EditarEntradaModal({ entrada, onFechar, onSalvar, onExcl
                                         key={opt}
                                         type="button"
                                         onClick={() => setStatus(opt)}
-                                        className={`select-none px-3 py-1.5 rounded-full text-xs font-bold transition-all duration-200 cursor-pointer border ${
-                                            status === opt
-                                                ? 'bg-holo-2/20 border-holo-2 text-holo-2 shadow-[0_0_10px_rgba(123,92,255,0.2)]'
-                                                : 'bg-panel-2 border-line text-muted hover:border-holo-2 hover:text-text'
-                                        }`}
+                                        className={`select-none px-3 py-1.5 rounded-full text-xs font-bold transition-all duration-200 cursor-pointer border ${status === opt
+                                            ? 'bg-holo-2/20 border-holo-2 text-holo-2 shadow-[0_0_10px_rgba(123,92,255,0.2)]'
+                                            : 'bg-panel-2 border-line text-muted hover:border-holo-2 hover:text-text'
+                                            }`}
                                     >
                                         {opt}
                                     </button>
@@ -226,13 +235,15 @@ export default function EditarEntradaModal({ entrada, onFechar, onSalvar, onExcl
                         {erro && <p className="text-coral text-xs mb-3 font-bold">{erro}</p>}
 
                         <div className="flex justify-end gap-2 mt-4 select-none">
-                            <button
-                                type="button"
-                                onClick={() => setConfirmandoExclusao(true)}
-                                className="px-4 py-2.5 rounded-xl border border-coral/30 text-coral text-sm font-bold mr-auto cursor-pointer hover:bg-coral/10 transition-colors"
-                            >
-                                Excluir
-                            </button>
+                            {entradaCache.id && (
+                                <button
+                                    type="button"
+                                    onClick={() => setConfirmandoExclusao(true)}
+                                    className="px-4 py-2.5 rounded-xl border border-coral/30 text-coral text-sm font-bold mr-auto cursor-pointer hover:bg-coral/10 transition-colors"
+                                >
+                                    Excluir
+                                </button>
+                            )}
                             <button
                                 type="button"
                                 onClick={handleSalvar}
