@@ -36,6 +36,35 @@ const QUERY_ANILIST = `
   }
 `
 
+// Assinatura do formulário, usada para saber se há alteração não salva.
+//
+// Ficava montado em três lugares — a comparação e os dois pontos que gravam a referência —
+// cada um listando as 15 chaves na mão. Qualquer divergência de ordem ou de campo entre eles
+// deixaria o formulário marcado como sujo para sempre, sem nada indicando o porquê. Aqui a
+// ordem é do array, não de quem chama, então não há como divergir.
+type CamposDoFormulario = {
+  titulo: string
+  formato: string
+  status: string
+  ordem: number
+  sinopse: string
+  tags: string[]
+  coverImage: string
+  bannerImage: string
+  characters: CuratedCharacter[]
+  episodios: CuratedEpisode[]
+  links: CuratedExternalLink[]
+  estreia: string
+  duracao: string
+  isDestaque: boolean
+  curationStatus: CurationStatus
+}
+
+const montarHash = (c: CamposDoFormulario) => JSON.stringify([
+  c.titulo, c.formato, c.status, c.ordem, c.sinopse, c.tags, c.coverImage, c.bannerImage,
+  c.characters, c.episodios, c.links, c.estreia, c.duracao, c.isDestaque, c.curationStatus,
+])
+
 export default function PainelAdmin() {
   const { showToast } = useToast()
   const navigate = useNavigate()
@@ -85,22 +114,23 @@ export default function PainelAdmin() {
   const [olheiroAberto, setOlheiroAberto] = useState(false)
 
   const [initialStateHash, setInitialStateHash] = useState('')
-  const [isDirty, setIsDirty] = useState(false)
 
   useEffect(() => {
     verificarAcesso()
   }, [])
 
-  useEffect(() => {
-    if (!previewTitulo) return
-    const currentState = JSON.stringify({
-      titulo, formato, status, ordem, sinopse, tags, coverImage, bannerImage, characters,
-      episodios, links, estreia, duracao, isDestaque, curationStatus,
-    })
-    setIsDirty(currentState !== initialStateHash)
-  }, [titulo, formato, status, ordem, sinopse, tags, coverImage, bannerImage, characters,
-      episodios, links, estreia, duracao, isDestaque, curationStatus,
-      initialStateHash, previewTitulo])
+  // "Tem alteração não salva" e valor DERIVADO, não estado.
+  //
+  // Antes era um estado escrito por um efeito e por mais cinco pontos imperativos. O efeito
+  // rodava depois do render, o que abria uma janela onde o flag ainda nao refletia o
+  // formulario — e era essa janela que o setTimeout(100) do editarDestaque contornava.
+  //
+  // O guarda do previewTitulo reproduz o `if (!previewTitulo) return` do efeito antigo: sem
+  // formulario aberto nao ha o que comparar, e o limparFormulario justamente zera esse campo.
+  const isDirty = Boolean(previewTitulo) && montarHash({
+    titulo, formato, status, ordem, sinopse, tags, coverImage, bannerImage, characters,
+    episodios, links, estreia, duracao, isDestaque, curationStatus,
+  }) !== initialStateHash
 
   useEffect(() => {
     const handleBeforeUnload = (e: BeforeUnloadEvent) => {
@@ -267,7 +297,7 @@ export default function PainelAdmin() {
     // state. O React aplica tudo no mesmo lote, então o efeito de comparação
     // roda uma vez só — já com hash e state batendo — e o formulário nasce
     // limpo, sem a bolinha de "alterações não salvas".
-    setInitialStateHash(JSON.stringify({
+    setInitialStateHash(montarHash({
       titulo: tituloCorreto, formato: formatoAnime, status: statusAnime,
       ordem: 0, sinopse: sinopseLimpa, tags: tagsAnime,
       coverImage: capa, bannerImage: banner, characters: importedChars,
@@ -460,7 +490,8 @@ export default function PainelAdmin() {
         }
       }
 
-      setIsDirty(false)
+      // Sem setIsDirty: fecharEditorForce chama limparFormulario, que zera o previewTitulo —
+      // e sem formulário aberto o isDirty derivado já é falso.
       fecharEditorForce()
       carregarDestaques()
     } catch {
@@ -505,7 +536,9 @@ export default function PainelAdmin() {
         setTags(data.tags)
       }
 
-      setIsDirty(true)
+      // Sem setIsDirty: o setSinopse/setTags acima já mudam a assinatura do formulário, e o
+      // isDirty derivado acompanha. A diferença é que agora ele reflete a verdade — se a IA
+      // devolver texto idêntico ao que já estava lá, não há nada a salvar.
       showToast('Sinopse reescrita com sucesso!', 'success')
 
     } catch {
@@ -527,7 +560,7 @@ export default function PainelAdmin() {
       if (!response.ok) throw new Error()
       showToast('Destaque removido com sucesso.')
       if (editId === itemParaExcluir.id) {
-        setIsDirty(false)
+        // Mesmo caso do salvar: o fecharEditorForce zera o previewTitulo.
         fecharEditorForce()
       }
       carregarDestaques()
@@ -560,7 +593,9 @@ export default function PainelAdmin() {
     setCurationStatus('parcial')
     setResultadosBusca([])
     setSugestaoEmCuradoria(null)
-    setIsDirty(false)
+    // O previewTitulo acima volta a ser nulo, e é ele que zera o isDirty derivado. Note que
+    // este método NÃO reseta o `status` — por isso o guarda é o previewTitulo e não uma
+    // comparação com uma assinatura de formulário vazio, que não bateria.
   }
 
   const abrirNovoDestaque = () => {
@@ -609,19 +644,19 @@ export default function PainelAdmin() {
       setFormularioAberto(true)
       window.scrollTo({ top: 0, behavior: 'smooth' })
 
-      setTimeout(() => {
-        setInitialStateHash(JSON.stringify({
-          titulo: anime.custom_title, formato: anime.custom_format || 'TV', status: anime.custom_status || 'RELEASING',
-          ordem: anime.order_index, sinopse: anime.custom_synopsis || '', tags: anime.custom_tags || [],
-          coverImage: anime.custom_cover_image || '', bannerImage: anime.custom_banner_image || '',
-          characters: anime.custom_characters || [],
-          episodios: anime.custom_episodes || [], links: anime.custom_external_links || [],
-          estreia: estreiaParaInput(anime.custom_first_aired_at),
-          duracao: anime.custom_duration_minutes ? String(anime.custom_duration_minutes) : '',
-          isDestaque: anime.is_destaque ?? true, curationStatus: anime.curation_status || 'parcial'
-        }))
-        setIsDirty(false)
-      }, 100)
+      // Sem setTimeout: a referência é montada a partir dos mesmos valores que acabaram de
+      // ser aplicados no formulário, no mesmo lote. Como isDirty agora é derivado, ele já
+      // nasce falso — o atraso de 100ms existia só para esperar o efeito antigo rodar.
+      setInitialStateHash(montarHash({
+        titulo: anime.custom_title, formato: anime.custom_format || 'TV', status: anime.custom_status || 'RELEASING',
+        ordem: anime.order_index, sinopse: anime.custom_synopsis || '', tags: anime.custom_tags || [],
+        coverImage: anime.custom_cover_image || '', bannerImage: anime.custom_banner_image || '',
+        characters: anime.custom_characters || [],
+        episodios: anime.custom_episodes || [], links: anime.custom_external_links || [],
+        estreia: estreiaParaInput(anime.custom_first_aired_at),
+        duracao: anime.custom_duration_minutes ? String(anime.custom_duration_minutes) : '',
+        isDestaque: anime.is_destaque ?? true, curationStatus: anime.curation_status || 'parcial'
+      }))
     })
   }
 
