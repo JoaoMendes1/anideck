@@ -281,7 +281,7 @@ e essa ausência era o único obstáculo real à escrita anônima.
 > **Pergunta obrigatória:** as policies desta tabela restringem alguma coisa, ou só existem?
 > Rodar `SET ROLE anon` e tentar escrever responde em 10 segundos.
 
-## 16. 0️⃣ Campo numérico ausente em dado curado vira `0`, não `NULL`
+## 16. 0️⃣ Campo numérico ausente vira `0`, não `NULL`
 
 **Incidente (30/08/2026):** o console acusava `Encountered two children with the same key, 0`
 centenas de vezes por carregamento na tela de Detalhes.
@@ -296,21 +296,33 @@ o componente errado ao atualizar a lista — estado de um item aparecendo em out
 manifesta em animes **curados**: um anime que vem direto da AniList traz ids reais e não
 reproduz.
 
-**Isso não é só sobre personagens.** Ao investigar, a troca de `key={index}` por `mal_id` nas
-relações quase foi aplicada — e Frieren tem uma relação com `mal_id: 0`. A "correção" teria
-criado o mesmo bug que estava sendo consertado.
+**O zero tem duas origens, e a segunda é pior.** A primeira é a curadoria não
+preencher um campo que não existe no Painel Admin. A segunda é a **própria
+AniList devolver `null`** — em Frieren, uma relação vem com `idMal: null`, e o
+`int` do Go a converte em `0` do mesmo jeito.
+
+Essa segunda causou dano real ao usuário: a tela montava `<Link to="/anime/0">`,
+e clicar levava a um `503 "Catálogo indisponível"`. Uma falha de catálogo
+aparente, por um link que nunca deveria ter existido.
+
+Ao investigar as chaves, a troca de `key={index}` por `mal_id` nas relações
+quase foi aplicada — e teria criado o mesmo bug que estava sendo consertado.
 
 **Relação com o item 5:** lá a distinção é `NULL` × array vazio no Postgres. Aqui é ausência ×
 zero value na fronteira Go → JSON. Mesma classe de erro, camada diferente: em ambas, "não tem
 valor" vira um valor que parece legítimo.
 
-A correção adotada foi `key={char.id || char.name}` — cai para o nome quando o id é 0, e mantém
-o id da AniList quando ele existe. Trata o sintoma; a causa continua em qualquer campo numérico
-que a curadoria não preencha.
+Corrigido em 30/08/2026 na raiz: `Character.ID` e `RelationEntry.MalID` viraram
+`*int` com `omitempty`, então ausente sai do JSON em vez de virar `0`. O
+`key={char.id || char.name}` continua como defesa de sobra.
 
-> **Pergunta obrigatória:** este campo numérico é preenchido pela curadoria, ou só existe no dado
-> da AniList? Se só existe na AniList, no registro curado ele vale `0` — e `0` não serve como
-> chave nem como "ausente".
+Os outros 16 campos `int` de `internal/anilist/` foram verificados contra a API
+no ar e vêm sempre preenchidos — mas isso é observação, não garantia.
+
+> **Pergunta obrigatória:** este campo numérico pode chegar ausente — porque a
+> curadoria não o preenche, ou porque a API externa manda `null`? Se puder,
+> ele precisa ser ponteiro no Go. `0` não é "sem valor": é um número válido que
+> colide com todos os outros ausentes, e vira link para `/anime/0`.
 
 ## 🧭 Como manter este arquivo
 
