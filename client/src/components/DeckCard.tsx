@@ -43,7 +43,6 @@ export default function DeckCard({ entrada, animeLocal, gradientClass, foilDelay
             imageUrl={animeLocal?.image_url}
             genre={animeLocal?.genre}
             score={entrada.nota}
-            ranking={animeLocal?.ranking}
             isFavorite={entrada.is_favorite}
             gradientClass={gradientClass}
             foilDelay={foilDelay}
