@@ -198,8 +198,8 @@ export default function PainelAdmin() {
       if (!response.ok) throw new Error('Falha ao carregar destaques')
       const data = await response.json()
       setDestaques(data || [])
-    } catch (err: any) {
-      setError(err.message)
+    } catch (err) {
+      setError((err as Error).message)
     } finally {
       setLoading(false)
     }
@@ -508,7 +508,7 @@ export default function PainelAdmin() {
       setIsDirty(true)
       showToast('Sinopse reescrita com sucesso!', 'success')
 
-    } catch (err) {
+    } catch {
       showToast('Erro ao se comunicar com a IA. Tente novamente.', 'error')
     } finally {
       setGerandoIA(false)

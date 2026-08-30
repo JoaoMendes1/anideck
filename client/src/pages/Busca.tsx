@@ -79,7 +79,7 @@ export default function Busca() {
                 if (response.ok) {
                     const entradas = await response.json()
                     if (entradas && entradas.length > 0) {
-                        const idsSalvos = entradas.map((e: any) => ({ mal_id: e.mal_id, id: e.id, is_favorite: e.is_favorite }))
+                        const idsSalvos = entradas.map((e: SavedEntry) => ({ mal_id: e.mal_id, id: e.id, is_favorite: e.is_favorite }))
                         setSavedEntries(idsSalvos)
                     }
                 }
@@ -137,10 +137,10 @@ export default function Busca() {
 
                 setResultados(prev => page === 1 ? (data.data || []) : [...prev, ...(data.data || [])])
 
-            } catch (err: any) {
-                if (err.name === 'AbortError') return
+            } catch (err) {
+                if ((err as Error).name === 'AbortError') return
                 if (page === 1) setResultados([])
-                setError(err.message || 'Falha ao conectar com o servidor.')
+                setError((err as Error).message || 'Falha ao conectar com o servidor.')
             } finally {
                 if (!controller.signal.aborted) {
                     setLoading(false)

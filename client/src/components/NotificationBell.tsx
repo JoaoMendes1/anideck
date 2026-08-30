@@ -16,7 +16,7 @@ interface AppNotification {
 
 function urlBase64ToUint8Array(base64String: string) {
   const padding = '='.repeat((4 - (base64String.length % 4)) % 4);
-  const base64 = (base64String + padding).replace(/\-/g, '+').replace(/_/g, '/');
+  const base64 = (base64String + padding).replace(/-/g, '+').replace(/_/g, '/');
   const rawData = window.atob(base64);
   const outputArray = new Uint8Array(rawData.length);
   for (let i = 0; i < rawData.length; ++i) {
@@ -37,19 +37,6 @@ export default function NotificationBell() {
   // pra sempre. Agora começamos assumindo false e confirmamos de verdade no mount.
   const [pushEnabled, setPushEnabled] = useState(false);
 
-  useEffect(() => {
-    fetchNotifications();
-    if ('serviceWorker' in navigator) {
-      navigator.serviceWorker.register('/sw.js')
-        .then(() => checkExistingSubscription())
-        .catch((err) => {
-          console.error('Service Worker registration failed:', err);
-        });
-    }
-  }, []);
-
-  // Confirma se já existe uma inscrição de push ATIVA neste navegador/dispositivo
-  // (diferente de só ter permissão concedida).
   const checkExistingSubscription = async () => {
     try {
       const registration = await navigator.serviceWorker.ready;
@@ -76,6 +63,19 @@ export default function NotificationBell() {
     }
   };
 
+  useEffect(() => {
+    fetchNotifications();
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('/sw.js')
+        .then(() => checkExistingSubscription())
+        .catch((err) => {
+          console.error('Service Worker registration failed:', err);
+        });
+    }
+  }, []);
+
+  // Confirma se já existe uma inscrição de push ATIVA neste navegador/dispositivo
+  // (diferente de só ter permissão concedida).
   const markAsRead = async (id: string) => {
     try {
       const { data: { session } } = await supabase.auth.getSession();

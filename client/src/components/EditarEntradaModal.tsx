@@ -97,7 +97,7 @@ export default function EditarEntradaModal({ entrada, onFechar, onSalvar, onExcl
             onSalvar(Array.isArray(atualizada) ? atualizada[0] : atualizada)
             showToast(isNova ? 'Adicionado ao seu Deck!' : 'Alterações salvas com sucesso!')
             onFechar()
-        } catch (err) {
+        } catch {
             setErro('Não foi possível salvar. Tente de novo.')
             setSalvando(false)
         }
@@ -127,7 +127,7 @@ export default function EditarEntradaModal({ entrada, onFechar, onSalvar, onExcl
             onExcluir(id)
             showToast('Anime removido do seu Deck.')
             onFechar()
-        } catch (err) {
+        } catch {
             setErro('Não foi possível excluir. Tente de novo.')
             setSalvando(false)
         }

@@ -43,6 +43,9 @@ export function ToastProvider({ children }: { children: ReactNode}) {
   )
 }
 
+// Provider e hook juntos é o padrão dos contextos deste projeto; separar só melhoraria
+// o hot reload e exigiria atualizar imports em todo o app.
+// eslint-disable-next-line react-refresh/only-export-components
 export function useToast() {
     const context = useContext(ToastContext)
     if(!context) throw new Error('useToast deve ser usado dentro de um ToastProvider')

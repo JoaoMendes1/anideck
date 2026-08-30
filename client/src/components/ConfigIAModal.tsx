@@ -31,7 +31,7 @@ export default function ConfigIAModal({ isOpen, onClose }: ConfigIAModalProps) {
       if (!res.ok) throw new Error()
       const data = await res.json()
       setAiPrompt(data.prompt)
-    } catch (err) {
+    } catch {
       showToast('Erro ao carregar instrução da IA', 'error')
     } finally {
       setCarregandoPrompt(false)
@@ -53,7 +53,7 @@ export default function ConfigIAModal({ isOpen, onClose }: ConfigIAModalProps) {
       if (!res.ok) throw new Error()
       showToast('Regras da IA salvas com sucesso!', 'success')
       onClose() // Fecha o modal após salvar
-    } catch (err) {
+    } catch {
       showToast('Erro ao salvar instrução', 'error')
     } finally {
       setSalvandoPrompt(false)

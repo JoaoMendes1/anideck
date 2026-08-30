@@ -110,7 +110,7 @@ export default function Detalhes() {
           })
           if (resEntries.ok) {
             const entradas = await resEntries.json()
-            const entrada = entradas?.find((e: any) => e.mal_id === Number(id))
+            const entrada = entradas?.find((e: MinhaEntrada) => e.mal_id === Number(id))
             if (entrada) setMinhaEntrada(entrada)
           }
           try {
@@ -357,9 +357,13 @@ export default function Detalhes() {
                 {anime.synopsis ? (
                   <ReactMarkdown
                     components={{
+                      /* eslint-disable @typescript-eslint/no-unused-vars -- `node` é
+                         destruturado justamente para NÃO entrar no ...props: sem isso ele
+                         seria espalhado no elemento e vazaria como atributo inválido no DOM. */
                       p: ({ node, ...props }) => <p className="mb-4 last:mb-0" {...props} />,
                       strong: ({ node, ...props }) => <strong className="font-extrabold text-text" {...props} />,
                       em: ({ node, ...props }) => <em className="italic text-holo-3" {...props} />
+                      /* eslint-enable @typescript-eslint/no-unused-vars */
                     }}
                   >
                     {anime.synopsis.replace(/&#34;/g, '"').replace(/&#39;/g, "'")}
