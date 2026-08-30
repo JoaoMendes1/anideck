@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import { usePosicaoDeLista } from '../lib/posicaoDeLista'
 import { Link } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import { AlertCircle, Flame, Trophy, Compass, Target, Clock } from 'lucide-react'
@@ -231,6 +232,9 @@ export default function Estatisticas() {
   const notaAnimada = useContagemAnimada(overview?.nota_media || 0)
   const streakAtualAnimado = useContagemAnimada(streak.current)
   const streakRecordeAnimado = useContagemAnimada(streak.longest)
+
+  // Vários fetches, nenhum paginado: quando o loading sai, a página está inteira.
+  usePosicaoDeLista(!loading)
 
   if (loading) {
     return (

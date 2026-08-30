@@ -8,10 +8,11 @@
 // E tem uma propriedade que importa nesta fase: a vitrine **não depende da AniList**. Título
 // e capa saem de `curated_animes`, então ela continua de pé mesmo com a API fora do ar — que
 // é a situação de hoje.
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { Link } from 'react-router-dom'
 import type { CuratedAnime } from '../types/curation'
 import { gradienteDoCard } from '../lib/deckHelpers'
+import { usePosicaoDeTrilho } from '../lib/posicaoDeLista'
 
 // Quantos cabem sem a vitrine competir com o deck do usuário, que é o conteúdo principal
 // da página. Passando disso ela vira a atração e não o aperitivo.
@@ -20,6 +21,12 @@ const MAX_NA_VITRINE = 12
 export default function VitrineDestaques() {
   const [destaques, setDestaques] = useState<CuratedAnime[]>([])
   const [carregando, setCarregando] = useState(true)
+
+  // O trilho rola na horizontal por conta própria, então a rolagem da janela não
+  // cobre a posição dele: sem isto, voltar de um destaque devolvia o carrossel ao
+  // primeiro item mesmo com o resto do Meu Deck no lugar certo.
+  const trilho = useRef<HTMLDivElement>(null)
+  usePosicaoDeTrilho('vitrine', trilho, !carregando)
 
   useEffect(() => {
     let cancelado = false
@@ -69,7 +76,7 @@ export default function VitrineDestaques() {
 
       {/* Mesmo padrão de rolagem do resto do Meu Deck: sangra até a borda no mobile
           (-mx-5/px-5) e vira faixa normal no md+. */}
-      <div className="flex gap-3.5 overflow-x-auto scrollbar-hide snap-x snap-mandatory -mx-5 px-5 md:mx-0 md:px-0 pb-1">
+      <div ref={trilho} className="flex gap-3.5 overflow-x-auto scrollbar-hide snap-x snap-mandatory -mx-5 px-5 md:mx-0 md:px-0 pb-1">
         {destaques.map((anime, index) => (
           <Link
             key={anime.id || anime.mal_id}

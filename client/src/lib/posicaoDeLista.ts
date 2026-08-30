@@ -6,7 +6,7 @@
 // sobreviver é a navegação client-side (lista → Detalhes → voltar), que não
 // recarrega o módulo. Um F5 descarta tudo, e esse é o comportamento certo: quem
 // recarregou a página não está voltando de onde estava.
-import { useEffect, useLayoutEffect, useRef } from 'react'
+import { useEffect, useLayoutEffect, useRef, type RefObject } from 'react'
 import { useLocation, useNavigationType } from 'react-router-dom'
 
 interface Instantaneo {
@@ -101,4 +101,48 @@ export function usePosicaoDeLista(pronto: boolean): void {
         jaRestaurou.current = true
         window.scrollTo(0, alvo)
     }, [pronto, pathname, tipoNavegacao])
+}
+
+/**
+ * O mesmo, para um trilho de rolagem horizontal dentro da página — um carrossel,
+ * cuja posição a rolagem da janela não cobre. A chave é do trilho, não da rota:
+ * um trilho não é uma origem de navegação e por isso não mexe em `ultimaLista`.
+ */
+export function usePosicaoDeTrilho(
+    chave: string,
+    ref: RefObject<HTMLElement | null>,
+    pronto: boolean,
+): void {
+    const tipoNavegacao = useNavigationType()
+    const jaRestaurou = useRef(false)
+    const id = `trilho:${chave}`
+
+    useEffect(() => {
+        if (tipoNavegacao !== 'POP') instantaneos.delete(id)
+    }, [id, tipoNavegacao])
+
+    useEffect(() => {
+        const trilho = ref.current
+        if (!trilho) return
+
+        const anotar = () => {
+            const guardado = instantaneos.get(id)
+            // Mesmo cuidado com o clamp da versão vertical: quando o trilho
+            // encolhe, o navegador força scrollLeft a caber.
+            if (guardado && guardado.scrollY > trilho.scrollWidth - trilho.clientWidth) return
+
+            if (guardado) guardado.scrollY = trilho.scrollLeft
+            else instantaneos.set(id, { scrollY: trilho.scrollLeft })
+        }
+        trilho.addEventListener('scroll', anotar, { passive: true })
+        return () => trilho.removeEventListener('scroll', anotar)
+    }, [id, ref, pronto])
+
+    useLayoutEffect(() => {
+        if (!pronto || jaRestaurou.current || tipoNavegacao !== 'POP') return
+        const alvo = instantaneos.get(id)?.scrollY
+        if (!alvo || !ref.current) return
+        jaRestaurou.current = true
+        ref.current.scrollLeft = alvo
+    }, [pronto, id, ref, tipoNavegacao])
 }
