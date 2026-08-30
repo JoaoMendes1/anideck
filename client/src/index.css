@@ -27,6 +27,25 @@
   --font-mono: 'JetBrains Mono', monospace;
 }
 
+/* 3.1 Cores decorativas de gradiente.
+   Fora do @theme de propósito: são pontas de gradiente, não cores da linguagem
+   de design — não devem virar utilitário Tailwind nem entrar no DESIGN_TOKENS.md.
+   Ficam aqui para que um tema consiga sobrescrevê-las. */
+:root {
+  --grad-card-1: #3a1a4a;
+  --grad-card-2: #1a3d4a;
+  --grad-card-3: #4a1a2f;
+  --grad-card-4: #1a2f4a;
+  --grad-card-5: #2f4a1a;
+  --grad-card-base: #120b22;
+
+  --grad-pilha-1: #2a1a4d;
+  --grad-pilha-2: #1a3d4d;
+  --grad-pilha-3-meio: #1a1030;
+
+  --grad-foil-topo: #1a1525;
+}
+
 /* 4. Estilos globais (Reset) aplicados a toda a página */
 @layer base {
   body {
@@ -53,8 +72,8 @@
   z-index: 0;
   pointer-events: none;
   background:
-    radial-gradient(480px 380px at 15% 15%, rgba(255,79,216,.12), transparent 60%),
-    radial-gradient(520px 420px at 85% 85%, rgba(63,224,240,.10), transparent 60%);
+    radial-gradient(480px 380px at 15% 15%, color-mix(in srgb, var(--color-holo-1) 12%, transparent), transparent 60%),
+    radial-gradient(520px 420px at 85% 85%, color-mix(in srgb, var(--color-holo-3) 10%, transparent), transparent 60%);
 }
 
 /* Shimmer Effect para Skeletons */
@@ -69,11 +88,11 @@
 }
 
 /* Gradientes Fallback dos Cards (c1 a c5 do protótipo) */
-@utility card-g1 { background: linear-gradient(155deg, #3a1a4a, #120b22 75%); }
-@utility card-g2 { background: linear-gradient(155deg, #1a3d4a, #120b22 75%); }
-@utility card-g3 { background: linear-gradient(155deg, #4a1a2f, #120b22 75%); }
-@utility card-g4 { background: linear-gradient(155deg, #1a2f4a, #120b22 75%); }
-@utility card-g5 { background: linear-gradient(155deg, #2f4a1a, #120b22 75%); }
+@utility card-g1 { background: linear-gradient(155deg, var(--grad-card-1), var(--grad-card-base) 75%); }
+@utility card-g2 { background: linear-gradient(155deg, var(--grad-card-2), var(--grad-card-base) 75%); }
+@utility card-g3 { background: linear-gradient(155deg, var(--grad-card-3), var(--grad-card-base) 75%); }
+@utility card-g4 { background: linear-gradient(155deg, var(--grad-card-4), var(--grad-card-base) 75%); }
+@utility card-g5 { background: linear-gradient(155deg, var(--grad-card-5), var(--grad-card-base) 75%); }
 
 /* Ocultar barra de rolagem nos quick filters */
 @utility scrollbar-hide {
@@ -109,10 +128,10 @@
    ========================================= */
 .hero-visual { position: relative; height: 400px; display: flex; align-items: center; justify-content: center; }
 .stack-card { position: absolute; width: 210px; height: 300px; border-radius: 20px; overflow: hidden; box-shadow: 0 30px 60px -20px rgba(0,0,0,.6); }
-.stack-card.c1 { background: linear-gradient(150deg, #2a1a4d, #0A0714 70%); transform: rotate(-10deg) translateX(-70px); z-index: 1; opacity: .7; }
-.stack-card.c2 { background: linear-gradient(160deg, #1a3d4d, #0A0714 70%); transform: rotate(8deg) translateX(70px); z-index: 1; opacity: .7; }
-.stack-card.c3 { background: linear-gradient(160deg, #3a1a4a 0%, #1a1030 55%, #0A0714 100%); z-index: 2; border: 1px solid rgba(255,255,255,.08); }
-.stack-card.c3::before { content: ''; position: absolute; inset: 0; background: linear-gradient(120deg, transparent 30%, rgba(255,79,216,.25) 45%, rgba(63,224,240,.25) 55%, transparent 70%); mix-blend-mode: screen; }
+.stack-card.c1 { background: linear-gradient(150deg, var(--grad-pilha-1), var(--color-void) 70%); transform: rotate(-10deg) translateX(-70px); z-index: 1; opacity: .7; }
+.stack-card.c2 { background: linear-gradient(160deg, var(--grad-pilha-2), var(--color-void) 70%); transform: rotate(8deg) translateX(70px); z-index: 1; opacity: .7; }
+.stack-card.c3 { background: linear-gradient(160deg, var(--grad-card-1) 0%, var(--grad-pilha-3-meio) 55%, var(--color-void) 100%); z-index: 2; border: 1px solid rgba(255,255,255,.08); }
+.stack-card.c3::before { content: ''; position: absolute; inset: 0; background: linear-gradient(120deg, transparent 30%, color-mix(in srgb, var(--color-holo-1) 25%, transparent) 45%, color-mix(in srgb, var(--color-holo-3) 25%, transparent) 55%, transparent 70%); mix-blend-mode: screen; }
 
 @media(max-width: 900px) {
   .hero-visual { height: 280px; }
@@ -162,8 +181,8 @@
    ========================================= */
 .foil-card {
   /* Fundo sutilmente mais quente para combinar com a coroa */
-  background: linear-gradient(155deg, #1a1525, #0A0714 75%);
-  border-color: rgba(255, 197, 66, 0.3) !important;
+  background: linear-gradient(155deg, var(--grad-foil-topo), var(--color-void) 75%);
+  border-color: color-mix(in srgb, var(--color-gold) 30%, transparent) !important;
 }
 .foil-card::after {
   content: '';
@@ -171,7 +190,7 @@
   inset: 0;
   border-radius: inherit;
   /* Brilho dourado/champagne muito mais suave */
-  background: linear-gradient(125deg, transparent 30%, rgba(255, 197, 66, 0.05) 45%, rgba(255, 255, 255, 0.15) 50%, rgba(255, 197, 66, 0.05) 55%, transparent 70%);
+  background: linear-gradient(125deg, transparent 30%, color-mix(in srgb, var(--color-gold) 5%, transparent) 45%, rgba(255, 255, 255, 0.15) 50%, color-mix(in srgb, var(--color-gold) 5%, transparent) 55%, transparent 70%);
   background-size: 200% 200%;
   animation: foilShine 10s linear infinite;
   pointer-events: none;
@@ -194,21 +213,22 @@
 }
 
 .custom-scrollbar::-webkit-scrollbar-thumb {
-  background-color: #2B2247; /* Cor cravada da sua variável --line */
+  background-color: var(--color-line);
   border-radius: 99px;
   /* O pulo do gato: borda sólida com a mesma cor do fundo para criar o efeito flutuante */
-  border: 4px solid #130F22; /* Cor cravada do --panel */
+  /* O pulo do gato: borda sólida com a mesma cor do fundo para criar o efeito flutuante */
+  border: 4px solid var(--color-panel);
   background-clip: padding-box; 
 }
 
 /* Efeito Neon (Holo) ao passar o mouse */
 .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-  background-color: #7B5CFF; /* Cor cravada da --holo-2 */
-  border: 3px solid #130F22; /* Diminui a borda para a pílula "engordar" sutilmente */
+  background-color: var(--color-holo-2);
+  border: 3px solid var(--color-panel); /* Diminui a borda para a pílula "engordar" sutilmente */
 }
 
 /* Estilização Customizada de Scrollbars (Firefox - suporte mais limitado) */
 .custom-scrollbar {
   scrollbar-width: thin;
-  scrollbar-color: #2B2247 transparent;
+  scrollbar-color: var(--color-line) transparent;
 }
