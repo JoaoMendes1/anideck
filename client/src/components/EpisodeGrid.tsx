@@ -69,7 +69,7 @@ export default function EpisodeGrid({ malId, totalEpisodes, streamingEpisodes = 
       })
 
       if (!response.ok) throw new Error()
-    } catch (err) {
+    } catch {
       setWatched(prev => isWatched ? [...prev, episodeNumber] : prev.filter(num => num !== episodeNumber))
       showToast('Erro ao sincronizar episódio. Verifique sua conexão.', 'error')
     }

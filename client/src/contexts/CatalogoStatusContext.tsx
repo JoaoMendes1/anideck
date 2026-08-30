@@ -32,6 +32,9 @@ export function CatalogoStatusProvider({ children }: { children: ReactNode }) {
   return <CatalogoStatusContext.Provider value={valor}>{children}</CatalogoStatusContext.Provider>
 }
 
+// Provider e hook juntos é o padrão dos contextos deste projeto; separar só melhoraria
+// o hot reload e exigiria atualizar imports em todo o app.
+// eslint-disable-next-line react-refresh/only-export-components
 export function useCatalogoStatus() {
   return useContext(CatalogoStatusContext)
 }

@@ -81,7 +81,7 @@ export default function Rankings() {
                 if (response.ok) {
                     const entradas = await response.json()
                     if (entradas && entradas.length > 0) {
-                        const idsSalvos = entradas.map((e: any) => ({ mal_id: e.mal_id, id: e.id, is_favorite: e.is_favorite }))
+                        const idsSalvos = entradas.map((e: SavedEntry) => ({ mal_id: e.mal_id, id: e.id, is_favorite: e.is_favorite }))
                         setSavedEntries(idsSalvos)
                     }
                 }
@@ -117,8 +117,8 @@ export default function Rankings() {
             }
             const incoming: Anime[] = data.data || []
             setAnimes(prev => replace ? incoming : [...prev, ...incoming])
-        } catch (err: any) {
-            setError(err.message)
+        } catch (err) {
+            setError((err as Error).message)
         } finally {
             setLoading(false)
         }

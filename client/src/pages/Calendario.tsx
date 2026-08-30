@@ -31,7 +31,12 @@ export default function Calendario() {
     const [animes, setAnimes] = useState<HydratedAnime[]>([])
     const [loading, setLoading] = useState(true)
     const [error, setError] = useState<string | null>(null)
-    const [, setTick] = useState(0)
+    // Instante de referência da contagem regressiva, em segundos.
+    // Guardar o tempo em estado (em vez de um contador descartado que só forçava
+    // re-render) é o que permite ler o relógio fora do render: chamar Date.now()
+    // durante a renderização torna o resultado dependente de QUANDO o React decidiu
+    // renderizar, e não do intervalo de 1 minuto que governa a atualização.
+    const [agora, setAgora] = useState(() => Math.floor(Date.now() / 1000))
 
     const [abaAtiva, setAbaAtiva] = useState<'meus' | 'todos'>('meus')
 
@@ -46,7 +51,10 @@ export default function Calendario() {
                 try {
                     const res = await fetch('/api/entries', { headers: { 'Authorization': `Bearer ${session.access_token}` } })
                     if (res.ok) userEntries = await res.json()
-                } catch (e) { }
+                } catch {
+                    // Sem as entradas do usuário o calendário ainda funciona: ele só perde
+                    // a marcação de "está no seu deck". Falhar aqui não pode impedir a tela.
+                }
             }
 
             try {
@@ -92,7 +100,7 @@ export default function Calendario() {
                 })
 
                 setAnimes(animesComEpisodio)
-            } catch (err) {
+            } catch {
                 setError('Não foi possível carregar o calendário.')
             } finally {
                 setLoading(false)
@@ -104,7 +112,7 @@ export default function Calendario() {
 
     useEffect(() => {
         const interval = setInterval(() => {
-            setTick(t => t + 1)
+            setAgora(Math.floor(Date.now() / 1000))
         }, 60000)
         return () => clearInterval(interval)
     }, [])
@@ -131,8 +139,7 @@ export default function Calendario() {
     }
 
     const formatTimeRemaining = (targetEpoch: number) => {
-        const now = Math.floor(Date.now() / 1000)
-        const diff = targetEpoch - now
+        const diff = targetEpoch - agora
         if (diff <= 0) return 'Lançado!'
 
         const days = Math.floor(diff / 86400)

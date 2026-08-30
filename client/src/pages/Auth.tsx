@@ -42,8 +42,8 @@ export default function Auth() {
         showToast('Conta criada com sucesso! Você já pode fazer login.')
         setIsLogin(true) // Volta para a tela de login
       }
-    } catch (err: any) {
-      setError(err.message) // Exibe o erro do Supabase (ex: "Senha muito fraca") na tela
+    } catch (err) {
+      setError((err as Error).message) // Exibe o erro do Supabase (ex: "Senha muito fraca") na tela
     } finally {
       setLoading(false)
     }

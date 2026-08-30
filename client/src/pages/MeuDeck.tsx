@@ -91,7 +91,7 @@ export default function MeuDeck() {
                         setAnimesData(mapaAnimes)
                     }
                 }
-            } catch (err) {
+            } catch {
                 setError('Não foi possível carregar seu deck. Tente novamente.')
             } finally {
                 setLoading(false)
