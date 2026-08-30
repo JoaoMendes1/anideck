@@ -5,6 +5,7 @@ import { supabase } from '../lib/supabase'
 import EditarEntradaModal from '../components/EditarEntradaModal'
 import DeckCard from '../components/DeckCard'
 import VitrineDestaques from '../components/VitrineDestaques'
+import type { AnimeDaApi } from '../types/anime'
 import DeckSkeleton from '../components/DeckSkeleton'
 import StatCard from '../components/StatCard'
 import { Play, CheckCircle2, Bookmark, MonitorPlay, Star, XCircle, AlertCircle } from 'lucide-react'
@@ -29,22 +30,6 @@ interface HydratedAnime {
     ranking?: number
     nextAiringEpisode?: AiringInfo
     streaming?: { name: string; url: string }[]
-}
-
-// Formato de cada item devolvido por POST /api/anime/bulk.
-// Derivado de `anilist.Anime` (internal/anilist/models.go), e não dos campos que esta
-// tela consome — só os usados aqui estão declarados.
-//
-// `genres` e `streaming` não têm `omitempty` na struct Go: quando a lista é nula, o JSON
-// traz `null` e não `[]`. Por isso os dois aceitam null explicitamente.
-interface AnimeDaApi {
-    mal_id: number
-    title: string
-    ranking?: number
-    images: { jpg: { image_url: string } }
-    genres: { name: string }[] | null
-    streaming: { name: string; url: string }[] | null
-    nextAiringEpisode?: AiringInfo
 }
 
 const FILTER_TABS = ['Todos', 'Assistindo', 'Em Dia', 'Completo', 'Quero Assistir', 'Dropado']
