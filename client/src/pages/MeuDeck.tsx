@@ -10,6 +10,7 @@ import DeckSkeleton from '../components/DeckSkeleton'
 import StatCard from '../components/StatCard'
 import { Play, CheckCircle2, Bookmark, MonitorPlay, Star, XCircle, AlertCircle } from 'lucide-react'
 import type { AiringInfo } from '../lib/deckHelpers'
+import { gradienteDoCard } from '../lib/deckHelpers'
 import { useCatalogoStatus } from '../contexts/CatalogoStatusContext'
 
 interface Entrada {
@@ -236,7 +237,7 @@ export default function MeuDeck() {
                                 key={entrada.id}
                                 entrada={entrada}
                                 animeLocal={animesData[entrada.mal_id]}
-                                gradientClass={`card-g${(index % 5) + 1}`}
+                                gradientClass={gradienteDoCard(index)}
                                 onEdit={setEditando}
                             />
                         ))}

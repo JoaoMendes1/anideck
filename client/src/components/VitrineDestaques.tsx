@@ -11,6 +11,7 @@
 import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import type { CuratedAnime } from '../types/curation'
+import { gradienteDoCard } from '../lib/deckHelpers'
 
 // Quantos cabem sem a vitrine competir com o deck do usuário, que é o conteúdo principal
 // da página. Passando disso ela vira a atração e não o aperitivo.
@@ -73,7 +74,7 @@ export default function VitrineDestaques() {
           <Link
             key={anime.id || anime.mal_id}
             to={`/anime/${anime.mal_id}`}
-            className={`group relative shrink-0 w-[124px] md:w-[136px] aspect-[3/4.2] rounded-[14px] overflow-hidden border border-line bg-panel card-g${(index % 5) + 1} transition-transform hover:-translate-y-1 active:scale-[0.98]`}
+            className={`group relative shrink-0 w-[124px] md:w-[136px] aspect-[3/4.2] rounded-[14px] overflow-hidden border border-line bg-panel ${gradienteDoCard(index)} transition-transform hover:-translate-y-1 active:scale-[0.98]`}
           >
             {anime.custom_cover_image && (
               <img

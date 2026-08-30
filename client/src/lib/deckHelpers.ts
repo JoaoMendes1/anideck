@@ -11,6 +11,19 @@ export interface StatusTheme {
     border: string
 }
 
+// Gradiente de fundo do card, usado como fallback quando o anime não tem capa.
+//
+// Os cinco nomes estão escritos por extenso de propósito: o Tailwind v4 só emite um
+// utilitário quando o nome aparece LITERAL no código-fonte. Montar `card-g${n}` fazia a
+// classe chegar ao DOM e a regra CSS nunca ser gerada — sem erro, sem aviso, sem nada no
+// build. É a mesma armadilha que o StatCard já documentava para `border-t-${cor}`.
+const GRADIENTES_CARD = ['card-g1', 'card-g2', 'card-g3', 'card-g4', 'card-g5'] as const
+
+/** Escolhe um dos cinco gradientes ciclando pela posição do card na lista. */
+export function gradienteDoCard(indice: number): string {
+    return GRADIENTES_CARD[indice % GRADIENTES_CARD.length]
+}
+
 // Extraído do MeuDeck.tsx pra ser reusado pelo DeckCard sem duplicar o switch.
 export function getStatusTheme(status: string): StatusTheme {
     switch (status) {
