@@ -281,6 +281,37 @@ e essa ausência era o único obstáculo real à escrita anônima.
 > **Pergunta obrigatória:** as policies desta tabela restringem alguma coisa, ou só existem?
 > Rodar `SET ROLE anon` e tentar escrever responde em 10 segundos.
 
+## 16. 0️⃣ Campo numérico ausente em dado curado vira `0`, não `NULL`
+
+**Incidente (30/08/2026):** o console acusava `Encountered two children with the same key, 0`
+centenas de vezes por carregamento na tela de Detalhes.
+
+**Causa:** `custom_characters` é gravado como `{name, image, role}` — sem `id`, porque não existe
+id a informar no Painel Admin. O Go desserializa esse JSON em `[]anilist.Character`, cuja struct
+tem `ID int`. Campo ausente assume o **zero value**, então todo personagem curado sai da API com
+`id: 0`, e o `key={char.id}` da lista virava `0` repetido.
+
+**O que torna isso silencioso:** nada quebra na tela. O React apenas fica livre para reaproveitar
+o componente errado ao atualizar a lista — estado de um item aparecendo em outro. E só se
+manifesta em animes **curados**: um anime que vem direto da AniList traz ids reais e não
+reproduz.
+
+**Isso não é só sobre personagens.** Ao investigar, a troca de `key={index}` por `mal_id` nas
+relações quase foi aplicada — e Frieren tem uma relação com `mal_id: 0`. A "correção" teria
+criado o mesmo bug que estava sendo consertado.
+
+**Relação com o item 5:** lá a distinção é `NULL` × array vazio no Postgres. Aqui é ausência ×
+zero value na fronteira Go → JSON. Mesma classe de erro, camada diferente: em ambas, "não tem
+valor" vira um valor que parece legítimo.
+
+A correção adotada foi `key={char.id || char.name}` — cai para o nome quando o id é 0, e mantém
+o id da AniList quando ele existe. Trata o sintoma; a causa continua em qualquer campo numérico
+que a curadoria não preencha.
+
+> **Pergunta obrigatória:** este campo numérico é preenchido pela curadoria, ou só existe no dado
+> da AniList? Se só existe na AniList, no registro curado ele vale `0` — e `0` não serve como
+> chave nem como "ausente".
+
 ## 🧭 Como manter este arquivo
 
 - Toda vez que um bug **silencioso** chegar a produção (não quebrou, só devolveu dado errado),
