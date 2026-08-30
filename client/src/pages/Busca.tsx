@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect } from 'react'
 import { useToast } from '../contexts/ToastContext'
 import { useCatalogoStatus } from '../contexts/CatalogoStatusContext'
 import { useNavigate } from 'react-router-dom'
@@ -135,17 +135,30 @@ export default function Busca() {
         }
     }
 
-    // A lista restaurada já está na tela: deixar o efeito rodar refaria a
-    // requisição da página guardada e grudaria as mesmas 40 linhas no fim dela.
-    // Só a primeira execução é pulada — mexer num filtro depois disso busca normal.
-    const pularBuscaDaReidratacao = useRef(retrato !== undefined)
+    // O conjunto que o retrato já colocou na tela. Enquanto o efeito for chamado
+    // para exatamente ele, não há o que buscar: a lista restaurada já É o
+    // resultado dessa busca. Comparar, em vez de "pular a primeira execução", é o
+    // que torna isto correto sob o StrictMode, que roda todo efeito duas vezes no
+    // dev — medido no Rankings, onde o sinalizador de uso único deixava a segunda
+    // execução refazer a requisição e duplicar a última página.
+    // A comparação é por identidade em cada campo, mesmo idioma do bloco acima.
+    const [buscaJaFeita] = useState(() => (retrato
+        ? { query, selectedFilters, selectedStatus, selectedSeason, selectedYear, selectedSort, page }
+        : null))
+
+    const ehABuscaRestaurada =
+        buscaJaFeita !== null &&
+        buscaJaFeita.query === query &&
+        buscaJaFeita.selectedFilters === selectedFilters &&
+        buscaJaFeita.selectedStatus === selectedStatus &&
+        buscaJaFeita.selectedSeason === selectedSeason &&
+        buscaJaFeita.selectedYear === selectedYear &&
+        buscaJaFeita.selectedSort === selectedSort &&
+        buscaJaFeita.page === page
 
     useEffect(() => {
         if (!hasAnyFilter) return
-        if (pularBuscaDaReidratacao.current) {
-            pularBuscaDaReidratacao.current = false
-            return
-        }
+        if (ehABuscaRestaurada) return
 
         const controller = new AbortController()
 
@@ -195,7 +208,7 @@ export default function Busca() {
             clearTimeout(timer)
             controller.abort()
         }
-    }, [query, selectedFilters, selectedStatus, selectedSeason, selectedYear, selectedSort, page, hasAnyFilter, reportarFalha, reportarSucesso])
+    }, [query, selectedFilters, selectedStatus, selectedSeason, selectedYear, selectedSort, page, hasAnyFilter, ehABuscaRestaurada, reportarFalha, reportarSucesso])
 
     // Mantém o retrato em dia. Guardar é só anotar referências, então sai barato
     // mesmo rodando a cada tecla digitada na busca.

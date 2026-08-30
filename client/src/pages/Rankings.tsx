@@ -4,6 +4,7 @@ import { useToast } from '../contexts/ToastContext'
 import { useNavigate } from 'react-router-dom'
 import { AlertCircle, SlidersHorizontal, X, Info } from 'lucide-react'
 import { supabase } from '../lib/supabase'
+import { useDadosRestaurados, usePosicaoDeLista, guardarDados } from '../lib/posicaoDeLista'
 import {
     CONTENT_FILTERS, STATUS_OPTIONS, SEASON_OPTIONS,
     type FilterItem, getCategoryTheme
@@ -41,26 +42,47 @@ const SORT_OPTIONS = [
     { label: 'Lançamentos', value: 'START_DATE_DESC' },
 ]
 
+/** O que os Rankings precisam para renascer inteiros ao voltar do Detalhes. */
+interface EstadoRanking {
+    animes: Anime[]
+    page: number
+    lastUpdated: string | null
+    selectedFilters: FilterItem[]
+    selectedStatus: string
+    selectedSeason: string
+    selectedYear: string
+    selectedSort: string
+}
+
 export default function Rankings() {
     const navigate = useNavigate()
-    const [animes, setAnimes] = useState<Anime[]>([])
-    const [loading, setLoading] = useState(true)
+    // Retrato deixado ao sair para o Detalhes. Tem que ser lido ANTES dos filtros:
+    // `filtrosAnteriores`, mais abaixo, nasce das próprias variáveis de estado dos
+    // filtros, então semear os filtros daqui semeia os dois com as MESMAS
+    // referências e `filtrosMudaram` já sai falso no primeiro render. É isso que
+    // impede o guarda de corrida de confundir reidratação com troca de filtro e
+    // jogar fora a lista restaurada. Por isso o bloco do guarda não muda.
+    const retrato = useDadosRestaurados<EstadoRanking>()
+
+    const [animes, setAnimes] = useState<Anime[]>(retrato?.animes ?? [])
+    // Reidratado, não há nada carregando: a lista já está na tela.
+    const [loading, setLoading] = useState(retrato === undefined)
     const [error, setError] = useState<string | null>(null)
-    const [page, setPage] = useState(1)
+    const [page, setPage] = useState(retrato?.page ?? 1)
     const [showFilters, setShowFilters] = useState(false)
     const { showToast } = useToast()
     const [savingIds, setSavingIds] = useState<number[]>([])
 
     const [savedEntries, setSavedEntries] = useState<SavedEntry[]>([])
 
-    const [lastUpdated, setLastUpdated] = useState<string | null>(null)
+    const [lastUpdated, setLastUpdated] = useState<string | null>(retrato?.lastUpdated ?? null)
     const [showCredibilityInfo, setShowCredibilityInfo] = useState(false)
 
-    const [selectedFilters, setSelectedFilters] = useState<FilterItem[]>([])
-    const [selectedStatus, setSelectedStatus] = useState('')
-    const [selectedSeason, setSelectedSeason] = useState('')
-    const [selectedYear, setSelectedYear] = useState('')
-    const [selectedSort, setSelectedSort] = useState('POPULARITY_DESC')
+    const [selectedFilters, setSelectedFilters] = useState<FilterItem[]>(retrato?.selectedFilters ?? [])
+    const [selectedStatus, setSelectedStatus] = useState(retrato?.selectedStatus ?? '')
+    const [selectedSeason, setSelectedSeason] = useState(retrato?.selectedSeason ?? '')
+    const [selectedYear, setSelectedYear] = useState(retrato?.selectedYear ?? '')
+    const [selectedSort, setSelectedSort] = useState(retrato?.selectedSort ?? 'POPULARITY_DESC')
 
     const activeFilterCount =
         selectedFilters.length +
@@ -151,9 +173,34 @@ export default function Rankings() {
         }
     }, [selectedFilters, selectedStatus, selectedSeason, selectedYear, selectedSort])
 
+    // O par (página, filtros) que o retrato já colocou na tela. Enquanto o efeito
+    // for chamado para exatamente esse par, não há o que buscar: a lista restaurada
+    // já É o resultado dessa busca.
+    //
+    // Comparar, em vez de "pular a primeira execução", é o que torna isto correto
+    // sob o StrictMode, que roda todo efeito duas vezes no dev. Medido com o
+    // navegador: um sinalizador de uso único era gasto na primeira execução e a
+    // segunda refazia a requisição da página 3, grudando 20 duplicatas na lista.
+    //
+    // `fetchRanking` é o representante dos filtros aqui: é um useCallback sobre
+    // eles, então a identidade muda exatamente quando eles mudam. Isso cobre o
+    // caso em que trocar de filtro mantém a página em 1 e só o filtro difere.
+    const [buscaJaFeita] = useState(() => (retrato ? { page, buscar: fetchRanking } : null))
+
     useEffect(() => {
+        if (buscaJaFeita && buscaJaFeita.page === page && buscaJaFeita.buscar === fetchRanking) return
         fetchRanking(page, page === 1)
-    }, [page, fetchRanking])
+    }, [buscaJaFeita, page, fetchRanking])
+
+    useEffect(() => {
+        guardarDados<EstadoRanking>('/rankings', {
+            animes, page, lastUpdated, selectedFilters, selectedStatus,
+            selectedSeason, selectedYear, selectedSort,
+        })
+    }, [animes, page, lastUpdated, selectedFilters, selectedStatus,
+        selectedSeason, selectedYear, selectedSort])
+
+    usePosicaoDeLista(animes.length > 0)
 
     const handleSalvar = async (e: React.MouseEvent, malId: number) => {
         e.preventDefault()
