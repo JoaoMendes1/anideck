@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
-import { useParams, Link } from 'react-router-dom'
-import { PlayCircle, Star, AlertCircle, Bookmark, Trophy } from 'lucide-react'
+import { useParams, Link, useNavigate } from 'react-router-dom'
+import { PlayCircle, Star, AlertCircle, Bookmark, Trophy, X, ArrowLeft } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import { useToast } from '../contexts/ToastContext'
 import { useCatalogoStatus } from '../contexts/CatalogoStatusContext'
@@ -9,6 +9,7 @@ import ReactMarkdown from 'react-markdown'
 import EpisodeGrid from '../components/EpisodeGrid'
 import EditarEntradaModal from '../components/EditarEntradaModal'
 import { getCategoryTheme } from '../lib/filters'
+import { temHistoriaNoApp, veioDeListaRestauravel } from '../lib/posicaoDeLista'
 import { motion } from 'framer-motion'
 
 interface AnimeDetail {
@@ -54,6 +55,21 @@ interface MinhaEntrada {
 }
 
 export default function Detalhes() {
+  const navigate = useNavigate()
+
+  // Que promessa o botão pode fazer. Decidido uma vez, na montagem: depende do
+  // ponto do histórico em que esta tela nasceu, e isso não muda enquanto ela vive.
+  //   'fechar' — veio direto de uma lista cuja posição será devolvida
+  //   'voltar' — veio de outro Detalhes, ou de origem sem posição a restaurar
+  //   'raiz'   — link direto, aba nova ou refresh: não há para onde voltar
+  const [modoVoltar] = useState<'fechar' | 'voltar' | 'raiz'>(() =>
+    !temHistoriaNoApp() ? 'raiz' : veioDeListaRestauravel() ? 'fechar' : 'voltar'
+  )
+
+  const aoVoltar = () => {
+    if (modoVoltar === 'raiz') navigate('/')
+    else navigate(-1)
+  }
   const { id } = useParams<{ id: string }>()
   const { showToast } = useToast()
   const { reportarFalha, reportarSucesso } = useCatalogoStatus()
@@ -255,6 +271,22 @@ export default function Detalhes() {
         )}
         <div className="absolute top-0 left-0 right-0 h-36 bg-gradient-to-b from-void/95 via-void/60 to-transparent z-10" />
         <div className="absolute inset-0 bg-gradient-to-t from-void via-void/40 to-transparent z-10" />
+
+        {/*
+          Saída no canto da capa, como em app de streaming. A forma promete o que
+          o destino cumpre: X é "fechar e voltar ao que eu fazia", e só aparece
+          quando a posição de origem vai mesmo ser devolvida. Nos outros casos a
+          seta é honesta — ela só desfaz um passo da navegação.
+        */}
+        <button
+          type="button"
+          onClick={aoVoltar}
+          aria-label={modoVoltar === 'fechar' ? 'Fechar e voltar para a lista' : 'Voltar'}
+          title={modoVoltar === 'fechar' ? 'Fechar' : 'Voltar'}
+          className="absolute top-4 left-4 md:top-6 md:left-6 z-30 w-10 h-10 rounded-full bg-void/70 border border-line text-text hover:text-holo-3 hover:border-holo-3 flex items-center justify-center backdrop-blur-md shadow-lg transition-colors cursor-pointer active:scale-90"
+        >
+          {modoVoltar === 'fechar' ? <X size={18} /> : <ArrowLeft size={18} />}
+        </button>
       </div>
 
       <div className="max-w-[1040px] mx-auto px-5 -mt-[120px] md:-mt-[160px] relative z-20 pb-2">
