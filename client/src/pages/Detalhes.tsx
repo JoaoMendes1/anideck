@@ -28,7 +28,9 @@ interface AnimeDetail {
   studios: { name: string }[]
   streaming: { name: string; url: string }[]
   theme: { openings: string[]; endings: string[] }
-  relations: { relation: string; entry: { mal_id: number; type: string; name: string; image?: string }[] }[]
+  // mal_id é opcional: a AniList devolve `idMal` nulo em parte do catálogo, e o backend
+  // omite o campo nesse caso em vez de mandar 0 — que virava um link para /anime/0.
+  relations: { relation: string; entry: { mal_id?: number | null; type: string; name: string; image?: string }[] }[]
   characters?: { id: number; name: string; image: string; role: string }[]
   streamingEpisodes?: { title: string; thumbnail: string; url: string; site: string }[]
   nextAiringEpisode?: { airingAt: number; timeUntilAiring: number; episode: number }
@@ -439,12 +441,13 @@ export default function Detalhes() {
                       const relationAnime = rel.entry[0]
                       if (!relationAnime) return null
 
-                      return (
-                        <Link
-                          key={i}
-                          to={`/anime/${relationAnime.mal_id}`}
-                          className="flex-none w-[160px] md:w-[180px] group cursor-pointer snap-start"
-                        >
+                      // Sem mal_id não existe página de destino: o card sai igual, só não vira
+                      // link. A informação "existe uma continuação" continua verdadeira e útil,
+                      // e mandar para /anime/0 mostrava um erro de catálogo ao usuário.
+                      const classeCartao = 'flex-none w-[160px] md:w-[180px] group snap-start'
+
+                      const conteudo = (
+                        <>
                           <div className="relative aspect-[2/3] rounded-xl overflow-hidden mb-2 bg-panel-2 border border-line">
                             {relationAnime.image ? (
                               <img src={relationAnime.image} alt={relationAnime.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300 opacity-90 group-hover:opacity-100" />
@@ -460,7 +463,17 @@ export default function Detalhes() {
                           <div className="font-bold text-[13px] md:text-[14px] leading-tight text-text group-hover:text-holo-3 transition-colors line-clamp-2">
                             {relationAnime.name}
                           </div>
+                        </>
+                      )
+
+                      return relationAnime.mal_id != null ? (
+                        <Link key={i} to={`/anime/${relationAnime.mal_id}`} className={`${classeCartao} cursor-pointer`}>
+                          {conteudo}
                         </Link>
+                      ) : (
+                        <div key={i} className={classeCartao}>
+                          {conteudo}
+                        </div>
                       )
                     })}
                 </div>

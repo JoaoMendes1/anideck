@@ -75,15 +75,7 @@ type Anime struct {
 		Name string `json:"name"`
 	} `json:"studios"`
 
-	Relations []struct {
-		Relation string `json:"relation"` 
-		Entry    []struct {
-			MalID int    `json:"mal_id"`
-			Type  string `json:"type"`
-			Name  string `json:"name"`
-			Image string `json:"image"` // Imagem da Capa do anime relacionado
-		} `json:"entry"`
-	} `json:"relations"`
+	Relations []Relation `json:"relations"`
 
 	Theme struct {
 		Openings []string `json:"openings"`
@@ -113,6 +105,25 @@ type ScoreDistribution struct {
 	Score      int     `json:"score"`
 	Votes      int     `json:"votes"`
 	Percentage float64 `json:"percentage"`
+}
+
+// RelationEntry é a obra apontada por uma relação (prequela, sequência, spin-off...).
+//
+// MalID é ponteiro de propósito: a AniList devolve `idMal` nulo em parte do catálogo, e
+// como `int` isso virava 0 — um número válido, que a tela transformava num link para
+// /anime/0. Ponteiro permite distinguir "não tem id" de "o id é zero".
+type RelationEntry struct {
+	MalID *int   `json:"mal_id,omitempty"`
+	Type  string `json:"type"`
+	Name  string `json:"name"`
+	Image string `json:"image"` // Imagem da Capa do anime relacionado
+}
+
+// Relation agrupa o tipo de vínculo com a obra relacionada.
+// Tipo nomeado pelo mesmo motivo do Genre: a struct anônima estava repetida em 4 pontos.
+type Relation struct {
+	Relation string          `json:"relation"`
+	Entry    []RelationEntry `json:"entry"`
 }
 
 // StreamingLink é uma plataforma onde a obra pode ser assistida.

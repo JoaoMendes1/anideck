@@ -344,37 +344,25 @@ func (m *aniListMedia) toAnime() Anime {
 		})
 	}
 
-	var relations []struct {
-		Relation string `json:"relation"`
-		Entry    []struct {
-			MalID int    `json:"mal_id"`
-			Type  string `json:"type"`
-			Name  string `json:"name"`
-			Image string `json:"image"`
-		} `json:"entry"`
-	}
+	relations := make([]Relation, 0, len(m.Relations.Edges))
 	for _, edge := range m.Relations.Edges {
 		relTitle := edge.Node.Title.Romaji
 		if relTitle == "" {
 			relTitle = edge.Node.Title.English
 		}
-		relations = append(relations, struct {
-			Relation string `json:"relation"`
-			Entry    []struct {
-				MalID int    `json:"mal_id"`
-				Type  string `json:"type"`
-				Name  string `json:"name"`
-				Image string `json:"image"`
-			} `json:"entry"`
-		}{
+
+		// idMal nulo na AniList chega aqui como 0. Manter o ponteiro nil nesse caso é o que
+		// impede a tela de montar um link para /anime/0 — que responde 503.
+		var malID *int
+		if edge.Node.IDMal > 0 {
+			id := edge.Node.IDMal
+			malID = &id
+		}
+
+		relations = append(relations, Relation{
 			Relation: edge.RelationType,
-			Entry: []struct {
-				MalID int    `json:"mal_id"`
-				Type  string `json:"type"`
-				Name  string `json:"name"`
-				Image string `json:"image"`
-			}{{
-				MalID: edge.Node.IDMal,
+			Entry: []RelationEntry{{
+				MalID: malID,
 				Type:  edge.Node.Type,
 				Name:  relTitle,
 				Image: edge.Node.CoverImage.Large, // Extraindo a imagem da API
