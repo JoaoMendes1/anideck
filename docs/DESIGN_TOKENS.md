@@ -25,6 +25,33 @@
 **Gradiente holo padrão** (usado em botões primários, título de marca, avatares):
 `linear-gradient(90deg, var(--holo-1), var(--holo-2) 45%, var(--holo-3))`
 
+### Onde pôr uma cor nova
+
+O `client/src/index.css` tem **dois blocos de cor**, e a escolha entre eles não é estética:
+
+| | `@theme` | `:root` |
+|---|---|---|
+| Gera utilitário Tailwind (`bg-*`, `text-*`, `border-*`, `from-*`) | sim | não |
+| Entra nesta paleta oficial | sim | não |
+| Um tema consegue sobrescrever | sim | sim |
+
+**Vai no `@theme`** a cor que faz parte da linguagem de design — algo que você diria em voz
+alta ao descrever a interface ("o fundo", "o acento", "a cor de perigo") e que vai ser
+aplicada por classe em vários componentes.
+
+**Vai no `:root`** a cor decorativa: ponta de gradiente, tom intermediário de ilustração,
+valor que existe dentro de um bloco de CSS específico e não é aplicado por classe. Colocá-la
+no `@theme` geraria dezenas de utilitários que ninguém usa e inflaria esta paleta com cores
+que não são vocabulário do projeto.
+
+Em ambos os casos, **nunca repita o hex fora do bloco onde ele é definido.** Para cor com
+opacidade, use `color-mix(in srgb, var(--token) N%, transparent)` — não escreva o `rgba()`
+com os canais na mão, senão o valor volta a existir em dois lugares e o tema deixa de
+alcançá-lo. Foi essa duplicação que a issue #88 removeu.
+
+Exceção deliberada: preto e branco puros (sombras e brilhos) ficam literais. Tokenizá-los
+implicaria que devem mudar junto com o tema, o que é decisão de design, não de arquitetura.
+
 ## Tipografia
 
 | Uso | Fonte | Peso |
