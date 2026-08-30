@@ -6,7 +6,7 @@
 // sobreviver é a navegação client-side (lista → Detalhes → voltar), que não
 // recarrega o módulo. Um F5 descarta tudo, e esse é o comportamento certo: quem
 // recarregou a página não está voltando de onde estava.
-import { useEffect, useLayoutEffect, useRef, type RefObject } from 'react'
+import { useEffect, useLayoutEffect, useRef, useState, type RefObject } from 'react'
 import { useLocation, useNavigationType } from 'react-router-dom'
 
 interface Instantaneo {
@@ -45,6 +45,22 @@ export function veioDeListaRestauravel(): boolean {
 
 export function lerDados<D>(chave: string): D | undefined {
     return instantaneos.get(chave)?.dados as D | undefined
+}
+
+/**
+ * Retrato guardado desta rota, e só quando a chegada foi um "voltar".
+ *
+ * Existe como hook para ser chamado no inicializador dos `useState` da lista: o
+ * retrato precisa estar inteiro já no PRIMEIRO render. Ler depois, num efeito,
+ * significaria um render com a lista vazia e os filtros zerados — e é justamente
+ * esse render intermediário que faria os blocos de estado derivado das telas
+ * concluírem "o filtro mudou" e jogarem a lista fora.
+ */
+export function useDadosRestaurados<D>(): D | undefined {
+    const { pathname } = useLocation()
+    const tipoNavegacao = useNavigationType()
+    const [dados] = useState(() => (tipoNavegacao === 'POP' ? lerDados<D>(pathname) : undefined))
+    return dados
 }
 
 export function guardarDados<D>(chave: string, dados: D): void {

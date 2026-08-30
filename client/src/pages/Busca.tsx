@@ -1,9 +1,10 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useToast } from '../contexts/ToastContext'
 import { useCatalogoStatus } from '../contexts/CatalogoStatusContext'
 import { useNavigate } from 'react-router-dom'
 import { Search, AlertCircle, SlidersHorizontal, X } from 'lucide-react'
 import { supabase } from '../lib/supabase'
+import { useDadosRestaurados, usePosicaoDeLista, guardarDados } from '../lib/posicaoDeLista'
 import {
     CONTENT_FILTERS, STATUS_OPTIONS, SEASON_OPTIONS,
     type FilterItem, getCategoryTheme
@@ -39,22 +40,41 @@ const SORT_OPTIONS = [
     { label: 'Lançamentos', value: 'START_DATE_DESC' },
 ]
 
+/** O que a Busca precisa para renascer inteira ao voltar do Detalhes. */
+interface EstadoBusca {
+    query: string
+    selectedFilters: FilterItem[]
+    selectedStatus: string
+    selectedSeason: string
+    selectedYear: string
+    selectedSort: string
+    page: number
+    resultados: Anime[]
+    hasSearched: boolean
+}
+
 export default function Busca() {
     const navigate = useNavigate()
     const { showToast } = useToast()
     const { reportarFalha, reportarSucesso } = useCatalogoStatus()
 
-    const [query, setQuery] = useState('')
-    const [selectedFilters, setSelectedFilters] = useState<FilterItem[]>([])
-    const [selectedStatus, setSelectedStatus] = useState('')
-    const [selectedSeason, setSelectedSeason] = useState('')
-    const [selectedYear, setSelectedYear] = useState('')
-    const [selectedSort, setSelectedSort] = useState('POPULARITY_DESC')
-    const [page, setPage] = useState(1)
+    // Retrato deixado ao sair para o Detalhes. Lido antes de todo o resto: cada
+    // useState abaixo nasce dele, no MESMO primeiro render. Se os filtros viessem
+    // do retrato num render e o resto noutro, o bloco `tinhaFiltro` mais abaixo
+    // leria a discordância como "o filtro mudou" e jogaria fora a lista restaurada.
+    const retrato = useDadosRestaurados<EstadoBusca>()
 
-    const [resultados, setResultados] = useState<Anime[]>([])
+    const [query, setQuery] = useState(retrato?.query ?? '')
+    const [selectedFilters, setSelectedFilters] = useState<FilterItem[]>(retrato?.selectedFilters ?? [])
+    const [selectedStatus, setSelectedStatus] = useState(retrato?.selectedStatus ?? '')
+    const [selectedSeason, setSelectedSeason] = useState(retrato?.selectedSeason ?? '')
+    const [selectedYear, setSelectedYear] = useState(retrato?.selectedYear ?? '')
+    const [selectedSort, setSelectedSort] = useState(retrato?.selectedSort ?? 'POPULARITY_DESC')
+    const [page, setPage] = useState(retrato?.page ?? 1)
+
+    const [resultados, setResultados] = useState<Anime[]>(retrato?.resultados ?? [])
     const [loading, setLoading] = useState(false)
-    const [hasSearched, setHasSearched] = useState(false)
+    const [hasSearched, setHasSearched] = useState(retrato?.hasSearched ?? false)
     const [error, setError] = useState<string | null>(null)
     const [showFilters, setShowFilters] = useState(false)
     const [savingIds, setSavingIds] = useState<number[]>([])
@@ -115,8 +135,17 @@ export default function Busca() {
         }
     }
 
+    // A lista restaurada já está na tela: deixar o efeito rodar refaria a
+    // requisição da página guardada e grudaria as mesmas 40 linhas no fim dela.
+    // Só a primeira execução é pulada — mexer num filtro depois disso busca normal.
+    const pularBuscaDaReidratacao = useRef(retrato !== undefined)
+
     useEffect(() => {
         if (!hasAnyFilter) return
+        if (pularBuscaDaReidratacao.current) {
+            pularBuscaDaReidratacao.current = false
+            return
+        }
 
         const controller = new AbortController()
 
@@ -167,6 +196,18 @@ export default function Busca() {
             controller.abort()
         }
     }, [query, selectedFilters, selectedStatus, selectedSeason, selectedYear, selectedSort, page, hasAnyFilter, reportarFalha, reportarSucesso])
+
+    // Mantém o retrato em dia. Guardar é só anotar referências, então sai barato
+    // mesmo rodando a cada tecla digitada na busca.
+    useEffect(() => {
+        guardarDados<EstadoBusca>('/descobrir', {
+            query, selectedFilters, selectedStatus, selectedSeason, selectedYear,
+            selectedSort, page, resultados, hasSearched,
+        })
+    }, [query, selectedFilters, selectedStatus, selectedSeason, selectedYear,
+        selectedSort, page, resultados, hasSearched])
+
+    usePosicaoDeLista(resultados.length > 0)
 
     const handleSalvar = async (e: React.MouseEvent, malId: number) => {
         e.preventDefault()
