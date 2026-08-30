@@ -11,6 +11,7 @@ import StatCard from '../components/StatCard'
 import { Play, CheckCircle2, Bookmark, MonitorPlay, Star, XCircle, AlertCircle } from 'lucide-react'
 import type { AiringInfo } from '../lib/deckHelpers'
 import { gradienteDoCard, atrasoDoFoil } from '../lib/deckHelpers'
+import { usePosicaoDeLista } from '../lib/posicaoDeLista'
 import { useCatalogoStatus } from '../contexts/CatalogoStatusContext'
 
 interface Entrada {
@@ -44,6 +45,10 @@ export default function MeuDeck() {
     const [filtroAtivo, setFiltroAtivo] = useState('Todos')
     const [userName, setUserName] = useState('Usuário')
     const { reportarFalha, reportarSucesso } = useCatalogoStatus()
+
+    // O deck carrega tudo de uma vez, sem paginação: devolver a rolagem quando os
+    // dados chegam já recoloca o usuário onde ele estava.
+    usePosicaoDeLista(!loading)
 
     useEffect(() => {
         const carregarDeck = async () => {

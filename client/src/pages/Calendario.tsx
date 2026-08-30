@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
+import { usePosicaoDeLista } from '../lib/posicaoDeLista'
 import { supabase } from '../lib/supabase'
 import { Play, Calendar as CalendarIcon } from 'lucide-react'
 import { getCategoryTheme } from '../lib/filters'
@@ -41,6 +42,9 @@ export default function Calendario() {
     const [agora, setAgora] = useState(() => Math.floor(Date.now() / 1000))
 
     const [abaAtiva, setAbaAtiva] = useState<'meus' | 'todos'>('meus')
+
+    // Carga única (um /api/ranking com perPage fixo), então a rolagem basta.
+    usePosicaoDeLista(!loading)
 
     useEffect(() => {
         const carregarCalendario = async () => {
