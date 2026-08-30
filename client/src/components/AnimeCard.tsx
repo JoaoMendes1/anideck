@@ -11,6 +11,7 @@ interface AnimeCardProps {
     imageUrl?: string
     genre?: string
     score?: number | null
+    ranking?: number
     isFavorite?: boolean
     gradientClass: string
     /** Atraso da animação do foil, já calculado pela lista (ver atrasoDoFoil).
@@ -22,23 +23,24 @@ interface AnimeCardProps {
 }
 
 export default function AnimeCard({
-    malId, title, imageUrl, genre, score, isFavorite,
+    malId, title, imageUrl, genre, score, ranking, isFavorite,
     gradientClass, foilDelay, statusBadge, extraBadges, topRightAction,
 }: AnimeCardProps) {
     const [imagemFalhou, setImagemFalhou] = useState(false)
     const semCapa = !imageUrl || imagemFalhou
     const temNota = score !== null && score !== undefined
+    const temRanking = ranking !== undefined && ranking !== null
 
     return (
         <div
-            className={`relative aspect-[3/4.2] rounded-[14px] overflow-hidden p-3 flex flex-col justify-end border transition-transform active:scale-[0.98] hover:-translate-y-1 group ${
+            className={`relative aspect-[3/4.2] rounded-[14px] overflow-hidden p-3 pb-2.5 flex flex-col justify-end border transition-transform active:scale-[0.98] hover:-translate-y-1 group ${
                 isFavorite ? 'foil-card border-gold/50 shadow-[0_0_15px_rgba(255,197,66,0.15)]' : `border-line bg-panel ${gradientClass}`
             }`}
             style={isFavorite && foilDelay ? ({ '--foil-atraso': foilDelay } as CSSProperties) : undefined}
         >
             <Link to={`/anime/${malId}`} className="absolute inset-0 z-10" aria-label={title} />
 
-                        {semCapa && (
+            {semCapa && (
                 <div className="absolute inset-0 z-0 flex items-center justify-center bg-panel-2">
                     <span className="font-mono text-[8px] text-muted-2 uppercase tracking-widest text-center px-2">
                         Capa indisponível
@@ -55,7 +57,11 @@ export default function AnimeCard({
                     className="absolute inset-0 w-full h-full object-cover z-0 opacity-90 group-hover:opacity-100 transition-opacity"
                 />
             )}
-            <div className="absolute inset-0 bg-gradient-to-t from-void via-void/70 to-transparent z-0 opacity-90" />
+
+            {/* Gradiente mais fechado que antes: a base do card ganhou uma linha
+                a mais de conteúdo, e o texto precisa de fundo pra continuar legível
+                sobre capa clara. */}
+            <div className="absolute inset-0 bg-gradient-to-t from-void via-void/85 to-transparent z-0 opacity-95" />
 
             {/* right-12 reserva espaço fixo pro botão do canto — a fonte única
                 do fix de sobreposição que fiz no MeuDeck. Agora vale pro Busca também. */}
@@ -70,28 +76,44 @@ export default function AnimeCard({
                 </div>
             )}
 
+            {/*
+              Ordem invertida em relação ao layout antigo: os metadados vêm ANTES
+              do título, e o título fecha o card.
+
+              A linha de metadados usa flex-wrap: o navegador tenta encaixar
+              ranking, gênero e nota lado a lado e, quando não cabe, o gênero é
+              quem desce sozinho pra linha seguinte. É por isso que a nota vem
+              antes do gênero no HTML e volta pro lugar com "order" — assim quem
+              quebra é sempre o elemento de largura imprevisível, não a nota.
+
+              Antes disso, os três disputavam uma linha fixa em ~136px no grid
+              de 2 colunas do celular, e quem cedia era sempre o gênero,
+              virando "Adv...".
+            */}
             <div className="relative z-20 mt-auto flex flex-col pointer-events-none select-none w-full justify-end">
-                <h3 className="font-anton text-[13px] md:text-[14px] uppercase leading-tight mb-2 text-white drop-shadow-md line-clamp-2 break-words" title={title}>
+
+                <div className="flex flex-wrap items-center gap-1">
+                    {temRanking && (
+                        <div className="order-1 shrink-0 flex items-center gap-1 font-anton text-[9.5px] md:text-[10.5px] px-1.5 py-0.5 rounded-md bg-panel-2/80 text-holo-3 border border-holo-3/40 backdrop-blur-sm shadow-[0_0_8px_rgba(63,224,240,0.25)]">
+                            <span className="text-[8.5px] leading-none">🏆</span>#{ranking}
+                        </div>
+                    )}
+
+                    <div className={`order-3 shrink-0 ml-auto font-anton text-[9.5px] md:text-[10.5px] px-1.5 py-0.5 rounded-md backdrop-blur-sm border ${temNota ? 'bg-gold/20 text-gold border-gold/40 shadow-[0_0_8px_rgba(255,197,66,0.3)]' : 'bg-panel-2/80 text-muted-2 border-line'}`}>
+                        {temNota ? `★ ${score}` : 'S/N'}
+                    </div>
+
+                    {genre && (
+                        <div className={`order-2 min-w-0 max-w-full px-1.5 py-0.5 rounded-md border backdrop-blur-sm text-[8.5px] font-bold truncate ${getCategoryTheme(genre)}`}>
+                            {genre}
+                        </div>
+                    )}
+                </div>
+
+                <h3 className="mt-2 pt-2 border-t border-dashed border-muted/20 font-anton text-[13px] md:text-[14px] uppercase leading-tight text-white drop-shadow-md line-clamp-2 break-words" title={title}>
                     {isFavorite && <span className="text-gold mr-1 inline-block -translate-y-[1px]" title="Favorito">👑</span>}
                     {title}
                 </h3>
-
-                {/* Gênero e nota, só. O selo de ranking saiu daqui: eram três larguras
-                    variáveis disputando ~136px, e quem truncava era sempre o gênero.
-                    A posição no ranking continua na tela de Detalhes. */}
-                <div className="flex justify-between items-end gap-2">
-                    <div className="flex-1 min-w-0">
-                        {genre && (
-                            <span className={`inline-block text-[9px] font-bold px-1.5 py-0.5 rounded border backdrop-blur-sm truncate max-w-full ${getCategoryTheme(genre)}`}>
-                                {genre}
-                            </span>
-                        )}
-                    </div>
-
-                    <div className={`shrink-0 font-anton text-[11px] sm:text-[12px] px-1.5 py-0.5 rounded-md backdrop-blur-sm border ${temNota ? 'bg-gold/20 text-gold border-gold/40 shadow-[0_0_8px_rgba(255,197,66,0.3)]' : 'bg-panel-2/80 text-muted-2 border-line'}`}>
-                        {temNota ? `★ ${score}` : 'S/N'}
-                    </div>
-                </div>
             </div>
         </div>
     )
