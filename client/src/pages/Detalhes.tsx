@@ -283,7 +283,7 @@ export default function Detalhes() {
           onClick={aoVoltar}
           aria-label={modoVoltar === 'fechar' ? 'Fechar e voltar para a lista' : 'Voltar'}
           title={modoVoltar === 'fechar' ? 'Fechar' : 'Voltar'}
-          className="absolute top-4 left-4 md:top-6 md:left-6 z-30 w-10 h-10 rounded-full bg-void/70 border border-line text-text hover:text-holo-3 hover:border-holo-3 flex items-center justify-center backdrop-blur-md shadow-lg transition-colors cursor-pointer active:scale-90"
+          className="absolute top-[88px] left-4 md:left-6 z-30 w-10 h-10 rounded-full bg-void/70 border border-line text-text hover:text-holo-3 hover:border-holo-3 flex items-center justify-center backdrop-blur-md shadow-lg transition-colors cursor-pointer active:scale-90"
         >
           {modoVoltar === 'fechar' ? <X size={18} /> : <ArrowLeft size={18} />}
         </button>
