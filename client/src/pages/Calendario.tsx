@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import { Play, Calendar as CalendarIcon } from 'lucide-react'
 import { getCategoryTheme } from '../lib/filters'
+import type { AnimeDaApi } from '../types/anime'
 
 interface Entrada {
     mal_id: number
@@ -25,25 +26,6 @@ interface HydratedAnime {
         name: string
         url: string
     }[]
-}
-
-// Formato de cada item devolvido por POST /api/anime/bulk.
-// Derivado de `anilist.Anime` (internal/anilist/models.go), e não dos campos que esta
-// tela consome — só os usados aqui estão declarados.
-//
-// `genres` e `streaming` não têm `omitempty` na struct Go: quando a lista é nula, o JSON
-// traz `null` e não `[]`. Por isso os dois aceitam null explicitamente.
-interface AnimeDaApi {
-    mal_id: number
-    title: string
-    images: { jpg: { image_url: string } }
-    genres: { name: string }[] | null
-    streaming: { name: string; url: string }[] | null
-    nextAiringEpisode?: {
-        airingAt: number
-        timeUntilAiring: number
-        episode: number
-    }
 }
 
 export default function Calendario() {
