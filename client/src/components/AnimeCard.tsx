@@ -11,7 +11,6 @@ interface AnimeCardProps {
     imageUrl?: string
     genre?: string
     score?: number | null
-    ranking?: number
     isFavorite?: boolean
     gradientClass: string
     /** Atraso da animação do foil, já calculado pela lista (ver atrasoDoFoil).
@@ -23,7 +22,7 @@ interface AnimeCardProps {
 }
 
 export default function AnimeCard({
-    malId, title, imageUrl, genre, score, ranking, isFavorite,
+    malId, title, imageUrl, genre, score, isFavorite,
     gradientClass, foilDelay, statusBadge, extraBadges, topRightAction,
 }: AnimeCardProps) {
     const [imagemFalhou, setImagemFalhou] = useState(false)
@@ -77,29 +76,19 @@ export default function AnimeCard({
                     {title}
                 </h3>
 
-                {/* Gênero sozinho na primeira linha. Dos três dados, é o único de
-                    largura imprevisível — enquanto dividia uma linha só com ranking e
-                    nota, era sempre ele que truncava: num card de ~160px sobravam ~29px
-                    e "Slice of Life" precisa de ~74px. Com a linha inteira (~136px) cabe.
-                    A altura do card não muda: o aspect-[3/4.2] a trava, então a segunda
-                    linha sai do espaço de capa, não do tamanho do card. */}
-                {genre && (
-                    <div className="min-w-0 mb-1.5">
-                        <span className={`inline-block text-[9px] font-bold px-1.5 py-0.5 rounded border backdrop-blur-sm truncate max-w-full ${getCategoryTheme(genre)}`}>
-                            {genre}
-                        </span>
+                {/* Gênero e nota, só. O selo de ranking saiu daqui: eram três larguras
+                    variáveis disputando ~136px, e quem truncava era sempre o gênero.
+                    A posição no ranking continua na tela de Detalhes. */}
+                <div className="flex justify-between items-end gap-2">
+                    <div className="flex-1 min-w-0">
+                        {genre && (
+                            <span className={`inline-block text-[9px] font-bold px-1.5 py-0.5 rounded border backdrop-blur-sm truncate max-w-full ${getCategoryTheme(genre)}`}>
+                                {genre}
+                            </span>
+                        )}
                     </div>
-                )}
 
-                {/* ml-auto na nota, e não justify-between no pai: sem ranking, o
-                    justify-between jogaria a nota pro lado esquerdo. */}
-                <div className="flex items-end gap-1.5">
-                    {ranking && (
-                        <div className="shrink-0 font-anton text-[11px] sm:text-[12px] px-1.5 py-0.5 rounded-md backdrop-blur-sm border bg-panel-2/90 text-holo-3 border-holo-3/40">
-                            🏆 #{ranking}
-                        </div>
-                    )}
-                    <div className={`ml-auto shrink-0 font-anton text-[11px] sm:text-[12px] px-1.5 py-0.5 rounded-md backdrop-blur-sm border ${temNota ? 'bg-gold/20 text-gold border-gold/40 shadow-[0_0_8px_rgba(255,197,66,0.3)]' : 'bg-panel-2/80 text-muted-2 border-line'}`}>
+                    <div className={`shrink-0 font-anton text-[11px] sm:text-[12px] px-1.5 py-0.5 rounded-md backdrop-blur-sm border ${temNota ? 'bg-gold/20 text-gold border-gold/40 shadow-[0_0_8px_rgba(255,197,66,0.3)]' : 'bg-panel-2/80 text-muted-2 border-line'}`}>
                         {temNota ? `★ ${score}` : 'S/N'}
                     </div>
                 </div>
