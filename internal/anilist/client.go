@@ -103,7 +103,7 @@ func (c *Client) gqlRequest(ctx context.Context, query string, variables map[str
 		// ritmo que o nosso limiter permite.
 		if resp.StatusCode == http.StatusTooManyRequests {
 			StateMutex.Lock()
-			ApiHealth = "Warning"
+			ApiHealth = "WARNING"
 			StateMutex.Unlock()
 
 			espera := parseRetryAfter(resp.Header.Get("Retry-After"), esperaPadraoRateLimit)

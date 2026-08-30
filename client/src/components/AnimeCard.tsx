@@ -1,7 +1,7 @@
 // client/src/components/AnimeCard.tsx
 // Casco genérico do card em formato pôster. Usado pelo DeckCard (Meu Deck)
 // e pelo SearchResultCard (Busca) — cada um só monta os "slots" diferentes.
-import { useState, type CSSProperties, type ReactNode } from 'react'
+import { useState, type ReactNode } from 'react'
 import { Link } from 'react-router-dom'
 import { getCategoryTheme } from '../lib/filters'
 
@@ -14,8 +14,9 @@ interface AnimeCardProps {
     ranking?: number
     isFavorite?: boolean
     gradientClass: string
-    /** Atraso da animação do foil, já calculado pela lista (ver atrasoDoFoil).
-        Vem pronto de fora porque só a lista sabe a posição do card. */
+    /** @deprecated Sobrou do foil antigo, que era um brilho em loop com atraso
+        por card. A carta rara agora é só a moldura chanfrada — não há animação
+        a defasar. Continua aceito só pra não quebrar quem ainda passa. */
     foilDelay?: string
     statusBadge: ReactNode      // badge do topo-esquerda (obrigatório: todo card tem status)
     extraBadges?: ReactNode     // badges extras empilhadas abaixo do status (ex: "Novo EP")
@@ -24,19 +25,24 @@ interface AnimeCardProps {
 
 export default function AnimeCard({
     malId, title, imageUrl, genre, score, ranking, isFavorite,
-    gradientClass, foilDelay, statusBadge, extraBadges, topRightAction,
+    gradientClass, statusBadge, extraBadges, topRightAction,
 }: AnimeCardProps) {
     const [imagemFalhou, setImagemFalhou] = useState(false)
     const semCapa = !imageUrl || imagemFalhou
     const temNota = score !== null && score !== undefined
     const temRanking = ranking !== undefined && ranking !== null
 
-    return (
+    // O favorito não leva o hover:-translate-y: quem sobe é a moldura, que é o
+    // elemento de fora. Se os dois subissem, o movimento dobrava.
+    const movimentoPadrao = isFavorite ? 'active:scale-[0.98]' : 'active:scale-[0.98] hover:-translate-y-1'
+
+    const conteudo = (
         <div
-            className={`relative aspect-[3/4.2] rounded-[14px] overflow-hidden p-3 pb-2.5 flex flex-col justify-end border transition-transform active:scale-[0.98] hover:-translate-y-1 group ${
-                isFavorite ? 'foil-card border-gold/50 shadow-[0_0_15px_rgba(255,197,66,0.15)]' : `border-line bg-panel ${gradientClass}`
+            className={`relative aspect-[3/4.2] overflow-hidden p-3 pb-2.5 flex flex-col justify-end transition-transform group ${movimentoPadrao} ${
+                isFavorite
+                    ? 'carta-rara-corpo'
+                    : `rounded-[14px] border border-line bg-panel ${gradientClass}`
             }`}
-            style={isFavorite && foilDelay ? ({ '--foil-atraso': foilDelay } as CSSProperties) : undefined}
         >
             <Link to={`/anime/${malId}`} className="absolute inset-0 z-10" aria-label={title} />
 
@@ -117,4 +123,8 @@ export default function AnimeCard({
             </div>
         </div>
     )
+
+    if (!isFavorite) return conteudo
+
+    return <div className="carta-rara-moldura">{conteudo}</div>
 }
