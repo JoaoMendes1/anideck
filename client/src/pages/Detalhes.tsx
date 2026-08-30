@@ -132,7 +132,9 @@ export default function Detalhes() {
       }
     }
     if (id) fetchData()
-  }, [id])
+    // reportarFalha/reportarSucesso vêm de useCallback(..., []) no CatalogoStatusContext:
+    // a identidade nunca muda, então entram na lista sem alterar quando o efeito roda.
+  }, [id, reportarFalha, reportarSucesso])
 
   const handleAtualizarEntradaRapida = async (novoStatus: string) => {
     setSalvandoStatus(true)

@@ -99,7 +99,9 @@ export default function MeuDeck() {
         }
 
         carregarDeck()
-    }, [])
+        // reportarFalha/reportarSucesso vêm de useCallback(..., []) no CatalogoStatusContext:
+        // a identidade nunca muda, então entram na lista sem alterar quando o efeito roda.
+    }, [reportarFalha, reportarSucesso])
 
     const stats = useMemo(() => {
         let assistindo = 0, emDia = 0, concluidos = 0, dropados = 0, somaNotas = 0, qtdNotas = 0;
