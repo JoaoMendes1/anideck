@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { createPortal } from 'react-dom'
 import { supabase } from '../lib/supabase'
 import { useToast } from '../contexts/ToastContext'
@@ -38,7 +38,20 @@ export default function EditarEntradaModal({ entrada, onFechar, onSalvar, onExcl
     const [erro, setErro] = useState<string | null>(null)
     const [confirmandoExclusao, setConfirmandoExclusao] = useState(false)
 
-    useEffect(() => {
+    // Ajuste de estado durante o render, e não num efeito.
+    //
+    // O gatilho é o mesmo de antes (`entrada` mudar de identidade), mas o React
+    // reexecuta o componente na hora, sem pintar o quadro intermediário — antes havia
+    // um instante em que o formulário aparecia com os valores da entrada anterior.
+    //
+    // O `key` para remontar, que seria a outra saída, não serve aqui: ele apagaria o
+    // entradaCache, e é justamente ele que segura o conteúdo na tela durante a animação
+    // de fechamento, quando `entrada` já voltou a ser null.
+    const [entradaAnterior, setEntradaAnterior] = useState<Entrada | null>(null)
+
+    if (entrada !== entradaAnterior) {
+        setEntradaAnterior(entrada)
+
         if (entrada) {
             setEntradaCache(entrada)
             setStatus(entrada.status)
@@ -56,7 +69,7 @@ export default function EditarEntradaModal({ entrada, onFechar, onSalvar, onExcl
             setSalvando(false)
             setErro(null)
         }
-    }, [entrada])
+    }
 
     const handleSalvar = async () => {
         if (!entradaCache) return
