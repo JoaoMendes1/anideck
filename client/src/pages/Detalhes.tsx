@@ -31,7 +31,9 @@ interface AnimeDetail {
   // mal_id é opcional: a AniList devolve `idMal` nulo em parte do catálogo, e o backend
   // omite o campo nesse caso em vez de mandar 0 — que virava um link para /anime/0.
   relations: { relation: string; entry: { mal_id?: number | null; type: string; name: string; image?: string }[] }[]
-  characters?: { id: number; name: string; image: string; role: string }[]
+  // id é opcional: o elenco curado no Painel é gravado sem ele, e o backend omite o campo
+  // em vez de mandar 0 — que colidia como chave para o elenco inteiro.
+  characters?: { id?: number | null; name: string; image: string; role: string }[]
   streamingEpisodes?: { title: string; thumbnail: string; url: string; site: string }[]
   nextAiringEpisode?: { airingAt: number; timeUntilAiring: number; episode: number }
 }

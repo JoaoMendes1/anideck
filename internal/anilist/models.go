@@ -23,7 +23,10 @@ type Genre struct {
 }
 
 type Character struct {
-	ID    int    `json:"id"`
+	// Ponteiro porque o elenco curado no Painel é gravado como {name, image, role}, sem id:
+	// como `int`, o campo ausente virava 0 para TODO personagem curado, e o React recebia uma
+	// lista inteira com a mesma key. Ponteiro distingue "não tem id" de "o id é zero".
+	ID    *int   `json:"id,omitempty"`
 	Name  string `json:"name"`
 	Image string `json:"image"`
 	Role  string `json:"role"`
