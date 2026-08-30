@@ -31,6 +31,22 @@ interface HydratedAnime {
     streaming?: { name: string; url: string }[]
 }
 
+// Formato de cada item devolvido por POST /api/anime/bulk.
+// Derivado de `anilist.Anime` (internal/anilist/models.go), e não dos campos que esta
+// tela consome — só os usados aqui estão declarados.
+//
+// `genres` e `streaming` não têm `omitempty` na struct Go: quando a lista é nula, o JSON
+// traz `null` e não `[]`. Por isso os dois aceitam null explicitamente.
+interface AnimeDaApi {
+    mal_id: number
+    title: string
+    ranking?: number
+    images: { jpg: { image_url: string } }
+    genres: { name: string }[] | null
+    streaming: { name: string; url: string }[] | null
+    nextAiringEpisode?: AiringInfo
+}
+
 const FILTER_TABS = ['Todos', 'Assistindo', 'Em Dia', 'Completo', 'Quero Assistir', 'Dropado']
 
 export default function MeuDeck() {
@@ -77,7 +93,7 @@ export default function MeuDeck() {
                         const media = apiJson.data || []
 
                         const mapaAnimes: Record<number, HydratedAnime> = {}
-                        media.forEach((m: any) => {
+                        media.forEach((m: AnimeDaApi) => {
                             mapaAnimes[m.mal_id] = {
                                 mal_id: m.mal_id,
                                 title: m.title || 'Título indisponível',
@@ -85,7 +101,10 @@ export default function MeuDeck() {
                                 genre: m.genres && m.genres.length > 0 ? m.genres[0].name : undefined,
                                 ranking: m.ranking,
                                 nextAiringEpisode: m.nextAiringEpisode,
-                                streaming: m.streaming
+                                // `?? undefined` porque a struct Go manda `null` quando não há
+                                // links; os consumidores só testam veracidade, então os dois são
+                                // equivalentes na tela.
+                                streaming: m.streaming ?? undefined
                             }
                         })
                         setAnimesData(mapaAnimes)

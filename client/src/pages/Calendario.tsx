@@ -27,6 +27,25 @@ interface HydratedAnime {
     }[]
 }
 
+// Formato de cada item devolvido por POST /api/anime/bulk.
+// Derivado de `anilist.Anime` (internal/anilist/models.go), e não dos campos que esta
+// tela consome — só os usados aqui estão declarados.
+//
+// `genres` e `streaming` não têm `omitempty` na struct Go: quando a lista é nula, o JSON
+// traz `null` e não `[]`. Por isso os dois aceitam null explicitamente.
+interface AnimeDaApi {
+    mal_id: number
+    title: string
+    images: { jpg: { image_url: string } }
+    genres: { name: string }[] | null
+    streaming: { name: string; url: string }[] | null
+    nextAiringEpisode?: {
+        airingAt: number
+        timeUntilAiring: number
+        episode: number
+    }
+}
+
 export default function Calendario() {
     const [animes, setAnimes] = useState<HydratedAnime[]>([])
     const [loading, setLoading] = useState(true)
@@ -84,7 +103,7 @@ export default function Calendario() {
                 }
 
                 const animesComEpisodio: HydratedAnime[] = []
-                media.forEach((m: any) => {
+                media.forEach((m: AnimeDaApi) => {
                     if (m.nextAiringEpisode) {
                         const entry = userEntries.find(e => e.mal_id === m.mal_id)
                         animesComEpisodio.push({
@@ -93,7 +112,9 @@ export default function Calendario() {
                             image_url: m.images?.jpg?.image_url || '',
                             genre: m.genres && m.genres.length > 0 ? m.genres[0].name : undefined,
                             nextAiringEpisode: m.nextAiringEpisode,
-                            streaming: m.streaming,
+                            // `?? undefined` porque a struct Go manda `null` quando não há
+                            // links; os consumidores só testam veracidade.
+                            streaming: m.streaming ?? undefined,
                             is_favorite: entry?.is_favorite
                         })
                     }
