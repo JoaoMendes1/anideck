@@ -336,8 +336,16 @@ func (m *aniListMedia) toAnime() Anime {
 
 	var chars []Character
 	for _, edge := range m.Characters.Edges {
+		// Personagem da AniList sempre tem id; o ponteiro existe para o elenco curado, que
+		// não tem. Manter nil quando não houver id é o que evita a colisão de chaves na tela.
+		var charID *int
+		if edge.Node.ID > 0 {
+			id := edge.Node.ID
+			charID = &id
+		}
+
 		chars = append(chars, Character{
-			ID:    edge.Node.ID,
+			ID:    charID,
 			Name:  edge.Node.Name.Full,
 			Image: edge.Node.Image.Large,
 			Role:  edge.Role,
