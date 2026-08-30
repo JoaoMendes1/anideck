@@ -24,6 +24,21 @@ export function gradienteDoCard(indice: number): string {
     return GRADIENTES_CARD[indice % GRADIENTES_CARD.length]
 }
 
+/** Defasa o brilho do foil pela posição do card, para os favoritos não brilharem
+    em uníssono — o que denuncia o loop e faz a tela inteira piscar junto.
+
+    Devolve atraso NEGATIVO de propósito: com atraso positivo o card ficaria os
+    primeiros segundos sem brilho nenhum, esperando a vez. Negativo entra com a
+    animação já em andamento.
+
+    O passo de 2.3s contra o ciclo de 10s do `foilShine` só volta a repetir
+    depois de 100 cards, então numa tela de favoritos dois nunca coincidem. O valor sai
+    daqui e não de uma classe do Tailwind porque classe montada por interpolação
+    não é gerada — ver armadilha 17 do PITFALLS.md. */
+export function atrasoDoFoil(indice: number): string {
+    return `-${((indice * 2.3) % 10).toFixed(2)}s`
+}
+
 // Extraído do MeuDeck.tsx pra ser reusado pelo DeckCard sem duplicar o switch.
 export function getStatusTheme(status: string): StatusTheme {
     switch (status) {
