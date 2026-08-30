@@ -96,13 +96,26 @@ export default function Busca() {
         !!selectedStatus ||
         !!selectedSeason
 
-    useEffect(() => {
+    // A limpeza dos resultados acontece na TRANSIÇÃO para "sem filtro", ajustada durante o
+    // render em vez de dentro do efeito.
+    //
+    // Antes ela rodava a cada execução do efeito enquanto não houvesse filtro — e como
+    // `setResultados([])` cria um array novo toda vez, cada uma dessas execuções forçava
+    // um render a mais sem nada ter mudado na tela. Mexer no `sort` com a busca vazia,
+    // por exemplo, disparava isso.
+    const [tinhaFiltro, setTinhaFiltro] = useState(hasAnyFilter)
+
+    if (tinhaFiltro !== hasAnyFilter) {
+        setTinhaFiltro(hasAnyFilter)
         if (!hasAnyFilter) {
             setResultados([])
             setHasSearched(false)
             setError(null)
-            return
         }
+    }
+
+    useEffect(() => {
+        if (!hasAnyFilter) return
 
         const controller = new AbortController()
 
