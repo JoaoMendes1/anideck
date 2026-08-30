@@ -380,8 +380,13 @@ export default function Detalhes() {
                   <span className="font-mono text-[11px] text-holo-3">02</span> Personagens
                 </h2>
                 <div className="flex gap-4 overflow-x-auto pb-4 custom-scrollbar snap-x">
+                  {/* A chave cai para o nome quando o id é 0.
+                      Personagem vindo da AniList tem id próprio, mas o elenco curado no
+                      Painel é gravado como {name, image, role} — sem id — e o Go desserializa
+                      isso em Character{ID: 0}. Resultado: TODO o elenco curado chegava aqui
+                      com key={0}, e o React reaproveitava o componente errado ao atualizar. */}
                   {anime.characters.map(char => (
-                    <div key={char.id} className="flex-none w-[110px] sm:w-[130px] snap-start group">
+                    <div key={char.id || char.name} className="flex-none w-[110px] sm:w-[130px] snap-start group">
                       <div className="aspect-[3/4] rounded-xl overflow-hidden mb-2 bg-panel-2 border border-line">
                         <img src={char.image} alt={char.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
                       </div>
