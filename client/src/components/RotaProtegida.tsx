@@ -1,18 +1,9 @@
-import { useState, useEffect } from 'react'
 import { Navigate } from 'react-router-dom'
-import type { Session } from '@supabase/supabase-js'
-import { supabase } from '../lib/supabase'
+import { useSessao } from '../contexts/SessaoContext'
 
 export default function RotaProtegida({ children }: { children: React.ReactNode }) {
-    const [session, setSession] = useState<Session | null>(null)
-    const [carregando, setCarregando] = useState(true)
 
-    useEffect(() => {
-        supabase.auth.getSession().then(({ data: { session } }) => {
-            setSession(session)
-            setCarregando(false)
-        })
-    }, [])
+    const { session, carregando } = useSessao()
 
     if (carregando) {
         return <div className="p-10 text-center text-muted font-mono text-sm">Carregando...</div>
