@@ -92,10 +92,37 @@ export default function Rankings() {
         carregarDeck()
     }, [])
 
-    useEffect(() => {
+    // Voltar para a página 1 ao trocar de filtro acontece durante o RENDER, não num efeito.
+    //
+    // Era isso que gerava duas requisições. Como efeito, a sequência era: o reset roda,
+    // agenda setPage(1), e o efeito de busca roda LOGO EM SEGUIDA no mesmo commit — ainda
+    // enxergando o `page` antigo, porque o agendamento só vale no render seguinte. Resultado:
+    // uma busca da página antiga com o filtro novo, em modo "acrescentar", e só depois a
+    // correta. Sem garantia de ordem de chegada, a obsoleta podia aterrissar por último e
+    // deixar itens do filtro anterior grudados na lista.
+    //
+    // Ajustando no render, o React reexecuta o componente antes de fazer o commit: quando os
+    // efeitos rodam, `page` já vale 1 e `fetchRanking` já carrega os filtros novos. Só existe
+    // um par consistente, então sai uma requisição só — não há resposta obsoleta a descartar,
+    // e por isso a corrida deixa de ser possível sem precisar de AbortController.
+    const [filtrosAnteriores, setFiltrosAnteriores] = useState({
+        selectedFilters, selectedStatus, selectedSeason, selectedYear, selectedSort,
+    })
+
+    const filtrosMudaram =
+        filtrosAnteriores.selectedFilters !== selectedFilters ||
+        filtrosAnteriores.selectedStatus !== selectedStatus ||
+        filtrosAnteriores.selectedSeason !== selectedSeason ||
+        filtrosAnteriores.selectedYear !== selectedYear ||
+        filtrosAnteriores.selectedSort !== selectedSort
+
+    if (filtrosMudaram) {
+        // A comparação é por identidade em cada campo, igual ao que a lista de dependências
+        // do efeito antigo fazia — mesmo gatilho, momento diferente.
+        setFiltrosAnteriores({ selectedFilters, selectedStatus, selectedSeason, selectedYear, selectedSort })
         setAnimes([])
         setPage(1)
-    }, [selectedFilters, selectedStatus, selectedSeason, selectedYear, selectedSort])
+    }
 
     const fetchRanking = useCallback(async (currentPage: number, replace: boolean) => {
         setLoading(true)
