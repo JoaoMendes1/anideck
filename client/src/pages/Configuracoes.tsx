@@ -4,6 +4,7 @@ import { supabase } from '../lib/supabase'
 import { useToast } from '../contexts/ToastContext'
 import { useCatalogoStatus } from '../contexts/CatalogoStatusContext'
 import EmBreve from '../components/EmBreve'
+import { TEMAS, aplicarTema, useTema } from '../lib/temas'
 import { ChevronDown, MessageSquare, Check, AlertTriangle } from 'lucide-react'
 
 const ABAS = [
@@ -34,16 +35,6 @@ const FAQ = [
         p: 'Por que às vezes as capas somem?',
         r: 'Quando a AniList está fora do ar, o AniDeck continua mostrando seu Deck normalmente, mas sem os dados de catálogo. Seus animes, notas e progresso nunca dependem dela — ficam salvos aqui.',
     },
-]
-
-// Paletas exibidas na seção Aparência. As cores aqui são literais de propósito:
-// são a AMOSTRA de cada tema, então precisam aparecer iguais independentemente
-// de qual tema estiver ativo. Não confundir com cor cravada em componente.
-const TEMAS = [
-    { nome: 'Holo', desc: 'O visual atual', cores: ['#0A0714', '#FF4FD8', '#7B5CFF', '#3FE0F0'] },
-    { nome: 'Terminal', desc: 'Verde de console antigo', cores: ['#050A08', '#A0FF78', '#3FE0F0', '#1F6B4A'] },
-    { nome: 'Arquivo', desc: 'Âmbar e papel envelhecido', cores: ['#120C08', '#FFC542', '#FF8A5C', '#8A5A2B'] },
-    { nome: 'Estúdio', desc: 'Sóbrio, sem gradiente', cores: ['#12141A', '#4A7DFF', '#8C96AD', '#2A3040'] },
 ]
 
 function Secao({ id, titulo, children }: { id: string; titulo: string; children: ReactNode }) {
@@ -77,6 +68,7 @@ function LinhaToggle({ titulo, desc, ligado }: { titulo: string; desc: string; l
 
 export default function Configuracoes() {
     const { showToast } = useToast()
+    const temaAtivo = useTema()
     const { indisponivel } = useCatalogoStatus()
 
     const [carregando, setCarregando] = useState(true)
@@ -210,32 +202,33 @@ export default function Configuracoes() {
 
             {/* APARÊNCIA */}
             <Secao id="aparencia" titulo="Aparência">
-                <EmBreve nota="Requer refatoração dos design tokens">
-                    <Card>
-                        <p className="text-[12.5px] text-muted mb-4">
-                            Escolha a paleta de cores do AniDeck.
-                        </p>
-                        <div className="grid grid-cols-2 gap-3">
-                            {TEMAS.map((tema, i) => (
-                                <div
-                                    key={tema.nome}
-                                    className={`rounded-xl border p-3.5 ${i === 0 ? 'border-holo-2 bg-holo-2/10' : 'border-line bg-panel-2'}`}
-                                >
-                                    <div className="flex items-center justify-between mb-2.5">
-                                        <span className="text-[13px] font-bold">{tema.nome}</span>
-                                        {i === 0 && <Check size={14} className="text-holo-2" />}
-                                    </div>
-                                    <div className="flex gap-1.5 mb-2">
-                                        {tema.cores.map((c) => (
-                                            <div key={c} className="w-5 h-5 rounded-full border border-white/10" style={{ background: c }} />
-                                        ))}
-                                    </div>
-                                    <span className="text-[11px] text-muted-2">{tema.desc}</span>
+                <Card>
+                    <p className="text-[12.5px] text-muted mb-4">
+                        Escolha a paleta de cores do AniDeck.
+                    </p>
+                    <div className="grid grid-cols-2 gap-3">
+                        {TEMAS.map((tema) => (
+                            <button
+                                key={tema.id}
+                                type="button"
+                                onClick={() => aplicarTema(tema.id)}
+                                aria-pressed={tema.id === temaAtivo}
+                                className={`text-left cursor-pointer rounded-xl border p-3.5 transition-colors ${tema.id === temaAtivo ? 'border-holo-2 bg-holo-2/10' : 'border-line bg-panel-2 hover:border-muted-2'}`}
+                            >
+                                <div className="flex items-center justify-between mb-2.5">
+                                    <span className="text-[13px] font-bold">{tema.nome}</span>
+                                    {tema.id === temaAtivo && <Check size={14} className="text-holo-2" />}
                                 </div>
-                            ))}
-                        </div>
-                    </Card>
-                </EmBreve>
+                                <div className="flex gap-1.5 mb-2">
+                                    {tema.cores.map((c) => (
+                                        <div key={c} className="w-5 h-5 rounded-full border border-white/10" style={{ background: c }} />
+                                    ))}
+                                </div>
+                                <span className="text-[11px] text-muted-2">{tema.desc}</span>
+                            </button>
+                        ))}
+                    </div>
+                </Card>
             </Secao>
 
             {/* NOTIFICAÇÕES */}

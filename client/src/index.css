@@ -46,6 +46,96 @@
   --grad-foil-topo: #1a1525;
 }
 
+/* 3.2 Temas.
+   Cada tema redefine SO os tokens de cor — nenhuma classe muda de nome, nenhum
+   componente sabe que temas existem. As paletas preservam as relacoes da Holo
+   (os degraus de luminosidade entre void/panel/panel-2/line, e o leque de matizes
+   dos gradientes decorativos), mudando o matiz e a saturacao. Por isso nenhuma tela
+   quebra: o contraste entre camadas continua o mesmo.
+
+   gold, green e coral ficam de fora de proposito: sao cores semanticas (nota,
+   "em dia", erro) e mudam de significado se mudarem de tema.
+
+   Holo e o padrao e vive no @theme acima — nao tem bloco aqui. */
+
+/* Terminal — Verde de console antigo. */
+html[data-tema='terminal'] {
+  --color-void: #050A08;
+  --color-panel: #121F1A;
+  --color-panel-2: #172B24;
+  --color-line: #1F6B4A;
+  --color-text: #F0F8F5;
+  --color-muted: #A2C2B6;
+  --color-muted-2: #678C7E;
+
+  --color-holo-1: #A0FF78;
+  --color-holo-2: #70F0B4;
+  --color-holo-3: #3FE0F0;
+
+  --grad-card-1: #214342;
+  --grad-card-2: #2F4321;
+  --grad-card-3: #212543;
+  --grad-card-4: #254321;
+  --grad-card-5: #432125;
+  --grad-card-base: #0F1E19;
+  --grad-pilha-1: #224538;
+  --grad-pilha-2: #2F4522;
+  --grad-pilha-3-meio: #152B23;
+  --grad-foil-topo: #18231F;
+}
+
+/* Arquivo — Ambar e papel envelhecido. */
+html[data-tema='arquivo'] {
+  --color-void: #120C08;
+  --color-panel: #201711;
+  --color-panel-2: #2D2016;
+  --color-line: #433326;
+  --color-text: #F9F3EF;
+  --color-muted: #C4B0A0;
+  --color-muted-2: #8F7764;
+
+  --color-holo-1: #FFC542;
+  --color-holo-2: #FF8A5C;
+  --color-holo-3: #8A5A2B;
+
+  --grad-card-1: #453D1F;
+  --grad-card-2: #451F36;
+  --grad-card-3: #2B451F;
+  --grad-card-4: #451F2B;
+  --grad-card-5: #1F2B45;
+  --grad-card-base: #20150D;
+  --grad-pilha-1: #48311F;
+  --grad-pilha-2: #481F36;
+  --grad-pilha-3-meio: #2D1E13;
+  --grad-foil-topo: #231C17;
+}
+
+/* Estudio — Sobrio, sem gradiente de marca. */
+html[data-tema='estudio'] {
+  --color-void: #12141A;
+  --color-panel: #15171C;
+  --color-panel-2: #1C1F27;
+  --color-line: #2A3040;
+  --color-text: #F2F3F6;
+  --color-muted: #8C96AD;
+  --color-muted-2: #6F7483;
+
+  --color-holo-1: #4A7DFF;
+  --color-holo-2: #4A7DFF;
+  --color-holo-3: #4A7DFF;
+
+  --grad-card-1: #2B293B;
+  --grad-card-2: #293B36;
+  --grad-card-3: #3B293B;
+  --grad-card-4: #293B3B;
+  --grad-card-5: #3B3B29;
+  --grad-card-base: #12141B;
+  --grad-pilha-1: #2A2F3D;
+  --grad-pilha-2: #2A3D38;
+  --grad-pilha-3-meio: #1A1D26;
+  --grad-foil-topo: #1A1C20;
+}
+
 /* 4. Estilos globais (Reset) aplicados a toda a página */
 @layer base {
   body {
