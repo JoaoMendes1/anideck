@@ -1,7 +1,7 @@
 // client/src/components/AnimeCard.tsx
 // Casco genérico do card em formato pôster. Usado pelo DeckCard (Meu Deck)
 // e pelo SearchResultCard (Busca) — cada um só monta os "slots" diferentes.
-import { useState, type ReactNode } from 'react'
+import { useState, type CSSProperties, type ReactNode } from 'react'
 import { Link } from 'react-router-dom'
 import { getCategoryTheme } from '../lib/filters'
 
@@ -14,6 +14,9 @@ interface AnimeCardProps {
     ranking?: number
     isFavorite?: boolean
     gradientClass: string
+    /** Atraso da animação do foil, já calculado pela lista (ver atrasoDoFoil).
+        Vem pronto de fora porque só a lista sabe a posição do card. */
+    foilDelay?: string
     statusBadge: ReactNode      // badge do topo-esquerda (obrigatório: todo card tem status)
     extraBadges?: ReactNode     // badges extras empilhadas abaixo do status (ex: "Novo EP")
     topRightAction?: ReactNode  // botão do canto superior direito (editar OU salvar)
@@ -21,7 +24,7 @@ interface AnimeCardProps {
 
 export default function AnimeCard({
     malId, title, imageUrl, genre, score, ranking, isFavorite,
-    gradientClass, statusBadge, extraBadges, topRightAction,
+    gradientClass, foilDelay, statusBadge, extraBadges, topRightAction,
 }: AnimeCardProps) {
     const [imagemFalhou, setImagemFalhou] = useState(false)
     const semCapa = !imageUrl || imagemFalhou
@@ -32,6 +35,7 @@ export default function AnimeCard({
             className={`relative aspect-[3/4.2] rounded-[14px] overflow-hidden p-3 flex flex-col justify-end border transition-transform active:scale-[0.98] hover:-translate-y-1 group ${
                 isFavorite ? 'foil-card border-gold/50 shadow-[0_0_15px_rgba(255,197,66,0.15)]' : `border-line bg-panel ${gradientClass}`
             }`}
+            style={isFavorite && foilDelay ? ({ '--foil-atraso': foilDelay } as CSSProperties) : undefined}
         >
             <Link to={`/anime/${malId}`} className="absolute inset-0 z-10" aria-label={title} />
 
