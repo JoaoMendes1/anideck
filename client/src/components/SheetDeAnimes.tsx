@@ -8,7 +8,7 @@
 // saber nada sobre autenticação nem sobre a API.
 import AnimeCard from './AnimeCard'
 import Sheet from './Sheet'
-import { getStatusTheme } from '../lib/deckHelpers'
+import { getStatusTheme, gradienteDoCard } from '../lib/deckHelpers'
 
 export interface AnimeDoGenero {
     mal_id: number
@@ -58,7 +58,7 @@ export default function SheetDeAnimes({ titulo, animes, carregando, onClose }: S
                                     title={anime.title || 'Título indisponível'}
                                     imageUrl={anime.image_url}
                                     score={anime.nota}
-                                    gradientClass={`card-g${(index % 5) + 1}`}
+                                    gradientClass={gradienteDoCard(index)}
                                     statusBadge={
                                         <span className={`select-none text-[9px] font-extrabold px-2 py-1 rounded-md uppercase tracking-wider border backdrop-blur-md truncate max-w-full ${tema.bg} ${tema.text} ${tema.border}`}>
                                             {anime.status}

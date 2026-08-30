@@ -4,6 +4,7 @@ import { supabase } from '../lib/supabase'
 import { Play, Calendar as CalendarIcon } from 'lucide-react'
 import { getCategoryTheme } from '../lib/filters'
 import type { AnimeDaApi } from '../types/anime'
+import { gradienteDoCard } from '../lib/deckHelpers'
 
 interface Entrada {
     mal_id: number
@@ -247,7 +248,7 @@ export default function Calendario() {
 
                                 <div className="flex flex-col gap-3">
                                     {group.animes.map((anime, index) => {
-                                        const gradClass = `card-g${(index % 5) + 1}`
+                                        const gradClass = gradienteDoCard(index)
                                         const streamUrl = anime.streaming ? anime.streaming.find(s => s.name.toLowerCase().includes('crunchyroll'))?.url || anime.streaming.find(s => s.name.toLowerCase().includes('netflix'))?.url || anime.streaming[0]?.url : null
                                         const remainingText = formatTimeRemaining(anime.nextAiringEpisode!.airingAt)
                                         const isLanchado = remainingText === 'Lançado!'

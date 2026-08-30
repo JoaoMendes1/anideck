@@ -11,6 +11,7 @@ import {
 import SearchResultCard from '../components/SearchResultCard'
 import FilterSheet from '../components/FilterSheet'
 import FilterChipGroup from '../components/FilterChipGroup'
+import { gradienteDoCard } from '../lib/deckHelpers'
 
 interface Anime {
     mal_id: number
@@ -433,7 +434,7 @@ export default function Busca() {
                             <SearchResultCard
                                 key={`${anime.mal_id}-${index}`}
                                 anime={anime}
-                                gradientClass={`card-g${(index % 5) + 1}`}
+                                gradientClass={gradienteDoCard(index)}
                                 isSaved={savedEntries.some(e => e.mal_id === anime.mal_id)}
                                 isFavorite={savedEntries.find(e => e.mal_id === anime.mal_id)?.is_favorite}
                                 isSaving={savingIds.includes(anime.mal_id)}
