@@ -7,6 +7,28 @@
     <title>AniDeck</title>
     <link rel="manifest" href="/manifest.json" />
     <meta name="theme-color" content="#0A0714" />
+
+    <!--
+      Aplica o tema salvo ANTES de qualquer pintura. Este script é inline e
+      síncrono de propósito: se virasse módulo, ganhasse `defer` ou fosse parar no
+      main.tsx, o navegador já teria pintado um quadro na paleta padrão e o usuário
+      veria o roxo piscar antes do tema dele aparecer.
+
+      O mapa de fundos está duplicado em src/lib/temas.ts — ver o aviso de lá.
+    -->
+    <script>
+      (function () {
+        var FUNDOS = { holo: '#0A0714', terminal: '#050A08', arquivo: '#120C08', estudio: '#12141A' }
+        try {
+          var id = localStorage.getItem('anideck:tema')
+          if (!id || !FUNDOS[id] || id === 'holo') return
+          document.documentElement.setAttribute('data-tema', id)
+          document.querySelector('meta[name="theme-color"]').setAttribute('content', FUNDOS[id])
+        } catch (e) {
+          /* Armazenamento bloqueado: segue no tema padrão. */
+        }
+      })()
+    </script>
   </head>
   <body>
     <div id="root"></div>
