@@ -115,6 +115,55 @@ export default function PainelAdmin() {
 
   const [initialStateHash, setInitialStateHash] = useState('')
 
+  // Declaradas antes do efeito que as usa: acessar uma const antes da linha em que ela
+  // e declarada e valido em execucao (o efeito so roda depois do render), mas o linter
+  // sinaliza, e ler de cima pra baixo fica mais simples assim.
+ const verificarAcesso = async () => {
+    const { data: { session } } = await supabase.auth.getSession()
+    if (!session) {
+      setIsAdmin(false)
+      return
+    }
+    try {
+      const response = await fetch('/api/admin/verify', { headers: { Authorization: `Bearer ${session.access_token}` } })
+      setIsAdmin(response.ok)
+      if (response.ok) {
+        carregarDestaques()
+        carregarStatusSistema(session.access_token)
+      }
+    } catch {
+      setIsAdmin(false)
+    }
+  }
+  // 	Verifica admin, carrega destaques e status da API, além de permitir alternar kill switch
+  const carregarStatusSistema = async (token: string) => {
+    try {
+      const res = await fetch('/api/admin/system/status', {
+        headers: { Authorization: `Bearer ${token}` }
+      })
+      if (res.ok) {
+        const data = await res.json()
+        setApiHealth(data.api_health)
+        setForceOffline(data.force_offline)
+      }
+    } catch (e) {
+      console.error("Erro ao ler status do sistema", e)
+    }
+  }
+
+  const carregarDestaques = async () => {
+    try {
+      const response = await fetch('/api/curation')
+      if (!response.ok) throw new Error('Falha ao carregar destaques')
+      const data = await response.json()
+      setDestaques(data || [])
+    } catch (err) {
+      setError((err as Error).message)
+    } finally {
+      setLoading(false)
+    }
+  }
+
   useEffect(() => {
     verificarAcesso()
   }, [])
@@ -168,39 +217,6 @@ export default function PainelAdmin() {
     setAcaoPendente(null)
   }
    //	Verifica admin, carrega destaques e status da API, além de permitir alternar kill switch
- const verificarAcesso = async () => {
-    const { data: { session } } = await supabase.auth.getSession()
-    if (!session) {
-      setIsAdmin(false)
-      return
-    }
-    try {
-      const response = await fetch('/api/admin/verify', { headers: { Authorization: `Bearer ${session.access_token}` } })
-      setIsAdmin(response.ok)
-      if (response.ok) {
-        carregarDestaques()
-        carregarStatusSistema(session.access_token)
-      }
-    } catch {
-      setIsAdmin(false)
-    }
-  }
-  // 	Verifica admin, carrega destaques e status da API, além de permitir alternar kill switch
-  const carregarStatusSistema = async (token: string) => {
-    try {
-      const res = await fetch('/api/admin/system/status', {
-        headers: { Authorization: `Bearer ${token}` }
-      })
-      if (res.ok) {
-        const data = await res.json()
-        setApiHealth(data.api_health)
-        setForceOffline(data.force_offline)
-      }
-    } catch (e) {
-      console.error("Erro ao ler status do sistema", e)
-    }
-  }
-
   const toggleKillSwitch = async () => {
     const novoStatus = !forceOffline
     setForceOffline(novoStatus) // Atualização otimista na tela
@@ -219,19 +235,6 @@ export default function PainelAdmin() {
     } catch {
       setForceOffline(!novoStatus) // Reverte se a API falhar
       showToast('Erro ao alterar status do sistema', 'error')
-    }
-  }
-
-  const carregarDestaques = async () => {
-    try {
-      const response = await fetch('/api/curation')
-      if (!response.ok) throw new Error('Falha ao carregar destaques')
-      const data = await response.json()
-      setDestaques(data || [])
-    } catch (err) {
-      setError((err as Error).message)
-    } finally {
-      setLoading(false)
     }
   }
 

@@ -14,13 +14,6 @@ export default function ConfigIAModal({ isOpen, onClose }: ConfigIAModalProps) {
   const [carregandoPrompt, setCarregandoPrompt] = useState(false)
   const [salvandoPrompt, setSalvandoPrompt] = useState(false)
 
-  // Sempre que o modal abrir, busca o prompt atual no banco
-  useEffect(() => {
-    if (isOpen) {
-      carregarPrompt()
-    }
-  }, [isOpen])
-
   const carregarPrompt = async () => {
     setCarregandoPrompt(true)
     try {
@@ -37,6 +30,13 @@ export default function ConfigIAModal({ isOpen, onClose }: ConfigIAModalProps) {
       setCarregandoPrompt(false)
     }
   }
+
+  // Sempre que o modal abrir, busca o prompt atual no banco
+  useEffect(() => {
+    if (isOpen) {
+      carregarPrompt()
+    }
+  }, [isOpen])
 
   const salvarConfigIA = async () => {
     setSalvandoPrompt(true)
