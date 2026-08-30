@@ -324,6 +324,44 @@ no ar e vêm sempre preenchidos — mas isso é observação, não garantia.
 > ele precisa ser ponteiro no Go. `0` não é "sem valor": é um número válido que
 > colide com todos os outros ausentes, e vira link para `/anime/0`.
 
+## 17. 🎨 Classe do Tailwind montada por interpolação nunca é gerada
+
+**Incidente (30/08/2026):** descoberto de raspão, ao verificar o CSS compilado durante a
+tokenização das cores (#88). As classes `card-g1` a `card-g5` estavam definidas como
+`@utility` no `index.css`, mas **nenhuma das cinco aparecia no bundle**. Os cards de anime sem
+capa mostravam fundo liso desde sempre — o gradiente de fallback nunca existiu na tela.
+
+**Causa:** o Tailwind v4 varre o código-fonte procurando nomes de classe **literais** e só emite
+o utilitário para os que encontra. Os cinco pontos de uso montavam o nome por interpolação:
+
+```tsx
+gradientClass={`card-g${(index % 5) + 1}`}   // o scanner nunca vê "card-g1"
+```
+
+**O que torna isso silencioso:** absolutamente nada acusa. O TypeScript compila — é uma string
+válida. O ESLint não tem o que dizer. O build passa. A classe até **aparece no DOM**, no
+`class` do elemento, exatamente como escrita. O que não existe é a regra CSS correspondente, e
+o navegador ignora classe sem regra em silêncio. Inspecionar o elemento mostra a classe lá e
+não explica por que nada acontece.
+
+**O agravante:** o projeto **já sabia disso**. O `StatCard.tsx` tem um comentário explicando a
+mesma armadilha, escrito quando alguém tentou gerar `border-t-${cor}` e mapeou os valores
+explicitamente para contorná-la. Saber num arquivo não impediu de repetir em cinco outros —
+`MeuDeck`, `Busca`, `Calendario`, `SheetDeAnimes` e `VitrineDestaques`.
+
+**Como achar:** procurar por caractere de nome de classe colado num `${`. Uma varredura por
+`([A-Za-z][A-Za-z0-9-]*)\$\{` sobre o `client/src` encontra todos os casos. Atenção aos falsos
+positivos: interpolar a string de classe **inteira** (`` `${base} text-coral` ``, ou o retorno de
+uma função como `getCategoryTheme`) é seguro, porque o literal existe em algum arquivo varrido.
+O perigo é interpolar o **sufixo**.
+
+Corrigido em 30/08/2026: os cinco nomes passaram a viver escritos por extenso num array em
+`deckHelpers`, atrás de `gradienteDoCard(indice)`. É o que o `StatCard` já fazia.
+
+> **Pergunta obrigatória:** este nome de classe existe literal em algum arquivo que o Tailwind
+> varre? Se ele é montado com `${...}`, a regra CSS não vai existir — e nada vai te avisar.
+> Escreva os nomes por extenso num array e indexe.
+
 ## 🧭 Como manter este arquivo
 
 - Toda vez que um bug **silencioso** chegar a produção (não quebrou, só devolveu dado errado),
