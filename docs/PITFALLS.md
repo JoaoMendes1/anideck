@@ -52,12 +52,56 @@ não de quem consulta. Confiar na RLS da tabela base é vazamento garantido.
 **Regra:** toda view que expõe dado de usuário precisa de `WHERE user_id = auth.uid()`
 **explícito**. Sem exceção, inclusive em views novas.
 
-**Efeito colateral no teste:** por causa desse filtro, rodar essas views no SQL Editor do
-Supabase devolve **zero linhas** — lá você é `postgres` e `auth.uid()` volta `NULL`. Parece que
-a query quebrou, mas não quebrou. Teste pelo Postman com o JWT ou pela tela.
+**Atualização (31/08/2026) — a causa foi tratada, mas só nas views que já existiam.** O
+`sql/017` ligou `security_invoker = on` nas 16 views do `public`: elas passaram a rodar no
+contexto de **quem consulta**, e a RLS da tabela-base voltou a valer sozinha. O filtro explícito
+**continua em todas e não deve ser removido** — o objetivo é a mesma dupla camada do item 7.
 
-> **Pergunta obrigatória:** esta view expõe dado de usuário? Tem `auth.uid()` explícito? E as
-> views que ela consulta por dentro, têm?
+**Onde mora o risco hoje:**
+
+- **View nova nasce desprotegida.** O default do Postgres continua sendo
+  `security_invoker = off`. Criar sempre com `CREATE VIEW ... WITH (security_invoker = on)`
+  **e** com o `auth.uid()` explícito.
+- **O Table Editor do Supabase omite a cláusula.** Ao exibir a definição de uma view, o painel
+  monta um `CREATE VIEW` **sem** o `WITH (security_invoker = on)` — bug conhecido do Dashboard.
+  Copiar dali, editar e rodar devolve a view para security definer, sem erro e sem aviso, e a
+  RLS cai de novo. Use `pg_get_viewdef('nome'::regclass, true)` e reescreva a cláusula à mão.
+  *Isto ainda não aconteceu aqui; está registrado porque o caminho que dispara é o mais natural
+  do painel.*
+- **Ligar o invoker exige permissão na tabela-base.** Com `security_invoker = on`, a view precisa
+  que `authenticated` tenha `SELECT` **e** policy de leitura em cada tabela que ela consulta.
+  Faltando qualquer um, a view devolve **vazio, sem erro** — troca um modo de falha silencioso
+  por outro.
+
+**Como verificar de verdade:** o estado vivo está no catálogo, não nos arquivos do `sql/`.
+
+```sql
+SELECT c.relname AS view,
+       COALESCE((SELECT option_value FROM pg_options_to_table(c.reloptions)
+                 WHERE option_name = 'security_invoker'), 'off') AS invoker
+FROM pg_class c JOIN pg_namespace n ON n.oid = c.relnamespace
+WHERE c.relkind = 'v' AND n.nspname = 'public'
+ORDER BY invoker, c.relname;
+```
+
+E, para provar que o filtro recorta de fato, dá para **fingir ser outro usuário** dentro de uma
+transação abortada — read-only, seguro mesmo com produção e homologação no mesmo banco
+(item 11):
+
+```sql
+BEGIN;
+SET LOCAL ROLE authenticated;
+SET LOCAL request.jwt.claims = '{"sub":"<uuid-de-teste>","role":"authenticated"}';
+SELECT count(*) FROM <a_view>;   -- usuário inexistente tem que devolver 0
+ROLLBACK;
+```
+
+**Efeito colateral no teste:** por causa do filtro, rodar essas views no SQL Editor do
+Supabase devolve **zero linhas** — lá você é `postgres` e `auth.uid()` volta `NULL`. Parece que
+a query quebrou, mas não quebrou. Teste pelo Postman com o JWT, pela tela, ou com o bloco acima.
+
+> **Pergunta obrigatória:** esta view expõe dado de usuário? Tem `auth.uid()` explícito **e**
+> `security_invoker = on`? E as views que ela consulta por dentro, têm?
 
 ---
 
@@ -201,6 +245,10 @@ ambiente onde errar sem custo. Teste em homologação altera dado de produção.
 **Segundo agravante:** o repositório não sabe quais arquivos já foram aplicados. Registre a data
 de aplicação no `sql/README.md` — sem isso, você não descobre em outra máquina.
 
+**Terceiro agravante (31/08/2026):** o plano Free do Supabase **não tem backup automático** —
+é recurso do Pro para cima. Não existe ponto de restauração nenhum hoje. DDL destrutivo aplicado
+aqui é definitivo até que a rotina própria de `pg_dump` exista.
+
 > **Pergunta obrigatória:** este SQL precisa rodar antes ou depois do deploy do código? É
 > reversível? Se não for, qual é o rollback?
 
@@ -222,6 +270,10 @@ definição viva — não o arquivo onde a view nasceu.
 
 **Corolário para correções:** correção de view vai sempre num arquivo **novo**, nunca editando o
 antigo. Editar o `003` para corrigir a afinidade teria revertido o tier `'ignorado'` do `008`.
+
+**Agravante desde o `sql/017`:** reaplicar um `CREATE OR REPLACE VIEW` antigo também derruba o
+`security_invoker` da view, porque nenhum arquivo anterior ao `017` traz a cláusula. A view volta
+a rodar como `postgres` sem que nada acuse (item 2).
 
 > **Pergunta obrigatória:** este objeto é redefinido em algum arquivo `sql/` de número maior?
 > Estou editando a definição viva ou uma cópia morta?
@@ -253,6 +305,8 @@ tela é dado real, não defeito.
 > **Pergunta obrigatória:** as categorias que este gráfico desenha cobrem **todas** as que
 > o denominador conta? Se eu somar as fatias, dá 100%?
 
+---
+
 ## 14. 🧪 Teste que valida o caminho errado depois de mudança no handler
 
 **Incidente (26/08/2026):** `TestHandleCreate_CorpoInvalido` esperava 400 e recebia 401.
@@ -266,6 +320,8 @@ para trás.
 > **Pergunta obrigatória:** quando um handler ganha uma dependência nova do contexto, quais
 > testes montam esse contexto à mão e precisam acompanhar?
 
+---
+
 ## 15. 🔓 Policy `USING (true)` numa tabela de configuração
 
 **Incidente (28/08/2026):** a `app_settings` tinha policies de SELECT e UPDATE com
@@ -278,8 +334,14 @@ chama atenção; uma com RLS e policy permissiva parece resolvida.
 **Como foi descoberto:** por acidente. Um upsert falhou porque não havia policy de INSERT,
 e essa ausência era o único obstáculo real à escrita anônima.
 
+**Corolário (31/08/2026):** contar policies não diz nada — `USING (true)` e
+`USING (is_admin())` contam como 1 do mesmo jeito. Auditoria de permissão só vale lendo o
+predicado, ou testando com `SET LOCAL ROLE` (item 2).
+
 > **Pergunta obrigatória:** as policies desta tabela restringem alguma coisa, ou só existem?
 > Rodar `SET ROLE anon` e tentar escrever responde em 10 segundos.
+
+---
 
 ## 16. 0️⃣ Campo numérico ausente vira `0`, não `NULL`
 
@@ -324,6 +386,8 @@ no ar e vêm sempre preenchidos — mas isso é observação, não garantia.
 > ele precisa ser ponteiro no Go. `0` não é "sem valor": é um número válido que
 > colide com todos os outros ausentes, e vira link para `/anime/0`.
 
+---
+
 ## 17. 🎨 Classe do Tailwind montada por interpolação nunca é gerada
 
 **Incidente (30/08/2026):** descoberto de raspão, ao verificar o CSS compilado durante a
@@ -361,6 +425,8 @@ Corrigido em 30/08/2026: os cinco nomes passaram a viver escritos por extenso nu
 > **Pergunta obrigatória:** este nome de classe existe literal em algum arquivo que o Tailwind
 > varre? Se ele é montado com `${...}`, a regra CSS não vai existir — e nada vai te avisar.
 > Escreva os nomes por extenso num array e indexe.
+
+---
 
 ## 🧭 Como manter este arquivo
 
