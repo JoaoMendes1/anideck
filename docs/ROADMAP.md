@@ -391,8 +391,12 @@ reordenáveis, sinopse com reescrita por IA, título, formato e status.
 - [ ] Caminho para exclusão de conta, mesmo que operado manualmente no início.
 - [ ] Política de privacidade curta (LGPD).
 - [ ] Canal de reporte de bug (grupo de mensagens já resolve).
-- [ ] Ativar backup automático no Supabase e validar o procedimento de restauração —
-      pré-requisito inegociável antes do primeiro convite.
+- [x] **Rotina própria de backup e restauração validada** — pré-requisito
+      inegociável antes do primeiro convite. Backup automático não existe no
+      plano Free; a rotina é `pg_dump` (banco + `auth.users`) e `aws s3 sync`
+      (bucket `curadoria`), rodada à mão antes de cada arquivo `sql/` e
+      semanalmente. **Validada em 01/09/2026** em projeto descartável, com
+      conferência de contagem e de permissões. Ver `DECISIONS.md`.
 - [ ] Reavaliar modelo de dados e permissões à luz do que o beta revelar.
 - [ ] **Pré-requisito para a visão completa de ranking com credibilidade** — ver
       `VISAO_RANKING_CREDIVEL.md` (documento de visão, não compromisso de escopo; peso de voto
@@ -425,12 +429,12 @@ reordenáveis, sinopse com reescrita por IA, título, formato e status.
 - [ ] **Filtro por ano na Busca, independente de temporada** — hoje o campo de ano só habilita se
       uma temporada estiver selecionada (ver `docs/ideias-para-melhorias.md`, item 7.1). Aceitável
       como está por ora; revisar se surgir demanda real de usuário.
-- [ ] **Página de Configurações e Ajuda.** É a única das dez do `PAGES.md` que nunca
+- [x] **Página de Configurações e Ajuda.** É a única das dez do `PAGES.md` que nunca
       saiu do protótipo (`prototipos/config-ajuda-prototipo.html`). Precisa conter
       exclusão de conta e redefinição de senha: hoje um usuário cadastrado não
       consegue apagar a própria conta — só o admin, direto no banco. Exclusão de
       conta é item da Fase 7 e requisito de LGPD, então esta página é pré-requisito
-      do beta, não enfeite.
+      do beta, não enfeite. OBS: Finalizado paricalmente
 
 - [ ] **Criar anime do zero no Painel Admin.** Toda entrada em `curated_animes` hoje
       nasce de um `mal_id` da AniList — não existe caminho para cadastrar obra que
