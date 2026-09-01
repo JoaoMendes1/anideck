@@ -479,7 +479,7 @@ CREATE OR REPLACE VIEW public.view_user_year_distribution WITH (security_invoker
 
 -- Permitir upload apenas para o Admin           | INSERT | authenticated     
 --     USING:  -
---     CHECK:  ((bucket_id = 'curadoria'::text) AND (auth.uid() = 'bb751d21-ba19-4ddf-9c85-1e86e8e6b5f7'::uuid))
+--     CHECK:  ((bucket_id = 'curadoria'::text) AND (auth.uid() = '<UUID_DO_ADMIN>'::uuid))
 
 -- =============================================================================
 -- [6] BUCKETS
