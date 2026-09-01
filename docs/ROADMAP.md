@@ -387,7 +387,9 @@ reordenáveis, sinopse com reescrita por IA, título, formato e status.
 - [ ] Cadastro fechado (convite ou confirmação de e-mail) para evitar bot.
 - [ ] Teste de isolamento entre contas: validar com uma segunda conta que `media_entries`,
       `episode_progress`, `push_subscriptions` e `notifications` não vazam dado entre usuários.
-- [ ] Esconder o acesso ao Painel Admin na UI para quem não é admin (o backend já bloqueia).
+- [x] **Esconder o acesso ao Painel Admin na UI** — `ItensPerfil.tsx` já condiciona
+      o link a `isAdmin` vindo do `SessaoContext`. É arrumação, não segurança: a
+      rota `/admin` continua acessível por URL e é o `RequireAdmin` que barra.
 - [ ] Caminho para exclusão de conta, mesmo que operado manualmente no início.
 - [ ] Política de privacidade curta (LGPD).
 - [ ] Canal de reporte de bug (grupo de mensagens já resolve).
