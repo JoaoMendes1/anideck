@@ -17,3 +17,8 @@ Thumbs.db
 # config.toml é regenerável com `supabase init`.
 supabase/
 
+# Backups locais — contêm dado de usuário, repo é público
+*.backup.sql
+.env.backup
+backup_capas/
+sql/*local.sql
