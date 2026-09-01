@@ -397,6 +397,9 @@ reordenáveis, sinopse com reescrita por IA, título, formato e status.
       (bucket `curadoria`), rodada à mão antes de cada arquivo `sql/` e
       semanalmente. **Validada em 01/09/2026** em projeto descartável, com
       conferência de contagem e de permissões. Ver `DECISIONS.md`.
+- [x] **Escrita de `anime_metadata_cache` fechada a `is_admin()`** — `sql/020`,
+      aplicado e validado em 01/09/2026. Era a última policy `USING (true)`
+      do schema. Ver `DECISIONS.md`.
 - [ ] Reavaliar modelo de dados e permissões à luz do que o beta revelar.
 - [ ] **Pré-requisito para a visão completa de ranking com credibilidade** — ver
       `VISAO_RANKING_CREDIVEL.md` (documento de visão, não compromisso de escopo; peso de voto

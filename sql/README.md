@@ -43,6 +43,7 @@ SELECT pg_get_viewdef('nome_da_view'::regclass, true);
 | `017_security_invoker_views.sql` | Liga `security_invoker` nas 16 views: a RLS da tabela-base passa a valer, o filtro `auth.uid()` vira segunda camada | 31/08/2026 |
 | `018_rpcs_cron_sem_execute_publico.sql` | Revoga `EXECUTE` de `PUBLIC`/`anon`/`authenticated` nas duas RPCs do cron; acesso só via `service_role` | 31/08/2026 |
 | `019_policies_initplan_e_sobreposicao.sql` | `(SELECT auth.uid())` nas 8 policies de usuário; policy de admin em `curated_animes` deixa de cobrir SELECT | 31/08/2026 |
+| `020_anime_metadata_cache_rls.sql` | Fecha a escrita do cache de metadados a `is_admin()`; leitura segue pública | 01/09/2026 |
 
 Datas com `~` são a data do commit, não da aplicação no Supabase.
 
