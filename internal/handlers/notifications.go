@@ -41,10 +41,9 @@ func callRPC(rpcName string, payload interface{}) ([]byte, error) {
 		return nil, err
 	}
 
-	anonKey := os.Getenv("SUPABASE_ANON_KEY")
-	req.Header.Set("apikey", anonKey)
-	req.Header.Set("Authorization", "Bearer "+anonKey)
-	req.Header.Set("Content-Type", "application/json")
+	serviceKey := os.Getenv("SUPABASE_SERVICE_ROLE_KEY")
+	req.Header.Set("apikey", serviceKey)
+	req.Header.Set("Authorization", "Bearer "+serviceKey)
 
 	var httpClient = &http.Client{Timeout: 15 * time.Second}
 	resp, err := httpClient.Do(req)
@@ -171,8 +170,9 @@ func (h *NotificationsHandler) HandleReadNotification(w http.ResponseWriter, r *
 }
 
 func (h *NotificationsHandler) HandleCheckNewEpisodes(w http.ResponseWriter, r *http.Request) {
-	if r.Header.Get("X-Cron-Secret") != os.Getenv("CRON_SECRET") {
-		http.Error(w, "Acesso Negado", http.StatusForbidden)
+		if os.Getenv("SUPABASE_SERVICE_ROLE_KEY") == "" {
+		log.Printf("[ERRO CRON] SUPABASE_SERVICE_KEY ausente")
+		http.Error(w, "Erro de configuração", http.StatusInternalServerError)
 		return
 	}
 

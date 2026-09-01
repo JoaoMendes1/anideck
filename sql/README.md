@@ -41,6 +41,7 @@ SELECT pg_get_viewdef('nome_da_view'::regclass, true);
 | `015_quero_assistir_nas_stats.sql` | Acrescenta `quero_assistir` à `view_user_stats` | 26/08/2026 |
 | `016_app_settings_rls.sql` | Fecha a escrita da `app_settings` a `is_admin()`; leitura segue pública | 28/08/2026 |
 | `017_security_invoker_views.sql` | Liga `security_invoker` nas 16 views: a RLS da tabela-base passa a valer, o filtro `auth.uid()` vira segunda camada | 31/08/2026 |
+| `018_rpcs_cron_sem_execute_publico.sql` | Revoga `EXECUTE` de `PUBLIC`/`anon`/`authenticated` nas duas RPCs do cron; acesso só via `service_role` | 31/08/2026 |
 
 Datas com `~` são a data do commit, não da aplicação no Supabase.
 
