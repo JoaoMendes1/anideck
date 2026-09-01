@@ -6,6 +6,7 @@ import { useCatalogoStatus } from '../contexts/CatalogoStatusContext'
 import EmBreve from '../components/EmBreve'
 import { TEMAS, aplicarTema, useTema } from '../lib/temas'
 import { ChevronDown, MessageSquare, Check, AlertTriangle } from 'lucide-react'
+import { useNavigate } from 'react-router-dom'
 
 const ABAS = [
     { id: 'perfil', label: 'Perfil' },
@@ -78,6 +79,59 @@ export default function Configuracoes() {
     const [salvando, setSalvando] = useState(false)
     const [erro, setErro] = useState<string | null>(null)
     const [faqAberta, setFaqAberta] = useState<number | null>(0)
+
+    
+    const navigate = useNavigate()
+    const [modalExclusao, setModalExclusao] = useState(false)
+    const [senhaExclusao, setSenhaExclusao] = useState('')
+    const [confirmacao, setConfirmacao] = useState('')
+    const [excluindo, setExcluindo] = useState(false)
+    const [erroExclusao, setErroExclusao] = useState<string | null>(null)
+
+    const podeExcluir = confirmacao === 'EXCLUIR' && senhaExclusao.length > 0 && !excluindo
+
+    const excluirConta = async () => {
+        setExcluindo(true)
+        setErroExclusao(null)
+
+        // Reautentica antes de apagar. Sessao aberta nao basta: sem isso, quem
+        // sentasse na maquina com o site logado apagaria a conta em dois cliques.
+        const { error: erroLogin } = await supabase.auth.signInWithPassword({
+            email,
+            password: senhaExclusao,
+        })
+        if (erroLogin) {
+            setErroExclusao('Senha incorreta.')
+            setExcluindo(false)
+            return
+        }
+
+        const { data: { session } } = await supabase.auth.getSession()
+        if (!session) {
+            setErroExclusao('Sessão expirada. Entre de novo e tente outra vez.')
+            setExcluindo(false)
+            return
+        }
+
+        try {
+            const res = await fetch('/api/account', {
+                method: 'DELETE',
+                headers: { Authorization: `Bearer ${session.access_token}` },
+            })
+            if (!res.ok) {
+                setErroExclusao('Não foi possível excluir a conta. Tente de novo.')
+                setExcluindo(false)
+                return
+            }
+        } catch {
+            setErroExclusao('Não foi possível excluir a conta. Tente de novo.')
+            setExcluindo(false)
+            return
+        }
+
+        await supabase.auth.signOut()
+        navigate('/')
+    }
 
     useEffect(() => {
         supabase.auth.getSession().then(({ data: { session } }) => {
@@ -284,20 +338,81 @@ export default function Configuracoes() {
                     </Card>
                 </EmBreve>
 
-                <EmBreve nota="Requer backup do banco ativo">
-                    <div className="border border-coral/30 bg-coral/5 rounded-2xl p-5">
-                        <h3 className="font-anton text-coral uppercase text-[15px] mb-1.5 flex items-center gap-2">
-                            <AlertTriangle size={15} />
-                            Excluir conta
-                        </h3>
-                        <p className="text-[12.5px] text-muted mb-4">
-                            Remove permanentemente sua conta e todos os dados do seu Deck. Não pode ser desfeito.
-                        </p>
-                        <button type="button" className="px-4 py-2.5 rounded-xl border border-coral bg-coral/10 text-coral text-sm font-bold">
+                                <div className="border border-coral/30 bg-coral/5 rounded-2xl p-5">
+                    <h3 className="font-anton text-coral uppercase text-[15px] mb-1.5 flex items-center gap-2">
+                        <AlertTriangle size={15} />
+                        Excluir conta
+                    </h3>
+                    <p className="text-[12.5px] text-muted mb-4">
+                        Remove permanentemente sua conta e todos os dados do seu Deck. Não pode ser desfeito.
+                    </p>
+
+                    {!modalExclusao ? (
+                        <button
+                            type="button"
+                            onClick={() => setModalExclusao(true)}
+                            className="px-4 py-2.5 rounded-xl border border-coral bg-coral/10 text-coral text-sm font-bold cursor-pointer"
+                        >
                             Excluir minha conta
                         </button>
-                    </div>
-                </EmBreve>
+                    ) : (
+                        <div className="space-y-3">
+                            <div>
+                                <label className="block text-[11px] font-bold text-muted mb-2 uppercase tracking-wide">
+                                    Sua senha
+                                </label>
+                                <input
+                                    type="password"
+                                    value={senhaExclusao}
+                                    onChange={(e) => setSenhaExclusao(e.target.value)}
+                                    autoComplete="current-password"
+                                    className="w-full bg-panel-2 border border-line rounded-xl px-4 py-3 text-sm outline-none"
+                                />
+                            </div>
+
+                            <div>
+                                <label className="block text-[11px] font-bold text-muted mb-2 uppercase tracking-wide">
+                                    Digite <span className="text-coral">EXCLUIR</span> para confirmar
+                                </label>
+                                <input
+                                    type="text"
+                                    value={confirmacao}
+                                    onChange={(e) => setConfirmacao(e.target.value)}
+                                    autoComplete="off"
+                                    className="w-full bg-panel-2 border border-line rounded-xl px-4 py-3 text-sm outline-none"
+                                />
+                            </div>
+
+                            {erroExclusao && (
+                                <p className="text-[12.5px] text-coral font-bold">{erroExclusao}</p>
+                            )}
+
+                            <div className="flex gap-2.5">
+                                <button
+                                    type="button"
+                                    onClick={excluirConta}
+                                    disabled={!podeExcluir}
+                                    className="px-4 py-2.5 rounded-xl border border-coral bg-coral/10 text-coral text-sm font-bold cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
+                                >
+                                    {excluindo ? 'Excluindo...' : 'Excluir definitivamente'}
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={() => {
+                                        setModalExclusao(false)
+                                        setSenhaExclusao('')
+                                        setConfirmacao('')
+                                        setErroExclusao(null)
+                                    }}
+                                    disabled={excluindo}
+                                    className="px-4 py-2.5 rounded-xl border border-line text-sm font-bold cursor-pointer"
+                                >
+                                    Cancelar
+                                </button>
+                            </div>
+                        </div>
+                    )}
+                </div>
             </Secao>
 
             {/* AJUDA */}

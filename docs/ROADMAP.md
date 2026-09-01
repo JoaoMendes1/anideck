@@ -384,13 +384,21 @@ reordenáveis, sinopse com reescrita por IA, título, formato e status.
 > nesta fase.** Número de convidados é o que aparecer — duas ou três pessoas já cumprem o
 > objetivo técnico de sair da amostra de um usuário só.
 
+> **Nota (01/09/2026):** os itens de segurança da fase estão fechados. Backup, escrita do
+> cache de metadados e exclusão de conta saíram no mesmo dia. O que resta é cadastro,
+> política de privacidade e o teste de isolamento.
+
 - [ ] Cadastro fechado (convite ou confirmação de e-mail) para evitar bot.
 - [ ] Teste de isolamento entre contas: validar com uma segunda conta que `media_entries`,
       `episode_progress`, `push_subscriptions` e `notifications` não vazam dado entre usuários.
 - [x] **Esconder o acesso ao Painel Admin na UI** — `ItensPerfil.tsx` já condiciona
       o link a `isAdmin` vindo do `SessaoContext`. É arrumação, não segurança: a
       rota `/admin` continua acessível por URL e é o `RequireAdmin` que barra.
-- [ ] Caminho para exclusão de conta, mesmo que operado manualmente no início.
+- [x] **Exclusão de conta pelo próprio usuário** — `sql/021` (FK de `media_entries`
+      para `ON DELETE CASCADE`) + `DELETE /api/account` com service role + tela em
+      Configurações, com reautenticação por senha e confirmação digitada. Saiu melhor
+      que o previsto aqui: não é operada manualmente. Aplicado e validado em
+      01/09/2026. Ver #98 e `DECISIONS.md`.
 - [ ] Política de privacidade curta (LGPD).
 - [ ] Canal de reporte de bug (grupo de mensagens já resolve).
 - [x] **Rotina própria de backup e restauração validada** — pré-requisito

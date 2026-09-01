@@ -70,6 +70,7 @@ func main() {
 	rankingHandler := &handlers.RankingHandler{AniListClient: anilistService}
 	curationHandler := &handlers.CurationHandler{}
 	systemHandler := &handlers.SystemHandler{}
+	accountHandler := &handlers.AccountHandler{}
 	notificationsHandler := &handlers.NotificationsHandler{AniListClient: anilistService}
 	metadataHandler := &handlers.MetadataHandler{AniListClient: anilistService}
 	olheiroHandler := &handlers.OlheiroHandler{AniListClient: anilistService}
@@ -112,6 +113,8 @@ func main() {
 		// Drill-down: os animes por trás de uma barra do gráfico de afinidade
 		protegido.Get("/api/stats/genre", statsHandler.HandleGetGenreAnimes)
 		protegido.Get("/api/stats/year", statsHandler.HandleGetYearAnimes)
+
+		protegido.Delete("/api/account", accountHandler.HandleDeleteAccount)
 	})
 
 	r.Group(func(admin chi.Router) {
