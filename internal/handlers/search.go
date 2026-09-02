@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"log"
 	"net/http"
+	"sort"
 	"strconv"
 	"strings"
 
@@ -11,6 +12,127 @@ import (
 	"github.com/JoaoMendes1/anideck/internal/database"
 	"github.com/JoaoMendes1/anideck/internal/models"
 )
+
+// O chip da busca manda o vocabulario da AniList (ingles); a curadoria usa o
+// seu (portugues). Sem traduzir, EqualFold("Action","Ação") da falso e nenhum
+// curado passa -- "Romance" funcionava so porque se escreve igual nas duas.
+//
+// Ha rotulo em ingles na propria curadoria (Adventure, Fantasy, Sci-Fi, Slice
+// of Life): curadoria antiga, antes do vocabulario fechado. Por isso alguns
+// mapeamentos incluem o proprio termo em ingles.
+var equivalentes = map[string][]string{
+	"action":        {"ação"},
+	"adventure":     {"aventura", "adventure"},
+	"comedy":        {"comédia", "comédia romântica"},
+	"drama":         {"drama"},
+	"fantasy":       {"fantasia", "fantasy", "magia"},
+	"horror":        {"terror"},
+	"mystery":       {"mistério", "suspense"},
+	"psychological": {"psicológico"},
+	"romance":       {"romance", "comédia romântica"},
+	"sci-fi":        {"ficção científica", "sci-fi"},
+	"slice of life": {"cotidiano", "dia a dia", "slice of life"},
+	"sports":        {"esporte"},
+	"supernatural":  {"sobrenatural", "super poderes"},
+	"thriller":      {"suspense"},
+	"mecha":         {"mecha"},
+	"music":         {"musical"},
+	"isekai":        {"isekai", "reencarnação"},
+	"school":        {"escolar", "vida escolar"},
+	"martial arts":  {"artes marciais"},
+	"historical":    {"histórico"},
+	"harem":         {"harém"},
+	"ecchi":         {"ecchi"},
+	"shounen":       {"shounen"},
+	"time travel":   {"viagem no tempo"},
+	"revenge":       {"vingança"},
+	"game":          {"jogo", "jogos"},
+}
+
+// Quantas tags contam para o filtro em anime CURADO.
+//
+// So vale para curadoria: AplicarCuradoria poe as custom_tags em anime.Genres
+// na ordem do ReorderableTags, que vai do mais estrutural para o mais
+// superficial. A AniList devolve genero em ordem ALFABETICA -- cortar la
+// filtraria por letra, nao por relevancia (Romance comeca com R e quase nunca
+// e o primeiro). Por isso anime nao curado passa sem corte.
+const maxTagsFiltro = 2
+
+// Unico lugar que compara rotulo pedido com rotulo do anime. Tanto o filtro
+// quanto a ordenacao passam por aqui -- ter duas comparacoes soltas ja fez a
+// ordenacao ignorar os equivalentes e empatar tudo.
+func mesmoRotulo(pedida string, tag string) bool {
+	if strings.EqualFold(pedida, tag) {
+		return true
+	}
+	for _, pt := range equivalentes[strings.ToLower(pedida)] {
+		if strings.EqualFold(pt, tag) {
+			return true
+		}
+	}
+	return false
+}
+
+func bateComTagPrincipal(doAnime []anilist.Genre, pedidas []string) bool {
+	principais := doAnime
+	if len(principais) > maxTagsFiltro {
+		principais = principais[:maxTagsFiltro]
+	}
+	for _, pedida := range pedidas {
+		for _, tag := range principais {
+			if mesmoRotulo(pedida, tag.Name) {
+				return true
+			}
+		}
+	}
+	return false
+}
+
+// Curados que batem a busca: titulo contem o texto (se houver) e a tag pedida
+// esta entre as principais. Ordenado pelo OrderIndex da curadoria.
+func curadosQueBatem(curados []models.CuratedAnime, query string, genres, tags []string) []anilist.Anime {
+	var achados []anilist.Anime
+
+	for _, cur := range curados {
+		anime := anilist.Anime{MalID: cur.MalID}
+		AplicarCuradoria(&anime, cur)
+
+		if query != "" && !strings.Contains(strings.ToLower(anime.Title), strings.ToLower(query)) {
+			continue
+		}
+		if len(genres) > 0 && !bateComTagPrincipal(anime.Genres, genres) {
+			continue
+		}
+		if len(tags) > 0 && !bateComTagPrincipal(anime.Genres, tags) {
+			continue
+		}
+		achados = append(achados, anime)
+	}
+
+			// Ordena por onde a tag pedida aparece: quem tem em primeiro vem antes de
+	// quem tem em segundo. O order_index nao serve aqui -- hoje esta zerado em
+	// toda a curadoria, entao empataria tudo e a ordem cairia no mal_id.
+	pedidas := append(append([]string{}, genres...), tags...)
+	posicao := func(a anilist.Anime) int {
+		for i, tag := range a.Genres {
+			for _, p := range pedidas {
+				if mesmoRotulo(p, tag.Name) {
+				return i
+			}
+			}
+		}
+		return len(a.Genres)
+	}
+	sort.Slice(achados, func(i, j int) bool {
+		pi, pj := posicao(achados[i]), posicao(achados[j])
+		if pi != pj {
+			return pi < pj
+		}
+		return achados[i].Title < achados[j].Title
+	})
+
+	return achados
+}
 
 type SearchHandler struct {
 	AniListClient anilist.Service
@@ -25,17 +147,15 @@ func (h *SearchHandler) HandleSearch(w http.ResponseWriter, r *http.Request) {
 	sortParam := r.URL.Query().Get("sort")
 
 	if sortParam == "" {
-		sortParam = "POPULARITY_DESC" // Padrão: Mais populares primeiro
+		sortParam = "POPULARITY_DESC"
 	}
 
-	pageStr := r.URL.Query().Get("page")
-	page, err := strconv.Atoi(pageStr)
+	page, err := strconv.Atoi(r.URL.Query().Get("page"))
 	if err != nil || page < 1 {
 		page = 1
 	}
 
-	perPageStr := r.URL.Query().Get("perPage")
-	perPage, err := strconv.Atoi(perPageStr)
+	perPage, err := strconv.Atoi(r.URL.Query().Get("perPage"))
 	if err != nil || perPage < 1 || perPage > 50 {
 		perPage = 20
 	}
@@ -52,14 +172,16 @@ func (h *SearchHandler) HandleSearch(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	genreMap := make(map[string]bool)
-	for _, g := range genres {
-		genreMap[strings.ToLower(g)] = true
+	// Curadoria carregada uma vez e usada nos tres papeis abaixo: montar a
+	// lista propria, saber quem ja entrou, e sobrepor nos resultados da AniList.
+	var curados []models.CuratedAnime
+	dataCurados, _, _ := database.Client.From("curated_animes").Select("*", "exact", false).Execute()
+	if dataCurados != nil {
+		_ = json.Unmarshal(dataCurados, &curados)
 	}
-
-	tagMap := make(map[string]bool)
-	for _, t := range tags {
-		tagMap[strings.ToLower(t)] = true
+	curadosMap := make(map[int]models.CuratedAnime, len(curados))
+	for _, c := range curados {
+		curadosMap[c.MalID] = c
 	}
 
 	filters := anilist.SearchFilters{
@@ -72,210 +194,54 @@ func (h *SearchHandler) HandleSearch(w http.ResponseWriter, r *http.Request) {
 	}
 
 	resultados, err := h.AniListClient.SearchAnime(r.Context(), query, page, perPage, filters)
-	
-// FALLBACK (BLOCO 3): Se a AniList cair, montamos a busca inteira unindo Curadoria e Cache
-	if err != nil || resultados == nil {
+	aniListCaiu := err != nil || resultados == nil
+
+	// FALLBACK: sem AniList, o catalogo e a curadoria. O cache NAO entra.
+	// O cache e residuo do que os usuarios adicionaram ao deck -- sem capa e
+	// sem sinopse. Misturar faz a curadoria parecer pior do que e. No Deck ele
+	// continua sendo o fallback certo, que e outra tela.
+	if aniListCaiu {
 		log.Printf("[ERRO ANILIST] Fallback ativado para busca: %v", err)
-		resultados = &anilist.AnimeSearchResponse{Data: []anilist.Anime{}}
-		
-		dataCurados, _, _ := database.Client.From("curated_animes").Select("*", "exact", false).Execute()
-		var curados []models.CuratedAnime
-		json.Unmarshal(dataCurados, &curados)
+		resultados = &anilist.AnimeSearchResponse{Data: curadosQueBatem(curados, query, genres, tags)}
 
-		dataCache, _, _ := database.Client.From("anime_metadata_cache").Select("*", "exact", false).Execute()
-		var cached []map[string]interface{}
-		json.Unmarshal(dataCache, &cached)
-
-		unified := make(map[int]anilist.Anime)
-
-		// 1. Popula com cache (preserva Gêneros e Tags originais em Inglês)
-		for _, c := range cached {
-			idFloat, ok := c["mal_id"].(float64)
-			if !ok { continue }
-			id := int(idFloat)
-			
-			anime := anilist.Anime{MalID: id}
-			if t, ok := c["title"].(string); ok { anime.Title = t }
-			if st, ok := c["status"].(string); ok { anime.Status = st }
-			
-			if gList, ok := c["genres"].([]interface{}); ok {
-				for _, g := range gList {
-					if gStr, isStr := g.(string); isStr { anime.Genres = append(anime.Genres, anilist.Genre{Name: gStr}) }
-				}
+		inicio := (page - 1) * perPage
+		if inicio >= len(resultados.Data) {
+			resultados.Data = []anilist.Anime{}
+		} else {
+			fim := inicio + perPage
+			if fim > len(resultados.Data) {
+				fim = len(resultados.Data)
 			}
-			if tList, ok := c["tags"].([]interface{}); ok {
-				for _, t := range tList {
-					if tStr, isStr := t.(string); isStr { anime.Tags = append(anime.Tags, tStr) }
-				}
+			resultados.Data = resultados.Data[inicio:fim]
+		}
+	} else {
+		// Aplica a curadoria sobre o que a AniList devolveu.
+		for i := range resultados.Data {
+			if curado, ok := curadosMap[resultados.Data[i].MalID]; ok {
+				AplicarCuradoria(&resultados.Data[i], curado)
 			}
-			unified[id] = anime
 		}
 
-		// 2. Mescla e Filtra tudo
-		for _, cur := range curados {
-			anime, exists := unified[cur.MalID]
-			if !exists { anime = anilist.Anime{MalID: cur.MalID, Title: cur.CustomTitle} }
-			
-			originalGenres := make([]string, len(anime.Genres))
-			for i, g := range anime.Genres { originalGenres[i] = g.Name }
-			originalTags := append([]string{}, anime.Tags...)
+		// Curadoria na frente, so na pagina 1. A AniList filtra pelo vocabulario
+		// dela e nao conhece suas tags, entao curado que bate precisa entrar por
+		// fora -- inclusive quando a busca e so por chip, sem texto digitado.
+		if page == 1 {
+			meus := curadosQueBatem(curados, query, genres, tags)
 
-			AplicarCuradoria(&anime, cur)
-
-			if query != "" && !strings.Contains(strings.ToLower(anime.Title), strings.ToLower(query)) { continue }
-
-			match := true
-			if len(genres) > 0 {
-				has := false
-				for _, gReq := range genres {
-					// Compara com os originais (em Inglês)
-					for _, og := range originalGenres { if strings.EqualFold(gReq, og) { has = true; break } }
-					// Compara com os curados (em Português)
-					for _, ag := range anime.Genres { if strings.EqualFold(gReq, ag.Name) { has = true; break } }
-				}
-				if !has { match = false }
+			jaEntrou := make(map[int]bool, len(meus))
+			for _, a := range meus {
+				jaEntrou[a.MalID] = true
 			}
-
-			if match && len(tags) > 0 {
-				has := false
-				for _, tReq := range tags {
-					for _, ot := range originalTags { if strings.EqualFold(tReq, ot) { has = true; break } }
-					for _, ag := range anime.Genres { if strings.EqualFold(tReq, ag.Name) { has = true; break } }
+			for _, a := range resultados.Data {
+				if !jaEntrou[a.MalID] {
+					meus = append(meus, a)
+					jaEntrou[a.MalID] = true
 				}
-				if !has { match = false }
 			}
-
-			if match { resultados.Data = append(resultados.Data, anime) }
-			delete(unified, cur.MalID) // Remove para não duplicar no loop abaixo
-		}
-
-		// 3. Processa o que sobrou apenas no cache
-		for _, anime := range unified {
-			if query != "" && !strings.Contains(strings.ToLower(anime.Title), strings.ToLower(query)) { continue }
-
-			match := true
-			if len(genres) > 0 {
-				has := false
-				for _, gReq := range genres {
-					for _, ag := range anime.Genres { if strings.EqualFold(gReq, ag.Name) { has = true; break } }
-				}
-				if !has { match = false }
-			}
-			if match && len(tags) > 0 {
-				has := false
-				for _, tReq := range tags {
-					for _, at := range anime.Tags { if strings.EqualFold(tReq, at) { has = true; break } }
-				}
-				if !has { match = false }
-			}
-
-			if match { resultados.Data = append(resultados.Data, anime) }
+			resultados.Data = meus
 		}
 	}
 
-	// Injeta a curadoria local APENAS na primeira página para não repetir
-	if err == nil && query != "" && page == 1 {
-		var localHits []models.CuratedAnime
-		data, _, errLocal := database.Client.From("curated_animes").Select("*", "exact", false).Filter("custom_title", "ilike", "%"+query+"%").Execute()
-
-		if errLocal == nil {
-			_ = json.Unmarshal(data, &localHits)
-		}
-
-		if errLocal == nil && len(localHits) > 0 {
-			var localMalIDs []int
-			for _, hit := range localHits {
-				localMalIDs = append(localMalIDs, hit.MalID)
-			}
-
-			localAnimes, errAniListIds := h.AniListClient.GetAnimesByMalIDs(r.Context(), localMalIDs)
-
-			// FALLBACK (BLOCO 3): Se a AniList cair, montamos os animes usando a curadoria local
-			if errAniListIds != nil || localAnimes == nil {
-				localAnimes = &anilist.AnimeSearchResponse{Data: []anilist.Anime{}}
-				for _, hit := range localHits {
-					localAnimes.Data = append(localAnimes.Data, anilist.Anime{
-						MalID: hit.MalID,
-						Title: hit.CustomTitle,
-					})
-				}
-			}
-
-			if localAnimes != nil {
-				curadosMap := make(map[int]models.CuratedAnime)
-				for _, hit := range localHits {
-					curadosMap[hit.MalID] = hit
-				}
-
-				existingIDs := make(map[int]bool)
-				var combined []anilist.Anime
-
-				for _, a := range localAnimes.Data {
-					if curado, ok := curadosMap[a.MalID]; ok {
-						AplicarCuradoria(&a, curado)
-					}
-
-					match := true
-					if len(genres) > 0 {
-						hasGenre := false
-						for _, animeG := range a.Genres {
-							if genreMap[strings.ToLower(animeG.Name)] {
-								hasGenre = true
-								break
-							}
-						}
-						if !hasGenre {
-							match = false
-						}
-					}
-					if match && len(tags) > 0 {
-						hasTag := false
-						for _, animeG := range a.Genres {
-							if tagMap[strings.ToLower(animeG.Name)] {
-								hasTag = true
-								break
-							}
-						}
-						if !hasTag {
-							match = false
-						}
-					}
-
-					if match {
-						combined = append(combined, a)
-						existingIDs[a.MalID] = true
-					}
-				}
-
-				for _, a := range resultados.Data {
-					if !existingIDs[a.MalID] {
-						combined = append(combined, a)
-						existingIDs[a.MalID] = true
-					}
-				}
-				resultados.Data = combined
-			}
-		}
-	}
-
-	var curados []models.CuratedAnime
-	dataCurados, _, _ := database.Client.From("curated_animes").Select("*", "exact", false).Execute()
-	if dataCurados != nil {
-		_ = json.Unmarshal(dataCurados, &curados)
-	}
-
-	curadosMap := make(map[int]models.CuratedAnime)
-	for _, c := range curados {
-		curadosMap[c.MalID] = c
-	}
-
-	for i, animeAniList := range resultados.Data {
-		if curado, ok := curadosMap[animeAniList.MalID]; ok {
-			AplicarCuradoria(&resultados.Data[i], curado)
-		}
-	}
-
-	// Filtra a lista final para garantir precisão
 	if status != "" {
 		expectedStatus := status
 		switch status {
