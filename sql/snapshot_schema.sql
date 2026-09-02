@@ -1,7 +1,7 @@
 -- =============================================================================
 -- snapshot_schema.sql — RETRATO DO BANCO. NAO EXECUTE ESTE ARQUIVO.
 -- =============================================================================
--- Regenerado em 01/09/2026 10:02 a partir do banco de producao.
+-- Regenerado em 02/09/2026 00:15 a partir do banco de producao.
 --
 -- PARA QUE SERVE: consulta rapida do estado real do banco, sem precisar abrir
 -- o painel do Supabase nem confiar nos arquivos sql/ antigos (que podem ter
@@ -393,17 +393,17 @@ CREATE OR REPLACE VIEW public.view_user_year_distribution WITH (security_invoker
 -- igual. O que vale e o predicado abaixo (Armadilha 15 do PITFALLS.md).
 -- =============================================================================
 
--- anime_metadata_cache   | Permitir inserção no cache para autenticados  | INSERT | authenticated     
+-- anime_metadata_cache   | Escrita no cache restrita a admin             | INSERT | authenticated     
 --     USING:  -
---     CHECK:  true
+--     CHECK:  ( SELECT is_admin() AS is_admin)
 
 -- anime_metadata_cache   | Leitura pública do cache                      | SELECT | public            
 --     USING:  true
 --     CHECK:  -
 
--- anime_metadata_cache   | Permitir atualização no cache para autenticados | UPDATE | authenticated     
---     USING:  true
---     CHECK:  true
+-- anime_metadata_cache   | Atualização no cache restrita a admin         | UPDATE | authenticated     
+--     USING:  ( SELECT is_admin() AS is_admin)
+--     CHECK:  ( SELECT is_admin() AS is_admin)
 
 -- app_settings           | app_settings_insert_admin                     | INSERT | public            
 --     USING:  -
