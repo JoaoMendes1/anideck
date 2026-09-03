@@ -7,6 +7,7 @@ import (
 	"net/http/httptest"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/JoaoMendes1/anideck/internal/middleware"
 )
@@ -25,6 +26,7 @@ func requisicaoComUsuario(userID string, body string) *http.Request {
 	req := httptest.NewRequest(http.MethodDelete, "/api/account", strings.NewReader(body))
 	if userID != "" {
 		ctx := context.WithValue(req.Context(), middleware.UserIDKey, userID)
+		ctx = context.WithValue(ctx, middleware.AuthTimeKey, time.Now())
 		req = req.WithContext(ctx)
 	}
 	return req
@@ -112,5 +114,50 @@ func TestFalhaNaAPIAdminRecebe500(t *testing.T) {
 
 	if rec.Code != http.StatusInternalServerError {
 		t.Errorf("status = %d, queria 500", rec.Code)
+	}
+}
+
+func requisicaoComAutenticacaoEm(userID string, autenticadoEm time.Time) *http.Request {
+	req := httptest.NewRequest(http.MethodDelete, "/api/account", nil)
+	ctx := context.WithValue(req.Context(), middleware.UserIDKey, userID)
+	ctx = context.WithValue(ctx, middleware.AuthTimeKey, autenticadoEm)
+	return req.WithContext(ctx)
+}
+
+func TestExclusaoComAutenticacaoAntigaRecebe401(t *testing.T) {
+	t.Setenv("ADMIN_USER_ID", usuarioAdmin)
+
+	chamou := false
+	h := &AccountHandler{Deletar: func(string) error { chamou = true; return nil }}
+
+	rec := httptest.NewRecorder()
+	h.HandleDeleteAccount(rec, requisicaoComAutenticacaoEm(usuarioComum, time.Now().Add(-30*time.Minute)))
+
+	if rec.Code != http.StatusUnauthorized {
+		t.Errorf("status = %d, queria 401", rec.Code)
+	}
+	if chamou {
+		t.Error("a exclusão rodou com autenticação antiga")
+	}
+}
+
+// Token sem amr legível não pode virar passe livre.
+func TestExclusaoSemAuthTimeRecebe401(t *testing.T) {
+	t.Setenv("ADMIN_USER_ID", usuarioAdmin)
+
+	chamou := false
+	h := &AccountHandler{Deletar: func(string) error { chamou = true; return nil }}
+
+	req := httptest.NewRequest(http.MethodDelete, "/api/account", nil)
+	req = req.WithContext(context.WithValue(req.Context(), middleware.UserIDKey, usuarioComum))
+
+	rec := httptest.NewRecorder()
+	h.HandleDeleteAccount(rec, req)
+
+	if rec.Code != http.StatusUnauthorized {
+		t.Errorf("status = %d, queria 401", rec.Code)
+	}
+	if chamou {
+		t.Error("a exclusão rodou sem prova de autenticação")
 	}
 }

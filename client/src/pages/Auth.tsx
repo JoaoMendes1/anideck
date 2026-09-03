@@ -18,6 +18,28 @@ export default function Auth() {
   // Ferramenta do React Router para forçar a mudança de página após o login
   const navigate = useNavigate()
 
+  const [loadingGoogle, setLoadingGoogle] = useState(false)
+
+  const entrarComGoogle = async () => {
+    setLoadingGoogle(true)
+    setError(null)
+
+    // Não devolve sessão: redireciona a página inteira para o Google.
+    // Quem finaliza o login é o onAuthStateChange, na volta.
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider: 'google',
+            options: {
+        redirectTo: `${window.location.origin}/deck`,
+        queryParams: { prompt: 'select_account' },
+      },
+    })
+
+    if (error) {
+      setError('Não foi possível conectar com o Google. Tente de novo.')
+      setLoadingGoogle(false)
+    }
+  }
+
   // Função que dispara quando o usuário clica em "Entrar" ou "Criar conta"
   const handleAuth = async (e: React.FormEvent) => {
     e.preventDefault() // Evita que a página recarregue (comportamento padrão do HTML)
@@ -127,6 +149,28 @@ export default function Auth() {
               {loading ? 'Processando...' : (isLogin ? 'Entrar' : 'Criar conta')}
             </button>
           </form>
+
+          
+          <div className="flex items-center gap-3 my-5">
+            <div className="flex-1 h-px bg-line" />
+            <span className="text-[11px] font-bold uppercase tracking-wide text-muted-2">ou</span>
+            <div className="flex-1 h-px bg-line" />
+          </div>
+
+          <button
+            type="button"
+            onClick={entrarComGoogle}
+            disabled={loadingGoogle || loading}
+            className="w-full flex items-center justify-center gap-2.5 py-3 rounded-xl font-extrabold text-sm border border-line bg-panel-2 hover:border-holo-3 transition-colors disabled:opacity-50"
+          >
+            <svg width="17" height="17" viewBox="0 0 24 24" aria-hidden="true">
+              <path fill="#4285F4" d="M23.5 12.27c0-.82-.07-1.6-.2-2.36H12v4.47h6.47c-.28 1.5-1.13 2.78-2.4 3.63v3h3.87c2.27-2.09 3.56-5.17 3.56-8.74z" />
+              <path fill="#34A853" d="M12 24c3.24 0 5.95-1.07 7.94-2.9l-3.87-3c-1.08.72-2.45 1.15-4.07 1.15-3.13 0-5.78-2.11-6.73-4.96H1.28v3.1C3.26 21.3 7.3 24 12 24z" />
+              <path fill="#FBBC05" d="M5.27 14.29c-.25-.72-.38-1.5-.38-2.29s.14-1.57.38-2.29V6.61H1.28A11.98 11.98 0 000 12c0 1.93.46 3.76 1.28 5.39l4-3.1z" />
+              <path fill="#EA4335" d="M12 4.75c1.77 0 3.35.61 4.6 1.8l3.42-3.42C17.94 1.19 15.24 0 12 0 7.3 0 3.26 2.7 1.28 6.61l4 3.1c.95-2.86 3.6-4.96 6.73-4.96z" />
+            </svg>
+                        {loadingGoogle ? 'Redirecionando...' : 'Continuar com Google'}
+          </button>
 
           <div className="text-center mt-6 text-sm text-muted">
             {isLogin ? 'Ainda não tem conta? ' : 'Já tem conta? '}
