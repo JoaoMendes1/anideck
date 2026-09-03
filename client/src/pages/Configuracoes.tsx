@@ -80,7 +80,9 @@ export default function Configuracoes() {
     const [erro, setErro] = useState<string | null>(null)
     const [faqAberta, setFaqAberta] = useState<number | null>(0)
 
-  
+
+    const [temGoogle, setTemGoogle] = useState(false)
+    const [temSenha, setTemSenha] = useState(true)
     const [senhaAtual, setSenhaAtual] = useState('')
     const [novaSenha, setNovaSenha] = useState('')
     const [salvandoSenha, setSalvandoSenha] = useState(false)
@@ -95,22 +97,24 @@ export default function Configuracoes() {
     const [excluindo, setExcluindo] = useState(false)
     const [erroExclusao, setErroExclusao] = useState<string | null>(null)
 
-    const podeExcluir = confirmacao === 'EXCLUIR' && senhaExclusao.length > 0 && !excluindo
+    const podeExcluir = confirmacao === 'EXCLUIR' && (temSenha ? senhaExclusao.length > 0 : true) && !excluindo
 
-    const excluirConta = async () => {
+        const excluirConta = async () => {
         setExcluindo(true)
         setErroExclusao(null)
 
-        // Reautentica antes de apagar. Sessao aberta nao basta: sem isso, quem
-        // sentasse na maquina com o site logado apagaria a conta em dois cliques.
-        const { error: erroLogin } = await supabase.auth.signInWithPassword({
-            email,
-            password: senhaExclusao,
-        })
-        if (erroLogin) {
-            setErroExclusao('Senha incorreta.')
-            setExcluindo(false)
-            return
+        // Conta com senha reautentica aqui; conta só-Google já voltou do
+        // redirect com autenticação fresca. O backend confere os dois pelo amr.
+        if (temSenha) {
+            const { error: erroLogin } = await supabase.auth.signInWithPassword({
+                email,
+                password: senhaExclusao,
+            })
+            if (erroLogin) {
+                setErroExclusao('Senha incorreta.')
+                setExcluindo(false)
+                return
+            }
         }
 
         const { data: { session } } = await supabase.auth.getSession()
@@ -126,7 +130,9 @@ export default function Configuracoes() {
                 headers: { Authorization: `Bearer ${session.access_token}` },
             })
             if (!res.ok) {
-                setErroExclusao('Não foi possível excluir a conta. Tente de novo.')
+                setErroExclusao(res.status === 401
+                    ? 'Confirmação expirada. Confirme sua identidade de novo.'
+                    : 'Não foi possível excluir a conta. Tente de novo.')
                 setExcluindo(false)
                 return
             }
@@ -140,12 +146,36 @@ export default function Configuracoes() {
         navigate('/')
     }
 
+    const reautenticarComGoogle = async () => {
+        setErroExclusao(null)
+        const { error } = await supabase.auth.signInWithOAuth({
+            provider: 'google',
+            options: {
+                redirectTo: `${window.location.origin}/configuracoes?reauth=1#conta`,
+                queryParams: { prompt: 'select_account' },
+            },
+        })
+        if (error) {
+            setErroExclusao('Não foi possível confirmar com o Google. Tente de novo.')
+        }
+    }
+
+    // O login com Google recarrega a página inteira, então o modal se perde no
+    // caminho. O marcador na URL manda reabrir na volta.
+    useEffect(() => {
+        if (new URLSearchParams(window.location.search).get('reauth') === '1') {
+            setModalExclusao(true)
+        }
+    }, [])
+
     useEffect(() => {
         supabase.auth.getSession().then(({ data: { session } }) => {
             const nomeAtual = session?.user.user_metadata?.display_name || ''
             setEmail(session?.user.email || '')
             setNome(nomeAtual)
             setNomeOriginal(nomeAtual)
+            setTemGoogle(session?.user.app_metadata?.providers?.includes('google') ?? false)
+            setTemSenha(session?.user.app_metadata?.providers?.includes('email') ?? true)
             setCarregando(false)
         })
     }, [])
@@ -341,63 +371,78 @@ export default function Configuracoes() {
                 </EmBreve>
             </Secao>
 
-            {/* CONTA */}
+              {/* CONTA */}
             <Secao id="conta" titulo="Conta">
-                <EmBreve nota="Login com Google ainda não configurado">
-                    <Card className="mb-4">
-                        <div className="flex items-center justify-between gap-4">
-                            <div className="flex items-center gap-2.5 text-[13.5px] font-bold">
-                                <svg width="17" height="17" viewBox="0 0 24 24" aria-hidden="true">
-                                    <path fill="#4285F4" d="M23.5 12.27c0-.82-.07-1.6-.2-2.36H12v4.47h6.47c-.28 1.5-1.13 2.78-2.4 3.63v3h3.87c2.27-2.09 3.56-5.17 3.56-8.74z" />
-                                    <path fill="#34A853" d="M12 24c3.24 0 5.95-1.07 7.94-2.9l-3.87-3c-1.08.72-2.45 1.15-4.07 1.15-3.13 0-5.78-2.11-6.73-4.96H1.28v3.1C3.26 21.3 7.3 24 12 24z" />
-                                    <path fill="#FBBC05" d="M5.27 14.29c-.25-.72-.38-1.5-.38-2.29s.14-1.57.38-2.29V6.61H1.28A11.98 11.98 0 000 12c0 1.93.46 3.76 1.28 5.39l4-3.1z" />
-                                    <path fill="#EA4335" d="M12 4.75c1.77 0 3.35.61 4.6 1.8l3.42-3.42C17.94 1.19 15.24 0 12 0 7.3 0 3.26 2.7 1.28 6.61l4 3.1c.95-2.86 3.6-4.96 6.73-4.96z" />
-                                </svg>
-                                Conta Google
-                            </div>
-                            <span className="text-[10px] font-bold uppercase tracking-wide text-muted-2 border border-line rounded-full px-2.5 py-1">
-                                Não conectada
-                            </span>
-                        </div>
-
-                                  </Card>
-                </EmBreve>
-
                 <Card className="mb-4">
-                    <label className="block text-[11px] font-bold text-muted mb-2 uppercase tracking-wide">Senha atual</label>
-                    <input
-                        type="password"
-                        value={senhaAtual}
-                        onChange={(e) => setSenhaAtual(e.target.value)}
-                        autoComplete="current-password"
-                        className="w-full bg-panel-2 border border-line rounded-xl px-4 py-3 text-sm outline-none"
-                    />
+                    <div className="flex items-center justify-between gap-4">
+                        <div className="flex items-center gap-2.5 text-[13.5px] font-bold">
+                            <svg width="17" height="17" viewBox="0 0 24 24" aria-hidden="true">
+                                <path fill="#4285F4" d="M23.5 12.27c0-.82-.07-1.6-.2-2.36H12v4.47h6.47c-.28 1.5-1.13 2.78-2.4 3.63v3h3.87c2.27-2.09 3.56-5.17 3.56-8.74z" />
+                                <path fill="#34A853" d="M12 24c3.24 0 5.95-1.07 7.94-2.9l-3.87-3c-1.08.72-2.45 1.15-4.07 1.15-3.13 0-5.78-2.11-6.73-4.96H1.28v3.1C3.26 21.3 7.3 24 12 24z" />
+                                <path fill="#FBBC05" d="M5.27 14.29c-.25-.72-.38-1.5-.38-2.29s.14-1.57.38-2.29V6.61H1.28A11.98 11.98 0 000 12c0 1.93.46 3.76 1.28 5.39l4-3.1z" />
+                                <path fill="#EA4335" d="M12 4.75c1.77 0 3.35.61 4.6 1.8l3.42-3.42C17.94 1.19 15.24 0 12 0 7.3 0 3.26 2.7 1.28 6.61l4 3.1c.95-2.86 3.6-4.96 6.73-4.96z" />
+                            </svg>
+                            Conta Google
+                        </div>
+                        <span className={`text-[10px] font-bold uppercase tracking-wide border rounded-full px-2.5 py-1 ${
+                            temGoogle ? 'text-holo-3 border-holo-3/40' : 'text-muted-2 border-line'
+                        }`}>
+                            {temGoogle ? 'Conectada' : 'Não conectada'}
+                        </span>
+                    </div>
 
-                    <label className="block text-[11px] font-bold text-muted mb-2 mt-4 uppercase tracking-wide">Nova senha</label>
-                    <input
-                        type="password"
-                        value={novaSenha}
-                        onChange={(e) => setNovaSenha(e.target.value)}
-                        autoComplete="new-password"
-                        placeholder="Mínimo de 8 caracteres"
-                        className="w-full bg-panel-2 border border-line rounded-xl px-4 py-3 text-sm outline-none"
-                    />
-
-                    {erroSenha && (
-                        <p className="mt-2 text-[12.5px] text-coral">{erroSenha}</p>
+                    {!temGoogle && (
+                        <p className="text-[12.5px] text-muted mt-3">
+                            Entre com o Google usando este mesmo e-mail e as contas se juntam automaticamente.
+                        </p>
                     )}
-
-                    <button
-                        type="button"
-                        onClick={atualizarSenha}
-                        disabled={!podeTrocarSenha}
-                        className="mt-3.5 px-6 py-2.5 rounded-xl bg-gradient-to-r from-holo-1 to-holo-2 text-void text-sm font-extrabold disabled:opacity-40 disabled:cursor-not-allowed"
-                    >
-                        {salvandoSenha ? 'Salvando...' : 'Atualizar senha'}
-                    </button>
                 </Card>
 
-                                <div className="border border-coral/30 bg-coral/5 rounded-2xl p-5">
+                {!temSenha && (
+                    <Card className="mb-4">
+                        <p className="text-[12.5px] text-muted">
+                            Esta conta entra pelo Google e não tem senha definida.
+                        </p>
+                    </Card>
+                )}
+
+                {temSenha && (
+                    <Card className="mb-4">
+                        <label className="block text-[11px] font-bold text-muted mb-2 uppercase tracking-wide">Senha atual</label>
+                        <input
+                            type="password"
+                            value={senhaAtual}
+                            onChange={(e) => setSenhaAtual(e.target.value)}
+                            autoComplete="current-password"
+                            className="w-full bg-panel-2 border border-line rounded-xl px-4 py-3 text-sm outline-none"
+                        />
+
+                        <label className="block text-[11px] font-bold text-muted mb-2 mt-4 uppercase tracking-wide">Nova senha</label>
+                        <input
+                            type="password"
+                            value={novaSenha}
+                            onChange={(e) => setNovaSenha(e.target.value)}
+                            autoComplete="new-password"
+                            placeholder="Mínimo de 8 caracteres"
+                            className="w-full bg-panel-2 border border-line rounded-xl px-4 py-3 text-sm outline-none"
+                        />
+
+                        {erroSenha && (
+                            <p className="mt-2 text-[12.5px] text-coral">{erroSenha}</p>
+                        )}
+
+                        <button
+                            type="button"
+                            onClick={atualizarSenha}
+                            disabled={!podeTrocarSenha}
+                            className="mt-3.5 px-6 py-2.5 rounded-xl bg-gradient-to-r from-holo-1 to-holo-2 text-void text-sm font-extrabold disabled:opacity-40 disabled:cursor-not-allowed"
+                        >
+                            {salvandoSenha ? 'Salvando...' : 'Atualizar senha'}
+                        </button>
+                    </Card>
+                )}
+
+                <div className="border border-coral/30 bg-coral/5 rounded-2xl p-5">
                     <h3 className="font-anton text-coral uppercase text-[15px] mb-1.5 flex items-center gap-2">
                         <AlertTriangle size={15} />
                         Excluir conta
@@ -416,18 +461,36 @@ export default function Configuracoes() {
                         </button>
                     ) : (
                         <div className="space-y-3">
-                            <div>
-                                <label className="block text-[11px] font-bold text-muted mb-2 uppercase tracking-wide">
-                                    Sua senha
-                                </label>
-                                <input
-                                    type="password"
-                                    value={senhaExclusao}
-                                    onChange={(e) => setSenhaExclusao(e.target.value)}
-                                    autoComplete="current-password"
-                                    className="w-full bg-panel-2 border border-line rounded-xl px-4 py-3 text-sm outline-none"
-                                />
-                            </div>
+                                                      {temSenha ? (
+                                <div>
+                                    <label className="block text-[11px] font-bold text-muted mb-2 uppercase tracking-wide">
+                                        Sua senha
+                                    </label>
+                                    <input
+                                        type="password"
+                                        value={senhaExclusao}
+                                        onChange={(e) => setSenhaExclusao(e.target.value)}
+                                        autoComplete="current-password"
+                                        className="w-full bg-panel-2 border border-line rounded-xl px-4 py-3 text-sm outline-none"
+                                    />
+                                </div>
+                            ) : (
+                                <div>
+                                    <label className="block text-[11px] font-bold text-muted mb-2 uppercase tracking-wide">
+                                        Confirme sua identidade
+                                    </label>
+                                    <button
+                                        type="button"
+                                        onClick={reautenticarComGoogle}
+                                        className="px-4 py-2.5 rounded-xl border border-line bg-panel-2 text-sm font-bold cursor-pointer"
+                                    >
+                                        Confirmar com Google
+                                    </button>
+                                    <p className="text-[12px] text-muted-2 mt-2">
+                                        Você volta para esta tela depois de confirmar.
+                                    </p>
+                                </div>
+                            )}
 
                             <div>
                                 <label className="block text-[11px] font-bold text-muted mb-2 uppercase tracking-wide">

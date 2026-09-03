@@ -23,6 +23,11 @@ import (
 	"github.com/JoaoMendes1/anideck/internal/middleware"
 )
 
+// Janela em que uma autenticação ainda conta como recente o bastante para
+// autorizar a exclusão. Sessão aberta e esquecida em máquina de terceiro não
+// basta: é preciso ter provado identidade agora.
+const janelaReautenticacao = 5 * time.Minute
+
 type AccountHandler struct {
 	// Injetavel para teste: em producao fica nil e cai no padrao, que chama a
 	// API admin de verdade. O teste substitui por uma funcao falsa e verifica
@@ -34,6 +39,12 @@ func (h *AccountHandler) HandleDeleteAccount(w http.ResponseWriter, r *http.Requ
 	userID, ok := r.Context().Value(middleware.UserIDKey).(string)
 	if !ok || userID == "" {
 		http.Error(w, "Não autenticado", http.StatusUnauthorized)
+		return
+	}
+
+	autenticadoEm, ok := r.Context().Value(middleware.AuthTimeKey).(time.Time)
+	if !ok || time.Since(autenticadoEm) > janelaReautenticacao {
+		http.Error(w, "Reautenticação necessária para excluir a conta", http.StatusUnauthorized)
 		return
 	}
 
