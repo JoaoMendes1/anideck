@@ -6,7 +6,7 @@ import { useCatalogoStatus } from '../contexts/CatalogoStatusContext'
 import EmBreve from '../components/EmBreve'
 import { TEMAS, aplicarTema, useTema } from '../lib/temas'
 import { ChevronDown, MessageSquare, Check, AlertTriangle } from 'lucide-react'
-import { useNavigate } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 
 const ABAS = [
     { id: 'perfil', label: 'Perfil' },
@@ -595,7 +595,12 @@ export default function Configuracoes() {
                     </div>
                 </div>
 
-                <p className="text-center text-[11px] text-muted-2 mt-8 select-none">AniDeck v{VERSAO}</p>
+                                <div className="text-center mt-8">
+                    <Link to="/privacidade" className="text-[12.5px] font-bold text-holo-3 hover:underline">
+                        Política de Privacidade
+                    </Link>
+                    <p className="text-[11px] text-muted-2 mt-3 select-none">AniDeck v{VERSAO}</p>
+                </div>
             </Secao>
         </div>
     )

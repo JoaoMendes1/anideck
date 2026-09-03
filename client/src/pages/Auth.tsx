@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import { useToast } from '../contexts/ToastContext'
 
@@ -209,6 +209,13 @@ export default function Auth() {
               {isLogin ? 'Criar conta' : 'Entrar'}
             </button>
           </div>
+                    <p className="text-center text-[11px] text-muted-2 mt-4 leading-relaxed">
+            Ao criar uma conta, por e-mail ou com o Google, você concorda com a{' '}
+            <Link to="/privacidade" className="text-holo-3 hover:underline">
+              Política de Privacidade
+            </Link>
+            .
+          </p>
         </div>
       </div>
     </div>

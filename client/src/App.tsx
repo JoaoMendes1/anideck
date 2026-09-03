@@ -13,6 +13,7 @@ import { SessaoProvider } from './contexts/SessaoContext'
 import Landing from './pages/Landing'
 import Estatisticas from './pages/Estatisticas'
 import Configuracoes from './pages/Configuracoes'
+import Privacidade from './pages/Privacidade'
 
 function App() {
   return (
@@ -26,6 +27,7 @@ function App() {
             <Route path="/calendario" element={<RotaProtegida><Calendario /></RotaProtegida>} />
             <Route path="/anime/:id" element={<Detalhes />} />
             <Route path="/rankings" element={<Rankings />} />
+            <Route path="/privacidade" element={<Privacidade />} />
             <Route path="/estatisticas" element={<RotaProtegida><Estatisticas /></RotaProtegida>} />
             <Route path="/configuracoes" element={<RotaProtegida><Configuracoes /></RotaProtegida>} />
           </Route>
