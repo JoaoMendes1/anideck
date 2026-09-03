@@ -388,20 +388,21 @@ reordenáveis, sinopse com reescrita por IA, título, formato e status.
 > cache de metadados e exclusão de conta saíram no mesmo dia. O que resta é cadastro,
 > política de privacidade e o teste de isolamento.
 
-> **Nota (03/09/2026):** teste de isolamento, troca de senha e login com Google fechados.
-> O Google expôs que a reautenticação da exclusão de conta era só do frontend — corrigido
-> no mesmo dia. Restam três itens: desligar o signup público, política de privacidade e
+> **Nota (03/09/2026):** teste de isolamento, troca de senha, login com Google e limite
+> de cadastros fechados. O Google expôs que a reautenticação da exclusão de conta era só
+> do frontend — corrigido no mesmo dia. Restam dois itens: política de privacidade e
 > recuperação de senha.
 
 - [x] **Página de Configurações e Ajuda.** É a única das dez do `PAGES.md` que nunca
       saiu do protótipo (`prototipos/config-ajuda-prototipo.html`). Precisa conter
       exclusão de conta e redefinição de senha.
 
-- [ ] **Cadastro fechado para evitar bot.** A confirmação de e-mail já está ligada
-      (`Confirm email`, em Authentication → Sign In / Providers). O que falta é desligar
-      `Allow new users to sign up`, na mesma tela. **Deixar por último:** com ele ligado
-      dá para criar conta de teste sozinho; depois cada convidado vira trabalho manual
-      no painel.
+- [x] **Cadastro fechado para evitar bot** — resolvido por limite automático em vez do
+      toggle global. O `before-user-created` hook (`sql/022`) recusa o cadastro quando
+      `auth.users` atinge o valor de `beta_signup_limit` em `app_settings`, hoje em 8.
+      A confirmação de e-mail (`Confirm email`) segue ligada como barreira adicional.
+      O toggle `Allow new users to sign up` permanece **ligado** de propósito: quem
+      fecha a porta é o limite, não ele. Feito em 02/09/2026. Ver #103 e `DECISIONS.md`.
 - [x] **Teste de isolamento entre contas** — validado em 02/09/2026 pelo PostgREST direto,
       com JWT de conta comum. Cobertos `media_entries`, `episode_progress`,
       `push_subscriptions` e `notifications` (leitura sem filtro, leitura apontada ao
