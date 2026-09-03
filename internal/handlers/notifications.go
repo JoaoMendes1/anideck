@@ -171,7 +171,7 @@ func (h *NotificationsHandler) HandleReadNotification(w http.ResponseWriter, r *
 
 func (h *NotificationsHandler) HandleCheckNewEpisodes(w http.ResponseWriter, r *http.Request) {
 		if os.Getenv("SUPABASE_SERVICE_ROLE_KEY") == "" {
-		log.Printf("[ERRO CRON] SUPABASE_SERVICE_KEY ausente")
+		log.Printf("[ERRO CRON] SUPABASE_SERVICE_ROLE_KEY ausente")
 		http.Error(w, "Erro de configuração", http.StatusInternalServerError)
 		return
 	}

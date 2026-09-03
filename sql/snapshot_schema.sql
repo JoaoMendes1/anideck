@@ -1,7 +1,7 @@
 -- =============================================================================
 -- snapshot_schema.sql — RETRATO DO BANCO. NAO EXECUTE ESTE ARQUIVO.
 -- =============================================================================
--- Regenerado em 02/09/2026 00:15 a partir do banco de producao.
+-- Regenerado em 03/09/2026 16:46 a partir do banco de producao.
 --
 -- PARA QUE SERVE: consulta rapida do estado real do banco, sem precisar abrir
 -- o painel do Supabase nem confiar nos arquivos sql/ antigos (que podem ter
@@ -479,7 +479,7 @@ CREATE OR REPLACE VIEW public.view_user_year_distribution WITH (security_invoker
 
 -- Permitir upload apenas para o Admin           | INSERT | authenticated     
 --     USING:  -
---     CHECK:  ((bucket_id = 'curadoria'::text) AND (auth.uid() = '<UUID_DO_ADMIN>'::uuid))
+--     CHECK:  ((bucket_id = 'curadoria'::text) AND (auth.uid() = '<UUID>'::uuid))
 
 -- =============================================================================
 -- [6] BUCKETS
@@ -508,6 +508,7 @@ CREATE OR REPLACE VIEW public.view_user_year_distribution WITH (security_invoker
 
 -- fn_user_genre_affinity         | definer: f     | anon: t     | auth: t     | service: t     | search_path=public, pg_temp
 -- get_cron_media_entries         | definer: t     | anon: f     | auth: f     | service: t     | search_path=public
+-- hook_limite_cadastros          | definer: f     | anon: f     | auth: f     | service: t     | sem search_path
 -- is_admin                       | definer: t     | anon: t     | auth: t     | service: t     | search_path=public, pg_temp
 -- process_cron_notification      | definer: t     | anon: f     | auth: f     | service: t     | search_path=public
 -- rls_auto_enable                | definer: t     | anon: t     | auth: t     | service: t     | search_path=pg_catalog
