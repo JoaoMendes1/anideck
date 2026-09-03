@@ -426,6 +426,38 @@ Corrigido em 30/08/2026: os cinco nomes passaram a viver escritos por extenso nu
 > varre? Se ele é montado com `${...}`, a regra CSS não vai existir — e nada vai te avisar.
 > Escreva os nomes por extenso num array e indexe.
 
+## 18 — `supabase_auth_admin` não enxerga o schema `public`
+
+Função Postgres usada como Auth Hook roda com o papel `supabase_auth_admin`, e esse
+papel **não tem acesso ao schema `public` por padrão**. Conceder `execute` na função
+não basta:
+
+```sql
+grant usage on schema public to supabase_auth_admin;
+grant execute on function public.minha_funcao to supabase_auth_admin;
+revoke execute on function public.minha_funcao from authenticated, anon, public;
+```
+
+E se a função lê alguma tabela com RLS, o `supabase_auth_admin` precisa passar por
+alguma policy — ele não é dono da tabela e não escapa da RLS. No caso do
+`hook_limite_cadastros` funcionou sem policy nova porque `app_settings` tem `SELECT`
+para `public` com `USING (true)`, e `public` cobre qualquer papel. Numa tabela com
+policy restritiva, o hook falharia em silêncio.
+
+**Por que dói:** hook com erro de permissão não avisa em lugar nenhum óbvio — ele
+simplesmente derruba o cadastro de todos os usuários. Por isso a função deve ser
+testada por chamada direta no SQL Editor **antes** de ser ativada no painel:
+
+```sql
+select public.hook_limite_cadastros('{"user":{"email":"teste@exemplo.com"}}'::jsonb);
+```
+
+`{}` significa liberado. Objeto com `error` significa bloqueado. Erro de permissão
+aparece aqui, onde não machuca.
+
+**Pergunta obrigatória ao mexer em Auth Hook:** o `supabase_auth_admin` tem `usage`
+no schema e passa pelas policies de toda tabela que a função lê?
+
 ---
 
 ## 🧭 Como manter este arquivo

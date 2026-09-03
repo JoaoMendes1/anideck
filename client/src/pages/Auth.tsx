@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import { useToast } from '../contexts/ToastContext'
@@ -19,6 +19,20 @@ export default function Auth() {
   const navigate = useNavigate()
 
   const [loadingGoogle, setLoadingGoogle] = useState(false)
+
+    // Erro de OAuth não volta como resposta de API: vem na URL depois do
+  // redirect. Lemos da query string, e não do hash, porque no hash o texto
+  // chega codificado duas vezes e apareceria com lixo no meio.
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search)
+    const descricao = params.get('error_description')
+
+    if (descricao) {
+      setError(descricao)
+      // Limpa a URL para o erro não reaparecer se a pessoa recarregar.
+      window.history.replaceState({}, '', window.location.pathname)
+    }
+  }, [])
 
   const entrarComGoogle = async () => {
     setLoadingGoogle(true)
