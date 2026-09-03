@@ -20,6 +20,20 @@ export default function Auth() {
 
   const [loadingGoogle, setLoadingGoogle] = useState(false)
 
+    // O login com Google volta para /login (e não /deck) porque /deck está dentro
+  // de RotaProtegida: sem sessão, o guard redireciona e o erro que vem na URL
+  // se perde. Como a volta bem-sucedida também cai aqui, é preciso mandar para
+  // o deck quem já chegou autenticado.
+  useEffect(() => {
+    const { data: listener } = supabase.auth.onAuthStateChange((_evento, session) => {
+      if (session) {
+        navigate('/deck')
+      }
+    })
+
+    return () => listener.subscription.unsubscribe()
+  }, [navigate])
+
     // Erro de OAuth não volta como resposta de API: vem na URL depois do
   // redirect. Lemos da query string, e não do hash, porque no hash o texto
   // chega codificado duas vezes e apareceria com lixo no meio.
