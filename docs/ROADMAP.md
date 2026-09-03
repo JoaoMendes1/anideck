@@ -388,13 +388,35 @@ reordenáveis, sinopse com reescrita por IA, título, formato e status.
 > cache de metadados e exclusão de conta saíram no mesmo dia. O que resta é cadastro,
 > política de privacidade e o teste de isolamento.
 
-- [ ] Cadastro fechado (convite ou confirmação de e-mail) para evitar bot.
+> **Nota (02/09/2026):** teste de isolamento e troca de senha fechados. Restam quatro itens:
+> desligar o signup público, política de privacidade, recuperação de senha e login com Google.
+
+- [x] **Página de Configurações e Ajuda.** É a única das dez do `PAGES.md` que nunca
+      saiu do protótipo (`prototipos/config-ajuda-prototipo.html`). Precisa conter
+      exclusão de conta e redefinição de senha.
+
+- [ ] **Cadastro fechado para evitar bot.** A confirmação de e-mail já está ligada
+      (`Confirm email`, em Authentication → Sign In / Providers). O que falta é desligar
+      `Allow new users to sign up`, na mesma tela. **Deixar por último:** com ele ligado
+      dá para criar conta de teste sozinho; depois cada convidado vira trabalho manual
+      no painel.
 - [x] **Teste de isolamento entre contas** — validado em 02/09/2026 pelo PostgREST direto,
       com JWT de conta comum. Cobertos `media_entries`, `episode_progress`,
       `push_subscriptions` e `notifications` (leitura sem filtro, leitura apontada ao
       uuid alheio e escrita no alheio, cada um com caso de controle), mais as 16 views
       e a permissão de execução das RPCs. Sem vazamento. Ver #99.
-      `episode_progress`, `push_subscriptions` e `notifications` não vazam dado entre usuários.
+- [x] **Troca de senha em Configurações** — o campo existia mas estava dentro do
+      `<EmBreve>` do cartão do Google, e o `EmBreve` aplica `inert` na subárvore inteira.
+      Separado em dois cartões e implementado com `updateUser({ current_password,
+      password })`. A validação da senha atual é do servidor (toggle `Require current
+      password when updating`), não do frontend. Feito em 02/09/2026. Ver #100.
+- [ ] **Recuperação de senha ("esqueci minha senha")** — fluxo distinto do acima, para
+      quem *não* consegue entrar. Mora no `Auth.tsx`, precisa de `resetPasswordForEmail`,
+      rota nova para definir a senha e Redirect URL configurada. **Ressalva:** usa o SMTP
+      compartilhado do plano Free, com limite baixo de envios por hora e entrega ruim.
+- [ ] **Login com Google** — provider desabilitado e sem credenciais no painel, que é o
+      estado limpo. Começa fora do código: criar credencial OAuth no Google Cloud Console
+      e registrar a Callback URL do Supabase. O cartão segue no `EmBreve` até lá.
 - [x] **Esconder o acesso ao Painel Admin na UI** — `ItensPerfil.tsx` já condiciona
       o link a `isAdmin` vindo do `SessaoContext`. É arrumação, não segurança: a
       rota `/admin` continua acessível por URL e é o `RequireAdmin` que barra.
@@ -446,13 +468,6 @@ reordenáveis, sinopse com reescrita por IA, título, formato e status.
 - [ ] **Filtro por ano na Busca, independente de temporada** — hoje o campo de ano só habilita se
       uma temporada estiver selecionada (ver `docs/ideias-para-melhorias.md`, item 7.1). Aceitável
       como está por ora; revisar se surgir demanda real de usuário.
-- [x] **Página de Configurações e Ajuda.** É a única das dez do `PAGES.md` que nunca
-      saiu do protótipo (`prototipos/config-ajuda-prototipo.html`). Precisa conter
-      exclusão de conta e redefinição de senha: hoje um usuário cadastrado não
-      consegue apagar a própria conta — só o admin, direto no banco. Exclusão de
-      conta é item da Fase 7 e requisito de LGPD, então esta página é pré-requisito
-      do beta, não enfeite. OBS: Finalizado paricalmente
-
 - [ ] **Criar anime do zero no Painel Admin.** Toda entrada em `curated_animes` hoje
       nasce de um `mal_id` da AniList — não existe caminho para cadastrar obra que
       ela não tem. **Trava principal:** o `mal_id` é a chave que liga

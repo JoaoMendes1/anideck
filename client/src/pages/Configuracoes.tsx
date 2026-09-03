@@ -80,7 +80,14 @@ export default function Configuracoes() {
     const [erro, setErro] = useState<string | null>(null)
     const [faqAberta, setFaqAberta] = useState<number | null>(0)
 
-    
+  
+    const [senhaAtual, setSenhaAtual] = useState('')
+    const [novaSenha, setNovaSenha] = useState('')
+    const [salvandoSenha, setSalvandoSenha] = useState(false)
+    const [erroSenha, setErroSenha] = useState<string | null>(null)
+
+    const podeTrocarSenha = senhaAtual.length > 0 && novaSenha.length >= 8 && !salvandoSenha
+
     const navigate = useNavigate()
     const [modalExclusao, setModalExclusao] = useState(false)
     const [senhaExclusao, setSenhaExclusao] = useState('')
@@ -166,6 +173,33 @@ export default function Configuracoes() {
         setNomeOriginal(nome.trim())
         setSalvando(false)
         showToast('Perfil atualizado!')
+    }
+
+       const atualizarSenha = async () => {
+        setSalvandoSenha(true)
+        setErroSenha(null)
+
+        // current_password é validado pelo GoTrue, no servidor — depende do
+        // toggle "Require current password when updating", ligado no painel.
+        const { error } = await supabase.auth.updateUser({
+            current_password: senhaAtual,
+            password: novaSenha,
+        })
+
+        if (error) {
+            setErroSenha(
+                error.status === 401 || error.status === 422
+                    ? 'Senha atual incorreta.'
+                    : 'Não foi possível atualizar a senha. Tente de novo.'
+            )
+            setSalvandoSenha(false)
+            return
+        }
+
+        setSenhaAtual('')
+        setNovaSenha('')
+        setSalvandoSenha(false)
+        showToast('Senha atualizada!')
     }
 
     const inicial = (nome || 'U').charAt(0).toUpperCase()
@@ -326,17 +360,42 @@ export default function Configuracoes() {
                             </span>
                         </div>
 
-                        <label className="block text-[11px] font-bold text-muted mb-2 mt-5 uppercase tracking-wide">Nova senha</label>
-                        <input
-                            type="password"
-                            placeholder="Deixe em branco pra não alterar"
-                            className="w-full bg-panel-2 border border-line rounded-xl px-4 py-3 text-sm outline-none"
-                        />
-                        <button type="button" className="mt-3.5 px-6 py-2.5 rounded-xl bg-gradient-to-r from-holo-1 to-holo-2 text-void text-sm font-extrabold">
-                            Atualizar senha
-                        </button>
-                    </Card>
+                                  </Card>
                 </EmBreve>
+
+                <Card className="mb-4">
+                    <label className="block text-[11px] font-bold text-muted mb-2 uppercase tracking-wide">Senha atual</label>
+                    <input
+                        type="password"
+                        value={senhaAtual}
+                        onChange={(e) => setSenhaAtual(e.target.value)}
+                        autoComplete="current-password"
+                        className="w-full bg-panel-2 border border-line rounded-xl px-4 py-3 text-sm outline-none"
+                    />
+
+                    <label className="block text-[11px] font-bold text-muted mb-2 mt-4 uppercase tracking-wide">Nova senha</label>
+                    <input
+                        type="password"
+                        value={novaSenha}
+                        onChange={(e) => setNovaSenha(e.target.value)}
+                        autoComplete="new-password"
+                        placeholder="Mínimo de 8 caracteres"
+                        className="w-full bg-panel-2 border border-line rounded-xl px-4 py-3 text-sm outline-none"
+                    />
+
+                    {erroSenha && (
+                        <p className="mt-2 text-[12.5px] text-coral">{erroSenha}</p>
+                    )}
+
+                    <button
+                        type="button"
+                        onClick={atualizarSenha}
+                        disabled={!podeTrocarSenha}
+                        className="mt-3.5 px-6 py-2.5 rounded-xl bg-gradient-to-r from-holo-1 to-holo-2 text-void text-sm font-extrabold disabled:opacity-40 disabled:cursor-not-allowed"
+                    >
+                        {salvandoSenha ? 'Salvando...' : 'Atualizar senha'}
+                    </button>
+                </Card>
 
                                 <div className="border border-coral/30 bg-coral/5 rounded-2xl p-5">
                     <h3 className="font-anton text-coral uppercase text-[15px] mb-1.5 flex items-center gap-2">
