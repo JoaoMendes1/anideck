@@ -390,8 +390,7 @@ reordenáveis, sinopse com reescrita por IA, título, formato e status.
 
 > **Nota (03/09/2026):** teste de isolamento, troca de senha, login com Google e limite
 > de cadastros fechados. O Google expôs que a reautenticação da exclusão de conta era só
-> do frontend — corrigido no mesmo dia. Restam dois itens: política de privacidade e
-> recuperação de senha.
+> do frontend — corrigido no mesmo dia. > Restam dois itens: recuperação de senha e o canal de reporte de bug.
 
 - [x] **Página de Configurações e Ajuda.** É a única das dez do `PAGES.md` que nunca
       saiu do protótipo (`prototipos/config-ajuda-prototipo.html`). Precisa conter
@@ -429,7 +428,11 @@ reordenáveis, sinopse com reescrita por IA, título, formato e status.
       Configurações, com reautenticação por senha e confirmação digitada. Saiu melhor
       que o previsto aqui: não é operada manualmente. Aplicado e validado em
       01/09/2026. Ver #98 e `DECISIONS.md`.
-- [ ] Política de privacidade curta (LGPD).
+- [x] **Política de privacidade (LGPD)** — página pública em `/privacidade`, fora do
+      `RotaProtegida`, com link no `Auth.tsx` (cobrindo e-mail e Google) e em
+      Configurações. Conteúdo derivado do `snapshot_schema.sql`, não de suposição.
+      Exportação de dados declarada como atendimento por e-mail, sem prometer botão.
+      Feito em 03/09/2026. Ver #NN e `DECISIONS.md`.
 - [ ] Canal de reporte de bug (grupo de mensagens já resolve).
 - [x] **Rotina própria de backup e restauração validada** — pré-requisito
       inegociável antes do primeiro convite. Backup automático não existe no

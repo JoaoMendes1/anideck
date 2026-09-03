@@ -10,8 +10,9 @@
 | 8 | Estatísticas | `Estatisticas.tsx` | ✅ Implementada | Fase 4 / 6.8 |
 | 9 | Painel Admin (curadoria) | `PainelAdmin.tsx` | ✅ Implementada | Fase 2.5 / 4.5 |
 | 10 | Configurações & Ajuda | `Configuracoes.tsx` | ✅ Implementada | Fase 2 |
+| 11 | Política de Privacidade | `Privacidade.tsx` | ✅ Implementada | Fase 7 |
 
-**Total: 10 páginas implementadas.**
+**Total: 11 páginas implementadas.**
 
 > Em Configurações, três blocos seguem marcados com `EmBreve` — têm desenho e não têm
 > código (foto de perfil, notificações, exportar dados). Login com Google saiu da lista
