@@ -13,9 +13,11 @@
 
 **Total: 10 páginas implementadas.**
 
-> Em Configurações, quatro blocos seguem marcados com `EmBreve` — têm desenho e não têm
-> código (foto de perfil, notificações, login com Google, exportar dados). A seção
-> **Aparência** deixou de ser um deles: o seletor de tema funciona.
+> Em Configurações, três blocos seguem marcados com `EmBreve` — têm desenho e não têm
+> código (foto de perfil, notificações, exportar dados). Login com Google saiu da lista
+> em 02/09: o cartão mostra o estado real da conta. A troca de senha, que estava presa
+> junto dele sem motivo, foi separada no mesmo dia e funciona. A seção **Aparência**
+> também deixou de ser um deles: o seletor de tema funciona.
 
 > A coluna `Arquivo` existe para tornar a verificação barata: conferir este documento é
 > abrir `client/src/pages/` e comparar. Sem ela, "✅ Implementada" é afirmação que
