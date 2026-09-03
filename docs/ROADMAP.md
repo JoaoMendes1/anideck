@@ -388,8 +388,10 @@ reordenáveis, sinopse com reescrita por IA, título, formato e status.
 > cache de metadados e exclusão de conta saíram no mesmo dia. O que resta é cadastro,
 > política de privacidade e o teste de isolamento.
 
-> **Nota (02/09/2026):** teste de isolamento e troca de senha fechados. Restam quatro itens:
-> desligar o signup público, política de privacidade, recuperação de senha e login com Google.
+> **Nota (03/09/2026):** teste de isolamento, troca de senha e login com Google fechados.
+> O Google expôs que a reautenticação da exclusão de conta era só do frontend — corrigido
+> no mesmo dia. Restam três itens: desligar o signup público, política de privacidade e
+> recuperação de senha.
 
 - [x] **Página de Configurações e Ajuda.** É a única das dez do `PAGES.md` que nunca
       saiu do protótipo (`prototipos/config-ajuda-prototipo.html`). Precisa conter
@@ -414,9 +416,10 @@ reordenáveis, sinopse com reescrita por IA, título, formato e status.
       quem *não* consegue entrar. Mora no `Auth.tsx`, precisa de `resetPasswordForEmail`,
       rota nova para definir a senha e Redirect URL configurada. **Ressalva:** usa o SMTP
       compartilhado do plano Free, com limite baixo de envios por hora e entrega ruim.
-- [ ] **Login com Google** — provider desabilitado e sem credenciais no painel, que é o
-      estado limpo. Começa fora do código: criar credencial OAuth no Google Cloud Console
-      e registrar a Callback URL do Supabase. O cartão segue no `EmBreve` até lá.
+- [x] **Login com Google** — provider configurado com credenciais próprias (Google Cloud
+      Console, app em status Teste com usuários listados) e botão "Continuar com Google"
+      no `Auth.tsx`. O cartão saiu do `EmBreve` e mostra se a conta está conectada.
+      Entregue em 02/09/2026. Ver #101 e `DECISIONS.md`.
 - [x] **Esconder o acesso ao Painel Admin na UI** — `ItensPerfil.tsx` já condiciona
       o link a `isAdmin` vindo do `SessaoContext`. É arrumação, não segurança: a
       rota `/admin` continua acessível por URL e é o `RequireAdmin` que barra.
