@@ -17,7 +17,6 @@ import (
 	"github.com/google/uuid"
 )
 
-
 type EntriesHandler struct{}
 
 func (h *EntriesHandler) HandleList(w http.ResponseWriter, r *http.Request) {
@@ -74,7 +73,7 @@ func (h *EntriesHandler) HandleCreate(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	syncMetadataCacheAsync(entrada.MalID, token)
+	syncMetadataCacheAsync(entrada.MalID, token, entrada.Status == "Completo", userID)
 
 	w.Header().Set("Content-Type", "application/json")
 	w.Write(data)
@@ -122,7 +121,7 @@ func (h *EntriesHandler) HandleUpdate(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	syncMetadataCacheAsync(entrada.MalID, token)
+	syncMetadataCacheAsync(entrada.MalID, token, entrada.Status == "Completo", userID)
 
 	w.Header().Set("Content-Type", "application/json")
 	w.Write(data)
@@ -131,7 +130,7 @@ func (h *EntriesHandler) HandleUpdate(w http.ResponseWriter, r *http.Request) {
 func (h *EntriesHandler) HandleDelete(w http.ResponseWriter, r *http.Request) {
 	id := chi.URLParam(r, "id")
 	token, ok := r.Context().Value(middleware.TokenKey).(string)
-		userID, userOk := r.Context().Value(middleware.UserIDKey).(string)
+	userID, userOk := r.Context().Value(middleware.UserIDKey).(string)
 	if !ok || !userOk {
 		http.Error(w, "Não autorizado", http.StatusUnauthorized)
 		return
@@ -222,10 +221,29 @@ func syncMetadataCache(ctx context.Context, client anilist.Service, malID int, t
 	return nil
 }
 
-func syncMetadataCacheAsync(malID int, token string) {
+// syncMetadataCacheAsync sincroniza o cache em segundo plano e, quando o anime foi
+// salvo como "Completo", preenche episode_progress logo em seguida.
+//
+// O preenchimento roda DENTRO desta goroutine, depois da sincronização, e não em
+// paralelo. O motivo é uma corrida real observada em produção: numa entrada nova,
+// o anime ainda não existe em anime_metadata_cache, então o preenchimento não acha
+// a contagem de episódios e é pulado — o status salva normalmente e o usuário fica
+// sem nenhum episódio marcado, sem erro na tela.
+//
+// Sequência do log que revelou o problema:
+//
+//	[EPISODIOS LOTE] Sem contagem de episódios para mal_id=22199, preenchimento pulado
+//	[CACHE METADATA] Metadados sincronizados com sucesso para: Akame ga Kill!
+//
+// Encadear resolve na raiz: quando o preenchimento roda, a contagem já está no cache.
+func syncMetadataCacheAsync(malID int, token string, completo bool, userID string) {
 	go func() {
 		if err := syncMetadataCache(context.Background(), anilist.NewClient(), malID, token); err != nil {
 			log.Printf("[CACHE METADATA] %v", err)
+		}
+
+		if completo {
+			preencherEpisodiosCompleto(token, userID, malID)
 		}
 	}()
 }
