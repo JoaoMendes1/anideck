@@ -14,7 +14,7 @@
 ## 🚀 Deploy contínuo
 Staging sobe já na Fase 1, como projeto esqueleto — mesmo padrão do JVM Systems.
 
-## 📍 Status atual (27/08/2026)
+## 📍 Status atual (04/09/2026)
 
 | Fase | Status |
 |---|---|
@@ -30,7 +30,7 @@ Staging sobe já na Fase 1, como projeto esqueleto — mesmo padrão do JVM Syst
 | 6.7 · Progresso por Episódio | ✅ Concluída |
 | 6.8 · Taxonomia & Estatísticas | ✅ Concluída |
 | 6.9 · Catálogo Próprio & Independência | ✅ Concluída |
-| 7 · Multiusuário | 🔜 Próxima — beta fechado |
+| 7 · Multiusuário | ✅ Concluída — beta fechado em andamento |
 | 8 · App Instalável | ✅ Concluída (escopo reduzido) |
 
 ---
@@ -380,9 +380,10 @@ reordenáveis, sinopse com reescrita por IA, título, formato e status.
 
 > **Nota (21/08/2026):** a fase deixou de ser "futuro, avaliar quando chegar" e ganhou objetivo
 > concreto: abrir o AniDeck para um grupo pequeno de convidados, gratuitamente, com o propósito
-> de observar como o sistema se comporta com gente que não é o autor. **Não há monetização
-> nesta fase.** Número de convidados é o que aparecer — duas ou três pessoas já cumprem o
-> objetivo técnico de sair da amostra de um usuário só.
+> de observar como o sistema se comporta com gente que não é o autor.
+>
+> **Não há monetização nesta fase.** Número de convidados é o que aparecer — duas ou três
+> pessoas já cumprem o objetivo técnico de sair da amostra de um usuário só.
 
 > **Nota (01/09/2026):** os itens de segurança da fase estão fechados. Backup, escrita do
 > cache de metadados e exclusão de conta saíram no mesmo dia. O que resta é cadastro,
@@ -390,12 +391,25 @@ reordenáveis, sinopse com reescrita por IA, título, formato e status.
 
 > **Nota (03/09/2026):** teste de isolamento, troca de senha, login com Google e limite
 > de cadastros fechados. O Google expôs que a reautenticação da exclusão de conta era só
-> do frontend — corrigido no mesmo dia. > Restam dois itens: recuperação de senha e o canal de reporte de bug.
+> do frontend — corrigido no mesmo dia.
+
+> **Nota (04/09/2026):** fase encerrada, com a política de privacidade publicada. Três itens
+> foram **congelados**, com motivo e gatilho de reabertura no `DECISIONS.md`: a recuperação
+> de senha, o SMTP próprio e o formulário de reporte de bug no site. Os três são atendidos
+> à mão na escala do beta fechado — senha esquecida se resolve pelo painel do Supabase, e
+> relato de bug pelo grupo de mensagens. Nenhum deles bloqueia os convites.
+>
+> **A ordem importa quando reabrir:** o SMTP próprio vem primeiro. O serviço compartilhado do
+> plano Free tem teto de 2 e-mails por hora no projeto inteiro, então um fluxo de "esqueci
+> minha senha" construído em cima dele passaria no teste do autor e falharia no dia do convite.
+>
+> Os dois itens que seguem sem marcação não são pendência de execução: reavaliar o modelo
+> de dados depende do que o beta revelar, e o pré-requisito do ranking depende de base de
+> usuários real. Ficam abertos até o beta rodar.
 
 - [x] **Página de Configurações e Ajuda.** É a única das dez do `PAGES.md` que nunca
       saiu do protótipo (`prototipos/config-ajuda-prototipo.html`). Precisa conter
       exclusão de conta e redefinição de senha.
-
 - [x] **Cadastro fechado para evitar bot** — resolvido por limite automático em vez do
       toggle global. O `before-user-created` hook (`sql/022`) recusa o cadastro quando
       `auth.users` atinge o valor de `beta_signup_limit` em `app_settings`, hoje em 8.
@@ -412,10 +426,12 @@ reordenáveis, sinopse com reescrita por IA, título, formato e status.
       Separado em dois cartões e implementado com `updateUser({ current_password,
       password })`. A validação da senha atual é do servidor (toggle `Require current
       password when updating`), não do frontend. Feito em 02/09/2026. Ver #100.
-- [ ] **Recuperação de senha ("esqueci minha senha")** — fluxo distinto do acima, para
-      quem *não* consegue entrar. Mora no `Auth.tsx`, precisa de `resetPasswordForEmail`,
-      rota nova para definir a senha e Redirect URL configurada. **Ressalva:** usa o SMTP
-      compartilhado do plano Free, com limite baixo de envios por hora e entrega ruim.
+- [x] **Recuperação de senha ("esqueci minha senha")** — atendida **manualmente**: quem
+      perde a senha me avisa e eu reseto pelo painel do Supabase. **Não existe fluxo no
+      app** — o `Auth.tsx` não tem "esqueci minha senha", não chama `resetPasswordForEmail`
+      e não há rota para definir senha nova. Marcado como resolvido porque a necessidade
+      está coberta na escala de 3 testadores, não porque a feature exista. Congelado em
+      04/09/2026, depois do SMTP próprio, que é pré-requisito dele. Ver `DECISIONS.md`.
 - [x] **Login com Google** — provider configurado com credenciais próprias (Google Cloud
       Console, app em status Teste com usuários listados) e botão "Continuar com Google"
       no `Auth.tsx`. O cartão saiu do `EmBreve` e mostra se a conta está conectada.
@@ -433,7 +449,9 @@ reordenáveis, sinopse com reescrita por IA, título, formato e status.
       Configurações. Conteúdo derivado do `snapshot_schema.sql`, não de suposição.
       Exportação de dados declarada como atendimento por e-mail, sem prometer botão.
       Feito em 03/09/2026. Ver #NN e `DECISIONS.md`.
-- [ ] Canal de reporte de bug (grupo de mensagens já resolve).
+- [x] **Canal de reporte de bug** — o grupo de mensagens resolve na escala do beta
+      fechado. O formulário no site, com envio por SMTP próprio, foi avaliado e
+      congelado em 04/09/2026. Ver `DECISIONS.md`.
 - [x] **Rotina própria de backup e restauração validada** — pré-requisito
       inegociável antes do primeiro convite. Backup automático não existe no
       plano Free; a rotina é `pg_dump` (banco + `auth.users`) e `aws s3 sync`
