@@ -150,23 +150,28 @@ func (h *CurationHandler) HandleAIRewrite(w http.ResponseWriter, r *http.Request
 		return
 	}
 
-	config := &genai.GenerateContentConfig{
+		config := &genai.GenerateContentConfig{
 		SystemInstruction: &genai.Content{
 			Parts: []*genai.Part{{
 				Text: systemInstructionText,
 			}},
 		},
 		ResponseMIMEType: "application/json",
+		// Sem temperatura explícita o Gemini usa o padrão, que é alto: o mesmo
+		// anime com o mesmo prompt devolvia listas de tag diferentes a cada
+		// clique. Curadoria é classificação, não criação — aqui consistência
+		// vale mais que variedade.
+		Temperature: genai.Ptr[float32](0.3),
 	}
 
 	prompt := fmt.Sprintf("Título do anime: %s\nSinopse original técnica: %s", req.Title, req.Synopsis)
 
-	modelsToTry := []string{"gemini-3.7-flash", "gemini-3.6-flash"}
+	modelsToTry := []string{"gemini-3.8-flash", "gemini-3.7-flash", "gemini-3.6-flash"}
 	var resp *genai.GenerateContentResponse
 	var apiErr error
 
 	for _, modelName := range modelsToTry {
-		attemptCtx, cancel := context.WithTimeout(r.Context(), 30*time.Second)
+		attemptCtx, cancel := context.WithTimeout(r.Context(), 45*time.Second)
 		resp, apiErr = client.Models.GenerateContent(attemptCtx, modelName, genai.Text(prompt), config)
 		cancel()
 
