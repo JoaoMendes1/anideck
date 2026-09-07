@@ -881,6 +881,7 @@ export default function PainelAdmin() {
 
                     <CuradoriaEpisodios
                       episodes={episodios}
+                      dataEstreiaBase={estreia}
                       onAdd={(ep) => setEpisodios([...episodios, ep])}
                       onUpdate={(index, ep) => {
                         const novos = [...episodios]

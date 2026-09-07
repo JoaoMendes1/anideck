@@ -151,3 +151,100 @@ func ConverterEstreia(bruto *string, daAniList *anilist.FuzzyDate) (*anilist.Fuz
 	log.Printf("[CURADORIA] custom_first_aired_at ilegível (%q), usando a data da AniList", *bruto)
 	return daAniList, ""
 }
+
+// CalcularProximoEpisodioCurado varre custom_episodes e sintetiza o nextAiringEpisode
+// com base no primeiro episódio cuja data de exibição seja futura em relação a agora.
+func CalcularProximoEpisodioCurado(bruto json.RawMessage, firstAiredAt *string) *anilist.NextAiringEpisode {
+	if jsonAusente(bruto) {
+		return nil
+	}
+
+	var curados []episodioCurado
+	if err := json.Unmarshal(bruto, &curados); err != nil {
+		return nil
+	}
+
+	agora := time.Now().UTC()
+	var proximo *episodioCurado
+	var menorData time.Time
+
+	// Se houver firstAiredAt, extraímos o horário base para episódios que têm apenas data
+	var baseHour, baseMin, baseSec int
+	var baseLoc *time.Location = time.UTC
+	var temBaseTime bool
+
+	if firstAiredAt != nil && *firstAiredAt != "" {
+		for _, f := range formatosDeEstreia {
+			if t, err := time.Parse(f, *firstAiredAt); err == nil {
+				baseHour = t.Hour()
+				baseMin = t.Minute()
+				baseSec = t.Second()
+				baseLoc = t.Location()
+				temBaseTime = true
+				break
+			}
+		}
+	}
+
+	for _, ep := range curados {
+		if ep.AiredAt == "" || ep.Number < 1 {
+			continue
+		}
+
+		var dataEp time.Time
+		var parseOk bool
+
+		// 1. Tenta formatos com data e hora
+		for _, f := range []string{
+			time.RFC3339,
+			"2006-01-02T15:04:05.999999999",
+			"2006-01-02T15:04:05",
+			"2006-01-02T15:04",
+		} {
+			if t, err := time.Parse(f, ep.AiredAt); err == nil {
+				dataEp = t.UTC()
+				parseOk = true
+				break
+			}
+		}
+
+		// 2. Se for apenas data YYYY-MM-DD
+		if !parseOk {
+			if t, err := time.Parse("2006-01-02", ep.AiredAt); err == nil {
+				if temBaseTime {
+					// Herda o horário exato da estreia no mesmo fuso
+					dataEp = time.Date(t.Year(), t.Month(), t.Day(), baseHour, baseMin, baseSec, 0, baseLoc).UTC()
+				} else {
+					// Meio-dia UTC evita que fusos negativos (UTC-3) recuem para o dia anterior às 21:00
+					dataEp = time.Date(t.Year(), t.Month(), t.Day(), 12, 0, 0, 0, time.UTC)
+				}
+				parseOk = true
+			}
+		}
+
+		if !parseOk {
+			continue
+		}
+
+		if dataEp.After(agora) {
+			if proximo == nil || dataEp.Before(menorData) {
+				menorData = dataEp
+				epCopy := ep
+				proximo = &epCopy
+			}
+		}
+	}
+
+	if proximo == nil {
+		return nil
+	}
+
+	airingAt := int(menorData.Unix())
+	segundosRestantes := int(menorData.Sub(agora).Seconds())
+
+	return &anilist.NextAiringEpisode{
+		Episode:         proximo.Number,
+		AiringAt:        airingAt,
+		TimeUntilAiring: segundosRestantes,
+	}
+}

@@ -1,37 +1,27 @@
 // client/src/components/CuradoriaEpisodios.tsx
-// Editor dos episódios curados. Mesmo molde do CuradoriaPersonagens.
-//
-// A regra que rege este componente inteiro: o NÚMERO do episódio é imutável depois de
-// existir. `episode_progress` referencia esse número e não há chave estrangeira entre as
-// duas tabelas — renumerar faz o progresso já marcado pelo usuário apontar para o episódio
-// errado, sem erro e sem aviso. Por isso o campo fica travado ao editar: corrigir um
-// episódio significa mudar o conteúdo, nunca o número.
 import { useState } from 'react'
-import { Plus, Trash2, UploadCloud, Check, X, Lock, DownloadCloud, ListPlus } from 'lucide-react'
+import { Plus, Trash2, UploadCloud, Check, X, Lock, DownloadCloud, ListPlus, Calendar } from 'lucide-react'
 import type { CuratedEpisode } from '../types/curation'
 
 interface CuradoriaEpisodiosProps {
   episodes: CuratedEpisode[]
+  dataEstreiaBase?: string
   onAdd: (ep: CuratedEpisode) => void
   onUpdate: (index: number, ep: CuratedEpisode) => void
   onRemove: (index: number) => void
   onUploadImage: (file: File) => Promise<string | null>
   uploading: boolean
   onValidationError: (msg: string) => void
-  /** Busca os episódios na AniList. Devolve null quando falha — o erro já foi informado. */
   onImportar: () => Promise<CuratedEpisode[] | null>
   importando: boolean
-  /** Substitui a lista inteira. Usado pelas duas formas de preencher de uma vez. */
   onDefinirLista: (eps: CuratedEpisode[]) => void
 }
 
-// Teto para a geração de episódios vazios. Um anime longo passa de 500 episódios, mas quem
-// cadastra One Piece pela grade do Painel tem um problema maior — e o número existe para
-// impedir que um dígito a mais trave o navegador montando 99 mil campos.
 const MAX_EPISODIOS_GERADOS = 500
 
 export default function CuradoriaEpisodios({
   episodes,
+  dataEstreiaBase,
   onAdd,
   onUpdate,
   onRemove,
@@ -51,10 +41,32 @@ export default function CuradoriaEpisodios({
 
   const emEdicao = editIndex !== null
 
-  // Junta uma lista vinda de fora com a que já está na tela.
-  //
-  // O que já foi curado sempre vence: importar de novo depois de corrigir três episódios não
-  // pode desfazer as correções. Os de fora só preenchem as lacunas.
+  const paraInputDateTime = (val?: string) => {
+    if (!val) return ''
+    if (/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/.test(val)) return val
+    if (/^\d{4}-\d{2}-\d{2}$/.test(val)) return `${val}T12:00`
+    const d = new Date(val)
+    if (isNaN(d.getTime())) return ''
+    const pad = (n: number) => String(n).padStart(2, '0')
+    return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`
+  }
+
+  const paraBanco = (val: string) => {
+    if (!val) return ''
+    const d = new Date(val)
+    return isNaN(d.getTime()) ? val : d.toISOString()
+  }
+
+  // Formata com data completa (DD/MM/AAAA às HH:mm) para não gerar confusão de anos
+  const formatarDataCard = (val?: string) => {
+    if (!val) return null
+    const d = new Date(val.includes('T') ? val : `${val}T12:00:00`)
+    if (isNaN(d.getTime())) return val
+    const dataStr = d.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric' })
+    const horaStr = d.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })
+    return `${dataStr} às ${horaStr}`
+  }
+
   const mesclar = (novos: CuratedEpisode[]) => {
     const porNumero = new Map<number, CuratedEpisode>()
     for (const ep of episodes) porNumero.set(ep.number, ep)
@@ -66,7 +78,7 @@ export default function CuradoriaEpisodios({
 
   const importar = async () => {
     const lista = await onImportar()
-    if (!lista) return // a falha já virou mensagem para o usuário
+    if (!lista) return
     if (lista.length === 0) {
       onValidationError('A AniList não tem episódios cadastrados para este anime. Use "Gerar vazios".')
       return
@@ -89,6 +101,44 @@ export default function CuradoriaEpisodios({
     setTotalParaGerar('')
   }
 
+  const distribuirDatasSemanais = () => {
+    if (episodes.length === 0) {
+      onValidationError('Cadastre ou gere os episódios antes de distribuir as datas.')
+      return
+    }
+
+    let baseDate: Date | null = null
+
+    if (dataEstreiaBase) {
+      const d = new Date(dataEstreiaBase)
+      if (!isNaN(d.getTime())) baseDate = d
+    }
+
+    if (!baseDate) {
+      const ep1 = episodes.find(e => e.number === 1)
+      if (ep1?.aired_at) {
+        const d = new Date(ep1.aired_at)
+        if (!isNaN(d.getTime())) baseDate = d
+      }
+    }
+
+    if (!baseDate) {
+      onValidationError('Defina a data e hora de estreia do Episódio 1 antes de distribuir as datas.')
+      return
+    }
+
+    const novos = episodes.map(ep => {
+      const semanasOffset = ep.number - 1
+      const dataEp = new Date(baseDate!.getTime() + semanasOffset * 7 * 24 * 60 * 60 * 1000)
+      return {
+        ...ep,
+        aired_at: dataEp.toISOString(),
+      }
+    })
+
+    onDefinirLista(novos)
+  }
+
   const cancelarEdicao = () => {
     setEditIndex(null)
     setNumero('')
@@ -105,7 +155,6 @@ export default function CuradoriaEpisodios({
       return
     }
 
-    // Número repetido criaria dois episódios disputando a mesma posição na grade.
     const jaExiste = episodes.some((ep, i) => ep.number === num && i !== editIndex)
     if (jaExiste) {
       onValidationError(`Já existe um episódio ${num} cadastrado.`)
@@ -116,7 +165,7 @@ export default function CuradoriaEpisodios({
       number: num,
       title: titulo.trim(),
       image: imagem.trim(),
-      aired_at: dataExibicao,
+      aired_at: paraBanco(dataExibicao),
     }
 
     if (emEdicao) {
@@ -133,7 +182,7 @@ export default function CuradoriaEpisodios({
     setNumero(String(ep.number))
     setTitulo(ep.title || '')
     setImagem(ep.image || '')
-    setDataExibicao(ep.aired_at || '')
+    setDataExibicao(paraInputDateTime(ep.aired_at))
   }
 
   const remover = (index: number) => {
@@ -146,8 +195,6 @@ export default function CuradoriaEpisodios({
     if (url) setImagem(url)
   }
 
-  // Ordena só para exibir. O índice real do array é preservado para o onUpdate/onRemove
-  // acertarem o item certo mesmo com a lista fora de ordem.
   const ordenados = episodes
     .map((ep, index) => ({ ep, index }))
     .sort((a, b) => a.ep.number - b.ep.number)
@@ -162,8 +209,7 @@ export default function CuradoriaEpisodios({
         Só o que você cadastrar aqui substitui a AniList — os demais episódios continuam vindo dela.
       </p>
 
-      {/* Preencher de uma vez. Dois caminhos porque um depende da AniList estar no ar e o
-          outro não — e foi a queda dela que originou esta fase inteira. */}
+      {/* Barra de Ações Rápidas */}
       <div className="flex flex-col sm:flex-row sm:items-center gap-2 mb-4 p-2.5 rounded-lg bg-panel border border-line">
         <button
           type="button"
@@ -199,7 +245,17 @@ export default function CuradoriaEpisodios({
           </button>
         </div>
 
-        <span className="text-[9.5px] text-muted-2 sm:ml-auto">O que você já curou nunca é sobrescrito</span>
+        <span className="hidden sm:block w-px h-5 bg-line shrink-0" aria-hidden="true"></span>
+
+        <button
+          type="button"
+          onClick={distribuirDatasSemanais}
+          className="flex items-center justify-center gap-1.5 text-[11px] font-bold bg-holo-2/15 text-holo-2 border border-holo-2/40 px-3 py-1.5 rounded-md hover:bg-holo-2/25 transition-colors cursor-pointer shrink-0"
+          title="Calcula as datas de todos os episódios a cada 7 dias a partir do Episódio 1"
+        >
+          <Calendar size={13} />
+          Distribuir datas (+7d)
+        </button>
       </div>
 
       <div className={`flex flex-col sm:flex-row sm:items-end gap-3 mb-4 p-3 rounded-lg border transition-colors ${emEdicao ? 'bg-holo-3/5 border-holo-3' : 'bg-panel border-line'}`}>
@@ -214,7 +270,6 @@ export default function CuradoriaEpisodios({
             value={numero}
             disabled={emEdicao}
             onChange={(e) => setNumero(e.target.value)}
-            title={emEdicao ? 'O número não muda depois de cadastrado — o progresso dos usuários depende dele' : undefined}
             className="w-full bg-panel-2 border border-line rounded px-2 py-1.5 text-xs outline-none focus:border-holo-2 text-text disabled:opacity-50 disabled:cursor-not-allowed tabular-nums"
           />
         </div>
@@ -258,9 +313,9 @@ export default function CuradoriaEpisodios({
 
         <div className="flex items-end gap-2">
           <div className="flex-1 sm:flex-none">
-            <label className="block text-[10px] mb-1 font-bold text-muted">Exibição</label>
+            <label className="block text-[10px] mb-1 font-bold text-muted">Exibição (data e hora)</label>
             <input
-              type="date"
+              type="datetime-local"
               value={dataExibicao}
               onChange={(e) => setDataExibicao(e.target.value)}
               className="w-full sm:w-auto bg-panel-2 border border-line rounded px-2 py-1.5 text-xs outline-none focus:border-holo-2 text-text"
@@ -295,7 +350,7 @@ export default function CuradoriaEpisodios({
               <div
                 key={index}
                 onClick={() => editar(index, ep)}
-                className={`w-32 shrink-0 relative group cursor-pointer rounded-lg p-1 transition-all snap-start ${
+                className={`w-40 shrink-0 relative group cursor-pointer rounded-lg p-2 transition-all snap-start ${
                   editando ? 'bg-panel-2 ring-1 ring-holo-3 shadow-[0_0_15px_rgba(63,224,240,0.15)]' : 'hover:bg-panel'
                 }`}
               >
@@ -323,7 +378,11 @@ export default function CuradoriaEpisodios({
                 </div>
                 <div className={`text-[10px] font-bold font-mono tabular-nums ${editando ? 'text-holo-3' : 'text-holo-2'}`}>EP {ep.number}</div>
                 <div className="text-[10px] text-text truncate">{ep.title || <span className="text-muted-2">sem título</span>}</div>
-                {ep.aired_at && <div className="text-[9px] text-muted-2 font-mono tabular-nums">{ep.aired_at}</div>}
+                {ep.aired_at && (
+                  <div className="text-[9.5px] text-holo-3/90 font-mono tabular-nums truncate mt-0.5" title={formatarDataCard(ep.aired_at) || ep.aired_at}>
+                    {formatarDataCard(ep.aired_at)}
+                  </div>
+                )}
               </div>
             )
           })}
