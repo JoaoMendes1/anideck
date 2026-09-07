@@ -158,6 +158,24 @@ export default function Detalhes() {
     // a identidade nunca muda, então entram na lista sem alterar quando o efeito roda.
   }, [id, reportarFalha, reportarSucesso])
 
+  const recarregarEpisodios = async () => {
+    const { data: { session } } = await supabase.auth.getSession()
+    if (!session || !id) return
+    try {
+      const resEps = await fetch(`/api/entries/${id}/episodes`, {
+        headers: { 'Authorization': `Bearer ${session.access_token}` }
+      })
+      if (resEps.ok) {
+        const epsData: number[] = await resEps.json()
+        if (Array.isArray(epsData) && epsData.length > 0) {
+          setEpisodiosAssistidos(epsData)
+        }
+      }
+    } catch (e) {
+      console.error('Erro ao recarregar progresso:', e)
+    }
+  }
+
   const handleAtualizarEntradaRapida = async (novoStatus: string) => {
     setSalvandoStatus(true)
     const { data: { session } } = await supabase.auth.getSession()
@@ -189,6 +207,15 @@ export default function Detalhes() {
       if (!response.ok) throw new Error()
       const atualizada = await response.json()
       setMinhaEntrada(Array.isArray(atualizada) ? atualizada[0] : atualizada)
+
+      if (novoStatus === 'Completo') {
+        const totalEps = anime?.episodes || anime?.streamingEpisodes?.length || 0
+        if (totalEps > 0) {
+          setEpisodiosAssistidos(Array.from({ length: totalEps }, (_, i) => i + 1))
+        }
+        await recarregarEpisodios()
+      }
+
       showToast('Parabéns! Movido para os Completos.', 'success')
     } catch {
       showToast('Erro ao atualizar. Tente novamente.', 'error')
@@ -379,7 +406,7 @@ export default function Detalhes() {
           <div className="bg-gradient-to-r from-holo-1/20 to-holo-2/20 border border-holo-2/40 p-5 rounded-2xl flex flex-col md:flex-row justify-between items-center gap-4 shadow-lg mb-8 backdrop-blur-md">
             <div className="text-center md:text-left">
               <h3 className="font-anton uppercase text-holo-1 text-xl mb-1">Anime Finalizado!</h3>
-              <p className="font-bold text-sm text-text">A AniList detectou que esta obra acabou. Deseja mover da sua lista de "Em Dia" para "Completo"?</p>
+              <p className="font-bold text-sm text-text">O AniDeck detectou que já finalizou essa obra. Deseja mover da sua lista de "Em Dia" para "Completo"?</p>
             </div>
             <button
               onClick={() => handleAtualizarEntradaRapida('Completo')}
@@ -614,19 +641,27 @@ export default function Detalhes() {
         </div>
       </div>
 
-      <EditarEntradaModal
+     <EditarEntradaModal
         entrada={isModalOpen ? (minhaEntrada || novaEntrada) : null}
+        totalEpisodiosAssistidos={episodiosAssistidos.length}
         onFechar={() => setIsModalOpen(false)}
-        onSalvar={(atualizada) => {
+        onEpisodiosLimpos={() => setEpisodiosAssistidos([])}
+        onSalvar={async (atualizada) => {
           setMinhaEntrada(atualizada)
           setIsModalOpen(false)
+          if (atualizada?.status === 'Completo') {
+            const totalEps = anime?.episodes || anime?.streamingEpisodes?.length || 0
+            if (totalEps > 0) {
+              setEpisodiosAssistidos(Array.from({ length: totalEps }, (_, i) => i + 1))
+            }
+            await recarregarEpisodios()
+          }
         }}
         onExcluir={() => {
           setMinhaEntrada(null)
           showToast('Removido do Deck.', 'success')
           setIsModalOpen(false)
         }}
-        
       />
        <ImagemAmpliada
         src={imagemAmpliada}

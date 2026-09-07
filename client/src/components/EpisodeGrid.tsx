@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Check, Play, ImageOff, Lock, ChevronDown } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import { useToast } from '../contexts/ToastContext'
@@ -30,6 +30,10 @@ export default function EpisodeGrid({ malId, totalEpisodes, streamingEpisodes = 
   
   // PAGINAÇÃO: Estado para limitar a quantidade inicial de episódios no DOM
   const [visibleCount, setVisibleCount] = useState(24) 
+
+  useEffect(() => {
+    setWatched(initialWatched)
+  }, [initialWatched])
 
   const episodesCount = totalEpisodes > 0 ? totalEpisodes : streamingEpisodes.length
   

@@ -104,6 +104,7 @@ func main() {
 		protegido.Get("/api/entries/{mal_id}/episodes", entriesHandler.HandleGetEpisodes)
 		protegido.Post("/api/entries/{mal_id}/episodes/{number}", entriesHandler.HandleMarkEpisode)
 		protegido.Delete("/api/entries/{mal_id}/episodes/{number}", entriesHandler.HandleUnmarkEpisode)
+		protegido.Delete("/api/entries/{mal_id}/episodes", entriesHandler.HandleClearEpisodes)
 
 		protegido.Post("/api/push/subscribe", notificationsHandler.HandleSubscribePush)
 		protegido.Get("/api/notifications", notificationsHandler.HandleGetNotifications)
