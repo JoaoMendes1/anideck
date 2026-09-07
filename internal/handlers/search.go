@@ -56,7 +56,7 @@ var equivalentes = map[string][]string{
 // superficial. A AniList devolve genero em ordem ALFABETICA -- cortar la
 // filtraria por letra, nao por relevancia (Romance comeca com R e quase nunca
 // e o primeiro). Por isso anime nao curado passa sem corte.
-const maxTagsFiltro = 2
+const maxTagsFiltro = 5
 
 // Unico lugar que compara rotulo pedido com rotulo do anime. Tanto o filtro
 // quanto a ordenacao passam por aqui -- ter duas comparacoes soltas ja fez a
@@ -220,6 +220,41 @@ func (h *SearchHandler) HandleSearch(w http.ResponseWriter, r *http.Request) {
 			if curado, ok := curadosMap[resultados.Data[i].MalID]; ok {
 				AplicarCuradoria(&resultados.Data[i], curado)
 			}
+		}
+
+		// TRAVA: quem passou pela curadoria responde pela curadoria, nao pela
+		// AniList. Re:Zero e Romance para a AniList, mas a curadoria daqui
+		// definiu Isekai, Fantasia, Psicologico, Drama e Suspense -- entao ele
+		// nao pode aparecer no filtro Romance. Anime nao curado passa direto,
+		// que e o comportamento de sempre.
+		//
+		// Usa bateComTagPrincipal de proposito: e a mesma regra do
+		// curadosQueBatem. Duas regras diferentes fariam um anime entrar por um
+		// caminho e ser barrado pelo outro.
+		if len(genres) > 0 || len(tags) > 0 {
+			mantidos := make([]anilist.Anime, 0, len(resultados.Data))
+			for _, a := range resultados.Data {
+				cur, ehCurado := curadosMap[a.MalID]
+
+				// Nao curado, ou curado sem tag nenhuma definida: passa.
+				// Tag vazia significa "ainda nao classifiquei", nao "nao e disso".
+				if !ehCurado || len(cur.CustomTags) == 0 {
+					mantidos = append(mantidos, a)
+					continue
+				}
+
+				if len(genres) > 0 && !bateComTagPrincipal(a.Genres, genres) {
+					log.Printf("[TRAVA CURADORIA] mal_id=%d barrado no filtro de genero", a.MalID)
+					continue
+				}
+				if len(tags) > 0 && !bateComTagPrincipal(a.Genres, tags) {
+					log.Printf("[TRAVA CURADORIA] mal_id=%d barrado no filtro de tag", a.MalID)
+					continue
+				}
+
+				mantidos = append(mantidos, a)
+			}
+			resultados.Data = mantidos
 		}
 
 		// Curadoria na frente, so na pagina 1. A AniList filtra pelo vocabulario

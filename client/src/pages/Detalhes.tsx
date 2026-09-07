@@ -11,6 +11,7 @@ import EditarEntradaModal from '../components/EditarEntradaModal'
 import { getCategoryTheme } from '../lib/filters'
 import { temHistoriaNoApp, veioDeListaRestauravel } from '../lib/posicaoDeLista'
 import { motion } from 'framer-motion'
+import ImagemAmpliada from '../components/ImagemAmpliada'
 
 interface AnimeDetail {
   mal_id: number
@@ -81,6 +82,7 @@ export default function Detalhes() {
   const [erro, setErro] = useState<TipoErro | null>(null)
 
   const [minhaEntrada, setMinhaEntrada] = useState<MinhaEntrada | null>(null)
+  const [imagemAmpliada, setImagemAmpliada] = useState<string | null>(null)
   const [episodiosAssistidos, setEpisodiosAssistidos] = useState<number[]>([])
 
   const [isModalOpen, setIsModalOpen] = useState(false)
@@ -265,7 +267,11 @@ export default function Detalhes() {
 
       <div className="relative h-[300px] md:h-[450px] w-full overflow-hidden bg-panel-2">
         {anime.bannerImage ? (
-          <div className="absolute inset-0 bg-cover bg-center bg-no-repeat opacity-90" style={{ backgroundImage: `url(${anime.bannerImage})` }} />
+          <div
+            onClick={() => setImagemAmpliada(anime.bannerImage!)}
+            className="absolute inset-0 bg-cover bg-center bg-no-repeat opacity-90 cursor-zoom-in"
+            style={{ backgroundImage: `url(${anime.bannerImage})` }}
+          />
         ) : (
           <div className="absolute inset-0 bg-gradient-to-br from-[#3a1a4a] to-[#0A0714]" />
         )}
@@ -299,7 +305,8 @@ export default function Detalhes() {
             <img
               src={anime.images?.jpg?.image_url}
               alt={`Poster de ${anime.title}`}
-              className={`w-[140px] md:w-[170px] h-[198px] md:h-[240px] rounded-xl shadow-[0_15px_30px_-10px_rgba(0,0,0,0.8)] border-[3px] shrink-0 object-cover bg-panel-2 transition-colors ${minhaEntrada?.is_favorite ? 'border-gold' : 'border-panel'}`}
+              onClick={() => anime.images?.jpg?.image_url && setImagemAmpliada(anime.images.jpg.image_url)}
+              className={`w-[140px] md:w-[170px] h-[198px] md:h-[240px] rounded-xl shadow-[0_15px_30px_-10px_rgba(0,0,0,0.8)] border-[3px] shrink-0 object-cover bg-panel-2 transition-colors ${minhaEntrada?.is_favorite ? 'border-gold' : 'border-panel'}cursor-zoom-in`}
             />
           </div>
 
@@ -619,6 +626,12 @@ export default function Detalhes() {
           showToast('Removido do Deck.', 'success')
           setIsModalOpen(false)
         }}
+        
+      />
+       <ImagemAmpliada
+        src={imagemAmpliada}
+        alt={anime.title || 'Imagem do anime'}
+        aoFechar={() => setImagemAmpliada(null)}
       />
     </div>
   )
