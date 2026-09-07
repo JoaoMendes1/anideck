@@ -29,6 +29,8 @@ interface HydratedAnime {
     title: string
     image_url: string
     genre?: string
+    genres?: string[]
+    year?: number
     ranking?: number
     nextAiringEpisode?: AiringInfo
     streaming?: { name: string; url: string }[]
@@ -42,11 +44,12 @@ export default function MeuDeck() {
     const [loading, setLoading] = useState(true)
     const [error, setError] = useState<string | null>(null)
     const [editando, setEditando] = useState<Entrada | null>(null)
+    const [totalEpisodiosEditando, setTotalEpisodiosEditando] = useState(0)
     const [filtroAtivo, setFiltroAtivo] = useState('Todos')
     const [userName, setUserName] = useState('Usuário')
     const { reportarFalha, reportarSucesso } = useCatalogoStatus()
 
-    const [totalEpisodiosEditando, setTotalEpisodiosEditando] = useState(0)
+    usePosicaoDeLista(!loading)
 
     useEffect(() => {
         if (!editando) {
@@ -73,10 +76,6 @@ export default function MeuDeck() {
         buscarProgressoAnime()
     }, [editando])
 
-    // O deck carrega tudo de uma vez, sem paginação: devolver a rolagem quando os
-    // dados chegam já recoloca o usuário onde ele estava.
-    usePosicaoDeLista(!loading)
-
     useEffect(() => {
         const carregarDeck = async () => {
             const { data: { session } } = await supabase.auth.getSession()
@@ -101,8 +100,6 @@ export default function MeuDeck() {
                     })
 
                     if (!apiResponse.ok) {
-                        // O deck é seu e já veio do Supabase — ele fica na tela.
-                        // Só a camada de catálogo (capa, título, gênero) não veio.
                         reportarFalha()
                     } else {
                         reportarSucesso()
@@ -117,11 +114,10 @@ export default function MeuDeck() {
                                 title: m.title || 'Título indisponível',
                                 image_url: m.images?.jpg?.image_url || '',
                                 genre: m.genres && m.genres.length > 0 ? m.genres[0].name : undefined,
+                                genres: m.genres && m.genres.length > 0 ? m.genres.slice(0, 2).map(g => g.name) : undefined,
+                                year: m.season_year || m.startDate?.year || undefined,
                                 ranking: m.ranking,
                                 nextAiringEpisode: m.nextAiringEpisode,
-                                // `?? undefined` porque a struct Go manda `null` quando não há
-                                // links; os consumidores só testam veracidade, então os dois são
-                                // equivalentes na tela.
                                 streaming: m.streaming ?? undefined
                             }
                         })
@@ -136,8 +132,6 @@ export default function MeuDeck() {
         }
 
         carregarDeck()
-        // reportarFalha/reportarSucesso vêm de useCallback(..., []) no CatalogoStatusContext:
-        // a identidade nunca muda, então entram na lista sem alterar quando o efeito roda.
     }, [reportarFalha, reportarSucesso])
 
     const stats = useMemo(() => {
@@ -161,6 +155,23 @@ export default function MeuDeck() {
             dropados,
             notaMedia: qtdNotas > 0 ? (somaNotas / qtdNotas).toFixed(1) : 'N/A'
         }
+    }, [entradas])
+
+    // Mapa de contadores para exibir os totais dentro de cada aba
+    const contadoresPorAba = useMemo(() => {
+        const counts: Record<string, number> = {
+            'Todos': entradas.length,
+            'Assistindo': 0,
+            'Em Dia': 0,
+            'Completo': 0,
+            'Quero Assistir': 0,
+            'Dropado': 0,
+        }
+        entradas.forEach(e => {
+            if (e.status in counts) counts[e.status]++
+            if (e.status === 'Finalizado') counts['Completo']++
+        })
+        return counts
     }, [entradas])
 
     const entradasFiltradas = entradas.filter(e => filtroAtivo === 'Todos' || e.status === filtroAtivo)
@@ -220,11 +231,6 @@ export default function MeuDeck() {
                     </Link>
                 </div>
 
-                {/*
-                  No mobile isso vira uma fileira com scroll horizontal (bleed até a
-                  borda da tela via -mx-5/px-5) em vez do grid 2-colunas que sobrava
-                  um card solto em col-span-2. No md+ volta a ser grid normal.
-                */}
                 <div className="flex md:grid md:grid-cols-5 gap-3.5 mb-10 select-none overflow-x-auto md:overflow-visible scrollbar-hide snap-x snap-mandatory -mx-5 px-5 md:mx-0 md:px-0">
                     <StatCard icon={<MonitorPlay size={14} />} value={stats.assistindo} label="Assistindo" accentColor="holo-3" />
                     <StatCard icon={<Bookmark size={14} />} value={stats.emDia} label="Em Dia" accentColor="green" />
@@ -239,21 +245,32 @@ export default function MeuDeck() {
                     <h2 className="font-anton text-[17px] uppercase m-0">Meu Deck</h2>
                 </div>
 
-                {/* Mesma lógica de scroll horizontal pras abas — evita quebrar em
-                    2-3 linhas e empurrar a grade de cards pra baixo no mobile. */}
+                {/* Abas com contadores numéricos integrados */}
                 <div className="flex overflow-x-auto md:flex-wrap md:overflow-visible scrollbar-hide gap-2 mb-7 select-none -mx-5 px-5 md:mx-0 md:px-0">
-                    {FILTER_TABS.map(tab => (
-                        <button
-                            key={tab}
-                            onClick={() => setFiltroAtivo(tab)}
-                            className={`shrink-0 whitespace-nowrap text-[13px] font-bold px-4 py-2 rounded-full border transition-colors cursor-pointer ${filtroAtivo === tab
-                                ? 'bg-gradient-to-r from-holo-1 to-holo-2 text-white border-transparent shadow-lg'
-                                : 'bg-panel border-line text-muted hover:border-holo-3 hover:text-text'
-                                }`}
-                        >
-                            {tab}
-                        </button>
-                    ))}
+                    {FILTER_TABS.map(tab => {
+                        const totalAba = contadoresPorAba[tab] ?? 0
+                        const ativa = filtroAtivo === tab
+
+                        return (
+                            <button
+                                key={tab}
+                                onClick={() => setFiltroAtivo(tab)}
+                                className={`shrink-0 whitespace-nowrap text-[13px] font-bold px-4 py-2 rounded-full border transition-all cursor-pointer flex items-center gap-2 ${ativa
+                                    ? 'bg-gradient-to-r from-holo-1 to-holo-2 text-white border-transparent shadow-lg'
+                                    : 'bg-panel border-line text-muted hover:border-holo-3 hover:text-text'
+                                    }`}
+                            >
+                                <span>{tab}</span>
+                                <span className={`font-mono text-[10.5px] px-1.5 py-0.5 rounded-full ${
+                                    ativa
+                                        ? 'bg-white/20 text-white'
+                                        : 'bg-panel-2 text-muted-2 border border-line/60'
+                                }`}>
+                                    {totalAba}
+                                </span>
+                            </button>
+                        )
+                    })}
                 </div>
 
                 {entradasOrdenadas.length === 0 ? (
@@ -263,7 +280,7 @@ export default function MeuDeck() {
                         <p className="text-sm text-muted">Nenhum anime encontrado com este status.</p>
                     </div>
                 ) : (
-                    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3 sm:gap-4">
+                    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3.5 sm:gap-5">
                         {entradasOrdenadas.map((entrada, index) => (
                             <DeckCard
                                 key={entrada.id}
