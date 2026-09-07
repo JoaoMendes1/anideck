@@ -524,6 +524,9 @@ query ($idMal_in: [Int]) {
       idMal
       title { romaji english }
       status
+      startDate { year month day }
+      season
+      seasonYear
       description
       episodes
       duration
@@ -687,6 +690,9 @@ func (c *Client) fetchByAliases(ctx context.Context, missingIDs []int) ([]Anime,
 		sb.WriteString(`    idMal
     title { romaji english }
     status
+    startDate { year month day }
+    season
+    seasonYear
     description
     episodes
     duration

@@ -227,6 +227,7 @@ func (h *AnimeHandler) HandleGetAnimesByIDs(w http.ResponseWriter, r *http.Reque
 					if e, ok := c["episodes"].(float64); ok { anime.Episodes = int(e) }
 					if s, ok := c["average_score"].(float64); ok { anime.Score = s }
 					if st, ok := c["status"].(string); ok { anime.Status = st }
+					if sy, ok := c["season_year"].(float64); ok { anime.SeasonYear = int(sy) }
 				}
 				resultados.Data = append(resultados.Data, anime)
 			}
