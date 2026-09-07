@@ -73,6 +73,9 @@ func (h *EntriesHandler) HandleCreate(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	if entrada.Status == "Completo" {
+		preencherEpisodiosCompleto(token, userID, entrada.MalID)
+	}
 	syncMetadataCacheAsync(entrada.MalID, token, entrada.Status == "Completo", userID)
 
 	w.Header().Set("Content-Type", "application/json")
@@ -121,6 +124,9 @@ func (h *EntriesHandler) HandleUpdate(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	if entrada.Status == "Completo" {
+		preencherEpisodiosCompleto(token, userID, entrada.MalID)
+	}
 	syncMetadataCacheAsync(entrada.MalID, token, entrada.Status == "Completo", userID)
 
 	w.Header().Set("Content-Type", "application/json")
@@ -224,20 +230,15 @@ func syncMetadataCache(ctx context.Context, client anilist.Service, malID int, t
 // syncMetadataCacheAsync sincroniza o cache em segundo plano e, quando o anime foi
 // salvo como "Completo", preenche episode_progress logo em seguida.
 //
-// O preenchimento roda DENTRO desta goroutine, depois da sincronização, e não em
-// paralelo. O motivo é uma corrida real observada em produção: numa entrada nova,
-// o anime ainda não existe em anime_metadata_cache, então o preenchimento não acha
-// a contagem de episódios e é pulado — o status salva normalmente e o usuário fica
-// sem nenhum episódio marcado, sem erro na tela.
-//
-// Sequência do log que revelou o problema:
-//
-//	[EPISODIOS LOTE] Sem contagem de episódios para mal_id=22199, preenchimento pulado
-//	[CACHE METADATA] Metadados sincronizados com sucesso para: Akame ga Kill!
-//
-// Encadear resolve na raiz: quando o preenchimento roda, a contagem já está no cache.
+// Chamamos preencherEpisodiosCompleto antes E depois da sincronização da AniList:
+// se o anime já estiver em cache/curadoria (caso comum), ele preenche em milissegundos
+// sem esperar a resposta externa da AniList.
 func syncMetadataCacheAsync(malID int, token string, completo bool, userID string) {
 	go func() {
+		if completo {
+			preencherEpisodiosCompleto(token, userID, malID)
+		}
+
 		if err := syncMetadataCache(context.Background(), anilist.NewClient(), malID, token); err != nil {
 			log.Printf("[CACHE METADATA] %v", err)
 		}
@@ -355,6 +356,42 @@ func (h *EntriesHandler) HandleUnmarkEpisode(w http.ResponseWriter, r *http.Requ
 	if err != nil {
 		log.Printf("[ERRO DB] HandleUnmarkEpisode (user=%s, mal_id=%s, ep=%s): %v", userID, malID, episodeNumber, err)
 		http.Error(w, "Erro ao desmarcar episódio", http.StatusInternalServerError)
+		return
+	}
+
+	w.WriteHeader(http.StatusNoContent)
+}
+
+func (h *EntriesHandler) HandleClearEpisodes(w http.ResponseWriter, r *http.Request) {
+	token, ok := r.Context().Value(middleware.TokenKey).(string)
+	userID, userOk := r.Context().Value(middleware.UserIDKey).(string)
+
+	if !ok || !userOk {
+		http.Error(w, "Não autorizado", http.StatusUnauthorized)
+		return
+	}
+
+	malID := chi.URLParam(r, "mal_id")
+	if _, err := strconv.Atoi(malID); err != nil {
+		http.Error(w, "mal_id inválido", http.StatusBadRequest)
+		return
+	}
+
+	dbClient, errClient := database.ClientWithToken(token)
+	if errClient != nil {
+		http.Error(w, "Erro interno de conexão", http.StatusInternalServerError)
+		return
+	}
+
+	_, _, err := dbClient.From("episode_progress").
+		Delete("", "exact").
+		Eq("user_id", userID).
+		Eq("mal_id", malID).
+		Execute()
+
+	if err != nil {
+		log.Printf("[ERRO DB] HandleClearEpisodes (user=%s, mal_id=%s): %v", userID, malID, err)
+		http.Error(w, "Erro ao zerar episódios", http.StatusInternalServerError)
 		return
 	}
 

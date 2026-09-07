@@ -1,7 +1,7 @@
 -- =============================================================================
 -- snapshot_schema.sql — RETRATO DO BANCO. NAO EXECUTE ESTE ARQUIVO.
 -- =============================================================================
--- Regenerado em 03/09/2026 16:46 a partir do banco de producao.
+-- Regenerado em 07/09/2026 15:47 a partir do banco de producao.
 --
 -- PARA QUE SERVE: consulta rapida do estado real do banco, sem precisar abrir
 -- o painel do Supabase nem confiar nos arquivos sql/ antigos (que podem ter
@@ -185,7 +185,7 @@ CREATE OR REPLACE VIEW public.view_user_activity WITH (security_invoker = on) AS
     date_trunc('week'::text, watched_at)::date AS semana,
     count(*) AS episodios_assistidos
    FROM episode_progress
-  WHERE user_id = auth.uid()
+  WHERE user_id = auth.uid() AND watched_at IS NOT NULL
   GROUP BY user_id, (date_trunc('week'::text, watched_at))
   ORDER BY (date_trunc('week'::text, watched_at)::date);
 
@@ -197,7 +197,7 @@ CREATE OR REPLACE VIEW public.view_user_fastest_binge WITH (security_invoker = o
    FROM episode_progress ep
      LEFT JOIN anime_metadata_cache c ON ep.mal_id = c.mal_id
      LEFT JOIN curated_animes cur ON ep.mal_id = cur.mal_id
-  WHERE ep.user_id = auth.uid()
+  WHERE ep.user_id = auth.uid() AND ep.watched_at IS NOT NULL
   GROUP BY ep.user_id, ep.mal_id, (COALESCE(cur.custom_title, c.title))
  HAVING count(*) >= 3 AND EXTRACT(epoch FROM max(ep.watched_at) - min(ep.watched_at)) >= ((count(*) - 1) * 300)::numeric
   ORDER BY (EXTRACT(epoch FROM max(ep.watched_at) - min(ep.watched_at)) / 3600::numeric)
@@ -212,7 +212,7 @@ CREATE OR REPLACE VIEW public.view_user_forgotten_anime WITH (security_invoker =
    FROM media_entries e
      LEFT JOIN anime_metadata_cache c ON c.mal_id = e.mal_id
      LEFT JOIN curated_animes cur ON cur.mal_id = e.mal_id
-     LEFT JOIN episode_progress ep ON ep.mal_id = e.mal_id AND ep.user_id = e.user_id
+     LEFT JOIN episode_progress ep ON ep.mal_id = e.mal_id AND ep.user_id = e.user_id AND ep.watched_at IS NOT NULL
   WHERE e.user_id = auth.uid() AND e.status = 'Assistindo'::text
   GROUP BY e.mal_id, cur.custom_title, c.title, c.episodes
  HAVING max(ep.watched_at) IS NOT NULL
@@ -346,7 +346,7 @@ CREATE OR REPLACE VIEW public.view_user_watch_dates WITH (security_invoker = on)
  SELECT DISTINCT user_id,
     date(watched_at) AS dia
    FROM episode_progress
-  WHERE user_id = auth.uid()
+  WHERE user_id = auth.uid() AND watched_at IS NOT NULL
   ORDER BY (date(watched_at));
 
 CREATE OR REPLACE VIEW public.view_user_watch_hours WITH (security_invoker = on) AS
@@ -354,14 +354,14 @@ CREATE OR REPLACE VIEW public.view_user_watch_hours WITH (security_invoker = on)
     EXTRACT(hour FROM watched_at)::integer AS hora,
     count(*) AS total
    FROM episode_progress
-  WHERE user_id = auth.uid()
+  WHERE user_id = auth.uid() AND watched_at IS NOT NULL
   GROUP BY user_id, (EXTRACT(hour FROM watched_at))
   ORDER BY (EXTRACT(hour FROM watched_at)::integer);
 
 CREATE OR REPLACE VIEW public.view_user_watch_timestamps WITH (security_invoker = on) AS
  SELECT watched_at
    FROM episode_progress ep
-  WHERE user_id = auth.uid()
+  WHERE user_id = auth.uid() AND watched_at IS NOT NULL
   ORDER BY watched_at;
 
 CREATE OR REPLACE VIEW public.view_user_year_animes WITH (security_invoker = on) AS
@@ -479,7 +479,7 @@ CREATE OR REPLACE VIEW public.view_user_year_distribution WITH (security_invoker
 
 -- Permitir upload apenas para o Admin           | INSERT | authenticated     
 --     USING:  -
---     CHECK:  ((bucket_id = 'curadoria'::text) AND (auth.uid() = '<UUID>'::uuid))
+--     CHECK:  ((bucket_id = 'curadoria'::text) AND (auth.uid() = '<uuid-aqui>'::uuid))
 
 -- =============================================================================
 -- [6] BUCKETS

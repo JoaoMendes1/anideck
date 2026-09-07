@@ -22,3 +22,5 @@ supabase/
 .env.backup
 backup_capas/
 sql/*local.sql
+
+.prototipos

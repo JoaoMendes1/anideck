@@ -46,6 +46,33 @@ export default function MeuDeck() {
     const [userName, setUserName] = useState('Usuário')
     const { reportarFalha, reportarSucesso } = useCatalogoStatus()
 
+    const [totalEpisodiosEditando, setTotalEpisodiosEditando] = useState(0)
+
+    useEffect(() => {
+        if (!editando) {
+            setTotalEpisodiosEditando(0)
+            return
+        }
+
+        const buscarProgressoAnime = async () => {
+            const { data: { session } } = await supabase.auth.getSession()
+            if (!session) return
+            try {
+                const res = await fetch(`/api/entries/${editando.mal_id}/episodes`, {
+                    headers: { 'Authorization': `Bearer ${session.access_token}` }
+                })
+                if (res.ok) {
+                    const eps: number[] = await res.json()
+                    setTotalEpisodiosEditando(Array.isArray(eps) ? eps.length : 0)
+                }
+            } catch {
+                setTotalEpisodiosEditando(0)
+            }
+        }
+
+        buscarProgressoAnime()
+    }, [editando])
+
     // O deck carrega tudo de uma vez, sem paginação: devolver a rolagem quando os
     // dados chegam já recoloca o usuário onde ele estava.
     usePosicaoDeLista(!loading)
@@ -252,6 +279,8 @@ export default function MeuDeck() {
 
                 <EditarEntradaModal
                     entrada={editando}
+                    totalEpisodiosAssistidos={totalEpisodiosEditando}
+                    onEpisodiosLimpos={() => setTotalEpisodiosEditando(0)}
                     onFechar={() => setEditando(null)}
                     onSalvar={(atualizada) => {
                         setEntradas((prev) => prev.map((e) => (e.id === atualizada.id ? atualizada : e)))

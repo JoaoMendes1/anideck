@@ -20,11 +20,13 @@ interface Props {
     onFechar: () => void
     onSalvar: (atualizada: EntradaSalva) => void
     onExcluir: (id: string) => void
+    totalEpisodiosAssistidos?: number
+    onEpisodiosLimpos?: () => void
 }
 
 const STATUS_OPCOES = ['Assistindo', 'Em Dia', 'Completo', 'Quero Assistir', 'Dropado']
 
-export default function EditarEntradaModal({ entrada, onFechar, onSalvar, onExcluir }: Props) {
+export default function EditarEntradaModal({ entrada, onFechar, onSalvar, onExcluir, totalEpisodiosAssistidos = 0, onEpisodiosLimpos }: Props) {
     const { showToast } = useToast()
     const isOpen = entrada !== null
 
@@ -37,16 +39,8 @@ export default function EditarEntradaModal({ entrada, onFechar, onSalvar, onExcl
     const [salvando, setSalvando] = useState(false)
     const [erro, setErro] = useState<string | null>(null)
     const [confirmandoExclusao, setConfirmandoExclusao] = useState(false)
+    const [confirmandoZerarEpisodios, setConfirmandoZerarEpisodios] = useState(false)
 
-    // Ajuste de estado durante o render, e não num efeito.
-    //
-    // O gatilho é o mesmo de antes (`entrada` mudar de identidade), mas o React
-    // reexecuta o componente na hora, sem pintar o quadro intermediário — antes havia
-    // um instante em que o formulário aparecia com os valores da entrada anterior.
-    //
-    // O `key` para remontar, que seria a outra saída, não serve aqui: ele apagaria o
-    // entradaCache, e é justamente ele que segura o conteúdo na tela durante a animação
-    // de fechamento, quando `entrada` já voltou a ser null.
     const [entradaAnterior, setEntradaAnterior] = useState<Entrada | null>(null)
 
     if (entrada !== entradaAnterior) {
@@ -62,16 +56,31 @@ export default function EditarEntradaModal({ entrada, onFechar, onSalvar, onExcl
             // Garante que inicie limpo
             setErro(null)
             setConfirmandoExclusao(false)
+            setConfirmandoZerarEpisodios(false)
             setSalvando(false)
         } else {
             // Limpeza total de estados quando a janela fechar
             setConfirmandoExclusao(false)
+            setConfirmandoZerarEpisodios(false)
             setSalvando(false)
             setErro(null)
         }
     }
 
     const handleSalvar = async () => {
+        if (!entradaCache) return
+
+        // Intercepta a mudança para "Quero Assistir" se o usuário tiver episódios registrados
+        const trocouParaQueroAssistir = entradaCache.status !== 'Quero Assistir' && status === 'Quero Assistir'
+        if (trocouParaQueroAssistir && totalEpisodiosAssistidos > 0) {
+            setConfirmandoZerarEpisodios(true)
+            return
+        }
+
+        await executarSalvamento(false)
+    }
+
+    const executarSalvamento = async (zerarEpisodios: boolean) => {
         if (!entradaCache) return
         setSalvando(true)
         setErro(null)
@@ -82,12 +91,20 @@ export default function EditarEntradaModal({ entrada, onFechar, onSalvar, onExcl
             return
         }
 
-        const notaFormatada = nota.trim() === '' ? null : Number(nota.replace(',', '.'))
-
-        // Sem id, a entrada ainda não existe: cria (POST) em vez de atualizar (PUT).
-        const isNova = !entradaCache.id
-
         try {
+            // Se o usuário optou por zerar os episódios marcados por engano
+            if (zerarEpisodios) {
+                const resClear = await fetch(`/api/entries/${entradaCache.mal_id}/episodes`, {
+                    method: 'DELETE',
+                    headers: { 'Authorization': `Bearer ${session.access_token}` }
+                })
+                if (!resClear.ok) throw new Error('Falha ao zerar episódios')
+                onEpisodiosLimpos?.()
+            }
+
+            const notaFormatada = nota.trim() === '' ? null : Number(nota.replace(',', '.'))
+            const isNova = !entradaCache.id
+
             const response = await fetch(isNova ? '/api/entries' : `/api/entries/${entradaCache.id}`, {
                 method: isNova ? 'POST' : 'PUT',
                 headers: {
@@ -109,9 +126,11 @@ export default function EditarEntradaModal({ entrada, onFechar, onSalvar, onExcl
             const atualizada = await response.json()
             onSalvar(Array.isArray(atualizada) ? atualizada[0] : atualizada)
             showToast(isNova ? 'Adicionado ao seu Deck!' : 'Alterações salvas com sucesso!')
+            setConfirmandoZerarEpisodios(false)
             onFechar()
         } catch {
             setErro('Não foi possível salvar. Tente de novo.')
+        } finally {
             setSalvando(false)
         }
     }
@@ -180,12 +199,62 @@ export default function EditarEntradaModal({ entrada, onFechar, onSalvar, onExcl
         document.body
     ) : null;
 
+    const modalZerarEpisodios = confirmandoZerarEpisodios ? createPortal(
+        <div className="fixed inset-0 bg-void/80 flex items-center justify-center z-[120] p-4 backdrop-blur-sm animate-in fade-in duration-200">
+            <div className="bg-panel border border-line rounded-2xl p-6 max-w-md w-full text-center shadow-2xl animate-in zoom-in-95 duration-200">
+                <h3 className="font-anton text-text text-xl uppercase mb-2">Episódios no Histórico</h3>
+                <p className="text-sm text-muted mb-3">
+                    Você tem <span className="text-holo-3 font-bold font-mono">{totalEpisodiosAssistidos}</span> episódio{totalEpisodiosAssistidos === 1 ? '' : 's'} marcado{totalEpisodiosAssistidos === 1 ? '' : 's'} como assistido{totalEpisodiosAssistidos === 1 ? '' : 's'}. O que deseja fazer ao mover para <strong>"Quero Assistir"</strong>?
+                </p>
+
+                <div className="bg-coral/10 border border-coral/30 rounded-xl p-3 mb-5 text-left">
+                    <p className="text-[12px] text-coral leading-relaxed">
+                        ⚠️ <strong>Atenção:</strong> Zerar episódios removerá o tempo assistido deste anime das suas métricas em <em>Estatísticas</em>.
+                    </p>
+                </div>
+
+                <div className="flex flex-col gap-2.5">
+                    <button
+                        type="button"
+                        onClick={() => executarSalvamento(false)}
+                        disabled={salvando}
+                        className="w-full py-3 px-4 rounded-xl bg-panel-2 border border-line text-sm font-bold text-text hover:border-holo-3 hover:text-holo-3 transition-colors cursor-pointer disabled:opacity-50 text-center"
+                    >
+                        Manter Histórico (Planejar Rewatch)
+                    </button>
+                    <button
+                        type="button"
+                        onClick={() => executarSalvamento(true)}
+                        disabled={salvando}
+                        className="w-full py-3 px-4 rounded-xl bg-coral/10 border border-coral text-coral text-sm font-bold hover:bg-coral hover:text-void transition-colors cursor-pointer disabled:opacity-50 flex items-center justify-center gap-2"
+                    >
+                        {salvando ? (
+                            <div className="w-5 h-5 border-2 border-current border-t-transparent rounded-full animate-spin"></div>
+                        ) : (
+                            'Zerar Episódios (Marcado por Engano)'
+                        )}
+                    </button>
+                    <button
+                        type="button"
+                        onClick={() => setConfirmandoZerarEpisodios(false)}
+                        disabled={salvando}
+                        className="w-full py-2 text-xs font-bold text-muted hover:text-text transition-colors cursor-pointer disabled:opacity-50"
+                    >
+                        Voltar à edição
+                    </button>
+                </div>
+            </div>
+        </div>,
+        document.body
+    ) : null;
+
     return (
         <>
             {modalConfirmacao}
+            {modalZerarEpisodios}
             <Sheet
                 isOpen={isOpen}
-                onClose={() => { if (!salvando && !confirmandoExclusao) onFechar() }}
+                onClose={() => { if (!salvando && !confirmandoExclusao && !confirmandoZerarEpisodios) onFechar() }}
                 title="Editar entrada"
             >
                 {entradaCache && (
