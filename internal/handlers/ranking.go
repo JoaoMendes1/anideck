@@ -29,41 +29,52 @@ type GlobalRankingState struct {
 
 var globalRanking GlobalRankingState
 
-// intervaloEntreFotos é a cadência do indicador ▲/▼. Trinta dias foi escolhido
-// pelo rótulo: "desde o mês passado" é legível, "nos últimos 20 dias" não é.
+// intervaloEntreFotos é a cadência do indicador ▲/▼ mantido em 30 dias.
 const intervaloEntreFotos = 30 * 24 * time.Hour
 
-// limiteFotoTopGlobal é quantas linhas ler da tabela de fotos. O Top Global tem
-// 500 animes (10 páginas × 50), então uma foto inteira cabe aqui. Se uma foto
-// antiga tiver menos linhas, o laço de agrupamento para na virada de
-// captured_at e ignora o excedente — por isso ler "a mais" é seguro.
+// limiteFotoTopGlobal define a quantidade de registros lidos do Top Global.
 const limiteFotoTopGlobal = 500
 
-// linhaSnapshot espelha uma linha de ranking_snapshots.
+// pesoVotoComunitario pondera o voto local contra o volume externo da AniList.
+// Com 350.0, um conjunto de 10 a 15 votos da comunidade local tem força para
+// subir posições no Top 500 de maneira orgânica e segura.
+const pesoVotoComunitario = 350.0
+
+// linhaSnapshot espelha uma linha de ranking_snapshots (delta mensal de posições).
 type linhaSnapshot struct {
 	CapturedAt string `json:"captured_at"`
 	MalID      int    `json:"mal_id"`
 	Position   int    `json:"position"`
 }
 
+// communityScoreRow espelha o resultado da view anime_community_scores.
+type communityScoreRow struct {
+	MalID      int     `json:"mal_id"`
+	LocalVotes int     `json:"local_votes"`
+	LocalScore float64 `json:"local_score"`
+}
+
+// currentCacheRow espelha os registros salvos em ranking_current_cache para boot instantâneo.
+type currentCacheRow struct {
+	Position      int      `json:"position"`
+	MalID         int      `json:"mal_id"`
+	Title         string   `json:"title"`
+	ImageURL      string   `json:"image_url"`
+	BayesianScore float64  `json:"bayesian_score"`
+	Score         float64  `json:"score"`
+	LocalVotes    int      `json:"local_votes"`
+	LocalScore    *float64 `json:"local_score,omitempty"`
+	UpdatedAt     string   `json:"updated_at,omitempty"`
+}
+
 // calcularVariacao preenche PreviousRank a partir da foto anterior.
-//
-// Função pura de propósito: entra a lista já ordenada e o mapa da foto, sai a
-// lista com o campo preenchido. Sem banco, sem rede, sem relógio — dá para
-// testar isoladamente, mesmo padrão do PontuarCandidato do Olheiro.
-//
-// Anime ausente da foto (entrou na lista depois, ou é a primeira medição)
-// recebe 0. O `omitempty` da struct faz esse zero sumir do JSON, e o frontend
-// recebe undefined — que é o sinal de "não exibir indicador".
 func calcularVariacao(animes []anilist.Anime, foto map[int]int) {
 	for i := range animes {
-		// Busca em mapa nil devolve o zero do tipo. Foto ausente não quebra.
 		animes[i].PreviousRank = foto[animes[i].MalID]
 	}
 }
 
-// carregarUltimaFoto devolve o mapa mal_id → posição da medição mais recente,
-// e quando ela foi tirada. Tabela vazia devolve mapa nil e tempo zero, sem erro.
+// carregarUltimaFoto busca a foto histórica de 30 dias em ranking_snapshots.
 func carregarUltimaFoto() (map[int]int, time.Time, error) {
 	client, err := database.ServiceRoleClient()
 	if err != nil {
@@ -87,9 +98,6 @@ func carregarUltimaFoto() (map[int]int, time.Time, error) {
 		return nil, time.Time{}, nil
 	}
 
-	// Todas as linhas de uma mesma medição compartilham o captured_at. Como a
-	// consulta veio ordenada do mais recente para o mais antigo, a virada desse
-	// valor marca o fim da foto atual.
 	maisRecente := linhas[0].CapturedAt
 	foto := make(map[int]int, len(linhas))
 	for _, l := range linhas {
@@ -100,7 +108,7 @@ func carregarUltimaFoto() (map[int]int, time.Time, error) {
 	}
 
 	var quando time.Time
-	for _, formato := range formatosDeTimestamp {
+	for _, formato := range formatosDeEstreia {
 		if t, errParse := time.Parse(formato, maisRecente); errParse == nil {
 			quando = t.UTC()
 			break
@@ -110,11 +118,7 @@ func carregarUltimaFoto() (map[int]int, time.Time, error) {
 	return foto, quando, nil
 }
 
-// gravarFoto persiste as posições atuais como uma nova medição.
-//
-// O carimbo de tempo é definido aqui em Go, e não pelo DEFAULT now() da coluna,
-// para garantir que todas as linhas do lote compartilhem exatamente o mesmo
-// captured_at — é ele que agrupa a foto na leitura.
+// gravarFoto persiste as posições atuais na tabela histórica ranking_snapshots.
 func gravarFoto(animes []anilist.Anime, quando time.Time) error {
 	client, err := database.ServiceRoleClient()
 	if err != nil {
@@ -137,19 +141,147 @@ func gravarFoto(animes []anilist.Anime, quando time.Time) error {
 		return nil
 	}
 
-	// Upsert no UNIQUE(captured_at, mal_id): se o motor reiniciar no meio da
-	// gravação, repetir o lote não duplica nem estoura erro.
 	_, _, err = client.From("ranking_snapshots").
 		Insert(linhas, true, "captured_at,mal_id", "minimal", "exact").
 		Execute()
 	return err
 }
 
-// StartRankingEngine inicia o Worker de Background que calcula o Ranking a cada 12 horas.
-// DEVE SER CHAMADO NO main.go: `go handlers.StartRankingEngine(aniListClient)`
+// carregarVotosComunitarios busca as notas consolidadas da view anime_community_scores.
+func carregarVotosComunitarios() map[int]communityScoreRow {
+	votosMap := make(map[int]communityScoreRow)
+	client, err := database.ServiceRoleClient()
+	if err != nil {
+		log.Printf("[RANKING ENGINE] Falha ao obter client para ler notas comunitárias: %v", err)
+		return votosMap
+	}
+
+	data, _, err := client.From("anime_community_scores").Select("*", "exact", false).Execute()
+	if err != nil {
+		log.Printf("[RANKING ENGINE] Aviso: falha ao consultar anime_community_scores: %v", err)
+		return votosMap
+	}
+
+	var linhas []communityScoreRow
+	if err := json.Unmarshal(data, &linhas); err != nil {
+		log.Printf("[RANKING ENGINE] Aviso: falha ao deserializar anime_community_scores: %v", err)
+		return votosMap
+	}
+
+	for _, l := range linhas {
+		votosMap[l.MalID] = l
+	}
+	return votosMap
+}
+
+// gravarCachePersistido salva o estado consolidado atual em ranking_current_cache.
+func gravarCachePersistido(animes []anilist.Anime, votosMap map[int]communityScoreRow) error {
+	client, err := database.ServiceRoleClient()
+	if err != nil {
+		return err
+	}
+
+	linhas := make([]currentCacheRow, 0, len(animes))
+	agoraStr := time.Now().UTC().Format(time.RFC3339)
+
+	for i, a := range animes {
+		if a.MalID <= 0 {
+			continue
+		}
+		var lVotes int
+		var lScore *float64
+		if v, ok := votosMap[a.MalID]; ok {
+			lVotes = v.LocalVotes
+			valScore := v.LocalScore
+			lScore = &valScore
+		}
+
+		linhas = append(linhas, currentCacheRow{
+			Position:      i + 1,
+			MalID:         a.MalID,
+			Title:         a.Title,
+			ImageURL:      a.Images.JPG.ImageURL,
+			BayesianScore: a.BayesianScore,
+			Score:         a.Score,
+			LocalVotes:    lVotes,
+			LocalScore:    lScore,
+			UpdatedAt:     agoraStr,
+		})
+	}
+
+	if len(linhas) == 0 {
+		return nil
+	}
+
+	_, _, err = client.From("ranking_current_cache").
+		Insert(linhas, true, "position", "minimal", "exact").
+		Execute()
+	return err
+}
+
+// carregarCachePersistido preenche a memória RAM instantaneamente no boot lendo ranking_current_cache.
+func carregarCachePersistido() bool {
+	client, err := database.ServiceRoleClient()
+	if err != nil {
+		log.Printf("[RANKING ENGINE] Erro de conexão no boot: %v", err)
+		return false
+	}
+
+	data, _, err := client.From("ranking_current_cache").
+		Select("*", "exact", false).
+		Order("position", &postgrest.OrderOpts{Ascending: true}).
+		Limit(limiteFotoTopGlobal, "").
+		Execute()
+	if err != nil {
+		log.Printf("[RANKING ENGINE] ranking_current_cache inacessível no boot: %v", err)
+		return false
+	}
+
+	var linhas []currentCacheRow
+	if err := json.Unmarshal(data, &linhas); err != nil || len(linhas) == 0 {
+		return false
+	}
+
+	animes := make([]anilist.Anime, 0, len(linhas))
+	var somaScores float64
+	for _, l := range linhas {
+		a := anilist.Anime{
+			MalID:         l.MalID,
+			Title:         l.Title,
+			Score:         l.Score,
+			BayesianScore: l.BayesianScore,
+			CurrentRank:   l.Position,
+		}
+		a.Images.JPG.ImageURL = l.ImageURL
+		animes = append(animes, a)
+		somaScores += l.Score
+	}
+
+	foto, _, _ := carregarUltimaFoto()
+	calcularVariacao(animes, foto)
+
+	globalRanking.Lock()
+	globalRanking.Animes = animes
+	globalRanking.LastUpdated = time.Now()
+	if len(animes) > 0 {
+		globalRanking.GlobalC = somaScores / float64(len(animes))
+		globalRanking.GlobalM = 15000.0
+	}
+	globalRanking.Unlock()
+
+	log.Printf("[RANKING ENGINE] Boot imediato concluído: %d animes carregados de ranking_current_cache.", len(animes))
+	return true
+}
+
+// StartRankingEngine inicia o motor e o agendador de atualização a cada 12 horas.
 func StartRankingEngine(client anilist.Service) {
-	log.Println("[RANKING ENGINE] Worker iniciado. Primeira carga Bayesiana em andamento...")
-	updateGlobalCache(client) // Executa na hora que o servidor sobe
+	log.Println("[RANKING ENGINE] Inicializando motor de ranking...")
+
+	// 1. Boot imediato resiliente do banco para a RAM
+	carregarCachePersistido()
+
+	// 2. Executa a primeira carga completa em background para não bloquear o servidor
+	go updateGlobalCache(client)
 
 	ticker := time.NewTicker(12 * time.Hour)
 	for range ticker.C {
@@ -164,18 +296,57 @@ func updateGlobalCache(client anilist.Service) {
 	var allAnimes []anilist.Anime
 	filters := anilist.SearchFilters{Sort: "POPULARITY_DESC"}
 
-	// Buscamos o Top 500 mais popular (10 páginas de 50) para aplicar o cálculo
 	for page := 1; page <= 10; page++ {
 		res, err := client.GetTopAnime(ctx, page, 50, filters)
 		if err != nil {
-			log.Printf("[RANKING ENGINE] Falha ao buscar página %d: %v", page, err)
+			log.Printf("[RANKING ENGINE] Falha na página %d da AniList: %v", page, err)
 			continue
 		}
 		allAnimes = append(allAnimes, res.Data...)
-		time.Sleep(1 * time.Second) // Evitar rate limit da AniList
+		time.Sleep(1 * time.Second)
 	}
 
-	// 1. Extrair 'C' (Média Geral) e 'm' (Volume Mínimo)
+	// Se a AniList falhou completamente (ex: Erro 403/Cloudflare)
+	if len(allAnimes) == 0 {
+		globalRanking.RLock()
+		temMemoria := len(globalRanking.Animes) > 0
+		globalRanking.RUnlock()
+
+		if temMemoria {
+			log.Println("[RANKING ENGINE] AniList indisponível (403/500). Preservando ranking existente em memória.")
+			return
+		}
+
+		// Fallback soberano: se a memória está vazia, monta o ranking a partir do cache local
+		log.Println("[RANKING ENGINE] AniList indisponível e cache vazio. Gerando ranking de emergência via anime_metadata_cache...")
+		clientDb, errDb := database.ServiceRoleClient()
+		if errDb == nil {
+			dataCache, _, _ := clientDb.From("anime_metadata_cache").Select("*", "exact", false).Execute()
+			var cached []map[string]interface{}
+			json.Unmarshal(dataCache, &cached)
+
+			for _, c := range cached {
+				mID, _ := c["mal_id"].(float64)
+				if mID <= 0 {
+					continue
+				}
+				a := anilist.Anime{MalID: int(mID)}
+				if t, ok := c["title"].(string); ok { a.Title = t }
+				if s, ok := c["average_score"].(float64); ok { a.Score = s }
+				allAnimes = append(allAnimes, a)
+			}
+		}
+
+		if len(allAnimes) == 0 {
+			log.Println("[RANKING ENGINE] Nenhum dado local encontrado para fallback.")
+			return
+		}
+	}
+
+	// 1. Carrega as notas da comunidade da view SQL
+	votosComunidade := carregarVotosComunitarios()
+
+	// 2. Extrai C (Média Geral) e m (Volume Mínimo)
 	var totalScore, totalPop float64
 	var validCount float64
 
@@ -192,48 +363,64 @@ func updateGlobalCache(client anilist.Service) {
 	}
 
 	C := totalScore / validCount
-	m := totalPop / validCount // Usando a popularidade média como threshold
+	m := totalPop / validCount
 
-	// 2. Aplicar Fórmula Bayesiana: (v / (v+m) * R) + (m / (v+m) * C)
+	// 3. Aplica o Cálculo Bayesiano Híbrido
 	for i := range allAnimes {
-		if allAnimes[i].Score == 0 {
+		id := allAnimes[i].MalID
+		vExt := float64(allAnimes[i].Popularity)
+		rExt := allAnimes[i].Score
+
+		if rExt == 0 {
 			allAnimes[i].BayesianScore = 0
 			continue
 		}
-		v := float64(allAnimes[i].Popularity)
-		R := allAnimes[i].Score
-		allAnimes[i].BayesianScore = (v/(v+m))*R + (m/(v+m))*C
+
+		vTotal := vExt
+		rComb := rExt
+
+		// Incorpora as avaliações dos usuários do AniDeck com o peso comunitário
+		if loc, ok := votosComunidade[id]; ok && loc.LocalVotes > 0 {
+			vLocal := float64(loc.LocalVotes) * pesoVotoComunitario
+			vTotal = vExt + vLocal
+			rComb = ((vExt * rExt) + (vLocal * loc.LocalScore)) / vTotal
+			allAnimes[i].Score = loc.LocalScore
+		}
+
+		allAnimes[i].BayesianScore = (vTotal/(vTotal+m))*rComb + (m/(vTotal+m))*C
 	}
 
-	// 3. Ordenar matematicamente pelo Score Bayesiano
+	// 4. Ordenação pelo Score Bayesiano Híbrido
 	sort.Slice(allAnimes, func(i, j int) bool {
 		return allAnimes[i].BayesianScore > allAnimes[j].BayesianScore
 	})
 
-	// 4. Posições atuais e comparação com a foto anterior
 	for i := range allAnimes {
 		allAnimes[i].CurrentRank = i + 1
 	}
 
-	// A leitura vem ANTES da gravação, e a ordem
+	// 5. Comparação com a foto mensal de ranking_snapshots
 	foto, capturadaEm, errFoto := carregarUltimaFoto()
 	if errFoto != nil {
-		log.Printf("[RANKING ENGINE] Falha ao ler a última foto: %v", errFoto)
+		log.Printf("[RANKING ENGINE] Falha ao ler última foto: %v", errFoto)
 	}
 	calcularVariacao(allAnimes, foto)
 
-	// Só grava se a leitura deu certo. Sem saber a idade da foto atual, gravar
-	// poderia criar uma medição fora de cadência e zerar o indicador.
 	agora := time.Now().UTC()
 	if errFoto == nil && (capturadaEm.IsZero() || agora.Sub(capturadaEm) >= intervaloEntreFotos) {
 		if err := gravarFoto(allAnimes, agora); err != nil {
-			log.Printf("[RANKING ENGINE] Falha ao gravar foto: %v", err)
+			log.Printf("[RANKING ENGINE] Falha ao gravar foto de 30 dias: %v", err)
 		} else {
-			log.Printf("[RANKING ENGINE] Foto gravada: %d posições.", len(allAnimes))
+			log.Printf("[RANKING ENGINE] Nova foto histórica persistida: %d posições.", len(allAnimes))
 		}
 	}
 
-	// 5. Salvar na Memória (Lock seguro)
+	// 6. Grava o estado consolidado em ranking_current_cache para os próximos boots
+	if err := gravarCachePersistido(allAnimes, votosComunidade); err != nil {
+		log.Printf("[RANKING ENGINE] Falha ao gravar cache consolidado: %v", err)
+	}
+
+	// 7. Atualização atômica da memória RAM
 	globalRanking.Lock()
 	globalRanking.Animes = allAnimes
 	globalRanking.LastUpdated = time.Now()
@@ -241,7 +428,7 @@ func updateGlobalCache(client anilist.Service) {
 	globalRanking.GlobalM = m
 	globalRanking.Unlock()
 
-	log.Printf("[RANKING ENGINE] Atualização concluída com sucesso. %d animes reordenados na memória.", len(allAnimes))
+	log.Printf("[RANKING ENGINE] Ciclo concluído. %d animes ordenados com notas comunitárias.", len(allAnimes))
 }
 
 type RankingHandler struct {
@@ -273,8 +460,7 @@ func (h *RankingHandler) HandleGetTopAnime(w http.ResponseWriter, r *http.Reques
 		Sort:   sortParam,
 	}
 
-	// Se for o ranking principal limpo, servimos a nossa Paginação Virtual Bayesiana em memória!
-	isDefaultRanking := page >= 1 && season == "" && status == "" && sortParam == "POPULARITY_DESC" && len(filters.Genres) == 0 && len(filters.Tags) == 0
+	isDefaultRanking := page >= 1 && season == "" && status == "" && (sortParam == "" || sortParam == "POPULARITY_DESC") && len(filters.Genres) == 0 && len(filters.Tags) == 0
 
 	w.Header().Set("Content-Type", "application/json")
 
@@ -298,13 +484,12 @@ func (h *RankingHandler) HandleGetTopAnime(w http.ResponseWriter, r *http.Reques
 				LastUpdated: globalRanking.LastUpdated.Format(time.RFC3339),
 			}
 
-			applyCuradoria(&response) // Reaplica edições manuais (nomes pt-br, etc)
+			applyCuradoria(&response)
 			json.NewEncoder(w).Encode(response)
 			return
 		}
 	}
 
-	// Fallback inteligente: se usou filtros (ex: Lançamentos de Verão), passamos direto pra AniList
 	resultados, err := h.AniListClient.GetTopAnime(r.Context(), page, perPage, filters)
 	if err != nil {
 		log.Printf("[ERRO ANILIST] Falha ao buscar top animes filtrados: %v", err)
@@ -328,7 +513,6 @@ func (h *RankingHandler) HandleGetTopAnime(w http.ResponseWriter, r *http.Reques
 	m := globalRanking.GlobalM
 	globalRanking.RUnlock()
 
-	// Se o motor já rodou pelo menos uma vez, temos C e m válidos
 	if C > 0 && m > 0 {
 		for i := range resultados.Data {
 			if resultados.Data[i].Score > 0 {
@@ -338,8 +522,6 @@ func (h *RankingHandler) HandleGetTopAnime(w http.ResponseWriter, r *http.Reques
 			}
 		}
 
-		// Reordena a página atual localmente para garantir que
-		// a nota AniDeck dite a ordem visual do que acabou de chegar
 		sort.Slice(resultados.Data, func(i, j int) bool {
 			return resultados.Data[i].BayesianScore > resultados.Data[j].BayesianScore
 		})
@@ -349,9 +531,6 @@ func (h *RankingHandler) HandleGetTopAnime(w http.ResponseWriter, r *http.Reques
 	json.NewEncoder(w).Encode(resultados)
 }
 
-// applyCuradoria aplica as edições do Painel Admin ao resultado do ranking.
-// A regra de sobreposição vive em AplicarCuradoria (curation_utils.go), compartilhada com a
-// busca, o detalhe e o deck — antes cada tela tinha a sua cópia e elas divergiram.
 func applyCuradoria(res *anilist.AnimeSearchResponse) {
 	AplicarCuradoriaEmLista(res.Data, CarregarCuradoria(database.Client))
 }
@@ -369,23 +548,9 @@ func mapStatusForFilter(status string) string {
 	}
 }
 
-// recarregandoRanking impede que várias edições seguidas no Admin disparem
-// recargas simultâneas. Cada updateGlobalCache faz 10 chamadas à AniList, que
-// hoje aceita 30 por minuto (ver PITFALLS.md) — cinco recargas concorrentes
-// estouram o limite e ainda podem terminar fora de ordem, deixando o cache com
-// o resultado da execução mais antiga.
 var recarregandoRanking atomic.Bool
 
-// InvalidateRankingCache força a limpeza da memória.
-// Usado pelo curation.go quando o Admin edita um anime manualmente.
 func InvalidateRankingCache() {
-	globalRanking.Lock()
-	globalRanking.Animes = nil
-	globalRanking.Unlock()
-
-	// CompareAndSwap devolve false se já existe uma recarga em andamento.
-	// Nesse caso não agenda outra: a que está rodando já vai buscar os dados
-	// atualizados, incluindo esta edição.
 	if !recarregandoRanking.CompareAndSwap(false, true) {
 		log.Println("[RANKING ENGINE] Recarga já em andamento, edição será coberta por ela.")
 		return
@@ -397,7 +562,6 @@ func InvalidateRankingCache() {
 	}()
 }
 
-// GetAniDeckStats busca a posição oficial e a nota do nosso motor Bayesiano em memória
 func GetAniDeckStats(malID int) (rank int, bayesianScore float64, found bool) {
 	globalRanking.RLock()
 	defer globalRanking.RUnlock()

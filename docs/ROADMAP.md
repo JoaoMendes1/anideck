@@ -14,7 +14,7 @@
 ## 🚀 Deploy contínuo
 Staging sobe já na Fase 1, como projeto esqueleto — mesmo padrão do JVM Systems.
 
-## 📍 Status atual (04/09/2026)
+## 📍 Status atual (07/09/2026)
 
 | Fase | Status |
 |---|---|
@@ -406,6 +406,15 @@ reordenáveis, sinopse com reescrita por IA, título, formato e status.
 > Os dois itens que seguem sem marcação não são pendência de execução: reavaliar o modelo
 > de dados depende do que o beta revelar, e o pré-requisito do ranking depende de base de
 > usuários real. Ficam abertos até o beta rodar.
+>
+> **Nota (07/09/2026):** durante os preparativos do beta, a AniList enfrentou instabilidade
+> global prolongada (403/Cloudflare) e expôs dois pontos de falha: o motor de ranking
+> travava com erro 503 no boot do Go (pois dependia da API externa acordada para popular
+> a RAM), e os animes curados ficavam sem contagem regressiva viva na agenda.
+> Realizado hardening do sistema antes dos convites: o ranking passou a ter estado
+> consolidado persistido no banco (`ranking_current_cache`), integrando as notas reais dos
+> usuários (`anime_community_scores`), e o backend passou a sintetizar agendamentos
+> futuros localmente a partir de `custom_episodes`. Detalhes em `DECISIONS.md`.
 
 - [x] **Página de Configurações e Ajuda.** É a única das dez do `PAGES.md` que nunca
       saiu do protótipo (`prototipos/config-ajuda-prototipo.html`). Precisa conter
