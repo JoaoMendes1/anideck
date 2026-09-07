@@ -1,3 +1,4 @@
+// client/src/pages/Calendario.tsx
 import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import { usePosicaoDeLista } from '../lib/posicaoDeLista'
@@ -18,6 +19,7 @@ interface HydratedAnime {
     title: string
     image_url: string
     genre?: string
+    genres?: string[]
     is_favorite?: boolean
     nextAiringEpisode?: {
         airingAt: number
@@ -34,16 +36,9 @@ export default function Calendario() {
     const [animes, setAnimes] = useState<HydratedAnime[]>([])
     const [loading, setLoading] = useState(true)
     const [error, setError] = useState<string | null>(null)
-    // Instante de referência da contagem regressiva, em segundos.
-    // Guardar o tempo em estado (em vez de um contador descartado que só forçava
-    // re-render) é o que permite ler o relógio fora do render: chamar Date.now()
-    // durante a renderização torna o resultado dependente de QUANDO o React decidiu
-    // renderizar, e não do intervalo de 1 minuto que governa a atualização.
     const [agora, setAgora] = useState(() => Math.floor(Date.now() / 1000))
-
     const [abaAtiva, setAbaAtiva] = useState<'meus' | 'todos'>('meus')
 
-    // Carga única (um /api/ranking com perPage fixo), então a rolagem basta.
     usePosicaoDeLista(!loading)
 
     useEffect(() => {
@@ -58,13 +53,12 @@ export default function Calendario() {
                     const res = await fetch('/api/entries', { headers: { 'Authorization': `Bearer ${session.access_token}` } })
                     if (res.ok) userEntries = await res.json()
                 } catch {
-                    // Sem as entradas do usuário o calendário ainda funciona: ele só perde
-                    // a marcação de "está no seu deck". Falhar aqui não pode impedir a tela.
+                    // Falha silenciosa permitida
                 }
             }
 
             try {
-                let media = []
+                let media: AnimeDaApi[] = []
 
                 if (abaAtiva === 'meus') {
                     const ativos = userEntries.filter(e => e.status === 'Assistindo' || e.status === 'Em Dia')
@@ -82,11 +76,48 @@ export default function Calendario() {
                     const apiJson = await apiResponse.json()
                     media = apiJson.data || []
                 } else {
-                    // 🟢 AQUI: Forçando a ordenação por Popularidade (POPULARITY_DESC) para trazer os animes corretos
-                    const response = await fetch('/api/ranking?status=RELEASING&perPage=50&sort=POPULARITY_DESC')
-                    if (!response.ok) throw new Error('Falha ao buscar lançamentos globais.')
-                    const json = await response.json()
-                    media = json.data || []
+                    let curadosComEp: AnimeDaApi[] = []
+                    try {
+                        const resCur = await fetch('/api/curation')
+                        if (resCur.ok) {
+                            const curados = await resCur.json()
+                            const idsCurados = curados.map((c: { mal_id: number }) => c.mal_id)
+                            if (idsCurados.length > 0) {
+                                const resBulk = await fetch('/api/anime/bulk', {
+                                    method: 'POST',
+                                    headers: { 'Content-Type': 'application/json' },
+                                    body: JSON.stringify({ ids: idsCurados })
+                                })
+                                if (resBulk.ok) {
+                                    const jsonBulk = await resBulk.json()
+                                    curadosComEp = jsonBulk.data || []
+                                }
+                            }
+                        }
+                    } catch {
+                        // Prossegue para AniList
+                    }
+
+                    let anilistMedia: AnimeDaApi[] = []
+                    try {
+                        const response = await fetch('/api/ranking?status=RELEASING&perPage=50&sort=POPULARITY_DESC')
+                        if (response.ok) {
+                            const json = await response.json()
+                            anilistMedia = json.data || []
+                        }
+                    } catch {
+                        // Curadoria segura se AniList cair
+                    }
+
+                    const mapaFinal = new Map<number, AnimeDaApi>()
+                    curadosComEp.forEach(m => mapaFinal.set(m.mal_id, m))
+                    anilistMedia.forEach(m => {
+                        if (!mapaFinal.has(m.mal_id)) {
+                            mapaFinal.set(m.mal_id, m)
+                        }
+                    })
+
+                    media = Array.from(mapaFinal.values())
                 }
 
                 const animesComEpisodio: HydratedAnime[] = []
@@ -98,9 +129,8 @@ export default function Calendario() {
                             title: m.title || 'Título Desconhecido',
                             image_url: m.images?.jpg?.image_url || '',
                             genre: m.genres && m.genres.length > 0 ? m.genres[0].name : undefined,
+                            genres: m.genres && m.genres.length > 0 ? m.genres.slice(0, 3).map(g => g.name) : undefined,
                             nextAiringEpisode: m.nextAiringEpisode,
-                            // `?? undefined` porque a struct Go manda `null` quando não há
-                            // links; os consumidores só testam veracidade.
                             streaming: m.streaming ?? undefined,
                             is_favorite: entry?.is_favorite
                         })
@@ -128,11 +158,9 @@ export default function Calendario() {
     const getDayLabel = (timestamp: number) => {
         const date = new Date(timestamp * 1000)
 
-        // Data atual do usuário travada na meia-noite
         const today = new Date()
         today.setHours(0, 0, 0, 0)
 
-        // Data do episódio travada na meia-noite
         const targetDate = new Date(date)
         targetDate.setHours(0, 0, 0, 0)
 
@@ -193,7 +221,6 @@ export default function Calendario() {
                     </p>
                 </div>
 
-                {/* 🟢 OPÇÃO C: Abas de controle no topo do calendário */}
                 <div className="flex gap-2 mb-8 select-none border-b border-line pb-4 overflow-x-auto scrollbar-hide">
                     <button
                         onClick={() => setAbaAtiva('meus')}
@@ -231,7 +258,6 @@ export default function Calendario() {
                 ) : (
                     groups.map((group) => {
                         let badgeColor = 'bg-panel border-line text-muted-2'
-                        // Atualizando o Hoje para a cor coral para dar destaque de urgência
                         if (group.label === 'Hoje') badgeColor = 'bg-coral/15 border-coral/35 text-coral'
                         if (group.label === 'Amanhã') badgeColor = 'bg-gold/15 border-gold/35 text-gold'
 
@@ -255,30 +281,51 @@ export default function Calendario() {
                                         const gradClass = gradienteDoCard(index)
                                         const streamUrl = anime.streaming ? anime.streaming.find(s => s.name.toLowerCase().includes('crunchyroll'))?.url || anime.streaming.find(s => s.name.toLowerCase().includes('netflix'))?.url || anime.streaming[0]?.url : null
                                         const remainingText = formatTimeRemaining(anime.nextAiringEpisode!.airingAt)
-                                        const isLanchado = remainingText === 'Lançado!'
+                                        const isLancado = remainingText === 'Lançado!'
+                                        const listaGeneros = anime.genres && anime.genres.length > 0 
+                                            ? anime.genres 
+                                            : anime.genre 
+                                                ? [anime.genre] 
+                                                : []
 
                                         return (
-                                            <div key={anime.mal_id} className={`grid grid-cols-[44px_1fr_auto] md:grid-cols-[56px_1fr_auto_auto] gap-3 md:gap-5 items-center p-3 border rounded-xl transition-colors group ${anime.is_favorite ? 'bg-panel-2 border-gold/30 shadow-[0_0_10px_rgba(255,197,66,0.05)]' : 'bg-panel border-line hover:border-holo-2'}`}>
+                                            <div key={anime.mal_id} className={`grid grid-cols-[48px_1fr_auto] md:grid-cols-[56px_1fr_auto_auto] gap-3.5 md:gap-5 items-center p-3 border rounded-xl transition-colors group ${anime.is_favorite ? 'bg-panel-2 border-gold/30 shadow-[0_0_10px_rgba(255,197,66,0.05)]' : 'bg-panel border-line hover:border-holo-2'}`}>
 
-                                                <div className={`w-11 h-11 md:w-14 md:h-14 rounded-lg flex-shrink-0 bg-cover bg-center border border-line ${gradClass}`} style={{ backgroundImage: `url(${anime.image_url})` }}></div>
+                                                <div className={`w-12 h-16 md:w-14 md:h-20 rounded-lg flex-shrink-0 overflow-hidden border border-line bg-panel-2 relative shadow-md ${gradClass}`}>
+                                                    {anime.image_url ? (
+                                                        <img
+                                                            src={anime.image_url}
+                                                            alt={anime.title}
+                                                            loading="lazy"
+                                                            className="w-full h-full object-cover object-center group-hover:scale-105 transition-transform duration-300"
+                                                        />
+                                                    ) : (
+                                                        <div className="w-full h-full flex items-center justify-center font-mono text-[8px] text-muted-2 uppercase text-center p-1">
+                                                            S/ Capa
+                                                        </div>
+                                                    )}
+                                                </div>
 
                                                 <div className="min-w-0">
                                                     <Link to={`/anime/${anime.mal_id}`} className="font-bold text-[13.5px] md:text-[14.5px] truncate block hover:text-holo-3 transition-colors">
                                                         {anime.title}
                                                     </Link>
-                                                    <div className="flex items-center gap-2 font-mono text-[10px] md:text-[10.5px] text-muted-2 mt-1 select-none">
+                                                    <div className="flex flex-wrap items-center gap-1.5 font-mono text-[10px] md:text-[10.5px] text-muted-2 mt-1 select-none">
                                                         {anime.is_favorite && <span className="text-gold text-xs leading-none drop-shadow-md" title="Favorito">👑</span>}
-                                                        {anime.genre && (
-                                                            <span className={`px-1.5 py-0.5 rounded border font-bold font-manrope hidden md:inline-block ${getCategoryTheme(anime.genre)}`}>
-                                                                {anime.genre}
+                                                        {listaGeneros.map((g) => (
+                                                            <span 
+                                                                key={g} 
+                                                                className={`px-1.5 py-0.5 rounded border font-bold font-manrope hidden md:inline-block ${getCategoryTheme(g)}`}
+                                                            >
+                                                                {g}
                                                             </span>
-                                                        )}
+                                                        ))}
                                                         <span>EPISÓDIO {anime.nextAiringEpisode!.episode}</span>
                                                     </div>
                                                 </div>
 
                                                 <div className="flex flex-col md:flex-row md:items-center gap-1.5 md:gap-5 text-right select-none">
-                                                    <span className={`inline-flex items-center justify-center font-mono text-[10.5px] md:text-[11.5px] font-extrabold px-2.5 py-1 rounded-full border ${isLanchado ? 'bg-green/15 text-green border-green/30' : 'bg-holo-3/15 text-holo-3 border-holo-3/30'}`}>
+                                                    <span className={`inline-flex items-center justify-center font-mono text-[10.5px] md:text-[11.5px] font-extrabold px-2.5 py-1 rounded-full border ${isLancado ? 'bg-green/15 text-green border-green/30' : 'bg-holo-3/15 text-holo-3 border-holo-3/30'}`}>
                                                         {remainingText}
                                                     </span>
                                                     <span className="font-mono text-[12px] md:text-[13.5px] text-muted-2 hidden md:block">

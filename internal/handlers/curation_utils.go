@@ -56,6 +56,10 @@ func AplicarCuradoria(anime *anilist.Anime, curado models.CuratedAnime) {
 	anime.StreamingEpisodes = ConverterEpisodios(curado.CustomEpisodes, anime.StreamingEpisodes)
 	anime.Streaming = ConverterLinks(curado.CustomExternalLinks, anime.Streaming)
 	anime.StartDate, anime.FirstAiredAt = ConverterEstreia(curado.CustomFirstAiredAt, anime.StartDate)
+	// Se a curadoria possui cronograma futuro de episódios, ela tem precedência sobre a AniList
+	if proximoCurado := CalcularProximoEpisodioCurado(curado.CustomEpisodes, curado.CustomFirstAiredAt); proximoCurado != nil {
+		anime.NextAiringEpisode = proximoCurado
+	}
 
 	// Duração só é sobrescrita quando é um número que faz sentido: zero ou negativo viraria
 	// tempo assistido zerado nas Estatísticas, pior do que a estimativa de 24 min do cache.
