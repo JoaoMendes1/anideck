@@ -460,6 +460,32 @@ no schema e passa pelas policies de toda tabela que a função lê?
 
 ---
 
+## ✅ Parece armadilha, mas foi verificado — não reabrir
+
+> Cada item aqui já disparou suspeita numa sessão e foi checado com o
+> arquivo real na mão. Estão registrados para não custarem a verificação
+> de novo. **Item só entra depois de verificado**, nunca por suposição.
+
+### `anime_community_scores` não tem `auth.uid()` — e está certo
+
+**O que parece:** view sem filtro por usuário e com `security_invoker = on`.
+Pelo item 2, isso devolveria vazio para quem consulta com JWT comum.
+
+**Por que está certo:** ela agrega a nota de todos os usuários de propósito —
+é o peso comunitário do ranking. O único ponto de leitura é
+`carregarVotosComunitarios()` em `internal/handlers/ranking.go`, que usa
+`database.ServiceRoleClient()`. Service role ignora RLS, então a view devolve
+a base inteira. É o caso de exceção previsto no comentário do
+`ServiceRoleClient` em `internal/database/db.go`: worker de background, sem
+JWT para anexar.
+
+**Verificado em 08/09/2026** por `grep` de todos os pontos de uso + leitura da
+atribuição do client.
+
+**O que faria virar bug de verdade:** qualquer leitura nova dessa view por
+`ClientWithToken` ou pelo frontend via PostgREST. Aí ela passa a ver só as
+notas de um usuário, e o peso comunitário fica errado sem erro nenhum.
+
 ## 🧭 Como manter este arquivo
 
 - Toda vez que um bug **silencioso** chegar a produção (não quebrou, só devolveu dado errado),
