@@ -1,7 +1,7 @@
 -- =============================================================================
 -- snapshot_schema.sql — RETRATO DO BANCO. NAO EXECUTE ESTE ARQUIVO.
 -- =============================================================================
--- Regenerado em 07/09/2026 20:39 a partir do banco de producao.
+-- Regenerado em 08/09/2026 00:22 a partir do banco de producao.
 --
 -- PARA QUE SERVE: consulta rapida do estado real do banco, sem precisar abrir
 -- o painel do Supabase nem confiar nos arquivos sql/ antigos (que podem ter
@@ -10,6 +10,9 @@
 --
 -- O QUE ELE NAO E: uma migration. As secoes [1] e [2] sao comentarios; a [3]
 -- tem DDL de view que so deve ser usado como referencia, nunca colado direto.
+--
+-- UUIDs aparecem mascarados como <uuid>. O repositorio e publico e o
+-- ADMIN_USER_ID nao entra nele -- ver regra 4 do sql/README.md.
 --
 -- REGENERAR: rodar sql/gerar_snapshot.sql no SQL Editor e substituir este
 -- arquivo inteiro pelo resultado. Fazer isso a cada arquivo sql/ novo.
@@ -138,8 +141,9 @@
 -- [2] RLS POR TABELA
 -- =============================================================================
 -- RLS ligada com 0 policies significa que ninguem le pela API -- e proposital
--- em app_admins (lida pela is_admin(), SECURITY DEFINER) e ranking_snapshots
--- (lida pelo service role). Nao "corrigir" criando policy.
+-- em app_admins (lida pela is_admin(), SECURITY DEFINER), ranking_snapshots e
+-- ranking_current_cache (ambas lidas pelo service role).
+-- Nao "corrigir" criando policy.
 -- =============================================================================
 
 -- anime_metadata_cache      | RLS: t     | policies: 3
@@ -166,7 +170,7 @@
 -- security definer em silencio (Armadilha 2 do PITFALLS.md).
 -- =============================================================================
 
-CREATE OR REPLACE VIEW public.anime_community_scores WITH (security_invoker = off) AS
+CREATE OR REPLACE VIEW public.anime_community_scores WITH (security_invoker = on) AS
  SELECT mal_id,
     count(nota)::integer AS local_votes,
     round(avg(nota), 2)::double precision AS local_score
@@ -528,7 +532,7 @@ CREATE OR REPLACE VIEW public.view_user_year_distribution WITH (security_invoker
 
 -- fn_user_genre_affinity         | definer: f     | anon: t     | auth: t     | service: t     | search_path=public, pg_temp
 -- get_cron_media_entries         | definer: t     | anon: f     | auth: f     | service: t     | search_path=public
--- hook_limite_cadastros          | definer: f     | anon: f     | auth: f     | service: t     | sem search_path
+-- hook_limite_cadastros          | definer: f     | anon: f     | auth: f     | service: t     | search_path=public, pg_temp
 -- is_admin                       | definer: t     | anon: t     | auth: t     | service: t     | search_path=public, pg_temp
 -- process_cron_notification      | definer: t     | anon: f     | auth: f     | service: t     | search_path=public
 -- rls_auto_enable                | definer: t     | anon: t     | auth: t     | service: t     | search_path=pg_catalog
