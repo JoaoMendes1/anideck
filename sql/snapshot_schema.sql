@@ -540,3 +540,4 @@ CREATE OR REPLACE VIEW public.view_user_year_distribution WITH (security_invoker
 -- =============================================================================
 -- FIM DO RETRATO
 -- =============================================================================
+

@@ -142,6 +142,14 @@ parênteses (`ui`, `auth`, `db`, etc.) e sempre referenciando a issue com `close
     obrigatória dele explicitamente na resposta, com o arquivo real na mão — não de memória.
     Bug silencioso novo (o que não quebra, só devolve dado errado) vira item novo lá.
 
+12. **Suspeita não é achado.** Não aponte problema sem o arquivo na mão. Se a
+    dúvida depende de saber *quem consome* um objeto — view, função, coluna —
+    o snapshot do banco não responde: o banco não sabe quem o consulta. Peça o
+    arquivo, ou o `grep` que localiza os pontos de uso, e só então conclua.
+    Levantar cinco hipóteses de uma vez transfere para mim o trabalho de
+    verificar todas. Antes de levantar qualquer uma, confira a seção
+    "Parece armadilha, mas foi verificado" do `PITFALLS.md`.
+
 ## Tom da conversa
 
 Prefiro uma conversa natural com a IA, não uma troca robotizada de comandos. Pode explicar,
