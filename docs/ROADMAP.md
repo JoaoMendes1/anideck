@@ -152,7 +152,7 @@ OBS: O Product Owner decidiu que a Fase 5 fosse implementada primeiro.
 > Planejamento completo, com issues detalhadas em formato `AGENTS.md`, motivação, gargalos
 > identificados (cobertura variável do campo `streamingEpisodes` da AniList, e o fato de que
 > temporadas já são separadas por `mal_id` — não precisa de agrupamento manual) e mitigação de
-> timeout de cold-start documentados em `FASE_6.7_EPISODIOS.md`.
+> timeout de cold-start levantados na issue da fase.
 
 - [x] Criar tabela `episode_progress` (Supabase) + endpoints Go para marcar/desmarcar episódio assistido, com RLS extraindo o `user_id` sempre do JWT.
 - [x] Grade visual de episódios na página de detalhe/Meu Deck, usando `streamingEpisodes` da AniList (com fallback).
