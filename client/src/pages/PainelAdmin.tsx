@@ -683,11 +683,13 @@ export default function PainelAdmin() {
           </span>
           <span className="font-mono text-[10px] font-bold text-gold bg-gold/10 border border-gold/40 px-2 py-1 rounded-full">⚙ ADMIN</span>
         </div>
-        <div className="flex gap-4 items-center">
-          <div className="hidden sm:flex items-center gap-2 bg-panel-2 border border-line rounded-full px-3 py-1.5 select-none">
-            <span className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wider text-muted-2 border-r border-line pr-2" title="Saúde Passiva da API AniList">
+                <div className="flex gap-2 sm:gap-4 items-center">
+          <div className="flex items-center gap-1.5 sm:gap-2 bg-panel-2 border border-line rounded-full px-2 sm:px-3 py-1.5 select-none">
+            <span className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wider text-muted-2 border-r border-line pr-1.5 sm:pr-2" title="Saúde Passiva da API AniList">
               <Activity size={12} />
-              <span className={apiHealth === 'OK' ? 'text-green' : apiHealth === 'WARNING' ? 'text-gold' : 'text-coral'}>
+              {/* O rótulo textual da saúde some no mobile: o que importa ali é a cor
+                  do ícone. A palavra OFFLINE do Kill Switch fica, porque é ação. */}
+              <span className={`hidden sm:inline ${apiHealth === 'OK' ? 'text-green' : apiHealth === 'WARNING' ? 'text-gold' : 'text-coral'}`}>
                 {apiHealth}
               </span>
             </span>

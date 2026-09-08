@@ -362,7 +362,7 @@ export default function Detalhes() {
 
             <div className="flex flex-wrap gap-2 justify-center sm:justify-start mb-4">
               {anime.genres?.map(g => (
-                <span key={g.name} className={`text-[10px] font-bold px-3 py-1 rounded-full border select-none ${getCategoryTheme(g.name)}`}>
+                <span key={g.name} className={`text-[10px] font-bold px-1.5 py-0.5 sm:px-3 sm:py-1 rounded-full border select-none ${getCategoryTheme(g.name)}`}>
                   {g.name}
                 </span>
               ))}
