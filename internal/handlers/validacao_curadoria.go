@@ -101,3 +101,19 @@ func urlSegura(bruto string) bool {
 	endereco := strings.ToLower(strings.TrimSpace(bruto))
 	return strings.HasPrefix(endereco, "http://") || strings.HasPrefix(endereco, "https://")
 }
+
+// ValidarMalID recusa mal_id ausente ou inválido.
+//
+// Fica fora de SanitizarCuradoria de propósito: aquela função trata os campos JSONB, e
+// os testes dela montam a struct sem MalID. Como o campo é `int`, ele vale 0 nesses
+// testes — validar ali quebraria os cinco de uma vez, e por um motivo que nada tem a ver
+// com o que eles verificam (Armadilha 14).
+//
+// O zero é o caso que importa: payload sem o campo desserializa em 0, não em erro
+// (Armadilha 16). Sem esta checagem, o HandleCreate gravava normalmente.
+func ValidarMalID(malID int) error {
+	if malID < 1 {
+		return fmt.Errorf("o MAL ID precisa ser um número maior que zero")
+	}
+	return nil
+}

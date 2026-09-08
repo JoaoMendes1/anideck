@@ -84,6 +84,8 @@ export default function PainelAdmin() {
 
   const [editId, setEditId] = useState<string | null>(null)
   const [malId, setMalId] = useState<number | null>(null)
+
+  const [modoManual, setModoManual] = useState(false)
   const [titulo, setTitulo] = useState('')
   const [formato, setFormato] = useState('TV')
   const [status, setStatus] = useState('RELEASING')
@@ -176,7 +178,7 @@ export default function PainelAdmin() {
   //
   // O guarda do previewTitulo reproduz o `if (!previewTitulo) return` do efeito antigo: sem
   // formulario aberto nao ha o que comparar, e o limparFormulario justamente zera esse campo.
-  const isDirty = Boolean(previewTitulo) && montarHash({
+    const isDirty = Boolean(previewTitulo || modoManual) && montarHash({
     titulo, formato, status, ordem, sinopse, tags, coverImage, bannerImage, characters,
     episodios, links, estreia, duracao, isDestaque, curationStatus,
   }) !== initialStateHash
@@ -433,7 +435,7 @@ export default function PainelAdmin() {
 
   const salvarDestaque = async () => {
     if (!malId || !titulo) {
-      showToast('Busque um anime e defina um título antes de salvar!', 'error')
+            showToast('Preencha o MAL ID e o título antes de salvar!', 'error')
       return
     }
 
@@ -596,15 +598,34 @@ export default function PainelAdmin() {
     setCurationStatus('parcial')
     setResultadosBusca([])
     setSugestaoEmCuradoria(null)
-    // O previewTitulo acima volta a ser nulo, e é ele que zera o isDirty derivado. Note que
-    // este método NÃO reseta o `status` — por isso o guarda é o previewTitulo e não uma
-    // comparação com uma assinatura de formulário vazio, que não bateria.
+    setModoManual(false)
   }
 
-  const abrirNovoDestaque = () => {
+    const abrirNovoDestaque = () => {
     pedirConfirmacao(() => {
       limparFormulario()
       setFormularioAberto(true)
+      window.scrollTo({ top: 0, behavior: 'smooth' })
+    })
+  }
+
+  // Abre o formulário sem a AniList. O caminho existe para quando a API está fora do ar ou
+  // quando ela devolve idMal nulo (Armadilha 16): você busca o id no myanimelist.net, que
+  // é um site separado do GraphQL do AniList, e digita.
+  //
+  // O initialStateHash nasce igual ao formulário vazio para o isDirty começar falso — sem
+  // isso, abrir o modo manual já pediria confirmação de "alterações não salvas". O `status`
+  // entra com o valor atual, e não com 'RELEASING', porque limparFormulario não o reseta.
+  const criarManualmente = () => {
+    pedirConfirmacao(() => {
+      limparFormulario()
+      setModoManual(true)
+      setFormularioAberto(true)
+      setInitialStateHash(montarHash({
+        titulo: '', formato: 'TV', status, ordem: 0, sinopse: '', tags: [],
+        coverImage: '', bannerImage: '', characters: [], episodios: [], links: [],
+        estreia: '', duracao: '', isDestaque: true, curationStatus: 'parcial',
+      }))
       window.scrollTo({ top: 0, behavior: 'smooth' })
     })
   }
@@ -801,11 +822,39 @@ export default function PainelAdmin() {
                   buscando={buscando}
                   resultados={resultadosBusca}
                   onBuscar={buscarNaAniList}
-                  onSelecionar={aplicarAnimeNoFormulario}
+                                   onSelecionar={aplicarAnimeNoFormulario}
                 />
 
-                {previewTitulo && (
+                <button
+                  type="button"
+                  onClick={criarManualmente}
+                  className="mt-3 text-xs font-bold text-muted hover:text-holo-3 transition-colors cursor-pointer"
+                >
+                  Criar manualmente, sem a AniList →
+                </button>
+
+                {(previewTitulo || modoManual) && (
                   <div className="border-t border-dashed border-line pt-6 mt-4 space-y-6 animate-in fade-in duration-300">
+                    <div>
+                      <label className="block text-xs font-bold text-muted mb-2 uppercase">
+                        MAL ID {editId && <span className="text-muted-2 normal-case">(travado)</span>}
+                      </label>
+                      <input
+                        type="number"
+                        min={1}
+                        value={malId ?? ''}
+                        onChange={(e) => setMalId(e.target.value ? Number(e.target.value) : null)}
+                        disabled={!!editId}
+                        placeholder="Ex: 52991 — busque no myanimelist.net"
+                        className="w-full bg-panel-2 border border-line rounded-xl px-4 py-2 text-sm outline-none focus:border-holo-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                      />
+                      <p className="text-[11px] text-muted-2 mt-1.5">
+                        {editId
+                          ? 'Trocar o MAL ID dessincronizaria o progresso e os decks já salvos. Para mudar, exclua e recrie.'
+                          : 'É a chave que liga curadoria, cache, deck e progresso. Use sempre o id real do MyAnimeList.'}
+                      </p>
+                    </div>
+
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <div>
                         <label className="block text-xs font-bold text-muted mb-2 uppercase">Título Customizado</label>

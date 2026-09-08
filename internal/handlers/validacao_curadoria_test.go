@@ -147,3 +147,33 @@ func TestSanitizarCuradoriaNaoInventaValorParaCampoAusente(t *testing.T) {
 		t.Errorf("custom_external_links virou %s, deveria continuar nulo", entrada.CustomExternalLinks)
 	}
 }
+
+func TestValidarMalIDAceitaValorValido(t *testing.T) {
+	if err := ValidarMalID(52991); err != nil {
+		t.Fatalf("não esperava erro, veio: %v", err)
+	}
+}
+
+// O caso que motivou a validação: `mal_id` é int, então um payload sem o campo chega
+// como 0 e era gravado sem reclamação nenhuma.
+func TestValidarMalIDRecusaValorInvalido(t *testing.T) {
+	tests := []struct {
+		name  string
+		malID int
+	}{
+		{"campo ausente vira zero", 0},
+		{"negativo", -1},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			err := ValidarMalID(tt.malID)
+			if err == nil {
+				t.Fatal("esperava erro, veio nil")
+			}
+			if !strings.Contains(err.Error(), "maior que zero") {
+				t.Errorf("mensagem = %q", err.Error())
+			}
+		})
+	}
+}
