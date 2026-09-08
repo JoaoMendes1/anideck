@@ -47,6 +47,31 @@ var equivalentes = map[string][]string{
 	"time travel":   {"viagem no tempo"},
 	"revenge":       {"vingança"},
 	"game":          {"jogo", "jogos"},
+
+	// As chaves abaixo faltavam. O chip manda o `value` do CONTENT_FILTERS, que é o termo
+	// da AniList em inglês; sem chave aqui, o mesmoRotulo cai no EqualFold, dá falso e o
+	// curado é barrado em silêncio. Era o caso do chip Magia, que mandava "Magic".
+	//
+	// Só entram rótulos que existem de verdade em curated_animes.custom_tags — exceto
+	// samurai, yuri e boys' love, que ainda não têm curadoria mas passam a funcionar
+	// no dia em que tiverem.
+	"magic":       {"magia"},
+	"demons":      {"demônios"},
+	"military":    {"militar"},
+	"seinen":      {"seinen"},
+	"shoujo":      {"shoujo"},
+	"super power": {"super poderes"},
+	"video games": {"jogo", "jogos"},
+
+	// O chip manda "Female Harem" e "Male Harem"; a curadoria usa um "Harém" só. Por isso
+	// os dois apontam para o mesmo rótulo — e por isso a chave "harem" acima nunca era
+	// alcançada por chip nenhum.
+	"female harem": {"harém"},
+	"male harem":   {"harém"},
+
+	"samurai":     {"samurai"},
+	"yuri":        {"yuri"},
+	"boys' love":  {"boys love"},
 }
 
 // Quantas tags contam para o filtro em anime CURADO.
