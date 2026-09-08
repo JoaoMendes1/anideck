@@ -1,7 +1,7 @@
 -- =============================================================================
 -- snapshot_schema.sql — RETRATO DO BANCO. NAO EXECUTE ESTE ARQUIVO.
 -- =============================================================================
--- Regenerado em 07/09/2026 15:47 a partir do banco de producao.
+-- Regenerado em 07/09/2026 20:39 a partir do banco de producao.
 --
 -- PARA QUE SERVE: consulta rapida do estado real do banco, sem precisar abrir
 -- o painel do Supabase nem confiar nos arquivos sql/ antigos (que podem ter
@@ -117,6 +117,17 @@
 --     auth                         text NOT NULL
 --     created_at                   timestamp with time zone
 
+-- ranking_current_cache
+--     position                     integer NOT NULL
+--     mal_id                       integer NOT NULL
+--     title                        text NOT NULL
+--     image_url                    text
+--     bayesian_score               numeric NOT NULL
+--     score                        numeric NOT NULL
+--     local_votes                  integer NOT NULL
+--     local_score                  numeric
+--     updated_at                   timestamp with time zone NOT NULL
+
 -- ranking_snapshots
 --     id                           bigint NOT NULL
 --     captured_at                  timestamp with time zone NOT NULL
@@ -141,6 +152,7 @@
 -- media_entries             | RLS: t     | policies: 4
 -- notifications             | RLS: t     | policies: 2
 -- push_subscriptions        | RLS: t     | policies: 1
+-- ranking_current_cache     | RLS: t     | policies: 0
 -- ranking_snapshots         | RLS: t     | policies: 0
 
 -- =============================================================================
@@ -153,6 +165,14 @@
 -- do Supabase omite o security_invoker, e colar sem ele devolve a view para
 -- security definer em silencio (Armadilha 2 do PITFALLS.md).
 -- =============================================================================
+
+CREATE OR REPLACE VIEW public.anime_community_scores WITH (security_invoker = off) AS
+ SELECT mal_id,
+    count(nota)::integer AS local_votes,
+    round(avg(nota), 2)::double precision AS local_score
+   FROM media_entries
+  WHERE nota IS NOT NULL
+  GROUP BY mal_id;
 
 CREATE OR REPLACE VIEW public.view_episode_progress_orphans WITH (security_invoker = on) AS
  SELECT ep.user_id,
@@ -479,7 +499,7 @@ CREATE OR REPLACE VIEW public.view_user_year_distribution WITH (security_invoker
 
 -- Permitir upload apenas para o Admin           | INSERT | authenticated     
 --     USING:  -
---     CHECK:  ((bucket_id = 'curadoria'::text) AND (auth.uid() = '<uuid-aqui>'::uuid))
+--     CHECK:  ((bucket_id = 'curadoria'::text) AND (auth.uid() = '<uuid>'::uuid))
 
 -- =============================================================================
 -- [6] BUCKETS

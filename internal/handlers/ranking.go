@@ -184,10 +184,14 @@ func gravarCachePersistido(animes []anilist.Anime, votosMap map[int]communitySco
 	linhas := make([]currentCacheRow, 0, len(animes))
 	agoraStr := time.Now().UTC().Format(time.RFC3339)
 
-	for i, a := range animes {
+	// O contador é próprio em vez do índice do range: anime pulado abriria buraco
+	// na numeração, e position é a chave primária da tabela.
+	posicao := 0
+	for _, a := range animes {
 		if a.MalID <= 0 {
 			continue
 		}
+		posicao++
 		var lVotes int
 		var lScore *float64
 		if v, ok := votosMap[a.MalID]; ok {
@@ -197,7 +201,7 @@ func gravarCachePersistido(animes []anilist.Anime, votosMap map[int]communitySco
 		}
 
 		linhas = append(linhas, currentCacheRow{
-			Position:      i + 1,
+			Position:      posicao,
 			MalID:         a.MalID,
 			Title:         a.Title,
 			ImageURL:      a.Images.JPG.ImageURL,
@@ -213,8 +217,18 @@ func gravarCachePersistido(animes []anilist.Anime, votosMap map[int]communitySco
 		return nil
 	}
 
-	_, _, err = client.From("ranking_current_cache").
+	if _, _, err = client.From("ranking_current_cache").
 		Insert(linhas, true, "position", "minimal", "exact").
+		Execute(); err != nil {
+		return err
+	}
+
+	// O upsert é por position: um Top menor que o anterior não toca as posições
+	// excedentes, e elas ficam com dados da execução passada. O boot leria as duas
+	// execuções misturadas sem nada acusar.
+	_, _, err = client.From("ranking_current_cache").
+		Delete("", "exact").
+		Gt("position", strconv.Itoa(len(linhas))).
 		Execute()
 	return err
 }
@@ -289,6 +303,83 @@ func StartRankingEngine(client anilist.Service) {
 	}
 }
 
+// calcularRankingBayesiano ordena os animes pelo score bayesiano híbrido e devolve os
+// dois parâmetros do cálculo: C (média geral das notas) e m (volume mínimo de votos).
+//
+// Fica fora do updateGlobalCache de propósito. Lá a lógica está espremida entre chamada
+// à AniList e escrita no Supabase, e não há como testá-la sem as duas. Mesmo motivo que
+// separou o buildMetadataPayload no entries.go.
+//
+// Ordena o slice recebido no lugar. O terceiro retorno é false quando nenhum anime tem
+// nota — não há ranking a calcular e o ciclo deve parar.
+func calcularRankingBayesiano(animes []anilist.Anime, votos map[int]communityScoreRow) (float64, float64, bool) {
+	var totalScore, totalPop, validCount float64
+
+	for _, a := range animes {
+		if a.Score > 0 {
+			totalScore += a.Score
+			totalPop += float64(a.Popularity)
+			validCount++
+		}
+	}
+
+	if validCount == 0 {
+		return 0, 0, false
+	}
+
+	C := totalScore / validCount
+	m := totalPop / validCount
+
+	// m = 0 significa que nenhum anime trouxe popularity. Acontece no caminho de
+	// emergência, em que o ranking vem do anime_metadata_cache, que não guarda esse
+	// campo. Sem log, o Top sai degradado sem ninguém perceber.
+	if m == 0 {
+		log.Println("[RANKING] m = 0: sem popularity na fonte, ranking sem suavização bayesiana")
+	}
+
+	for i := range animes {
+		vExt := float64(animes[i].Popularity)
+		rExt := animes[i].Score
+
+		if rExt == 0 {
+			animes[i].BayesianScore = 0
+			continue
+		}
+
+		vTotal := vExt
+		rComb := rExt
+
+		// Incorpora as avaliações dos usuários do AniDeck com o peso comunitário
+		if loc, temVoto := votos[animes[i].MalID]; temVoto && loc.LocalVotes > 0 {
+			vLocal := float64(loc.LocalVotes) * pesoVotoComunitario
+			vTotal = vExt + vLocal
+			rComb = ((vExt * rExt) + (vLocal * loc.LocalScore)) / vTotal
+			animes[i].Score = loc.LocalScore
+		}
+
+		// Sem popularity e sem voto local, vTotal + m = 0 e a divisão daria NaN.
+		// NaN não é maior nem menor que nada, então o comparador do sort.Slice abaixo
+		// violaria a ordem total que o sort exige e a lista sairia embaralhada.
+		// Sem nada para suavizar, a nota crua é a melhor resposta.
+		if vTotal+m == 0 {
+			animes[i].BayesianScore = rComb
+			continue
+		}
+
+		animes[i].BayesianScore = (vTotal/(vTotal+m))*rComb + (m/(vTotal+m))*C
+	}
+
+	sort.Slice(animes, func(i, j int) bool {
+		return animes[i].BayesianScore > animes[j].BayesianScore
+	})
+
+	for i := range animes {
+		animes[i].CurrentRank = i + 1
+	}
+
+	return C, m, true
+}
+
 func updateGlobalCache(client anilist.Service) {
 	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Minute)
 	defer cancel()
@@ -331,8 +422,12 @@ func updateGlobalCache(client anilist.Service) {
 					continue
 				}
 				a := anilist.Anime{MalID: int(mID)}
-				if t, ok := c["title"].(string); ok { a.Title = t }
-				if s, ok := c["average_score"].(float64); ok { a.Score = s }
+				if t, ok := c["title"].(string); ok {
+					a.Title = t
+				}
+				if s, ok := c["average_score"].(float64); ok {
+					a.Score = s
+				}
 				allAnimes = append(allAnimes, a)
 			}
 		}
@@ -346,57 +441,11 @@ func updateGlobalCache(client anilist.Service) {
 	// 1. Carrega as notas da comunidade da view SQL
 	votosComunidade := carregarVotosComunitarios()
 
-	// 2. Extrai C (Média Geral) e m (Volume Mínimo)
-	var totalScore, totalPop float64
-	var validCount float64
-
-	for _, a := range allAnimes {
-		if a.Score > 0 {
-			totalScore += a.Score
-			totalPop += float64(a.Popularity)
-			validCount++
-		}
-	}
-
-	if validCount == 0 {
+	// 2. Ordena pelo score bayesiano híbrido
+	C, m, ok := calcularRankingBayesiano(allAnimes, votosComunidade)
+	if !ok {
+		log.Println("[RANKING ENGINE] Nenhum anime com nota válida. Ciclo abortado.")
 		return
-	}
-
-	C := totalScore / validCount
-	m := totalPop / validCount
-
-	// 3. Aplica o Cálculo Bayesiano Híbrido
-	for i := range allAnimes {
-		id := allAnimes[i].MalID
-		vExt := float64(allAnimes[i].Popularity)
-		rExt := allAnimes[i].Score
-
-		if rExt == 0 {
-			allAnimes[i].BayesianScore = 0
-			continue
-		}
-
-		vTotal := vExt
-		rComb := rExt
-
-		// Incorpora as avaliações dos usuários do AniDeck com o peso comunitário
-		if loc, ok := votosComunidade[id]; ok && loc.LocalVotes > 0 {
-			vLocal := float64(loc.LocalVotes) * pesoVotoComunitario
-			vTotal = vExt + vLocal
-			rComb = ((vExt * rExt) + (vLocal * loc.LocalScore)) / vTotal
-			allAnimes[i].Score = loc.LocalScore
-		}
-
-		allAnimes[i].BayesianScore = (vTotal/(vTotal+m))*rComb + (m/(vTotal+m))*C
-	}
-
-	// 4. Ordenação pelo Score Bayesiano Híbrido
-	sort.Slice(allAnimes, func(i, j int) bool {
-		return allAnimes[i].BayesianScore > allAnimes[j].BayesianScore
-	})
-
-	for i := range allAnimes {
-		allAnimes[i].CurrentRank = i + 1
 	}
 
 	// 5. Comparação com a foto mensal de ranking_snapshots

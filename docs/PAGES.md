@@ -14,16 +14,18 @@
 
 **Total: 11 páginas implementadas.**
 
-> Em Configurações, três blocos seguem marcados com `EmBreve` — têm desenho e não têm
-> código (foto de perfil, notificações, exportar dados). Login com Google saiu da lista
-> em 02/09: o cartão mostra o estado real da conta. A troca de senha, que estava presa
-> junto dele sem motivo, foi separada no mesmo dia e funciona. A seção **Aparência**
-> também deixou de ser um deles: o seletor de tema funciona.
+> Configurações tem cinco seções, todas funcionando: Perfil, Aparência, Notificações,
+> Conta e Ajuda. Dois blocos dentro delas usam o componente `EmBreve`, e cada um diz no
+> `nota` o que falta para sair do papel:
+>
+> - foto de perfil — precisa de armazenamento de imagens;
+> - notificações — precisa de preferências salvas por usuário.
+>
+> São ideias que surgiram depois da página pronta e dependem de infraestrutura que ainda
+> não existe. Ficam visíveis de propósito, para não sumirem da cabeça. Não são pendência
+> da página.
 
 > A coluna `Arquivo` existe para tornar a verificação barata: conferir este documento é
 > abrir `client/src/pages/` e comparar. Sem ela, "✅ Implementada" é afirmação que
 > ninguém consegue checar sem ler o repositório inteiro — foi assim que este arquivo
 > passou meses dizendo que só três telas existiam.
-
-Protótipo em HTML já implementado, mantido como referência do desenho original:
-- `prototipos/config-ajuda-prototipo.html` (Configurações & Ajuda)
