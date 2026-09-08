@@ -98,7 +98,7 @@ export default function AnimeCard({
             )}
 
             <div className="absolute inset-x-0 top-0 h-16 bg-gradient-to-b from-void/75 via-void/25 to-transparent z-10 pointer-events-none" />
-            <div className="absolute inset-x-0 bottom-0 h-16 bg-gradient-to-t from-void/85 via-void/35 to-transparent z-10 pointer-events-none" />
+            <div className="absolute inset-x-0 bottom-0 h-20 bg-gradient-to-t from-void via-void/65 to-transparent z-10 pointer-events-none" />
 
             {/* Badges superiores */}
             <div className="absolute top-2.5 left-2.5 right-11 z-20 flex flex-col gap-1 items-start pointer-events-none">
@@ -124,7 +124,7 @@ export default function AnimeCard({
                     {listaGeneros.map((g) => (
                         <span
                             key={g}
-                            className={`text-[8.5px] font-bold px-1.5 py-0.5 rounded-md border backdrop-blur-md truncate max-w-[85px] ${getCategoryTheme(g)}`}
+                            className={`text-[8px] font-bold px-1 py-[1px] rounded border backdrop-blur-md truncate max-w-[92px] ${getCategoryTheme(g)}`}
                         >
                             {g}
                         </span>

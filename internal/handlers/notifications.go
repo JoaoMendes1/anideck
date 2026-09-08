@@ -17,6 +17,7 @@ import (
 	"github.com/JoaoMendes1/anideck/internal/middleware"
 	webpush "github.com/SherClockHolmes/webpush-go"
 	"github.com/go-chi/chi/v5"
+	"github.com/supabase-community/postgrest-go"
 )
 
 type NotificationsHandler struct {
@@ -120,10 +121,14 @@ func (h *NotificationsHandler) HandleGetNotifications(w http.ResponseWriter, r *
 		return
 	}
 
+		// Devolve lidas e não lidas: o sino virou histórico, não caixa de entrada.
+	// Sem as lidas, marcar como lido apagava a notificação para sempre e não
+	// havia como reencontrar o episódio depois. O cliente separa pelo read_at.
 	data, _, err := dbClient.From("notifications").
 		Select("*", "exact", false).
 		Eq("user_id", userID).
-		Is("read_at", "null").
+		Order("created_at", &postgrest.OrderOpts{Ascending: false}).
+		Limit(50, "").
 		Execute()
 
 	if err != nil {

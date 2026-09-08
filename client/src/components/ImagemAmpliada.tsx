@@ -1,4 +1,5 @@
 import { useEffect } from 'react'
+import { createPortal } from 'react-dom'
 import { X } from 'lucide-react'
 
 // Lightbox para ampliar pôster e banner na página de Detalhes.
@@ -9,6 +10,14 @@ import { X } from 'lucide-react'
 // Sem dependência nova: é overlay + img. O fechamento funciona por três
 // caminhos (botão, clique no fundo, tecla Esc) porque num overlay em tela
 // cheia a saída precisa ser óbvia em qualquer dispositivo.
+//
+// POR QUE createPortal: o <main> do Layout.tsx é `relative z-10`, e isso cria
+// um contexto de empilhamento. Renderizado ali dentro, o overlay competia como
+// z-10 contra a Navbar (z-50) e perdia — o header continuava por cima e o botão
+// de fechar caía exatamente em cima do sino de notificações. Aumentar o z-index
+// interno não resolve: dentro do contexto, o valor é relativo ao pai. O portal
+// tira o overlay de dentro do <main> e o coloca direto no body, onde o z-[100]
+// vale contra a Navbar de verdade.
 
 interface Props {
     src: string | null
@@ -38,7 +47,7 @@ export default function ImagemAmpliada({ src, alt, aoFechar }: Props) {
 
     if (!src) return null
 
-    return (
+    return createPortal(
         <div
             role="dialog"
             aria-modal="true"
@@ -67,6 +76,7 @@ export default function ImagemAmpliada({ src, alt, aoFechar }: Props) {
             <p className="absolute bottom-5 left-0 right-0 text-center text-[11px] text-muted-2 select-none pointer-events-none">
                 Toque fora da imagem para fechar
             </p>
-        </div>
+        </div>,
+        document.body
     )
 }
