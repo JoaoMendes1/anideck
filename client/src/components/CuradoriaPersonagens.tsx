@@ -2,6 +2,13 @@ import { useState } from 'react'
 import { Plus, Trash2, UploadCloud, Check, X } from 'lucide-react'
 import type { CuratedCharacter } from '../types/curation'
 
+const PAPEIS: Record<string, string> = {
+  MAIN: 'Principal',
+  SUPPORTING: 'Coadjuvante',
+}
+
+const rotuloPapel = (papel?: string) => (papel ? PAPEIS[papel] ?? papel : '')
+
 interface CuradoriaPersonagensProps {
   characters: CuratedCharacter[]
   onAdd: (char: CuratedCharacter) => void
@@ -120,8 +127,8 @@ export default function CuradoriaPersonagens({
               onChange={(e) => setCharRole(e.target.value)}
               className="w-full sm:w-auto bg-panel-2 border border-line rounded px-2 py-1.5 text-xs outline-none text-text"
             >
-              <option value="MAIN">MAIN</option>
-              <option value="SUPPORTING">SUPPORTING</option>
+              <option value="MAIN">Principal</option>
+              <option value="SUPPORTING">Coadjuvante</option>
             </select>
           </div>
           
@@ -180,7 +187,7 @@ export default function CuradoriaPersonagens({
                   </button>
                 </div>
                 <div className={`text-[10px] font-bold truncate ${isEditing ? 'text-holo-3' : 'text-text'}`}>{char.name}</div>
-                <div className="text-[9px] text-muted">{char.role}</div>
+                <div className="text-[9px] text-muted">{rotuloPapel(char.role)}</div>
               </div>
             )
           })}
