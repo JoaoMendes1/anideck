@@ -57,6 +57,10 @@ não de quem consulta. Confiar na RLS da tabela base é vazamento garantido.
 contexto de **quem consulta**, e a RLS da tabela-base voltou a valer sozinha. O filtro explícito
 **continua em todas e não deve ser removido** — o objetivo é a mesma dupla camada do item 7.
 
+**Emenda (07/09/2026) — o gatilho disparou.** O `sql/024` criou a `anime_community_scores` sem a
+cláusula e ninguém rodou a conferência; o `sql/025` corrigiu com `ALTER VIEW`. **São 17 views
+hoje**, todas com `invoker = on`. A conferência do fim do `sql/017` não roda sozinha.
+
 **Onde mora o risco hoje:**
 
 - **View nova nasce desprotegida.** O default do Postgres continua sendo
@@ -223,7 +227,17 @@ marcado pelos usuários. Não há erro, não há aviso — o usuário só vê ep
   manda o diagnóstico para o lado errado.
 - **Rate limit mudou:** a AniList reduziu de 90 para **30 requisições/minuto**, com limitador de
   burst separado. O debounce de 400ms da busca foi calculado em cima dos 90/min — a premissa
-  mudou e o `docs/fluxo-busca.md` ainda não foi atualizado.
+  mudou. O `docs/fluxo-busca.md` foi atualizado no Bloco 3 da Fase 6.9 e já reflete os 30/min.
+
+**Atualização (08/09/2026) — a queda deixou de ser evento e virou rotina.** A AniList passou
+dois dias seguidos em manutenção, e a instabilidade é estrutural: eles não são empresa, são
+comunidade, com demanda acima do que aguentam. Trate indisponibilidade como estado normal, não
+como exceção.
+
+**O Painel Admin era o único ponto sem proteção nenhuma.** O `BuscaAniList` fala direto com o
+`graphql.anilist.co` a partir do navegador, sem passar pelo Go — então nem o Kill Switch nem a
+cadeia de fallback o cobrem. Com a API fora, não havia como criar curadoria alguma. Corrigido em
+08/09/2026 com o campo manual de `mal_id` e o botão "Criar manualmente" (ver `DECISIONS.md`).
 
 > **Pergunta obrigatória:** o que este código faz quando a AniList responde 403, 429 ou timeout?
 > O usuário vê "fonte externa indisponível" ou vê "erro"?
@@ -381,6 +395,18 @@ Corrigido em 30/08/2026 na raiz: `Character.ID` e `RelationEntry.MalID` viraram
 Os outros 16 campos `int` de `internal/anilist/` foram verificados contra a API
 no ar e vêm sempre preenchidos — mas isso é observação, não garantia.
 
+**Terceira manifestação (08/09/2026), agora na gravação e não na leitura.** O
+`CuratedAnime.MalID` também é `int`, e o `HandleCreate` gravava sem validar: um
+payload sem o campo virava `mal_id = 0` no banco, silenciosamente. A única trava
+era o `if (!malId)` do formulário, contornável por requisição direta. O mesmo
+`idMal: null` da AniList chegava no `setMalId` do Painel e derrubava o
+salvamento com a mensagem errada ("Busque um anime e defina um título"),
+mandando o diagnóstico para o lado errado. Corrigido com `ValidarMalID` no
+servidor e campo editável na tela. **Aqui o `MalID` não virou ponteiro de
+propósito:** ausência de `mal_id` é erro, não "sem valor" — ponteiro deixaria
+o `nil` atravessar até o banco. A regra do item continua valendo para campo
+que pode legitimamente não existir.
+
 > **Pergunta obrigatória:** este campo numérico pode chegar ausente — porque a
 > curadoria não o preenche, ou porque a API externa manda `null`? Se puder,
 > ele precisa ser ponteiro no Go. `0` não é "sem valor": é um número válido que
@@ -460,31 +486,81 @@ no schema e passa pelas policies de toda tabela que a função lê?
 
 ---
 
+## 19. 🗺️ Mapa cravado no Go que duplica o que a `genre_taxonomy` já sabe
+
+**Incidente (08/09/2026):** o chip "Magia" na Busca devolvia **"Nada encontrado"**, enquanto
+"Fantasia", "Ação" e os outros funcionavam. Vários animes exibiam o selo "Magia" no próprio card
+da tela que dizia não ter achado nada.
+
+**Causa:** o `filters.ts` manda o `value` do chip, que é o termo da AniList **em inglês**
+(`{ label: 'Magia', value: 'Magic' }`). A curadoria guarda o rótulo **em português**
+(`custom_tags: ["Magia", ...]`). Quem faz a ponte é o mapa `equivalentes`, cravado no
+`search.go` — e ele **não tinha a chave `"magic"`**. Sem chave, o `mesmoRotulo` cai no
+`EqualFold("Magic", "Magia")`, dá falso, e o anime é descartado.
+
+**Não era um caso isolado: faltavam 12 das 17 chaves de tag.** `Magic`, `Demons`, `Military`,
+`Samurai`, `Seinen`, `Shoujo`, `Yuri`, `Super Power`, `Video Games`, `Boys' Love`,
+`Female Harem` e `Male Harem`. Os 17 gêneros estavam todos cobertos — só as tags foram
+esquecidas quando a lista de chips cresceu.
+
+**O que torna isso silencioso:** nada acusa. O mapa é um literal Go válido, o compilador não tem
+o que dizer, e chave ausente num `map` devolve o zero value (slice vazio) em vez de erro. O laço
+não roda, a função devolve `false`, e o anime é filtrado como se legitimamente não batesse. O
+resultado é uma tela de busca vazia, indistinguível de "não existe anime dessa tag".
+
+**O agravante que amplificou:** com a AniList fora do ar, o `HandleSearch` cai no fallback e a
+resposta passa a ser **só a curadoria**. Todo curado barrado significa zero resultados. Com a
+API no ar, os não curados apareceriam e os curados sumiriam no meio — falha parcial, ainda mais
+difícil de notar.
+
+**Chave morta é o mesmo defeito pelo avesso:** `harem`, `game`, `time travel` e `revenge`
+existiam no mapa e **nenhum chip conseguia alcançá-las**, porque o chip manda `Female Harem` e
+`Video Games`. Sobra de quando os `value` eram outros. Chave que ninguém chama não dá erro,
+então nada avisa que ela apodreceu.
+
+**Relação com o item 1:** lá a duplicação de vocabulário vive no banco, e a `genre_taxonomy`
+resolve com `raw_name` → `display_name_pt`. Aqui é a **terceira** cópia da mesma informação — a
+tabela sabe que `Magic` e `Magia` são a mesma coisa, e o mapa em Go repete isso à mão. Duas
+fontes para o mesmo fato divergem por padrão; a única dúvida é quando.
+
+Corrigido em 08/09/2026 completando as 12 chaves, com os rótulos conferidos contra
+`SELECT custom_tags FROM curated_animes` — não contra suposição do que a curadoria usaria.
+**A correção de raiz continua aberta:** derivar o mapa da `genre_taxonomy` (ver `ROADMAP.md`).
+
+> **Pergunta obrigatória:** este mapa, lista ou `switch` em Go repete informação que já vive numa
+> tabela do banco? Se sim, o que acontece quando a tabela ganhar um valor novo — alguém precisa
+> lembrar de editar o Go, e quem avisa se esquecer? Chave ausente em `map` do Go não dá erro:
+> devolve o zero value e o código segue como se a resposta fosse "não".
+
+---
+
 ## ✅ Parece armadilha, mas foi verificado — não reabrir
 
-> Cada item aqui já disparou suspeita numa sessão e foi checado com o
-> arquivo real na mão. Estão registrados para não custarem a verificação
-> de novo. **Item só entra depois de verificado**, nunca por suposição.
+> Cada item aqui já disparou suspeita numa sessão e foi checado **com o arquivo real na mão**.
+> Estão registrados para não custarem a mesma verificação de novo. **Item só entra depois de
+> verificado**, nunca por suposição — e cada um declara o que o transformaria em bug de verdade.
 
-### `anime_community_scores` não tem `auth.uid()` — e está certo
+### `anime_community_scores` não filtra por `auth.uid()` — e está certo
 
-**O que parece:** view sem filtro por usuário e com `security_invoker = on`.
-Pelo item 2, isso devolveria vazio para quem consulta com JWT comum.
+**O que parece:** view sem filtro por usuário, com `security_invoker = on`. Pelo item 2, isso
+devolveria vazio ou dado alheio para quem consulta com JWT comum.
 
-**Por que está certo:** ela agrega a nota de todos os usuários de propósito —
-é o peso comunitário do ranking. O único ponto de leitura é
-`carregarVotosComunitarios()` em `internal/handlers/ranking.go`, que usa
-`database.ServiceRoleClient()`. Service role ignora RLS, então a view devolve
-a base inteira. É o caso de exceção previsto no comentário do
-`ServiceRoleClient` em `internal/database/db.go`: worker de background, sem
-JWT para anexar.
+**Por que está certo:** ela agrega a `nota` de **todos** os usuários de propósito — é o peso
+comunitário do ranking (`pesoVotoComunitario = 350`, ver `DECISIONS.md` de 07/09). O único ponto
+de leitura é `carregarVotosComunitarios()` em `internal/handlers/ranking.go`, que usa
+`database.ServiceRoleClient()`. Service role ignora RLS, então a view devolve a base inteira. É
+exatamente o caso de exceção previsto no comentário do `ServiceRoleClient` em
+`internal/database/db.go`: worker de background, a cada 12h, sem JWT para anexar.
 
-**Verificado em 08/09/2026** por `grep` de todos os pontos de uso + leitura da
-atribuição do client.
+**Verificado em 08/09/2026** por `grep` de todos os pontos de uso no repositório, mais leitura da
+atribuição do client dentro da função.
 
-**O que faria virar bug de verdade:** qualquer leitura nova dessa view por
-`ClientWithToken` ou pelo frontend via PostgREST. Aí ela passa a ver só as
-notas de um usuário, e o peso comunitário fica errado sem erro nenhum.
+**O que faria virar bug de verdade:** qualquer leitura nova dessa view por `ClientWithToken`, ou
+direto do frontend pelo PostgREST. Aí ela passa a enxergar só as notas de um usuário, e o peso
+comunitário do ranking fica errado **sem erro nenhum** — o `log.Printf` de aviso ao lado só
+dispara em caso de falha, e RLS recortando linha não é falha.
+
+---
 
 ## 🧭 Como manter este arquivo
 
@@ -498,3 +574,8 @@ notas de um usuário, e o peso comunitário fica errado sem erro nenhum.
   um problema que não existe mais.
 - Item que deixou de ser risco de vez (código removido, coluna dropada) vira nota histórica, para
   não ser reintroduzido por alguém que não viveu o incidente.
+- **A seção "Parece armadilha, mas foi verificado" segue regra própria.** Entra ali só o que foi
+  checado com o arquivo na mão, com a data e a forma da verificação. Suspeita registrada como se
+  fosse fato é pior que suspeita nenhuma: vira afirmação eterna que ninguém reconfere. Todo item
+  precisa declarar **o que o transformaria em bug de verdade** — sem isso ele envelhece e passa a
+  mentir.

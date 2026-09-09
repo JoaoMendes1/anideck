@@ -14,7 +14,7 @@
 ## 🚀 Deploy contínuo
 Staging sobe já na Fase 1, como projeto esqueleto — mesmo padrão do JVM Systems.
 
-## 📍 Status atual (07/09/2026)
+## 📍 Status atual (08/09/2026)
 
 | Fase | Status |
 |---|---|
@@ -485,6 +485,43 @@ reordenáveis, sinopse com reescrita por IA, título, formato e status.
 
 ---
 
+## 🔧 Manutenção pós-v1
+
+> Correção e ajuste feitos depois do escopo da v1 fechar. **Não são fases** — não seguem a
+> numeração e não abrem escopo novo. Ficam registrados aqui em ordem cronológica inversa para
+> não sumirem: fase concluída não deve ser reaberta só para receber um conserto.
+
+### 08/09/2026 — Curadoria deixa de depender da AniList
+
+- [x] **Campo de `mal_id` e modo manual no Painel Admin.** O `BuscaAniList` fala direto com o
+      `graphql.anilist.co` pelo navegador, sem passar pelo Go — então o Painel era o único
+      ponto do app que o Kill Switch e a cadeia de fallback da Fase 6.9 **não cobriam**. Com a
+      AniList em manutenção por dois dias, não havia como cadastrar nada. Agora o `mal_id` é
+      digitável (buscado no myanimelist.net) e o botão "Criar manualmente" abre o formulário
+      sem tocar na API. O id continua sendo o real — sem id próprio, sem mudança de schema.
+      Ver #NN e `DECISIONS.md`.
+- [x] **`ValidarMalID` no servidor e 409 para `mal_id` duplicado.** O `HandleCreate` gravava
+      `mal_id = 0` sem reclamar (campo `int`, item 16 do `PITFALLS.md`), e a única trava era o
+      `if (!malId)` do formulário — contornável por requisição direta. A duplicata batia na
+      `UNIQUE (mal_id)` e virava 500, que significa "meu código quebrou"; agora é consulta
+      prévia e 409 com mensagem legível.
+- [x] **Campo travado no modo edição.** Não existe FK de `mal_id` em lugar nenhum, então
+      trocá-lo numa curadoria existente órfãna `media_entries` e `episode_progress` em
+      silêncio. Mesma trava do número de episódio (item 9 do `PITFALLS.md`).
+
+### 08/09/2026 — Chips de tag da Busca voltam a filtrar
+
+- [x] **12 chaves faltantes no mapa `equivalentes` do `search.go`.** O chip manda o termo em
+      inglês (`Magic`) e a curadoria guarda português (`Magia`); sem a chave, o `mesmoRotulo`
+      descartava o anime como se não batesse. Afetava `Magic`, `Demons`, `Military`, `Samurai`,
+      `Seinen`, `Shoujo`, `Yuri`, `Super Power`, `Video Games`, `Boys' Love`, `Female Harem` e
+      `Male Harem` — os 17 gêneros estavam íntegros, só as tags foram esquecidas quando a lista
+      de chips cresceu. Sintoma: "Nada encontrado" com o selo da tag visível nos cards. Rótulos
+      conferidos contra `SELECT custom_tags FROM curated_animes`. Ver #NN, `DECISIONS.md` e o
+      item 19 do `PITFALLS.md`.
+
+---
+
 ## 📋 Backlog / Ideias em Avaliação
 
 > Nada aqui é compromisso de escopo. Reavaliar depois do beta da Fase 7, com base em uso real.
@@ -494,22 +531,21 @@ reordenáveis, sinopse com reescrita por IA, título, formato e status.
 - [ ] **Relatório semanal por e-mail (Gmail API, SDK oficial em Go).** Removido do escopo da
       Fase 4.5 em 21/08/2026 — depende do Agente Olheiro estar validado e produzindo sugestões
       de qualidade. Mandar e-mail com recomendação ruim é pior que não mandar.
-- [ ] **Importação de lista via OAuth da AniList.** Opção (não obrigatória) para quem não quiser
-      cadastrar o deck manualmente. Tem um efeito colateral relevante: sincronização sustentada
-      com contas AniList é justamente o critério que os ToS deles citam para autorizar serviços
-      da mesma natureza. Reavaliar após o beta.
 - [ ] **Notificações de novas temporadas/sequências** — avisar quando uma sequência/temporada nova é anunciada.
 - [ ] **Filtro por ano na Busca, independente de temporada** — hoje o campo de ano só habilita se
       uma temporada estiver selecionada (ver `docs/ideias-para-melhorias.md`, item 7.1). Aceitável
       como está por ora; revisar se surgir demanda real de usuário.
-- [ ] **Criar anime do zero no Painel Admin.** Toda entrada em `curated_animes` hoje
-      nasce de um `mal_id` da AniList — não existe caminho para cadastrar obra que
-      ela não tem. **Trava principal:** o `mal_id` é a chave que liga
-      `curated_animes`, `anime_metadata_cache`, `media_entries` e `episode_progress`.
-      Um anime sem `mal_id` precisa de identidade própria, e isso é decisão de
-      schema, não de tela. Duas saídas possíveis: ID próprio para obras locais, ou
-      tornar o `mal_id` opcional e usar o `id` de `curated_animes` como chave real.
-      A segunda é mais correta e mais cara — mexe em tabelas com dado de usuário.
+- [ ] **Anime que não existe nem na AniList nem no MAL.** O campo manual de `mal_id`
+      (08/09/2026) já cobre toda obra que tem id. Sobrou só a que não existe em fonte
+      nenhuma. Exige id próprio, e cada um vira uma fusão de quatro tabelas no dia em
+      que a obra ganhar `mal_id`. Só virar tarefa quando aparecer um caso concreto.
+      Ver `DECISIONS.md` de 08/09/2026.
+
+- [ ] **Derivar o `equivalentes` da `genre_taxonomy` em vez de cravá-lo no `search.go`.**
+      Foi por divergir da tabela que os chips de tag pararam de filtrar em 08/09/2026.
+      Ganho: tag nova passa a funcionar sem deploy. Cuidado: caminho quente da Busca,
+      precisa de cache. Ver item 19 do `PITFALLS.md`.
+
 
 - [ ] **Agente de inconsistências.** Compara o que já existe no banco em vez de
       buscar fora: data em `curated_animes` contra `anime_metadata_cache`, contagem
