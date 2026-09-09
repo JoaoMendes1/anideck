@@ -120,7 +120,7 @@ export default function PainelAdmin() {
   // Declaradas antes do efeito que as usa: acessar uma const antes da linha em que ela
   // e declarada e valido em execucao (o efeito so roda depois do render), mas o linter
   // sinaliza, e ler de cima pra baixo fica mais simples assim.
- const verificarAcesso = async () => {
+  const verificarAcesso = async () => {
     const { data: { session } } = await supabase.auth.getSession()
     if (!session) {
       setIsAdmin(false)
@@ -178,7 +178,7 @@ export default function PainelAdmin() {
   //
   // O guarda do previewTitulo reproduz o `if (!previewTitulo) return` do efeito antigo: sem
   // formulario aberto nao ha o que comparar, e o limparFormulario justamente zera esse campo.
-    const isDirty = Boolean(previewTitulo || modoManual) && montarHash({
+  const isDirty = Boolean(previewTitulo || modoManual) && montarHash({
     titulo, formato, status, ordem, sinopse, tags, coverImage, bannerImage, characters,
     episodios, links, estreia, duracao, isDestaque, curationStatus,
   }) !== initialStateHash
@@ -218,7 +218,7 @@ export default function PainelAdmin() {
     acaoPendente?.()
     setAcaoPendente(null)
   }
-   //	Verifica admin, carrega destaques e status da API, além de permitir alternar kill switch
+  //	Verifica admin, carrega destaques e status da API, além de permitir alternar kill switch
   const toggleKillSwitch = async () => {
     const novoStatus = !forceOffline
     setForceOffline(novoStatus) // Atualização otimista na tela
@@ -249,9 +249,9 @@ export default function PainelAdmin() {
       const res = await fetch('https://graphql.anilist.co', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ 
-          query: QUERY_ANILIST, 
-          variables: /^\d+$/.test(termoBusca.trim()) ? { idMal: parseInt(termoBusca.trim(), 10) } : { search: termoBusca } 
+        body: JSON.stringify({
+          query: QUERY_ANILIST,
+          variables: /^\d+$/.test(termoBusca.trim()) ? { idMal: parseInt(termoBusca.trim(), 10) } : { search: termoBusca }
         }),
       })
       const { data } = await res.json()
@@ -311,7 +311,7 @@ export default function PainelAdmin() {
     }))
   }
 
-    // Guarda o id da sugestão que originou a edição atual. Só é usado no
+  // Guarda o id da sugestão que originou a edição atual. Só é usado no
   // salvarDestaque, para marcar 'curado' depois que o destaque existir.
   const [sugestaoEmCuradoria, setSugestaoEmCuradoria] = useState<number | null>(null)
 
@@ -385,12 +385,15 @@ export default function PainelAdmin() {
     setSugestaoEmCuradoria(sugestao.id)
   }
 
-  const uploadImagem = async (file: File): Promise<string | null> => {
+  const uploadImagem = async (
+    file: File,
+    tipo: 'capa' | 'banner' = 'capa',
+  ): Promise<string | null> => {
     setUploading(true)
     try {
       const options = {
         maxSizeMB: 0.3,
-        maxWidthOrHeight: 1920,
+        maxWidthOrHeight: tipo === 'capa' ? 600 : 1920,
         useWebWorker: true,
         fileType: 'image/webp'
       }
@@ -406,7 +409,8 @@ export default function PainelAdmin() {
       const { data: { publicUrl } } = supabase.storage.from('curadoria').getPublicUrl(filePath)
       showToast('Imagem otimizada (WebP) e enviada com sucesso!', 'success')
       return publicUrl
-    } catch {
+    } catch (err) {
+      console.error('[UPLOAD IMAGEM]', err)
       showToast('Erro ao enviar imagem. Verifique o console ou limite de tamanho.', 'error')
       return null
     } finally {
@@ -435,7 +439,7 @@ export default function PainelAdmin() {
 
   const salvarDestaque = async () => {
     if (!malId || !titulo) {
-            showToast('Preencha o MAL ID e o título antes de salvar!', 'error')
+      showToast('Preencha o MAL ID e o título antes de salvar!', 'error')
       return
     }
 
@@ -601,7 +605,7 @@ export default function PainelAdmin() {
     setModoManual(false)
   }
 
-    const abrirNovoDestaque = () => {
+  const abrirNovoDestaque = () => {
     pedirConfirmacao(() => {
       limparFormulario()
       setFormularioAberto(true)
@@ -704,7 +708,7 @@ export default function PainelAdmin() {
           </span>
           <span className="font-mono text-[10px] font-bold text-gold bg-gold/10 border border-gold/40 px-2 py-1 rounded-full">⚙ ADMIN</span>
         </div>
-                <div className="flex gap-2 sm:gap-4 items-center">
+        <div className="flex gap-2 sm:gap-4 items-center">
           <div className="flex items-center gap-1.5 sm:gap-2 bg-panel-2 border border-line rounded-full px-2 sm:px-3 py-1.5 select-none">
             <span className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wider text-muted-2 border-r border-line pr-1.5 sm:pr-2" title="Saúde Passiva da API AniList">
               <Activity size={12} />
@@ -822,7 +826,7 @@ export default function PainelAdmin() {
                   buscando={buscando}
                   resultados={resultadosBusca}
                   onBuscar={buscarNaAniList}
-                                   onSelecionar={aplicarAnimeNoFormulario}
+                  onSelecionar={aplicarAnimeNoFormulario}
                 />
 
                 <button
@@ -894,7 +898,7 @@ export default function PainelAdmin() {
                           value={coverImage}
                           onChange={setCoverImage}
                           onFileSelect={async (file) => {
-                            const url = await uploadImagem(file)
+                            const url = await uploadImagem(file, 'capa')
                             if (url) setCoverImage(url)
                           }}
                           uploading={uploading}
@@ -905,7 +909,7 @@ export default function PainelAdmin() {
                           value={bannerImage}
                           onChange={setBannerImage}
                           onFileSelect={async (file) => {
-                            const url = await uploadImagem(file)
+                            const url = await uploadImagem(file, 'banner')
                             if (url) setBannerImage(url)
                           }}
                           uploading={uploading}
@@ -1110,7 +1114,7 @@ export default function PainelAdmin() {
         title="Agente Olheiro"
         maxWidthClass="md:max-w-4xl"
       >
-               {/* Só monta quando o Sheet abre: o hook recarrega a fila a cada
+        {/* Só monta quando o Sheet abre: o hook recarrega a fila a cada
             abertura (sugestões abandonadas reaparecem) e o painel deixa de
             fazer a requisição para quem nunca abre o Olheiro. */}
         {olheiroAberto && (
