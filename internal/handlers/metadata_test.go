@@ -76,25 +76,31 @@ func TestBuildMetadataPayloadAnimeSemGeneroNemTag(t *testing.T) {
 }
 
 func TestIdsUnicos(t *testing.T) {
-	type linha = struct {
-		MalID int `json:"mal_id"`
-	}
-
+	// Usa o linhaMalID do metadata.go em vez de redeclarar a struct aqui. Duas structs
+	// anônimas idênticas são tipos distintos para o Go — foi por isso que o idsUnicos
+	// passou a receber um tipo nomeado quando o resync ganhou a segunda consulta.
 	tests := []struct {
 		name   string
-		linhas []linha
+		linhas []linhaMalID
 		quero  []int
 	}{
-		{name: "deck vazio", linhas: nil, quero: []int{}},
+		{name: "lista vazia", linhas: nil, quero: []int{}},
 		{
 			name:   "remove repetidos preservando a ordem",
-			linhas: []linha{{MalID: 30}, {MalID: 10}, {MalID: 30}, {MalID: 20}},
+			linhas: []linhaMalID{{MalID: 30}, {MalID: 10}, {MalID: 30}, {MalID: 20}},
 			quero:  []int{30, 10, 20},
 		},
 		{
 			name:   "ignora id inválido",
-			linhas: []linha{{MalID: 0}, {MalID: -5}, {MalID: 42}},
+			linhas: []linhaMalID{{MalID: 0}, {MalID: -5}, {MalID: 42}},
 			quero:  []int{42},
+		},
+		{
+			// Deck e curadoria se sobrepõem bastante: dos 114 curados, 81 também estão
+			// no deck. Sem esta deduplicação seriam 81 chamadas à AniList à toa.
+			name:   "sobreposição entre deck e curadoria",
+			linhas: []linhaMalID{{MalID: 21}, {MalID: 20}, {MalID: 21}, {MalID: 52991}},
+			quero:  []int{21, 20, 52991},
 		},
 	}
 
