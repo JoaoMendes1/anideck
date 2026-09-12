@@ -218,6 +218,41 @@ export default function PainelAdmin() {
     acaoPendente?.()
     setAcaoPendente(null)
   }
+
+  // Reprocessa o anime_metadata_cache do deck E da curadoria.
+  //
+  // Por que importa: quase todo campo de curated_animes é sobreposição, não
+  // preenchimento — deixar vazio significa "usa o da AniList". Mas o cache só
+  // nasce quando alguém adiciona o anime ao deck, então anime curado e nunca
+  // adicionado fica sem fonte nenhuma.
+  //
+  // O endpoint devolve 202 e segue trabalhando em background: o resultado NÃO
+  // volta para a tela, sai no log do servidor. O toast diz isso de propósito.
+  const [resyncRodando, setResyncRodando] = useState(false)
+
+  const resyncMetadados = async () => {
+    setResyncRodando(true)
+    try {
+      const { data: { session } } = await supabase.auth.getSession()
+      const res = await fetch('/api/admin/metadata/resync', {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${session?.access_token}` },
+      })
+      if (!res.ok) throw new Error()
+
+      const info = await res.json()
+      showToast(
+        `Sincronizando ${info.total} animes (${info.deck} do deck, ${info.curadoria} da curadoria). ` +
+        `Leva alguns minutos — acompanhe pelo log do servidor.`,
+        'success',
+      )
+    } catch {
+      showToast('Erro ao iniciar a sincronização de metadados.', 'error')
+    } finally {
+      setResyncRodando(false)
+    }
+  }
+
   //	Verifica admin, carrega destaques e status da API, além de permitir alternar kill switch
   const toggleKillSwitch = async () => {
     const novoStatus = !forceOffline
@@ -429,6 +464,19 @@ export default function PainelAdmin() {
     const doisDigitos = (n: number) => String(n).padStart(2, '0')
     return `${data.getFullYear()}-${doisDigitos(data.getMonth() + 1)}-${doisDigitos(data.getDate())}` +
       `T${doisDigitos(data.getHours())}:${doisDigitos(data.getMinutes())}`
+  }
+
+
+  const derivarEstreiaDoEp1 = (lista: CuratedEpisode[]) => {
+    if (estreia) return
+    const ep1 = lista.find((ep) => ep.number === 1)
+    if (!ep1?.aired_at) return
+    setEstreia(estreiaParaInput(ep1.aired_at))
+  }
+
+  const aplicarEpisodios = (lista: CuratedEpisode[]) => {
+    setEpisodios(lista)
+    derivarEstreiaDoEp1(lista)
   }
 
   const estreiaParaBanco = (valorDoInput: string) => {
@@ -755,9 +803,20 @@ export default function PainelAdmin() {
       </div>
 
       <div className="max-w-[1400px] mx-auto p-4 sm:p-6 lg:p-8 mt-2 relative z-10">
-        <div className={`mb-8 ${formularioAberto ? 'hidden lg:block' : 'block'}`}>
-          <h1 className="font-anton text-3xl uppercase">Painel de Curadoria</h1>
-          <p className="text-muted text-sm mt-1">Gerencie os "Destaques AniDeck" e refine a exibição de capas e personagens.</p>
+        <div className={`mb-8 flex items-start justify-between gap-4 ${formularioAberto ? 'hidden lg:block' : 'block'}`}>
+          <div className="min-w-0">
+            <h1 className="font-anton text-3xl uppercase">Painel de Curadoria</h1>
+            <p className="text-muted text-sm mt-1">Gerencie os "Destaques AniDeck" e refine a exibição de capas e personagens.</p>
+          </div>
+          <button
+            type="button"
+            onClick={() => pedirConfirmacao(resyncMetadados)}
+            disabled={resyncRodando}
+            title="Rebusca na AniList os metadados do deck e da curadoria"
+            className="shrink-0 flex items-center gap-2 px-4 py-2 bg-panel-2 border border-line text-muted hover:text-text hover:border-holo-2 text-xs font-bold rounded-full cursor-pointer transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            ♻️ {resyncRodando ? 'Sincronizando…' : 'Resync'}
+          </button>
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-[360px_1fr] gap-6 lg:gap-8 items-start">
@@ -937,11 +996,11 @@ export default function PainelAdmin() {
                     <CuradoriaEpisodios
                       episodes={episodios}
                       dataEstreiaBase={estreia}
-                      onAdd={(ep) => setEpisodios([...episodios, ep])}
+                      onAdd={(ep) => aplicarEpisodios([...episodios, ep])}
                       onUpdate={(index, ep) => {
                         const novos = [...episodios]
                         novos[index] = ep
-                        setEpisodios(novos)
+                        aplicarEpisodios(novos)
                       }}
                       onRemove={(index) => setEpisodios(episodios.filter((_, i) => i !== index))}
                       onUploadImage={uploadImagem}
@@ -949,7 +1008,7 @@ export default function PainelAdmin() {
                       onValidationError={(msg) => showToast(msg, 'error')}
                       onImportar={importarEpisodiosDaAniList}
                       importando={importandoEpisodios}
-                      onDefinirLista={setEpisodios}
+                      onDefinirLista={aplicarEpisodios}
                     />
 
                     <CuradoriaLinks
@@ -979,8 +1038,8 @@ export default function PainelAdmin() {
                             className="w-full bg-panel border border-line rounded px-2 py-1.5 text-xs outline-none focus:border-holo-2 text-text"
                           />
                           <p className="text-[9.5px] text-muted-2 mt-1">
-                            No <b className="text-muted">seu</b> horário — a conversão é automática. É a hora que permite
-                            calcular a contagem regressiva sem a AniList.
+                            No <strong>seu</strong> horário — a conversão é automática. É a hora que permite calcular a contagem regressiva sem a AniList.
+                            calcular a contagem regressiva sem a AniList. Preenchido sozinho quando você salva o episódio 1 com data.
                           </p>
                         </div>
 
