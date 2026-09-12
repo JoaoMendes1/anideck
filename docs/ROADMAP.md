@@ -499,33 +499,68 @@ reordenáveis, sinopse com reescrita por IA, título, formato e status.
 
 ---
 
-## 🎛️ Fase 9: Painel de Controle e curadoria assistida por IA
+## 🎛️ Fase 9: Independência da AniList na curadoria
 
-> Milestone sugerido no GitHub: `v1.1`. Quatro issues, nesta ordem, cada uma
-> entregando sozinha.
+> Milestone sugerido no GitHub: `v1.1`. Quatro issues, nesta ordem.
+
+**O critério mudou (12/09/2026).** Até aqui o projeto media *completude* — campo
+preenchido ou vazio. A medida certa é **independência**: se a AniList cair e não
+voltar, o que sobra? Ela ficou quase uma semana fora e a resposta importa.
+
+Retrato inicial, por `sql/relatorio_independencia_v3.sql`:
+
+| Campo | Curado | Falta |
+|---|---|---|
+| Sinopse, capa, tags | 114 | 0 |
+| Personagens | 113 | 1 |
+| Banner | 104 | 10 |
+| Estreia | 15 | 99 |
+| **Lista de episódios** | 2 | **112** |
+| **Onde assistir** | 2 | **112** |
+
+**Independentes da AniList: 1 de 114.**
+
+**O cache não é fallback para esses campos.** O `anime_metadata_cache` guarda só
+`title`, `episodes`, `duration_minutes`, `genres`, `studios`, `average_score`,
+`tags` e `season_year` — conferido em `buildMetadataPayload`. Episódio, data de
+estreia e onde assistir **não estão lá**: vêm da AniList ao vivo ou de lugar
+nenhum. E mesmo o que ele guarda é uma foto: se ela morrer, congela.
 
 - [ ] **9.1 — Aba Painel de Controle.** Traz para um lugar só o que já existe e
       já tem endpoint: Kill Switch, peso do voto do ranking (hoje `const` no
-      `ranking.go`), tags fora da taxonomia (`view_unmapped_labels`) e uso do
-      bucket. Faixa de estado no topo.
+      `ranking.go`), tags fora da taxonomia (`view_unmapped_labels`), uso do
+      bucket e o botão de Resync. Faixa de estado no topo, e o relatório de
+      independência como seção. O Resync hoje mora provisoriamente no cabeçalho
+      do Painel de Curadoria e migra para cá.
 - [ ] **9.2 — Pesos do Olheiro saem do código.** O `tagsDesejadas` é `map`
       literal no `olheiro.go`; o comentário dele já antecipava esta issue. Vira
       tabela + tela. Mexe em schema.
-- [ ] **9.3 — Fila, worker e tela de revisão.** A base de tudo. Worker é binário
-      separado (`cmd/worker/`), não goroutine no app: o free tier do Render
-      hiberna, e processo próprio é o que migra para `systemd` na VPS. Molde a
-      seguir: `StartRankingEngine` + o `atomic.Bool` com `CompareAndSwap`.
-- [ ] **9.4 — Episódios, datas, horários e onde assistir.** Exige busca na web.
+- [ ] **9.3 — Fila, worker e tela de revisão.** A base da 9.4, não um fim em si.
+      Worker é binário separado (`cmd/worker/`), não goroutine no app: o free
+      tier do Render hiberna, e processo próprio é o que migra para `systemd` na
+      VPS. Molde a seguir: `StartRankingEngine` + o `atomic.Bool` com
+      `CompareAndSwap`. **Usa `ServiceRoleClient()`, nunca o token da
+      requisição** — ver o incidente de 12/09 na Manutenção pós-v1.
+- [ ] **9.4 — Títulos de episódio em pt-BR, datas, horários e onde assistir.**
+      O coração da fase. Exige busca na web: a AniList não tem título em
+      português, e o usuário quer o oficial da Crunchyroll.
       **Duas chamadas ao Gemini por anime**: a API recusa `google_search` junto
       com `ResponseMIMEType: application/json` (400 INVALID_ARGUMENT), e pedir
       JSON pelo prompt é instável nos modelos `3.x-flash`. Estes campos **nunca**
-      entram em modo automático.
+      entram em modo automático — o relatório de ressalvas e a aprovação humana
+      são parte do desenho, não precaução.
 
-**Correção de rumo (10/09/2026), a partir do relatório de completude:** a 9.3
-tinha sido planejada para gerar sinopse e tags em lote. Não há lote — sinopse,
-tags e capa estão preenchidas em **100% dos 114 animes**. O trabalho real está
-nos campos da 9.4 e nos episódios cadastrados pela metade. A 9.3 continua sendo
-a base (fila + worker), mas o que ela processa é o conteúdo da 9.4.
+**Correção de rumo (12/09/2026).** A 9.3 tinha sido planejada para gerar sinopse
+e tags em lote, e a 9.4 era a última com ressalva. Os dois estavam errados:
+sinopse, tags e capa já estão em **100% dos 114**, e são justamente os campos da
+9.4 que deixam 112 animes reféns. A 9.4 virou o centro; a 9.3 existe para
+alimentá-la.
+
+**O que já encolheu a fase, antes de começar.** O Resync passando a cobrir a
+curadoria zerou os 48 animes sem cache, e a derivação da estreia a partir do
+episódio 1 mais o botão "Distribuir datas (+7d)" reduzem a curadoria de
+episódios a: gerar vazios → distribuir datas → digitar os títulos. Sobrou o
+título, que é o que a IA resolve.
 
 **Foto de episódio, capa e banner ficam fora de toda a fase.** Modelo de texto
 não busca nem gera imagem. Isso volta pela AniList.
@@ -579,6 +614,33 @@ numa integração é risco desproporcional.
 > numeração e não abrem escopo novo. Ficam registrados aqui em ordem cronológica inversa para
 > não sumirem: fase concluída não deve ser reaberta só para receber um conserto.
 
+### 12/09/2026 — Resync passa a enxergar a curadoria
+
+- [x] **`HandleResyncMetadata` lia só `media_entries`.** Anime curado que ninguém
+      adicionou ao deck nunca ganhava linha em `anime_metadata_cache` — e como
+      quase todo campo de `curated_animes` é sobreposição, o que ficou vazio não
+      tinha de onde vir. Eram **48 dos 114**, incluindo ONE PIECE e Vinland Saga.
+      Passou a unir deck + curadoria; o `idsUnicos` já elimina a sobreposição.
+      Resultado: **48 → 0**.
+- [x] **O lote usa `ServiceRoleClient()`.** Na primeira execução, 34 animes foram
+      buscados com sucesso e perdidos na gravação com `(PGRST303) JWT expired`:
+      o token do Supabase dura ~1h e o resync passou disso com a AniList lenta.
+      **Trabalho de background não pode depender do token de uma requisição que
+      já terminou** — é o caso de exceção previsto no `db.go`. Depois disso:
+      114 de 114 em 7 minutos.
+- [x] **Botão de Resync no Painel.** O endpoint existia no `main.go` desde sempre
+      e nunca tinha sido ligado à tela. Provisório no cabeçalho do Painel de
+      Curadoria; migra para a aba da 9.1.
+- [x] **Estreia derivada do episódio 1.** O Painel tem dois campos de data — o
+      `aired_at` do episódio 1 e o `custom_first_aired_at` da obra. São coisas
+      diferentes, mas para o episódio 1 o valor é o mesmo, e digitar duas vezes
+      cria duas fontes para um fato só (item 19). Agora salvar o episódio 1
+      preenche a estreia quando ela está vazia — nunca sobrescreve.
+- [x] **Papel do personagem traduzido na exibição.** `MAIN`/`SUPPORTING` viram
+      Principal/Coadjuvante no Admin e em Detalhes. O valor gravado continua em
+      inglês, que é o vocabulário da AniList. O mapa vive em
+      `client/src/types/curation.ts`, não duplicado nos dois componentes.
+
 ### 08/09/2026 — Curadoria deixa de depender da AniList
 
 - [x] **Campo de `mal_id` e modo manual no Painel Admin.** O `BuscaAniList` fala direto com o
@@ -613,6 +675,20 @@ numa integração é risco desproporcional.
 ## 📋 Backlog / Ideias em Avaliação
 
 > Nada aqui é compromisso de escopo. Reavaliar depois do beta da Fase 7, com base em uso real.
+
+- [ ] **Resync pular quem já está em dia.** Hoje ele refaz os 114 toda vez,
+      inclusive quem sincronizou há uma hora. Pular quem foi atualizado nos
+      últimos N dias encurta a rodada e economiza cota real. O que **não** vale
+      mexer é na velocidade: o rate limiter já gasta a cota do minuto em rajada
+      e espera o reset, que é o comportamento certo — a mensagem
+      "Limite de requisições atingido" é que parece erro sem ser.
+
+- [ ] **Meio-dia local vs. meio-dia UTC.** Data sem hora é completada com
+      meio-dia **local** no `CuradoriaEpisodios.tsx` e meio-dia **UTC** no
+      `CalcularProximoEpisodioCurado`. Os dois evitam o recuo para o dia
+      anterior (item 3), mas não são o mesmo instante — 3h de diferença em
+      Brasília. Hoje sem caso ativo: todo `aired_at` do catálogo tem hora
+      explícita. Volta a existir se entrar data sem hora por outro caminho.
 
 - [ ] **Agente Olheiro — evolução da pontuação.** A v1 nasce com fórmula simples e proposital;
       refinar incrementalmente conforme o catálogo e a base de usuários crescerem.
