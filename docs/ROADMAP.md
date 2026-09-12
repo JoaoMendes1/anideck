@@ -485,6 +485,94 @@ reordenáveis, sinopse com reescrita por IA, título, formato e status.
 
 ---
 
+---
+
+# 🏁 v1.0 — beta entregue
+
+> Tudo acima é o produto sendo construído: Fases 1 a 8, escopo fechado, com fim.
+> Daqui para baixo o trabalho muda de natureza — não é mais construir, é evoluir.
+> A numeração continua, porque ela conta a história do projeto na ordem.
+>
+> **Quando este arquivo passar de ~900 linhas**, mover as Fases 1 a 6 para
+> `docs/historico/` ou para releases do GitHub, deixando um ponteiro no topo.
+> Roadmap saudável guarda o que vem e o passado recente, não tudo.
+
+---
+
+## 🎛️ Fase 9: Painel de Controle e curadoria assistida por IA
+
+> Milestone sugerido no GitHub: `v1.1`. Quatro issues, nesta ordem, cada uma
+> entregando sozinha.
+
+- [ ] **9.1 — Aba Painel de Controle.** Traz para um lugar só o que já existe e
+      já tem endpoint: Kill Switch, peso do voto do ranking (hoje `const` no
+      `ranking.go`), tags fora da taxonomia (`view_unmapped_labels`) e uso do
+      bucket. Faixa de estado no topo.
+- [ ] **9.2 — Pesos do Olheiro saem do código.** O `tagsDesejadas` é `map`
+      literal no `olheiro.go`; o comentário dele já antecipava esta issue. Vira
+      tabela + tela. Mexe em schema.
+- [ ] **9.3 — Fila, worker e tela de revisão.** A base de tudo. Worker é binário
+      separado (`cmd/worker/`), não goroutine no app: o free tier do Render
+      hiberna, e processo próprio é o que migra para `systemd` na VPS. Molde a
+      seguir: `StartRankingEngine` + o `atomic.Bool` com `CompareAndSwap`.
+- [ ] **9.4 — Episódios, datas, horários e onde assistir.** Exige busca na web.
+      **Duas chamadas ao Gemini por anime**: a API recusa `google_search` junto
+      com `ResponseMIMEType: application/json` (400 INVALID_ARGUMENT), e pedir
+      JSON pelo prompt é instável nos modelos `3.x-flash`. Estes campos **nunca**
+      entram em modo automático.
+
+**Correção de rumo (10/09/2026), a partir do relatório de completude:** a 9.3
+tinha sido planejada para gerar sinopse e tags em lote. Não há lote — sinopse,
+tags e capa estão preenchidas em **100% dos 114 animes**. O trabalho real está
+nos campos da 9.4 e nos episódios cadastrados pela metade. A 9.3 continua sendo
+a base (fila + worker), mas o que ela processa é o conteúdo da 9.4.
+
+**Foto de episódio, capa e banner ficam fora de toda a fase.** Modelo de texto
+não busca nem gera imagem. Isso volta pela AniList.
+
+---
+
+## 🧠 Fase 10: RAG e busca semântica — *a planejar*
+
+> Levantada em 10/09/2026. **Só planejar depois da Fase 9 fechar.** Registrado
+> aqui para o contexto não se perder entre sessões.
+
+**Motivação:** aprender RAG, embeddings e agentes com ferramenta — aplicado num
+projeto real, não em exercício descartável.
+
+**Decidido que NÃO fazer:** RAG sobre dado estruturado. "Quantos Isekai eu
+tenho" é `SELECT`, e jogar isso num índice vetorial deixa mais lento, mais caro
+e **menos exato**. RAG serve para o que SQL não faz: significado em texto livre.
+
+**Os dois casos que cabem de verdade:**
+
+1. **Busca semântica nas sinopses.** São 114 sinopses reescritas à mão, em
+   português, com voz consistente. `WHERE tag = 'Isekai'` nunca responde "anime
+   com a melancolia de Frieren". Vira recurso do app: "parecidos com este".
+2. **RAG sobre as próprias docs.** `PITFALLS`, `DECISIONS` e `ROADMAP` passam de
+   100 KB e crescem. É o caso da wiki interna, literal. Bônus: melhora o fluxo
+   de trabalho com IA — o agente busca o trecho em vez de receber tudo colado.
+
+**Ordem sugerida:** embeddings das sinopses → busca por similaridade →
+RAG sobre as docs → agente que decide entre SQL e vetor.
+
+A terceira etapa é onde mora o aprendizado real: recortar documento em pedaços é
+o que separa RAG bom de ruim. O `PITFALLS.md` é caso ótimo porque já vem em itens
+numerados — cortar por item preserva o sentido, cortar a cada N caracteres não.
+
+**Infra (verificado em 10/09/2026):** `pgvector` está incluído no plano **Free**,
+sem custo extra — `create extension vector`. O free tier comporta de 50 a 80 mil
+vetores; o catálogo tem 114. **Não é preciso banco vetorial novo.** Embedding do
+Gemini tem camada gratuita, e a chave já existe no projeto.
+
+**Fora de escopo:** observabilidade com Grafana e MCP para telemetria. Com um
+usuário não há métrica que justifique, e inventar escala para praticar ensina
+pouco. MCP do Supabase espera a VPS com backup automático — hoje produção e
+homologação são o mesmo projeto sem ponto de restauração, e credencial de escrita
+numa integração é risco desproporcional.
+
+---
+
 ## 🔧 Manutenção pós-v1
 
 > Correção e ajuste feitos depois do escopo da v1 fechar. **Não são fases** — não seguem a
@@ -545,6 +633,20 @@ reordenáveis, sinopse com reescrita por IA, título, formato e status.
       Foi por divergir da tabela que os chips de tag pararam de filtrar em 08/09/2026.
       Ganho: tag nova passa a funcionar sem deploy. Cuidado: caminho quente da Busca,
       precisa de cache. Ver item 19 do `PITFALLS.md`.
+
+- [ ] **Levar o relatório de completude para a tela.** A query já existe em
+      `sql/relatorio_curadoria_v2.sql` e roda no SQL Editor. Virar seção do Painel
+      de Controle é uma view mais uma tabela, e cada linha vira item da fila da 9.3.
+      **A régua está na v2 e não pode ser afrouxada:** campo vazio **com** linha em
+      `anime_metadata_cache` não é pendência — é a AniList respondendo. A v1 contava
+      assim e acusou 114 de 114 animes "sem duração e sem estreia", que é ruído.
+
+- [ ] **Varredura de divergência — o que está *errado*, não o que falta.** Outra
+      coisa do relatório acima, que é SQL puro e exato. Aqui é comparar o banco com
+      o mundo real: uma busca web por anime, com custo. Só faz sentido nos que já
+      estão completos. **Desenho obrigatório:** o modelo mostra o que a fonte diz ao
+      lado do que está no banco, e o humano decide. Ele aponta divergência, nunca dá
+      veredito — senão você confere tudo à mão de novo, que é o trabalho a evitar.
 
 
 - [ ] **Agente de inconsistências.** Compara o que já existe no banco em vez de

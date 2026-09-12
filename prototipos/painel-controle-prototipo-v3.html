@@ -1,0 +1,596 @@
+<!DOCTYPE html>
+<html lang="pt-BR" data-tema="holo">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>AniDeck — Protótipo: Painel de Controle + Revisão da IA</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Anton&family=Manrope:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+/* ============================================================================
+   Tokens copiados de client/src/index.css — mesmos nomes de variável, para a
+   tradução ao app ser direta. Nenhum hex fora deste bloco; opacidade sempre por
+   color-mix, conforme DESIGN_TOKENS.md.
+   ========================================================================== */
+:root{
+  --color-void:#0A0714; --color-panel:#130F22; --color-panel-2:#181330;
+  --color-line:#2B2247; --color-text:#F1EEFA; --color-muted:#A79BC9;
+  --color-muted-2:#6B5F94;
+  --color-holo-1:#FF4FD8; --color-holo-2:#7B5CFF; --color-holo-3:#3FE0F0;
+  --color-gold:#FFC542; --color-green:#a0ff78; --color-coral:#FF5C6C;
+}
+html[data-tema='terminal']{
+  --color-void:#050A08; --color-panel:#121F1A; --color-panel-2:#172B24;
+  --color-line:#1F6B4A; --color-text:#F0F8F5; --color-muted:#A2C2B6; --color-muted-2:#678C7E;
+  --color-holo-1:#A0FF78; --color-holo-2:#70F0B4; --color-holo-3:#3FE0F0;
+}
+html[data-tema='arquivo']{
+  --color-void:#120C08; --color-panel:#201711; --color-panel-2:#2D2016;
+  --color-line:#433326; --color-text:#F9F3EF; --color-muted:#C4B0A0; --color-muted-2:#8F7764;
+  --color-holo-1:#FFC542; --color-holo-2:#FF8A5C; --color-holo-3:#8A5A2B;
+}
+html[data-tema='estudio']{
+  --color-void:#12141A; --color-panel:#15171C; --color-panel-2:#1C1F27;
+  --color-line:#2A3040; --color-text:#F2F3F6; --color-muted:#8C96AD; --color-muted-2:#6F7483;
+  --color-holo-1:#4A7DFF; --color-holo-2:#4A7DFF; --color-holo-3:#4A7DFF;
+}
+
+*{box-sizing:border-box}
+html,body{margin:0}
+body{
+  background:var(--color-void); color:var(--color-text);
+  font-family:'Manrope',sans-serif; font-size:15px; line-height:1.55;
+  -webkit-font-smoothing:antialiased;
+}
+h1,h2,h3{font-family:'Anton',sans-serif;font-weight:400;letter-spacing:.02em;margin:0;text-transform:uppercase}
+.mono{font-family:'JetBrains Mono',monospace;font-size:12px}
+button,input,textarea,select{font:inherit;color:inherit}
+:focus-visible{outline:2px solid var(--color-holo-3);outline-offset:2px;border-radius:8px}
+@media(prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+
+.ambient{position:fixed;inset:0;z-index:0;pointer-events:none;
+  background:
+   radial-gradient(480px 380px at 15% 12%, color-mix(in srgb,var(--color-holo-1) 12%,transparent),transparent 60%),
+   radial-gradient(520px 420px at 85% 88%, color-mix(in srgb,var(--color-holo-3) 10%,transparent),transparent 60%)}
+.wrap{max-width:1220px;margin:0 auto;padding:18px 16px 80px;position:relative;z-index:1}
+
+.topbar{display:flex;align-items:center;gap:14px;padding:12px 0 18px;flex-wrap:wrap}
+.logo{font-family:'Anton',sans-serif;font-size:22px;letter-spacing:.03em}
+.logo b{font-weight:400;background-image:linear-gradient(90deg,var(--color-holo-1),var(--color-holo-2) 45%,var(--color-holo-3));
+        background-clip:text;-webkit-background-clip:text;color:transparent}
+.temas{margin-left:auto;display:flex;gap:8px;align-items:center}
+.temas>span{color:var(--color-muted-2);font-family:'JetBrains Mono',monospace;font-size:10.5px;letter-spacing:.1em}
+.tema-bola{width:22px;height:22px;border-radius:50%;border:1px solid var(--color-line);cursor:pointer;padding:0}
+.tema-bola[data-t='holo']{background-image:linear-gradient(135deg,#FF4FD8,#7B5CFF 50%,#3FE0F0)}
+.tema-bola[data-t='terminal']{background-image:linear-gradient(135deg,#A0FF78,#70F0B4)}
+.tema-bola[data-t='arquivo']{background-image:linear-gradient(135deg,#FFC542,#FF8A5C)}
+.tema-bola[data-t='estudio']{background-image:linear-gradient(135deg,#4A7DFF,#2A3040)}
+.tema-bola[aria-pressed="true"]{outline:2px solid var(--color-text);outline-offset:2px}
+
+.tabs{display:flex;gap:4px;overflow-x:auto;border-bottom:1px solid var(--color-line);
+      margin-bottom:22px;scrollbar-width:none}
+.tabs::-webkit-scrollbar{display:none}
+.tab{background:none;border:0;padding:11px 16px;color:var(--color-muted);cursor:pointer;
+     white-space:nowrap;border-bottom:2px solid transparent;font-weight:600;font-size:14px}
+.tab[aria-selected="true"]{color:var(--color-text);border-bottom-color:var(--color-holo-1)}
+.tab .badge{display:inline-block;margin-left:7px;background:var(--color-holo-1);color:var(--color-void);
+            border-radius:99px;padding:1px 7px;font-size:11px;font-weight:700}
+
+.estado{border:1px solid var(--color-line);border-radius:16px;background:var(--color-panel);
+        padding:18px 20px;margin-bottom:24px;display:grid;gap:18px}
+@media(min-width:760px){.estado{grid-template-columns:repeat(3,1fr)}}
+.est{display:flex;gap:13px;align-items:flex-start}
+.dot{width:9px;height:9px;border-radius:50%;margin-top:8px;flex:none}
+.dot.off{background:var(--color-coral);box-shadow:0 0 11px var(--color-coral)}
+.dot.on{background:var(--color-green);box-shadow:0 0 11px var(--color-green)}
+.dot.idle{background:var(--color-muted-2)}
+.est h3{font-size:16px}
+.est p{margin:3px 0 0;color:var(--color-muted);font-size:13px}
+.est .num{font-family:'Anton',sans-serif;font-size:27px;line-height:1}
+
+.grid{display:grid;gap:22px;grid-template-columns:1fr}
+@media(min-width:920px){.grid{grid-template-columns:206px 1fr;align-items:start}}
+.secnav{display:flex;gap:6px;overflow-x:auto;scrollbar-width:none;padding-bottom:4px}
+.secnav::-webkit-scrollbar{display:none}
+@media(min-width:920px){.secnav{flex-direction:column;overflow:visible;position:sticky;top:16px}}
+.secnav button{background:none;border:1px solid transparent;border-radius:12px;padding:9px 14px;
+  color:var(--color-muted);cursor:pointer;text-align:left;white-space:nowrap;font-size:14px;font-weight:600}
+.secnav button:hover{background:var(--color-panel);color:var(--color-text)}
+.secnav button[aria-current="true"]{background:var(--color-panel-2);color:var(--color-text);border-color:var(--color-line)}
+
+.card{border:1px solid var(--color-line);border-radius:16px;background:var(--color-panel);padding:20px;margin-bottom:18px}
+.card>header{margin-bottom:14px}
+.card h2{font-size:18px}
+.card>header p{margin:6px 0 0;color:var(--color-muted);font-size:13.5px;max-width:64ch}
+.linha{display:flex;justify-content:space-between;align-items:center;gap:16px;padding:14px 0;
+       border-top:1px solid var(--color-line);flex-wrap:wrap}
+.linha:first-of-type{border-top:0}
+.txt{flex:1;min-width:200px}
+.txt strong{display:block;font-weight:700;font-size:14.5px}
+.txt span{color:var(--color-muted);font-size:13px}
+
+.sw{width:46px;height:26px;border-radius:99px;background:var(--color-panel-2);border:1px solid var(--color-line);
+    position:relative;cursor:pointer;flex:none;transition:background .16s}
+.sw::after{content:"";position:absolute;top:3px;left:3px;width:18px;height:18px;border-radius:50%;
+           background:var(--color-muted);transition:transform .16s,background .16s}
+.sw[aria-checked="true"]{background-image:linear-gradient(90deg,var(--color-holo-1),var(--color-holo-2) 45%,var(--color-holo-3));border-color:transparent}
+.sw[aria-checked="true"]::after{transform:translateX(20px);background:var(--color-void)}
+
+input[type=text],input[type=number],textarea,select{
+  background:var(--color-panel-2);border:1px solid var(--color-line);border-radius:12px;
+  padding:9px 13px;width:100%;outline:none;transition:border-color .12s}
+input:focus,textarea:focus,select:focus{border-color:var(--color-holo-2)}
+textarea{min-height:180px;resize:vertical;font-family:'JetBrains Mono',monospace;font-size:12px;line-height:1.65}
+.btn{border:1px solid var(--color-line);background:var(--color-panel-2);border-radius:99px;
+     padding:9px 18px;cursor:pointer;font-weight:700;font-size:14px;transition:border-color .12s}
+.btn:hover{border-color:var(--color-holo-2)}
+.btn.primary{border:0;color:var(--color-void);
+  background-image:linear-gradient(90deg,var(--color-holo-1),var(--color-holo-2) 45%,var(--color-holo-3))}
+.btn.danger{border-color:color-mix(in srgb,var(--color-coral) 45%,transparent);color:var(--color-coral)}
+.btn.sm{padding:5px 13px;font-size:12.5px}
+.acoes{display:flex;gap:10px;flex-wrap:wrap;margin-top:16px}
+
+.modos{display:grid;gap:10px;margin-top:4px}
+@media(min-width:640px){.modos{grid-template-columns:1fr 1fr}}
+.modo{border:1px solid var(--color-line);border-radius:14px;padding:14px;cursor:pointer;background:none;text-align:left}
+.modo[aria-pressed="true"]{border-color:var(--color-holo-2);background:color-mix(in srgb,var(--color-holo-2) 9%,transparent)}
+.modo strong{display:block;font-size:14.5px;margin-bottom:4px}
+.modo>span{color:var(--color-muted);font-size:12.5px;display:block}
+
+.selo{display:inline-flex;align-items:center;gap:5px;border-radius:99px;padding:3px 11px;
+      font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:600;white-space:nowrap}
+.selo.ok{background:color-mix(in srgb,var(--color-green) 12%,transparent);
+         border:1px solid color-mix(in srgb,var(--color-green) 40%,transparent);color:var(--color-green)}
+.selo.aviso{background:color-mix(in srgb,var(--color-gold) 12%,transparent);
+            border:1px solid color-mix(in srgb,var(--color-gold) 40%,transparent);color:var(--color-gold)}
+.selo.neutro{background:var(--color-panel-2);border:1px solid var(--color-line);color:var(--color-muted)}
+
+.pesos{display:grid;gap:8px}
+.peso{display:grid;grid-template-columns:1fr 76px 34px;gap:8px;align-items:center}
+.peso .nome{background:var(--color-panel-2);border:1px solid var(--color-line);border-radius:12px;padding:9px 13px;font-size:14px}
+.peso .rm{background:none;border:0;color:var(--color-muted-2);cursor:pointer;font-size:18px;border-radius:8px}
+.peso .rm:hover{color:var(--color-coral)}
+
+.chips{display:flex;flex-wrap:wrap;gap:7px;margin-top:6px}
+.barra{height:7px;border-radius:99px;background:var(--color-panel-2);overflow:hidden;margin-top:10px}
+.barra i{display:block;height:100%;width:.46%;
+  background-image:linear-gradient(90deg,var(--color-holo-3),var(--color-holo-2))}
+.nota{border-left:2px solid var(--color-holo-3);padding:3px 0 3px 13px;color:var(--color-muted);font-size:13px;margin-top:15px}
+
+.rev{display:grid;gap:20px;grid-template-columns:1fr}
+@media(min-width:980px){.rev{grid-template-columns:290px 1fr;align-items:start}}
+.fila{border:1px solid var(--color-line);border-radius:16px;background:var(--color-panel);padding:10px;
+      display:flex;flex-direction:column;gap:6px}
+@media(min-width:980px){.fila{position:sticky;top:16px}}
+.item{border:1px solid transparent;border-radius:12px;padding:11px 13px;cursor:pointer;background:none;text-align:left;width:100%}
+.item:hover{background:var(--color-panel-2)}
+.item[aria-current="true"]{background:var(--color-panel-2);border-color:var(--color-line)}
+.item strong{display:block;font-size:14px;font-weight:700;margin-bottom:6px}
+
+.campo{border-top:1px solid var(--color-line);padding:16px 0}
+.campo:first-of-type{border-top:0;padding-top:0}
+.campo-top{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:9px;flex-wrap:wrap}
+.campo-top h3{font-size:14px}
+.valor{background:var(--color-panel-2);border:1px solid var(--color-line);border-radius:12px;padding:13px;font-size:13.5px}
+.valor p{margin:0 0 9px}
+.valor p:last-child{margin:0}
+
+.resumo{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;text-align:center;
+        border:1px solid var(--color-line);border-radius:14px;padding:14px;background:var(--color-panel-2)}
+.resumo .num{font-family:'Anton',sans-serif;font-size:30px;line-height:1;display:block;color:var(--color-green)}
+.resumo p{margin:4px 0 0;color:var(--color-muted);font-size:12.5px}
+.rolagem{overflow-x:auto}
+.tabela{width:100%;border-collapse:collapse;font-size:12.5px;margin-top:4px}
+.tabela th{text-align:left;font-family:'JetBrains Mono',monospace;font-size:10.5px;letter-spacing:.08em;
+           color:var(--color-muted-2);padding:0 10px 8px 0;font-weight:600;white-space:nowrap}
+.tabela td{padding:8px 10px 8px 0;border-top:1px solid var(--color-line);vertical-align:top}
+.tabela td.n{font-family:'JetBrains Mono',monospace;color:var(--color-muted);white-space:nowrap}
+.vazio{color:var(--color-muted-2)}
+
+.relatorio{border:1px solid color-mix(in srgb,var(--color-gold) 32%,transparent);border-radius:14px;
+           background:color-mix(in srgb,var(--color-gold) 6%,transparent);padding:15px;margin-top:6px}
+.relatorio h3{font-size:14px;color:var(--color-gold);margin-bottom:9px}
+.relatorio ul{margin:0;padding-left:17px;color:var(--color-muted);font-size:13px}
+.relatorio li{margin-bottom:6px}
+.relatorio li:last-child{margin-bottom:0}
+
+.rodape{display:flex;gap:10px;flex-wrap:wrap;border-top:1px solid var(--color-line);padding-top:16px;margin-top:6px}
+[hidden]{display:none!important}
+</style>
+</head>
+<body>
+<div class="ambient"></div>
+<div class="wrap">
+
+  <div class="topbar">
+    <span class="logo">Ani<b>Deck</b></span>
+    <div class="temas">
+      <span>TEMA</span>
+      <button class="tema-bola" data-t="holo" aria-pressed="true" aria-label="Tema Holo"></button>
+      <button class="tema-bola" data-t="terminal" aria-pressed="false" aria-label="Tema Terminal"></button>
+      <button class="tema-bola" data-t="arquivo" aria-pressed="false" aria-label="Tema Arquivo"></button>
+      <button class="tema-bola" data-t="estudio" aria-pressed="false" aria-label="Tema Estúdio"></button>
+    </div>
+  </div>
+
+  <div class="tabs" role="tablist">
+    <button class="tab" role="tab" aria-selected="false">Curadoria</button>
+    <button class="tab" role="tab" aria-selected="false">Agente Olheiro</button>
+    <button class="tab" role="tab" aria-selected="false" data-aba="aba-revisao">Revisão da IA <span class="badge">3</span></button>
+    <button class="tab" role="tab" aria-selected="true"  data-aba="aba-controle">Painel de Controle</button>
+  </div>
+
+  <div id="aba-controle">
+    <section class="estado" aria-label="Estado dos serviços">
+      <div class="est">
+        <span class="dot off"></span>
+        <div><h3>AniList fora do ar</h3>
+        <p>Sem resposta há 2 dias. A busca está servindo só a curadoria.</p></div>
+      </div>
+      <div class="est">
+        <span class="dot on"></span>
+        <div><h3>Gemini respondendo</h3>
+        <p>Usando <span class="mono">gemini-3.8-flash</span>, o primeiro da fila.</p></div>
+      </div>
+      <div class="est">
+        <span class="dot idle"></span>
+        <div><span class="num">3</span>
+        <p>curadorias geradas esperando sua revisão.</p></div>
+      </div>
+    </section>
+
+    <div class="grid">
+      <nav class="secnav" aria-label="Seções">
+        <button aria-current="true"  data-alvo="s-anilist">AniList</button>
+        <button aria-current="false" data-alvo="s-ia">Curadoria por IA</button>
+        <button aria-current="false" data-alvo="s-olheiro">Olheiro</button>
+        <button aria-current="false" data-alvo="s-ranking">Ranking</button>
+        <button aria-current="false" data-alvo="s-catalogo">Catálogo</button>
+        <button aria-current="false" data-alvo="s-diag">Diagnóstico</button>
+      </nav>
+
+      <div>
+        <section class="sec" id="s-anilist">
+          <div class="card">
+            <header><h2>Conexão com a AniList</h2>
+            <p>Desligar corta toda chamada à API. O catálogo passa a ser a curadoria, e nada
+               quebra — mas anime não curado some da busca.</p></header>
+            <div class="linha">
+              <div class="txt"><strong>Buscar dados na AniList</strong>
+              <span>Desligado, curadoria e cache respondem sozinhos.</span></div>
+              <div class="sw" role="switch" aria-checked="false" tabindex="0" aria-label="Buscar dados na AniList"></div>
+            </div>
+            <div class="linha">
+              <div class="txt"><strong>Limite de requisições por minuto</strong>
+              <span>A AniList corta em 30. Passar disso devolve erro para todo mundo.</span></div>
+              <input type="number" value="30" min="1" max="30" style="width:96px">
+            </div>
+            <div class="acoes"><button class="btn">Testar conexão agora</button></div>
+            <p class="nota">Última verificação: hoje às 22:41 — sem resposta.</p>
+          </div>
+        </section>
+
+        <section class="sec" id="s-ia" hidden>
+          <div class="card">
+            <header><h2>Como a IA aplica o que gera</h2>
+            <p>A escolha vale para sinopse e tags. Título de episódio, data e horário nunca
+               são gravados sozinhos — vêm de busca na web e podem estar errados.</p></header>
+            <div class="modos">
+              <button class="modo" aria-pressed="true">
+                <strong>Mandar para revisão</strong>
+                <span>Gera e guarda na aba Revisão. Você aprova campo a campo antes de gravar.</span>
+              </button>
+              <button class="modo" aria-pressed="false">
+                <strong>Gravar direto</strong>
+                <span>Sinopse e tags entram sem passar por você. O resto continua na fila.</span>
+              </button>
+            </div>
+            <div class="linha" style="margin-top:18px">
+              <div class="txt"><strong>Buscar episódios, datas e horários</strong>
+              <span>Exige pesquisa na web. Mais lento, e sempre revisado à mão.</span></div>
+              <div class="sw" role="switch" aria-checked="true" tabindex="0" aria-label="Buscar episódios e datas"></div>
+            </div>
+            <div class="linha">
+              <div class="txt"><strong>Episódios por lote</strong>
+              <span>Série de 24 costuma sair em dois cours; 12 cobre a maioria dos casos.</span></div>
+              <input type="number" value="12" min="1" max="50" style="width:96px">
+            </div>
+            <div class="linha">
+              <div class="txt"><strong>Animes por rodada</strong>
+              <span>Cada um é uma chamada ao Gemini, com espera entre elas.</span></div>
+              <input type="number" value="10" min="1" max="40" style="width:96px">
+            </div>
+            <div class="acoes">
+              <button class="btn primary">Gerar para 10 animes sem sinopse</button>
+            </div>
+          </div>
+
+          <div class="card">
+            <header><h2>Instrução da IA</h2>
+            <p>O texto enviado ao modelo. Salvo em <span class="mono">app_settings</span>,
+               sem precisar de deploy.</p></header>
+            <textarea spellcheck="false">Você é o redator-chefe do catálogo AniDeck. Seu tom de voz é instigante, moderno e direto ao ponto.
+
+Sua saída é sempre um objeto JSON estrito com as chaves "sinopse" e "tags", sem cercas de código e sem texto antes ou depois.
+
+## 1. Sinopse
+Leia a sinopse fria e técnica (que pode estar em inglês), traduza e reescreva…</textarea>
+            <div class="acoes">
+              <button class="btn primary">Salvar instrução</button>
+              <button class="btn">Restaurar a última salva</button>
+            </div>
+            <div class="linha" style="margin-top:18px">
+              <div class="txt"><strong>Fila de modelos</strong>
+              <span>Se o primeiro falhar ou estiver sobrecarregado, tenta o seguinte.</span></div>
+              <span class="mono">3.8-flash → 3.7-flash → 3.6-flash</span>
+            </div>
+          </div>
+        </section>
+
+        <section class="sec" id="s-olheiro" hidden>
+          <div class="card">
+            <header><h2>O que o Olheiro procura</h2>
+            <p>Cada tag vale um peso na pontuação. Hoje essa lista vive cravada no código —
+               trazê-la para cá é o motivo principal desta aba existir.</p></header>
+            <div class="pesos">
+              <div class="peso"><span class="nome">Isekai</span><input type="number" value="3.0" step="0.5"><button class="rm" aria-label="Remover Isekai">×</button></div>
+              <div class="peso"><span class="nome">Level Up</span><input type="number" value="3.0" step="0.5"><button class="rm" aria-label="Remover Level Up">×</button></div>
+              <div class="peso"><span class="nome">Magic</span><input type="number" value="2.0" step="0.5"><button class="rm" aria-label="Remover Magic">×</button></div>
+              <div class="peso"><span class="nome">Dungeon</span><input type="number" value="2.0" step="0.5"><button class="rm" aria-label="Remover Dungeon">×</button></div>
+              <div class="peso"><span class="nome">Guilds</span><input type="number" value="2.0" step="0.5"><button class="rm" aria-label="Remover Guilds">×</button></div>
+            </div>
+            <div class="acoes"><button class="btn">Adicionar tag</button><button class="btn primary">Salvar pesos</button></div>
+            <p class="nota">O nome precisa ser o da AniList, em inglês — é assim que ele chega da API.
+               “Magia” aqui não encontraria nada.</p>
+            <div class="linha" style="margin-top:14px">
+              <div class="txt"><strong>Sugestões por varredura</strong>
+              <span>Menos deixa a aba vazia; mais vira lista que ninguém revisa.</span></div>
+              <input type="number" value="10" min="1" max="50" style="width:96px">
+            </div>
+          </div>
+        </section>
+
+        <section class="sec" id="s-ranking" hidden>
+          <div class="card">
+            <header><h2>Ranking</h2>
+            <p>A âncora bayesiana define quanto as notas daqui pesam contra a nota externa.
+               Com poucos votos, o número alto é proposital.</p></header>
+            <div class="linha">
+              <div class="txt"><strong>Peso do voto da comunidade</strong>
+              <span>Quantos votos são precisos para a nota daqui mover o ranking.</span></div>
+              <input type="number" value="350" step="50" style="width:104px">
+            </div>
+            <div class="linha">
+              <div class="txt"><strong>Recalcular agora</strong>
+              <span>O motor roda sozinho a cada 12h. Isto força fora de hora.</span></div>
+              <button class="btn">Recalcular</button>
+            </div>
+            <p class="nota">Último cálculo: hoje às 12:00 · próxima foto do histórico em 22 dias.</p>
+          </div>
+        </section>
+
+        <section class="sec" id="s-catalogo" hidden>
+          <div class="card">
+            <header><h2>O que falta em cada anime</h2>
+            <p>O <span class="mono">curation_status</span> diz "parcial", mas não diz parcial
+               em quê. Aqui a lacuna é por campo — e cada linha vira item da fila.</p></header>
+
+            <div class="resumo">
+              <div><span class="num">7</span><p>completos</p></div>
+              <div><span class="num" style="color:var(--color-gold)">31</span><p>parciais</p></div>
+              <div><span class="num" style="color:var(--color-coral)">4</span><p>a revisar</p></div>
+            </div>
+
+            <div class="rolagem" style="margin-top:16px">
+              <table class="tabela">
+                <thead><tr><th>Anime</th><th>Falta</th><th></th></tr></thead>
+                <tbody>
+                  <tr>
+                    <td>Yomi no Tsugai</td>
+                    <td><span class="selo aviso">episódios 13-24</span> <span class="selo aviso">onde assistir</span></td>
+                    <td><button class="btn sm">Enfileirar</button></td>
+                  </tr>
+                  <tr>
+                    <td>Kage no Jitsuryokusha</td>
+                    <td><span class="selo aviso">datas</span> <span class="selo aviso">banner</span></td>
+                    <td><button class="btn sm">Enfileirar</button></td>
+                  </tr>
+                  <tr>
+                    <td>Amagami SS</td>
+                    <td><span class="selo aviso">sinopse</span> <span class="selo aviso">episódios</span></td>
+                    <td><button class="btn sm">Enfileirar</button></td>
+                  </tr>
+                  <tr>
+                    <td>Black Clover 2ª Temporada</td>
+                    <td><span class="selo aviso">sinopse</span> <span class="selo aviso">onde assistir</span></td>
+                    <td><button class="btn sm">Enfileirar</button></td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+
+            <div class="acoes">
+              <button class="btn primary">Enfileirar os 31 parciais</button>
+              <button class="btn">Só os que faltam sinopse</button>
+            </div>
+            <p class="nota">Foto de episódio não entra: modelo de texto não busca nem gera
+               imagem. Isso volta pela AniList, quando ela voltar.</p>
+          </div>
+        </section>
+
+        <section class="sec" id="s-diag" hidden>
+          <div class="card">
+            <header><h2>Diagnóstico</h2>
+            <p>Coisas que falham em silêncio e por isso ninguém percebe.</p></header>
+            <div class="linha">
+              <div class="txt"><strong>Tags fora da taxonomia</strong>
+              <span>Foram digitadas na curadoria e não entram em gráfico nenhum.</span></div>
+            </div>
+            <div class="chips">
+              <span class="selo aviso">Construção de Mundo</span>
+              <span class="selo aviso">Superação</span>
+              <span class="selo aviso">Delinquentes</span>
+              <span class="selo aviso">Ninjas</span>
+              <span class="selo aviso">Amigos de Infância</span>
+            </div>
+            <div class="acoes"><button class="btn">Mapear na taxonomia</button></div>
+            <div class="linha" style="margin-top:18px">
+              <div class="txt"><strong>Espaço de imagens usado</strong>
+              <span>4,6 MB de 1 GB · 32 arquivos, todos em WebP.</span></div>
+            </div>
+            <div class="barra"><i></i></div>
+          </div>
+        </section>
+      </div>
+    </div>
+  </div>
+
+  <div id="aba-revisao" hidden>
+    <div class="rev">
+      <div class="fila">
+        <button class="item" aria-current="true">
+          <strong>LV999 no Murabito</strong><span class="selo aviso">2 ressalvas</span>
+        </button>
+        <button class="item" aria-current="false">
+          <strong>Yomi no Tsugai</strong><span class="selo aviso">12 de 24 episódios</span>
+        </button>
+        <button class="item" aria-current="false">
+          <strong>Kage no Jitsuryokusha</strong><span class="selo ok">tudo encontrado</span>
+        </button>
+      </div>
+
+      <div>
+        <div class="card">
+          <header>
+            <h2>LV999 no Murabito</h2>
+            <p><span class="mono">mal_id 197715</span> · gerado hoje às 23:14 · Brain's Base · 12 episódios</p>
+          </header>
+
+          <div class="campo">
+            <div class="campo-top"><h3>Sinopse</h3>
+              <span class="selo ok">reescrita · pode gravar sozinha</span></div>
+            <div class="valor">
+              <p>Num mundo onde o nível define tudo, um <strong>aldeão</strong> comum carrega
+                 um número que ninguém deveria ter.</p>
+              <p>Quando a <strong>princesa</strong> chega ao vilarejo atrás de respostas, a
+                 fronteira entre humanos e <em>demônios</em> começa a rachar.</p>
+            </div>
+          </div>
+
+          <div class="campo">
+            <div class="campo-top"><h3>Tags</h3>
+              <span class="selo ok">vocabulário fechado · 1 da Lista B</span></div>
+            <div class="chips">
+              <span class="selo neutro">Isekai</span>
+              <span class="selo neutro">Fantasia</span>
+              <span class="selo neutro">Aventura</span>
+              <span class="selo neutro">Comédia</span>
+            </div>
+          </div>
+
+          <div class="campo">
+            <div class="campo-top"><h3>Episódios, datas e horários</h3>
+              <span class="selo aviso">de fonte externa · confira antes</span></div>
+            <div class="rolagem">
+              <table class="tabela">
+                <thead><tr><th>#</th><th>Título</th><th>Estreia BR</th><th>Hora</th><th>Fonte</th></tr></thead>
+                <tbody>
+                  <tr><td class="n">1</td><td>Como o Mundo Funciona</td><td class="n">01/07/2026</td><td class="n">13:00</td><td><span class="selo ok">Crunchyroll</span></td></tr>
+                  <tr><td class="n">2</td><td>O Maior Idiota</td><td class="n">01/07/2026</td><td class="n">13:00</td><td><span class="selo ok">Crunchyroll</span></td></tr>
+                  <tr><td class="n">3</td><td>Coexistência entre Demônios e Humanos</td><td class="n">08/07/2026</td><td class="n">13:00</td><td><span class="selo ok">Crunchyroll</span></td></tr>
+                  <tr><td class="n">4</td><td>Tenho Perguntas Para Fazer</td><td class="n">15/07/2026</td><td class="n">13:00</td><td><span class="selo ok">Crunchyroll</span></td></tr>
+                  <tr><td class="n">11</td><td>A autoridade do rei é absoluta</td><td class="n">02/09/2026</td><td class="n">13:00</td><td><span class="selo ok">Crunchyroll</span></td></tr>
+                  <tr><td class="n">12</td><td class="vazio">sem título publicado</td><td class="n">09/09/2026</td><td class="n vazio">—</td><td><span class="selo aviso">TVmaze · só JP</span></td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <div class="campo">
+            <div class="campo-top"><h3>Onde assistir</h3>
+              <span class="selo aviso">de fonte externa · muda por país</span></div>
+            <div class="rolagem">
+              <table class="tabela">
+                <thead><tr><th>Plataforma</th><th>Link</th><th>Situação</th></tr></thead>
+                <tbody>
+                  <tr>
+                    <td>Crunchyroll</td>
+                    <td class="n">/pt-br/series/GT00371878</td>
+                    <td><span class="selo ok">legendado pt-BR</span></td>
+                  </tr>
+                  <tr>
+                    <td>Netflix</td>
+                    <td class="n vazio">não encontrado</td>
+                    <td><span class="selo aviso">talvez não tenha</span></td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+            <p class="nota">Só entram links que começam com http:// ou https:// — o
+               <span class="mono">sanitizarLinks</span> recusa o resto no servidor.</p>
+          </div>
+
+          <div class="relatorio">
+            <h3>O que ficou em aberto</h3>
+            <ul>
+              <li><strong>Episódio 12</strong> — data confirmada, título ainda não publicado
+                  em nenhuma fonte. Vai entrar vazio.</li>
+              <li><strong>Duração</strong> — a AniList registra 24 min e a Crunchyroll mostra 23.
+                  Usei 24, que é o da ficha.</li>
+              <li><strong>Episódios 1 e 2</strong> saíram no mesmo dia. Não é erro de leitura.</li>
+              <li class="mono" style="color:var(--color-muted-2)">fontes: crunchyroll.com · tvmaze.com</li>
+            </ul>
+          </div>
+
+          <div class="rodape">
+            <button class="btn primary">Aplicar tudo</button>
+            <button class="btn">Aplicar só sinopse e tags</button>
+            <button class="btn danger">Descartar</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+const $$ = s => document.querySelectorAll(s);
+
+$$('.tema-bola').forEach(b => b.addEventListener('click', () => {
+  document.documentElement.dataset.tema = b.dataset.t;
+  $$('.tema-bola').forEach(o => o.setAttribute('aria-pressed', String(o === b)));
+}));
+
+$$('.tab').forEach(t => t.addEventListener('click', () => {
+  if (!t.dataset.aba) return;
+  $$('.tab').forEach(o => o.setAttribute('aria-selected', String(o === t)));
+  ['aba-controle','aba-revisao'].forEach(id =>
+    document.getElementById(id).hidden = (id !== t.dataset.aba));
+}));
+
+const nav = $$('.secnav button'), secs = $$('.sec');
+nav.forEach(b => b.addEventListener('click', () => {
+  nav.forEach(o => o.setAttribute('aria-current', String(o === b)));
+  secs.forEach(s => s.hidden = (s.id !== b.dataset.alvo));
+}));
+
+$$('.sw').forEach(sw => {
+  const vira = () => sw.setAttribute('aria-checked',
+    sw.getAttribute('aria-checked') === 'true' ? 'false' : 'true');
+  sw.addEventListener('click', vira);
+  sw.addEventListener('keydown', e => {
+    if (e.key === ' ' || e.key === 'Enter') { e.preventDefault(); vira(); }
+  });
+});
+
+const modos = $$('.modo');
+modos.forEach(m => m.addEventListener('click', () =>
+  modos.forEach(o => o.setAttribute('aria-pressed', String(o === m)))));
+
+const itens = $$('.item');
+itens.forEach(i => i.addEventListener('click', () =>
+  itens.forEach(o => o.setAttribute('aria-current', String(o === i)))));
+</script>
+</body>
+</html>
