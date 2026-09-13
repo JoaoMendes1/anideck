@@ -560,6 +560,56 @@ direto do frontend pelo PostgREST. Aí ela passa a enxergar só as notas de um u
 comunitário do ranking fica errado **sem erro nenhum** — o `log.Printf` de aviso ao lado só
 dispara em caso de falha, e RLS recortando linha não é falha.
 
+## 20. 📦 `omitempty` num lote enviado ao PostgREST derruba a gravação inteira
+
+**Incidente (12/09/2026):** o motor de ranking falhava em **todo** ciclo desde o
+`sql/024` com `(PGRST102) All object keys must match`. A `ranking_current_cache`
+ficou parada no seed, e o boot resiliente carregava 99 animes de semanas atrás
+achando que era o Top atual.
+
+**Causa:** o campo `LocalScore` de `currentCacheRow` era `*float64` com
+`omitempty`. Anime sem voto local deixa o ponteiro em `nil`, e `omitempty` apaga
+a chave do JSON:
+
+```jsonc
+{ "mal_id": 21,  "local_votes": 3, "local_score": 8.4 }   // com voto
+{ "mal_id": 199, "local_votes": 0 }                       // sem voto: sumiu
+```
+
+O PostgREST monta **um único** `INSERT` para a lista toda, com as colunas
+deduzidas do primeiro objeto. Conjunto de chaves diferente em qualquer objeto
+seguinte e ele recusa o lote antes de tocar no banco. Dos 500 do Top, 486 não
+tinham voto.
+
+**O que torna isso silencioso:** nada quebra. O erro só aparece no log, nenhuma
+linha é gravada (é tudo ou nada, não existe gravação parcial), e a tabela segue
+respondendo com o conteúdo antigo. O boot lê rápido e sem rede, exatamente como
+projetado — o problema é *o que* ele lê. A função de gravação só imprime em caso
+de falha, então sucesso e fracasso silencioso se parecem.
+
+**A correção é tirar o `omitempty`, nunca o `*`.** Sem o ponteiro, ausência de
+voto viraria nota `0.0` — o item 16 com outra roupa, e pior aqui, porque zero
+entraria no cálculo do peso comunitário como avaliação legítima. Com ponteiro e
+sem `omitempty`, `nil` vira `"local_score": null`, a chave existe em todos os
+objetos e o banco recebe o `NULL` que a coluna aceita.
+
+**Como verificar sem subir nada:** serializar duas linhas do lote — uma com
+valor, outra sem — e comparar os conjuntos de chaves. É o
+`TestMontarLinhasCache_ChavesIdenticas`, que só existe porque a montagem foi
+extraída do handler para `montarLinhasCache`, pelo mesmo motivo que separou o
+`calcularRankingBayesiano`.
+
+**Depois de corrigir**, a conferência é no banco, não no log:
+`count(*) FILTER (WHERE local_score = 0)` tem que ser **zero**. Qualquer número
+ali significa ponteiro perdido em algum ponto do caminho.
+
+> **Pergunta obrigatória:** este `insert`/`upsert` manda uma **lista** de objetos?
+> Algum campo da struct tem `omitempty`? Se tiver, os objetos com valor vazio vão
+> sair com menos chaves que os outros, e o PostgREST recusa o lote inteiro — no
+> log, nunca na tela.
+
+---
+
 ---
 
 ## 🧭 Como manter este arquivo
