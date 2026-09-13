@@ -529,13 +529,14 @@ nenhum. E mesmo o que ele guarda é uma foto: se ela morrer, congela.
 - [ ] **9.1 — Aba Painel de Controle.** Traz para um lugar só o que já existe e
       já tem endpoint: Kill Switch, peso do voto do ranking (hoje `const` no
       `ranking.go`), tags fora da taxonomia (`view_unmapped_labels`), uso do
-      bucket e o botão de Resync. Faixa de estado no topo, e o relatório de
-      independência como seção. O Resync hoje mora provisoriamente no cabeçalho
-      do Painel de Curadoria e migra para cá.
+      bucket e o botão de Resync. Faixa de estado no topo. O Resync hoje mora
+      provisoriamente no cabeçalho do Painel de Curadoria e migra para cá.
 - [ ] **9.2 — Pesos do Olheiro saem do código.** O `tagsDesejadas` é `map`
       literal no `olheiro.go`; o comentário dele já antecipava esta issue. Vira
       tabela + tela. Mexe em schema.
 - [ ] **9.3 — Fila, worker e tela de revisão.** A base da 9.4, não um fim em si.
+      Traz junto a seção Catálogo (relatório de independência) da aba de Controle:
+      cada linha dele tem um botão "Enfileirar", que só existe depois da fila.
       Worker é binário separado (`cmd/worker/`), não goroutine no app: o free
       tier do Render hiberna, e processo próprio é o que migra para `systemd` na
       VPS. Molde a seguir: `StartRankingEngine` + o `atomic.Bool` com

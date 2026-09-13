@@ -1,7 +1,7 @@
 -- =============================================================================
 -- snapshot_schema.sql — RETRATO DO BANCO. NAO EXECUTE ESTE ARQUIVO.
 -- =============================================================================
--- Regenerado em 08/09/2026 00:22 a partir do banco de producao.
+-- Regenerado em 12/09/2026 17:58 a partir do banco de producao.
 --
 -- PARA QUE SERVE: consulta rapida do estado real do banco, sem precisar abrir
 -- o painel do Supabase nem confiar nos arquivos sql/ antigos (que podem ter
@@ -540,4 +540,3 @@ CREATE OR REPLACE VIEW public.view_user_year_distribution WITH (security_invoker
 -- =============================================================================
 -- FIM DO RETRATO
 -- =============================================================================
-
