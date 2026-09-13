@@ -1,7 +1,7 @@
 -- =============================================================================
 -- snapshot_schema.sql — RETRATO DO BANCO. NAO EXECUTE ESTE ARQUIVO.
 -- =============================================================================
--- Regenerado em 12/09/2026 17:58 a partir do banco de producao.
+-- Regenerado em 13/09/2026 01:51 a partir do banco de producao.
 --
 -- PARA QUE SERVE: consulta rapida do estado real do banco, sem precisar abrir
 -- o painel do Supabase nem confiar nos arquivos sql/ antigos (que podem ter
@@ -505,6 +505,10 @@ CREATE OR REPLACE VIEW public.view_user_year_distribution WITH (security_invoker
 --     USING:  -
 --     CHECK:  ((bucket_id = 'curadoria'::text) AND (auth.uid() = '<uuid>'::uuid))
 
+-- Admin lista arquivos da curadoria             | SELECT | authenticated     
+--     USING:  ((bucket_id = 'curadoria'::text) AND ( SELECT is_admin() AS is_admin))
+--     CHECK:  -
+
 -- =============================================================================
 -- [6] BUCKETS
 -- =============================================================================
@@ -536,6 +540,7 @@ CREATE OR REPLACE VIEW public.view_user_year_distribution WITH (security_invoker
 -- is_admin                       | definer: t     | anon: t     | auth: t     | service: t     | search_path=public, pg_temp
 -- process_cron_notification      | definer: t     | anon: f     | auth: f     | service: t     | search_path=public
 -- rls_auto_enable                | definer: t     | anon: t     | auth: t     | service: t     | search_path=pg_catalog
+-- uso_do_bucket_curadoria        | definer: f     | anon: f     | auth: t     | service: t     | search_path=public, storage, pg_temp
 
 -- =============================================================================
 -- FIM DO RETRATO

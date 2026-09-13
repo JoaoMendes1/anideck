@@ -1,8 +1,8 @@
 package main
 
 import (
-	"log"
 	"encoding/json"
+	"log"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -25,7 +25,7 @@ func main() {
 		log.Fatalf("Erro crítico ao conectar ao banco de dados: %v", err)
 	}
 	log.Println("Conexão com o banco de dados estabelecida!")
-		// O Kill Switch vive em memória para ser instantâneo, mas é gravado em app_settings
+	// O Kill Switch vive em memória para ser instantâneo, mas é gravado em app_settings
 	// para sobreviver a um restart. Sem esta leitura ele voltaria a false toda vez que o
 	// serviço subisse — e no free tier do Render isso acontece a cada hibernação, então
 	// o painel mostraria "ligado" enquanto o backend já estaria consultando a AniList.
@@ -74,6 +74,7 @@ func main() {
 	notificationsHandler := &handlers.NotificationsHandler{AniListClient: anilistService}
 	metadataHandler := &handlers.MetadataHandler{AniListClient: anilistService}
 	olheiroHandler := &handlers.OlheiroHandler{AniListClient: anilistService}
+	diagnosticoHandler := &handlers.DiagnosticoHandler{}
 
 	r := chi.NewRouter()
 	r.Use(chimw.RequestID)
@@ -141,6 +142,17 @@ func main() {
 		// Status do Sistema (Infra/AniList)
 		admin.Get("/api/admin/system/status", systemHandler.HandleGetSystemStatus)
 		admin.Post("/api/admin/system/kill-switch", systemHandler.HandleToggleKillSwitch)
+
+		admin.Post("/api/admin/system/testar-anilist", systemHandler.HandleTestarAniList)
+
+		// Painel de Controle: peso do voto local e recálculo sob demanda
+		admin.Get("/api/admin/ranking/settings", systemHandler.HandleGetRankingSettings)
+		admin.Put("/api/admin/ranking/settings", systemHandler.HandleUpdateRankingSettings)
+		admin.Post("/api/admin/ranking/recalcular", systemHandler.HandleRecalcularRanking)
+
+		// Diagnóstico: coisas que hoje só aparecem no SQL Editor
+		admin.Get("/api/admin/diagnostico/rotulos-orfaos", diagnosticoHandler.HandleListarRotulosOrfaos)
+		admin.Get("/api/admin/diagnostico/bucket", diagnosticoHandler.HandleUsoDoBucket)
 
 		// Agente Olheiro: scan sob demanda e revisão da fila de sugestões
 		admin.Post("/api/admin/olheiro/scan", olheiroHandler.HandleScan)
