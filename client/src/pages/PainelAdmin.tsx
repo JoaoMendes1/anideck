@@ -16,6 +16,7 @@ import imageCompression from 'browser-image-compression'
 import type { CuratedAnime, CuratedCharacter, CuratedEpisode, CuratedExternalLink, CurationStatus } from '../types/curation'
 import ConfigIAModal from '../components/ConfigIAModal'
 import { AbaOlheiro } from '../components/AbaOlheiro'
+import { AbaControle } from '../components/AbaControle'
 import type { SugestaoPendente } from '../hooks/useOlheiro'
 
 // Uma query serve os dois caminhos: busca por nome (search) e importação
@@ -114,6 +115,8 @@ export default function PainelAdmin() {
 
   const [configModalAberto, setConfigModalAberto] = useState(false)
   const [olheiroAberto, setOlheiroAberto] = useState(false)
+
+  const [abaAtiva, setAbaAtiva] = useState<'curadoria' | 'controle'>('curadoria')
 
   const [initialStateHash, setInitialStateHash] = useState('')
 
@@ -803,346 +806,380 @@ export default function PainelAdmin() {
       </div>
 
       <div className="max-w-[1400px] mx-auto p-4 sm:p-6 lg:p-8 mt-2 relative z-10">
-        <div className={`mb-8 flex items-start justify-between gap-4 ${formularioAberto ? 'hidden lg:block' : 'block'}`}>
-          <div className="min-w-0">
+        {/* A barra de abas fica fora do bloco que o formulário esconde: com o editor
+            aberto no mobile, sumir a navegação prenderia o usuário na Curadoria. */}
+        <div className="flex gap-1 border-b border-line mb-6 overflow-x-auto" role="tablist">
+          {([
+            { id: 'curadoria', nome: 'Curadoria' },
+            { id: 'controle', nome: 'Painel de Controle' },
+          ] as const).map(aba => (
+            <button
+              key={aba.id}
+              type="button"
+              role="tab"
+              aria-selected={abaAtiva === aba.id}
+              onClick={() => setAbaAtiva(aba.id)}
+              className={`shrink-0 whitespace-nowrap px-4 py-2.5 text-sm font-bold border-b-2 cursor-pointer transition-colors ${abaAtiva === aba.id
+                  ? 'text-text border-holo-1'
+                  : 'text-muted border-transparent hover:text-text'
+                }`}
+            >
+              {aba.nome}
+            </button>
+          ))}
+        </div>
+
+        {abaAtiva === 'curadoria' && (
+          <div className={`mb-8 min-w-0 ${formularioAberto ? 'hidden lg:block' : 'block'}`}>
             <h1 className="font-anton text-3xl uppercase">Painel de Curadoria</h1>
             <p className="text-muted text-sm mt-1">Gerencie os "Destaques AniDeck" e refine a exibição de capas e personagens.</p>
           </div>
-          <button
-            type="button"
-            onClick={() => pedirConfirmacao(resyncMetadados)}
-            disabled={resyncRodando}
-            title="Rebusca na AniList os metadados do deck e da curadoria"
-            className="shrink-0 flex items-center gap-2 px-4 py-2 bg-panel-2 border border-line text-muted hover:text-text hover:border-holo-2 text-xs font-bold rounded-full cursor-pointer transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            ♻️ {resyncRodando ? 'Sincronizando…' : 'Resync'}
-          </button>
-        </div>
+        )}
 
-        <div className="grid grid-cols-1 lg:grid-cols-[360px_1fr] gap-6 lg:gap-8 items-start">
-
-          <div className={`lg:block ${formularioAberto ? 'hidden' : 'block'}`}>
-            <DestaquesRail
-              destaques={destaques}
-              selectedId={editId}
-              onSelect={editarDestaque}
-              onDelete={(id, titulo) => setItemParaExcluir({ id, titulo })}
-              onNovo={abrirNovoDestaque}
-              novoAtivo={formularioAberto && !editId}
+        {abaAtiva === 'controle' && (
+          <>
+            <div className="mb-8 min-w-0">
+              <h1 className="font-anton text-3xl uppercase">Painel de Controle</h1>
+              <p className="text-muted text-sm mt-1">Ajuste como o sistema funciona e veja o que ele está fazendo agora.</p>
+            </div>
+            <AbaControle
+              apiHealth={apiHealth}
+              forceOffline={forceOffline}
+              onToggleKillSwitch={toggleKillSwitch}
+              onResync={() => pedirConfirmacao(resyncMetadados)}
+              resyncRodando={resyncRodando}
             />
-          </div>
+          </>
+        )}
 
-          {/* 'min-w-0' resolve o estouro do layout */}
-          <div className={`bg-panel border border-line rounded-2xl shadow-xl lg:sticky lg:top-24 min-w-0 ${formularioAberto ? 'block' : 'hidden lg:block'}`}>
-            {!formularioAberto ? (
-              <div className="flex flex-col items-center justify-center text-center py-20 px-6">
-                <div className="w-14 h-14 rounded-2xl bg-panel-2 border border-line flex items-center justify-center mb-4 text-muted">
-                  <LayoutList size={22} />
-                </div>
-                <h3 className="font-anton text-lg uppercase text-text mb-1">Nenhum destaque selecionado</h3>
-                <p className="text-sm text-muted max-w-xs mb-6">
-                  Escolha um item na lista ao lado para editar, ou comece um destaque novo.
-                </p>
-                <button
-                  onClick={abrirNovoDestaque}
-                  className="bg-gradient-to-r from-holo-1 to-holo-2 text-void font-extrabold text-sm px-6 py-2.5 rounded-full hover:opacity-90 cursor-pointer transition-opacity"
-                >
-                  + Novo Destaque
-                </button>
-              </div>
-            ) : (
-              <div className="p-4 sm:p-6">
+        {/* O grid da Curadoria é montado condicionalmente, não escondido por CSS:
+            deixá-lo no DOM manteria os 114 cards do DestaquesRail renderizados
+            atrás da aba de Controle. */}
+        {abaAtiva === 'curadoria' && (
+          <div className="grid grid-cols-1 lg:grid-cols-[360px_1fr] gap-6 lg:gap-8 items-start">
 
-                <button
-                  onClick={tentarFecharEditor}
-                  className="lg:hidden flex items-center gap-1.5 text-xs font-bold text-holo-2 bg-holo-2/10 px-3 py-1.5 rounded-lg mb-6 hover:bg-holo-2/20 transition-colors"
-                >
-                  <ArrowLeft size={14} /> Voltar para a lista
-                </button>
+            <div className={`lg:block ${formularioAberto ? 'hidden' : 'block'}`}>
+              <DestaquesRail
+                destaques={destaques}
+                selectedId={editId}
+                onSelect={editarDestaque}
+                onDelete={(id, titulo) => setItemParaExcluir({ id, titulo })}
+                onNovo={abrirNovoDestaque}
+                novoAtivo={formularioAberto && !editId}
+              />
+            </div>
 
-                <div className="flex justify-between items-center mb-4">
-                  <h3 className="font-extrabold text-sm flex items-center gap-2">
-                    {editId ? '✎ Editando Destaque' : '🔍 Novo Destaque'}
-                    {isDirty && <span className="w-2 h-2 rounded-full bg-holo-3 animate-pulse" title="Alterações não salvas"></span>}
-                  </h3>
-                  <div className="flex items-center gap-3">
-                    <button onClick={tentarLimparFormulario} className="text-xs text-muted hover:text-text cursor-pointer">
-                      Limpar
-                    </button>
-                    <button
-                      onClick={tentarFecharEditor}
-                      aria-label="Fechar editor"
-                      className="w-7 h-7 rounded-lg bg-panel-2 border border-line text-muted hover:text-white hover:border-holo-2 transition-colors cursor-pointer hidden lg:flex items-center justify-center"
-                    >
-                      <X size={14} />
-                    </button>
+            {/* 'min-w-0' resolve o estouro do layout */}
+            <div className={`bg-panel border border-line rounded-2xl shadow-xl lg:sticky lg:top-24 min-w-0 ${formularioAberto ? 'block' : 'hidden lg:block'}`}>
+              {!formularioAberto ? (
+                <div className="flex flex-col items-center justify-center text-center py-20 px-6">
+                  <div className="w-14 h-14 rounded-2xl bg-panel-2 border border-line flex items-center justify-center mb-4 text-muted">
+                    <LayoutList size={22} />
                   </div>
+                  <h3 className="font-anton text-lg uppercase text-text mb-1">Nenhum destaque selecionado</h3>
+                  <p className="text-sm text-muted max-w-xs mb-6">
+                    Escolha um item na lista ao lado para editar, ou comece um destaque novo.
+                  </p>
+                  <button
+                    onClick={abrirNovoDestaque}
+                    className="bg-gradient-to-r from-holo-1 to-holo-2 text-void font-extrabold text-sm px-6 py-2.5 rounded-full hover:opacity-90 cursor-pointer transition-opacity"
+                  >
+                    + Novo Destaque
+                  </button>
                 </div>
+              ) : (
+                <div className="p-4 sm:p-6">
 
-                <BuscaAniList
-                  termoBusca={termoBusca}
-                  onChangeTermo={setTermoBusca}
-                  buscando={buscando}
-                  resultados={resultadosBusca}
-                  onBuscar={buscarNaAniList}
-                  onSelecionar={aplicarAnimeNoFormulario}
-                />
+                  <button
+                    onClick={tentarFecharEditor}
+                    className="lg:hidden flex items-center gap-1.5 text-xs font-bold text-holo-2 bg-holo-2/10 px-3 py-1.5 rounded-lg mb-6 hover:bg-holo-2/20 transition-colors"
+                  >
+                    <ArrowLeft size={14} /> Voltar para a lista
+                  </button>
 
-                <button
-                  type="button"
-                  onClick={criarManualmente}
-                  className="mt-3 text-xs font-bold text-muted hover:text-holo-3 transition-colors cursor-pointer"
-                >
-                  Criar manualmente, sem a AniList →
-                </button>
-
-                {(previewTitulo || modoManual) && (
-                  <div className="border-t border-dashed border-line pt-6 mt-4 space-y-6 animate-in fade-in duration-300">
-                    <div>
-                      <label className="block text-xs font-bold text-muted mb-2 uppercase">
-                        MAL ID {editId && <span className="text-muted-2 normal-case">(travado)</span>}
-                      </label>
-                      <input
-                        type="number"
-                        min={1}
-                        value={malId ?? ''}
-                        onChange={(e) => setMalId(e.target.value ? Number(e.target.value) : null)}
-                        disabled={!!editId}
-                        placeholder="Ex: 52991 — busque no myanimelist.net"
-                        className="w-full bg-panel-2 border border-line rounded-xl px-4 py-2 text-sm outline-none focus:border-holo-2 disabled:opacity-50 disabled:cursor-not-allowed"
-                      />
-                      <p className="text-[11px] text-muted-2 mt-1.5">
-                        {editId
-                          ? 'Trocar o MAL ID dessincronizaria o progresso e os decks já salvos. Para mudar, exclua e recrie.'
-                          : 'É a chave que liga curadoria, cache, deck e progresso. Use sempre o id real do MyAnimeList.'}
-                      </p>
-                    </div>
-
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <div>
-                        <label className="block text-xs font-bold text-muted mb-2 uppercase">Título Customizado</label>
-                        <input
-                          type="text"
-                          value={titulo}
-                          onChange={(e) => setTitulo(e.target.value)}
-                          className="w-full bg-panel-2 border border-line rounded-xl px-4 py-2 text-sm outline-none focus:border-holo-2"
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-[10px] font-bold text-muted mb-2 uppercase tracking-wide">Status Manual</label>
-                        <div className="flex flex-wrap gap-2">
-                          {[
-                            { value: 'RELEASING', label: 'Lançamento' },
-                            { value: 'FINISHED', label: 'Finalizado' },
-                          ].map((opt) => (
-                            <button
-                              key={opt.value}
-                              type="button"
-                              onClick={() => setStatus(opt.value)}
-                              className={`px-3 py-1.5 rounded-full text-xs font-bold border cursor-pointer transition-colors ${status === opt.value ? 'bg-coral/20 border-coral text-coral' : 'bg-panel-2 border-line text-muted'
-                                }`}
-                            >
-                              {opt.label}
-                            </button>
-                          ))}
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className="p-4 border border-line bg-panel-2 rounded-xl">
-                      <h4 className="text-xs font-bold text-muted uppercase mb-4">Imagens do Anime (Live Preview)</h4>
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        <ImageUploadField
-                          label="URL da Capa (Poster)"
-                          value={coverImage}
-                          onChange={setCoverImage}
-                          onFileSelect={async (file) => {
-                            const url = await uploadImagem(file, 'capa')
-                            if (url) setCoverImage(url)
-                          }}
-                          uploading={uploading}
-                          previewClassName="w-24 h-36"
-                        />
-                        <ImageUploadField
-                          label="URL do Banner (Fundo)"
-                          value={bannerImage}
-                          onChange={setBannerImage}
-                          onFileSelect={async (file) => {
-                            const url = await uploadImagem(file, 'banner')
-                            if (url) setBannerImage(url)
-                          }}
-                          uploading={uploading}
-                          previewClassName="w-full h-24"
-                        />
-                      </div>
-                    </div>
-
-                    <CuradoriaPersonagens
-                      characters={characters}
-                      onAdd={(char) => setCharacters([...characters, char])}
-
-                      onUpdate={(index, char) => {
-                        const newChars = [...characters]
-                        newChars[index] = char
-                        setCharacters(newChars)
-                      }}
-
-                      onRemove={(index) => setCharacters(characters.filter((_, i) => i !== index))}
-                      onUploadImage={uploadImagem}
-                      uploading={uploading}
-                      onValidationError={(msg) => showToast(msg, 'error')}
-                    />
-
-                    <CuradoriaEpisodios
-                      episodes={episodios}
-                      dataEstreiaBase={estreia}
-                      onAdd={(ep) => aplicarEpisodios([...episodios, ep])}
-                      onUpdate={(index, ep) => {
-                        const novos = [...episodios]
-                        novos[index] = ep
-                        aplicarEpisodios(novos)
-                      }}
-                      onRemove={(index) => setEpisodios(episodios.filter((_, i) => i !== index))}
-                      onUploadImage={uploadImagem}
-                      uploading={uploading}
-                      onValidationError={(msg) => showToast(msg, 'error')}
-                      onImportar={importarEpisodiosDaAniList}
-                      importando={importandoEpisodios}
-                      onDefinirLista={aplicarEpisodios}
-                    />
-
-                    <CuradoriaLinks
-                      links={links}
-                      onAdd={(link) => setLinks([...links, link])}
-                      onUpdate={(index, link) => {
-                        const novos = [...links]
-                        novos[index] = link
-                        setLinks(novos)
-                      }}
-                      onRemove={(index) => setLinks(links.filter((_, i) => i !== index))}
-                      onValidationError={(msg) => showToast(msg, 'error')}
-                    />
-
-                    {/* Exibição e curadoria: campos que não descrevem a obra, e sim como ela
-                        é tratada pelo AniDeck. Por isso ficam juntos e separados do resto. */}
-                    <div className="p-4 border border-line bg-panel-2 rounded-xl">
-                      <h4 className="text-xs font-bold text-muted uppercase mb-4">Exibição &amp; Controle</h4>
-
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
-                        <div>
-                          <label className="block text-[10px] mb-1 font-bold text-muted">Estreia do episódio 1 (data e hora)</label>
-                          <input
-                            type="datetime-local"
-                            value={estreia}
-                            onChange={(e) => setEstreia(e.target.value)}
-                            className="w-full bg-panel border border-line rounded px-2 py-1.5 text-xs outline-none focus:border-holo-2 text-text"
-                          />
-                          <p className="text-[9.5px] text-muted-2 mt-1">
-                            No <strong>seu</strong> horário — a conversão é automática. É a hora que permite calcular a contagem regressiva sem a AniList.
-                            calcular a contagem regressiva sem a AniList. Preenchido sozinho quando você salva o episódio 1 com data.
-                          </p>
-                        </div>
-
-                        <div>
-                          <label className="block text-[10px] mb-1 font-bold text-muted">Duração do episódio (min)</label>
-                          <input
-                            type="number"
-                            min="1"
-                            step="1"
-                            value={duracao}
-                            onChange={(e) => setDuracao(e.target.value)}
-                            placeholder="24"
-                            className="w-full bg-panel border border-line rounded px-2 py-1.5 text-xs outline-none focus:border-holo-2 text-text tabular-nums"
-                          />
-                          <p className="text-[9.5px] text-muted-2 mt-1">Sem isso, o tempo assistido usa uma estimativa de 24 min.</p>
-                        </div>
-                      </div>
-
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                        <div>
-                          <label className="block text-[10px] mb-1 font-bold text-muted">Estado da curadoria</label>
-                          <select
-                            value={curationStatus}
-                            onChange={(e) => setCurationStatus(e.target.value as CurationStatus)}
-                            className="w-full bg-panel border border-line rounded px-2 py-1.5 text-xs outline-none text-text"
-                          >
-                            <option value="parcial">Parcial — ainda falta coisa</option>
-                            <option value="completo">Completo — nada pendente</option>
-                            <option value="revisar">Revisar — tem algo errado</option>
-                          </select>
-                        </div>
-
-                        <div className="flex items-end">
-                          <label className="flex items-center gap-2.5 cursor-pointer select-none w-full bg-panel border border-line rounded px-3 py-2 hover:border-holo-2 transition-colors">
-                            <input
-                              type="checkbox"
-                              checked={isDestaque}
-                              onChange={(e) => setIsDestaque(e.target.checked)}
-                              className="w-4 h-4 accent-holo-2 cursor-pointer"
-                            />
-                            <span className="text-xs font-bold text-text">Exibir como destaque</span>
-                          </label>
-                        </div>
-                      </div>
-                      <p className="text-[9.5px] text-muted-2 mt-2">
-                        Desmarcar mantém o anime curado e com os dados aplicados — só tira ele da vitrine de destaques.
-                      </p>
-                    </div>
-
-                    <ReorderableTags tags={tags} onChange={setTags} />
-
-                    <div>
-                      <div className="flex justify-between items-center mb-2">
-                        <label className="block text-xs font-bold text-muted uppercase">Sinopse Curada</label>
-
-                        {/* NOVO BOTÃO DA IA */}
-                        <button
-                          type="button"
-                          onClick={reescreverComIA}
-                          disabled={gerandoIA || !sinopse}
-                          className="flex items-center gap-1.5 text-[10px] font-bold bg-holo-1/10 text-holo-1 border border-holo-1/30 px-2.5 py-1 rounded-md hover:bg-holo-1/20 transition-colors disabled:opacity-50 cursor-pointer"
-                        >
-                          {gerandoIA ? (
-                            <div className="w-3 h-3 border-2 border-current border-t-transparent rounded-full animate-spin"></div>
-                          ) : (
-                            <Sparkles size={12} />
-                          )}
-                          {gerandoIA ? 'Reescrevendo...' : 'Reescrever com IA'}
-                        </button>
-                      </div>
-
-                      <textarea
-                        ref={textareaRef}
-                        value={sinopse}
-                        onChange={handleSinopseChange}
-                        disabled={gerandoIA}
-                        className="w-full bg-panel-2 border border-line rounded-xl px-4 py-3 text-sm outline-none min-h-[120px] focus:border-holo-2 resize-none custom-scrollbar disabled:opacity-60"
-                      />
-                    </div>
-
-                    <div className="flex flex-col-reverse sm:flex-row sm:items-center justify-between gap-3 pt-4 border-t border-line">
-                      <div className="flex items-center gap-3">
-                        <label className="text-xs font-bold text-muted uppercase shrink-0">Ordem Home:</label>
-                        <input
-                          type="number"
-                          value={ordem}
-                          onChange={(e) => setOrdem(Number(e.target.value))}
-                          className="w-20 bg-panel-2 border border-line rounded-xl px-3 py-2 text-sm outline-none"
-                        />
-                      </div>
+                  <div className="flex justify-between items-center mb-4">
+                    <h3 className="font-extrabold text-sm flex items-center gap-2">
+                      {editId ? '✎ Editando Destaque' : '🔍 Novo Destaque'}
+                      {isDirty && <span className="w-2 h-2 rounded-full bg-holo-3 animate-pulse" title="Alterações não salvas"></span>}
+                    </h3>
+                    <div className="flex items-center gap-3">
+                      <button onClick={tentarLimparFormulario} className="text-xs text-muted hover:text-text cursor-pointer">
+                        Limpar
+                      </button>
                       <button
-                        onClick={salvarDestaque}
-                        className="w-full sm:w-auto bg-gradient-to-r from-holo-1 to-holo-2 text-void font-extrabold text-sm px-8 py-3 rounded-full hover:opacity-90 cursor-pointer transition-opacity"
+                        onClick={tentarFecharEditor}
+                        aria-label="Fechar editor"
+                        className="w-7 h-7 rounded-lg bg-panel-2 border border-line text-muted hover:text-white hover:border-holo-2 transition-colors cursor-pointer hidden lg:flex items-center justify-center"
                       >
-                        {editId ? 'Salvar Alterações' : 'Publicar Destaque'}
+                        <X size={14} />
                       </button>
                     </div>
                   </div>
-                )}
-              </div>
-            )}
-          </div>
-        </div>
+
+                  <BuscaAniList
+                    termoBusca={termoBusca}
+                    onChangeTermo={setTermoBusca}
+                    buscando={buscando}
+                    resultados={resultadosBusca}
+                    onBuscar={buscarNaAniList}
+                    onSelecionar={aplicarAnimeNoFormulario}
+                  />
+
+                  <button
+                    type="button"
+                    onClick={criarManualmente}
+                    className="mt-3 text-xs font-bold text-muted hover:text-holo-3 transition-colors cursor-pointer"
+                  >
+                    Criar manualmente, sem a AniList →
+                  </button>
+
+                  {(previewTitulo || modoManual) && (
+                    <div className="border-t border-dashed border-line pt-6 mt-4 space-y-6 animate-in fade-in duration-300">
+                      <div>
+                        <label className="block text-xs font-bold text-muted mb-2 uppercase">
+                          MAL ID {editId && <span className="text-muted-2 normal-case">(travado)</span>}
+                        </label>
+                        <input
+                          type="number"
+                          min={1}
+                          value={malId ?? ''}
+                          onChange={(e) => setMalId(e.target.value ? Number(e.target.value) : null)}
+                          disabled={!!editId}
+                          placeholder="Ex: 52991 — busque no myanimelist.net"
+                          className="w-full bg-panel-2 border border-line rounded-xl px-4 py-2 text-sm outline-none focus:border-holo-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                        />
+                        <p className="text-[11px] text-muted-2 mt-1.5">
+                          {editId
+                            ? 'Trocar o MAL ID dessincronizaria o progresso e os decks já salvos. Para mudar, exclua e recrie.'
+                            : 'É a chave que liga curadoria, cache, deck e progresso. Use sempre o id real do MyAnimeList.'}
+                        </p>
+                      </div>
+
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                          <label className="block text-xs font-bold text-muted mb-2 uppercase">Título Customizado</label>
+                          <input
+                            type="text"
+                            value={titulo}
+                            onChange={(e) => setTitulo(e.target.value)}
+                            className="w-full bg-panel-2 border border-line rounded-xl px-4 py-2 text-sm outline-none focus:border-holo-2"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-[10px] font-bold text-muted mb-2 uppercase tracking-wide">Status Manual</label>
+                          <div className="flex flex-wrap gap-2">
+                            {[
+                              { value: 'RELEASING', label: 'Lançamento' },
+                              { value: 'FINISHED', label: 'Finalizado' },
+                            ].map((opt) => (
+                              <button
+                                key={opt.value}
+                                type="button"
+                                onClick={() => setStatus(opt.value)}
+                                className={`px-3 py-1.5 rounded-full text-xs font-bold border cursor-pointer transition-colors ${status === opt.value ? 'bg-coral/20 border-coral text-coral' : 'bg-panel-2 border-line text-muted'
+                                  }`}
+                              >
+                                {opt.label}
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="p-4 border border-line bg-panel-2 rounded-xl">
+                        <h4 className="text-xs font-bold text-muted uppercase mb-4">Imagens do Anime (Live Preview)</h4>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                          <ImageUploadField
+                            label="URL da Capa (Poster)"
+                            value={coverImage}
+                            onChange={setCoverImage}
+                            onFileSelect={async (file) => {
+                              const url = await uploadImagem(file, 'capa')
+                              if (url) setCoverImage(url)
+                            }}
+                            uploading={uploading}
+                            previewClassName="w-24 h-36"
+                          />
+                          <ImageUploadField
+                            label="URL do Banner (Fundo)"
+                            value={bannerImage}
+                            onChange={setBannerImage}
+                            onFileSelect={async (file) => {
+                              const url = await uploadImagem(file, 'banner')
+                              if (url) setBannerImage(url)
+                            }}
+                            uploading={uploading}
+                            previewClassName="w-full h-24"
+                          />
+                        </div>
+                      </div>
+
+                      <CuradoriaPersonagens
+                        characters={characters}
+                        onAdd={(char) => setCharacters([...characters, char])}
+
+                        onUpdate={(index, char) => {
+                          const newChars = [...characters]
+                          newChars[index] = char
+                          setCharacters(newChars)
+                        }}
+
+                        onRemove={(index) => setCharacters(characters.filter((_, i) => i !== index))}
+                        onUploadImage={uploadImagem}
+                        uploading={uploading}
+                        onValidationError={(msg) => showToast(msg, 'error')}
+                      />
+
+                      <CuradoriaEpisodios
+                        episodes={episodios}
+                        dataEstreiaBase={estreia}
+                        onAdd={(ep) => aplicarEpisodios([...episodios, ep])}
+                        onUpdate={(index, ep) => {
+                          const novos = [...episodios]
+                          novos[index] = ep
+                          aplicarEpisodios(novos)
+                        }}
+                        onRemove={(index) => setEpisodios(episodios.filter((_, i) => i !== index))}
+                        onUploadImage={uploadImagem}
+                        uploading={uploading}
+                        onValidationError={(msg) => showToast(msg, 'error')}
+                        onImportar={importarEpisodiosDaAniList}
+                        importando={importandoEpisodios}
+                        onDefinirLista={aplicarEpisodios}
+                      />
+
+                      <CuradoriaLinks
+                        links={links}
+                        onAdd={(link) => setLinks([...links, link])}
+                        onUpdate={(index, link) => {
+                          const novos = [...links]
+                          novos[index] = link
+                          setLinks(novos)
+                        }}
+                        onRemove={(index) => setLinks(links.filter((_, i) => i !== index))}
+                        onValidationError={(msg) => showToast(msg, 'error')}
+                      />
+
+                      {/* Exibição e curadoria: campos que não descrevem a obra, e sim como ela
+                        é tratada pelo AniDeck. Por isso ficam juntos e separados do resto. */}
+                      <div className="p-4 border border-line bg-panel-2 rounded-xl">
+                        <h4 className="text-xs font-bold text-muted uppercase mb-4">Exibição &amp; Controle</h4>
+
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
+                          <div>
+                            <label className="block text-[10px] mb-1 font-bold text-muted">Estreia do episódio 1 (data e hora)</label>
+                            <input
+                              type="datetime-local"
+                              value={estreia}
+                              onChange={(e) => setEstreia(e.target.value)}
+                              className="w-full bg-panel border border-line rounded px-2 py-1.5 text-xs outline-none focus:border-holo-2 text-text"
+                            />
+                            <p className="text-[9.5px] text-muted-2 mt-1">
+                              No <strong>seu</strong> horário — a conversão é automática. É a hora que permite calcular a contagem regressiva sem a AniList.
+                              calcular a contagem regressiva sem a AniList. Preenchido sozinho quando você salva o episódio 1 com data.
+                            </p>
+                          </div>
+
+                          <div>
+                            <label className="block text-[10px] mb-1 font-bold text-muted">Duração do episódio (min)</label>
+                            <input
+                              type="number"
+                              min="1"
+                              step="1"
+                              value={duracao}
+                              onChange={(e) => setDuracao(e.target.value)}
+                              placeholder="24"
+                              className="w-full bg-panel border border-line rounded px-2 py-1.5 text-xs outline-none focus:border-holo-2 text-text tabular-nums"
+                            />
+                            <p className="text-[9.5px] text-muted-2 mt-1">Sem isso, o tempo assistido usa uma estimativa de 24 min.</p>
+                          </div>
+                        </div>
+
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                          <div>
+                            <label className="block text-[10px] mb-1 font-bold text-muted">Estado da curadoria</label>
+                            <select
+                              value={curationStatus}
+                              onChange={(e) => setCurationStatus(e.target.value as CurationStatus)}
+                              className="w-full bg-panel border border-line rounded px-2 py-1.5 text-xs outline-none text-text"
+                            >
+                              <option value="parcial">Parcial — ainda falta coisa</option>
+                              <option value="completo">Completo — nada pendente</option>
+                              <option value="revisar">Revisar — tem algo errado</option>
+                            </select>
+                          </div>
+
+                          <div className="flex items-end">
+                            <label className="flex items-center gap-2.5 cursor-pointer select-none w-full bg-panel border border-line rounded px-3 py-2 hover:border-holo-2 transition-colors">
+                              <input
+                                type="checkbox"
+                                checked={isDestaque}
+                                onChange={(e) => setIsDestaque(e.target.checked)}
+                                className="w-4 h-4 accent-holo-2 cursor-pointer"
+                              />
+                              <span className="text-xs font-bold text-text">Exibir como destaque</span>
+                            </label>
+                          </div>
+                        </div>
+                        <p className="text-[9.5px] text-muted-2 mt-2">
+                          Desmarcar mantém o anime curado e com os dados aplicados — só tira ele da vitrine de destaques.
+                        </p>
+                      </div>
+
+                      <ReorderableTags tags={tags} onChange={setTags} />
+
+                      <div>
+                        <div className="flex justify-between items-center mb-2">
+                          <label className="block text-xs font-bold text-muted uppercase">Sinopse Curada</label>
+
+                          {/* NOVO BOTÃO DA IA */}
+                          <button
+                            type="button"
+                            onClick={reescreverComIA}
+                            disabled={gerandoIA || !sinopse}
+                            className="flex items-center gap-1.5 text-[10px] font-bold bg-holo-1/10 text-holo-1 border border-holo-1/30 px-2.5 py-1 rounded-md hover:bg-holo-1/20 transition-colors disabled:opacity-50 cursor-pointer"
+                          >
+                            {gerandoIA ? (
+                              <div className="w-3 h-3 border-2 border-current border-t-transparent rounded-full animate-spin"></div>
+                            ) : (
+                              <Sparkles size={12} />
+                            )}
+                            {gerandoIA ? 'Reescrevendo...' : 'Reescrever com IA'}
+                          </button>
+                        </div>
+
+                        <textarea
+                          ref={textareaRef}
+                          value={sinopse}
+                          onChange={handleSinopseChange}
+                          disabled={gerandoIA}
+                          className="w-full bg-panel-2 border border-line rounded-xl px-4 py-3 text-sm outline-none min-h-[120px] focus:border-holo-2 resize-none custom-scrollbar disabled:opacity-60"
+                        />
+                      </div>
+
+                      <div className="flex flex-col-reverse sm:flex-row sm:items-center justify-between gap-3 pt-4 border-t border-line">
+                        <div className="flex items-center gap-3">
+                          <label className="text-xs font-bold text-muted uppercase shrink-0">Ordem Home:</label>
+                          <input
+                            type="number"
+                            value={ordem}
+                            onChange={(e) => setOrdem(Number(e.target.value))}
+                            className="w-20 bg-panel-2 border border-line rounded-xl px-3 py-2 text-sm outline-none"
+                          />
+                        </div>
+                        <button
+                          onClick={salvarDestaque}
+                          className="w-full sm:w-auto bg-gradient-to-r from-holo-1 to-holo-2 text-void font-extrabold text-sm px-8 py-3 rounded-full hover:opacity-90 cursor-pointer transition-opacity"
+                        >
+                          {editId ? 'Salvar Alterações' : 'Publicar Destaque'}
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          </div>)}
       </div>
 
       <Sheet isOpen={itemParaExcluir !== null} onClose={() => !excluindo && setItemParaExcluir(null)} title="Remover destaque?">
