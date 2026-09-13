@@ -35,10 +35,42 @@ const intervaloEntreFotos = 30 * 24 * time.Hour
 // limiteFotoTopGlobal define a quantidade de registros lidos do Top Global.
 const limiteFotoTopGlobal = 500
 
-// pesoVotoComunitario pondera o voto local contra o volume externo da AniList.
-// Com 350.0, um conjunto de 10 a 15 votos da comunidade local tem força para
-// subir posições no Top 500 de maneira orgânica e segura.
-const pesoVotoComunitario = 350.0
+// pesoVotoComunitarioPadrao é o valor usado quando app_settings não responde ou
+// devolve algo inválido. Com 350.0, um conjunto de 10 a 15 votos da comunidade local
+// tem força para subir posições no Top 500 de maneira orgânica e segura.
+const pesoVotoComunitarioPadrao = 350.0
+
+const chavePesoVotoComunitario = "ranking_peso_voto_comunitario"
+
+func interpretarPeso(valor string) float64 {
+	peso, err := strconv.ParseFloat(strings.TrimSpace(valor), 64)
+	if err != nil || peso <= 0 {
+		log.Printf("[RANKING ENGINE] %s inválido (%q), usando %.0f",
+			chavePesoVotoComunitario, valor, pesoVotoComunitarioPadrao)
+		return pesoVotoComunitarioPadrao
+	}
+	return peso
+}
+
+func lerPesoVotoComunitario() float64 {
+	data, _, err := database.Client.From("app_settings").
+		Select("value", "extract", false).
+		Eq("key", chavePesoVotoComunitario).
+		Execute()
+	if err != nil {
+		log.Printf("[RANKING ENGINE] Falha ao ler %s, usando %.0f: %v",
+			chavePesoVotoComunitario, pesoVotoComunitarioPadrao, err)
+		return pesoVotoComunitarioPadrao
+	}
+
+	var linhas []struct {
+		Value string `json:"value"`
+	}
+	if err := json.Unmarshal(data, &linhas); err != nil || len(linhas) == 0 {
+		return pesoVotoComunitarioPadrao
+	}
+	return interpretarPeso(linhas[0].Value)
+}
 
 // linhaSnapshot espelha uma linha de ranking_snapshots (delta mensal de posições).
 type linhaSnapshot struct {
@@ -319,7 +351,7 @@ func StartRankingEngine(client anilist.Service) {
 //
 // Ordena o slice recebido no lugar. O terceiro retorno é false quando nenhum anime tem
 // nota — não há ranking a calcular e o ciclo deve parar.
-func calcularRankingBayesiano(animes []anilist.Anime, votos map[int]communityScoreRow) (float64, float64, bool) {
+func calcularRankingBayesiano(animes []anilist.Anime, votos map[int]communityScoreRow, peso float64) (float64, float64, bool) {
 	var totalScore, totalPop, validCount float64
 
 	for _, a := range animes {
@@ -358,7 +390,7 @@ func calcularRankingBayesiano(animes []anilist.Anime, votos map[int]communitySco
 
 		// Incorpora as avaliações dos usuários do AniDeck com o peso comunitário
 		if loc, temVoto := votos[animes[i].MalID]; temVoto && loc.LocalVotes > 0 {
-			vLocal := float64(loc.LocalVotes) * pesoVotoComunitario
+			vLocal := float64(loc.LocalVotes) * peso
 			vTotal = vExt + vLocal
 			rComb = ((vExt * rExt) + (vLocal * loc.LocalScore)) / vTotal
 			animes[i].Score = loc.LocalScore
@@ -449,7 +481,7 @@ func updateGlobalCache(client anilist.Service) {
 	votosComunidade := carregarVotosComunitarios()
 
 	// 2. Ordena pelo score bayesiano híbrido
-	C, m, ok := calcularRankingBayesiano(allAnimes, votosComunidade)
+	C, m, ok := calcularRankingBayesiano(allAnimes, votosComunidade, lerPesoVotoComunitario())
 	if !ok {
 		log.Println("[RANKING ENGINE] Nenhum anime com nota válida. Ciclo abortado.")
 		return
@@ -628,4 +660,20 @@ func GetAniDeckStats(malID int) (rank int, bayesianScore float64, found bool) {
 		}
 	}
 	return 0, 0, false
+}
+
+func UltimoCicloRanking() string {
+	globalRanking.RLock()
+	defer globalRanking.RUnlock()
+
+	if globalRanking.LastUpdated.IsZero() {
+		return ""
+	}
+	return globalRanking.LastUpdated.UTC().Format(time.RFC3339)
+}
+
+func TotalAnimesRanking() int {
+	globalRanking.RLock()
+	defer globalRanking.RUnlock()
+	return len(globalRanking.Animes)
 }

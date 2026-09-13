@@ -56,6 +56,8 @@ SELECT pg_get_viewdef('nome_da_view'::regclass, true);
 | `024_ranking_hibrido.sql` | Cria a view `anime_community_scores` e a tabela `ranking_current_cache` para o motor híbrido e boot resiliente | 07/09/2026 |
 | `025_invoker_community_scores_e_search_path.sql` | Liga `security_invoker` na view que o `024` criou sem ele; fixa `search_path` na função do `022` | 07/09/2026 |
 | `026_ranking_current_cache_grant_morto.sql` | Revoga o `GRANT SELECT` que o `024` deu a `anon`/`authenticated` e que a RLS já bloqueava | 08/09/2026 |
+| `027_peso_voto_comunitario.sql` | Move o `pesoVotoComunitario` do `const` no `ranking.go` para `app_settings` | 13/09/2026 |
+| `028_storage_uso_bucket.sql` | Policy de `SELECT` no bucket `curadoria` para admin + RPC `uso_do_bucket_curadoria` | 13/09/2026 |
 
 Datas com `~` são a data do commit, não da aplicação no Supabase.
 

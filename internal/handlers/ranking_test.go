@@ -21,7 +21,7 @@ func TestCalcularRankingBayesiano_SemPopularity(t *testing.T) {
 		{MalID: 2, Title: "B", Score: 9.0},
 	}
 
-	C, m, ok := calcularRankingBayesiano(animes, map[int]communityScoreRow{})
+	C, m, ok := calcularRankingBayesiano(animes, map[int]communityScoreRow{}, pesoVotoComunitarioPadrao)
 	if !ok {
 		t.Fatal("esperava ok=true com dois animes com nota")
 	}
@@ -54,7 +54,7 @@ func TestCalcularRankingBayesiano_SemPopularityComVotoLocal(t *testing.T) {
 		1: {MalID: 1, LocalVotes: 2, LocalScore: 9.0},
 	}
 
-	_, m, ok := calcularRankingBayesiano(animes, votos)
+	_, m, ok := calcularRankingBayesiano(animes, votos, pesoVotoComunitarioPadrao)
 	if !ok {
 		t.Fatal("esperava ok=true")
 	}
@@ -77,7 +77,7 @@ func TestCalcularRankingBayesiano_CaminhoNormal(t *testing.T) {
 		{MalID: 2, Title: "B", Score: 7.0, Popularity: 100},
 	}
 
-	C, m, ok := calcularRankingBayesiano(animes, map[int]communityScoreRow{})
+	C, m, ok := calcularRankingBayesiano(animes, map[int]communityScoreRow{}, pesoVotoComunitarioPadrao)
 	if !ok {
 		t.Fatal("esperava ok=true")
 	}
@@ -102,7 +102,7 @@ func TestCalcularRankingBayesiano_CaminhoNormal(t *testing.T) {
 
 func TestCalcularRankingBayesiano_SemNotaNenhuma(t *testing.T) {
 	animes := []anilist.Anime{{MalID: 1, Title: "A", Score: 0}}
-	if _, _, ok := calcularRankingBayesiano(animes, map[int]communityScoreRow{}); ok {
+	if _, _, ok := calcularRankingBayesiano(animes, map[int]communityScoreRow{}, pesoVotoComunitarioPadrao); ok {
 		t.Error("esperava ok=false quando nenhum anime tem nota")
 	}
 }
@@ -183,5 +183,32 @@ func TestMontarLinhasCache_NumeracaoContigua(t *testing.T) {
 	}
 	if linhas[0].Position != 1 || linhas[1].Position != 2 {
 		t.Errorf("posições não contíguas: %d e %d", linhas[0].Position, linhas[1].Position)
+	}
+}
+
+// TestInterpretarPeso cobre o parse do valor de app_settings, que é TEXT e por isso
+// aceita qualquer coisa. Peso <= 0 anularia o vLocal e tiraria o voto da comunidade
+// do ranking inteiro, sem erro nenhum na tela.
+func TestInterpretarPeso(t *testing.T) {
+	casos := []struct {
+		nome     string
+		valor    string
+		esperado float64
+	}{
+		{"valor válido", "500", 500.0},
+		{"decimal", "350.5", 350.5},
+		{"com espaços", "  420  ", 420.0},
+		{"vazio", "", pesoVotoComunitarioPadrao},
+		{"texto", "muito", pesoVotoComunitarioPadrao},
+		{"zero anularia o voto local", "0", pesoVotoComunitarioPadrao},
+		{"negativo", "-100", pesoVotoComunitarioPadrao},
+	}
+
+	for _, c := range casos {
+		t.Run(c.nome, func(t *testing.T) {
+			if got := interpretarPeso(c.valor); got != c.esperado {
+				t.Errorf("esperava %v, veio %v", c.esperado, got)
+			}
+		})
 	}
 }
