@@ -63,8 +63,8 @@ type currentCacheRow struct {
 	BayesianScore float64  `json:"bayesian_score"`
 	Score         float64  `json:"score"`
 	LocalVotes    int      `json:"local_votes"`
-	LocalScore    *float64 `json:"local_score,omitempty"`
-	UpdatedAt     string   `json:"updated_at,omitempty"`
+	LocalScore    *float64 `json:"local_score"`
+	UpdatedAt     string   `json:"updated_at"`
 }
 
 // calcularVariacao preenche PreviousRank a partir da foto anterior.
@@ -174,15 +174,8 @@ func carregarVotosComunitarios() map[int]communityScoreRow {
 	return votosMap
 }
 
-// gravarCachePersistido salva o estado consolidado atual em ranking_current_cache.
-func gravarCachePersistido(animes []anilist.Anime, votosMap map[int]communityScoreRow) error {
-	client, err := database.ServiceRoleClient()
-	if err != nil {
-		return err
-	}
-
+func montarLinhasCache(animes []anilist.Anime, votosMap map[int]communityScoreRow, agoraStr string) []currentCacheRow {
 	linhas := make([]currentCacheRow, 0, len(animes))
-	agoraStr := time.Now().UTC().Format(time.RFC3339)
 
 	// O contador é próprio em vez do índice do range: anime pulado abriria buraco
 	// na numeração, e position é a chave primária da tabela.
@@ -192,6 +185,9 @@ func gravarCachePersistido(animes []anilist.Anime, votosMap map[int]communitySco
 			continue
 		}
 		posicao++
+
+		// lScore continua nil quando não há voto local. Com o omitempty que existia
+		// aqui, a chave sumia do JSON e o lote inteiro era recusado.
 		var lVotes int
 		var lScore *float64
 		if v, ok := votosMap[a.MalID]; ok {
@@ -213,6 +209,17 @@ func gravarCachePersistido(animes []anilist.Anime, votosMap map[int]communitySco
 		})
 	}
 
+	return linhas
+}
+
+// gravarCachePersistido salva o estado consolidado atual em ranking_current_cache.
+func gravarCachePersistido(animes []anilist.Anime, votosMap map[int]communityScoreRow) error {
+	client, err := database.ServiceRoleClient()
+	if err != nil {
+		return err
+	}
+
+	linhas := montarLinhasCache(animes, votosMap, time.Now().UTC().Format(time.RFC3339))
 	if len(linhas) == 0 {
 		return nil
 	}

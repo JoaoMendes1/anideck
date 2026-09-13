@@ -1,7 +1,11 @@
 package handlers
 
 import (
+	"encoding/json"
 	"math"
+	"reflect"
+	"sort"
+	"strings"
 	"testing"
 
 	"github.com/JoaoMendes1/anideck/internal/anilist"
@@ -100,5 +104,84 @@ func TestCalcularRankingBayesiano_SemNotaNenhuma(t *testing.T) {
 	animes := []anilist.Anime{{MalID: 1, Title: "A", Score: 0}}
 	if _, _, ok := calcularRankingBayesiano(animes, map[int]communityScoreRow{}); ok {
 		t.Error("esperava ok=false quando nenhum anime tem nota")
+	}
+}
+
+// TestMontarLinhasCache_ChavesIdenticas trava o defeito que gerava PGRST102: o
+// PostgREST monta um único INSERT com as colunas do primeiro objeto do lote, e
+// recusa a lista inteira se algum objeto seguinte tiver chaves diferentes.
+func TestMontarLinhasCache_ChavesIdenticas(t *testing.T) {
+	animes := []anilist.Anime{
+		{MalID: 21, Title: "One Piece"},      // tem voto local
+		{MalID: 199, Title: "Spirited Away"}, // não tem
+	}
+	votos := map[int]communityScoreRow{
+		21: {MalID: 21, LocalVotes: 3, LocalScore: 8.4},
+	}
+
+	linhas := montarLinhasCache(animes, votos, "2026-09-12T00:00:00Z")
+	if len(linhas) != 2 {
+		t.Fatalf("esperava 2 linhas, veio %d", len(linhas))
+	}
+
+	chavesDe := func(l currentCacheRow) []string {
+		bruto, err := json.Marshal(l)
+		if err != nil {
+			t.Fatalf("falha ao serializar: %v", err)
+		}
+		var m map[string]json.RawMessage
+		if err := json.Unmarshal(bruto, &m); err != nil {
+			t.Fatalf("falha ao ler o JSON gerado: %v", err)
+		}
+		out := make([]string, 0, len(m))
+		for k := range m {
+			out = append(out, k)
+		}
+		sort.Strings(out)
+		return out
+	}
+
+	comVoto, semVoto := chavesDe(linhas[0]), chavesDe(linhas[1])
+	if !reflect.DeepEqual(comVoto, semVoto) {
+		t.Errorf("conjuntos de chaves divergem — o PostgREST devolveria PGRST102\n com voto: %v\n sem voto: %v", comVoto, semVoto)
+	}
+}
+
+// TestMontarLinhasCache_SemVotoGravaNulo garante que ausência de voto vira NULL e
+// nunca 0. Nota zero é um número válido e contaminaria o cálculo do peso local.
+func TestMontarLinhasCache_SemVotoGravaNulo(t *testing.T) {
+	linhas := montarLinhasCache(
+		[]anilist.Anime{{MalID: 199, Title: "Spirited Away"}},
+		map[int]communityScoreRow{},
+		"2026-09-12T00:00:00Z",
+	)
+	if len(linhas) != 1 {
+		t.Fatalf("esperava 1 linha, veio %d", len(linhas))
+	}
+	if linhas[0].LocalScore != nil {
+		t.Errorf("LocalScore deveria ser nil, veio %v", *linhas[0].LocalScore)
+	}
+
+	bruto, _ := json.Marshal(linhas[0])
+	if !strings.Contains(string(bruto), `"local_score":null`) {
+		t.Errorf("esperava local_score explícito como null, veio: %s", bruto)
+	}
+}
+
+// TestMontarLinhasCache_NumeracaoContigua cobre o motivo de position ser contador
+// próprio: mal_id inválido é pulado sem abrir buraco na chave primária.
+func TestMontarLinhasCache_NumeracaoContigua(t *testing.T) {
+	animes := []anilist.Anime{
+		{MalID: 21},
+		{MalID: 0}, // inválido, item 16 do PITFALLS
+		{MalID: 199},
+	}
+
+	linhas := montarLinhasCache(animes, nil, "2026-09-12T00:00:00Z")
+	if len(linhas) != 2 {
+		t.Fatalf("esperava 2 linhas, veio %d", len(linhas))
+	}
+	if linhas[0].Position != 1 || linhas[1].Position != 2 {
+		t.Errorf("posições não contíguas: %d e %d", linhas[0].Position, linhas[1].Position)
 	}
 }
