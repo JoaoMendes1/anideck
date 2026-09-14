@@ -28,41 +28,56 @@ SELECT pg_get_viewdef('nome_da_view'::regclass, true);
 
 ## Arquivos
 
-| Arquivo | O que faz | Aplicado |
-|---|---|---|
-| `001_anime_metadata_cache_tags.sql` | Adiciona `tags` e `season_year` ao cache de metadados | 21/08/2026 |
-| `002_genre_taxonomy.sql` | Cria e popula a taxonomia própria (3 camadas) | 21/08/2026 |
-| `003_view_user_genre_affinity.sql` | ⚰️ **Morto.** Redefinido pelo `008` e de novo pelo `013` | 21/08/2026 |
-| `004_estatisticas_avancadas.sql` | ⚠️ **Parcialmente morto.** Views de drill-down, marcações cruas e anime esquecido — a `view_user_forgotten_anime` foi redefinida pelo `023` | 21/08/2026 |
-| `005_remove_coluna_progress.sql` | ⚠️ Destrutivo — ver instruções no próprio arquivo | 21/08/2026 |
-| `006_views_existentes.sql` | ⚠️ **Parcialmente morto.** DDL das 9 views que só existiam no painel — 4 delas foram redefinidas pelo `023` | 21/08/2026 |
-| `007_drilldown_por_ano.sql` | View que lista os animes de cada ano de estreia | 21/08/2026 |
-| `008_correcoes_maratona_e_taxonomia.sql` | ⚰️ **Morto.** Filtrava maratonas implausíveis e criava a camada `ignorado`; a view de maratona foi redefinida pelo `023` e a de afinidade pelo `013` | 21/08/2026 |
-| `009_curation_suggestions.sql` | Fila de sugestões do Olheiro + tabela `app_admins` (espelha o admin no banco para a RLS) | ~21/08/2026 |
-| `010_olheiro_rpcs.sql` | ⚰️ **Morto.** A view voltou a ter lógica própria no `013`; as RPCs perderam uso com o `011` | ~21/08/2026 |
-| `011_olheiro_remove_cron.sql` | Remove o caminho de cron do `010`: o scan passou a rodar com o JWT do admin | ~22/08/2026 |
-| `012_ranking_snapshots.sql` | Tabela de fotos do Top Global (indicador ▲/▼) | ~23/08/2026 |
-| `013_precedencia_rotulos.sql` | Precedência campo a campo nos rótulos; `'ignorado'` como default | 24/08/2026 |
-| `014_campos_curadoria.sql` | Colunas novas de curadoria (`custom_episodes` e outras), todas NULLABLE — NULL cai para a fonte seguinte | ~25/08/2026 |
-| `015_quero_assistir_nas_stats.sql` | Acrescenta `quero_assistir` à `view_user_stats` | 26/08/2026 |
-| `016_app_settings_rls.sql` | Fecha a escrita da `app_settings` a `is_admin()`; leitura segue pública | 28/08/2026 |
-| `017_security_invoker_views.sql` | Liga `security_invoker` nas 16 views existentes na época: a RLS da tabela-base passa a valer, o filtro `auth.uid()` vira segunda camada | 31/08/2026 |
-| `018_rpcs_cron_sem_execute_publico.sql` | Revoga `EXECUTE` de `PUBLIC`/`anon`/`authenticated` nas duas RPCs do cron; acesso só via `service_role` | 31/08/2026 |
-| `019_policies_initplan_e_sobreposicao.sql` | `(SELECT auth.uid())` nas 8 policies de usuário; policy de admin em `curated_animes` deixa de cobrir SELECT | 31/08/2026 |
-| `020_anime_metadata_cache_rls.sql` | Fecha a escrita do cache de metadados a `is_admin()`; leitura segue pública | 01/09/2026 |
-| `021_media_entries_cascade.sql` | FK de `media_entries` passa a `ON DELETE CASCADE`, padronizando com as outras quatro — sem isso, exclusão de conta falha | 01/09/2026 |
-| `022_limite_cadastros_beta.sql` | Hook `before-user-created` que fecha o cadastro ao atingir `beta_signup_limit` (`app_settings`) — **exige ativação manual no painel**, ver Regras | 02/09/2026 |
-| `023_watched_at_nulo_em_lote.sql` | Filtra `watched_at IS NOT NULL` em 6 views de tempo, para o preenchimento em lote de "Completo" não criar balde nulo em Atividade, Horário, Streak, Maratona e Anime Esquecido | 05/09/2026 |
-| `024_ranking_hibrido.sql` | Cria a view `anime_community_scores` e a tabela `ranking_current_cache` para o motor híbrido e boot resiliente | 07/09/2026 |
-| `025_invoker_community_scores_e_search_path.sql` | Liga `security_invoker` na view que o `024` criou sem ele; fixa `search_path` na função do `022` | 07/09/2026 |
-| `026_ranking_current_cache_grant_morto.sql` | Revoga o `GRANT SELECT` que o `024` deu a `anon`/`authenticated` e que a RLS já bloqueava | 08/09/2026 |
-| `027_peso_voto_comunitario.sql` | Move o `pesoVotoComunitario` do `const` no `ranking.go` para `app_settings` | 13/09/2026 |
-| `028_storage_uso_bucket.sql` | Policy de `SELECT` no bucket `curadoria` para admin + RPC `uso_do_bucket_curadoria` | 13/09/2026 |
+| Arquivo                                          | O que faz                                                                                                                                                                      | Aplicado    |
+| ------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ----------- |
+| `001_anime_metadata_cache_tags.sql`              | Adiciona `tags` e `season_year` ao cache de metadados                                                                                                                          | 21/08/2026  |
+| `002_genre_taxonomy.sql`                         | Cria e popula a taxonomia própria (3 camadas)                                                                                                                                  | 21/08/2026  |
+| `003_view_user_genre_affinity.sql`               | ⚰️ **Morto.** Redefinido pelo `008` e de novo pelo `013`                                                                                                                        | 21/08/2026  |
+| `004_estatisticas_avancadas.sql`                 | ⚠️ **Parcialmente morto.** Views de drill-down, marcações cruas e anime esquecido — a `view_user_forgotten_anime` foi redefinida pelo `023`                                     | 21/08/2026  |
+| `005_remove_coluna_progress.sql`                 | ⚠️ Destrutivo — ver instruções no próprio arquivo                                                                                                                               | 21/08/2026  |
+| `006_views_existentes.sql`                       | ⚠️ **Parcialmente morto.** DDL das 9 views que só existiam no painel — 4 delas foram redefinidas pelo `023`                                                                     | 21/08/2026  |
+| `007_drilldown_por_ano.sql`                      | View que lista os animes de cada ano de estreia                                                                                                                                | 21/08/2026  |
+| `008_correcoes_maratona_e_taxonomia.sql`         | ⚰️ **Morto.** Filtrava maratonas implausíveis e criava a camada `ignorado`; a view de maratona foi redefinida pelo `023` e a de afinidade pelo `013`                            | 21/08/2026  |
+| `009_curation_suggestions.sql`                   | Fila de sugestões do Olheiro + tabela `app_admins` (espelha o admin no banco para a RLS)                                                                                       | ~21/08/2026 |
+| `010_olheiro_rpcs.sql`                           | ⚰️ **Morto.** A view voltou a ter lógica própria no `013`; as RPCs perderam uso com o `011`                                                                                     | ~21/08/2026 |
+| `011_olheiro_remove_cron.sql`                    | Remove o caminho de cron do `010`: o scan passou a rodar com o JWT do admin                                                                                                    | ~22/08/2026 |
+| `012_ranking_snapshots.sql`                      | Tabela de fotos do Top Global (indicador ▲/▼)                                                                                                                                  | ~23/08/2026 |
+| `013_precedencia_rotulos.sql`                    | Precedência campo a campo nos rótulos; `'ignorado'` como default                                                                                                               | 24/08/2026  |
+| `014_campos_curadoria.sql`                       | Colunas novas de curadoria (`custom_episodes` e outras), todas NULLABLE — NULL cai para a fonte seguinte                                                                       | ~25/08/2026 |
+| `015_quero_assistir_nas_stats.sql`               | Acrescenta `quero_assistir` à `view_user_stats`                                                                                                                                | 26/08/2026  |
+| `016_app_settings_rls.sql`                       | Fecha a escrita da `app_settings` a `is_admin()`; leitura segue pública                                                                                                        | 28/08/2026  |
+| `017_security_invoker_views.sql`                 | Liga `security_invoker` nas 16 views existentes na época: a RLS da tabela-base passa a valer, o filtro `auth.uid()` vira segunda camada                                        | 31/08/2026  |
+| `018_rpcs_cron_sem_execute_publico.sql`          | Revoga `EXECUTE` de `PUBLIC`/`anon`/`authenticated` nas duas RPCs do cron; acesso só via `service_role`                                                                        | 31/08/2026  |
+| `019_policies_initplan_e_sobreposicao.sql`       | `(SELECT auth.uid())` nas 8 policies de usuário; policy de admin em `curated_animes` deixa de cobrir SELECT                                                                    | 31/08/2026  |
+| `020_anime_metadata_cache_rls.sql`               | Fecha a escrita do cache de metadados a `is_admin()`; leitura segue pública                                                                                                    | 01/09/2026  |
+| `021_media_entries_cascade.sql`                  | FK de `media_entries` passa a `ON DELETE CASCADE`, padronizando com as outras quatro — sem isso, exclusão de conta falha                                                       | 01/09/2026  |
+| `022_limite_cadastros_beta.sql`                  | Hook `before-user-created` que fecha o cadastro ao atingir `beta_signup_limit` (`app_settings`) — **exige ativação manual no painel**, ver Regras                              | 02/09/2026  |
+| `023_watched_at_nulo_em_lote.sql`                | Filtra `watched_at IS NOT NULL` em 6 views de tempo, para o preenchimento em lote de "Completo" não criar balde nulo em Atividade, Horário, Streak, Maratona e Anime Esquecido | 05/09/2026  |
+| `024_ranking_hibrido.sql`                        | Cria a view `anime_community_scores` e a tabela `ranking_current_cache` para o motor híbrido e boot resiliente                                                                 | 07/09/2026  |
+| `025_invoker_community_scores_e_search_path.sql` | Liga `security_invoker` na view que o `024` criou sem ele; fixa `search_path` na função do `022`                                                                               | 07/09/2026  |
+| `026_ranking_current_cache_grant_morto.sql`      | Revoga o `GRANT SELECT` que o `024` deu a `anon`/`authenticated` e que a RLS já bloqueava                                                                                      | 08/09/2026  |
+| `027_peso_voto_comunitario.sql`                  | Move o `pesoVotoComunitario` do `const` no `ranking.go` para `app_settings`                                                                                                    | 13/09/2026  |
+| `028_storage_uso_bucket.sql`                     | Policy de `SELECT` no bucket `curadoria` para admin + RPC `uso_do_bucket_curadoria`                                                                                            | 13/09/2026  |
+| `029_sinonimos_curadoria_pt.sql`                 | Entradas em português na `genre_taxonomy` para as tags que a IA gera                                                                                                           | 13/09/2026  |
+| `030_unmapped_labels_detalhe.sql`                | Redefine `view_unmapped_labels` (passa a cobrir curadoria fora do deck) e cria `view_unmapped_labels_detalhe`                                                                  | 13/09/2026  |
+| `031_gestao_taxonomia_e_tags.sql`                | RPCs de renomear e remover tag em lote (preservando a posição no array) + policies de escrita em `genre_taxonomy`                                                              | 13/09/2026  |
+| `032_taxonomia_apoio.sql`                        | `Harém Reverso` ganha entrada em português + RPC `contar_animes_com_tag`                                                                                                       | 13/09/2026  |
+| `033_unmapped_labels_catalogo.sql`               | As duas views de rótulo órfão passam a cobrir o catálogo inteiro (`anime_metadata_cache`), não só o deck de quem consulta                                                      | 13/09/2026  |
 
 Datas com `~` são a data do commit, não da aplicação no Supabase.
 
 `snapshot_schema.sql` está fora desta lista de propósito — é retrato para consulta, não
 migration. Ver o cabeçalho do arquivo.
+
+### Views de rótulo órfão — `030` e `033`
+
+A definição viva das duas está no `033`, não no arquivo onde nasceram:
+
+`view_unmapped_labels` · `view_unmapped_labels_detalhe`
+
+O `030` fez a primeira passar a ver a curadoria além do deck e criou a de detalhe.
+O `033` trocou a base das duas de `media_entries` para `anime_metadata_cache`, e
+com isso o filtro por `auth.uid()` saiu: elas não leem mais dado de usuário.
 
 ### Views redefinidas pelo `023`
 
@@ -85,7 +100,12 @@ próxima pessoa que for mexer numa delas precisa saber onde está a definição 
 4. **Regerar o `snapshot_schema.sql`** a cada arquivo novo. Ele é o retrato do banco de
    verdade; desatualizado, manda a próxima sessão trabalhar em cima de um estado que
    não existe mais.
-5. **Passos manuais fora dos arquivos.** Banco recriado do zero precisa dos dois:
+5. **A `genre_taxonomy` é dado de aplicação, não schema.** Desde o `031` ela é
+   editável pelo Painel de Controle → Rótulos, e as linhas criadas por lá **não
+   entram no repositório**. Os arquivos `002`, `013`, `029` e `032` são só a
+   semente inicial; o conteúdo vivo está no banco. Banco recriado do zero nasce
+   com a semente e precisa recadastrar o que foi acrescentado pela tela.
+6. **Passos manuais fora dos arquivos.** Banco recriado do zero precisa dos dois:
    - o `009` exige um `INSERT` em `app_admins` com o UUID do `ADMIN_USER_ID`, rodado à mão
      (o valor não entra no repositório, que é público). Sem ele, a curadoria fica bloqueada
      pela RLS;

@@ -698,6 +698,22 @@ export default function PainelAdmin() {
     pedirConfirmacao(() => limparFormulario())
   }
 
+  // Ponte do Diagnóstico para o editor, no molde do curarSugestao do Olheiro:
+  // clicar num anime com rótulo problemático leva direto para onde se conserta,
+  // já com o formulário montado — e lá dá para usar a IA para reescrever as tags.
+  //
+  // Busca na lista já carregada em vez de refazer a requisição: os 114 destaques
+  // vêm no boot do painel, e o curated_id da view é o mesmo `id` de lá.
+  const abrirNaCuradoria = (curatedId: string) => {
+    const anime = destaques.find(d => d.id === curatedId)
+    if (!anime) {
+      showToast('Este anime não está na lista de destaques carregada.', 'error')
+      return
+    }
+    setAbaAtiva('curadoria')
+    editarDestaque(anime)
+  }
+
   const editarDestaque = (anime: CuratedAnime) => {
     pedirConfirmacao(() => {
       setEditId(anime.id || null)
@@ -820,8 +836,8 @@ export default function PainelAdmin() {
               aria-selected={abaAtiva === aba.id}
               onClick={() => setAbaAtiva(aba.id)}
               className={`shrink-0 whitespace-nowrap px-4 py-2.5 text-sm font-bold border-b-2 cursor-pointer transition-colors ${abaAtiva === aba.id
-                  ? 'text-text border-holo-1'
-                  : 'text-muted border-transparent hover:text-text'
+                ? 'text-text border-holo-1'
+                : 'text-muted border-transparent hover:text-text'
                 }`}
             >
               {aba.nome}
@@ -848,6 +864,7 @@ export default function PainelAdmin() {
               onToggleKillSwitch={toggleKillSwitch}
               onResync={() => pedirConfirmacao(resyncMetadados)}
               resyncRodando={resyncRodando}
+              onAbrirCuradoria={abrirNaCuradoria}
             />
           </>
         )}
