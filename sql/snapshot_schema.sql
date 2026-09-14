@@ -1,7 +1,7 @@
 -- =============================================================================
 -- snapshot_schema.sql — RETRATO DO BANCO. NAO EXECUTE ESTE ARQUIVO.
 -- =============================================================================
--- Regenerado em 13/09/2026 01:51 a partir do banco de producao.
+-- Regenerado em 14/09/2026 01:09 a partir do banco de producao.
 --
 -- PARA QUE SERVE: consulta rapida do estado real do banco, sem precisar abrir
 -- o painel do Supabase nem confiar nos arquivos sql/ antigos (que podem ter
@@ -152,7 +152,7 @@
 -- curated_animes            | RLS: t     | policies: 4
 -- curation_suggestions      | RLS: t     | policies: 1
 -- episode_progress          | RLS: t     | policies: 1
--- genre_taxonomy            | RLS: t     | policies: 1
+-- genre_taxonomy            | RLS: t     | policies: 3
 -- media_entries             | RLS: t     | policies: 4
 -- notifications             | RLS: t     | policies: 2
 -- push_subscriptions        | RLS: t     | policies: 1
@@ -192,17 +192,57 @@ CREATE OR REPLACE VIEW public.view_episode_progress_orphans WITH (security_invok
   ORDER BY cur.custom_title, ep.episode_number;
 
 CREATE OR REPLACE VIEW public.view_unmapped_labels WITH (security_invoker = on) AS
+ WITH fontes AS (
+         SELECT c.mal_id,
+            COALESCE(cur.custom_tags, COALESCE(c.genres, '{}'::text[]) || COALESCE(c.tags, '{}'::text[])) AS tags,
+            cur.custom_tags IS NOT NULL AS da_curadoria
+           FROM anime_metadata_cache c
+             LEFT JOIN curated_animes cur ON cur.mal_id = c.mal_id
+        UNION
+         SELECT cur.mal_id,
+            cur.custom_tags,
+            true
+           FROM curated_animes cur
+          WHERE cur.custom_tags IS NOT NULL
+        )
  SELECT r.raw_name,
-    count(DISTINCT e.mal_id) AS animes,
-    bool_or(cur.custom_tags IS NOT NULL) AS veio_de_curadoria
-   FROM media_entries e
-     LEFT JOIN anime_metadata_cache c ON c.mal_id = e.mal_id
-     LEFT JOIN curated_animes cur ON cur.mal_id = e.mal_id
-     CROSS JOIN LATERAL unnest(COALESCE(cur.custom_tags, COALESCE(c.genres, '{}'::text[]) || COALESCE(c.tags, '{}'::text[]))) r(raw_name)
+    count(DISTINCT f.mal_id) AS animes,
+    bool_or(f.da_curadoria) AS veio_de_curadoria
+   FROM fontes f
+     CROSS JOIN LATERAL unnest(f.tags) r(raw_name)
      LEFT JOIN genre_taxonomy t ON t.raw_name = r.raw_name
-  WHERE e.user_id = auth.uid() AND t.raw_name IS NULL
+  WHERE t.raw_name IS NULL
   GROUP BY r.raw_name
-  ORDER BY (count(DISTINCT e.mal_id)) DESC;
+  ORDER BY (count(DISTINCT f.mal_id)) DESC;
+
+CREATE OR REPLACE VIEW public.view_unmapped_labels_detalhe WITH (security_invoker = on) AS
+ WITH fontes AS (
+         SELECT c.mal_id,
+            COALESCE(cur.custom_tags, COALESCE(c.genres, '{}'::text[]) || COALESCE(c.tags, '{}'::text[])) AS tags,
+            cur.custom_tags IS NOT NULL AS da_curadoria,
+            COALESCE(cur.custom_title, c.title) AS titulo,
+            cur.id AS curated_id
+           FROM anime_metadata_cache c
+             LEFT JOIN curated_animes cur ON cur.mal_id = c.mal_id
+        UNION
+         SELECT cur.mal_id,
+            cur.custom_tags,
+            true,
+            cur.custom_title,
+            cur.id
+           FROM curated_animes cur
+          WHERE cur.custom_tags IS NOT NULL
+        )
+ SELECT r.raw_name,
+    f.mal_id,
+    f.titulo,
+    f.da_curadoria AS veio_de_curadoria,
+    f.curated_id
+   FROM fontes f
+     CROSS JOIN LATERAL unnest(f.tags) r(raw_name)
+     LEFT JOIN genre_taxonomy t ON t.raw_name = r.raw_name
+  WHERE t.raw_name IS NULL
+  ORDER BY r.raw_name, f.titulo;
 
 CREATE OR REPLACE VIEW public.view_user_activity WITH (security_invoker = on) AS
  SELECT user_id,
@@ -465,6 +505,14 @@ CREATE OR REPLACE VIEW public.view_user_year_distribution WITH (security_invoker
 --     USING:  (( SELECT auth.uid() AS uid) = user_id)
 --     CHECK:  (( SELECT auth.uid() AS uid) = user_id)
 
+-- genre_taxonomy         | admin_remove_taxonomia                        | DELETE | authenticated     
+--     USING:  ( SELECT is_admin() AS is_admin)
+--     CHECK:  -
+
+-- genre_taxonomy         | admin_insere_taxonomia                        | INSERT | authenticated     
+--     USING:  -
+--     CHECK:  ( SELECT is_admin() AS is_admin)
+
 -- genre_taxonomy         | Taxonomia é pública para usuários autenticados | SELECT | authenticated     
 --     USING:  true
 --     CHECK:  -
@@ -534,11 +582,14 @@ CREATE OR REPLACE VIEW public.view_user_year_distribution WITH (security_invoker
 -- chamavel como funcao comum.
 -- =============================================================================
 
+-- contar_animes_com_tag          | definer: f     | anon: f     | auth: t     | service: t     | search_path=public, pg_temp
 -- fn_user_genre_affinity         | definer: f     | anon: t     | auth: t     | service: t     | search_path=public, pg_temp
 -- get_cron_media_entries         | definer: t     | anon: f     | auth: f     | service: t     | search_path=public
 -- hook_limite_cadastros          | definer: f     | anon: f     | auth: f     | service: t     | search_path=public, pg_temp
 -- is_admin                       | definer: t     | anon: t     | auth: t     | service: t     | search_path=public, pg_temp
 -- process_cron_notification      | definer: t     | anon: f     | auth: f     | service: t     | search_path=public
+-- remover_tag_curadoria          | definer: t     | anon: f     | auth: t     | service: t     | search_path=public, pg_temp
+-- renomear_tag_curadoria         | definer: t     | anon: f     | auth: t     | service: t     | search_path=public, pg_temp
 -- rls_auto_enable                | definer: t     | anon: t     | auth: t     | service: t     | search_path=pg_catalog
 -- uso_do_bucket_curadoria        | definer: f     | anon: f     | auth: t     | service: t     | search_path=public, storage, pg_temp
 

@@ -29,15 +29,23 @@ já cadastra os dois idiomas apontando para o mesmo `display_name_pt` — `'Fant
 
 O que ainda quebra:
 
-- **A cobertura em português é parcial.** Existe `'Harém'`, mas não `'Harém Reverso'`.
-- **O campo de tags no Admin é texto livre.** O `curation.go` não valida nada contra a
-  taxonomia, então erro de digitação (`'Fantasía'`, `'Aventuras'`) vira rótulo órfão.
+- **A cobertura em português era parcial.** `'Harém Reverso'` ganhou entrada no `sql/032`,
+  e desde 13/09/2026 a taxonomia é editável pelo Painel (Controle → Rótulos), então a
+  cobertura deixou de depender de arquivo `sql/` novo.
+- **O campo de tags no Admin deixou de ser texto livre** (13/09/2026). O `ReorderableTags`
+  só aceita rótulo cadastrado: sugere pelo nome em português, grava o texto correspondente
+  e recusa o que não existe. Erro de digitação não entra mais por ali.
+- **Mas o import da AniList continua entrando direto.** O `aplicarAnimeNoFormulario` faz
+  `setTags(anime.genres)`, e os gêneros vêm em inglês sem passar pela validação. É daí que
+  vêm quase todos os rótulos órfãos de hoje.
 - **Desde o `sql/013`, órfão cai em `'ignorado'` e some da tela em silêncio.** A
-  `view_unmapped_labels` existe justamente para tornar isso visível.
+  `view_unmapped_labels` existe justamente para tornar isso visível, e desde o `sql/033`
+  ela cobre o catálogo inteiro, não só o deck de quem consulta.
 
 > **Pergunta obrigatória:** o rótulo desta ponta está cadastrado na `genre_taxonomy`, nos dois
-> idiomas? Confira o seed do `sql/002`. Rótulo ausente não aparece em lugar nenhum — consulte a
-> `view_unmapped_labels` antes de concluir que "sumiu sem motivo".
+> idiomas? Consulte o BANCO, não o seed do `sql/002` — desde 13/09/2026 a tabela é editável pelo
+> Painel e as linhas criadas por lá não estão em arquivo nenhum. Rótulo ausente não aparece em
+> lugar nenhum: veja a `view_unmapped_labels` antes de concluir que "sumiu sem motivo".
 
 ---
 
@@ -609,6 +617,51 @@ ali significa ponteiro perdido em algum ponto do caminho.
 > log, nunca na tela.
 
 ---
+
+---
+
+## 21. 🔀 `UPDATE` em array que reordena o que você levou horas ordenando
+
+**Incidente (13/09/2026):** a ordem das tags de 7 animes foi para ordem alfabética
+e não voltou. A ordem é prioridade editorial — a primeira tag é o selo que aparece
+no card — e não existe backup no plano Free (item 11).
+
+**Causa:** o `UPDATE` usava `array_agg(DISTINCT t)` para trocar uma tag por duas:
+
+```sql
+SET custom_tags = (SELECT array_agg(DISTINCT t) FROM unnest(...) t)
+```
+
+O `array_agg` **não preserva ordem** sem um `ORDER BY` explícito, e com `DISTINCT`
+o Postgres ordena para deduplicar. O array volta alfabético. A mesma armadilha
+mora em `array_remove(...) || ARRAY[...]`, que joga o elemento novo no fim.
+
+**O que torna isso silencioso:** o `UPDATE` reporta sucesso, o número de linhas
+afetadas está certo, e o conteúdo do array está certo — só a ordem mudou. Nada no
+banco distingue "ordem que alguém escolheu" de "ordem que saiu". Só se descobre
+olhando a tela depois.
+
+**A forma correta é trocar no lugar:**
+
+| Operação                            | Comando                         | Ordem            |
+| ----------------------------------- | ------------------------------- | ---------------- |
+| Trocar A por B                      | `array_replace(tags, 'A', 'B')` | ✅ preservada     |
+| Tirar A                             | `array_remove(tags, 'A')`       | ✅ fecha o buraco |
+| `array_agg(DISTINCT ...)`           | —                               | ❌ alfabética     |
+| `array_remove(...) \|\| ARRAY[...]` | —                               | ❌ vai para o fim |
+
+O caso de duplicata — o anime que já tem A e B, e trocar criaria B duas vezes —
+resolve com um `UPDATE` separado **antes**, removendo A só nesses. É o que a
+`renomear_tag_curadoria` do `sql/031` faz.
+
+**Corolário sobre contagem:** dois `UPDATE`s exigem dois `GET DIAGNOSTICS`. O
+`ROW_COUNT` só enxerga o último comando, e o primeiro grupo nem aparece no segundo
+`UPDATE` — o número que a tela mostra antes de confirmar viria errado, e
+confirmação com número errado não confirma nada.
+
+> **Pergunta obrigatória:** este `UPDATE` mexe num array cuja ORDEM significa
+> alguma coisa? Se mexe, ele usa `array_replace`/`array_remove`, ou reconstrói o
+> array com `array_agg`? Reconstruir reordena, e não há como desfazer.
 
 ---
 

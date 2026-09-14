@@ -154,6 +154,16 @@ func main() {
 		admin.Get("/api/admin/diagnostico/rotulos-orfaos", diagnosticoHandler.HandleListarRotulosOrfaos)
 		admin.Get("/api/admin/diagnostico/bucket", diagnosticoHandler.HandleUsoDoBucket)
 
+		// Correção de rótulos: listar os animes de uma tag órfã, renomear e remover
+		// em lote, e cadastrar a entrada na taxonomia
+		admin.Get("/api/admin/diagnostico/rotulos-orfaos/animes", diagnosticoHandler.HandleListarAnimesDoRotulo)
+		admin.Post("/api/admin/diagnostico/tags/renomear", diagnosticoHandler.HandleRenomearTag)
+		admin.Post("/api/admin/diagnostico/tags/remover", diagnosticoHandler.HandleRemoverTag)
+		admin.Post("/api/admin/diagnostico/taxonomia", diagnosticoHandler.HandleCadastrarNaTaxonomia)
+
+		admin.Get("/api/admin/diagnostico/taxonomia", diagnosticoHandler.HandleListarTaxonomia)
+		admin.Post("/api/admin/diagnostico/taxonomia/remover", diagnosticoHandler.HandleRemoverDaTaxonomia)
+
 		// Agente Olheiro: scan sob demanda e revisão da fila de sugestões
 		admin.Post("/api/admin/olheiro/scan", olheiroHandler.HandleScan)
 		admin.Get("/api/admin/olheiro/sugestoes", olheiroHandler.HandleListarSugestoes)
