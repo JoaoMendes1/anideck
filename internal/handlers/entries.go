@@ -200,22 +200,52 @@ func buildMetadataPayload(anime anilist.Anime) map[string]interface{} {
 	return payload
 }
 
-// syncMetadataCache busca o anime na AniList e grava os metadados no cache local.
+// animeEstaNoDeck confirma que o mal_id pertence ao deck de quem pediu a sincronização.
 //
-// O client vem de fora de propósito: ele carrega o rate limiter da AniList. Numa
-// re-sincronização em lote, criar um client por anime daria a cada chamada um limiter
-// zerado — o limite deixaria de valer e a API responderia 429. Reaproveitando o mesmo
-// client, as chamadas entram todas na mesma fila.
-func syncMetadataCache(ctx context.Context, client anilist.Service, malID int, token string) error {
+// POR QUE EXISTE: o syncMetadataCache grava com ServiceRoleClient, que ignora RLS. Sem
+// esta trava, qualquer autenticado poderia disparar gravação no cache para qualquer
+// mal_id, num laço. O conteúdo gravado vem da AniList e não do usuário, então não havia
+// corrupção possível — mas havia poluição, e cada chamada consome a cota de 30 req/min
+// que o app inteiro divide.
+//
+// Lê com ClientWithToken de propósito: a RLS de media_entries recorta por auth.uid(),
+// então a consulta só enxerga o deck de quem chamou. Usar service role aqui anularia o
+// sentido da verificação.
+func animeEstaNoDeck(malID int, token, userID string) (bool, error) {
+	dbClient, err := database.ClientWithToken(token)
+	if err != nil {
+		return false, err
+	}
+
+	data, _, err := dbClient.From("media_entries").
+		Select("mal_id", "exact", false).
+		Eq("user_id", userID).
+		Eq("mal_id", strconv.Itoa(malID)).
+		Execute()
+	if err != nil {
+		return false, err
+	}
+
+	var linhas []struct {
+		MalID int `json:"mal_id"`
+	}
+	if err := json.Unmarshal(data, &linhas); err != nil {
+		return false, err
+	}
+
+	return len(linhas) > 0, nil
+}
+
+func syncMetadataCache(ctx context.Context, client anilist.Service, malID int) error {
 	res, err := client.GetAnimeById(ctx, fmt.Sprintf("%d", malID))
 	if err != nil || res == nil {
 		return fmt.Errorf("erro ao buscar dados na AniList para mal_id %d: %w", malID, err)
 	}
 	anime := res.Data
 
-	dbClient, errClient := database.ClientWithToken(token)
+	dbClient, errClient := database.ServiceRoleClient()
 	if errClient != nil {
-		return fmt.Errorf("erro ao criar cliente com token: %w", errClient)
+		return fmt.Errorf("erro ao criar cliente de serviço: %w", errClient)
 	}
 
 	payload := buildMetadataPayload(anime)
@@ -239,7 +269,22 @@ func syncMetadataCacheAsync(malID int, token string, completo bool, userID strin
 			preencherEpisodiosCompleto(token, userID, malID)
 		}
 
-		if err := syncMetadataCache(context.Background(), anilist.NewClient(), malID, token); err != nil {
+		// A gravação usa service role, então a autorização acontece ANTES. Falha na
+		// consulta bloqueia por padrão: não sincronizar é perda de cache recuperável
+		// pelo Resync, enquanto sincronizar sem confirmar abre escrita sem RLS.
+		noDeck, errDeck := animeEstaNoDeck(malID, token, userID)
+		if errDeck != nil {
+			log.Printf("[CACHE METADATA] Não foi possível confirmar o mal_id %d no deck de %s: %v",
+				malID, userID, errDeck)
+			return
+		}
+		if !noDeck {
+			log.Printf("[CACHE METADATA] mal_id %d não está no deck de %s — sincronização recusada.",
+				malID, userID)
+			return
+		}
+
+			if err := syncMetadataCache(context.Background(), anilist.NewClient(), malID); err != nil {
 			log.Printf("[CACHE METADATA] %v", err)
 		}
 
