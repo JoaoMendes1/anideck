@@ -7,6 +7,7 @@ import (
 	"sort"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/JoaoMendes1/anideck/internal/anilist"
 	"github.com/JoaoMendes1/anideck/internal/database"
@@ -63,9 +64,10 @@ var equivalentes = map[string][]string{
 	"super power": {"super poderes"},
 	"video games": {"jogo", "jogos"},
 
-	// O chip manda "Female Harem" e "Male Harem"; a curadoria usa um "Harém" só. Por isso
-	// os dois apontam para o mesmo rótulo — e por isso a chave "harem" acima nunca era
-	// alcançada por chip nenhum.
+	// A AniList separa o harém clássico ("Female Harem") do reverso ("Male Harem"). O
+	// AniDeck trata os dois como um rótulo só, "Harém" — decisão de produto, registrada no
+	// DECISIONS.md. A genre_taxonomy segue a mesma regra desde o sql/034; se as duas
+	// divergirem de novo, a busca e as Estatísticas passam a discordar sobre o mesmo anime.
 	"female harem": {"harém"},
 	"male harem":   {"harém"},
 
@@ -113,9 +115,61 @@ func bateComTagPrincipal(doAnime []anilist.Genre, pedidas []string) bool {
 	return false
 }
 
-// Curados que batem a busca: titulo contem o texto (se houver) e a tag pedida
-// esta entre as principais. Ordenado pelo OrderIndex da curadoria.
-func curadosQueBatem(curados []models.CuratedAnime, query string, genres, tags []string) []anilist.Anime {
+// fusoDoJapao fixa UTC+9 sem depender do banco de fusos do sistema.
+//
+// O Japão não tem horário de verão, então um deslocamento fixo é exato. O
+// time.LoadLocation("Asia/Tokyo") daria o mesmo resultado, mas depende do tzdata
+// instalado na imagem do servidor e falha em tempo de execução se ele faltar.
+var fusoDoJapao = time.FixedZone("JST", 9*60*60)
+
+// Grade da TV japonesa: janeiro a março é inverno, abril a junho primavera,
+// julho a setembro verão, outubro a dezembro outono. O índice é (mês-1)/3.
+var temporadasPorTrimestre = [4]string{"WINTER", "SPRING", "SUMMER", "FALL"}
+
+// temporadaDeEstreia deduz temporada e ano a partir do instante de estreia curado.
+//
+// Existe porque a curadoria não guarda temporada, só o custom_first_aired_at. A conta
+// usa o fuso do Japão, e não o de quem consulta: temporada é um fato da exibição
+// japonesa, não uma data de exibição na tela. Em UTC, um anime que estreia à 00h30 de
+// 1º de outubro no Japão cairia em 30 de setembro e seria contado como verão.
+//
+// Devolve ok=false quando não há data ou ela não está em RFC 3339, que é o formato
+// que o ConverterEstreia grava em FirstAiredAt.
+func temporadaDeEstreia(firstAiredAt string) (temporada string, ano int, ok bool) {
+	if firstAiredAt == "" {
+		return "", 0, false
+	}
+	instante, err := time.Parse(time.RFC3339, firstAiredAt)
+	if err != nil {
+		return "", 0, false
+	}
+	noJapao := instante.In(fusoDoJapao)
+	return temporadasPorTrimestre[(int(noJapao.Month())-1)/3], noJapao.Year(), true
+}
+
+// bateComTemporada decide se um anime curado entra num filtro de temporada.
+//
+// Sem data de estreia curada não há como afirmar a temporada, então o anime fica de
+// fora. Deixá-lo passar era exatamente o bug: com só "Outono" marcado, toda a
+// curadoria subia para o topo da página. Se a AniList devolver o anime para essa
+// temporada, ele continua aparecendo pelo resultado dela, que conhece a temporada.
+func bateComTemporada(a anilist.Anime, temporada string, ano int) bool {
+	if temporada == "" {
+		return true
+	}
+	t, anoDoAnime, ok := temporadaDeEstreia(a.FirstAiredAt)
+	if !ok || t != temporada {
+		return false
+	}
+	return ano == 0 || anoDoAnime == ano
+}
+
+// Curados que batem a busca: titulo contem o texto (se houver), a tag pedida esta
+// entre as principais e, com filtro de temporada, a estreia curada cai nela.
+//
+// Recebe o SearchFilters inteiro, e nao cada filtro solto, para que o proximo
+// filtro nao obrigue a mudar a assinatura e todas as chamadas de novo.
+func curadosQueBatem(curados []models.CuratedAnime, query string, f anilist.SearchFilters) []anilist.Anime {
 	var achados []anilist.Anime
 
 	for _, cur := range curados {
@@ -125,19 +179,22 @@ func curadosQueBatem(curados []models.CuratedAnime, query string, genres, tags [
 		if query != "" && !strings.Contains(strings.ToLower(anime.Title), strings.ToLower(query)) {
 			continue
 		}
-		if len(genres) > 0 && !bateComTagPrincipal(anime.Genres, genres) {
+		if len(f.Genres) > 0 && !bateComTagPrincipal(anime.Genres, f.Genres) {
 			continue
 		}
-		if len(tags) > 0 && !bateComTagPrincipal(anime.Genres, tags) {
+		if len(f.Tags) > 0 && !bateComTagPrincipal(anime.Genres, f.Tags) {
+			continue
+		}
+		if !bateComTemporada(anime, f.Season, f.SeasonYear) {
 			continue
 		}
 		achados = append(achados, anime)
 	}
 
-			// Ordena por onde a tag pedida aparece: quem tem em primeiro vem antes de
+	// Ordena por onde a tag pedida aparece: quem tem em primeiro vem antes de
 	// quem tem em segundo. O order_index nao serve aqui -- hoje esta zerado em
 	// toda a curadoria, entao empataria tudo e a ordem cairia no mal_id.
-	pedidas := append(append([]string{}, genres...), tags...)
+	pedidas := append(append([]string{}, f.Genres...), f.Tags...)
 	posicao := func(a anilist.Anime) int {
 		for i, tag := range a.Genres {
 			for _, p := range pedidas {
@@ -227,7 +284,7 @@ func (h *SearchHandler) HandleSearch(w http.ResponseWriter, r *http.Request) {
 	// continua sendo o fallback certo, que e outra tela.
 	if aniListCaiu {
 		log.Printf("[ERRO ANILIST] Fallback ativado para busca: %v", err)
-		resultados = &anilist.AnimeSearchResponse{Data: curadosQueBatem(curados, query, genres, tags)}
+		resultados = &anilist.AnimeSearchResponse{Data: curadosQueBatem(curados, query, filters)}
 
 		inicio := (page - 1) * perPage
 		if inicio >= len(resultados.Data) {
@@ -286,7 +343,7 @@ func (h *SearchHandler) HandleSearch(w http.ResponseWriter, r *http.Request) {
 		// dela e nao conhece suas tags, entao curado que bate precisa entrar por
 		// fora -- inclusive quando a busca e so por chip, sem texto digitado.
 		if page == 1 {
-			meus := curadosQueBatem(curados, query, genres, tags)
+			meus := curadosQueBatem(curados, query, filters)
 
 			jaEntrou := make(map[int]bool, len(meus))
 			for _, a := range meus {

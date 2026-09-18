@@ -9,7 +9,17 @@ let sheetsAbertos = 0
 let overflowOriginal = ''
 const pilhaDeSheets: symbol[] = []
 
-export function useSheetBehavior(isOpen: boolean, onClose: () => void) {
+/**
+ * Comportamento comum dos painéis: trava de rolagem, pilha e tecla Esc.
+ *
+ * @param travarRolagem quando este painel é modal de fato. O padrão é `true`,
+ * que é o caso do Sheet.tsx — ele cobre a tela em qualquer largura. O
+ * FilterSheet passa `false` no desktop, onde ele NÃO é modal: a partir do `md`
+ * do Tailwind ele vira um bloco normal da página (`md:relative md:inset-auto`).
+ * Travar o body ali deixava a lista de gêneros inalcançável abaixo da dobra,
+ * porque o painel é mais alto que o espaço que sobra na tela.
+ */
+export function useSheetBehavior(isOpen: boolean, onClose: () => void, travarRolagem = true) {
     // Identidade única e estável deste Sheet. useRef sobrevive aos renders,
     // então os efeitos abaixo falam do mesmo objeto.
     const meuId = useRef<symbol>(Symbol('sheet'))
@@ -19,8 +29,13 @@ export function useSheetBehavior(isOpen: boolean, onClose: () => void) {
     // dois abertos, o de baixo restaurava "destravado" e o de cima logo depois
     // restaurava "hidden" — deixando a página travada sem nenhum Sheet na tela.
     // Agora conta quantos estão abertos: o primeiro trava, o último destrava.
+    //
+    // travarRolagem entra nas dependências de propósito. Quem gira o celular ou
+    // arrasta a janela para além do `md` com o painel aberto muda de valor no
+    // meio do caminho: a limpeza roda, decrementa a conta e destrava. Sem a
+    // dependência, a página ficaria travada até fechar o painel.
     useEffect(() => {
-        if (!isOpen) return
+        if (!isOpen || !travarRolagem) return
 
         if (sheetsAbertos === 0) {
             overflowOriginal = document.body.style.overflow
@@ -34,13 +49,16 @@ export function useSheetBehavior(isOpen: boolean, onClose: () => void) {
                 document.body.style.overflow = overflowOriginal
             }
         }
-    }, [isOpen])
+    }, [isOpen, travarRolagem])
 
     // --- Registro na pilha ---
     // O último a entrar é o que está visualmente por cima.
     // Depende SÓ de [isOpen]: se dependesse de onClose (que muda de identidade
     // a cada render do pai), a pilha se reordenaria e o Esc fecharia o Sheet
     // errado.
+    //
+    // Não depende de travarRolagem: o painel inline do desktop continua sendo o
+    // último aberto, e continua sendo quem o Esc deve fechar.
     useEffect(() => {
         if (!isOpen) return
 

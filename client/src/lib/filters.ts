@@ -30,8 +30,10 @@ export const CONTENT_FILTERS: FilterItem[] = [
     { label: 'Boys Love',       value: "Boys' Love",    type: 'tag' },
     { label: 'Demônios',        value: 'Demons',        type: 'tag' },
     { label: 'Escolar',         value: 'School',        type: 'tag' },
-    { label: 'Harém (ela)',     value: 'Female Harem',  type: 'tag' }, 
-    { label: 'Harém (ele)',     value: 'Male Harem',    type: 'tag' }, 
+    // A AniList separa harém em clássico (Female Harem) e reverso (Male Harem); o AniDeck
+    // trata os dois como um rótulo só. O chip manda o termo do clássico para a AniList, e
+    // a curadoria entra com os dois casos pelo "Harém" que o search.go reconhece.
+    { label: 'Harém',           value: 'Female Harem',  type: 'tag' },
     { label: 'Histórico',       value: 'Historical',    type: 'tag' },
     { label: 'Jogo',            value: 'Video Games',   type: 'tag' },
     { label: 'Magia',           value: 'Magic',         type: 'tag' },
@@ -92,7 +94,7 @@ export function getCategoryTheme(category: string) {
         return 'bg-holo-3/10 border-holo-3/30 text-holo-3';
     }
     // 💖 Sentimental / Relacionamentos (Holo-1 / Magenta)
-    if (['romance', 'shoujo', 'josei', 'harém', 'harém (ela)', 'harém (ele)', 'female harem', 'male harem', 'yuri', 'yaoi', "boys' love", 'boys love', 'ecchi', 'sem censura', 'nudity'].includes(cat)) {
+    if (['romance', 'shoujo', 'josei', 'harém', 'female harem', 'male harem', 'yuri', 'yaoi', "boys' love", 'boys love', 'ecchi', 'sem censura', 'nudity'].includes(cat)) {
         return 'bg-holo-1/10 border-holo-1/30 text-holo-1';
     }
     // 🟡 Leveza / Dia a dia (Gold)
