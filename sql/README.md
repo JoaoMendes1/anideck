@@ -63,6 +63,7 @@ SELECT pg_get_viewdef('nome_da_view'::regclass, true);
 | `031_gestao_taxonomia_e_tags.sql`                | RPCs de renomear e remover tag em lote (preservando a posição no array) + policies de escrita em `genre_taxonomy`                                                              | 13/09/2026  |
 | `032_taxonomia_apoio.sql`                        | `Harém Reverso` ganha entrada em português + RPC `contar_animes_com_tag`                                                                                                       | 13/09/2026  |
 | `033_unmapped_labels_catalogo.sql`               | As duas views de rótulo órfão passam a cobrir o catálogo inteiro (`anime_metadata_cache`), não só o deck de quem consulta                                                      | 13/09/2026  |
+| `034_harem_unificado.sql` | Funde "Harém Reverso" em "Harém" na taxonomia | 18/09/2026 |
 
 Datas com `~` são a data do commit, não da aplicação no Supabase.
 
