@@ -7,10 +7,17 @@
 | 5 | Detalhe do anime | `Detalhes.tsx` | ✅ Implementada | Fase 2 / 6.6 |
 | 6 | Calendário de lançamentos | `Calendario.tsx` | ✅ Implementada | Fase 5 |
 | 7 | Rankings | `Rankings.tsx` | ✅ Implementada | Fase 2 / 6.5 |
-| 8 | Estatísticas | `Estatisticas.tsx` | ✅ Implementada | Fase 4 / 6.8 |
+| 8 | Meu Gosto (ex-Estatísticas) | `Estatisticas.tsx` | ✅ Implementada · renomeação planejada | Fase 4 / 6.8 / 12 |
 | 9 | Painel Admin (curadoria) | `PainelAdmin.tsx` | ✅ Implementada | Fase 2.5 / 4.5 |
 | 10 | Configurações & Ajuda | `Configuracoes.tsx` | ✅ Implementada | Fase 2 |
 | 11 | Política de Privacidade | `Privacidade.tsx` | ✅ Implementada | Fase 7 |
+| 12 | Home logada | — | 🕐 Planejada | Fase 11 (#122) |
+| 13 | Card de gosto compartilhável | — | 🕐 Planejada | Fase 12 |
+| 14 | Guilda (rank, XP, insígnias) | — | 💭 Só visão | `VISAO_GAMIFICACAO.md` |
+
+> As telas 12 a 14 existem como protótipo navegável em
+> `prototipos/anideck-app-prototipo-v1.html`, com marcação do que é ajuste no que já existe e do
+> que é ideia nova. A 14 não tem fase: só vira roadmap com decisão explícita. Após implementação o protótipo será removido do repositório. 
 
 **Total: 11 páginas implementadas.**
 
