@@ -1,0 +1,916 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>AniDeck — protótipo completo (mobile + desktop)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Anton&family=Manrope:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --void:#0A0714; --panel:#130F22; --panel-2:#181330; --line:#2B2247;
+    --text:#F1EEFA; --muted:#A79BC9; --muted-2:#6B5F94;
+    --holo-1:#FF4FD8; --holo-2:#7B5CFF; --holo-3:#3FE0F0;
+    --gold:#FFC542; --green:#a0ff78; --coral:#FF5C6C;
+    --holo:linear-gradient(90deg,var(--holo-1),var(--holo-2) 45%,var(--holo-3));
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;background:#07050F;color:var(--text);font-family:'Manrope',system-ui,sans-serif}
+  h1,h2,h3,h4{font-family:'Anton',Impact,sans-serif;font-weight:400;text-transform:uppercase;letter-spacing:.4px;margin:0}
+  .mono{font-family:'JetBrains Mono',ui-monospace,monospace}
+  .phone{max-width:430px;margin:0 auto;background:var(--void);min-height:100vh;position:relative;
+         padding-bottom:88px;box-shadow:0 0 90px rgba(123,92,255,.12);overflow:hidden}
+
+  .top{position:sticky;top:0;z-index:20;display:flex;align-items:center;gap:8px;padding:12px 14px;
+       background:color-mix(in srgb,var(--void) 90%,transparent);backdrop-filter:blur(10px);border-bottom:1px solid var(--line)}
+  .logo{font-family:'Anton',sans-serif;font-size:18px;margin-right:auto}
+  .logo span{background:var(--holo);-webkit-background-clip:text;background-clip:text;color:transparent}
+  .chip{display:inline-flex;align-items:center;gap:5px;padding:5px 9px;border-radius:99px;
+        font-family:'JetBrains Mono',monospace;font-size:10.5px;font-weight:600;border:1px solid var(--line);
+        background:var(--panel-2);color:var(--muted);white-space:nowrap}
+  .chip.fire{color:var(--green);border-color:color-mix(in srgb,var(--green) 40%,transparent);background:color-mix(in srgb,var(--green) 12%,transparent)}
+  .chip.rank{color:var(--holo-2);border-color:color-mix(in srgb,var(--holo-2) 50%,transparent);background:color-mix(in srgb,var(--holo-2) 14%,transparent)}
+  .chip.gold{color:var(--gold);border-color:color-mix(in srgb,var(--gold) 40%,transparent);background:color-mix(in srgb,var(--gold) 12%,transparent)}
+  .chip.cor{color:var(--coral);border-color:color-mix(in srgb,var(--coral) 40%,transparent);background:color-mix(in srgb,var(--coral) 12%,transparent)}
+  .iconbtn{width:32px;height:32px;border-radius:50%;border:1px solid var(--line);background:var(--panel-2);
+           color:var(--muted);display:grid;place-items:center;cursor:pointer;font-size:14px}
+
+  .screen{display:none;padding:14px}
+  .screen.on{display:block;animation:f .22s ease}
+  @keyframes f{from{opacity:0;transform:translateY(5px)}to{opacity:1;transform:none}}
+
+  .eyebrow{font-family:'JetBrains Mono',monospace;font-size:9.5px;letter-spacing:.16em;color:var(--muted-2);text-transform:uppercase;margin:0 0 5px}
+  .ttl{font-size:17px;margin-bottom:3px}
+  .sub{color:var(--muted-2);font-size:11.5px;margin:0 0 12px;line-height:1.5}
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:15px}
+  .pad{padding:13px}
+  .mt{margin-top:12px}
+  .btn{display:inline-flex;align-items:center;justify-content:center;gap:7px;padding:10px 15px;border-radius:99px;border:0;
+       background:var(--holo);color:var(--void);font-weight:800;font-size:12.5px;cursor:pointer;font-family:inherit}
+  .btn.ghost{background:transparent;border:1px solid var(--line);color:var(--text)}
+  .btn.block{width:100%}
+  .row{display:flex;gap:9px;overflow-x:auto;padding:0 14px 8px;margin:0 -14px;scrollbar-width:none}
+  .row::-webkit-scrollbar{display:none}
+  .tabs{display:flex;gap:7px;overflow-x:auto;margin:0 -14px 12px;padding:0 14px 2px;scrollbar-width:none}
+  .tabs::-webkit-scrollbar{display:none}
+  .tb{flex:0 0 auto;padding:7px 13px;border-radius:99px;border:1px solid var(--line);background:var(--panel-2);
+      color:var(--muted);font-size:12px;font-weight:700;cursor:pointer}
+  .tb.on{background:var(--holo);color:var(--void);border-color:transparent}
+  .tb.on2{background:color-mix(in srgb,var(--gold) 18%,transparent);border-color:color-mix(in srgb,var(--gold) 45%,transparent);color:var(--gold)}
+
+  .poster{border-radius:11px;position:relative;overflow:hidden;display:flex;align-items:flex-end;padding:7px;
+          font-size:9.5px;font-weight:800;line-height:1.15;color:rgba(255,255,255,.95);text-shadow:0 2px 8px rgba(0,0,0,.75)}
+  .g1{background:linear-gradient(150deg,#241659,#7B5CFF)}.g2{background:linear-gradient(150deg,#5a1140,#FF4FD8)}
+  .g3{background:linear-gradient(150deg,#06323d,#3FE0F0)}.g4{background:linear-gradient(150deg,#4a2a06,#FFC542)}
+  .g5{background:linear-gradient(150deg,#3d0f22,#FF5C6C)}.g6{background:linear-gradient(150deg,#0d2a1a,#a0ff78)}
+  .flag{position:absolute;top:5px;left:5px;font-family:'JetBrains Mono',monospace;font-size:8px;padding:3px 6px;border-radius:99px;
+        background:color-mix(in srgb,var(--holo-3) 24%,transparent);border:1px solid color-mix(in srgb,var(--holo-3) 55%,transparent);color:#dcfaff}
+  .flag.g{background:color-mix(in srgb,var(--green) 22%,transparent);border-color:color-mix(in srgb,var(--green) 55%,transparent);color:#dfffd0}
+  .tl{font-family:'JetBrains Mono',monospace;font-size:9.5px;color:var(--muted-2);display:block;margin-top:5px}
+
+  .hero{border-radius:17px;overflow:hidden;position:relative;height:200px;display:flex;align-items:flex-end;
+        background:linear-gradient(160deg,#2a1263,#7B5CFF 55%,#3FE0F0)}
+  .hero .v{position:absolute;inset:0;background:linear-gradient(0deg,rgba(10,7,20,.95),rgba(10,7,20,.05) 72%)}
+  .hero .in{position:relative;padding:14px;width:100%}
+  .seal{display:inline-flex;gap:5px;font-family:'JetBrains Mono',monospace;font-size:9.5px;padding:4px 8px;border-radius:99px;
+        background:color-mix(in srgb,var(--gold) 16%,transparent);border:1px solid color-mix(in srgb,var(--gold) 45%,transparent);color:var(--gold);margin-bottom:7px}
+  .hero h2{font-size:22px;line-height:1.05;margin-bottom:5px}
+  .hero p{margin:0 0 11px;font-size:11.5px;color:var(--muted);line-height:1.45}
+
+  .today{flex:0 0 244px;display:flex;gap:9px;padding:9px;align-items:center}
+  .today .poster{width:52px;height:72px;flex:0 0 auto}
+  .h4{font-family:'Manrope';font-weight:800;font-size:12px;line-height:1.25;margin:0 0 4px}
+  .count{font-family:'JetBrains Mono',monospace;font-size:11.5px;color:var(--holo-3)}
+  .mini{font-family:'JetBrains Mono',monospace;font-size:9.5px;color:var(--muted-2);margin-top:3px}
+  .cont{flex:0 0 112px}
+  .cont .poster{width:112px;height:152px;margin-bottom:6px}
+  .bar{height:5px;border-radius:99px;background:var(--panel-2);overflow:hidden}
+  .bar i{display:block;height:100%;background:var(--holo)}
+  .curador{font-size:11.5px;color:var(--muted);line-height:1.5;border-left:2px solid var(--holo-1);padding-left:9px;margin:0 0 10px}
+
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:9px}
+  .grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:9px}
+  .stat .n{font-family:'Anton',sans-serif;font-size:21px;line-height:1}
+  .stat .l{font-family:'JetBrains Mono',monospace;font-size:9px;letter-spacing:.1em;color:var(--muted-2);text-transform:uppercase;margin-top:5px}
+  .gen{display:flex;align-items:center;gap:8px;margin-bottom:8px}
+  .gen .nm{width:80px;font-size:11.5px;font-weight:700;flex:0 0 auto}
+  .gen .tk{flex:1;height:9px;border-radius:99px;background:var(--panel-2);overflow:hidden}
+  .gen .tk i{display:block;height:100%;border-radius:99px}
+  .gen .pc{font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--muted);width:32px;text-align:right}
+  .legend{font-family:'JetBrains Mono',monospace;font-size:9.5px;color:var(--muted-2);line-height:1.55;margin:8px 0 0}
+  .legend b{color:var(--text)}
+
+  .search{display:flex;align-items:center;gap:9px;padding:12px 13px;border-radius:13px;background:var(--panel);border:1.5px solid var(--holo-2)}
+  .search input{flex:1;background:0;border:0;outline:0;color:var(--text);font-size:13.5px;font-family:inherit}
+  .aci{display:flex;align-items:center;gap:8px;padding:8px 12px;border-top:1px solid var(--line);font-size:12.5px}
+  .acg{font-family:'JetBrains Mono',monospace;font-size:9px;letter-spacing:.14em;color:var(--muted-2);padding:8px 12px 3px;text-transform:uppercase}
+  .tagx{font-family:'JetBrains Mono',monospace;font-size:9px;padding:3px 7px;border-radius:99px;border:1px solid var(--line);
+        background:var(--panel-2);color:var(--muted);margin-left:auto}
+  .fchips{display:flex;flex-wrap:wrap;gap:6px}
+  .fc{font-size:11.5px;font-weight:700;padding:6px 11px;border-radius:99px;border:1px solid var(--line);background:var(--panel-2);
+      color:var(--muted);cursor:pointer;user-select:none}
+  .fc .n{font-family:'JetBrains Mono',monospace;font-size:9.5px;color:var(--muted-2);margin-left:4px}
+  .fc.in{background:var(--holo);color:var(--void);border-color:transparent}.fc.in .n{color:rgba(10,7,20,.6)}
+  .fc.out{background:color-mix(in srgb,var(--coral) 12%,transparent);border-color:color-mix(in srgb,var(--coral) 45%,transparent);
+          color:var(--coral);text-decoration:line-through}
+
+  .epgrid{display:grid;grid-template-columns:repeat(6,1fr);gap:6px}
+  .ep{aspect-ratio:1;border-radius:8px;border:1px solid var(--line);background:var(--panel-2);display:grid;place-items:center;
+      font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--muted);cursor:pointer}
+  .ep.done{background:color-mix(in srgb,var(--holo-2) 30%,transparent);border-color:var(--holo-2);color:#fff}
+  .ep.next{border-color:var(--holo-3);color:var(--holo-3)}
+
+  .day{display:flex;gap:9px;padding:10px;align-items:center;margin-bottom:9px}
+  .day .poster{width:46px;height:64px;flex:0 0 auto}
+  .hour{font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--gold);white-space:nowrap;margin-left:auto;text-align:right}
+
+  .ring{width:88px;height:88px;flex:0 0 auto;position:relative;display:grid;place-items:center;border-radius:50%;
+        background:conic-gradient(var(--holo-2) 0turn .62turn,var(--panel-2) .62turn 1turn)}
+  .ring::after{content:"";position:absolute;inset:6px;border-radius:50%;background:var(--panel)}
+  .ring b{position:relative;font-family:'Anton',sans-serif;font-size:29px;background:var(--holo);
+          -webkit-background-clip:text;background-clip:text;color:transparent}
+  .ledger{display:flex;justify-content:space-between;gap:9px;padding:9px 0;border-bottom:1px solid var(--line);font-size:12px}
+  .ledger:last-of-type{border-bottom:0}
+  .xp{font-family:'JetBrains Mono',monospace;font-weight:600;color:var(--green);white-space:nowrap}
+  .xp.low{color:var(--gold)}
+  .badge{aspect-ratio:3/4;border-radius:11px;display:flex;flex-direction:column;justify-content:flex-end;padding:8px;
+         font-size:9px;font-weight:700;line-height:1.2;border:1px solid var(--line)}
+  .badge .ic{font-size:18px;margin-bottom:4px}
+  .foil{background:linear-gradient(140deg,#2a1263,#7B5CFF,#3FE0F0);color:#fff}
+  .foil2{background:linear-gradient(140deg,#5a1140,#FF4FD8,#FFC542);color:#fff}
+  .lock{background:var(--panel-2);color:var(--muted-2)}
+  .quest{display:flex;align-items:center;gap:9px;padding:10px 0;border-bottom:1px solid var(--line);font-size:12.5px}
+  .quest:last-of-type{border-bottom:0}
+  .dot{width:17px;height:17px;border-radius:50%;border:1.5px solid var(--line);flex:0 0 auto}
+  .dot.ok{background:var(--green);border-color:var(--green)}
+  .quest .p{margin-left:auto;font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--muted-2)}
+
+  .share{border-radius:19px;padding:18px;position:relative;overflow:hidden;border:1px solid var(--line);
+         background:radial-gradient(130% 100% at 100% 0%,color-mix(in srgb,var(--holo-1) 34%,transparent),transparent 55%),
+                    radial-gradient(120% 120% at 0% 100%,color-mix(in srgb,var(--holo-3) 26%,transparent),transparent 55%),var(--panel)}
+  .share .big{font-family:'Anton',sans-serif;font-size:26px;line-height:1.05;margin:14px 0 6px;text-transform:uppercase}
+  .share .big em{font-style:normal;background:var(--holo);-webkit-background-clip:text;background-clip:text;color:transparent}
+  .nums{display:flex;gap:11px;margin-top:13px;padding-top:11px;border-top:1px solid var(--line)}
+  .nums div{flex:1}.nums b{font-family:'Anton',sans-serif;font-size:19px;display:block}
+  .nums span{font-family:'JetBrains Mono',monospace;font-size:8px;letter-spacing:.1em;color:var(--muted-2);text-transform:uppercase}
+
+  .lista{display:flex;align-items:center;gap:11px;padding:12px 13px;border-bottom:1px solid var(--line);font-size:13.5px;cursor:pointer}
+  .lista:last-child{border-bottom:0}
+  .lista .ic{width:30px;height:30px;border-radius:9px;background:var(--panel-2);display:grid;place-items:center;font-size:14px}
+  .lista .ar{margin-left:auto;color:var(--muted-2)}
+
+  .note{margin-top:16px;padding:12px;border-left:2px solid var(--holo-2);background:var(--panel);border-radius:0 11px 11px 0}
+  .note p{margin:0;color:var(--muted);font-size:12px;line-height:1.6}
+  .note b{color:var(--text)}
+  .note.new{border-color:var(--holo-3)}
+  .note.keep{border-color:var(--green)}
+
+
+  /* ===================== DESKTOP ===================== */
+  .desknav{display:none}
+  .wide{display:block}
+  .aside{display:none}
+
+  @media (min-width:900px){
+    body.forcar-mobile .phone{max-width:430px}
+    body:not(.forcar-mobile) .phone{max-width:1200px;padding-bottom:40px;min-height:100vh}
+    body:not(.forcar-mobile) nav{display:none}
+    body:not(.forcar-mobile) .top{display:none}
+
+    body:not(.forcar-mobile) .desknav{
+      display:flex;align-items:center;gap:8px;padding:14px 24px;position:sticky;top:0;z-index:20;
+      background:color-mix(in srgb,var(--void) 92%,transparent);backdrop-filter:blur(10px);
+      border-bottom:1px solid var(--line)}
+    .desknav .logo{font-size:21px;margin-right:18px}
+    .desknav .lk{padding:8px 14px;border-radius:99px;font-size:13.5px;font-weight:700;color:var(--muted);cursor:pointer}
+    .desknav .lk:hover{color:var(--text);background:var(--panel-2)}
+    .desknav .lk.on{background:var(--holo);color:var(--void)}
+    .desknav .sp{margin-left:auto;display:flex;gap:8px;align-items:center}
+
+    body:not(.forcar-mobile) .screen{padding:24px}
+    /* duas colunas: conteúdo + coluna lateral */
+    body:not(.forcar-mobile) .wide{display:grid;grid-template-columns:1fr 330px;gap:22px;align-items:start}
+    body:not(.forcar-mobile) .aside{display:block;position:sticky;top:78px}
+    body:not(.forcar-mobile) .wide.inv{grid-template-columns:330px 1fr}
+
+    /* rails viram grade: nada de rolagem horizontal onde cabe tudo */
+    body:not(.forcar-mobile) .row{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));
+      gap:14px;overflow:visible;margin:0;padding:0}
+    body:not(.forcar-mobile) .row .cont{flex:none;width:100%}
+    body:not(.forcar-mobile) .cont .poster{width:100%;height:auto;aspect-ratio:2/3}
+    body:not(.forcar-mobile) .row .today{flex:none;width:100%}
+
+    body:not(.forcar-mobile) .grid2{grid-template-columns:repeat(4,1fr);gap:14px}
+    body:not(.forcar-mobile) .grid2 .poster{height:auto !important;aspect-ratio:2/3}
+    body:not(.forcar-mobile) .grid3{grid-template-columns:repeat(6,1fr)}
+    body:not(.forcar-mobile) .epgrid{grid-template-columns:repeat(12,1fr)}
+    body:not(.forcar-mobile) .hero{height:310px}
+    body:not(.forcar-mobile) .hero h2{font-size:34px}
+    body:not(.forcar-mobile) .hero p{font-size:13.5px;max-width:60ch}
+    body:not(.forcar-mobile) .ttl{font-size:21px}
+    body:not(.forcar-mobile) .tabs{overflow:visible;flex-wrap:wrap;margin:0 0 14px;padding:0}
+    body:not(.forcar-mobile) .mapa .box{max-width:520px}
+    body:not(.forcar-mobile) .share{max-width:380px}
+    /* o painel de filtros inline: é a tela onde o bug da rolagem morava */
+    body:not(.forcar-mobile) .filtros{position:sticky;top:78px}
+  }
+
+  .lvl{display:flex;align-items:center;gap:8px;padding:5px 10px 5px 6px;border-radius:99px;
+       border:1px solid color-mix(in srgb,var(--holo-2) 50%,transparent);
+       background:color-mix(in srgb,var(--holo-2) 13%,transparent);cursor:pointer}
+  .lvl .rk{width:22px;height:22px;border-radius:50%;display:grid;place-items:center;flex:0 0 auto;
+           font-family:'Anton',sans-serif;font-size:12px;color:var(--void);background:var(--holo)}
+  .lvl .col{display:flex;flex-direction:column;gap:3px;min-width:74px}
+  .lvl .lb{display:flex;justify-content:space-between;gap:8px;font-family:'JetBrains Mono',monospace;
+           font-size:9px;color:var(--muted);line-height:1}
+  .lvl .xb{height:4px;border-radius:99px;background:var(--panel-2);overflow:hidden}
+  .lvl .xb i{display:block;height:100%;background:var(--holo)}
+  .toggle{position:fixed;right:16px;bottom:100px;z-index:50;border:1px solid var(--line);
+          background:var(--panel);color:var(--text);border-radius:99px;padding:9px 14px;cursor:pointer;
+          font-family:'JetBrains Mono',monospace;font-size:11px;display:none}
+  @media (min-width:900px){.toggle{display:block;bottom:24px}}
+
+  nav{position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:100%;max-width:430px;z-index:30;display:flex;
+      background:color-mix(in srgb,var(--void) 95%,transparent);backdrop-filter:blur(12px);border-top:1px solid var(--line);
+      padding:8px 4px calc(8px + env(safe-area-inset-bottom))}
+  nav button{flex:1;background:0;border:0;color:var(--muted-2);font-family:'JetBrains Mono',monospace;font-size:9px;
+             display:flex;flex-direction:column;align-items:center;gap:3px;cursor:pointer;padding:3px 0;letter-spacing:.05em}
+  nav button .i{font-size:16px;line-height:1}
+  nav button[aria-current="true"]{color:var(--holo-3)}
+
+  .mapa{position:fixed;inset:0;z-index:40;background:rgba(7,5,15,.94);backdrop-filter:blur(6px);display:none;
+        padding:22px 16px;overflow:auto}
+  .mapa.on{display:block}
+  .mapa .box{max-width:400px;margin:0 auto}
+</style>
+</head>
+<body>
+<div class="phone">
+
+  <header class="desknav">
+    <div class="logo">Ani<span>Deck</span></div>
+    <span class="lk on" data-ir="inicio">Início</span>
+    <span class="lk" data-ir="descobrir">Descobrir</span>
+    <span class="lk" data-ir="deck">Meu Deck</span>
+    <span class="lk" data-ir="agenda">Agenda</span>
+    <span class="lk" data-ir="gosto">Meu Gosto</span>
+    <div class="sp">
+      <span class="chip fire">🔥 12</span>
+      <button class="lvl" data-ir="guilda" title="Rank C · Rastreador de Prata">
+      <span class="rk">C</span>
+      <span class="col">
+        <span class="lb"><b style="color:var(--text)">Nv 24</b><span>480/780</span></span>
+        <span class="xb"><i style="width:62%"></i></span>
+      </span>
+    </button>
+      <button class="iconbtn" data-ir="perfil">👤</button>
+      <button class="iconbtn" id="abrirMapa2">☰</button>
+    </div>
+  </header>
+
+  <header class="top">
+    <div class="logo">Ani<span>Deck</span></div>
+    <span class="chip fire">🔥 12</span>
+    <button class="lvl" data-ir="guilda" title="Rank C · Rastreador de Prata">
+      <span class="rk">C</span>
+      <span class="col">
+        <span class="lb"><b style="color:var(--text)">Nv 24</b><span>480/780</span></span>
+        <span class="xb"><i style="width:62%"></i></span>
+      </span>
+    </button>
+    <button class="iconbtn" id="abrirMapa" title="Todas as telas">☰</button>
+  </header>
+
+  <!-- ===================== INÍCIO (NOVA) ===================== -->
+  <section class="screen on" id="inicio">
+<div class="wide"><div>
+    <div class="hero">
+      <div class="v"></div>
+      <div class="in">
+        <span class="seal">✦ escolha do curador</span>
+        <h2>Frieren e a Jornada para o Além</h2>
+        <p>A fantasia que trocou a batalha final pelo luto. Sinopse e grade revisadas em português.</p>
+        <button class="btn" data-ir="detalhes">Continuar ep 23 →</button>
+      </div>
+    </div>
+
+    <p class="eyebrow mt">// estreia hoje, do seu deck</p>
+    <div class="row">
+      <div class="card today"><div class="poster g1">Slime</div>
+        <div><p class="h4">Slime — 4ª Temporada</p><div class="count">em 2h 14min</div><div class="mini">EP 23 · Crunchyroll</div></div></div>
+      <div class="card today"><div class="poster g3">Apotecária</div>
+        <div><p class="h4">Diários de uma Apotecária — 3ª</p><div class="count">em 6h 02min</div><div class="mini">EP 11 · Netflix</div></div></div>
+    </div>
+
+    <h3 class="ttl mt">Continue de onde parou</h3>
+    <p class="sub">3 episódios para fechar duas temporadas</p>
+    <div class="row">
+      <div class="cont"><div class="poster g2"><span class="flag">novo ep</span>Frieren</div><div class="bar"><i style="width:92%"></i></div><span class="tl">ep 23/25</span></div>
+      <div class="cont"><div class="poster g4">Mushoku</div><div class="bar"><i style="width:58%"></i></div><span class="tl">ep 7/12</span></div>
+      <div class="cont"><div class="poster g5"><span class="flag">novo ep</span>Black Torch</div><div class="bar"><i style="width:25%"></i></div><span class="tl">ep 3/12</span></div>
+      <div class="cont"><div class="poster g6">Bleach</div><div class="bar"><i style="width:40%"></i></div><span class="tl">ep 8/20</span></div>
+    </div>
+
+    <p class="eyebrow mt">// trilha do anideck</p>
+    <h3 class="ttl">Isekai com regra de mundo</h3>
+    <p class="sub">Quando o outro mundo tem economia, política e consequência</p>
+    <p class="curador">Se você achou Slime raso, a ordem aqui importa: comece pelo terceiro.</p>
+    <div class="row">
+      <div class="cont"><div class="poster g1">Log Horizon</div><span class="tl">curado · 8,6</span></div>
+      <div class="cont"><div class="poster g4">Spice and Wolf</div><span class="tl">curado · 9,0</span></div>
+      <div class="cont"><div class="poster g3">Ascendance</div><span class="tl">curado · 8,8</span></div>
+      <div class="cont"><div class="poster g2">Re:Zero</div><span class="tl">curado · 8,9</span></div>
+    </div>
+
+    <p class="eyebrow mt">// trilha do anideck</p>
+    <h3 class="ttl">Fantasia que dói</h3>
+    <p class="sub">Magia bonita, preço alto</p>
+    <div class="row">
+      <div class="cont"><div class="poster g5">Made in Abyss</div><span class="tl">curado · 9,2</span></div>
+      <div class="cont"><div class="poster g2">Frieren</div><span class="tl">curado · 9,3</span></div>
+      <div class="cont"><div class="poster g1">Vinland</div><span class="tl">curado · 9,1</span></div>
+      <div class="cont"><div class="poster g6">Mushishi</div><span class="tl">curado · 8,7</span></div>
+    </div>
+
+</div><div class="aside">    <div class="card pad mt">
+      <p class="eyebrow">// o buraco no seu gosto</p>
+      <h3 class="ttl" style="margin-bottom:7px">Você gosta de Psicológico e quase não assiste</h3>
+      <p style="margin:0 0 11px;font-size:12px;color:var(--muted);line-height:1.55">
+        Sua nota média em Psicológico é 8,9, a mais alta de todas — e são só 4 animes. Separei 6 do catálogo curado.</p>
+      <button class="btn block" data-ir="descobrir">Ver a trilha pessoal →</button>
+    </div>
+
+    <div class="card pad mt">
+      <p class="eyebrow">// top 5 do ranking</p>
+      <div class="row" style="padding-bottom:0">
+        <div class="cont" style="flex:0 0 84px"><div class="poster g3" style="width:84px;height:114px">1 · Apotecária</div></div>
+        <div class="cont" style="flex:0 0 84px"><div class="poster g1" style="width:84px;height:114px">2 · HxH</div></div>
+        <div class="cont" style="flex:0 0 84px"><div class="poster g5" style="width:84px;height:114px">3 · Chainsaw</div></div>
+        <div class="cont" style="flex:0 0 84px"><div class="poster g4" style="width:84px;height:114px">4 · One Piece</div></div>
+      </div>
+      <button class="btn ghost block mt" data-ir="rankings">Ver ranking completo →</button>
+    </div>
+
+</div></div>
+    <div class="note new"><p><b>Tela nova.</b> Hoje o <b>/</b> logado cai direto no Deck. Tudo aqui sai de dado que já existe: <b>media_entries</b>, <b>episode_progress</b>, streak, curadoria e afinidade.</p></div>
+  </section>
+
+  <!-- ===================== DESCOBRIR ===================== -->
+  <section class="screen" id="descobrir">
+    <p class="eyebrow">// descobrir · Busca.tsx</p>
+    <div class="tabs">
+      <span class="tb on">Buscar</span><span class="tb" data-ir="rankings">Rankings</span>
+      <span class="tb">Temporada</span><span class="tb">Trilhas</span>
+    </div>
+
+    <div class="search"><span>🔍</span><input value="mag" aria-label="Buscar por título ou rótulo"></div>
+    <div class="card mt" style="overflow:hidden">
+      <div class="acg">rótulos</div>
+      <div class="aci"><b>Magia</b><span class="tagx">tema · 41</span></div>
+      <div class="aci"><b>Garotas Mágicas</b><span class="tagx">gênero · 7</span></div>
+      <div class="acg" style="border-top:1px solid var(--line)">títulos</div>
+      <div class="aci">Magi: The Labyrinth of Magic<span class="tagx">2012</span></div>
+      <div class="aci">Mahoutsukai no Yome<span class="tagx">2017</span></div>
+    </div>
+
+<div class="wide inv"><div class="filtros">
+    <p class="eyebrow">// gênero</p>
+    <div class="fchips">
+      <span class="fc in">Fantasia<span class="n">38</span></span><span class="fc">Ação<span class="n">28</span></span>
+      <span class="fc">Drama<span class="n">27</span></span><span class="fc">Romance<span class="n">27</span></span>
+      <span class="fc out">Esporte<span class="n">4</span></span>
+    </div>
+    <p class="eyebrow mt">// demografia</p>
+    <div class="fchips">
+      <span class="fc">Isekai<span class="n">12</span></span><span class="fc">Shounen<span class="n">12</span></span>
+      <span class="fc">Seinen<span class="n">9</span></span><span class="fc">Slice of Life<span class="n">6</span></span>
+    </div>
+    <p class="eyebrow mt">// tema</p>
+    <div class="fchips">
+      <span class="fc in">Magia<span class="n">41</span></span><span class="fc">Escolar<span class="n">16</span></span>
+      <span class="fc">Harém<span class="n">12</span></span><span class="fc">Militar<span class="n">8</span></span>
+      <span class="fc">Espadas<span class="n">7</span></span>
+    </div>
+
+    <div class="card pad mt" style="display:flex;gap:9px;align-items:center">
+      <div style="font-size:11.5px;color:var(--muted);line-height:1.45">Um toque <b style="color:var(--text)">inclui</b>, dois <b style="color:var(--coral)">excluem</b>.</div>
+      <button class="btn ghost" style="margin-left:auto;white-space:nowrap">Esconder meu deck</button>
+    </div>
+
+</div><div>
+    <div class="grid2">
+      <div><div class="poster g2" style="height:176px" data-ir="detalhes">Frieren</div><p class="h4" style="margin-top:6px">Frieren — 1ª Temporada</p><span class="tl">curado · magia, fantasia</span></div>
+      <div><div class="poster g1" style="height:176px">Ascendance</div><p class="h4" style="margin-top:6px">Ascendance of a Bookworm</p><span class="tl">curado · magia, isekai</span></div>
+      <div><div class="poster g4" style="height:176px">Mahoutsukai</div><p class="h4" style="margin-top:6px">Mahoutsukai no Yome</p><span class="tl">magia, drama</span></div>
+      <div><div class="poster g3" style="height:176px">Magi</div><p class="h4" style="margin-top:6px">Magi: Labyrinth of Magic</p><span class="tl">magia, aventura</span></div>
+    </div>
+
+</div></div>
+    <div class="note"><p><b>Mesma página de hoje</b>, com os chips vindo da <b>genre_taxonomy</b> nas três camadas e contagem do catálogo. Rótulo cadastrado no Painel aparece sem deploy.</p></div>
+    <div class="note new"><p><b>Novo:</b> autocomplete de rótulo no campo de texto, excluir rótulo no segundo toque e Rankings virando aba daqui.</p></div>
+  </section>
+
+  <!-- ===================== RANKINGS ===================== -->
+  <section class="screen" id="rankings">
+    <p class="eyebrow">// Rankings.tsx</p>
+    <h3 class="ttl">Top 100 do AniDeck</h3>
+    <p class="sub">Nota bayesiana com peso de voto por afinidade — não é média cega</p>
+    <div class="tabs">
+      <span class="tb on">Mais Populares</span><span class="tb">Em Alta</span><span class="tb">Maior Nota</span><span class="tb">Lançamentos</span>
+    </div>
+    <div class="card pad" style="display:flex;gap:11px;align-items:center;margin-bottom:9px">
+      <div class="poster g3" style="width:56px;height:76px">1</div>
+      <div><p class="h4">Frieren e a Jornada para o Além</p>
+        <span class="chip gold">9,31 bayesiana</span> <span class="chip">▲ +2</span>
+        <div class="mini">412 votos · 38% de especialistas em Fantasia</div></div>
+    </div>
+    <div class="card pad" style="display:flex;gap:11px;align-items:center;margin-bottom:9px">
+      <div class="poster g1" style="width:56px;height:76px">2</div>
+      <div><p class="h4">Hunter x Hunter</p><span class="chip gold">9,18</span> <span class="chip">— 0</span>
+        <div class="mini">377 votos</div></div>
+    </div>
+    <div class="card pad" style="display:flex;gap:11px;align-items:center;margin-bottom:9px">
+      <div class="poster g5" style="width:56px;height:76px">3</div>
+      <div><p class="h4">Chainsaw Man — O Filme: Arco da Reze</p><span class="chip gold">9,02</span> <span class="chip cor">▼ -1</span>
+        <div class="mini">288 votos</div></div>
+    </div>
+    <div class="note keep"><p><b>Continua existindo</b>, só sai da barra inferior e vira aba de Descobrir. Ranking é coisa que se consulta, não seção de visita diária.</p></div>
+    <div class="note new"><p><b>Novo:</b> mostrar <b>quantos votos vêm de especialista no gênero</b>. É a sua tese do ranking crível ficando visível na tela.</p></div>
+  </section>
+
+  <!-- ===================== DETALHES ===================== -->
+  <section class="screen" id="detalhes">
+<div class="wide"><div>
+    <div class="hero" style="height:180px;background:linear-gradient(160deg,#3d0f4a,#FF4FD8 60%,#7B5CFF)">
+      <div class="v"></div>
+      <div class="in">
+        <span class="seal">✦ curado</span>
+        <h2>Frieren — 2ª Temporada</h2>
+        <div style="display:flex;gap:6px;flex-wrap:wrap"><span class="chip gold">★ 9,3</span><span class="chip">Em Lançamento</span><span class="chip">25 eps · 24 min</span></div>
+      </div>
+    </div>
+
+    <div class="grid2 mt">
+      <button class="btn">＋ Quero Assistir</button>
+      <button class="btn ghost">♥ Favoritar</button>
+    </div>
+
+    <div class="card pad mt">
+      <p class="eyebrow">// seu progresso</p>
+      <div class="epgrid">
+        <span class="ep done">1</span><span class="ep done">2</span><span class="ep done">3</span><span class="ep done">4</span>
+        <span class="ep done">5</span><span class="ep done">6</span><span class="ep done">7</span><span class="ep done">8</span>
+        <span class="ep done">9</span><span class="ep done">10</span><span class="ep done">11</span><span class="ep done">12</span>
+        <span class="ep next">13</span><span class="ep">14</span><span class="ep">15</span><span class="ep">16</span>
+        <span class="ep">17</span><span class="ep">18</span>
+      </div>
+      <div style="display:flex;gap:8px;margin-top:11px">
+        <button class="btn" style="flex:1">Marcar ep 13</button>
+        <button class="btn ghost" style="flex:1">Modo sessão (3 eps)</button>
+      </div>
+      <p class="legend">Marcar rende <b>+25 XP</b>; o terceiro do dia cai para 18 pelo retorno decrescente.</p>
+    </div>
+
+    <div class="card pad mt">
+      <p class="eyebrow">// onde assistir</p>
+      <div style="display:flex;gap:6px;flex-wrap:wrap"><span class="chip">Crunchyroll</span><span class="chip">Netflix</span></div>
+      <p class="eyebrow" style="margin-top:12px">// rótulos</p>
+      <div style="display:flex;gap:6px;flex-wrap:wrap">
+        <span class="chip rank">Fantasia</span><span class="chip">Aventura</span><span class="chip">Drama</span><span class="chip">Magia</span></div>
+      <p class="eyebrow" style="margin-top:12px">// próximo episódio</p>
+      <div class="count">EP 13 · sexta, 13h30 — em 2 dias</div>
+    </div>
+
+</div><div class="aside">    <div class="card pad mt">
+      <p class="eyebrow">// relacionados</p>
+      <div class="row" style="padding-bottom:0">
+        <div class="cont" style="flex:0 0 96px"><div class="poster g2" style="width:96px;height:130px">1ª Temporada</div><span class="tl">prequela</span></div>
+        <div class="cont" style="flex:0 0 96px"><div class="poster g1" style="width:96px;height:130px">Filme</div><span class="tl">história paralela</span></div>
+        <div class="cont" style="flex:0 0 96px"><div class="poster g4" style="width:96px;height:130px">Mangá</div><span class="tl">adaptação</span></div>
+      </div>
+    </div>
+
+    <div class="card pad mt">
+      <p class="eyebrow">// impressão de especialistas em fantasia</p>
+      <div style="font-size:12.5px;line-height:1.55;color:var(--muted)">
+        <b style="color:var(--text)">@renato</b> <span class="chip rank">SS · Fantasia N4</span><br>
+        O episódio 4 manteve o padrão de cinema da Madhouse.</div>
+      <p class="legend">Comentário só de quem tem afinidade comprovada no gênero — plateia pequena, autor identificável.</p>
+    </div>
+
+</div></div>
+    <div class="note keep"><p><b>Sua página de hoje</b>, com grade de episódios, onde assistir, relações e elenco. O que entra: XP visível ao marcar, modo sessão e a caixa de especialistas.</p></div>
+  </section>
+
+  <!-- ===================== DECK ===================== -->
+  <section class="screen" id="deck">
+    <p class="eyebrow">// MeuDeck.tsx</p>
+    <h3 class="ttl">Meu Deck</h3>
+    <p class="sub">Aqui está o que está rolando na sua coleção</p>
+    <div class="tabs">
+      <span class="tb on">Todos<span class="n"></span></span><span class="tb">Assistindo 9</span><span class="tb">Quero Assistir 31</span>
+      <span class="tb">Completo 40</span><span class="tb">Pausei 2</span><span class="tb">Dropado 2</span>
+    </div>
+    <div class="card pad" style="display:flex;gap:9px;align-items:center;margin-bottom:10px">
+      <span class="chip fire">Em Dia 4</span><span class="chip">Atrasado 3</span><span class="chip gold">Novo ep 2</span>
+      <button class="btn ghost" style="margin-left:auto">Ordenar</button>
+    </div>
+    <div class="grid2">
+      <div><div class="poster g2" style="height:176px"><span class="flag g">em dia</span>Frieren</div>
+        <p class="h4" style="margin-top:6px">Frieren — 2ª</p><div class="bar"><i style="width:92%"></i></div><span class="tl">ep 23/25 · ★ 9,5</span></div>
+      <div><div class="poster g4" style="height:176px">Mushoku</div>
+        <p class="h4" style="margin-top:6px">Mushoku Tensei — 3ª</p><div class="bar"><i style="width:58%"></i></div><span class="tl">ep 7/12 · ★ 9,0</span></div>
+      <div><div class="poster g5" style="height:176px"><span class="flag">novo ep</span>Black Torch</div>
+        <p class="h4" style="margin-top:6px">Black Torch — 1ª</p><div class="bar"><i style="width:25%"></i></div><span class="tl">ep 3/12</span></div>
+      <div><div class="poster g6" style="height:176px">Bleach</div>
+        <p class="h4" style="margin-top:6px">Bleach — TYBW</p><div class="bar"><i style="width:40%"></i></div><span class="tl">ep 8/20 · ★ 8,8</span></div>
+    </div>
+    <div class="note keep"><p><b>Continua o coração do app</b> e continua na barra. Os status e o selo "Em Dia" são os que você já tem.</p></div>
+    <div class="note new"><p><b>Novo:</b> a faixa de resumo no topo (Em Dia / Atrasado / Novo ep) responde "o que eu faço agora" sem obrigar a ler a grade inteira.</p></div>
+  </section>
+
+  <!-- ===================== AGENDA ===================== -->
+  <section class="screen" id="agenda">
+<div class="wide"><div>
+    <p class="eyebrow">// Calendario.tsx</p>
+    <h3 class="ttl">Agenda</h3>
+    <p class="sub">Horário de Brasília, convertido no seu navegador</p>
+    <div class="tabs"><span class="tb on">Meus animes</span><span class="tb">Todos</span></div>
+    <div class="tabs">
+      <span class="tb on2">HOJE sex</span><span class="tb">sáb</span><span class="tb">dom</span><span class="tb">seg</span>
+      <span class="tb">ter</span><span class="tb">qua</span><span class="tb">qui</span>
+    </div>
+
+    <div class="card day"><div class="poster g3">Apotecária</div>
+      <div><p class="h4">Diários de uma Apotecária — 3ª</p><span class="chip g" style="color:var(--green)">Lançado!</span></div>
+      <div class="hour">07:00<div class="mini">EP 11</div></div></div>
+    <div class="card day"><div class="poster g1">Slime</div>
+      <div><p class="h4">Slime — 4ª Temporada</p><span class="chip">no seu deck</span></div>
+      <div class="hour">12:00<div class="mini">EP 23</div></div></div>
+    <div class="card day"><div class="poster g5">Black Torch</div>
+      <div><p class="h4">Black Torch — 1ª</p><span class="chip cor">episódio final</span></div>
+      <div class="hour">13:30<div class="mini">EP 12</div></div></div>
+
+</div><div class="aside">    <div class="card pad mt">
+      <p class="eyebrow">// semana inteira</p>
+      <div class="gen"><span class="nm mono">sex</span><span class="tk"><i style="width:60%;background:var(--holo-2)"></i></span><span class="pc">3</span></div>
+      <div class="gen"><span class="nm mono">sáb</span><span class="tk"><i style="width:20%;background:var(--holo-3)"></i></span><span class="pc">1</span></div>
+      <div class="gen"><span class="nm mono">dom</span><span class="tk"><i style="width:40%;background:var(--holo-1)"></i></span><span class="pc">2</span></div>
+      <div class="gen"><span class="nm mono">seg</span><span class="tk"><i style="width:0%"></i></span><span class="pc">0</span></div>
+    </div>
+
+</div></div>
+    <div class="note keep"><p><b>Sua agenda de hoje</b>, com as abas Meus/Todos e o selo "Lançado!". O card de estreia da home leva para cá.</p></div>
+    <div class="note new"><p><b>Novo:</b> a barrinha da semana inteira, para saber de cara qual dia é cheio e qual é vazio.</p></div>
+  </section>
+
+  <!-- ===================== MEU GOSTO ===================== -->
+  <section class="screen" id="gosto">
+<div class="wide"><div>
+    <p class="eyebrow">// Estatisticas.tsx → Meu Gosto</p>
+    <h2 style="font-size:25px;line-height:1.12;margin:4px 0 8px">Você é um
+      <em style="font-style:normal;background:var(--holo);-webkit-background-clip:text;background-clip:text;color:transparent">maratonista de fantasia</em>
+      que foge de esporte.</h2>
+    <p class="sub">84 animes · 1.247 episódios marcados · taxa de conclusão 62%</p>
+
+    <div class="grid2">
+      <div class="card pad stat"><div class="n">19d 4h</div><div class="l">tempo assistido</div></div>
+      <div class="card pad stat"><div class="n">Fantasia</div><div class="l">gênero favorito</div></div>
+      <div class="card pad stat"><div class="n">12 / 31</div><div class="l">streak atual / recorde</div></div>
+      <div class="card pad stat"><div class="n">7,8</div><div class="l">sua nota média</div></div>
+    </div>
+
+    <div class="card pad mt">
+      <p class="eyebrow">// afinidade</p>
+      <div class="tabs" style="margin-bottom:9px"><span class="tb on">Gêneros</span><span class="tb">Demografias</span></div>
+      <div class="gen"><span class="nm">Fantasia</span><span class="tk"><i style="width:62%;background:var(--holo-2)"></i></span><span class="pc">62%</span></div>
+      <div class="gen"><span class="nm">Isekai</span><span class="tk"><i style="width:41%;background:var(--holo-1)"></i></span><span class="pc">41%</span></div>
+      <div class="gen"><span class="nm">Ação</span><span class="tk"><i style="width:33%;background:var(--coral)"></i></span><span class="pc">33%</span></div>
+      <div class="gen"><span class="nm">Comédia</span><span class="tk"><i style="width:21%;background:var(--gold)"></i></span><span class="pc">21%</span></div>
+      <div class="gen"><span class="nm">Esporte</span><span class="tk"><i style="width:3%;background:var(--muted-2)"></i></span><span class="pc">3%</span></div>
+      <p class="legend">Toque numa categoria para ver os animes dela.</p>
+    </div>
+
+    <div class="card pad mt">
+      <p class="eyebrow">// volume × satisfação</p>
+      <svg viewBox="0 0 320 220" style="width:100%;height:auto;display:block">
+        <line x1="160" y1="12" x2="160" y2="204" stroke="#2B2247"/><line x1="18" y1="108" x2="306" y2="108" stroke="#2B2247"/>
+        <text x="20" y="24" fill="#6B5F94" font-family="JetBrains Mono" font-size="8">GOSTO, VEJO POUCO</text>
+        <text x="190" y="24" fill="#6B5F94" font-family="JetBrains Mono" font-size="8">ZONA DE CONFORTO</text>
+        <text x="20" y="198" fill="#6B5F94" font-family="JetBrains Mono" font-size="8">NÃO É PRA VOCÊ</text>
+        <text x="182" y="198" fill="#6B5F94" font-family="JetBrains Mono" font-size="8">VÊ MUITO, GOSTA POUCO</text>
+        <circle cx="242" cy="52" r="9" fill="#7B5CFF"/><text x="196" y="42" fill="#F1EEFA" font-family="Manrope" font-size="10" font-weight="700">Fantasia</text>
+        <circle cx="212" cy="80" r="7" fill="#FF4FD8"/><text x="222" y="84" fill="#F1EEFA" font-family="Manrope" font-size="10" font-weight="700">Isekai</text>
+        <circle cx="194" cy="130" r="6" fill="#FF5C6C"/><text x="204" y="134" fill="#A79BC9" font-family="Manrope" font-size="10">Ação</text>
+        <circle cx="110" cy="56" r="8" fill="#FFC542"/><text x="34" y="60" fill="#FFC542" font-family="Manrope" font-size="10" font-weight="700">Psicológico</text>
+        <circle cx="84" cy="162" r="5" fill="#6B5F94"/><text x="34" y="166" fill="#6B5F94" font-family="Manrope" font-size="10">Esporte</text>
+      </svg>
+      <p class="legend">Psicológico está no canto que importa: nota alta, pouco assistido. <b>É daí que sai a trilha pessoal da home.</b></p>
+    </div>
+
+    <div class="card pad mt">
+      <p class="eyebrow">// distribuição por ano de lançamento</p>
+      <div class="gen"><span class="nm mono">2024</span><span class="tk"><i style="width:35%;background:var(--holo-3)"></i></span><span class="pc">11</span></div>
+      <div class="gen"><span class="nm mono">2025</span><span class="tk"><i style="width:80%;background:var(--holo-2)"></i></span><span class="pc">25</span></div>
+      <div class="gen"><span class="nm mono">2026</span><span class="tk"><i style="width:62%;background:var(--holo-1)"></i></span><span class="pc">19</span></div>
+    </div>
+
+</div><div class="aside">    <div class="grid2 mt">
+      <div class="card pad stat"><div class="n">12 eps</div><div class="l">maior maratona</div></div>
+      <div class="card pad stat"><div class="n">2d 6h</div><div class="l">maratona mais rápida</div></div>
+    </div>
+
+    <div class="card pad mt">
+      <p class="eyebrow">// padrão de horário</p>
+      <div class="gen"><span class="nm">Madrugada</span><span class="tk"><i style="width:44%;background:var(--holo-2)"></i></span><span class="pc">31%</span></div>
+      <div class="gen"><span class="nm">Manhã</span><span class="tk"><i style="width:10%;background:var(--muted-2)"></i></span><span class="pc">7%</span></div>
+      <div class="gen"><span class="nm">Tarde</span><span class="tk"><i style="width:26%;background:var(--holo-3)"></i></span><span class="pc">18%</span></div>
+      <div class="gen"><span class="nm">Noite</span><span class="tk"><i style="width:62%;background:var(--holo-1)"></i></span><span class="pc">44%</span></div>
+      <p class="legend">Você assiste de madrugada mais do que 8 em cada 10 usuários.</p>
+    </div>
+
+    <div class="card pad mt">
+      <p class="eyebrow">// tags temáticas</p>
+      <div style="display:flex;gap:6px;flex-wrap:wrap">
+        <span class="chip rank">Magia 28</span><span class="chip">Espadas 14</span><span class="chip">Escolar 11</span>
+        <span class="chip">Militar 6</span><span class="chip">Deuses 4</span></div>
+      <p class="legend">Elementos que mais aparecem nos seus animes.</p>
+    </div>
+
+    <button class="btn block mt" data-ir="card">Gerar meu card para postar →</button>
+</div></div>
+    <div class="note keep"><p><b>É a sua página de hoje, inteira</b> — afinidade, volume × satisfação, ano, maratona, horário, tags, streak. Nada foi cortado.</p></div>
+    <div class="note new"><p><b>Novo:</b> o nome, a frase-veredito na abertura e a comparação com os outros usuários. Com menos de 10 animes, a frase some e vira "ainda estou te conhecendo".</p></div>
+  </section>
+
+  <!-- ===================== GUILDA ===================== -->
+  <section class="screen" id="guilda">
+<div class="wide"><div>
+    <p class="eyebrow">// guilda (novo)</p>
+    <div class="card pad" style="display:flex;gap:14px;align-items:center">
+      <div class="ring"><b>C</b></div>
+      <div><h3 class="ttl">Rastreador de Prata</h3>
+        <p class="sub" style="margin:4px 0 0">Nível 24 · 480 / 780 XP</p>
+        <div class="bar" style="margin-top:8px"><i style="width:62%"></i></div></div>
+    </div>
+
+    <div class="card pad mt">
+      <p class="eyebrow">// como você ganhou xp hoje</p>
+      <div class="ledger"><div>Frieren · ep 1<div class="mini">episódio base · 100%</div></div><span class="xp">+25</span></div>
+      <div class="ledger"><div>Frieren · ep 2<div class="mini">episódio base · 100%</div></div><span class="xp">+25</span></div>
+      <div class="ledger"><div>Frieren · ep 3<div class="mini">retorno decrescente · 75%</div></div><span class="xp low">+18</span></div>
+      <div class="ledger"><div>Slime · ep 23<div class="mini">antes do próximo sair · +10</div></div><span class="xp">+35</span></div>
+      <p class="legend">Cada linha guarda quanto valeu <b>na hora</b>. Desmarcar devolve exatamente isso.</p>
+    </div>
+
+    <div class="card pad mt">
+      <p class="eyebrow">// especialista de gênero</p>
+      <div class="gen"><span class="nm">Fantasia</span><span class="tk"><i style="width:78%;background:var(--holo-2)"></i></span><span class="pc">N3</span></div>
+      <div class="gen"><span class="nm">Isekai</span><span class="tk"><i style="width:52%;background:var(--holo-1)"></i></span><span class="pc">N2</span></div>
+      <p class="legend">Seu voto pesa <b>1,8×</b> no ranking de Fantasia, e o peso normal em Esporte.</p>
+    </div>
+
+</div><div class="aside">    <div class="card pad mt">
+      <p class="eyebrow">// insígnias</p>
+      <div class="grid3">
+        <div class="badge foil"><span class="ic">🌙</span>Coruja<br>12 madrugadas</div>
+        <div class="badge foil2"><span class="ic">📚</span>Arquivista<br>50 curados</div>
+        <div class="badge lock"><span class="ic">👑</span>Voz da Guilda<br>rank S</div>
+      </div>
+      <p class="legend">Insígnia é carta, não ícone: usa os gradientes do <b>gradienteDoCard()</b>.</p>
+    </div>
+
+    <div class="card pad mt">
+      <p class="eyebrow">// convites da semana · sem punição</p>
+      <div class="quest"><span class="dot ok"></span>Terminar uma temporada<span class="p">feito</span></div>
+      <div class="quest"><span class="dot"></span>Assistir algo de Psicológico<span class="p">0/1</span></div>
+      <div class="quest"><span class="dot"></span>Dar nota a 2 animes<span class="p">1/2</span></div>
+      <p class="legend">Não completar não tira nada. Streak é elogio, nunca cobrança.</p>
+    </div>
+
+</div></div>
+    <div class="note new"><p><b>Tela nova, e a última da fila.</b> Mora dentro do Perfil enquanto for só o rank. Só vira item de menu quando tiver ledger, insígnias e missões.</p></div>
+    <div class="note"><p><b>Trava antes de qualquer código:</b> marcar "Completo" não preenche o <b>episode_progress</b> hoje. Sem isso o XP nasce torto — e o bug já distorce as suas Estatísticas.</p></div>
+  </section>
+
+  <!-- ===================== CARD ===================== -->
+  <section class="screen" id="card">
+    <p class="eyebrow">// card compartilhável (novo)</p>
+    <div class="share">
+      <div style="display:flex;justify-content:space-between;font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--muted)">
+        <span>@joaomendes08</span><span>ANIDECK · RANK C</span></div>
+      <div class="big">Maratonista<br>de <em>fantasia</em></div>
+      <div style="color:var(--muted);font-size:12px;line-height:1.5">19 dias e 4 horas assistindo. 3,4 episódios por sessão, o dobro da média.</div>
+      <div style="display:flex;gap:6px;flex-wrap:wrap;margin:11px 0">
+        <span class="chip">#1 Fantasia 62%</span><span class="chip">#2 Isekai 41%</span><span class="chip">#3 Ação 33%</span></div>
+      <div class="nums"><div><b>84</b><span>animes</span></div><div><b>1.247</b><span>episódios</span></div><div><b>7,8</b><span>nota</span></div></div>
+      <div style="margin-top:12px;font-family:'JetBrains Mono',monospace;font-size:9px;color:var(--muted-2)">anideck.app/u/joaomendes08</div>
+    </div>
+    <div style="display:flex;gap:9px;margin-top:14px">
+      <button class="btn" style="flex:1">Baixar imagem</button><button class="btn ghost" style="flex:1">Copiar link</button>
+    </div>
+    <div class="note new"><p><b>A peça que traz gente de fora</b> sem depender de já ter gente dentro. Render em HTML → PNG com <b>html2canvas</b>, sem serviço novo. Repete no fim de cada temporada.</p></div>
+  </section>
+
+  <!-- ===================== PERFIL ===================== -->
+  <section class="screen" id="perfil">
+    <div class="card pad" style="display:flex;gap:12px;align-items:center">
+      <div class="ring" style="width:64px;height:64px"><b style="font-size:21px">C</b></div>
+      <div><h3 class="ttl">João Victor</h3><p class="sub" style="margin:3px 0 0">Nível 24 · Rastreador de Prata</p></div>
+    </div>
+    <div class="card mt">
+      <div class="lista" data-ir="gosto"><span class="ic">📊</span>Meu Gosto<span class="ar">›</span></div>
+      <div class="lista" data-ir="guilda"><span class="ic">⚔️</span>Guilda e insígnias<span class="ar">›</span></div>
+      <div class="lista" data-ir="card"><span class="ic">✦</span>Meu card para postar<span class="ar">›</span></div>
+      <div class="lista" data-ir="admin"><span class="ic">🛠️</span>Painel Admin<span class="ar">›</span></div>
+    </div>
+    <p class="eyebrow mt">// configurações · Configuracoes.tsx</p>
+    <div class="card">
+      <div class="lista"><span class="ic">👤</span>Perfil<span class="ar">›</span></div>
+      <div class="lista"><span class="ic">🎨</span>Aparência<span class="ar">›</span></div>
+      <div class="lista"><span class="ic">🔔</span>Notificações<span class="ar">›</span></div>
+      <div class="lista"><span class="ic">🔒</span>Conta<span class="ar">›</span></div>
+      <div class="lista"><span class="ic">❓</span>Ajuda<span class="ar">›</span></div>
+      <div class="lista"><span class="ic">📄</span>Privacidade<span class="ar">›</span></div>
+      <div class="lista" style="color:var(--coral)"><span class="ic">🚪</span>Sair<span class="ar">›</span></div>
+    </div>
+    <div class="note keep"><p><b>Sua decisão mantida:</b> Sair e Admin ficam aqui, longe dos botões de uso diário. Era o item mais fácil de acertar sem querer na barra.</p></div>
+  </section>
+
+  <!-- ===================== ADMIN ===================== -->
+  <section class="screen" id="admin">
+    <p class="eyebrow">// PainelAdmin.tsx</p>
+    <h3 class="ttl">Painel de Controle</h3>
+    <p class="sub">Só admin · curadoria, taxonomia e saúde do sistema</p>
+    <div class="tabs"><span class="tb on">Curadoria</span><span class="tb">Controle</span>
+      <span class="tb">Olheiro <span class="n">3</span></span><span class="tb">Guilda</span></div>
+
+    <div class="card pad">
+      <p class="eyebrow">// saúde</p>
+      <div style="display:flex;gap:6px;flex-wrap:wrap">
+        <span class="chip" style="color:var(--green);border-color:color-mix(in srgb,var(--green) 40%,transparent)">AniList ONLINE</span>
+        <span class="chip">bucket 214 MB / 1 GB</span><span class="chip cor">kill switch</span></div>
+    </div>
+
+    <div class="card pad mt">
+      <p class="eyebrow">// fila do olheiro</p>
+      <div class="ledger"><div>Vagabond<div class="mini">falta grade de episódios</div></div><span class="chip">curar</span></div>
+      <div class="ledger"><div>Grand Blue S2<div class="mini">horário de estreia divergente</div></div><span class="chip">curar</span></div>
+      <div class="ledger"><div>Dandadan<div class="mini">afinidade 92% com seu perfil</div></div><span class="chip">curar</span></div>
+    </div>
+
+    <div class="card pad mt">
+      <p class="eyebrow">// rótulos</p>
+      <div style="display:flex;gap:6px;flex-wrap:wrap">
+        <span class="chip rank">Harém 12</span><span class="chip">Magia 41</span><span class="chip">Espadas 7</span>
+        <span class="chip cor">Ninjas · órfão</span></div>
+      <p class="legend">Renomear, cadastrar e remover, com a contagem antes de aplicar. É o que já existe na AbaControle.</p>
+    </div>
+
+    <div class="card pad mt">
+      <p class="eyebrow">// aba guilda · economia de xp</p>
+      <div class="ledger"><div>XP por episódio<div class="mini">valor base</div></div><span class="xp">25</span></div>
+      <div class="ledger"><div>Bônus por assistir cedo<div class="mini">antes do próximo episódio sair</div></div><span class="xp">+10</span></div>
+      <div class="ledger"><div>Retorno decrescente<div class="mini">a partir do 3º episódio do dia</div></div><span class="xp low">75%</span></div>
+      <div class="ledger"><div>Teto diário<div class="mini">trava de farm</div></div><span class="xp low">180</span></div>
+      <p class="legend">Pesos ficam no banco, como o <b>beta_signup_limit</b>. Mudar peso <b>nunca é retroativo</b>:
+        o ledger guarda quanto cada linha valeu na hora.</p>
+    </div>
+
+    <div class="card pad mt">
+      <p class="eyebrow">// aba guilda · faixas f → ss</p>
+      <div class="gen"><span class="nm">F · Novato</span><span class="tk"><i style="width:8%;background:var(--muted-2)"></i></span><span class="pc">0</span></div>
+      <div class="gen"><span class="nm">C · Prata</span><span class="tk"><i style="width:38%;background:var(--holo-2)"></i></span><span class="pc">18k</span></div>
+      <div class="gen"><span class="nm">S · Ouro</span><span class="tk"><i style="width:78%;background:var(--gold)"></i></span><span class="pc">90k</span></div>
+      <div class="gen"><span class="nm">SS · Lenda</span><span class="tk"><i style="width:100%;background:var(--holo-1)"></i></span><span class="pc">200k</span></div>
+      <p class="legend">Editar corte e título de cada faixa. Ver quantos usuários caem em cada uma
+        <b>antes</b> de aplicar — mudar corte rebaixa gente.</p>
+    </div>
+
+    <div class="card pad mt">
+      <p class="eyebrow">// aba guilda · insígnias e convites</p>
+      <div class="ledger"><div>Coruja<div class="mini">12 madrugadas · 84 usuários têm</div></div><span class="chip">editar</span></div>
+      <div class="ledger"><div>Arquivista<div class="mini">50 curados vistos · 12 têm</div></div><span class="chip">editar</span></div>
+      <div class="ledger"><div>Convites da semana<div class="mini">3 ativos · rodam de segunda a domingo</div></div><span class="chip">editar</span></div>
+      <p class="legend">Insígnia nova não pode dar XP retroativo — entra valendo da data de criação.</p>
+    </div>
+
+    <div class="card pad mt">
+      <p class="eyebrow">// aba guilda · auditoria</p>
+      <div class="ledger"><div>@joaomendes08<div class="mini">180/180 XP hoje · teto batido</div></div><span class="chip gold">ver ledger</span></div>
+      <div class="ledger"><div>@teste42<div class="mini">42 episódios em 9 minutos</div></div><span class="chip cor">suspeito</span></div>
+      <div class="ledger"><div>Kill switch da gamificação<div class="mini">desliga XP sem derrubar o app</div></div><span class="chip cor">desligar</span></div>
+      <p class="legend">Mesmo padrão do kill switch da IA de curadoria, que já existe no Controle.</p>
+    </div>
+
+    <div class="note keep"><p><b>Seu painel de hoje continua inteiro</b>: Curadoria, as quatro seções do Controle
+      (AniList, Ranking, Rótulos, Diagnóstico) e a fila do Olheiro. Nada sai.</p></div>
+    <div class="note new"><p><b>Novo:</b> aba <b>Guilda</b> para administrar a gamificação — economia, faixas,
+      insígnias, convites, auditoria e kill switch. Sem ela, mexer em XP viraria deploy.</p></div>
+  </section>
+
+  <!-- ===================== LANDING ===================== -->
+  <section class="screen" id="landing">
+    <p class="eyebrow">// Landing.tsx · visitante</p>
+    <div class="hero" style="height:230px">
+      <div class="v"></div>
+      <div class="in">
+        <h2 style="font-size:26px">Mais do que uma lista</h2>
+        <p>Deck, agenda e um retrato do seu gosto. Curadoria em português, 28 mil+ títulos da AniList.</p>
+        <div style="display:flex;gap:8px"><button class="btn">Criar meu deck</button><button class="btn ghost" data-ir="descobrir">Explorar sem conta</button></div>
+      </div>
+    </div>
+    <div class="grid3 mt">
+      <div class="card pad" style="text-align:center"><div style="font-size:20px">🃏</div><p class="tl">Curadoria híbrida</p></div>
+      <div class="card pad" style="text-align:center"><div style="font-size:20px">📊</div><p class="tl">Perfil de gosto</p></div>
+      <div class="card pad" style="text-align:center"><div style="font-size:20px">📺</div><p class="tl">Onde assistir</p></div>
+    </div>
+    <div class="card pad mt">
+      <p class="eyebrow">// prova antes do cadastro</p>
+      <p style="margin:0;font-size:12.5px;color:var(--muted);line-height:1.55">
+        "Maratonista de fantasia que foge de esporte." Um card assim, do seu gosto, em 30 segundos — importando sua lista do AniList ou do MAL.</p>
+      <button class="btn block mt" data-ir="card">Ver um exemplo →</button>
+    </div>
+    <div class="note new"><p><b>Novo na landing:</b> mostrar o card de gosto como isca e oferecer <b>importação de lista</b>. É o caminho mais curto entre visitante e usuário.</p></div>
+  </section>
+
+  <nav>
+    <button aria-current="true" data-ir="inicio"><span class="i">🏠</span>Início</button>
+    <button data-ir="descobrir"><span class="i">🔍</span>Descobrir</button>
+    <button data-ir="deck"><span class="i">🃏</span>Deck</button>
+    <button data-ir="agenda"><span class="i">📅</span>Agenda</button>
+    <button data-ir="perfil"><span class="i">👤</span>Perfil</button>
+  </nav>
+</div>
+
+<button class="toggle" id="alternar">🖥️ ver como celular</button>
+
+<div class="mapa" id="mapa">
+  <div class="box">
+    <h3 class="ttl" style="margin-bottom:12px">Todas as telas</h3>
+    <div class="card">
+      <div class="lista" data-ir="landing"><span class="ic">🌐</span>Landing (visitante)<span class="ar">›</span></div>
+      <div class="lista" data-ir="inicio"><span class="ic">🏠</span>Início <span class="chip" style="margin-left:6px">nova</span><span class="ar">›</span></div>
+      <div class="lista" data-ir="descobrir"><span class="ic">🔍</span>Descobrir / Busca<span class="ar">›</span></div>
+      <div class="lista" data-ir="rankings"><span class="ic">🏆</span>Rankings<span class="ar">›</span></div>
+      <div class="lista" data-ir="detalhes"><span class="ic">📄</span>Detalhe do anime<span class="ar">›</span></div>
+      <div class="lista" data-ir="deck"><span class="ic">🃏</span>Meu Deck<span class="ar">›</span></div>
+      <div class="lista" data-ir="agenda"><span class="ic">📅</span>Agenda<span class="ar">›</span></div>
+      <div class="lista" data-ir="gosto"><span class="ic">📊</span>Meu Gosto (Estatísticas)<span class="ar">›</span></div>
+      <div class="lista" data-ir="guilda"><span class="ic">⚔️</span>Guilda <span class="chip" style="margin-left:6px">nova</span><span class="ar">›</span></div>
+      <div class="lista" data-ir="card"><span class="ic">✦</span>Card <span class="chip" style="margin-left:6px">nova</span><span class="ar">›</span></div>
+      <div class="lista" data-ir="perfil"><span class="ic">👤</span>Perfil e Configurações<span class="ar">›</span></div>
+      <div class="lista" data-ir="admin"><span class="ic">🛠️</span>Painel Admin<span class="ar">›</span></div>
+    </div>
+    <button class="btn ghost block mt" id="fecharMapa">Fechar</button>
+    <p class="legend" style="text-align:center;margin-top:14px">
+      11 páginas suas · 3 novas · dados fictícios<br>
+      <b>Nenhuma página foi removida.</b> Detalhes, Rankings e Admin continuam; só mudaram de porta de entrada.</p>
+  </div>
+</div>
+
+<script>
+  const telas = document.querySelectorAll('.screen');
+  const abas  = document.querySelectorAll('nav button');
+  const mapa  = document.getElementById('mapa');
+
+  function ir(id){
+    telas.forEach(t => t.classList.toggle('on', t.id === id));
+    abas.forEach(b => b.setAttribute('aria-current', String(b.dataset.ir === id)));
+    document.querySelectorAll('.desknav .lk').forEach(l => l.classList.toggle('on', l.dataset.ir === id));
+    mapa.classList.remove('on');
+    window.scrollTo({top:0, behavior:'smooth'});
+  }
+  document.querySelectorAll('[data-ir]').forEach(el => el.addEventListener('click', () => ir(el.dataset.ir)));
+  document.getElementById('abrirMapa').addEventListener('click', () => mapa.classList.add('on'));
+  document.getElementById('abrirMapa2').addEventListener('click', () => mapa.classList.add('on'));
+
+  // alternador: força a largura de celular numa tela grande, para comparar sem redimensionar
+  const alternar = document.getElementById('alternar');
+  alternar.addEventListener('click', () => {
+    const mob = document.body.classList.toggle('forcar-mobile');
+    alternar.textContent = mob ? '📱 ver como desktop' : '🖥️ ver como celular';
+  });
+
+  // links do topo acompanham a tela ativa
+  const links = document.querySelectorAll('.desknav .lk');
+  document.getElementById('fecharMapa').addEventListener('click', () => mapa.classList.remove('on'));
+
+  document.querySelectorAll('.fc').forEach(c => c.addEventListener('click', () => {
+    if (c.classList.contains('in')) { c.classList.remove('in'); c.classList.add('out'); }
+    else if (c.classList.contains('out')) { c.classList.remove('out'); }
+    else { c.classList.add('in'); }
+  }));
+
+  // qualquer capa abre a página de detalhes, como no app
+  document.querySelectorAll('.poster').forEach(p => {
+    p.style.cursor = 'pointer';
+    p.addEventListener('click', () => ir('detalhes'));
+  });
+
+  document.querySelectorAll('.ep').forEach(e => e.addEventListener('click', () => e.classList.toggle('done')));
+  document.querySelectorAll('.quest .dot').forEach(d => d.addEventListener('click', () => d.classList.toggle('ok')));
+</script>
+</body>
+</html>

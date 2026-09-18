@@ -608,6 +608,33 @@ homologação são o mesmo projeto sem ponto de restauração, e credencial de e
 numa integração é risco desproporcional.
 
 ---
+## 🏠 Fase 11: Home e navegação — *a planejar*
+
+Motivo: a rota `/` autenticada redireciona para o Deck, e a primeira impressão do produto é uma
+grade de coleção. O diferencial analítico não aparece antes da autenticação e, depois dela, fica
+atrás de um item de menu que não comunica o próprio conteúdo.
+
+- [ ] Home autenticada em `/`, com estreias do dia, retomada e vitrine (#122)
+- [ ] Trilhas curadas com nota de curadoria (#123)
+- [ ] Nova barra inferior: Início · Descobrir · Deck · Agenda · Perfil (#125)
+- [ ] Rankings vira aba dentro de Descobrir (#125)
+
+Referência visual: `prototipos/anideck-app-prototipo-v1.html`.
+Dependência: a #125 depende da #122 — um item só sai da barra quando existir destino alternativo.
+
+## 🪞 Fase 12: Meu Gosto e distribuição — *a planejar*
+
+Motivo: a leitura do gosto individual não tem equivalente nas plataformas analisadas e hoje está
+pouco acessível. É também a base do único artefato capaz de atrair usuários externos sem depender
+de base instalada.
+
+- [ ] Estatísticas vira Meu Gosto, abrindo com a frase de abertura (#121)
+- [ ] Bloco "lacuna de gosto" (#124)
+- [ ] Card de gosto compartilhável em PNG (#126)
+- [ ] *(avaliar)* importar lista do AniList/MAL na landing
+
+A gamificação (rank F→SS, XP, insígnias) **não entra aqui**. Continua no
+`VISAO_GAMIFICACAO.md` até haver decisão explícita de fazer.
 
 ## 🔧 Manutenção pós-v1
 

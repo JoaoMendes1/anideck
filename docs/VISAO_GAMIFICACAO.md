@@ -253,9 +253,6 @@ do *Agente de inconsistências* do Backlog.
 - Marcar "Completo" conta, mesmo sem grade — caminho alternativo de XP.
 - Campo de progresso manual ("estou no episódio 7").
 
-**Dependência dura:** isso exige que marcar Completo preencha `episode_progress`, o que hoje não
-acontece — bug ativo que já distorce as Estatísticas, independente de gamificação.
-
 ---
 
 ## 🧭 O que roubar do Habitica, e o que não
@@ -355,7 +352,5 @@ A coluna da esquerda é o caminho de entrada natural. A da direita não é bloqu
 - **`VISAO_RANKING_CREDIVEL.md`** — consome o XP definido aqui para calcular o peso do voto. A
   mecânica de progressão saiu de lá e passou a morar neste arquivo.
 - **`ROADMAP.md`** — nada aqui é fase. Entra pelo Backlog e só vira fase com decisão explícita.
-  A dependência do bug "Completo não preenche `episode_progress`" é issue do app atual, não
-  deste documento.
 - **`DECISIONS.md`** — quando qualquer pedaço disto sair do papel, a decisão de arquitetura vai
   para lá, não para cá.
