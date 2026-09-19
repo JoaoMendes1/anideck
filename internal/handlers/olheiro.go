@@ -23,28 +23,12 @@ import (
 // vazia; mais vira lista que ninguém revisa.
 const limiteSugestoesPorScan = 10
 
-// tagsDesejadas é o gosto declarado do dono do AniDeck — o que a afinidade
-// calculada não captura sozinha.
-//
-// Por que uma lista fixa em vez de deduzir das Estatísticas: a view de
-// afinidade exclui tag_tematica de propósito (ver DECISIONS.md), então "Level
-// Up" e "Guilds" nunca chegariam até aqui. Declarar à mão é honesto para uma
-// v1 — vira tabela quando existir a tela de configuração do Olheiro.
-//
-// A chave é o nome exato da AniList (em inglês, é assim que chega da API).
-// O Label é o que aparece para o usuário no motivo da sugestão.
-var tagsDesejadas = map[string]struct {
-	Peso  float64
-	Label string
-}{
-	"Isekai":       {3.0, "isekai"},
-	"Level Up":     {3.0, "progressão"},
-	"Magic":        {2.0, "magia"},
-	"Dungeon":      {2.0, "dungeon"},
-	"Guilds":       {2.0, "guildas"},
-	"Female Harem": {1.5, "harém"},
-	"Cultivation":  {1.5, "cultivo"},
-	"Martial Arts": {1.0, "luta"},
+// Os pesos vêm de olheiro_tags (sql/035); antes eram literais aqui, e mudar um
+// exigia deploy. O Rotulo não é guardado lá: é o display_name_pt da
+// genre_taxonomy, lido por JOIN, para o nome do rótulo ter um lugar só.
+type TagDesejada struct {
+	Peso   float64
+	Rotulo string
 }
 
 // PerfilOlheiro é o retrato do gosto do usuário no momento do scan.
@@ -87,27 +71,29 @@ type SugestaoPendente struct {
 	Score     float64 `json:"score"`
 }
 
-// PontuarCandidato decide o quanto um anime combina com o gosto do usuário.
-//
-// Função pura: sem banco, sem rede, sem relógio. Entra dado, sai número —
-// por isso dá para testar isoladamente e refinar sem medo.
-//
-// Score 0 e motivo vazio significam "não vale sugerir".
-func PontuarCandidato(c Candidato, p PerfilOlheiro) (score float64, motivo string) {
-	var labels []string
+// Função pura: sem banco, sem rede, sem relógio. Os pesos entram por parâmetro
+// justamente para ela continuar assim depois que passaram a vir do banco.
+func PontuarCandidato(c Candidato, p PerfilOlheiro, pesos map[string]TagDesejada) (score float64, motivo string) {
+	var rotulos []string
+	contados := make(map[string]bool)
+
+	// O buscarCandidatos entrega Genres e Tags na mesma lista, e o admin pode
+	// cadastrar peso em qualquer rótulo da taxonomia — inclusive num que seja
+	// gênero e tag ao mesmo tempo. Sem esta guarda, ele contaria peso dobrado.
 
 	for _, g := range c.Generos {
-		if tag, existe := tagsDesejadas[g]; existe {
+		if tag, existe := pesos[g]; existe && !contados[g] {
+			contados[g] = true
 			score += tag.Peso
-			labels = append(labels, tag.Label)
+			rotulos = append(rotulos, strings.ToLower(tag.Rotulo))
 		}
 	}
 
-	if len(labels) == 0 {
+	if len(rotulos) == 0 {
 		return 0, ""
 	}
 
-	return score, "Tem " + strings.Join(labels, ", ")
+	return score, "Tem " + strings.Join(rotulos, ", ")
 }
 
 // OlheiroHandler concentra o scan e a revisão da fila. Todas as rotas rodam
@@ -144,7 +130,20 @@ func (h *OlheiroHandler) HandleScan(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	candidatos, err := h.buscarCandidatos(ctx)
+	pesos, err := carregarTagsDesejadas(dbClient)
+	if err != nil {
+		log.Printf("[OLHEIRO] Falha ao carregar pesos: %v", err)
+		http.Error(w, "Erro ao carregar a configuração do Olheiro", http.StatusInternalServerError)
+		return
+	}
+	if len(pesos) == 0 {
+		// Critério de aceite da issue: tabela vazia não derruba o scan. Ele roda,
+		// não pontua ninguém e diz o porquê no log — silêncio aqui viraria
+		// "o Olheiro parou de achar coisa" sem explicação.
+		log.Printf("[OLHEIRO] Nenhum rótulo ativo em olheiro_tags: o scan não vai pontuar ninguém")
+	}
+
+	candidatos, err := h.buscarCandidatos(ctx, pesos)
 	if err != nil {
 		log.Printf("[OLHEIRO] Falha ao buscar candidatos: %v", err)
 		http.Error(w, "Serviço da AniList indisponível no momento", http.StatusServiceUnavailable)
@@ -165,7 +164,7 @@ func (h *OlheiroHandler) HandleScan(w http.ResponseWriter, r *http.Request) {
 			continue
 		}
 
-		score, motivo := PontuarCandidato(c, perfil)
+		score, motivo := PontuarCandidato(c, perfil, pesos)
 		if score <= 0 || motivo == "" {
 			continue
 		}
@@ -215,7 +214,7 @@ func (h *OlheiroHandler) HandleScan(w http.ResponseWriter, r *http.Request) {
 // "melhores Isekai" traz o que interessa; o top geral só devolveria os
 // campeões de todos os tempos (Shingeki, One Piece), que não têm relação
 // nenhuma com o gosto declarado.
-func (h *OlheiroHandler) buscarCandidatos(ctx context.Context) ([]Candidato, error) {
+func (h *OlheiroHandler) buscarCandidatos(ctx context.Context, pesos map[string]TagDesejada) ([]Candidato, error) {
 	vistos := make(map[int]bool)
 	var candidatos []Candidato
 
@@ -249,7 +248,7 @@ func (h *OlheiroHandler) buscarCandidatos(ctx context.Context) ([]Candidato, err
 	}
 
 	sucessos := 0
-	for tag := range tagsDesejadas {
+	for tag := range pesos {
 		res, err := h.AniListClient.GetTopAnime(ctx, 1, 10, anilist.SearchFilters{
 			Tags: []string{tag},
 			Sort: "SCORE_DESC",
@@ -347,6 +346,44 @@ func carregarPerfilOlheiro(dbClient *supabase.Client) (PerfilOlheiro, error) {
 	}
 
 	return perfil, nil
+}
+
+// carregarTagsDesejadas Lê os pesos do Olheiro e o nome de exibição de cada um.
+//
+// O nome vem da genre_taxonomy pelo relacionamento da chave estrangeira — é o
+// mesmo dado que a tela mostra, sem segunda cópia. Só rótulo ativo entra.
+func carregarTagsDesejadas(dbClient *supabase.Client) (map[string]TagDesejada, error) {
+	data, _, err := dbClient.From("olheiro_tags").
+		Select("raw_name,peso,genre_taxonomy(display_name_pt)", "exact", false).
+		Eq("ativo", "true").
+		Execute()
+	if err != nil {
+		return nil, err
+	}
+
+	var linhas []struct {
+		RawName string  `json:"raw_name"`
+		Peso    float64 `json:"peso"`
+		Rotulo  struct {
+			DisplayNamePT string `json:"display_name_pt"`
+		} `json:"genre_taxonomy"`
+	}
+	if err := json.Unmarshal(data, &linhas); err != nil {
+		return nil, fmt.Errorf("payload inesperado: %w", err)
+	}
+
+	pesos := make(map[string]TagDesejada, len(linhas))
+	for _, l := range linhas {
+		rotulo := l.Rotulo.DisplayNamePT
+		if rotulo == "" {
+			// Não deveria acontecer: a FK garante a linha na taxonomia. Se
+			// acontecer, o raw_name em inglês é melhor que texto vazio.
+			rotulo = l.RawName
+		}
+		pesos[l.RawName] = TagDesejada{Peso: l.Peso, Rotulo: rotulo}
+	}
+
+	return pesos, nil
 }
 
 // HandleListarSugestoes devolve a fila pendente, melhor pontuada primeiro.

@@ -1,7 +1,7 @@
 -- =============================================================================
 -- snapshot_schema.sql — RETRATO DO BANCO. NAO EXECUTE ESTE ARQUIVO.
 -- =============================================================================
--- Regenerado em 18/09/2026 00:24 a partir do banco de producao.
+-- Regenerado em 19/09/2026 16:58 a partir do banco de producao.
 --
 -- PARA QUE SERVE: consulta rapida do estado real do banco, sem precisar abrir
 -- o painel do Supabase nem confiar nos arquivos sql/ antigos (que podem ter
@@ -112,6 +112,11 @@
 --     anime_title                  text
 --     anime_image                  text
 
+-- olheiro_tags
+--     raw_name                     text NOT NULL
+--     peso                         numeric NOT NULL
+--     ativo                        boolean NOT NULL
+
 -- push_subscriptions
 --     id                           uuid NOT NULL
 --     user_id                      uuid NOT NULL
@@ -155,6 +160,7 @@
 -- genre_taxonomy            | RLS: t     | policies: 3
 -- media_entries             | RLS: t     | policies: 4
 -- notifications             | RLS: t     | policies: 2
+-- olheiro_tags              | RLS: t     | policies: 1
 -- push_subscriptions        | RLS: t     | policies: 1
 -- ranking_current_cache     | RLS: t     | policies: 0
 -- ranking_snapshots         | RLS: t     | policies: 0
@@ -540,6 +546,10 @@ CREATE OR REPLACE VIEW public.view_user_year_distribution WITH (security_invoker
 -- notifications          | Users update own notifications                | UPDATE | public            
 --     USING:  (( SELECT auth.uid() AS uid) = user_id)
 --     CHECK:  (( SELECT auth.uid() AS uid) = user_id)
+
+-- olheiro_tags           | olheiro_tags_admin                            | ALL    | public            
+--     USING:  is_admin()
+--     CHECK:  is_admin()
 
 -- push_subscriptions     | Users manage own subscriptions                | ALL    | public            
 --     USING:  (( SELECT auth.uid() AS uid) = user_id)
