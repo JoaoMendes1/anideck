@@ -535,9 +535,9 @@ export default function PainelAdmin() {
       if (!response.ok) throw new Error('Falha ao salvar destaque')
       showToast('Destaque salvo com sucesso!')
 
-      // Só agora a sugestão sai da fila em definitivo. Se você tivesse
-      // desistido no meio, ela continuaria 'pendente' e voltaria a aparecer.
-      if (sugestaoEmCuradoria !== null) {
+      // O zero vem da aba Demanda, que não passa pela fila e não tem id para
+      // marcar como 'curado'. Sem esta guarda, o PATCH iria para /sugestoes/0.
+      if (sugestaoEmCuradoria) {
         try {
           await fetch(`/api/admin/olheiro/sugestoes/${sugestaoEmCuradoria}`, {
             method: 'PATCH',

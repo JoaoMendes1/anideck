@@ -165,8 +165,15 @@ func main() {
 		admin.Post("/api/admin/diagnostico/taxonomia/remover", diagnosticoHandler.HandleRemoverDaTaxonomia)
 
 		// Agente Olheiro: scan sob demanda e revisão da fila de sugestões
+		admin.Get("/api/admin/olheiro/tags", olheiroHandler.HandleListarTagsDesejadas)
+		admin.Put("/api/admin/olheiro/tags", olheiroHandler.HandleSalvarTagDesejada)
+		admin.Delete("/api/admin/olheiro/tags/{rawName}", olheiroHandler.HandleRemoverTagDesejada)
+		admin.Get("/api/admin/olheiro/settings", olheiroHandler.HandleGetOlheiroSettings)
+		admin.Put("/api/admin/olheiro/settings", olheiroHandler.HandleUpdateOlheiroSettings)
+		admin.Get("/api/admin/olheiro/disponiveis", olheiroHandler.HandleListarRotulosDisponiveis)
 		admin.Post("/api/admin/olheiro/scan", olheiroHandler.HandleScan)
 		admin.Get("/api/admin/olheiro/sugestoes", olheiroHandler.HandleListarSugestoes)
+		admin.Get("/api/admin/olheiro/demanda", olheiroHandler.HandleListarDemanda)
 		admin.Patch("/api/admin/olheiro/sugestoes/{id}", olheiroHandler.HandleRevisarSugestao)
 	})
 

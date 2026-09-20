@@ -1,9 +1,9 @@
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect, useRef } from 'react'
 import {
   Activity, PowerOff, RefreshCw, Tags, HardDrive, Trophy,
-  ChevronDown, ExternalLink, AlertTriangle, Plus, Search, Trash2,
+  ChevronDown, ExternalLink, AlertTriangle, Plus, Minus, Search, Trash2,
 } from 'lucide-react'
-import { useControle, type RotuloOrfao } from '../hooks/useControle'
+import { useControle, type RotuloOrfao, type TagOlheiro } from '../hooks/useControle'
 import { useTaxonomia, normalizar, CAMADAS, type Camada } from '../hooks/useTaxonomia'
 import { useToast } from '../contexts/ToastContext'
 
@@ -20,6 +20,7 @@ const SECOES = [
   { id: 'anilist', nome: 'AniList' },
   { id: 'ranking', nome: 'Ranking' },
   { id: 'rotulos', nome: 'Rótulos' },
+  { id: 'olheiro', nome: 'Olheiro' },
   { id: 'diagnostico', nome: 'Diagnóstico' },
 ] as const
 
@@ -51,7 +52,7 @@ export function AbaControle({
 }: Props) {
   const { showToast } = useToast()
   const {
-    ranking, orfaos, bucket,
+    ranking, orfaos, bucket, tagsOlheiro,
     carregando, erro, carregar,
     salvarPeso, salvandoPeso,
     recalcular, recalculando,
@@ -59,6 +60,8 @@ export function AbaControle({
     animesPorRotulo, carregandoRotulo, carregarAnimesDoRotulo,
     cadastrarNaTaxonomia, renomearTag, removerTag,
     removerDaTaxonomia, aplicando,
+    salvarTagOlheiro, removerTagOlheiro,
+    limiteOlheiro, salvarLimiteOlheiro, disponiveisOlheiro,
   } = useControle()
 
   const { rotulos, carregando: carregandoTaxonomia, recarregar: recarregarTaxonomia } = useTaxonomia()
@@ -73,6 +76,29 @@ export function AbaControle({
   const [novaCamada, setNovaCamada] = useState<Camada>('tag_tematica')
   const [novoSinonimo, setNovoSinonimo] = useState('')
   const [formAberto, setFormAberto] = useState(false)
+
+  // ---------- Seção Olheiro ----------
+  const [novoRotuloOlheiro, setNovoRotuloOlheiro] = useState('')
+  // Número e não texto: o campo agora é stepper, e 1,0 é o peso de entrada de um
+  // rótulo novo — o mais baixo do conjunto atual.
+  const [novoPesoOlheiro, setNovoPesoOlheiro] = useState(1)
+  // Espelha o valor do servidor e é ajustado com atraso, como o peso de cada linha.
+  const [limiteLocal, setLimiteLocal] = useState(limiteOlheiro)
+  const timerLimite = useRef<number | null>(null)
+
+  useEffect(() => { setLimiteLocal(limiteOlheiro) }, [limiteOlheiro])
+
+  const ajustarLimite = (delta: number) => {
+    const novo = Math.min(50, Math.max(1, limiteLocal + delta))
+    if (novo === limiteLocal) return
+    setLimiteLocal(novo)
+
+    if (timerLimite.current) window.clearTimeout(timerLimite.current)
+    timerLimite.current = window.setTimeout(async () => {
+      const erro = await salvarLimiteOlheiro(novo)
+      if (erro) { setLimiteLocal(limiteOlheiro); showToast(erro, 'error') }
+    }, 700)
+  }
 
   // ---------- Seção Diagnóstico ----------
   const [aberto, setAberto] = useState<string | null>(null)
@@ -474,7 +500,7 @@ export function AbaControle({
                     >
                       {CAMADAS.map(c => <option key={c.id} value={c.id}>{c.nome}</option>)}
                     </select>
-                                      </div>
+                  </div>
 
                   <div className="mt-2">
                     <input
@@ -560,6 +586,147 @@ export function AbaControle({
             </div>
           )}
 
+          {/* ---------- Olheiro ---------- */}
+          {secao === 'olheiro' && (
+            <div className="bg-panel border border-line rounded-2xl p-5 sm:p-6 space-y-4">
+              <header>
+                <h2 className="font-anton text-lg uppercase flex items-center gap-2">
+                  <Search size={16} className="text-holo-3" /> Pesos do Olheiro
+                </h2>
+                <p className="text-muted text-[13.5px] mt-1.5 max-w-[62ch]">
+                  Quanto cada rótulo puxa a pontuação de um anime candidato. O scan consulta a
+                  AniList uma vez por rótulo ativo — desativar reduz o tempo e as requisições.
+                </p>
+              </header>
+
+              <div className="flex justify-between items-center gap-4 flex-wrap py-3.5 border-t border-line">
+                <div className="flex-1 min-w-[200px]">
+                  <strong className="block text-[14.5px] font-bold">Sugestões por scan</strong>
+                  <span className="text-muted text-[13px]">
+                    Quantos candidatos entram na fila de cada vez. Acima disso, só os de maior
+                    pontuação — o resto volta no scan seguinte.
+                  </span>
+                </div>
+
+                <div className="flex items-center rounded-lg border border-line bg-panel overflow-hidden shrink-0">
+                  <button
+                    type="button" disabled={limiteLocal <= 1} onClick={() => ajustarLimite(-1)}
+                    aria-label="Diminuir limite"
+                    className="px-2.5 py-2 text-muted hover:text-text hover:bg-panel-2 cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+                  >
+                    <Minus size={14} />
+                  </button>
+
+                  <span className="w-10 text-center font-mono text-sm text-holo-2 tabular-nums">
+                    {limiteLocal}
+                  </span>
+
+                  <button
+                    type="button" disabled={limiteLocal >= 50} onClick={() => ajustarLimite(1)}
+                    aria-label="Aumentar limite"
+                    className="px-2.5 py-2 text-muted hover:text-text hover:bg-panel-2 cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+                  >
+                    <Plus size={14} />
+                  </button>
+                </div>
+              </div>
+
+              {/* Só rótulo da taxonomia entra: o raw_name precisa ser o nome exato da
+                  AniList, e texto livre cadastrado em português não acharia nada. */}
+              <div className="p-3 rounded-xl border border-line bg-panel-2 space-y-2">
+                <p className="font-mono text-[11px] uppercase tracking-wider text-muted-2">
+                  Adicionar rótulo
+                </p>
+                <div className="flex flex-wrap gap-2">
+                  <div className="relative flex-1 min-w-[180px]">
+                    <select
+                      value={novoRotuloOlheiro}
+                      onChange={e => setNovoRotuloOlheiro(e.target.value)}
+                      className="w-full appearance-none bg-panel border border-line rounded-lg pl-3 pr-9 py-2.5 text-sm text-text outline-none focus:border-holo-2 cursor-pointer"
+                    >
+                      <option value="">
+                        {disponiveisOlheiro.length === 0
+                          ? 'Nenhum rótulo disponível'
+                          : 'Escolha um rótulo…'}
+                      </option>
+                      {disponiveisOlheiro.map(d => (
+                        <option key={d.raw_name} value={d.raw_name}>
+                          {d.rotulo} ({d.raw_name})
+                        </option>
+                      ))}
+                    </select>
+                    <ChevronDown
+                      size={16}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-2 pointer-events-none"
+                    />
+                  </div>
+
+                  <div className="flex items-center rounded-lg border border-line bg-panel overflow-hidden shrink-0">
+                    <button
+                      type="button"
+                      disabled={novoPesoOlheiro <= 0.5}
+                      onClick={() => setNovoPesoOlheiro(p => Math.max(0.5, p - 0.5))}
+                      aria-label="Diminuir peso"
+                      className="px-2.5 py-2.5 text-muted hover:text-text hover:bg-panel-2 cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+                    >
+                      <Minus size={14} />
+                    </button>
+
+                    <span className="w-12 text-center font-mono text-sm text-holo-2 tabular-nums">
+                      {novoPesoOlheiro.toFixed(1).replace('.', ',')}
+                    </span>
+
+                    <button
+                      type="button"
+                      onClick={() => setNovoPesoOlheiro(p => p + 0.5)}
+                      aria-label="Aumentar peso"
+                      className="px-2.5 py-2.5 text-muted hover:text-text hover:bg-panel-2 cursor-pointer transition-colors"
+                    >
+                      <Plus size={14} />
+                    </button>
+                  </div>
+
+                  <button
+                    type="button"
+                    disabled={!novoRotuloOlheiro || aplicando}
+                    onClick={async () => {
+                      const erro = await salvarTagOlheiro(novoRotuloOlheiro, novoPesoOlheiro, true)
+                      showToast(erro ?? 'Rótulo adicionado ao Olheiro.', erro ? 'error' : 'success')
+                      if (!erro) { setNovoRotuloOlheiro(''); setNovoPesoOlheiro(1) }
+                    }}
+                    className="px-4 py-2 rounded-lg bg-holo-2 text-void text-sm font-bold cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
+                  >
+                    <Plus size={16} />
+                  </button>
+                </div>
+
+                <p className="text-muted-2 text-[11.5px]">
+                  Só aparecem rótulos que a AniList reconhece. Entrada em português, como
+                  "Aventura", fica de fora: ela não acha nada e falharia em silêncio.
+                </p>
+              </div>
+
+              {tagsOlheiro.length === 0 ? (
+                <p className="text-sm text-muted">
+                  Nenhum rótulo cadastrado. O scan roda, mas não pontua ninguém.
+                </p>
+              ) : (
+                <div className="space-y-2">
+                  {tagsOlheiro.map(t => (
+                    <LinhaOlheiro
+                      key={t.raw_name}
+                      tag={t}
+                      ocupado={aplicando}
+                      onSalvar={salvarTagOlheiro}
+                      onRemover={removerTagOlheiro}
+                      onErro={msg => showToast(msg, 'error')}
+                      onOk={msg => showToast(msg, 'success')}
+                    />
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
           {/* ---------- Diagnóstico ---------- */}
           {secao === 'diagnostico' && (
             <div className="bg-panel border border-line rounded-2xl p-5 sm:p-6">
@@ -827,6 +994,104 @@ export function AbaControle({
           </div>
         </div>
       )}
+    </div>
+  )
+}
+// Cada linha tem estado próprio porque o peso é editado com passos de 0,5 e
+// salvo com atraso: clicar três vezes no + tem que virar uma requisição, não três.
+function LinhaOlheiro({
+  tag, ocupado, onSalvar, onRemover, onErro, onOk,
+}: {
+  tag: TagOlheiro
+  ocupado: boolean
+  onSalvar: (rawName: string, peso: number, ativo: boolean) => Promise<string | null>
+  onRemover: (rawName: string) => Promise<string | null>
+  onErro: (msg: string) => void
+  onOk: (msg: string) => void
+}) {
+  const [peso, setPeso] = useState(tag.peso)
+  const timer = useRef<number | null>(null)
+
+  // Quando o servidor responde, a lista é recarregada e o valor de lá volta a
+  // mandar — evita a linha ficar mostrando um peso que não foi salvo.
+  useEffect(() => { setPeso(tag.peso) }, [tag.peso])
+
+  const ajustar = (delta: number) => {
+    const novo = Math.max(0.5, Math.round((peso + delta) * 2) / 2)
+    if (novo === peso) return
+    setPeso(novo)
+
+    if (timer.current) window.clearTimeout(timer.current)
+    timer.current = window.setTimeout(async () => {
+      const erro = await onSalvar(tag.raw_name, novo, tag.ativo)
+      if (erro) { setPeso(tag.peso); onErro(erro) }
+    }, 700)
+  }
+
+  return (
+    <div
+      className={`flex items-center gap-3 p-3 rounded-xl border transition-colors ${tag.ativo ? 'border-line bg-panel-2' : 'border-line/60 bg-panel-2/40'
+        }`}
+    >
+      <div className="min-w-0 flex-1">
+        <p className={`font-bold text-sm truncate ${tag.ativo ? 'text-text' : 'text-muted'}`}>
+          {tag.rotulo}
+        </p>
+        <p className="font-mono text-[11px] text-muted-2 truncate">
+          {tag.raw_name} · {tag.camada}
+        </p>
+      </div>
+
+      <div className="flex items-center rounded-lg border border-line bg-panel overflow-hidden shrink-0">
+        <button
+          type="button" disabled={ocupado || peso <= 0.5} onClick={() => ajustar(-0.5)}
+          aria-label="Diminuir peso"
+          className="px-2.5 py-2 text-muted hover:text-text hover:bg-panel-2 cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+        >
+          <Minus size={14} />
+        </button>
+
+        <span className="w-12 text-center font-mono text-sm text-holo-2 tabular-nums">
+          {peso.toFixed(1).replace('.', ',')}
+        </span>
+
+        <button
+          type="button" disabled={ocupado} onClick={() => ajustar(0.5)}
+          aria-label="Aumentar peso"
+          className="px-2.5 py-2 text-muted hover:text-text hover:bg-panel-2 cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+        >
+          <Plus size={14} />
+        </button>
+      </div>
+
+      <button
+        type="button" disabled={ocupado}
+        onClick={async () => {
+          const erro = await onSalvar(tag.raw_name, tag.peso, !tag.ativo)
+          if (erro) onErro(erro)
+        }}
+        title={tag.ativo ? 'Desativar: o scan deixa de buscar por este rótulo' : 'Ativar'}
+        className={`shrink-0 w-11 h-6 rounded-full border relative cursor-pointer transition-colors ${tag.ativo ? 'bg-holo-2/25 border-holo-2/50' : 'bg-panel border-line'
+          }`}
+      >
+        <span
+          className={`absolute top-1/2 -translate-y-1/2 w-4 h-4 rounded-full transition-all ${tag.ativo ? 'left-[22px] bg-holo-2' : 'left-[3px] bg-muted-2'
+            }`}
+        />
+      </button>
+
+      <button
+        type="button" disabled={ocupado}
+        onClick={async () => {
+          const erro = await onRemover(tag.raw_name)
+          if (erro) onErro(erro)
+          else onOk(`${tag.rotulo} saiu do Olheiro.`)
+        }}
+        title="Remover do Olheiro"
+        className="shrink-0 p-2 rounded-lg text-muted-2 hover:text-coral hover:bg-coral/10 cursor-pointer transition-colors"
+      >
+        <Trash2 size={15} />
+      </button>
     </div>
   )
 }

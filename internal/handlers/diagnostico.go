@@ -408,6 +408,20 @@ func (h *DiagnosticoHandler) HandleListarTaxonomia(w http.ResponseWriter, r *htt
 	json.NewEncoder(w).Encode(linhas)
 }
 
+// violaChaveEstrangeira reconhece o 23503 do Postgres, que é a recusa de apagar
+// algo ainda referenciado por outra tabela.
+//
+// O texto do erro é o que o PostgREST devolve; não existe código tipado aqui.
+// Se um dia a mensagem mudar de formato, o pior caso é voltar ao 500 genérico.
+func violaChaveEstrangeira(err error) bool {
+	if err == nil {
+		return false
+	}
+	texto := strings.ToLower(err.Error())
+	return strings.Contains(texto, "23503") ||
+		strings.Contains(texto, "foreign key constraint")
+}
+
 
 func (h *DiagnosticoHandler) HandleRemoverDaTaxonomia(w http.ResponseWriter, r *http.Request) {
 	token, ok := r.Context().Value(middleware.TokenKey).(string)
@@ -454,11 +468,19 @@ func (h *DiagnosticoHandler) HandleRemoverDaTaxonomia(w http.ResponseWriter, r *
 		return
 	}
 
-	if _, _, err := client.From("genre_taxonomy").
+		if _, _, err := client.From("genre_taxonomy").
 		Delete("", "exact").
 		Eq("raw_name", req.RawName).
 		Execute(); err != nil {
 		log.Printf("[ERRO DB] HandleRemoverDaTaxonomia (%q): %v", req.RawName, err)
+
+		// O Olheiro tem peso cadastrado nesse rótulo (sql/035). A remoção é
+		// recusada de propósito: em cascata, o scan encolheria em silêncio.
+		if violaChaveEstrangeira(err) {
+			http.Error(w, "Este rótulo tem peso cadastrado no Olheiro. Remova o peso na aba do Olheiro antes de excluir o rótulo.", http.StatusConflict)
+			return
+		}
+
 		http.Error(w, "Não foi possível remover o rótulo.", http.StatusInternalServerError)
 		return
 	}
