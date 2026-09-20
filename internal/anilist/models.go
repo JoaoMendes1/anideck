@@ -152,3 +152,12 @@ type FuzzyDate struct {
 	Month int `json:"month"`
 	Day   int `json:"day"`
 }
+
+// Vocabulario é tudo que a AniList reconhece em filtros de busca.
+//
+// Gênero e tag são listas separadas lá, mas para quem escolhe um rótulo isso é
+// detalhe interno — o que importa é se o texto existe ou não.
+type Vocabulario struct {
+	Generos []string `json:"generos"`
+	Tags    []string `json:"tags"`
+}
