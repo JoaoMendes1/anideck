@@ -22,6 +22,20 @@ export type RankingSettings = {
   total_animes: number
 }
 
+export type TagOlheiro = {
+  raw_name: string
+  rotulo: string
+  camada: string
+  peso: number
+  ativo: boolean
+}
+
+export type RotuloDisponivel = {
+  raw_name: string
+  rotulo: string
+  camada: string
+}
+
 export type UsoBucket = {
   arquivos: number
   bytes: number
@@ -62,6 +76,9 @@ export function useControle() {
   const [ranking, setRanking] = useState<RankingSettings | null>(null)
   const [orfaos, setOrfaos] = useState<RotuloOrfao[]>([])
   const [bucket, setBucket] = useState<UsoBucket | null>(null)
+  const [tagsOlheiro, setTagsOlheiro] = useState<TagOlheiro[]>([])
+  const [limiteOlheiro, setLimiteOlheiro] = useState(10)
+  const [disponiveisOlheiro, setDisponiveisOlheiro] = useState<RotuloDisponivel[]>([])
 
   const [carregando, setCarregando] = useState(true)
   const [erro, setErro] = useState<string | null>(null)
@@ -85,17 +102,29 @@ export function useControle() {
     setCarregando(true)
     setErro(null)
 
-    const [r, o, b] = await Promise.allSettled([
+    const [r, o, b, t, s, d] = await Promise.allSettled([
       comToken('/api/admin/ranking/settings').then(res => res.json()),
       comToken('/api/admin/diagnostico/rotulos-orfaos').then(res => res.json()),
       comToken('/api/admin/diagnostico/bucket').then(res => res.json()),
+      comToken('/api/admin/olheiro/tags').then(res => res.json()),
+      comToken('/api/admin/olheiro/settings').then(res => res.json()),
+      comToken('/api/admin/olheiro/disponiveis').then(res => res.json()),
     ])
 
     if (r.status === 'fulfilled') setRanking(r.value)
     if (o.status === 'fulfilled') setOrfaos(Array.isArray(o.value) ? o.value : [])
     if (b.status === 'fulfilled') setBucket(b.value)
+    if (t.status === 'fulfilled') setTagsOlheiro(Array.isArray(t.value) ? t.value : [])
+    if (s.status === 'fulfilled' && s.value?.limite_sugestoes > 0) {
+      setLimiteOlheiro(s.value.limite_sugestoes)
+    }
+    // Fora da checagem de erro abaixo: a AniList fora do ar não pode pintar a tela
+    // inteira de vermelho — só deixa a lista de rótulos disponíveis vazia.
+    if (d.status === 'fulfilled') {
+      setDisponiveisOlheiro(Array.isArray(d.value) ? d.value : [])
+    }
 
-    if ([r, o, b].some(p => p.status === 'rejected')) {
+    if ([r, o, b, t, s].some(p => p.status === 'rejected')) {
       setErro('Parte do diagnóstico não pôde ser carregada.')
     }
     setCarregando(false)
@@ -104,6 +133,60 @@ export function useControle() {
   useEffect(() => {
     carregar()
   }, [carregar])
+
+  // Sem recarregar tudo: o valor exibido é o que o usuário acabou de escolher, e
+  // uma nova rodada de leituras só piscaria a tela.
+  const salvarLimiteOlheiro = async (valor: number): Promise<string | null> => {
+    try {
+      const res = await comTokenJSON('/api/admin/olheiro/settings', 'PUT', {
+        limite_sugestoes: valor,
+      })
+      if (!res.ok) return (await res.text()).trim() || 'Não foi possível salvar o limite.'
+
+      setLimiteOlheiro(valor)
+      return null
+    } catch {
+      return 'Erro de conexão ao salvar o limite.'
+    }
+  }
+
+  // Devolvem mensagem de erro ou null, no mesmo contrato das outras ações de
+  // escrita daqui. Ambas recarregam a lista: o servidor é quem sabe a ordem final.
+  const salvarTagOlheiro = async (
+    rawName: string, peso: number, ativo: boolean,
+  ): Promise<string | null> => {
+    setAplicando(true)
+    try {
+      const res = await comTokenJSON('/api/admin/olheiro/tags', 'PUT', {
+        raw_name: rawName, peso, ativo,
+      })
+      if (!res.ok) return (await res.text()).trim() || 'Não foi possível salvar o peso.'
+
+      await carregar()
+      return null
+    } catch {
+      return 'Erro de conexão ao salvar o peso.'
+    } finally {
+      setAplicando(false)
+    }
+  }
+
+  const removerTagOlheiro = async (rawName: string): Promise<string | null> => {
+    setAplicando(true)
+    try {
+      const res = await comToken(`/api/admin/olheiro/tags/${encodeURIComponent(rawName)}`, {
+        method: 'DELETE',
+      })
+      if (!res.ok) return (await res.text()).trim() || 'Não foi possível remover o rótulo.'
+
+      await carregar()
+      return null
+    } catch {
+      return 'Erro de conexão ao remover o rótulo.'
+    } finally {
+      setAplicando(false)
+    }
+  }
 
   const salvarPeso = async (valor: number): Promise<string | null> => {
     setSalvandoPeso(true)
@@ -180,7 +263,7 @@ export function useControle() {
     await carregar()
   }
 
-    // O sinonimo é opcional e vira uma SEGUNDA linha com o mesmo display_name_pt —
+  // O sinonimo é opcional e vira uma SEGUNDA linha com o mesmo display_name_pt —
   // é isso que liga os dois textos ao mesmo rótulo. Cadastrar um por vez
   // funcionava, mas exigia lembrar de voltar e fazer o par, e esquecer significa
   // tag que continua caindo em 'ignorado' sem nada avisando.
@@ -287,12 +370,14 @@ export function useControle() {
   }
 
   return {
-    ranking, orfaos, bucket,
+    ranking, orfaos, bucket, tagsOlheiro,
     carregando, erro, carregar,
     salvarPeso, salvandoPeso,
     recalcular, recalculando,
     testarAniList, testando, testeAniList,
     animesPorRotulo, carregandoRotulo, carregarAnimesDoRotulo,
     cadastrarNaTaxonomia, renomearTag, removerTag, removerDaTaxonomia, aplicando,
+    salvarTagOlheiro, removerTagOlheiro,
+    limiteOlheiro, salvarLimiteOlheiro, disponiveisOlheiro,
   }
 }
