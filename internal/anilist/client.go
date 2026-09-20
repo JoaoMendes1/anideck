@@ -18,7 +18,7 @@ import (
 
 var (
 	ForceOffline bool
-	ApiHealth    string = "OK" 
+	ApiHealth    string = "OK"
 	StateMutex   sync.RWMutex
 )
 
@@ -786,4 +786,40 @@ func (c *Client) GetAnimesByMalIDs(ctx context.Context, malIDs []int) (*AnimeSea
 	}
 
 	return &AnimeSearchResponse{Data: allAnimes}, nil
+}
+
+// GetVocabulario busca a lista oficial de gêneros e tags da AniList.
+//
+// Existe porque o nome do rótulo precisa ser exatamente o texto dela: "Adventure"
+// devolve animes, "Aventura" devolve vazio sem erro nenhum. Com esta lista, a tela
+// só oferece o que funciona, em vez de pedir que alguém adivinhe.
+func (c *Client) GetVocabulario(ctx context.Context) (*Vocabulario, error) {
+	const query = `
+		query {
+			GenreCollection
+			MediaTagCollection { name }
+		}
+	`
+
+	// Sem envelope "data": o gqlRequest já o desembrulha antes de entregar aqui.
+	var resultado struct {
+		GenreCollection    []string `json:"GenreCollection"`
+		MediaTagCollection []struct {
+			Name string `json:"name"`
+		} `json:"MediaTagCollection"`
+	}
+
+	if err := c.gqlRequest(ctx, query, nil, &resultado); err != nil {
+		return nil, err
+	}
+
+	v := &Vocabulario{
+		Generos: resultado.GenreCollection,
+		Tags:    make([]string, 0, len(resultado.MediaTagCollection)),
+	}
+	for _, t := range resultado.MediaTagCollection {
+		v.Tags = append(v.Tags, t.Name)
+	}
+
+	return v, nil
 }

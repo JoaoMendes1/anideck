@@ -665,6 +665,37 @@ confirmação com número errado não confirma nada.
 
 ---
 
+## 22. Gênero e tag são filtros diferentes na AniList
+
+`genre_in` e `tag_in` são listas separadas, e a API **não avisa quando o termo
+está na lista errada**: mandar `"Adventure"` em `tag_in` devolve `media: []`,
+com status 200.
+
+Sintoma: o scan do Olheiro roda, registra "42 candidatos" de outros rótulos e
+zero do rótulo novo. Parece catálogo esgotado, não erro.
+
+Regra: antes de filtrar, decidir por qual campo o termo vai, usando o
+`GenreCollection` e o `MediaTagCollection` da própria AniList. É o que o
+`buscarCandidatos` faz desde 19/09/2026.
+
+Conferência rápida:
+
+```bash
+curl -s https://graphql.anilist.co -H "Content-Type: application/json" \
+  -d '{"query":"{ Page(perPage:3){ media(type:ANIME, tag_in:[\"Adventure\"]){ idMal } } }"}'
+```
+
+## 23. Buscar só a primeira página esgota em semanas
+
+O `buscarCandidatos` lia 10 resultados por rótulo e descartava depois o que já
+era conhecido. Com 31 animes já julgados, os 10 primeiros de cada rótulo eram
+todos conhecidos e o scan devolvia zero — num acervo de milhares.
+
+Regra: quando a busca externa é filtrada por um estado local (já curado, já
+dispensado), o filtro tem que estar **dentro** do laço de paginação, e a busca
+precisa avançar de página até juntar o que foi pedido. Filtrar depois de uma
+página só transforma catálogo cheio em resultado vazio.
+
 ## 🧭 Como manter este arquivo
 
 - Toda vez que um bug **silencioso** chegar a produção (não quebrou, só devolveu dado errado),

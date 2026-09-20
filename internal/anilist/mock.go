@@ -75,3 +75,10 @@ func (m *MockClient) GetAnimesByMalIDs(ctx context.Context, malIDs []int) (*Anim
 	}
 	return &AnimeSearchResponse{Data: animes}, nil
 }
+
+func (m *MockClient) GetVocabulario(ctx context.Context) (*Vocabulario, error) {
+	return &Vocabulario{
+		Generos: []string{"Action", "Adventure", "Fantasy"},
+		Tags:    []string{"Isekai", "Magic", "Martial Arts"},
+	}, nil
+}

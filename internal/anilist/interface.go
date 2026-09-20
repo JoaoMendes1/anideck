@@ -10,4 +10,5 @@ type Service interface {
 	GetAnimeStatistics(ctx context.Context, id string) (*AnimeStatisticsResponse, error)
 	GetTopAnime(ctx context.Context, page int, perPage int, f SearchFilters) (*AnimeSearchResponse, error)
 	GetAnimesByMalIDs(ctx context.Context, malIDs []int) (*AnimeSearchResponse, error)
+	GetVocabulario(ctx context.Context) (*Vocabulario, error)
 }
