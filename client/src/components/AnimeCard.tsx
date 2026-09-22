@@ -10,6 +10,7 @@ interface NextAiringInfo {
 }
 
 interface AnimeCardProps {
+    priority?: boolean
     malId: number
     title: string
     imageUrl?: string
@@ -29,6 +30,7 @@ interface AnimeCardProps {
 }
 
 export default function AnimeCard({
+    priority = false,
     malId, title, imageUrl, genre, genres, year, score, ranking, isFavorite,
     gradientClass, statusBadge, extraBadges, topRightAction, nextAiringEpisode,
 }: AnimeCardProps) {
@@ -91,7 +93,7 @@ export default function AnimeCard({
                 <img
                     src={imageUrl}
                     alt={title}
-                    loading="lazy"
+                    loading={priority ? "eager" : "lazy"}
                     onError={() => setImagemFalhou(true)}
                     className="absolute inset-0 w-full h-full object-cover z-0 opacity-100 transition-transform duration-300 ease-out group-hover:scale-105"
                 />

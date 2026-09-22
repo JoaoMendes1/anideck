@@ -88,11 +88,11 @@ export default function VitrineDestaques() {
             {/* A proporção virou 2/3, que é a da arte de pôster: o 3/4.2 anterior
                 deformava ou cortava toda capa que chegava no formato original. */}
             <div className={`relative aspect-[2/3] rounded-[14px] overflow-hidden border border-line bg-panel ${gradienteDoCard(index)} transition-transform group-hover:-translate-y-1 group-active:scale-[0.98]`}>
-              {anime.custom_cover_image && (
+             {anime.custom_cover_image && (
                 <img
                   src={anime.custom_cover_image}
                   alt={anime.custom_title}
-                  loading="lazy"
+                  loading={index < 4 ? "eager" : "lazy"}
                   onError={(e) => { e.currentTarget.style.visibility = 'hidden' }}
                   className="absolute inset-0 w-full h-full object-cover opacity-90 group-hover:opacity-100 transition-opacity"
                 />
