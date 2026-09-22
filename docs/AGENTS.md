@@ -84,17 +84,29 @@ git diff
 git add <arquivos alterados>
 git commit -m "tipo(escopo): descrição curta (closes #NN)"
 
-# 5. Subir para staging (dispara o deploy de homologação)
+# 5. Subir para staging
 git push origin staging
 
-# 6. Validar em homologação (URL de staging) antes de qualquer promoção
+# 6. Validar antes de qualquer promoção
+#    ⚠️ Ver a nota abaixo: hoje não existe ambiente de homologação no ar.
 
 # 7. Quando validado, promover para produção
 git checkout main
 git pull origin main
 git merge staging
-git push origin main
+git push origin main   # ← dispara a GitHub Action que publica na VPS
 ```
+
+> **⚠️ Mudou em 22/09/2026 — a homologação ficou sem destino.** O projeto saiu do Render para
+> VPS própria. O deploy de **produção** é automático: push na `main` dispara uma GitHub Action
+> que conecta por SSH, roda `git pull`, `docker build` e recria o container. Mas o ambiente de
+> **staging** vivia no Render e foi suspenso junto — hoje o passo 6 não tem onde acontecer, e a
+> validação é local. A disciplina de branch continua valendo; o que não existe é o ambiente.
+> Registrado no Backlog do `ROADMAP.md`.
+>
+> **Verde na Action não garante código novo.** Ela reporta sucesso mesmo quando o `git pull` não
+> trouxe nada. Antes de acusar o deploy, confira o `git log` do servidor — item 25 do
+> `PITFALLS.md`.
 
 **Tipos de commit usados:** `feat`, `fix`, `refactor`, `docs`, `chore` — seguido do escopo entre
 parênteses (`ui`, `auth`, `db`, etc.) e sempre referenciando a issue com `closes #NN`.

@@ -12,9 +12,16 @@
 + identidade visual mínima aplicada. Fases 4, 5 e 6.x são incrementos sobre um produto já no ar.
 
 ## 🚀 Deploy contínuo
+
 Staging sobe já na Fase 1, como projeto esqueleto — mesmo padrão do JVM Systems.
 
-## 📍 Status atual (08/09/2026)
+> **Mudou em 22/09/2026.** O projeto saiu do Render para VPS própria, e o deploy de produção
+> passou a ser `git push` na `main`, via GitHub Actions. **A homologação ficou sem destino:**
+> o ambiente de staging vivia no Render e foi suspenso junto. O fluxo do `AGENTS.md` continua
+> válido como disciplina de branch, mas o passo "validar em homologação" não tem onde acontecer
+> até que um segundo container suba na VPS. Ver `DECISIONS.md` e `AGENTS.md`.
+
+## 📍 Status atual (22/09/2026)
 
 | Fase | Status |
 |---|---|
@@ -467,6 +474,10 @@ reordenáveis, sinopse com reescrita por IA, título, formato e status.
       (bucket `curadoria`), rodada à mão antes de cada arquivo `sql/` e
       semanalmente. **Validada em 01/09/2026** em projeto descartável, com
       conferência de contagem e de permissões. Ver `DECISIONS.md`.
+      **Atualizado em 22/09/2026:** a rotina deixou de ser manual e roda às 3h
+      pelo `cron` da VPS, com destino no Google Drive e 30 dias de retenção.
+      A restauração **desta** rotina ainda não foi testada — ver a dívida no fim
+      deste arquivo.
 - [x] **Escrita de `anime_metadata_cache` fechada a `is_admin()`** — `sql/020`,
       aplicado e validado em 01/09/2026. Era a última policy `USING (true)`
       do schema. Ver `DECISIONS.md`.
@@ -537,9 +548,10 @@ nenhum. E mesmo o que ele guarda é uma foto: se ela morrer, congela.
 - [ ] **9.3 — Fila, worker e tela de revisão.** A base da 9.4, não um fim em si.
       Traz junto a seção Catálogo (relatório de independência) da aba de Controle:
       cada linha dele tem um botão "Enfileirar", que só existe depois da fila.
-      Worker é binário separado (`cmd/worker/`), não goroutine no app: o free
-      tier do Render hiberna, e processo próprio é o que migra para `systemd` na
-      VPS. Molde a seguir: `StartRankingEngine` + o `atomic.Bool` com
+      Worker é binário separado (`cmd/worker/`), não goroutine no app. O motivo
+      original era a hibernação do free tier; a VPS existe desde 22/09/2026 e a
+      separação continua valendo por outro: processo próprio ganha container ou
+      `systemd` sem ser derrubado a cada deploy do app. Molde a seguir: `StartRankingEngine` + o `atomic.Bool` com
       `CompareAndSwap`. **Usa `ServiceRoleClient()`, nunca o token da
       requisição** — ver o incidente de 12/09 na Manutenção pós-v1.
 - [ ] **9.4 — Títulos de episódio em pt-BR, datas, horários e onde assistir.**
@@ -603,9 +615,11 @@ Gemini tem camada gratuita, e a chave já existe no projeto.
 
 **Fora de escopo:** observabilidade com Grafana e MCP para telemetria. Com um
 usuário não há métrica que justifique, e inventar escala para praticar ensina
-pouco. MCP do Supabase espera a VPS com backup automático — hoje produção e
-homologação são o mesmo projeto sem ponto de restauração, e credencial de escrita
-numa integração é risco desproporcional.
+pouco. O bloqueio do MCP do Supabase **mudou de forma em 22/09/2026**: a VPS
+existe e o backup diário existe, mas a restauração dessa rotina nunca foi
+testada, e produção e homologação continuam sendo o mesmo projeto Supabase.
+Credencial de escrita numa integração segue desproporcional enquanto não houver
+ponto de restauração comprovado — não apenas capturado.
 
 ---
 ## 🏠 Fase 11: Home e navegação — *a planejar*
@@ -641,6 +655,37 @@ A gamificação (rank F→SS, XP, insígnias) **não entra aqui**. Continua no
 > Correção e ajuste feitos depois do escopo da v1 fechar. **Não são fases** — não seguem a
 > numeração e não abrem escopo novo. Ficam registrados aqui em ordem cronológica inversa para
 > não sumirem: fase concluída não deve ser reaberta só para receber um conserto.
+
+### 22/09/2026 — Saída do Render: VPS própria, deploy automático e backup diário
+
+> A maior mudança de infraestrutura desde a migração para a AniList. Não é fase porque não
+> altera o produto: nenhuma tela mudou, nenhum campo novo existe. Ver `DECISIONS.md`.
+
+- [x] **VPS própria** (Integrator, Ubuntu 26.04 LTS) com hardening: chave SSH, root bloqueado
+      no SSH, UFW, `fail2ban` e `unattended-upgrades`. O Render foi suspenso.
+- [x] **Caddy como proxy reverso**, com HTTPS emitido e renovado sozinho. O Nginx que veio na
+      imagem do provedor foi parado, não removido — item 27 do `PITFALLS.md`.
+- [x] **Domínio próprio:** `anideck.joaomendes.dev.br`, provisório até a compra de
+      `anideck.com.br`, adiada de propósito para quando o produto estiver mais completo.
+      As Redirect URLs do Supabase foram atualizadas para o domínio novo.
+- [x] **Imagem em três etapas** (Node compila o React → Go compila o binário → Alpine junta),
+      53 MB. Node é ferramenta de build e não vai para produção.
+- [x] **Deploy por `git push` na `main`**, via GitHub Actions com chave SSH dedicada.
+- [x] **Backup diário automático às 3h** para o Google Drive: `pg_dump` pelo Session pooler,
+      `rclone sync` do bucket `curadoria`, configuração e `.env`, com 30 dias de retenção.
+- [x] **O checador de episódios saiu do cron-job.org** para o `cron` da VPS, de 3h para 1h.
+- [x] **🔒 `POST /api/internal/check-new-episodes` estava aberto.** O `CRON_SECRET` era exigido
+      no boot pelo `internal/config/env.go` e **nunca conferido** pelo handler — a entrada de
+      31/08 no `DECISIONS.md` afirmava o contrário. A checagem do header virou as primeiras
+      linhas de `HandleCheckNewEpisodes`, e a rota responde 401 sem ele.
+- [x] **Infraestrutura versionada** em repositório privado `infra` (Caddyfile e compose).
+
+**Descoberto no caminho, tudo no `PITFALLS.md`:** o Docker fura o UFW (24), deploy verde não
+garante código novo (25), o `.env` do servidor envelhece sozinho e derrubou o Grimoire por uma
+senha rotacionada (26), e o painel do provedor desfaz a configuração com um clique (27).
+
+**O que ficou pendente:** a homologação perdeu o destino junto com o Render — ver a nota em
+"Deploy contínuo" — e a restauração do backup automático nunca foi testada.
 
 ### 12/09/2026 — Resync passa a enxergar a curadoria
 
@@ -703,6 +748,17 @@ A gamificação (rank F→SS, XP, insígnias) **não entra aqui**. Continua no
 ## 📋 Backlog / Ideias em Avaliação
 
 > Nada aqui é compromisso de escopo. Reavaliar depois do beta da Fase 7, com base em uso real.
+
+- [ ] **🔴 Testar a restauração do backup automático.** A rotina de 22/09 captura todo dia,
+      mas nunca foi restaurada — a validação de 01/09 cobriu o `backup.sh` manual, que é outro
+      script e outro destino. Backup não restaurado é esperança, não backup. Refazer o
+      procedimento de 01/09 num projeto Supabase descartável: contagens, `security_invoker`,
+      policies e RPCs. **É a pendência com maior custo em caso de acidente.**
+
+- [ ] **Homologação sem destino.** O ambiente de staging vivia no Render. O fluxo de branch do
+      `AGENTS.md` continua, mas não há onde validar antes de promover. Opções: um segundo
+      container na mesma VPS apontando para a branch `staging`, ou aceitar explicitamente que
+      a validação passou a ser local.
 
 - [ ] **Resync pular quem já está em dia.** Hoje ele refaz os 114 toda vez,
       inclusive quem sincronizou há uma hora. Pular quem foi atualizado nos

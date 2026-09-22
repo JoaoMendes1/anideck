@@ -15,11 +15,11 @@ jobs:
           host: ${{ secrets.VPS_HOST }}
           username: ${{ secrets.VPS_USER }}
           key: ${{ secrets.VPS_SSH_KEY }}
-          script: |
+                    script: |
             set -e
-            cd ~/grimoire
+            cd ~/anideck
             git pull origin main
-            docker build -t grimoire .
+            docker build -t anideck .
             cd ~/infra
-            docker compose up -d --force-recreate grimoire
+            docker compose up -d --force-recreate anideck
             docker image prune -f

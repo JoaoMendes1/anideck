@@ -247,6 +247,11 @@ como exceção.
 cadeia de fallback o cobrem. Com a API fora, não havia como criar curadoria alguma. Corrigido em
 08/09/2026 com o campo manual de `mal_id` e o botão "Criar manualmente" (ver `DECISIONS.md`).
 
+**Atualização (22/09/2026) — o IP virou fixo.** Com a saída do Render, o servidor passou a ter
+endereço dedicado, compartilhado com os outros projetos da máquina. Bloqueio por rate limit
+deixou de rodar entre IPs do provedor e passa a atingir sempre o mesmo endereço — e derruba
+junto o que não tem nada a ver com a AniList. O rate limiter próprio deixou de ser precaução.
+
 > **Pergunta obrigatória:** o que este código faz quando a AniList responde 403, 429 ou timeout?
 > O usuário vê "fonte externa indisponível" ou vê "erro"?
 
@@ -267,9 +272,12 @@ ambiente onde errar sem custo. Teste em homologação altera dado de produção.
 **Segundo agravante:** o repositório não sabe quais arquivos já foram aplicados. Registre a data
 de aplicação no `sql/README.md` — sem isso, você não descobre em outra máquina.
 
-**Terceiro agravante (31/08/2026):** o plano Free do Supabase **não tem backup automático** —
-é recurso do Pro para cima. Não existe ponto de restauração nenhum hoje. DDL destrutivo aplicado
-aqui é definitivo até que a rotina própria de `pg_dump` exista.
+**Terceiro agravante (31/08/2026, atualizado em 22/09/2026):** o plano Free do Supabase **não
+tem backup automático** — é recurso do Pro para cima. Desde 22/09 existe rotina própria rodando
+às 3h na VPS (`pg_dump` dos bancos + `rclone sync` do bucket, 30 dias de retenção no Google
+Drive), então o ponto de restauração passou a existir — **mas nunca foi restaurado**. A
+validação de 01/09 cobriu o `backup.sh` manual, não esta rotina. Até que uma restauração real
+seja executada, trate DDL destrutivo como definitivo.
 
 > **Pergunta obrigatória:** este SQL precisa rodar antes ou depois do deploy do código? É
 > reversível? Se não for, qual é o rollback?
@@ -695,6 +703,107 @@ Regra: quando a busca externa é filtrada por um estado local (já curado, já
 dispensado), o filtro tem que estar **dentro** do laço de paginação, e a busca
 precisa avançar de página até juntar o que foi pedido. Filtrar depois de uma
 página só transforma catálogo cheio em resultado vazio.
+
+## 24. 🧱 O Docker fura o UFW
+
+**Descoberto na migração (22/09/2026), testado e confirmado.** O Docker escreve regras direto no
+`iptables`, **abaixo** do UFW. Uma porta publicada com `-p` fica acessível pela internet mesmo
+sem regra nenhuma no firewall — `ufw status` continua dizendo que só 22, 80 e 443 estão abertas,
+e a 8080 responde de fora.
+
+O modo de falha é o pior tipo: o firewall **parece** correto. Ninguém descobre auditando a
+configuração; só testando de fora.
+
+Regra: container de aplicação declara `expose`, nunca `ports`. Só o Caddy publica porta, e o
+resto é alcançável apenas pela rede interna do compose.
+
+Conferência, da própria máquina não serve — tem que ser de fora:
+
+```bash
+curl -s -o /dev/null -w "%{http_code}\n" http://SEU_IP:8080
+```
+
+> **Pergunta obrigatória:** este serviço precisa ser alcançável de fora, ou só pelo Caddy? Se for
+> só pelo Caddy, por que tem `ports`?
+
+---
+
+## 25. ✅ Deploy verde não garante código novo
+
+A Action reporta sucesso mesmo quando o `git pull` não trouxe alteração nenhuma, porque
+tecnicamente nada falhou. O `set -e` cobre comando que **quebra**, não comando que roda e não
+tem o que fazer.
+
+**Incidente (22/09/2026):** a correção do `X-Cron-Secret` foi editada, a Action passou verde, e o
+endpoint continuou respondendo 200 sem o header. O commit só tinha chegado ao GitHub **depois**
+que a Action rodou — ela publicou, corretamente, a versão anterior.
+
+Meia hora foi gasta investigando a Action, que estava certa.
+
+Conferência antes de acusar o deploy:
+
+```bash
+cd ~/anideck && git log --oneline -3
+```
+
+Se o commit esperado não está no `HEAD` do servidor, o problema é de ordem dos acontecimentos.
+
+> **Pergunta obrigatória:** o commit que eu quero publicar está na `main` do GitHub **antes** de
+> a Action rodar? Verde diz que o processo rodou, não que ele tinha o que fazer.
+
+---
+
+## 26. 🔑 O `.env` do servidor é uma cópia que envelhece sozinha
+
+O `.env` vive na pasta do projeto no servidor, não vem do Git e não é derivado de nada. Toda
+credencial rotacionada no Supabase — senha do banco, service role, chave de API — precisa ser
+reescrita lá à mão, e nada relaciona as duas pontas.
+
+**Incidente (22/09/2026):** a senha do banco foi redefinida no painel do Supabase durante a
+configuração do backup. O app continuou no ar com a conexão já estabelecida e só caiu no
+restart seguinte, com `password authentication failed for user "postgres"` — horas depois da
+causa, sem ligação aparente com o que tinha sido feito.
+
+Agravado pelo `restart: unless-stopped`: o container sobe, falha no boot, reinicia, e o log
+enche de dezenas de linhas idênticas. O `fail-fast` funcionou — o que ele não faz é dizer que a
+causa foi uma ação tomada em outro sistema.
+
+Dois `.env` no AniDeck, e eles não são intercambiáveis: o da raiz é lido pelo Go **em tempo de
+execução**; o `client/.env` é lido pelo Vite **em tempo de build**, e variável `VITE_*` faltando
+só aparece como tela em branco no navegador, sem nada no log do servidor.
+
+Conferência sem expor valor:
+
+```bash
+grep -o '^[A-Z_]*=' ~/anideck/.env
+grep -o '^[A-Z_]*=' ~/anideck/client/.env
+```
+
+> **Pergunta obrigatória:** rotacionei credencial no Supabase? Então o `.env` do servidor já está
+> errado — e o sintoma só vai aparecer no próximo deploy.
+
+---
+
+## 27. 🎛️ O painel do provedor desfaz a configuração com um clique
+
+A imagem da VPS trouxe um Nginx próprio do painel ICP, **parado** durante a migração para
+liberar as portas 80 e 443 para o Caddy.
+
+A tela de Domínios do painel exibe `NGINX: PARADO` como se fosse falha a corrigir. Iniciá-lo faz
+o Nginx disputar a porta 80 e **derruba os dois sites**. O painel também mostra `Domínios: 01`,
+porque enxerga apenas o que ele mesmo configurou — os subdomínios do Caddy não existem para ele.
+
+Duas visões da mesma máquina que não se falam, e uma delas apresenta o estado correto como
+problema.
+
+Regra: o painel serve para métricas e para reinstalar o sistema. As seções Web, Aplicações e
+Container não devem criar nada. Para desfazer a migração um dia, a ordem é parar o Caddy
+**primeiro** e só então iniciar o Nginx.
+
+> **Pergunta obrigatória:** este botão do painel mexe em porta, container ou domínio? Se mexe, a
+> configuração real está no `~/infra`, não aqui.
+
+---
 
 ## 🧭 Como manter este arquivo
 
