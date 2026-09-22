@@ -175,6 +175,10 @@ func (h *NotificationsHandler) HandleReadNotification(w http.ResponseWriter, r *
 }
 
 func (h *NotificationsHandler) HandleCheckNewEpisodes(w http.ResponseWriter, r *http.Request) {
+		if r.Header.Get("X-Cron-Secret") != os.Getenv("CRON_SECRET") {
+    http.Error(w, "não autorizado", http.StatusUnauthorized)
+    return
+}
 		if os.Getenv("SUPABASE_SERVICE_ROLE_KEY") == "" {
 		log.Printf("[ERRO CRON] SUPABASE_SERVICE_ROLE_KEY ausente")
 		http.Error(w, "Erro de configuração", http.StatusInternalServerError)
