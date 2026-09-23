@@ -14,6 +14,7 @@ import (
 	"github.com/microcosm-cc/bluemonday"
 	"strconv"
 	supabase "github.com/supabase-community/supabase-go"
+	"github.com/supabase-community/postgrest-go"
 	
 )
 
@@ -22,17 +23,59 @@ var sanitizer = bluemonday.StrictPolicy()
 
 type CurationHandler struct{}
 
+// destaqueVitrine é o recorte de curated_animes que a vitrine do Meu Deck exibe.
+// Struct própria em vez de CuratedAnime com menos colunas: decodificar colunas
+// ausentes na struct completa faria os campos sem omitempty saírem com zero value
+// (tags nulas, order_index 0), que pareceria dado real para quem lê o JSON.
+type destaqueVitrine struct {
+	ID               string `json:"id"`
+	MalID            int    `json:"mal_id"`
+	CustomTitle      string `json:"custom_title"`
+	CustomCoverImage string `json:"custom_cover_image"`
+	CustomFormat     string `json:"custom_format,omitempty"`
+}
+
+// maxDestaquesNaVitrine espelha o MAX_NA_VITRINE da VitrineDestaques.tsx.
+// O corte acontece no banco para não trafegar o que a tela vai descartar.
+const maxDestaquesNaVitrine = 12
+
+// listarDestaques busca só o que a vitrine desenha. A ordenação acontece no banco,
+// ANTES do limite: limitar primeiro e ordenar no Go devolveria 12 destaques
+// quaisquer, em ordem certa — o grupo errado, sem erro nenhum.
+func (h *CurationHandler) listarDestaques(w http.ResponseWriter) {
+	data, _, err := database.Client.From("curated_animes").
+		Select("id,mal_id,custom_title,custom_cover_image,custom_format", "", false).
+		Eq("is_destaque", "true").
+		Order("order_index", &postgrest.OrderOpts{Ascending: true}).
+		Limit(maxDestaquesNaVitrine, "").
+		Execute()
+	if err != nil {
+		log.Printf("[ERRO DB] listarDestaques: %v", err)
+		http.Error(w, "Erro ao buscar destaques", http.StatusInternalServerError)
+		return
+	}
+
+	var destaques []destaqueVitrine
+	if err := json.Unmarshal(data, &destaques); err != nil {
+		log.Printf("[ERRO] listarDestaques: resposta ilegível: %v", err)
+		http.Error(w, "Erro ao buscar destaques", http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(destaques)
+}
+
 func (h *CurationHandler) HandleList(w http.ResponseWriter, r *http.Request) {
 	var resultado []models.CuratedAnime
 
 	consulta := database.Client.From("curated_animes").Select("*", "exact", false)
 
-	// `?destaques=true` devolve só o que deve aparecer na vitrine. Sem o parâmetro vem tudo,
-	// que é o que o Painel Admin precisa: lá o objetivo é gerenciar inclusive o que está
-	// oculto. Filtrar por padrão esconderia do Admin justamente os animes que ele precisa
-	// reencontrar para voltar a exibir.
+	// A vitrine tem caminho próprio e enxuto; sem o parâmetro segue o comportamento
+	// de sempre, que é o que o Painel Admin precisa (inclusive os ocultos).
 	if r.URL.Query().Get("destaques") == "true" {
-		consulta = consulta.Eq("is_destaque", "true")
+		h.listarDestaques(w)
+		return
 	}
 
 	data, _, err := consulta.Execute()
