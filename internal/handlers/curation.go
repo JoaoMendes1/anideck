@@ -12,10 +12,9 @@ import (
 	"github.com/JoaoMendes1/anideck/internal/models"
 	"github.com/go-chi/chi/v5"
 	"github.com/microcosm-cc/bluemonday"
-	"strconv"
-	supabase "github.com/supabase-community/supabase-go"
 	"github.com/supabase-community/postgrest-go"
-	
+	supabase "github.com/supabase-community/supabase-go"
+	"strconv"
 )
 
 // Inicia o higienizador para evitar ataques XSS nos textos de curadoria
@@ -46,7 +45,8 @@ func (h *CurationHandler) listarDestaques(w http.ResponseWriter) {
 	data, _, err := database.Client.From("curated_animes").
 		Select("id,mal_id,custom_title,custom_cover_image,custom_format", "", false).
 		Eq("is_destaque", "true").
-		Order("order_index", &postgrest.OrderOpts{Ascending: true}).
+		// NullsFirst reproduz a ordem antiga: o Go lia order_index nulo como 0 e punha na frente.
+		Order("order_index", &postgrest.OrderOpts{Ascending: true, NullsFirst: true}).
 		Limit(maxDestaquesNaVitrine, "").
 		Execute()
 	if err != nil {

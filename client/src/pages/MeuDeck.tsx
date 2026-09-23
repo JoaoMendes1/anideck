@@ -197,6 +197,11 @@ export default function MeuDeck() {
                             <div key={i} className="shrink-0 w-[132px] md:w-auto h-[92px] rounded-[14px] shimmer" />
                         ))}
                     </div>
+                    {/* A vitrine ocupa a MESMA posição (terceiro filho deste div) aqui e no
+                        retorno carregado. É isso que faz o React mantê-la viva quando o
+                        loading acaba, em vez de desmontar e buscar de novo. Mudou a
+                        estrutura de um dos dois retornos, mude a do outro junto. */}
+                    <VitrineDestaques />
                     <DeckSkeleton />
                 </div>
             </div>
@@ -261,11 +266,10 @@ export default function MeuDeck() {
                                     }`}
                             >
                                 <span>{tab}</span>
-                                <span className={`font-mono text-[10.5px] px-1.5 py-0.5 rounded-full ${
-                                    ativa
+                                <span className={`font-mono text-[10.5px] px-1.5 py-0.5 rounded-full ${ativa
                                         ? 'bg-white/20 text-white'
                                         : 'bg-panel-2 text-muted-2 border border-line/60'
-                                }`}>
+                                    }`}>
                                     {totalAba}
                                 </span>
                             </button>
