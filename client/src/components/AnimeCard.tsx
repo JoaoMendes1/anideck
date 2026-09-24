@@ -102,12 +102,17 @@ export default function AnimeCard({
             <div className="absolute inset-x-0 top-0 h-16 bg-gradient-to-b from-void/75 via-void/25 to-transparent z-10 pointer-events-none" />
             <div className="absolute inset-x-0 bottom-0 h-20 bg-gradient-to-t from-void via-void/65 to-transparent z-10 pointer-events-none" />
 
+            {/* Nenhum selo deste card usa backdrop-blur, de propósito. São até 6 por card;
+                com 85 cards no deck eram ~440 desfoques, refeitos pelo navegador a cada
+                capa que terminava de carregar — o maior peso do travamento medido no
+                Lighthouse. As faixas escuras em degradê acima já garantem a leitura. */}
+
             {/* Badges superiores */}
             <div className="absolute top-2.5 left-2.5 right-11 z-20 flex flex-col gap-1 items-start pointer-events-none">
                 {statusBadge}
                 {extraBadges}
                 {temRanking && (
-                    <div className="flex items-center gap-1 font-anton text-[9.5px] px-1.5 py-0.5 rounded-md bg-void/80 text-holo-3 border border-holo-3/40 backdrop-blur-md shadow-[0_0_8px_rgba(63,224,240,0.25)]">
+                    <div className="flex items-center gap-1 font-anton text-[9.5px] px-1.5 py-0.5 rounded-md bg-void/80 text-holo-3 border border-holo-3/40 shadow-[0_0_8px_rgba(63,224,240,0.25)]">
                         <span className="text-[8.5px] leading-none">🏆</span>#{ranking}
                     </div>
                 )}
@@ -126,14 +131,14 @@ export default function AnimeCard({
                     {listaGeneros.map((g) => (
                         <span
                             key={g}
-                            className={`text-[8px] font-bold px-1 py-[1px] rounded border backdrop-blur-md truncate max-w-[92px] ${getCategoryTheme(g)}`}
+                            className={`text-[8px] font-bold px-1 py-[1px] rounded border truncate max-w-[92px] ${getCategoryTheme(g)}`}
                         >
                             {g}
                         </span>
                     ))}
                 </div>
 
-                <div className={`shrink-0 font-anton text-[10px] px-1.5 py-0.5 rounded-md backdrop-blur-md border ${
+                <div className={`shrink-0 font-anton text-[10px] px-1.5 py-0.5 rounded-md border ${
                     temNota
                         ? 'bg-void/80 text-gold border-gold/50 shadow-[0_0_8px_rgba(255,197,66,0.3)]'
                         : 'bg-void/80 text-muted-2 border-line'
@@ -149,7 +154,7 @@ export default function AnimeCard({
             {isFavorite ? (
                 <div className="relative">
                     <div
-                        className="absolute -top-2.5 -left-2.5 z-40 w-7 h-7 rounded-full bg-void/90 border border-gold/60 flex items-center justify-center text-xs shadow-[0_0_12px_rgba(255,197,66,0.45)] backdrop-blur-md select-none pointer-events-none"
+                        className="absolute -top-2.5 -left-2.5 z-40 w-7 h-7 rounded-full bg-void/90 border border-gold/60 flex items-center justify-center text-xs shadow-[0_0_12px_rgba(255,197,66,0.45)] select-none pointer-events-none"
                         title="Favorito (Carta Rara)"
                     >
                         👑

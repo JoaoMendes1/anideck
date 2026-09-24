@@ -209,8 +209,23 @@ func (h *AnimeHandler) HandleGetAnimesByIDs(w http.ResponseWriter, r *http.Reque
 		// FALLBACK (BLOCO 3): Monta o array base usando o cache local para o Deck não quebrar
 		resultados = &anilist.AnimeSearchResponse{Data: []anilist.Anime{}}
 		dbClient := database.Client
-		if dbClient != nil {
-			dataCache, _, _ := dbClient.From("anime_metadata_cache").Select("*", "exact", false).Execute()
+		if dbClient != nil && len(payload.IDs) > 0 {
+			// Só as linhas e as colunas que o esqueleto abaixo usa. Antes vinha a tabela
+			// INTEIRA (todos os animes que qualquer usuário já teve no deck, com todas as
+			// colunas) a cada abertura do Meu Deck com a AniList fora — de 0,9 a 1,5 s
+			// no log do servidor. O len > 0 evita mandar um filtro "in.()" vazio.
+			//
+			// status ficou de fora de propósito: nada grava essa coluna no cache (ver
+			// buildMetadataPayload), e pedir uma coluna que não existe faz o PostgREST
+			// recusar a consulta INTEIRA — o deck ficaria sem título nenhum.
+			idsTexto := make([]string, len(payload.IDs))
+			for i, id := range payload.IDs {
+				idsTexto[i] = strconv.Itoa(id)
+			}
+			dataCache, _, _ := dbClient.From("anime_metadata_cache").
+				Select("mal_id,title,episodes,average_score,season_year", "", false).
+				In("mal_id", idsTexto).
+				Execute()
 			var cached []map[string]interface{}
 			json.Unmarshal(dataCache, &cached)
 			
@@ -226,7 +241,6 @@ func (h *AnimeHandler) HandleGetAnimesByIDs(w http.ResponseWriter, r *http.Reque
 					if t, ok := c["title"].(string); ok { anime.Title = t }
 					if e, ok := c["episodes"].(float64); ok { anime.Episodes = int(e) }
 					if s, ok := c["average_score"].(float64); ok { anime.Score = s }
-					if st, ok := c["status"].(string); ok { anime.Status = st }
 					if sy, ok := c["season_year"].(float64); ok { anime.SeasonYear = int(sy) }
 				}
 				resultados.Data = append(resultados.Data, anime)

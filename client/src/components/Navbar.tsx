@@ -1,10 +1,28 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useSyncExternalStore } from 'react'
 import { Link, useLocation } from 'react-router-dom'
 import { Search } from 'lucide-react'
 import NotificationBell from './NotificationBell'
 import MenuPerfil from './MenuPerfil'
 import { useSessao } from '../contexts/SessaoContext'
 import { LogoMark } from './Brand'
+
+// Mesma fronteira do prefixo md: do Tailwind (48rem).
+const CONSULTA_DESKTOP = '(min-width: 48rem)'
+
+function assinarTamanhoDaTela(avisar: () => void) {
+  const consulta = window.matchMedia(CONSULTA_DESKTOP)
+  consulta.addEventListener('change', avisar)
+  return () => consulta.removeEventListener('change', avisar)
+}
+
+// Diz se a tela está no layout de desktop. Existe por causa do sino: o menu tem
+// um lugar para ele no celular e outro no desktop, e esconder um dos dois com CSS
+// (md:hidden) não impede que ele monte. Montados, os dois buscavam as
+// notificações e registravam o service worker — toda abertura do app fazia essas
+// chamadas em dobro, como mostrou o log do servidor.
+function useEhDesktop(): boolean {
+  return useSyncExternalStore(assinarTamanhoDaTela, () => window.matchMedia(CONSULTA_DESKTOP).matches)
+}
 
 export default function Navbar() {
   // A sessão e a verificação de admin vinham daqui, cada uma com seu useEffect.
@@ -13,6 +31,7 @@ export default function Navbar() {
   const { session } = useSessao()
   const [scrolled, setScrolled] = useState(false)
   const location = useLocation()
+  const ehDesktop = useEhDesktop()
 
   // Gerencia o efeito de Scroll da Navbar
   useEffect(() => {
@@ -43,7 +62,7 @@ export default function Navbar() {
               Ani<span className="text-holo">Deck</span>
             </div>
           </Link>
-          {session && (
+          {session && !ehDesktop && (
             <div className="flex md:hidden items-center">
               <NotificationBell />
             </div>
@@ -69,7 +88,7 @@ export default function Navbar() {
               <Search size={16} />
             </Link>
 
-            {session && <NotificationBell />}
+            {session && ehDesktop && <NotificationBell />}
 
             {session ? (
               <MenuPerfil />

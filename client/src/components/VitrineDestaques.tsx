@@ -50,14 +50,26 @@ export default function VitrineDestaques() {
 
   if (carregando) {
     return (
+      // O skeleton ocupa EXATAMENTE a altura da vitrine pronta. Antes ele era mais baixo
+      // (título de 1 linha, cabeçalho de 20px) e, quando os destaques chegavam, tudo
+      // abaixo pulava — era o maior responsável pelo CLS do Meu Deck no Lighthouse.
+      // As alturas fixas abaixo espelham as do conteúdo real: cabeçalho de 25.5px
+      // (fonte de 17px x altura de linha 1.5), título de 2 linhas e linha de formato.
       <section className="mb-10">
-        <div className="h-5 w-32 rounded-full shimmer mb-5" />
+        <div className="h-[25.5px] flex items-center mb-5">
+          <div className="h-5 w-32 rounded-full shimmer" />
+        </div>
         <div className="flex gap-3.5 overflow-hidden">
           {Array.from({ length: 6 }).map((_, i) => (
             <div key={i} className="shrink-0 w-[140px] md:w-[158px]">
               <div className="aspect-[2/3] rounded-[14px] shimmer" />
-              <div className="h-3 w-4/5 rounded-full shimmer mt-2.5" />
-              <div className="h-2 w-1/3 rounded-full shimmer mt-1.5" />
+              <div className="mt-2.5 h-[31.25px] flex flex-col justify-center gap-1.5">
+                <div className="h-3 w-4/5 rounded-full shimmer" />
+                <div className="h-3 w-3/5 rounded-full shimmer" />
+              </div>
+              <div className="mt-1 h-[13.5px] flex items-center">
+                <div className="h-2 w-1/3 rounded-full shimmer" />
+              </div>
             </div>
           ))}
         </div>
@@ -93,6 +105,9 @@ export default function VitrineDestaques() {
                   src={anime.custom_cover_image}
                   alt={anime.custom_title}
                   loading={index < 4 ? "eager" : "lazy"}
+                  // A primeira capa é o elemento do LCP: pedir prioridade alta faz o
+                  // navegador baixá-la antes das outras 11, que disputam a mesma banda.
+                  fetchPriority={index === 0 ? "high" : "auto"}
                   onError={(e) => { e.currentTarget.style.visibility = 'hidden' }}
                   className="absolute inset-0 w-full h-full object-cover opacity-90 group-hover:opacity-100 transition-opacity"
                 />
@@ -106,7 +121,7 @@ export default function VitrineDestaques() {
             {/* O título saiu de cima da capa. Sobreposto, exigia drop-shadow pesado,
                 comia o terço inferior da arte e ainda assim quebrava em duas linhas
                 apertadas. Embaixo, lê melhor e a capa fica limpa. */}
-            <h3 className="mt-2.5 text-[12.5px] font-bold leading-tight line-clamp-2 text-text group-hover:text-holo-3 transition-colors">
+            <h3 className="mt-2.5 min-h-[2lh] text-[12.5px] font-bold leading-tight line-clamp-2 text-text group-hover:text-holo-3 transition-colors">
               {anime.custom_title}
             </h3>
 
