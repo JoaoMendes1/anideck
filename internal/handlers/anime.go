@@ -1,10 +1,12 @@
 package handlers
 
 import (
+	"context"
 	"encoding/json"
 	"net/http"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/JoaoMendes1/anideck/internal/anilist"
 	"github.com/JoaoMendes1/anideck/internal/database"
@@ -105,15 +107,24 @@ func (h *AnimeHandler) HandleGetTop(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(resultados)
 }
 
+// prazoDaAniListNaTela é quanto uma tela espera a AniList antes de desistir e usar o
+// que está no banco. Saudável, ela responde em ~1 s. Passar de 5 s significa fila no
+// limitador ou 429, e aí o cliente esperaria até 60 s por tentativa, com o usuário
+// parado no "Carregando". O prazo funciona porque o limitador e a espera do 429
+// respeitam o context.
+const prazoDaAniListNaTela = 5 * time.Second
+
 func (h *AnimeHandler) HandleGetAnime(w http.ResponseWriter, r *http.Request) {
 	id := chi.URLParam(r, "id")
 
-	resultados, err := h.AniListClient.GetAnimeById(r.Context(), id)
+	prazo, cancelar := context.WithTimeout(r.Context(), prazoDaAniListNaTela)
+	defer cancelar()
+	resultados, err := h.AniListClient.GetAnimeById(prazo, id)
 	if err != nil {
 		// FALLBACK (BLOCO 3): Tenta recuperar do cache local e curadoria
 		malID, _ := strconv.Atoi(id)
 		dbClient := database.Client
-		
+
 		if dbClient == nil {
 			http.Error(w, "Catálogo indisponível no momento.", http.StatusServiceUnavailable)
 			return
@@ -121,11 +132,15 @@ func (h *AnimeHandler) HandleGetAnime(w http.ResponseWriter, r *http.Request) {
 
 		dataCache, _, errM := dbClient.From("anime_metadata_cache").Select("*", "exact", false).Eq("mal_id", id).Execute()
 		var cached []map[string]interface{}
-		if errM == nil { json.Unmarshal(dataCache, &cached) }
+		if errM == nil {
+			json.Unmarshal(dataCache, &cached)
+		}
 
 		dataCurado, _, errC := dbClient.From("curated_animes").Select("*", "exact", false).Eq("mal_id", id).Execute()
 		var curados []models.CuratedAnime
-		if errC == nil { json.Unmarshal(dataCurado, &curados) }
+		if errC == nil {
+			json.Unmarshal(dataCurado, &curados)
+		}
 
 		// Se não tem no cache nem na curadoria, aí sim dá erro
 		if len(cached) == 0 && len(curados) == 0 {
@@ -137,9 +152,15 @@ func (h *AnimeHandler) HandleGetAnime(w http.ResponseWriter, r *http.Request) {
 		animeFallback := anilist.Anime{MalID: malID}
 		if len(cached) > 0 {
 			c := cached[0]
-			if title, ok := c["title"].(string); ok { animeFallback.Title = title }
-			if epFloat, ok := c["episodes"].(float64); ok { animeFallback.Episodes = int(epFloat) }
-			if score, ok := c["average_score"].(float64); ok { animeFallback.Score = score }
+			if title, ok := c["title"].(string); ok {
+				animeFallback.Title = title
+			}
+			if epFloat, ok := c["episodes"].(float64); ok {
+				animeFallback.Episodes = int(epFloat)
+			}
+			if score, ok := c["average_score"].(float64); ok {
+				animeFallback.Score = score
+			}
 		}
 
 		resultados = &anilist.AnimeByIdResponse{Data: animeFallback}
@@ -185,7 +206,9 @@ func (h *AnimeHandler) HandleGetAnime(w http.ResponseWriter, r *http.Request) {
 func (h *AnimeHandler) HandleGetStats(w http.ResponseWriter, r *http.Request) {
 	id := chi.URLParam(r, "id")
 
-	stats, err := h.AniListClient.GetAnimeStatistics(r.Context(), id)
+	prazo, cancelar := context.WithTimeout(r.Context(), prazoDaAniListNaTela)
+	defer cancelar()
+	stats, err := h.AniListClient.GetAnimeStatistics(prazo, id)
 	if err != nil {
 		http.Error(w, "Estatísticas indisponíveis no momento", http.StatusServiceUnavailable)
 		return
@@ -204,7 +227,9 @@ func (h *AnimeHandler) HandleGetAnimesByIDs(w http.ResponseWriter, r *http.Reque
 		return
 	}
 
-	resultados, err := h.AniListClient.GetAnimesByMalIDs(r.Context(), payload.IDs)
+	prazo, cancelar := context.WithTimeout(r.Context(), prazoDaAniListNaTela)
+	defer cancelar()
+	resultados, err := h.AniListClient.GetAnimesByMalIDs(prazo, payload.IDs)
 	if err != nil || resultados == nil || (len(resultados.Data) == 0 && len(payload.IDs) > 0) {
 		// FALLBACK (BLOCO 3): Monta o array base usando o cache local para o Deck não quebrar
 		resultados = &anilist.AnimeSearchResponse{Data: []anilist.Anime{}}
@@ -228,20 +253,30 @@ func (h *AnimeHandler) HandleGetAnimesByIDs(w http.ResponseWriter, r *http.Reque
 				Execute()
 			var cached []map[string]interface{}
 			json.Unmarshal(dataCache, &cached)
-			
+
 			cacheMap := make(map[int]map[string]interface{})
 			for _, c := range cached {
-				if m, ok := c["mal_id"].(float64); ok { cacheMap[int(m)] = c }
+				if m, ok := c["mal_id"].(float64); ok {
+					cacheMap[int(m)] = c
+				}
 			}
 
 			// Para cada ID que a tela pediu, criamos um "esqueleto" que a Curadoria vai preencher
 			for _, id := range payload.IDs {
 				anime := anilist.Anime{MalID: id}
 				if c, ok := cacheMap[id]; ok {
-					if t, ok := c["title"].(string); ok { anime.Title = t }
-					if e, ok := c["episodes"].(float64); ok { anime.Episodes = int(e) }
-					if s, ok := c["average_score"].(float64); ok { anime.Score = s }
-					if sy, ok := c["season_year"].(float64); ok { anime.SeasonYear = int(sy) }
+					if t, ok := c["title"].(string); ok {
+						anime.Title = t
+					}
+					if e, ok := c["episodes"].(float64); ok {
+						anime.Episodes = int(e)
+					}
+					if s, ok := c["average_score"].(float64); ok {
+						anime.Score = s
+					}
+					if sy, ok := c["season_year"].(float64); ok {
+						anime.SeasonYear = int(sy)
+					}
 				}
 				resultados.Data = append(resultados.Data, anime)
 			}

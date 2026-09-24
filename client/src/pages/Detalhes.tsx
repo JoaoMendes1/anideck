@@ -148,10 +148,11 @@ export default function Detalhes() {
       })
 
       try {
-        const [resAnime, resStats] = await Promise.all([
-          fetch(`/api/anime/${id}`),
-          fetch(`/api/anime/${id}/statistics`)
-        ])
+        // As estatísticas saem junto, mas a página NÃO espera por elas: são a parte
+        // secundária e a que mais depende da AniList. Antes, o Promise.all segurava
+        // o anime inteiro até as estatísticas chegarem.
+        const pedidoDeStats = fetch(`/api/anime/${id}/statistics`).catch(() => null)
+        const resAnime = await fetch(`/api/anime/${id}`)
 
         if (!resAnime.ok) {
           // 5xx = a fonte externa (AniList) falhou. 404 = anime não existe.
@@ -169,13 +170,16 @@ export default function Detalhes() {
         setAnime(animeNovo)
         reportarSucesso()
 
-        // Estatística é secundária: se falhar, a página continua de pé.
-        let statsNovas = emMemoria?.stats ?? null
-        if (resStats.ok) {
-          statsNovas = (await resStats.json()).data
+        guardarNaMemoria<AnimeEmMemoria>(chaveDoAnime, { anime: animeNovo, stats: emMemoria?.stats ?? null })
+        setLoading(false)
+
+        // Estatística é secundária: chega quando chegar, com a página já aberta.
+        const resStats = await pedidoDeStats
+        if (resStats?.ok) {
+          const statsNovas: AnimeStats = (await resStats.json()).data
           setStats(statsNovas)
+          guardarNaMemoria<AnimeEmMemoria>(chaveDoAnime, { anime: animeNovo, stats: statsNovas })
         }
-        guardarNaMemoria<AnimeEmMemoria>(chaveDoAnime, { anime: animeNovo, stats: statsNovas })
       } catch {
         if (!emMemoria) setErro('generico')
       } finally {
