@@ -1,8 +1,10 @@
+import { Suspense } from 'react'
 import { Outlet, Link } from 'react-router-dom'
 import { Search } from 'lucide-react'
 import { useSessao } from '../contexts/SessaoContext'
 import Navbar from './Navbar'
 import BottomNav from './BottomNav'
+import CarregandoPagina from './CarregandoPagina'
 import { CatalogoStatusProvider, useCatalogoStatus } from '../contexts/CatalogoStatusContext'
 
 function AvisoCatalogo() {
@@ -48,7 +50,11 @@ function LayoutInterno() {
       {/* pt-24 compensa a navbar superior. pb-24 compensa a BottomNav no mobile... */}
       <main className="relative z-10 flex-1 flex flex-col pt-24 pb-20 md:pb-0 w-full max-w-[100vw] overflow-x-hidden">
         <AvisoCatalogo />
-        <Outlet />
+        {/* Só o miolo espera o código da página chegar (ver lazy() no App.tsx);
+            Navbar e BottomNav ficam de pé durante a espera. */}
+        <Suspense fallback={<CarregandoPagina />}>
+          <Outlet />
+        </Suspense>
       </main>
 
       {/* A BottomNav tem a classe md:hidden internamente, então só renderiza no mobile */}

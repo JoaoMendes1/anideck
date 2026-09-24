@@ -6,6 +6,7 @@ import (
 	"log"
 	"net/http"
 	"strconv"
+	"sync"
 	"time"
 
 	"github.com/JoaoMendes1/anideck/internal/database"
@@ -33,9 +34,12 @@ func (h *StatsHandler) HandleGetUserStats(w http.ResponseWriter, r *http.Request
 		return
 	}
 
+	// Contagem "" e não "exact": ninguém lê o total, e "exact" faz o PostgREST contar
+	// as linhas de cada view além de devolvê-las — nas views agregadas daqui, é
+	// quase o dobro de trabalho no banco por consulta.
 	queryView := func(viewName string) []map[string]interface{} {
 		var result []map[string]interface{}
-		data, _, err := dbClient.From(viewName).Select("*", "exact", false).Execute()
+		data, _, err := dbClient.From(viewName).Select("*", "", false).Execute()
 		if err == nil {
 			_ = json.Unmarshal(data, &result)
 		} else {
@@ -44,19 +48,48 @@ func (h *StatsHandler) HandleGetUserStats(w http.ResponseWriter, r *http.Request
 		return result
 	}
 
-	statsData := queryView("view_user_stats")
-	genresData := queryView("view_user_genre_affinity")
-	activityData := queryView("view_user_activity")
-	ratingData := queryView("view_user_rating_distribution")
-	yearData := queryView("view_user_year_distribution")
-	watchHoursData := queryView("view_user_watch_hours")
-	longestAnimeData := queryView("view_user_longest_anime")
-	topRatedData := queryView("view_user_top_rated")
-	fastestBingeData := queryView("view_user_fastest_binge")
-	forgottenData := queryView("view_user_forgotten_anime")
+	// As 12 views não dependem umas das outras, então são consultadas ao mesmo tempo.
+	// Em sequência, os tempos somavam: ~300 ms cada, 3,3 a 3,8 s no total pelo log do
+	// servidor. Em paralelo, o total passa a ser o tempo da view mais lenta.
+	//
+	// Dividir o mesmo dbClient entre as goroutines é seguro: conferido no código do
+	// postgrest-go v0.0.11, cada From() cria um QueryBuilder próprio e o Execute só
+	// LÊ o client (cabeçalhos e URL base), sem alterar nada nele.
+	//
+	// Cada goroutine escreve numa variável só dela, por isso não há mutex: não existe
+	// dado que duas escrevam ao mesmo tempo. O wg.Wait() garante que todas terminaram
+	// antes de qualquer leitura abaixo.
+	var statsData, genresData, activityData, ratingData, yearData, watchHoursData,
+		longestAnimeData, topRatedData, fastestBingeData, forgottenData,
+		watchDates, timestampsData []map[string]interface{}
 
-	// Streak: busca as datas distintas assistidas e calcula em Go
-	watchDates := queryView("view_user_watch_dates")
+	consultas := []struct {
+		view    string
+		destino *[]map[string]interface{}
+	}{
+		{"view_user_stats", &statsData},
+		{"view_user_genre_affinity", &genresData},
+		{"view_user_activity", &activityData},
+		{"view_user_rating_distribution", &ratingData},
+		{"view_user_year_distribution", &yearData},
+		{"view_user_watch_hours", &watchHoursData},
+		{"view_user_longest_anime", &longestAnimeData},
+		{"view_user_top_rated", &topRatedData},
+		{"view_user_fastest_binge", &fastestBingeData},
+		{"view_user_forgotten_anime", &forgottenData},
+		{"view_user_watch_dates", &watchDates},
+		{"view_user_watch_timestamps", &timestampsData},
+	}
+
+	var wg sync.WaitGroup
+	for _, c := range consultas {
+		wg.Go(func() {
+			*c.destino = queryView(c.view)
+		})
+	}
+	wg.Wait()
+
+	// Streak: as datas distintas assistidas viram a sequência, calculada em Go
 	dates := make([]string, 0, len(watchDates))
 	for _, row := range watchDates {
 		if dia, ok := row["dia"].(string); ok {
@@ -68,7 +101,7 @@ func (h *StatsHandler) HandleGetUserStats(w http.ResponseWriter, r *http.Request
 	// Sessões: as marcações cruas viram blocos de atividade, e só o instante de início de
 	// cada bloco vai para o frontend. A conversão para hora local acontece lá, porque o
 	// servidor não sabe o fuso de quem está olhando.
-	marcacoes := parseTimestamps(queryView("view_user_watch_timestamps"))
+	marcacoes := parseTimestamps(timestampsData)
 	sessoes := AgruparSessoes(marcacoes, gapDeSessaoPadrao)
 	sessoesISO := make([]string, 0, len(sessoes))
 	for _, s := range sessoes {

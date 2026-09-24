@@ -52,7 +52,7 @@ export default function DeckCard({ entrada, animeLocal, gradientClass, foilDelay
             foilDelay={foilDelay}
             nextAiringEpisode={mostraSelosDeAr ? animeLocal?.nextAiringEpisode : undefined}
             statusBadge={
-                <span className={`select-none text-[9px] md:text-[9.5px] font-extrabold px-2 py-1 rounded-md uppercase tracking-wider border backdrop-blur-md truncate max-w-full ${temaStatus.bg} ${temaStatus.text} ${temaStatus.border}`}>
+                <span className={`select-none text-[9px] md:text-[9.5px] font-extrabold px-2 py-1 rounded-md uppercase tracking-wider border truncate max-w-full ${temaStatus.bg} ${temaStatus.text} ${temaStatus.border}`}>
                     {entrada.status}
                 </span>
             }
@@ -68,7 +68,7 @@ export default function DeckCard({ entrada, animeLocal, gradientClass, foilDelay
             topRightAction={
                 <button
                     onClick={(e) => { e.preventDefault(); e.stopPropagation(); onEdit(entrada) }}
-                    className="w-7 h-7 rounded-full bg-void/80 border border-line text-muted hover:text-holo-3 hover:border-holo-3 flex items-center justify-center backdrop-blur-md cursor-pointer transition-all shadow-lg opacity-85 hover:opacity-100 active:scale-90"
+                    className="w-7 h-7 rounded-full bg-void/80 border border-line text-muted hover:text-holo-3 hover:border-holo-3 flex items-center justify-center cursor-pointer transition-all shadow-lg opacity-85 hover:opacity-100 active:scale-90"
                     title="Editar entrada"
                     aria-label="Editar entrada"
                 >

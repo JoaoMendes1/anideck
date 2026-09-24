@@ -180,17 +180,9 @@ func main() {
 	workDir, _ := os.Getwd()
 	filesDir := filepath.Join(workDir, "client", "dist")
 
-	r.Get("/*", func(w http.ResponseWriter, req *http.Request) {
-		path := filepath.Join(filesDir, req.URL.Path)
-		_, err := os.Stat(path)
-
-		if os.IsNotExist(err) || req.URL.Path == "/" {
-			http.ServeFile(w, req, filepath.Join(filesDir, "index.html"))
-			return
-		}
-
-		http.ServeFile(w, req, path)
-	})
+	// Build do Vite + fallback da SPA, com cabeçalho de cache por tipo de arquivo.
+	// Ver estaticos.go para o porquê de cada caso.
+	r.Get("/*", servirEstaticos(filesDir))
 
 	port := os.Getenv("PORT")
 	log.Printf("Servidor rodando na porta %s...", port)
