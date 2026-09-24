@@ -1,4 +1,6 @@
 import { useState, useEffect } from 'react'
+import { useSessao } from '../contexts/SessaoContext'
+import { chaveDoUsuario, lerDaMemoria, guardarNaMemoria } from '../lib/cacheDeTela'
 import { usePosicaoDeLista } from '../lib/posicaoDeLista'
 import { Link } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
@@ -95,26 +97,50 @@ interface Conclusao {
   valida: boolean
 }
 
+// Formato do /api/stats/user. Tudo opcional porque a tela já tratava campo ausente
+// com um valor padrão; o tipo só torna explícito o que antes vinha como any.
+interface RespostaStats {
+  overview?: StatsOverview[]
+  genres?: GenreAffinity[]
+  activity?: ActivityWeek[]
+  ratings?: RatingRow[]
+  years?: YearRow[]
+  streak?: StreakData
+  watch_hours?: WatchHour[]
+  records?: Records
+  sessions?: string[]
+  dias_com_atividade?: number
+  variacao_semanal?: Variacao
+  perfil?: Perfil
+  conclusao?: Conclusao
+}
+
 export default function Estatisticas() {
-  const [overview, setOverview] = useState<StatsOverview | null>(null)
-  const [genres, setGenres] = useState<GenreAffinity[]>([])
-  const [activity, setActivity] = useState<ActivityWeek[]>([])
-  const [ratings, setRatings] = useState<RatingRow[]>([])
-  const [years, setYears] = useState<YearRow[]>([])
-  const [streak, setStreak] = useState<StreakData>({ current: 0, longest: 0 })
-  const [loading, setLoading] = useState(true)
+  // Mesmo padrão do Meu Deck (ver cacheDeTela.ts): com as estatísticas já vistas nesta
+  // aba, a tela nasce pronta e a versão nova chega por trás.
+  const { session } = useSessao()
+  const chaveDasStats = chaveDoUsuario(session?.user.id, 'estatisticas')
+  const [emMemoria] = useState(() => lerDaMemoria<RespostaStats>(chaveDasStats))
+
+  const [overview, setOverview] = useState<StatsOverview | null>(emMemoria?.overview?.[0] || null)
+  const [genres, setGenres] = useState<GenreAffinity[]>(emMemoria?.genres || [])
+  const [activity, setActivity] = useState<ActivityWeek[]>(emMemoria?.activity || [])
+  const [ratings, setRatings] = useState<RatingRow[]>(emMemoria?.ratings || [])
+  const [years, setYears] = useState<YearRow[]>(emMemoria?.years || [])
+  const [streak, setStreak] = useState<StreakData>(emMemoria?.streak || { current: 0, longest: 0 })
+  const [loading, setLoading] = useState(!emMemoria)
   const [error, setError] = useState<string | null>(null)
-  const [watchHours, setWatchHours] = useState<WatchHour[]>([])
-  const [records, setRecords] = useState<Records>({ longest_anime: null, top_rated: null, fastest_binge: null, forgotten: null })
+  const [watchHours, setWatchHours] = useState<WatchHour[]>(emMemoria?.watch_hours || [])
+  const [records, setRecords] = useState<Records>(emMemoria?.records || { longest_anime: null, top_rated: null, fastest_binge: null, forgotten: null })
   const [abaAfinidade, setAbaAfinidade] = useState<'genero' | 'demografia'>('genero')
 
   // Sessões de assistir (marcações agrupadas por proximidade no tempo, calculadas no Go).
   // Chegam como timestamps ISO justamente pra hora local ser resolvida aqui no navegador.
-  const [sessions, setSessions] = useState<string[]>([])
-  const [diasComAtividade, setDiasComAtividade] = useState(0)
-  const [variacao, setVariacao] = useState<Variacao>({ pct: 0, valida: false })
-  const [perfil, setPerfil] = useState<Perfil>({ tipo: '', concentracao: 0 })
-  const [conclusao, setConclusao] = useState<Conclusao>({ taxa: 0, valida: false })
+  const [sessions, setSessions] = useState<string[]>(emMemoria?.sessions || [])
+  const [diasComAtividade, setDiasComAtividade] = useState(emMemoria?.dias_com_atividade || 0)
+  const [variacao, setVariacao] = useState<Variacao>(emMemoria?.variacao_semanal || { pct: 0, valida: false })
+  const [perfil, setPerfil] = useState<Perfil>(emMemoria?.perfil || { tipo: '', concentracao: 0 })
+  const [conclusao, setConclusao] = useState<Conclusao>(emMemoria?.conclusao || { taxa: 0, valida: false })
 
   // "Agora" congelado na primeira renderização: chamar Date.now() no meio do render tornaria
   // o cálculo de "parado há N dias" instável entre re-renderizações.
@@ -143,7 +169,8 @@ export default function Estatisticas() {
         })
         if (!res.ok) throw new Error('Falha ao carregar estatísticas')
 
-        const data = await res.json()
+        const data: RespostaStats = await res.json()
+        guardarNaMemoria(chaveDasStats, data)
 
         setOverview(data.overview?.[0] || null)
         setGenres(data.genres || [])
@@ -159,13 +186,14 @@ export default function Estatisticas() {
         setPerfil(data.perfil || { tipo: '', concentracao: 0 })
         setConclusao(data.conclusao || { taxa: 0, valida: false })
       } catch (err) {
-        setError(err instanceof Error ? err.message : 'Não foi possível carregar suas estatísticas.')
+        // Com dados em memória, a falha da atualização por trás não troca a tela por erro.
+        if (!emMemoria) setError(err instanceof Error ? err.message : 'Não foi possível carregar suas estatísticas.')
       } finally {
         setLoading(false)
       }
     }
     fetchStats()
-  }, [])
+  }, [chaveDasStats, emMemoria])
 
   // Busca os animes do gênero clicado. Roda só quando o Sheet abre — não faz sentido
   // carregar a lista de todos os gêneros de antemão se o usuário talvez não clique em nenhum.

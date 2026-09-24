@@ -13,12 +13,16 @@ import { Link } from 'react-router-dom'
 import type { CuratedAnime } from '../types/curation'
 import { gradienteDoCard } from '../lib/deckHelpers'
 import { usePosicaoDeTrilho } from '../lib/posicaoDeLista'
+import { lerDaMemoria, guardarNaMemoria } from '../lib/cacheDeTela'
+import { miniatura } from '../lib/miniatura'
 
 const MAX_NA_VITRINE = 12
 
 export default function VitrineDestaques() {
-  const [destaques, setDestaques] = useState<CuratedAnime[]>([])
-  const [carregando, setCarregando] = useState(true)
+  // Os destaques são os mesmos para todo mundo, por isso a chave não leva o usuário.
+  const [emMemoria] = useState(() => lerDaMemoria<CuratedAnime[]>('vitrine'))
+  const [destaques, setDestaques] = useState<CuratedAnime[]>(emMemoria ?? [])
+  const [carregando, setCarregando] = useState(!emMemoria)
 
   // O trilho rola na horizontal por conta própria, então a rolagem da janela não
   // cobre a posição dele: sem isto, voltar de um destaque devolvia o carrossel ao
@@ -34,11 +38,13 @@ export default function VitrineDestaques() {
         const res = await fetch('/api/curation?destaques=true')
         if (!res.ok) throw new Error()
         const dados: CuratedAnime[] = await res.json()
-        if (!cancelado) setDestaques((dados || []).slice(0, MAX_NA_VITRINE))
+        const lista = (dados || []).slice(0, MAX_NA_VITRINE)
+        guardarNaMemoria('vitrine', lista)
+        if (!cancelado) setDestaques(lista)
       } catch {
         // Falhar aqui não é motivo de erro na tela: a vitrine é acessória e o deck do
         // usuário, que é o conteúdo real da página, não depende dela.
-        if (!cancelado) setDestaques([])
+        if (!cancelado && !emMemoria) setDestaques([])
       } finally {
         if (!cancelado) setCarregando(false)
       }
@@ -46,7 +52,7 @@ export default function VitrineDestaques() {
 
     buscar()
     return () => { cancelado = true }
-  }, [])
+  }, [emMemoria])
 
   if (carregando) {
     return (
@@ -102,7 +108,7 @@ export default function VitrineDestaques() {
             <div className={`relative aspect-[2/3] rounded-[14px] overflow-hidden border border-line bg-panel ${gradienteDoCard(index)} transition-transform group-hover:-translate-y-1 group-active:scale-[0.98]`}>
              {anime.custom_cover_image && (
                 <img
-                  src={anime.custom_cover_image}
+                  src={miniatura(anime.custom_cover_image)}
                   alt={anime.custom_title}
                   loading={index < 4 ? "eager" : "lazy"}
                   // A primeira capa é o elemento do LCP: pedir prioridade alta faz o

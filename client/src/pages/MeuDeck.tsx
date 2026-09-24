@@ -13,6 +13,8 @@ import type { AiringInfo } from '../lib/deckHelpers'
 import { gradienteDoCard, atrasoDoFoil } from '../lib/deckHelpers'
 import { usePosicaoDeLista } from '../lib/posicaoDeLista'
 import { useCatalogoStatus } from '../contexts/CatalogoStatusContext'
+import { useSessao } from '../contexts/SessaoContext'
+import { chaveDoUsuario, lerDaMemoria, guardarNaMemoria } from '../lib/cacheDeTela'
 
 interface Entrada {
     id: string
@@ -38,15 +40,28 @@ interface HydratedAnime {
 
 const FILTER_TABS = ['Todos', 'Assistindo', 'Em Dia', 'Completo', 'Quero Assistir', 'Dropado']
 
+interface DeckEmMemoria {
+    entradas: Entrada[]
+    animesData: Record<number, HydratedAnime>
+    userName: string
+}
+
 export default function MeuDeck() {
-    const [entradas, setEntradas] = useState<Entrada[]>([])
-    const [animesData, setAnimesData] = useState<Record<number, HydratedAnime>>({})
-    const [loading, setLoading] = useState(true)
+    // Com o deck já visitado nesta aba, a tela nasce pronta com o que tinha e busca a
+    // versão nova por trás (ver cacheDeTela.ts). Lido no inicializador do useState, e
+    // não num efeito, para o PRIMEIRO render já sair com os cards, sem skeleton.
+    const { session } = useSessao()
+    const chaveDoDeck = chaveDoUsuario(session?.user.id, 'deck')
+    const [emMemoria] = useState(() => lerDaMemoria<DeckEmMemoria>(chaveDoDeck))
+
+    const [entradas, setEntradas] = useState<Entrada[]>(emMemoria?.entradas ?? [])
+    const [animesData, setAnimesData] = useState<Record<number, HydratedAnime>>(emMemoria?.animesData ?? {})
+    const [loading, setLoading] = useState(!emMemoria)
     const [error, setError] = useState<string | null>(null)
     const [editando, setEditando] = useState<Entrada | null>(null)
     const [totalEpisodiosEditando, setTotalEpisodiosEditando] = useState(0)
     const [filtroAtivo, setFiltroAtivo] = useState('Todos')
-    const [userName, setUserName] = useState('Usuário')
+    const [userName, setUserName] = useState(emMemoria?.userName ?? 'Usuário')
     const { reportarFalha, reportarSucesso } = useCatalogoStatus()
 
     usePosicaoDeLista(!loading)
@@ -89,7 +104,11 @@ export default function MeuDeck() {
                 })
                 if (!response.ok) throw new Error('Não foi possível carregar seu deck.')
                 const dadosDeck: Entrada[] = await response.json()
-                setEntradas(dadosDeck || [])
+                // As entradas só vão para a tela junto com os dados dos animes. Com o deck
+                // em memória, gravá-las antes faria um anime recém-adicionado aparecer por
+                // um instante sem capa nem título, até o /api/anime/bulk responder.
+                const novasEntradas = dadosDeck || []
+                if (novasEntradas.length === 0) setEntradas([])
 
                 if (dadosDeck && dadosDeck.length > 0) {
                     const malIds = dadosDeck.map(e => e.mal_id)
@@ -100,6 +119,7 @@ export default function MeuDeck() {
                     })
 
                     if (!apiResponse.ok) {
+                        setEntradas(novasEntradas)
                         reportarFalha()
                     } else {
                         reportarSucesso()
@@ -121,18 +141,27 @@ export default function MeuDeck() {
                                 streaming: m.streaming ?? undefined
                             }
                         })
+                        setEntradas(novasEntradas)
                         setAnimesData(mapaAnimes)
                     }
                 }
             } catch {
-                setError('Não foi possível carregar seu deck. Tente novamente.')
+                // Com dados em memória, uma falha na atualização por trás não derruba a
+                // tela: o usuário segue vendo o deck que já tinha.
+                if (!emMemoria) setError('Não foi possível carregar seu deck. Tente novamente.')
             } finally {
                 setLoading(false)
             }
         }
 
         carregarDeck()
-    }, [reportarFalha, reportarSucesso])
+    }, [reportarFalha, reportarSucesso, emMemoria])
+
+    // Toda mudança do deck vai para a memória, inclusive as edições feitas no modal.
+    // Assim, voltar à tela depois de editar mostra a versão editada, não a de antes.
+    useEffect(() => {
+        if (!loading) guardarNaMemoria<DeckEmMemoria>(chaveDoDeck, { entradas, animesData, userName })
+    }, [loading, chaveDoDeck, entradas, animesData, userName])
 
     const stats = useMemo(() => {
         let assistindo = 0, emDia = 0, concluidos = 0, dropados = 0, somaNotas = 0, qtdNotas = 0;
@@ -266,10 +295,11 @@ export default function MeuDeck() {
                                     }`}
                             >
                                 <span>{tab}</span>
-                                <span className={`font-mono text-[10.5px] px-1.5 py-0.5 rounded-full ${ativa
+                                <span className={`font-mono text-[10.5px] px-1.5 py-0.5 rounded-full ${
+                                    ativa
                                         ? 'bg-white/20 text-white'
                                         : 'bg-panel-2 text-muted-2 border border-line/60'
-                                    }`}>
+                                }`}>
                                     {totalAba}
                                 </span>
                             </button>

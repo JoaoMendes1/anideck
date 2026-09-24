@@ -86,6 +86,11 @@ func main() {
 		w.Write([]byte("OK"))
 	})
 
+	// Capas curadas em tamanho de card (ver miniatura.go). Pública como as próprias
+	// capas: o bucket curadoria já é público, e a miniatura não revela nada além dele.
+	miniaturaHandler := handlers.NovoMiniaturaHandler(os.Getenv("SUPABASE_URL") + "/storage/v1/object/public/curadoria/")
+	r.Get("/api/miniatura/*", miniaturaHandler.HandleMiniatura)
+
 	r.Get("/api/search", searchHandler.HandleSearch)
 	r.Get("/api/anime/{id}", animeHandler.HandleGetAnime)
 	r.Get("/api/anime/{id}/statistics", animeHandler.HandleGetStats)
