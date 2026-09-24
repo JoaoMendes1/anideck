@@ -441,7 +441,11 @@ export default function PainelAdmin() {
       const fileName = `${Math.random().toString(36).substring(2, 15)}.webp`
       const filePath = `imagens/${fileName}`
 
-      const { error: uploadError } = await supabase.storage.from('curadoria').upload(filePath, compressedFile)
+      const { error: uploadError } = await supabase.storage.from('curadoria').upload(filePath, compressedFile, {
+        // O nome do arquivo é sorteado a cada upload, então o conteúdo de uma URL nunca
+        // muda: o navegador pode guardar por um ano. O padrão do Supabase é 1 hora.
+        cacheControl: '31536000',
+      })
       if (uploadError) throw uploadError
 
       const { data: { publicUrl } } = supabase.storage.from('curadoria').getPublicUrl(filePath)

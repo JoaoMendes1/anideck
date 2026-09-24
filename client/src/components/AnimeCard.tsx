@@ -2,6 +2,7 @@
 import { useState, type ReactNode } from 'react'
 import { Link } from 'react-router-dom'
 import { getCategoryTheme } from '../lib/filters'
+import { miniatura } from '../lib/miniatura'
 
 interface NextAiringInfo {
     airingAt: number
@@ -91,7 +92,7 @@ export default function AnimeCard({
 
             {imageUrl && !imagemFalhou && (
                 <img
-                    src={imageUrl}
+                    src={miniatura(imageUrl)}
                     alt={title}
                     loading={priority ? "eager" : "lazy"}
                     onError={() => setImagemFalhou(true)}
