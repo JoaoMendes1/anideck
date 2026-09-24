@@ -10,6 +10,8 @@ package handlers
 import (
 	"encoding/json"
 	"log"
+	"net/http"
+	"time"
 
 	"github.com/JoaoMendes1/anideck/internal/anilist"
 	"github.com/JoaoMendes1/anideck/internal/database"
@@ -76,30 +78,68 @@ func AplicarCuradoria(anime *anilist.Anime, curado models.CuratedAnime) {
 //
 // Falha de leitura devolve mapa vazio em vez de erro: curadoria é enriquecimento opcional, e
 // perder o acesso a ela deve degradar para os dados da AniList, não derrubar a requisição.
+// curadoriaEmCache guarda a curadoria inteira por um minuto.
+//
+// Deck, Calendário, Ranking e Busca aplicam a curadoria em toda resposta, e cada uma
+// baixava a tabela INTEIRA do banco (sinopses, episódios, personagens: ~490 KB) a cada
+// requisição — cerca de meio segundo por tela, no log do servidor. A curadoria muda só
+// quando o admin edita, então um minuto de validade não esconde nada de ninguém.
+//
+// Escrever pelo Painel invalida na hora (ver InvalidaCuradoriaDepois). O minuto é a rede
+// de segurança para escritas que não passam pelas rotas do admin.
+//
+// O mapa devolvido é compartilhado entre as requisições e só pode ser LIDO. Hoje é o
+// que acontece: AplicarCuradoria copia cada campo para o anime, sem alterar o original.
+var curadoriaEmCache = novoCacheComValidade[map[int]models.CuratedAnime](time.Minute)
+
+// InvalidaCuradoriaDepois é um middleware para as rotas do admin: depois de qualquer
+// requisição que não seja leitura, descarta a curadoria em cache. Assim, quem edita
+// uma capa no Painel vê a mudança no Deck na próxima abertura, sem esperar o minuto.
+//
+// Invalida até quando a escrita falha. Custa uma releitura do banco, e evita ter que
+// descobrir se a falha aconteceu antes ou depois de gravar.
+func InvalidaCuradoriaDepois(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		next.ServeHTTP(w, r)
+		if r.Method != http.MethodGet {
+			curadoriaEmCache.invalidar()
+		}
+	})
+}
+
 func CarregarCuradoria(client *supabase.Client) map[int]models.CuratedAnime {
+	return curadoriaEmCache.obter(func() (map[int]models.CuratedAnime, bool) {
+		return carregarCuradoriaDoBanco(client)
+	})
+}
+
+// carregarCuradoriaDoBanco é a leitura de verdade. O bool diz se deu certo: falha não
+// entra no cache, para a próxima requisição tentar de novo em vez de ficar um minuto
+// sem curadoria.
+func carregarCuradoriaDoBanco(client *supabase.Client) (map[int]models.CuratedAnime, bool) {
 	curadosMap := make(map[int]models.CuratedAnime)
 
 	if client == nil {
 		log.Printf("[CURADORIA] Cliente de banco não inicializado")
-		return curadosMap
+		return curadosMap, false
 	}
 
-	data, _, err := client.From("curated_animes").Select("*", "exact", false).Execute()
+	data, _, err := client.From("curated_animes").Select("*", "", false).Execute()
 	if err != nil {
 		log.Printf("[CURADORIA] Erro ao carregar curadoria: %v", err)
-		return curadosMap
+		return curadosMap, false
 	}
 
 	var curados []models.CuratedAnime
 	if err := json.Unmarshal(data, &curados); err != nil {
 		log.Printf("[CURADORIA] Erro ao decodificar curadoria: %v", err)
-		return curadosMap
+		return curadosMap, false
 	}
 
 	for _, c := range curados {
 		curadosMap[c.MalID] = c
 	}
-	return curadosMap
+	return curadosMap, true
 }
 
 // AplicarCuradoriaEmLista percorre uma lista de animes aplicando a curadoria de cada um.

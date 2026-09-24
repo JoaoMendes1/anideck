@@ -12,6 +12,7 @@ import { getCategoryTheme } from '../lib/filters'
 import { temHistoriaNoApp, veioDeListaRestauravel } from '../lib/posicaoDeLista'
 import { motion } from 'framer-motion'
 import ImagemAmpliada from '../components/ImagemAmpliada'
+import { lerDaMemoria, guardarNaMemoria } from '../lib/cacheDeTela'
 
 interface AnimeDetail {
   mal_id: number
@@ -55,6 +56,12 @@ interface MinhaEntrada {
   is_favorite?: boolean
 }
 
+// O que a tela guarda em memória de cada anime aberto (ver cacheDeTela.ts).
+interface AnimeEmMemoria {
+  anime: AnimeDetail
+  stats: AnimeStats | null
+}
+
 export default function Detalhes() {
   const navigate = useNavigate()
 
@@ -75,9 +82,15 @@ export default function Detalhes() {
   const { showToast } = useToast()
   const { reportarFalha, reportarSucesso } = useCatalogoStatus()
 
-  const [anime, setAnime] = useState<AnimeDetail | null>(null)
-  const [stats, setStats] = useState<AnimeStats | null>(null)
-  const [loading, setLoading] = useState(true)
+  // Com este anime já aberto nesta aba, a página nasce pronta (ver cacheDeTela.ts) e a
+  // versão nova chega por trás. Anime e estatísticas não são dado pessoal, então a chave
+  // não leva o usuário.
+  const chaveDoAnime = id ? `detalhes:${id}` : null
+  const [emMemoriaInicial] = useState(() => lerDaMemoria<AnimeEmMemoria>(chaveDoAnime))
+
+  const [anime, setAnime] = useState<AnimeDetail | null>(emMemoriaInicial?.anime ?? null)
+  const [stats, setStats] = useState<AnimeStats | null>(emMemoriaInicial?.stats ?? null)
+  const [loading, setLoading] = useState(!emMemoriaInicial)
   type TipoErro = 'fonte-externa' | 'nao-encontrado' | 'generico'
   const [erro, setErro] = useState<TipoErro | null>(null)
 
@@ -91,9 +104,49 @@ export default function Detalhes() {
   const [isLoggedIn, setIsLoggedIn] = useState(false)
 
   useEffect(() => {
+    // Lido de novo aqui, e não só no useState acima, porque ir de um Detalhes para outro
+    // troca o id sem desmontar a página.
+    const emMemoria = lerDaMemoria<AnimeEmMemoria>(chaveDoAnime)
+
+    // A entrada do usuário e os episódios assistidos não dependem da resposta do anime.
+    // Antes, só saíam depois dela, e a página esperava as quatro requisições em fila.
+    const buscarDadosDoUsuario = async () => {
+      const { data: { session } } = await supabase.auth.getSession()
+      if (!session) return
+      setIsLoggedIn(true)
+
+      const cabecalho = { 'Authorization': `Bearer ${session.access_token}` }
+      const [resEntries, resEps] = await Promise.all([
+        fetch('/api/entries', { headers: cabecalho }),
+        fetch(`/api/entries/${id}/episodes`, { headers: cabecalho }).catch(() => null),
+      ])
+
+      if (resEntries.ok) {
+        const entradas = await resEntries.json()
+        // `?? null` limpa a entrada do anime anterior quando se vai de um Detalhes para
+        // outro que não está no deck. Antes, ela ficava na tela.
+        setMinhaEntrada(entradas?.find((e: MinhaEntrada) => e.mal_id === Number(id)) ?? null)
+      }
+      if (resEps?.ok) {
+        const epsData = await resEps.json()
+        setEpisodiosAssistidos(epsData || [])
+      }
+    }
+
     const fetchData = async () => {
-      setLoading(true)
+      if (emMemoria) {
+        setAnime(emMemoria.anime)
+        setStats(emMemoria.stats)
+        setLoading(false)
+      } else {
+        setLoading(true)
+      }
       setErro(null)
+
+      const doUsuario = buscarDadosDoUsuario().catch((e) => {
+        console.error('Erro ao carregar progresso:', e)
+      })
+
       try {
         const [resAnime, resStats] = await Promise.all([
           fetch(`/api/anime/${id}`),
@@ -102,61 +155,39 @@ export default function Detalhes() {
 
         if (!resAnime.ok) {
           // 5xx = a fonte externa (AniList) falhou. 404 = anime não existe.
-          if (resAnime.status >= 500) { reportarFalha(); setErro('fonte-externa') }
-          else if (resAnime.status === 404) setErro('nao-encontrado')
-          else setErro('generico')
-          return
-        }
-        if (!resAnime.ok) {
-          // 5xx = a fonte externa (AniList) falhou. 404 = anime não existe.
-          if (resAnime.status >= 500) { reportarFalha(); setErro('fonte-externa') }
-          else if (resAnime.status === 404) setErro('nao-encontrado')
-          else setErro('generico')
+          // Com o anime em memória, a falha da atualização não troca a página por erro.
+          if (resAnime.status >= 500) reportarFalha()
+          if (!emMemoria) {
+            if (resAnime.status >= 500) setErro('fonte-externa')
+            else if (resAnime.status === 404) setErro('nao-encontrado')
+            else setErro('generico')
+          }
           return
         }
 
-        setAnime((await resAnime.json()).data)
+        const animeNovo: AnimeDetail = (await resAnime.json()).data
+        setAnime(animeNovo)
         reportarSucesso()
 
         // Estatística é secundária: se falhar, a página continua de pé.
+        let statsNovas = emMemoria?.stats ?? null
         if (resStats.ok) {
-          setStats((await resStats.json()).data)
+          statsNovas = (await resStats.json()).data
+          setStats(statsNovas)
         }
-
-        const { data: { session } } = await supabase.auth.getSession()
-        if (session) {
-          setIsLoggedIn(true)
-
-          const resEntries = await fetch('/api/entries', {
-            headers: { 'Authorization': `Bearer ${session.access_token}` }
-          })
-          if (resEntries.ok) {
-            const entradas = await resEntries.json()
-            const entrada = entradas?.find((e: MinhaEntrada) => e.mal_id === Number(id))
-            if (entrada) setMinhaEntrada(entrada)
-          }
-          try {
-            const resEps = await fetch(`/api/entries/${id}/episodes`, {
-              headers: { 'Authorization': `Bearer ${session.access_token}` }
-            })
-            if (resEps.ok) {
-              const epsData = await resEps.json()
-              setEpisodiosAssistidos(epsData || [])
-            }
-          } catch (e) {
-            console.error('Erro ao carregar progresso:', e)
-          }
-        }
+        guardarNaMemoria<AnimeEmMemoria>(chaveDoAnime, { anime: animeNovo, stats: statsNovas })
       } catch {
-        setErro('generico')
+        if (!emMemoria) setErro('generico')
       } finally {
+        // A página aparece assim que o anime chega; a entrada do usuário completa depois.
         setLoading(false)
       }
+      await doUsuario
     }
     if (id) fetchData()
     // reportarFalha/reportarSucesso vêm de useCallback(..., []) no CatalogoStatusContext:
     // a identidade nunca muda, então entram na lista sem alterar quando o efeito roda.
-  }, [id, reportarFalha, reportarSucesso])
+  }, [id, chaveDoAnime, reportarFalha, reportarSucesso])
 
   const recarregarEpisodios = async () => {
     const { data: { session } } = await supabase.auth.getSession()
