@@ -2,6 +2,8 @@
 import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import { usePosicaoDeLista } from '../lib/posicaoDeLista'
+import { useSessao } from '../contexts/SessaoContext'
+import { chaveDoUsuario, lerDaMemoria, guardarNaMemoria } from '../lib/cacheDeTela'
 import { supabase } from '../lib/supabase'
 import { Play, Calendar as CalendarIcon } from 'lucide-react'
 import { getCategoryTheme } from '../lib/filters'
@@ -39,31 +41,75 @@ export default function Calendario() {
     const [agora, setAgora] = useState(() => Math.floor(Date.now() / 1000))
     const [abaAtiva, setAbaAtiva] = useState<'meus' | 'todos'>('meus')
 
+    const { session } = useSessao()
+    const userId = session?.user.id
+
     usePosicaoDeLista(!loading)
 
     useEffect(() => {
-        const carregarCalendario = async () => {
-            setLoading(true)
-            setError(null)
+        // Cada aba guarda o que mostrou (ver cacheDeTela.ts): voltar ao Calendário, ou
+        // trocar de aba e voltar, mostra a lista na hora e atualiza por trás.
+        const chave = chaveDoUsuario(userId, `calendario:${abaAtiva}`)
+        const emMemoria = lerDaMemoria<HydratedAnime[]>(chave)
 
-            let userEntries: Entrada[] = []
+        const buscarEntradas = async (): Promise<Entrada[]> => {
             const { data: { session } } = await supabase.auth.getSession()
-            if (session) {
-                try {
-                    const res = await fetch('/api/entries', { headers: { 'Authorization': `Bearer ${session.access_token}` } })
-                    if (res.ok) userEntries = await res.json()
-                } catch {
-                    // Falha silenciosa permitida
-                }
+            if (!session) return []
+            try {
+                const res = await fetch('/api/entries', { headers: { 'Authorization': `Bearer ${session.access_token}` } })
+                return res.ok ? await res.json() : []
+            } catch {
+                return [] // Falha silenciosa permitida: sem entradas, só não marca favoritos
             }
+        }
+
+        const buscarCuradosComEpisodio = async (): Promise<AnimeDaApi[]> => {
+            try {
+                const resCur = await fetch('/api/curation')
+                if (!resCur.ok) return []
+                const curados = await resCur.json()
+                const idsCurados = curados.map((c: { mal_id: number }) => c.mal_id)
+                if (idsCurados.length === 0) return []
+                const resBulk = await fetch('/api/anime/bulk', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ ids: idsCurados })
+                })
+                return resBulk.ok ? ((await resBulk.json()).data || []) : []
+            } catch {
+                return [] // A AniList (lançamentos) segura a aba se a curadoria falhar
+            }
+        }
+
+        const buscarLancamentos = async (): Promise<AnimeDaApi[]> => {
+            try {
+                const response = await fetch('/api/ranking?status=RELEASING&perPage=50&sort=POPULARITY_DESC')
+                return response.ok ? ((await response.json()).data || []) : []
+            } catch {
+                return [] // A curadoria segura a aba se a AniList cair
+            }
+        }
+
+        const carregarCalendario = async () => {
+            if (emMemoria) {
+                setAnimes(emMemoria)
+                setLoading(false)
+            } else {
+                setLoading(true)
+            }
+            setError(null)
 
             try {
                 let media: AnimeDaApi[] = []
+                let userEntries: Entrada[] = []
 
                 if (abaAtiva === 'meus') {
+                    // Aqui a ordem é obrigatória: os ids do bulk saem das entradas.
+                    userEntries = await buscarEntradas()
                     const ativos = userEntries.filter(e => e.status === 'Assistindo' || e.status === 'Em Dia')
                     if (ativos.length === 0) {
                         setAnimes([])
+                        guardarNaMemoria(chave, [])
                         setLoading(false)
                         return
                     }
@@ -76,38 +122,15 @@ export default function Calendario() {
                     const apiJson = await apiResponse.json()
                     media = apiJson.data || []
                 } else {
-                    let curadosComEp: AnimeDaApi[] = []
-                    try {
-                        const resCur = await fetch('/api/curation')
-                        if (resCur.ok) {
-                            const curados = await resCur.json()
-                            const idsCurados = curados.map((c: { mal_id: number }) => c.mal_id)
-                            if (idsCurados.length > 0) {
-                                const resBulk = await fetch('/api/anime/bulk', {
-                                    method: 'POST',
-                                    headers: { 'Content-Type': 'application/json' },
-                                    body: JSON.stringify({ ids: idsCurados })
-                                })
-                                if (resBulk.ok) {
-                                    const jsonBulk = await resBulk.json()
-                                    curadosComEp = jsonBulk.data || []
-                                }
-                            }
-                        }
-                    } catch {
-                        // Prossegue para AniList
-                    }
-
-                    let anilistMedia: AnimeDaApi[] = []
-                    try {
-                        const response = await fetch('/api/ranking?status=RELEASING&perPage=50&sort=POPULARITY_DESC')
-                        if (response.ok) {
-                            const json = await response.json()
-                            anilistMedia = json.data || []
-                        }
-                    } catch {
-                        // Curadoria segura se AniList cair
-                    }
+                    // As três buscas não dependem umas das outras. Antes corriam em fila
+                    // (entradas → curadoria → bulk → AniList) e os tempos somavam; juntas,
+                    // o total vira o tempo da mais lenta.
+                    const [entradas, curadosComEp, anilistMedia] = await Promise.all([
+                        buscarEntradas(),
+                        buscarCuradosComEpisodio(),
+                        buscarLancamentos(),
+                    ])
+                    userEntries = entradas
 
                     const mapaFinal = new Map<number, AnimeDaApi>()
                     curadosComEp.forEach(m => mapaFinal.set(m.mal_id, m))
@@ -138,15 +161,17 @@ export default function Calendario() {
                 })
 
                 setAnimes(animesComEpisodio)
+                guardarNaMemoria(chave, animesComEpisodio)
             } catch {
-                setError('Não foi possível carregar o calendário.')
+                // Com a lista em memória, a falha da atualização por trás não vira erro na tela.
+                if (!emMemoria) setError('Não foi possível carregar o calendário.')
             } finally {
                 setLoading(false)
             }
         }
 
         carregarCalendario()
-    }, [abaAtiva])
+    }, [abaAtiva, userId])
 
     useEffect(() => {
         const interval = setInterval(() => {

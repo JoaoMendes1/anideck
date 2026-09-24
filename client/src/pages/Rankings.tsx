@@ -4,7 +4,7 @@ import { useToast } from '../contexts/ToastContext'
 import { useNavigate } from 'react-router-dom'
 import { AlertCircle, SlidersHorizontal, X, Info } from 'lucide-react'
 import { supabase } from '../lib/supabase'
-import { useDadosRestaurados, usePosicaoDeLista, guardarDados } from '../lib/posicaoDeLista'
+import { useDadosRestaurados, usePosicaoDeLista, guardarDados, lerDados } from '../lib/posicaoDeLista'
 import {
     CONTENT_FILTERS, STATUS_OPTIONS, SEASON_OPTIONS,
     type FilterItem, getCategoryTheme
@@ -62,7 +62,12 @@ export default function Rankings() {
     // referências e `filtrosMudaram` já sai falso no primeiro render. É isso que
     // impede o guarda de corrida de confundir reidratação com troca de filtro e
     // jogar fora a lista restaurada. Por isso o bloco do guarda não muda.
-    const retrato = useDadosRestaurados<EstadoRanking>()
+    // O retrato vinha só no "voltar". Agora vem também quando se chega pelo menu: o ranking
+    // é recalculado a cada 12 horas no servidor, então a lista da última visita nesta aba
+    // continua valendo, e refazer a busca só mostrava o skeleton à toa. A rolagem, essa
+    // sim, só volta no "voltar" (usePosicaoDeLista); pelo menu, a página abre no topo.
+    const retratoDaVolta = useDadosRestaurados<EstadoRanking>()
+    const [retrato] = useState(() => retratoDaVolta ?? lerDados<EstadoRanking>('/rankings'))
 
     const [animes, setAnimes] = useState<Anime[]>(retrato?.animes ?? [])
     // Reidratado, não há nada carregando: a lista já está na tela.

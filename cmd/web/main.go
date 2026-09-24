@@ -127,6 +127,8 @@ func main() {
 	r.Group(func(admin chi.Router) {
 		admin.Use(middleware.RequireAuth)
 		admin.Use(middleware.RequireAdmin)
+		// Toda escrita do admin descarta a curadoria em cache (ver curation_utils.go).
+		admin.Use(handlers.InvalidaCuradoriaDepois)
 
 		admin.Get("/api/admin/verify", func(w http.ResponseWriter, req *http.Request) {
 			w.WriteHeader(http.StatusOK)
