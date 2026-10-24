@@ -1,2 +1,6 @@
+# Arquivos de texto sempre com LF, em qualquer sistema.
+# Sem isso, o Git do Windows troca para CRLF, e script com CRLF quebra no container Linux.
+* text=auto eol=lf
+
 *.html linguist-detectable=false
 *.htm linguist-detectable=false
