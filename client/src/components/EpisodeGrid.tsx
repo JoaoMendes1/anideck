@@ -26,6 +26,8 @@ export default function EpisodeGrid({ malId, totalEpisodes, streamingEpisodes = 
   const { showToast } = useToast()
   const [watched, setWatched] = useState<number[]>(initialWatched)
   const [visibleCount, setVisibleCount] = useState(24)
+  // Relógio lido uma vez na montagem, pelo mesmo motivo do AnimeCard (pureza do render).
+  const [agora] = useState(() => Date.now())
 
   useEffect(() => {
     setWatched(initialWatched)
@@ -120,7 +122,7 @@ export default function EpisodeGrid({ malId, totalEpisodes, streamingEpisodes = 
           
           // Trava dupla: checa o nó de agendamento OU se a data curada é futura em relação a agora
           const dataDoEpisodio = ep.airedAt ? lerDataDoEpisodio(ep.airedAt) : null
-          const dataEhFutura = dataDoEpisodio ? dataDoEpisodio.getTime() > Date.now() : false
+          const dataEhFutura = dataDoEpisodio ? dataDoEpisodio.getTime() > agora : false
           const isUnreleased = (nextAiringEpisode ? ep.number >= nextAiringEpisode.episode : false) || dataEhFutura
 
           return (

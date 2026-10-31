@@ -36,6 +36,9 @@ export default function AnimeCard({
     gradientClass, statusBadge, extraBadges, topRightAction, nextAiringEpisode,
 }: AnimeCardProps) {
     const [imagemFalhou, setImagemFalhou] = useState(false)
+    // Relógio lido uma vez na montagem: Date.now() direto no render dá um valor diferente
+    // a cada renderização (a regra de pureza do React acusa isso).
+    const [agora] = useState(() => Date.now() / 1000)
     const semCapa = !imageUrl || imagemFalhou
     const temNota = score !== null && score !== undefined
     const temRanking = ranking !== undefined && ranking !== null
@@ -52,7 +55,6 @@ export default function AnimeCard({
     const obterTextoProximoEp = (info?: NextAiringInfo) => {
         if (!info?.airingAt || !info?.episode) return null
 
-        const agora = Date.now() / 1000
         const segundosRestantes = info.airingAt - agora
         if (segundosRestantes <= 0) return null
 
