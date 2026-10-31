@@ -76,6 +76,7 @@ func main() {
 	olheiroHandler := &handlers.OlheiroHandler{AniListClient: anilistService}
 	diagnosticoHandler := &handlers.DiagnosticoHandler{}
 	taxonomiaHandler := &handlers.TaxonomiaHandler{}
+	trilhasHandler := &handlers.TrilhasHandler{}
 
 	r := chi.NewRouter()
 	r.Use(chimw.RequestID)
@@ -94,6 +95,7 @@ func main() {
 
 	r.Get("/api/search", searchHandler.HandleSearch)
 	r.Get("/api/taxonomia", taxonomiaHandler.HandleListarRotulos)
+	r.Get("/api/trilhas", trilhasHandler.HandleListarPublicas)
 	r.Get("/api/anime/{id}", animeHandler.HandleGetAnime)
 	r.Get("/api/anime/{id}/statistics", animeHandler.HandleGetStats)
 	r.Get("/api/ranking", rankingHandler.HandleGetTopAnime)
@@ -105,6 +107,7 @@ func main() {
 		protegido.Use(middleware.RequireAuth)
 
 		protegido.Get("/api/entries", entriesHandler.HandleList)
+		protegido.Get("/api/entries/progresso", entriesHandler.HandleResumoProgresso)
 		protegido.Post("/api/entries", entriesHandler.HandleCreate)
 		protegido.Put("/api/entries/{id}", entriesHandler.HandleUpdate)
 		protegido.Delete("/api/entries/{id}", entriesHandler.HandleDelete)
@@ -172,6 +175,10 @@ func main() {
 
 		admin.Get("/api/admin/diagnostico/taxonomia", diagnosticoHandler.HandleListarTaxonomia)
 		admin.Post("/api/admin/diagnostico/taxonomia/remover", diagnosticoHandler.HandleRemoverDaTaxonomia)
+
+		// Trilhas curadas da home
+		admin.Get("/api/admin/trilhas", trilhasHandler.HandleListarAdmin)
+		admin.Put("/api/admin/trilhas", trilhasHandler.HandleSalvar)
 
 		// Agente Olheiro: scan sob demanda e revisão da fila de sugestões
 		admin.Get("/api/admin/olheiro/tags", olheiroHandler.HandleListarTagsDesejadas)

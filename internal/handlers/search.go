@@ -223,9 +223,11 @@ func (h *SearchHandler) HandleSearch(w http.ResponseWriter, r *http.Request) {
 	// sem termo na AniList (so do AniDeck) faz a resposta vir so da curadoria: sem
 	// o filtro, a AniList devolveria animes de qualquer genero.
 	filtroAniList := filters
-	soCuradoria := false
+	// so_curadoria=1 responde sem consultar a AniList: a Início lista sugestões do
+	// catálogo curado e não pode gerar uma chamada externa por render.
+	soCuradoria := r.URL.Query().Get("so_curadoria") == "1"
 	err = nil // o err anterior é do parse da paginação, que já tem valor padrão
-	if len(rotulos) > 0 {
+	if len(rotulos) > 0 && !soCuradoria {
 		vocab, errVocab := obterVocabularioAniList(r.Context(), h.AniListClient)
 		if errVocab != nil {
 			err = errVocab
@@ -257,7 +259,7 @@ func (h *SearchHandler) HandleSearch(w http.ResponseWriter, r *http.Request) {
 	// continua sendo o fallback certo, que e outra tela.
 	if aniListCaiu {
 		if soCuradoria {
-			log.Printf("[BUSCA] Rotulo sem termo na AniList: resposta so da curadoria")
+			log.Printf("[BUSCA] Resposta so da curadoria (pedido ou rotulo sem termo na AniList)")
 		} else {
 			log.Printf("[ERRO ANILIST] Fallback ativado para busca: %v", err)
 		}
