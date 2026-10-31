@@ -1,5 +1,5 @@
 import { lazy, Suspense } from 'react'
-import { Routes, Route } from 'react-router-dom'
+import { Routes, Route, Navigate } from 'react-router-dom'
 import MeuDeck from './pages/MeuDeck.tsx'
 import Landing from './pages/Landing'
 import RotaProtegida from './components/RotaProtegida'
@@ -44,7 +44,9 @@ function App() {
               <Route path="/anime/:id" element={<Detalhes />} />
               <Route path="/rankings" element={<Rankings />} />
               <Route path="/privacidade" element={<Privacidade />} />
-              <Route path="/estatisticas" element={<RotaProtegida><Estatisticas /></RotaProtegida>} />
+              <Route path="/meu-gosto" element={<RotaProtegida><Estatisticas /></RotaProtegida>} />
+              {/* Endereço antigo da tela, mantido para link salvo e histórico do navegador. */}
+              <Route path="/estatisticas" element={<Navigate to="/meu-gosto" replace />} />
               <Route path="/configuracoes" element={<RotaProtegida><Configuracoes /></RotaProtegida>} />
             </Route>
 

@@ -90,8 +90,9 @@ Cada uma já custou caro em outro repositório.
    vai perguntar "por que foi feito assim?"? Se sim, abre issue.
 
 2. **Toda alteração entra primeiro na branch `staging`** e é promovida para a `main`, que
-   publica. O CI (`.github/workflows/ci.yml`) roda `go vet`, `go test ./...` e o build do
-   `client/` a cada push na `staging`; só se promove com o CI verde. Não há ambiente de
+   publica. O CI (`.github/workflows/ci.yml`) roda `go vet`, `go test ./...`, os testes do
+   `client/` (`npm test`, Vitest) e o build a cada push na `staging`; só se promove com o CI
+   verde. Não há ambiente de
    homologação (vivia no Render e foi suspenso na migração para a VPS, em 22/09/2026).
 
 3. **Commits:** `tipo(escopo): descrição curta (closes #NN)`. Tipos: `feat`, `fix`,

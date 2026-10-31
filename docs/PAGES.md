@@ -7,7 +7,7 @@
 | 5 | Detalhe do anime | `Detalhes.tsx` | ✅ Implementada | Fase 2 / 6.6 |
 | 6 | Calendário de lançamentos | `Calendario.tsx` | ✅ Implementada | Fase 5 |
 | 7 | Rankings | `Rankings.tsx` | ✅ Implementada | Fase 2 / 6.5 |
-| 8 | Meu Gosto (ex-Estatísticas) | `Estatisticas.tsx` | ✅ Implementada · renomeação planejada | Fase 4 / 6.8 / 12 |
+| 8 | Meu Gosto (ex-Estatísticas), em `/meu-gosto` | `Estatisticas.tsx` | ✅ Implementada · abre com a frase-veredito | Fase 4 / 6.8 / 12 |
 | 9 | Painel Admin (curadoria) | `PainelAdmin.tsx` | ✅ Implementada | Fase 2.5 / 4.5 |
 | 10 | Configurações & Ajuda | `Configuracoes.tsx` | ✅ Implementada | Fase 2 |
 | 11 | Política de Privacidade | `Privacidade.tsx` | ✅ Implementada | Fase 7 |

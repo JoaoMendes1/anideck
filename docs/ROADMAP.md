@@ -645,7 +645,7 @@ Motivo: a leitura do gosto individual não tem equivalente nas plataformas anali
 pouco acessível. É também a base do único artefato capaz de atrair usuários externos sem depender
 de base instalada.
 
-- [ ] Estatísticas vira Meu Gosto, abrindo com a frase de abertura (#121)
+- [x] Estatísticas vira Meu Gosto, abrindo com a frase de abertura (#121)
 - [ ] Bloco "lacuna de gosto" (#124)
 - [ ] Card de gosto compartilhável em PNG (#126)
 - [ ] *(avaliar)* importar lista do AniList/MAL na landing

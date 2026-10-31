@@ -46,9 +46,9 @@ export default function BottomNav() {
                             <span className="text-[9px] font-bold">Deck</span>
                         </Link>
 
-                        <Link to="/estatisticas" className={itemClasse('/estatisticas')}>
+                        <Link to="/meu-gosto" className={itemClasse('/meu-gosto')}>
                             <BarChart2 size={18} />
-                            <span className="text-[9px] font-bold">Stats</span>
+                            <span className="text-[9px] font-bold">Gosto</span>
                         </Link>
 
                         {/* Admin e Sair saíram da barra e foram pro Sheet de Perfil.

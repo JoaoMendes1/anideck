@@ -37,7 +37,7 @@ const DADOS_COLETADOS = [
     },
     {
         titulo: 'Progresso por episódio',
-        itens: 'Quais episódios você marcou como assistidos e o momento em que marcou cada um. É esse registro que alimenta a página de Estatísticas.',
+        itens: 'Quais episódios você marcou como assistidos e o momento em que marcou cada um. É esse registro que alimenta a página Meu Gosto.',
     },
     {
         titulo: 'Notificações push',

@@ -9,6 +9,7 @@ import { useRevealOnScroll } from '../hooks/useRevealOnScroll'
 import { useContagemAnimada } from '../hooks/useContagemAnimada'
 import QuadranteAfinidade from '../components/QuadranteAfinidade'
 import SheetDeAnimes, { type AnimeDoGenero } from '../components/SheetDeAnimes'
+import { montarVeredito } from '../lib/veredito'
 
 interface StatsOverview {
   total_animes: number
@@ -416,13 +417,29 @@ export default function Estatisticas() {
     : 0
   const mostrarEsquecido = Boolean(esquecido) && diasParado >= DIAS_PARA_ESQUECIDO
 
+  // A página abre pela conclusão; os gráficos abaixo são o apoio dela. "Quero Assistir"
+  // fica fora da conta: o que ainda não foi visto não diz nada sobre o gosto.
+  const animesConsiderados = (overview?.total_animes || 0) - (overview?.quero_assistir || 0)
+  const veredito = montarVeredito(
+    genres.map(g => ({ ...g, genre: traduzirGenero(g.genre) })),
+    perfil.tipo,
+    animesConsiderados,
+  )
+
   return (
     <div className="pb-20">
       <div className="max-w-[980px] mx-auto px-5 pt-8 relative z-10">
 
         <div ref={registrar} className="reveal mb-8">
-          <h1 className="font-anton text-[clamp(1.6rem,3.6vw,2.2rem)] uppercase mb-1">Estatísticas</h1>
-          <p className="text-muted text-sm">Sua relação com anime, em números — tudo calculado a partir do seu próprio Deck.</p>
+          <h1 className="font-anton text-[clamp(1.6rem,3.6vw,2.2rem)] uppercase mb-3">Meu Gosto</h1>
+          {veredito.pronto ? (
+            <p className="text-text text-lg sm:text-xl leading-snug font-bold max-w-[640px]">{veredito.frase}</p>
+          ) : (
+            <p className="text-text text-lg sm:text-xl leading-snug font-bold max-w-[640px]">
+              Ainda estou te conhecendo. Com mais {veredito.faltam} {veredito.faltam === 1 ? 'anime' : 'animes'} no deck, eu te digo do que você gosta.
+            </p>
+          )}
+          <p className="text-muted text-sm mt-2">Tudo calculado a partir do seu próprio Deck.</p>
         </div>
 
         {/* Três colunas em qualquer largura: empilhados no mobile, esses cards empurravam

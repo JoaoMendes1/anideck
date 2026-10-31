@@ -209,7 +209,7 @@ export default function EditarEntradaModal({ entrada, onFechar, onSalvar, onExcl
 
                 <div className="bg-coral/10 border border-coral/30 rounded-xl p-3 mb-5 text-left">
                     <p className="text-[12px] text-coral leading-relaxed">
-                        ⚠️ <strong>Atenção:</strong> Zerar episódios removerá o tempo assistido deste anime das suas métricas em <em>Estatísticas</em>.
+                        ⚠️ <strong>Atenção:</strong> Zerar episódios removerá o tempo assistido deste anime das suas métricas em <em>Meu Gosto</em>.
                     </p>
                 </div>
 

@@ -76,7 +76,7 @@ export default function Navbar() {
               <>
                 <Link to="/deck" className={linkClasse('/deck')}>Meu Deck</Link>
                 <Link to="/calendario" className={linkClasse('/calendario')}>Calendário</Link>
-                <Link to="/estatisticas" className={linkClasse('/estatisticas')}>Estatísticas</Link>
+                <Link to="/meu-gosto" className={linkClasse('/meu-gosto')}>Meu Gosto</Link>
               </>
             )}
             <Link to="/rankings" className={linkClasse('/rankings')}>Rankings</Link>
