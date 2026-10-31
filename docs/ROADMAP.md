@@ -21,7 +21,7 @@ Staging sobe já na Fase 1, como projeto esqueleto — mesmo padrão do JVM Syst
 > válido como disciplina de branch, mas o passo "validar em homologação" não tem onde acontecer
 > até que um segundo container suba na VPS. Ver `DECISIONS.md` e `AGENTS.md`.
 
-## 📍 Status atual (22/09/2026)
+## 📍 Status atual (31/10/2026)
 
 | Fase | Status |
 |---|---|
@@ -39,6 +39,10 @@ Staging sobe já na Fase 1, como projeto esqueleto — mesmo padrão do JVM Syst
 | 6.9 · Catálogo Próprio & Independência | ✅ Concluída |
 | 7 · Multiusuário | ✅ Concluída — beta fechado em andamento |
 | 8 · App Instalável | ✅ Concluída (escopo reduzido) |
+| 9 · Independência da AniList na curadoria | 🚧 9.1 e 9.2 concluídas; 9.3 e 9.4 abertas |
+| 10 · RAG e busca semântica | 💭 A planejar, depois da Fase 9 |
+| 11 · Home e navegação | 💭 A planejar |
+| 12 · Meu Gosto e distribuição | 💭 A planejar |
 
 ---
 
@@ -93,7 +97,7 @@ Staging sobe já na Fase 1, como projeto esqueleto — mesmo padrão do JVM Syst
 > não decide. O relatório por Gmail saiu do escopo desta fase (ver Backlog).
 
 - [x] **Agente Curador (IA no Admin):** Integrar um LLM para reescrever sinopses frias da AniList de forma autônoma, adotando o tom de voz "AniDeck".
-- [x] **Engenharia de Prompt Dinâmica e Resiliência:** Criação de cache em memória no Go (`sync.RWMutex`) consultando tabela genérica no Supabase para editar as regras da IA sem mexer no código, suporte a Markdown, e fallback automático (`3.7-flash` -> `3.6-flash`).
+- [x] **Engenharia de Prompt Dinâmica e Resiliência:** Criação de cache em memória no Go (`sync.RWMutex`) consultando tabela genérica no Supabase para editar as regras da IA sem mexer no código, suporte a Markdown, e fallback automático (`3.8-flash` -> `3.7-flash` -> `3.6-flash`).
 - [x] **Decisão arquitetural (17/08/2026): n8n descartado** — exigiria hospedar/manter mais um
       serviço com custo recorrente, incompatível com o estágio atual do projeto. Implementação
       fica **nativa em Go** (mesmo backend, sem serviço novo), disparada por agendador externo
@@ -102,7 +106,8 @@ Staging sobe já na Fase 1, como projeto esqueleto — mesmo padrão do JVM Syst
 - [x] 🔄 **Agente Olheiro v1 (fila de sugestões de curadoria).** Cruza o perfil de gosto do
       usuário com os *trends* da AniList e grava candidatos em `curation_suggestions`, revisados
       manualmente numa aba nova do Painel Admin (botões "Curar" / "Dispensar"). Endpoint
-      `POST /api/admin/olheiro/scan` protegido por chave secreta, agendado semanalmente.
+      `POST /api/admin/olheiro/scan`, disparado sob demanda pelo Painel Admin, com o login do
+      admin (`RequireAuth` e `RequireAdmin`).
       A função de pontuação fica pura e testável em `internal/handlers/olheiro.go`, para ser
       refinada incrementalmente conforme o projeto evolui. Issue detalhada no GitHub Projects.
 
@@ -537,14 +542,12 @@ Retrato inicial, por `sql/relatorio_independencia_v3.sql`:
 estreia e onde assistir **não estão lá**: vêm da AniList ao vivo ou de lugar
 nenhum. E mesmo o que ele guarda é uma foto: se ela morrer, congela.
 
-- [ ] **9.1 — Aba Painel de Controle.** Traz para um lugar só o que já existe e
-      já tem endpoint: Kill Switch, peso do voto do ranking (hoje `const` no
-      `ranking.go`), tags fora da taxonomia (`view_unmapped_labels`), uso do
-      bucket e o botão de Resync. Faixa de estado no topo. O Resync hoje mora
-      provisoriamente no cabeçalho do Painel de Curadoria e migra para cá.
-- [ ] **9.2 — Pesos do Olheiro saem do código.** O `tagsDesejadas` é `map`
-      literal no `olheiro.go`; o comentário dele já antecipava esta issue. Vira
-      tabela + tela. Mexe em schema.
+- [x] **9.1 — Aba Painel de Controle** (#112, #118). Reúne num lugar só o Kill Switch, o
+      peso do voto do ranking (que saiu do `const` do `ranking.go` para `app_settings`,
+      `sql/027`), as tags fora da taxonomia (`view_unmapped_labels`), o uso do bucket e o
+      botão de Resync, com faixa de estado no topo.
+- [x] **9.2 — Pesos do Olheiro saem do código** (#113). O `map` literal `tagsDesejadas` do
+      `olheiro.go` virou a tabela `olheiro_tags` (`sql/035`), editável no Painel.
 - [ ] **9.3 — Fila, worker e tela de revisão.** A base da 9.4, não um fim em si.
       Traz junto a seção Catálogo (relatório de independência) da aba de Controle:
       cada linha dele tem um botão "Enfileirar", que só existe depois da fila.
@@ -655,6 +658,22 @@ A gamificação (rank F→SS, XP, insígnias) **não entra aqui**. Continua no
 > Correção e ajuste feitos depois do escopo da v1 fechar. **Não são fases** — não seguem a
 > numeração e não abrem escopo novo. Ficam registrados aqui em ordem cronológica inversa para
 > não sumirem: fase concluída não deve ser reaberta só para receber um conserto.
+
+### 31/10/2026 — `Dockerfile` e `.dockerignore` no repositório (#129)
+
+- [x] **O `Dockerfile` existia só no servidor** desde 21/09/2026, nunca commitado: o deploy
+      dependia de um arquivo fora do Git. Entrou no repositório sem alteração de conteúdo.
+- [x] **`.dockerignore` criado:** `.git`, `.env` da raiz e `node_modules` deixam de entrar no
+      contexto do build. O `client/.env` continua entrando, porque as `VITE_*` são lidas no
+      build.
+
+### 22 a 24/09/2026 — Desempenho das telas (#128, aberta)
+
+- [x] Capas iniciais com carregamento antecipado e `preconnect`; bundle por página
+      (`React.lazy`); vitrine em paralelo ao deck e limitada no banco; cache de telas em
+      memória; miniaturas das capas curadas; cache de assets; prazo de 5 s para a AniList.
+- [x] Compressão `zstd`/`gzip` no Caddy (repositório `infra`, 23/10/2026).
+- [ ] Medir os critérios de aceite da issue para fechá-la.
 
 ### 22/09/2026 — Saída do Render: VPS própria, deploy automático e backup diário
 
