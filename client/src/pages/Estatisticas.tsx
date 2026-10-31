@@ -10,6 +10,8 @@ import { useContagemAnimada } from '../hooks/useContagemAnimada'
 import QuadranteAfinidade from '../components/QuadranteAfinidade'
 import SheetDeAnimes, { type AnimeDoGenero } from '../components/SheetDeAnimes'
 import { montarVeredito } from '../lib/veredito'
+import { rotulosDoCard } from '../lib/cardDeGosto'
+import CompartilharGosto from '../components/CompartilharGosto'
 
 interface StatsOverview {
   total_animes: number
@@ -433,7 +435,15 @@ export default function Estatisticas() {
         <div ref={registrar} className="reveal mb-8">
           <h1 className="font-anton text-[clamp(1.6rem,3.6vw,2.2rem)] uppercase mb-3">Meu Gosto</h1>
           {veredito.pronto ? (
-            <p className="text-text text-lg sm:text-xl leading-snug font-bold max-w-[640px]">{veredito.frase}</p>
+            <>
+              <p className="text-text text-lg sm:text-xl leading-snug font-bold max-w-[640px]">{veredito.frase}</p>
+              <CompartilharGosto dados={{
+                frase: veredito.frase,
+                rotulos: rotulosDoCard(genres.map(g => ({ ...g, genre: traduzirGenero(g.genre) }))),
+                horas: Math.round((overview?.tempo_total_minutos || 0) / 60),
+                animes: animesConsiderados,
+              }} />
+            </>
           ) : (
             <p className="text-text text-lg sm:text-xl leading-snug font-bold max-w-[640px]">
               Ainda estou te conhecendo. Com mais {veredito.faltam} {veredito.faltam === 1 ? 'anime' : 'animes'} no deck, eu te digo do que você gosta.

@@ -12,7 +12,7 @@
 | 10 | Configurações & Ajuda | `Configuracoes.tsx` | ✅ Implementada | Fase 2 |
 | 11 | Política de Privacidade | `Privacidade.tsx` | ✅ Implementada | Fase 7 |
 | 12 | Início (home logada, em `/`) | `Inicio.tsx` | ✅ Implementada | Fase 11 (#122, #123, #124) |
-| 13 | Card de gosto compartilhável | — | 🕐 Planejada | Fase 12 |
+| 13 | Card de gosto compartilhável (no Meu Gosto) | `CompartilharGosto.tsx` | ✅ Implementada | Fase 12 (#126) |
 | 14 | Guilda (rank, XP, insígnias) | — | 💭 Só visão | `VISAO_GAMIFICACAO.md` |
 
 > As telas 12 a 14 existem como protótipo navegável em

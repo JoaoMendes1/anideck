@@ -42,7 +42,7 @@ Staging sobe já na Fase 1, como projeto esqueleto — mesmo padrão do JVM Syst
 | 9 · Independência da AniList na curadoria | 🚧 9.1 e 9.2 concluídas; 9.3 e 9.4 abertas |
 | 10 · RAG e busca semântica | 💭 A planejar, depois da Fase 9 |
 | 11 · Home e navegação | ✅ Concluída (31/10/2026) |
-| 12 · Meu Gosto e distribuição | 💭 A planejar |
+| 12 · Meu Gosto e distribuição | ✅ Concluída (31/10/2026); a importação de lista segue em avaliação |
 
 ---
 
@@ -647,7 +647,7 @@ de base instalada.
 
 - [x] Estatísticas vira Meu Gosto, abrindo com a frase de abertura (#121)
 - [x] Bloco "lacuna de gosto" (#124)
-- [ ] Card de gosto compartilhável em PNG (#126)
+- [x] Card de gosto compartilhável em PNG (#126)
 - [ ] *(avaliar)* importar lista do AniList/MAL na landing
 
 A gamificação (rank F→SS, XP, insígnias) **não entra aqui**. Continua no
