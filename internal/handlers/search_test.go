@@ -141,7 +141,7 @@ func TestCuradosQueBatem_SoTemporadaNaoInjetaCuradoriaInteira(t *testing.T) {
 		curado(4, "Outono 2024", "2024-10-05T15:00:00Z"),
 	}
 
-	got := idsDe(curadosQueBatem(curados, "", anilist.SearchFilters{Season: "FALL", SeasonYear: 2025}))
+	got := idsDe(curadosQueBatem(nil, curados, "", anilist.SearchFilters{Season: "FALL", SeasonYear: 2025}, nil))
 	if want := []int{1}; !mesmosIDs(got, want) {
 		t.Fatalf("esperado %v, recebido %v", want, got)
 	}
@@ -154,7 +154,7 @@ func TestCuradosQueBatem_TemporadaSemAnoAceitaQualquerAno(t *testing.T) {
 		curado(2, "Inverno 2026", "2026-01-10T15:00:00Z"),
 	}
 
-	got := idsDe(curadosQueBatem(curados, "", anilist.SearchFilters{Season: "FALL"}))
+	got := idsDe(curadosQueBatem(nil, curados, "", anilist.SearchFilters{Season: "FALL"}, nil))
 	if want := []int{1, 4}; !mesmosIDs(got, want) {
 		t.Fatalf("esperado %v, recebido %v", want, got)
 	}
@@ -168,7 +168,7 @@ func TestCuradosQueBatem_TemporadaETagPrecisamBaterJuntas(t *testing.T) {
 	}
 
 	f := anilist.SearchFilters{Tags: []string{"Isekai"}, Season: "FALL", SeasonYear: 2025}
-	got := idsDe(curadosQueBatem(curados, "", f))
+	got := idsDe(curadosQueBatem(nil, curados, "", f, nil))
 	if want := []int{1}; !mesmosIDs(got, want) {
 		t.Fatalf("esperado %v, recebido %v", want, got)
 	}
@@ -182,7 +182,7 @@ func TestCuradosQueBatem_SemTemporadaDataNaoImporta(t *testing.T) {
 		curado(2, "Sem data", "", "Isekai"),
 	}
 
-	got := idsDe(curadosQueBatem(curados, "", anilist.SearchFilters{Tags: []string{"Isekai"}}))
+	got := idsDe(curadosQueBatem(nil, curados, "", anilist.SearchFilters{Tags: []string{"Isekai"}}, nil))
 	if want := []int{1, 2}; !mesmosIDs(got, want) {
 		t.Fatalf("esperado %v, recebido %v", want, got)
 	}
@@ -191,10 +191,14 @@ func TestCuradosQueBatem_SemTemporadaDataNaoImporta(t *testing.T) {
 // --- Harém unificado ---------------------------------------------------------
 
 func TestMesmoRotulo_HaremUnificado(t *testing.T) {
-	// O AniDeck trata harém clássico e reverso como um rótulo só. Este teste
-	// trava a decisão: se alguém separar os dois de novo no mapa, ele quebra.
+	// O AniDeck trata harém clássico e reverso como um rótulo só, pela taxonomia
+	// (sql/034). Com as duas entradas apontando para "Harém", os dois termos batem.
+	idx := montarIndice([]entradaTaxonomia{
+		{RawName: "Female Harem", DisplayNamePt: "Harém", Tier: "tag_tematica"},
+		{RawName: "Male Harem", DisplayNamePt: "Harém", Tier: "tag_tematica"},
+	})
 	for _, pedida := range []string{"Female Harem", "Male Harem"} {
-		if !mesmoRotulo(pedida, "Harém") {
+		if !mesmoRotulo(idx, pedida, "Harém") {
 			t.Errorf("%q deveria bater com o rótulo curado \"Harém\"", pedida)
 		}
 	}

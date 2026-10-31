@@ -163,35 +163,7 @@ var (
 const vocabValidadePor = 24 * time.Hour
 
 func (h *OlheiroHandler) vocabularioAniList(ctx context.Context) (*vocabularioAni, error) {
-	vocabMutex.RLock()
-	if vocabCache != nil && time.Now().Before(vocabExpiraEm) {
-		defer vocabMutex.RUnlock()
-		return vocabCache, nil
-	}
-	vocabMutex.RUnlock()
-
-	v, err := h.AniListClient.GetVocabulario(ctx)
-	if err != nil {
-		return nil, err
-	}
-
-	vocab := &vocabularioAni{
-		Generos: make(map[string]bool, len(v.Generos)),
-		Tags:    make(map[string]bool, len(v.Tags)),
-	}
-	for _, g := range v.Generos {
-		vocab.Generos[g] = true
-	}
-	for _, t := range v.Tags {
-		vocab.Tags[t] = true
-	}
-
-	vocabMutex.Lock()
-	vocabCache = vocab
-	vocabExpiraEm = time.Now().Add(vocabValidadePor)
-	vocabMutex.Unlock()
-
-	return vocab, nil
+	return obterVocabularioAniList(ctx, h.AniListClient)
 }
 
 // ---------------------------------------------------------------------------

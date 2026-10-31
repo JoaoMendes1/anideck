@@ -14,68 +14,6 @@ import (
 	"github.com/JoaoMendes1/anideck/internal/models"
 )
 
-// O chip da busca manda o vocabulario da AniList (ingles); a curadoria usa o
-// seu (portugues). Sem traduzir, EqualFold("Action","Ação") da falso e nenhum
-// curado passa -- "Romance" funcionava so porque se escreve igual nas duas.
-//
-// Ha rotulo em ingles na propria curadoria (Adventure, Fantasy, Sci-Fi, Slice
-// of Life): curadoria antiga, antes do vocabulario fechado. Por isso alguns
-// mapeamentos incluem o proprio termo em ingles.
-var equivalentes = map[string][]string{
-	"action":        {"ação"},
-	"adventure":     {"aventura", "adventure"},
-	"comedy":        {"comédia", "comédia romântica"},
-	"drama":         {"drama"},
-	"fantasy":       {"fantasia", "fantasy", "magia"},
-	"horror":        {"terror"},
-	"mystery":       {"mistério", "suspense"},
-	"psychological": {"psicológico"},
-	"romance":       {"romance", "comédia romântica"},
-	"sci-fi":        {"ficção científica", "sci-fi"},
-	"slice of life": {"cotidiano", "dia a dia", "slice of life"},
-	"sports":        {"esporte"},
-	"supernatural":  {"sobrenatural", "super poderes"},
-	"thriller":      {"suspense"},
-	"mecha":         {"mecha"},
-	"music":         {"musical"},
-	"isekai":        {"isekai", "reencarnação"},
-	"school":        {"escolar", "vida escolar"},
-	"martial arts":  {"artes marciais"},
-	"historical":    {"histórico"},
-	"harem":         {"harém"},
-	"ecchi":         {"ecchi"},
-	"shounen":       {"shounen"},
-	"time travel":   {"viagem no tempo"},
-	"revenge":       {"vingança"},
-	"game":          {"jogo", "jogos"},
-
-	// As chaves abaixo faltavam. O chip manda o `value` do CONTENT_FILTERS, que é o termo
-	// da AniList em inglês; sem chave aqui, o mesmoRotulo cai no EqualFold, dá falso e o
-	// curado é barrado em silêncio. Era o caso do chip Magia, que mandava "Magic".
-	//
-	// Só entram rótulos que existem de verdade em curated_animes.custom_tags — exceto
-	// samurai, yuri e boys' love, que ainda não têm curadoria mas passam a funcionar
-	// no dia em que tiverem.
-	"magic":       {"magia"},
-	"demons":      {"demônios"},
-	"military":    {"militar"},
-	"seinen":      {"seinen"},
-	"shoujo":      {"shoujo"},
-	"super power": {"super poderes"},
-	"video games": {"jogo", "jogos"},
-
-	// A AniList separa o harém clássico ("Female Harem") do reverso ("Male Harem"). O
-	// AniDeck trata os dois como um rótulo só, "Harém" — decisão de produto, registrada no
-	// DECISIONS.md. A genre_taxonomy segue a mesma regra desde o sql/034; se as duas
-	// divergirem de novo, a busca e as Estatísticas passam a discordar sobre o mesmo anime.
-	"female harem": {"harém"},
-	"male harem":   {"harém"},
-
-	"samurai":     {"samurai"},
-	"yuri":        {"yuri"},
-	"boys' love":  {"boys love"},
-}
-
 // Quantas tags contam para o filtro em anime CURADO.
 //
 // So vale para curadoria: AplicarCuradoria poe as custom_tags em anime.Genres
@@ -88,26 +26,25 @@ const maxTagsFiltro = 5
 // Unico lugar que compara rotulo pedido com rotulo do anime. Tanto o filtro
 // quanto a ordenacao passam por aqui -- ter duas comparacoes soltas ja fez a
 // ordenacao ignorar os equivalentes e empatar tudo.
-func mesmoRotulo(pedida string, tag string) bool {
+//
+// A equivalencia vem da genre_taxonomy: "Magic", "Magia" e o nome de exibicao
+// apontam para o mesmo rotulo. Rotulo ausente da taxonomia so bate com ele mesmo.
+func mesmoRotulo(idx indiceRotulos, pedida string, tag string) bool {
 	if strings.EqualFold(pedida, tag) {
 		return true
 	}
-	for _, pt := range equivalentes[strings.ToLower(pedida)] {
-		if strings.EqualFold(pt, tag) {
-			return true
-		}
-	}
-	return false
+	a, b := idx.canonico(pedida), idx.canonico(tag)
+	return a != "" && strings.EqualFold(a, b)
 }
 
-func bateComTagPrincipal(doAnime []anilist.Genre, pedidas []string) bool {
+func bateComTagPrincipal(idx indiceRotulos, doAnime []anilist.Genre, pedidas []string) bool {
 	principais := doAnime
 	if len(principais) > maxTagsFiltro {
 		principais = principais[:maxTagsFiltro]
 	}
 	for _, pedida := range pedidas {
 		for _, tag := range principais {
-			if mesmoRotulo(pedida, tag.Name) {
+			if mesmoRotulo(idx, pedida, tag.Name) {
 				return true
 			}
 		}
@@ -166,10 +103,11 @@ func bateComTemporada(a anilist.Anime, temporada string, ano int) bool {
 
 // Curados que batem a busca: titulo contem o texto (se houver), a tag pedida esta
 // entre as principais e, com filtro de temporada, a estreia curada cai nela.
+// rotulos sao os nomes de exibicao escolhidos nos chips da Busca.
 //
 // Recebe o SearchFilters inteiro, e nao cada filtro solto, para que o proximo
 // filtro nao obrigue a mudar a assinatura e todas as chamadas de novo.
-func curadosQueBatem(curados []models.CuratedAnime, query string, f anilist.SearchFilters) []anilist.Anime {
+func curadosQueBatem(idx indiceRotulos, curados []models.CuratedAnime, query string, f anilist.SearchFilters, rotulos []string) []anilist.Anime {
 	var achados []anilist.Anime
 
 	for _, cur := range curados {
@@ -179,10 +117,13 @@ func curadosQueBatem(curados []models.CuratedAnime, query string, f anilist.Sear
 		if query != "" && !strings.Contains(strings.ToLower(anime.Title), strings.ToLower(query)) {
 			continue
 		}
-		if len(f.Genres) > 0 && !bateComTagPrincipal(anime.Genres, f.Genres) {
+		if len(f.Genres) > 0 && !bateComTagPrincipal(idx, anime.Genres, f.Genres) {
 			continue
 		}
-		if len(f.Tags) > 0 && !bateComTagPrincipal(anime.Genres, f.Tags) {
+		if len(f.Tags) > 0 && !bateComTagPrincipal(idx, anime.Genres, f.Tags) {
+			continue
+		}
+		if len(rotulos) > 0 && !bateComTagPrincipal(idx, anime.Genres, rotulos) {
 			continue
 		}
 		if !bateComTemporada(anime, f.Season, f.SeasonYear) {
@@ -194,13 +135,13 @@ func curadosQueBatem(curados []models.CuratedAnime, query string, f anilist.Sear
 	// Ordena por onde a tag pedida aparece: quem tem em primeiro vem antes de
 	// quem tem em segundo. O order_index nao serve aqui -- hoje esta zerado em
 	// toda a curadoria, entao empataria tudo e a ordem cairia no mal_id.
-	pedidas := append(append([]string{}, f.Genres...), f.Tags...)
+	pedidas := append(append(append([]string{}, f.Genres...), f.Tags...), rotulos...)
 	posicao := func(a anilist.Anime) int {
 		for i, tag := range a.Genres {
 			for _, p := range pedidas {
-				if mesmoRotulo(p, tag.Name) {
-				return i
-			}
+				if mesmoRotulo(idx, p, tag.Name) {
+					return i
+				}
 			}
 		}
 		return len(a.Genres)
@@ -224,6 +165,7 @@ func (h *SearchHandler) HandleSearch(w http.ResponseWriter, r *http.Request) {
 	query := strings.TrimSpace(r.URL.Query().Get("q"))
 	genres := r.URL.Query()["genre"]
 	tags := r.URL.Query()["tag"]
+	rotulos := r.URL.Query()["rotulo"]
 	season := strings.ToUpper(strings.TrimSpace(r.URL.Query().Get("season")))
 	status := strings.ToUpper(strings.TrimSpace(r.URL.Query().Get("status")))
 	sortParam := r.URL.Query().Get("sort")
@@ -249,7 +191,7 @@ func (h *SearchHandler) HandleSearch(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	if query == "" && len(genres) == 0 && len(tags) == 0 && season == "" && status == "" {
+	if query == "" && len(genres) == 0 && len(tags) == 0 && len(rotulos) == 0 && season == "" && status == "" {
 		http.Error(w, "É necessário informar ao menos um critério de busca", http.StatusBadRequest)
 		return
 	}
@@ -275,7 +217,38 @@ func (h *SearchHandler) HandleSearch(w http.ResponseWriter, r *http.Request) {
 		Sort:       sortParam,
 	}
 
-	resultados, err := h.AniListClient.SearchAnime(r.Context(), query, page, perPage, filters)
+	tax := taxonomiaAtual()
+
+	// O filtro da AniList recebe um termo dela por rotulo (ver termosAniList). Rotulo
+	// sem termo na AniList (so do AniDeck) faz a resposta vir so da curadoria: sem
+	// o filtro, a AniList devolveria animes de qualquer genero.
+	filtroAniList := filters
+	soCuradoria := false
+	err = nil // o err anterior é do parse da paginação, que já tem valor padrão
+	if len(rotulos) > 0 {
+		vocab, errVocab := obterVocabularioAniList(r.Context(), h.AniListClient)
+		if errVocab != nil {
+			err = errVocab
+		} else {
+			for _, rotulo := range rotulos {
+				genero, tag, ok := termosAniList(tax.entradas, rotulo, vocab)
+				if !ok {
+					soCuradoria = true
+					break
+				}
+				if genero != "" {
+					filtroAniList.Genres = append(append([]string{}, filtroAniList.Genres...), genero)
+				} else {
+					filtroAniList.Tags = append(append([]string{}, filtroAniList.Tags...), tag)
+				}
+			}
+		}
+	}
+
+	var resultados *anilist.AnimeSearchResponse
+	if err == nil && !soCuradoria {
+		resultados, err = h.AniListClient.SearchAnime(r.Context(), query, page, perPage, filtroAniList)
+	}
 	aniListCaiu := err != nil || resultados == nil
 
 	// FALLBACK: sem AniList, o catalogo e a curadoria. O cache NAO entra.
@@ -283,8 +256,12 @@ func (h *SearchHandler) HandleSearch(w http.ResponseWriter, r *http.Request) {
 	// sem sinopse. Misturar faz a curadoria parecer pior do que e. No Deck ele
 	// continua sendo o fallback certo, que e outra tela.
 	if aniListCaiu {
-		log.Printf("[ERRO ANILIST] Fallback ativado para busca: %v", err)
-		resultados = &anilist.AnimeSearchResponse{Data: curadosQueBatem(curados, query, filters)}
+		if soCuradoria {
+			log.Printf("[BUSCA] Rotulo sem termo na AniList: resposta so da curadoria")
+		} else {
+			log.Printf("[ERRO ANILIST] Fallback ativado para busca: %v", err)
+		}
+		resultados = &anilist.AnimeSearchResponse{Data: curadosQueBatem(tax.indice, curados, query, filters, rotulos)}
 
 		inicio := (page - 1) * perPage
 		if inicio >= len(resultados.Data) {
@@ -313,7 +290,7 @@ func (h *SearchHandler) HandleSearch(w http.ResponseWriter, r *http.Request) {
 		// Usa bateComTagPrincipal de proposito: e a mesma regra do
 		// curadosQueBatem. Duas regras diferentes fariam um anime entrar por um
 		// caminho e ser barrado pelo outro.
-		if len(genres) > 0 || len(tags) > 0 {
+		if len(genres) > 0 || len(tags) > 0 || len(rotulos) > 0 {
 			mantidos := make([]anilist.Anime, 0, len(resultados.Data))
 			for _, a := range resultados.Data {
 				cur, ehCurado := curadosMap[a.MalID]
@@ -325,12 +302,16 @@ func (h *SearchHandler) HandleSearch(w http.ResponseWriter, r *http.Request) {
 					continue
 				}
 
-				if len(genres) > 0 && !bateComTagPrincipal(a.Genres, genres) {
+				if len(genres) > 0 && !bateComTagPrincipal(tax.indice, a.Genres, genres) {
 					log.Printf("[TRAVA CURADORIA] mal_id=%d barrado no filtro de genero", a.MalID)
 					continue
 				}
-				if len(tags) > 0 && !bateComTagPrincipal(a.Genres, tags) {
+				if len(tags) > 0 && !bateComTagPrincipal(tax.indice, a.Genres, tags) {
 					log.Printf("[TRAVA CURADORIA] mal_id=%d barrado no filtro de tag", a.MalID)
+					continue
+				}
+				if len(rotulos) > 0 && !bateComTagPrincipal(tax.indice, a.Genres, rotulos) {
+					log.Printf("[TRAVA CURADORIA] mal_id=%d barrado no filtro de rotulo", a.MalID)
 					continue
 				}
 
@@ -343,7 +324,7 @@ func (h *SearchHandler) HandleSearch(w http.ResponseWriter, r *http.Request) {
 		// dela e nao conhece suas tags, entao curado que bate precisa entrar por
 		// fora -- inclusive quando a busca e so por chip, sem texto digitado.
 		if page == 1 {
-			meus := curadosQueBatem(curados, query, filters)
+			meus := curadosQueBatem(tax.indice, curados, query, filters, rotulos)
 
 			jaEntrou := make(map[int]bool, len(meus))
 			for _, a := range meus {

@@ -75,6 +75,7 @@ func main() {
 	metadataHandler := &handlers.MetadataHandler{AniListClient: anilistService}
 	olheiroHandler := &handlers.OlheiroHandler{AniListClient: anilistService}
 	diagnosticoHandler := &handlers.DiagnosticoHandler{}
+	taxonomiaHandler := &handlers.TaxonomiaHandler{}
 
 	r := chi.NewRouter()
 	r.Use(chimw.RequestID)
@@ -92,6 +93,7 @@ func main() {
 	r.Get("/api/miniatura/*", miniaturaHandler.HandleMiniatura)
 
 	r.Get("/api/search", searchHandler.HandleSearch)
+	r.Get("/api/taxonomia", taxonomiaHandler.HandleListarRotulos)
 	r.Get("/api/anime/{id}", animeHandler.HandleGetAnime)
 	r.Get("/api/anime/{id}/statistics", animeHandler.HandleGetStats)
 	r.Get("/api/ranking", rankingHandler.HandleGetTopAnime)
