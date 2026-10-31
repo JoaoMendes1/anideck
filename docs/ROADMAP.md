@@ -808,10 +808,12 @@ senha rotacionada (26), e o painel do provedor desfaz a configuração com um cl
       que a obra ganhar `mal_id`. Só virar tarefa quando aparecer um caso concreto.
       Ver `DECISIONS.md` de 08/09/2026.
 
-- [ ] **Derivar o `equivalentes` da `genre_taxonomy` em vez de cravá-lo no `search.go`.**
-      Foi por divergir da tabela que os chips de tag pararam de filtrar em 08/09/2026.
-      Ganho: tag nova passa a funcionar sem deploy. Cuidado: caminho quente da Busca,
-      precisa de cache. Ver item 19 do `PITFALLS.md`.
+- [x] **Derivar o `equivalentes` da `genre_taxonomy` em vez de cravá-lo no `search.go`.**
+      Feito em 31/10/2026 (#127): chips e equivalência vêm da taxonomia, com cache em
+      memória. Ver item 19 do `PITFALLS.md` e o `DECISIONS.md`.
+
+- [ ] **Chat de dúvidas no Painel Admin.** Conversa com a IA sobre a obra em edição, sem
+      preencher campo. Saiu do board em 31/10/2026 (era a #81) por não estar em nenhuma fase.
 
 - [ ] **Levar o relatório de completude para a tela.** A query já existe em
       `sql/relatorio_curadoria_v2.sql` e roda no SQL Editor. Virar seção do Painel

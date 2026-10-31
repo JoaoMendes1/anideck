@@ -1,14 +1,13 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { useToast } from '../contexts/ToastContext'
 import { useCatalogoStatus } from '../contexts/CatalogoStatusContext'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useSearchParams } from 'react-router-dom'
 import { Search, AlertCircle, SlidersHorizontal, X } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import { useDadosRestaurados, usePosicaoDeLista, guardarDados } from '../lib/posicaoDeLista'
-import {
-    CONTENT_FILTERS, STATUS_OPTIONS, SEASON_OPTIONS,
-    type FilterItem, getCategoryTheme
-} from '../lib/filters'
+import { STATUS_OPTIONS, SEASON_OPTIONS, getCategoryTheme } from '../lib/filters'
+import { useRotulos, type CamadaPublica } from '../hooks/useRotulos'
+import { normalizar } from '../hooks/useTaxonomia'
 import SearchResultCard from '../components/SearchResultCard'
 import FilterSheet from '../components/FilterSheet'
 import FilterChipGroup from '../components/FilterChipGroup'
@@ -33,6 +32,16 @@ interface SavedEntry {
 const CURRENT_YEAR = new Date().getFullYear()
 const YEAR_OPTIONS = Array.from({ length: 10 }, (_, i) => CURRENT_YEAR - i)
 
+// Atalhos da barra de chips. São nomes de rótulo da taxonomia: o servidor resolve o
+// termo da AniList e a equivalência com a curadoria.
+const ROTULOS_RAPIDOS = ['Ação', 'Romance', 'Comédia', 'Fantasia', 'Isekai']
+
+const GRUPOS_DE_ROTULOS: { camada: CamadaPublica; titulo: string }[] = [
+    { camada: 'genero', titulo: 'Gêneros' },
+    { camada: 'demografia', titulo: 'Demografias' },
+    { camada: 'tag_tematica', titulo: 'Temas' },
+]
+
 const SORT_OPTIONS = [
     { label: 'Mais Populares', value: 'POPULARITY_DESC' },
     { label: 'Em Alta', value: 'TRENDING_DESC' },
@@ -43,7 +52,7 @@ const SORT_OPTIONS = [
 /** O que a Busca precisa para renascer inteira ao voltar do Detalhes. */
 interface EstadoBusca {
     query: string
-    selectedFilters: FilterItem[]
+    selectedRotulos: string[]
     selectedStatus: string
     selectedSeason: string
     selectedYear: string
@@ -63,9 +72,14 @@ export default function Busca() {
     // do retrato num render e o resto noutro, o bloco `tinhaFiltro` mais abaixo
     // leria a discordância como "o filtro mudou" e jogaria fora a lista restaurada.
     const retrato = useDadosRestaurados<EstadoBusca>()
+    const [searchParams] = useSearchParams()
+    const { rotulos } = useRotulos()
 
     const [query, setQuery] = useState(retrato?.query ?? '')
-    const [selectedFilters, setSelectedFilters] = useState<FilterItem[]>(retrato?.selectedFilters ?? [])
+    // Um link pode chegar com ?rotulo=Nome (ex.: a sugestão de gosto): o filtro já abre aplicado.
+    const [selectedRotulos, setSelectedRotulos] = useState<string[]>(
+        retrato?.selectedRotulos ?? searchParams.getAll('rotulo')
+    )
     const [selectedStatus, setSelectedStatus] = useState(retrato?.selectedStatus ?? '')
     const [selectedSeason, setSelectedSeason] = useState(retrato?.selectedSeason ?? '')
     const [selectedYear, setSelectedYear] = useState(retrato?.selectedYear ?? '')
@@ -82,7 +96,7 @@ export default function Busca() {
     const [savedEntries, setSavedEntries] = useState<SavedEntry[]>([])
 
     const activeFilterCount =
-        selectedFilters.length +
+        selectedRotulos.length +
         (selectedStatus ? 1 : 0) +
         (selectedSeason ? 1 : 0) +
         (selectedYear ? 1 : 0) +
@@ -113,7 +127,7 @@ export default function Busca() {
 
     const hasAnyFilter =
         query.trim() !== '' ||
-        selectedFilters.length > 0 ||
+        selectedRotulos.length > 0 ||
         !!selectedStatus ||
         !!selectedSeason
 
@@ -143,13 +157,13 @@ export default function Busca() {
     // execução refazer a requisição e duplicar a última página.
     // A comparação é por identidade em cada campo, mesmo idioma do bloco acima.
     const [buscaJaFeita] = useState(() => (retrato
-        ? { query, selectedFilters, selectedStatus, selectedSeason, selectedYear, selectedSort, page }
+        ? { query, selectedRotulos, selectedStatus, selectedSeason, selectedYear, selectedSort, page }
         : null))
 
     const ehABuscaRestaurada =
         buscaJaFeita !== null &&
         buscaJaFeita.query === query &&
-        buscaJaFeita.selectedFilters === selectedFilters &&
+        buscaJaFeita.selectedRotulos === selectedRotulos &&
         buscaJaFeita.selectedStatus === selectedStatus &&
         buscaJaFeita.selectedSeason === selectedSeason &&
         buscaJaFeita.selectedYear === selectedYear &&
@@ -169,7 +183,7 @@ export default function Busca() {
 
             const params = new URLSearchParams()
             if (query.trim()) params.append('q', query.trim())
-            selectedFilters.forEach(f => params.append(f.type === 'genre' ? 'genre' : 'tag', f.value))
+            selectedRotulos.forEach(nome => params.append('rotulo', nome))
             if (selectedStatus) params.set('status', selectedStatus)
             if (selectedSeason) {
                 params.set('season', selectedSeason)
@@ -208,16 +222,16 @@ export default function Busca() {
             clearTimeout(timer)
             controller.abort()
         }
-    }, [query, selectedFilters, selectedStatus, selectedSeason, selectedYear, selectedSort, page, hasAnyFilter, ehABuscaRestaurada, reportarFalha, reportarSucesso])
+    }, [query, selectedRotulos, selectedStatus, selectedSeason, selectedYear, selectedSort, page, hasAnyFilter, ehABuscaRestaurada, reportarFalha, reportarSucesso])
 
     // Mantém o retrato em dia. Guardar é só anotar referências, então sai barato
     // mesmo rodando a cada tecla digitada na busca.
     useEffect(() => {
         guardarDados<EstadoBusca>('/descobrir', {
-            query, selectedFilters, selectedStatus, selectedSeason, selectedYear,
+            query, selectedRotulos, selectedStatus, selectedSeason, selectedYear,
             selectedSort, page, resultados, hasSearched,
         })
-    }, [query, selectedFilters, selectedStatus, selectedSeason, selectedYear,
+    }, [query, selectedRotulos, selectedStatus, selectedSeason, selectedYear,
         selectedSort, page, resultados, hasSearched])
 
     usePosicaoDeLista(resultados.length > 0)
@@ -260,17 +274,30 @@ export default function Busca() {
         }
     }
 
-    const toggleFilter = (f: FilterItem) => {
+    const toggleRotulo = (nome: string) => {
         setPage(1)
-        setSelectedFilters(prev =>
-            prev.some(x => x.value === f.value && x.type === f.type)
-                ? prev.filter(x => !(x.value === f.value && x.type === f.type))
-                : [...prev, f]
+        setSelectedRotulos(prev =>
+            prev.includes(nome) ? prev.filter(x => x !== nome) : [...prev, nome]
         )
     }
 
+    // Rótulos cujo nome contém o texto digitado. O campo de texto da AniList casa só
+    // com título: sem isto, digitar "isekai" não acharia nada.
+    const sugestoes = useMemo(() => {
+        const termo = normalizar(query)
+        if (termo.length < 2) return []
+        return rotulos
+            .filter(r => normalizar(r.nome).includes(termo) && !selectedRotulos.includes(r.nome))
+            .slice(0, 6)
+    }, [query, rotulos, selectedRotulos])
+
+    const escolherSugestao = (nome: string) => {
+        setQuery('')
+        toggleRotulo(nome)
+    }
+
     const clearFilters = () => {
-        setSelectedFilters([])
+        setSelectedRotulos([])
         setSelectedStatus('')
         setSelectedSeason('')
         setSelectedYear('')
@@ -294,10 +321,25 @@ export default function Busca() {
                     type="text"
                     value={query}
                     onChange={(e) => { setQuery(e.target.value); setPage(1); }}
-                    placeholder="Buscar anime, gênero, estúdio..."
+                    placeholder="Buscar anime ou rótulo..."
                     className="bg-transparent border-none outline-none text-text text-base w-full font-manrope placeholder:text-muted-2"
                 />
             </div>
+
+            {sugestoes.length > 0 && (
+                <div className="flex flex-wrap items-center gap-2 -mt-2 mb-4">
+                    <span className="font-mono text-[10px] text-muted-2 tracking-widest uppercase select-none">Filtrar por</span>
+                    {sugestoes.map(r => (
+                        <button
+                            key={r.nome}
+                            onClick={() => escolherSugestao(r.nome)}
+                            className="px-3 py-1.5 rounded-full text-xs font-bold bg-panel-2 border border-holo-2/40 text-holo-2 hover:bg-holo-2/10 transition-colors cursor-pointer"
+                        >
+                            {r.nome}
+                        </button>
+                    ))}
+                </div>
+            )}
 
             <div className="flex items-center gap-3 mb-4 overflow-x-auto pb-2 scrollbar-hide select-none">
                 <button
@@ -326,15 +368,12 @@ export default function Busca() {
                     🔥 Em Lançamento
                 </button>
 
-                {/* Filtros Rápidos - Agora com suporte nativo as Tags graças a atualização em filters.ts */}
-                {['Ação', 'Romance', 'Comédia', 'Fantasia', 'Isekai'].map(cat => {
-                    const filterObj = CONTENT_FILTERS.find(f => f.label === cat)
-                    if (!filterObj) return null;
-                    const isActive = selectedFilters.some(x => x.value === filterObj.value)
+                {ROTULOS_RAPIDOS.map(cat => {
+                    const isActive = selectedRotulos.includes(cat)
                     return (
                         <button
                             key={cat}
-                            onClick={() => toggleFilter(filterObj)}
+                            onClick={() => toggleRotulo(cat)}
                             className={`shrink-0 px-4 py-2 rounded-full text-xs font-bold transition-all duration-150 cursor-pointer border ${isActive
                                 ? `${getCategoryTheme(cat)} shadow-[0_0_10px_currentColor]`
                                 : 'bg-panel-2 border-line text-muted hover:border-holo-2 hover:text-text'
@@ -353,10 +392,10 @@ export default function Busca() {
                                 <button onClick={() => { setSelectedSort('POPULARITY_DESC'); setPage(1) }} className="cursor-pointer hover:text-white"><X size={10} /></button>
                             </span>
                         )}
-                        {selectedFilters.filter(f => !['Ação', 'Romance', 'Comédia', 'Fantasia', 'Isekai'].includes(f.label)).map(f => (
-                            <span key={`${f.type}-${f.value}`} className="flex items-center shrink-0 gap-1 px-2.5 py-1.5 rounded-full bg-holo-2/20 border border-holo-2/40 text-holo-2 text-[11px] font-bold">
-                                {f.label}
-                                <button onClick={() => toggleFilter(f)} className="cursor-pointer hover:text-white"><X size={10} /></button>
+                        {selectedRotulos.filter(nome => !ROTULOS_RAPIDOS.includes(nome)).map(nome => (
+                            <span key={nome} className="flex items-center shrink-0 gap-1 px-2.5 py-1.5 rounded-full bg-holo-2/20 border border-holo-2/40 text-holo-2 text-[11px] font-bold">
+                                {nome}
+                                <button onClick={() => toggleRotulo(nome)} className="cursor-pointer hover:text-white"><X size={10} /></button>
                             </span>
                         ))}
                         {selectedStatus && (
@@ -431,26 +470,33 @@ export default function Busca() {
                     </div>
                 </div>
 
-                <div>
-                    <p className="font-mono text-[10px] text-muted-2 tracking-widest mb-3 select-none uppercase">Gêneros e Tags</p>
-                    <div className="flex flex-wrap gap-2">
-                        {CONTENT_FILTERS.map(f => {
-                            const isActive = selectedFilters.some(x => x.value === f.value)
-                            return (
-                                <button
-                                    key={`${f.type}-${f.value}`}
-                                    onClick={() => toggleFilter(f)}
-                                    className={`px-3 py-1.5 rounded-full text-xs font-bold transition-all duration-150 cursor-pointer ${isActive
-                                        ? 'bg-gradient-to-r from-holo-1 to-holo-2 text-void shadow-[0_0_12px_rgba(123,92,255,0.4)]'
-                                        : 'bg-panel-2 border border-line text-muted hover:border-holo-2 hover:text-text'
-                                        }`}
-                                >
-                                    {f.label}
-                                </button>
-                            )
-                        })}
-                    </div>
-                </div>
+                {GRUPOS_DE_ROTULOS.map(grupo => {
+                    const doGrupo = rotulos.filter(r => r.camada === grupo.camada)
+                    if (doGrupo.length === 0) return null
+                    return (
+                        <div key={grupo.camada}>
+                            <p className="font-mono text-[10px] text-muted-2 tracking-widest mb-3 select-none uppercase">{grupo.titulo}</p>
+                            <div className="flex flex-wrap gap-2">
+                                {doGrupo.map(r => {
+                                    const isActive = selectedRotulos.includes(r.nome)
+                                    return (
+                                        <button
+                                            key={r.nome}
+                                            onClick={() => toggleRotulo(r.nome)}
+                                            className={`px-3 py-1.5 rounded-full text-xs font-bold transition-all duration-150 cursor-pointer ${isActive
+                                                ? 'bg-gradient-to-r from-holo-1 to-holo-2 text-void shadow-[0_0_12px_rgba(123,92,255,0.4)]'
+                                                : 'bg-panel-2 border border-line text-muted hover:border-holo-2 hover:text-text'
+                                                }`}
+                                        >
+                                            {r.nome}
+                                            {r.curados > 0 && <span className="ml-1.5 opacity-60 font-mono">{r.curados}</span>}
+                                        </button>
+                                    )
+                                })}
+                            </div>
+                        </div>
+                    )
+                })}
 
                 {activeFilterCount > 0 && (
                     <div className="pt-4 border-t border-line flex justify-end">

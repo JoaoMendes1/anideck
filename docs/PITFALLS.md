@@ -541,7 +541,11 @@ fontes para o mesmo fato divergem por padrão; a única dúvida é quando.
 
 Corrigido em 08/09/2026 completando as 12 chaves, com os rótulos conferidos contra
 `SELECT custom_tags FROM curated_animes` — não contra suposição do que a curadoria usaria.
-**A correção de raiz continua aberta:** derivar o mapa da `genre_taxonomy` (ver `ROADMAP.md`).
+**Corrigido na raiz em 31/10/2026 (#127):** o mapa saiu do `search.go`. A equivalência entre
+rótulos passou a vir da própria `genre_taxonomy`, lida pelo backend e guardada em memória
+(`internal/handlers/taxonomia.go`), e os chips da Busca vêm da rota `GET /api/taxonomia`.
+Rótulo cadastrado no Painel chega à Busca sem deploy. O risco que sobra é o mesmo do item 1:
+rótulo fora da taxonomia só bate com ele mesmo.
 
 > **Pergunta obrigatória:** este mapa, lista ou `switch` em Go repete informação que já vive numa
 > tabela do banco? Se sim, o que acontece quando a tabela ganhar um valor novo — alguém precisa
