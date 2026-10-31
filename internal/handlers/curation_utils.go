@@ -97,12 +97,14 @@ var curadoriaEmCache = novoCacheComValidade[map[int]models.CuratedAnime](time.Mi
 // uma capa no Painel vê a mudança no Deck na próxima abertura, sem esperar o minuto.
 //
 // Invalida até quando a escrita falha. Custa uma releitura do banco, e evita ter que
-// descobrir se a falha aconteceu antes ou depois de gravar.
+// descobrir se a falha aconteceu antes ou depois de gravar. A taxonomia vai junto: os
+// rótulos também são editados pelo Painel e aparecem nos chips da Busca.
 func InvalidaCuradoriaDepois(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		next.ServeHTTP(w, r)
 		if r.Method != http.MethodGet {
 			curadoriaEmCache.invalidar()
+			taxonomiaEmCache.invalidar()
 		}
 	})
 }
