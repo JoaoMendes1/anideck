@@ -420,6 +420,19 @@ func marcarErro(client *supabase.Client, item itemFila, err error, resultado int
 	atualizarItem(client, item.ID, campos)
 }
 
+// devolverSeInterrompido trata a falha que veio do próprio worker sendo parado (deploy,
+// SIGTERM): o item volta a pendente em vez de virar erro, porque o anime não tem culpa.
+// A gravação não usa o ctx (o postgrest-go não recebe contexto), então funciona mesmo
+// com ele cancelado.
+func devolverSeInterrompido(ctx context.Context, client *supabase.Client, item itemFila) bool {
+	if ctx.Err() == nil {
+		return false
+	}
+	log.Printf("[FILA IA] mal_id=%d (%s) interrompido pelo encerramento do worker; volta para a fila", item.MalID, item.Tipo)
+	atualizarItem(client, item.ID, map[string]interface{}{"status": "pendente", "pego_em": nil})
+	return true
+}
+
 func processarSinopseTags(ctx context.Context, client *supabase.Client, item itemFila, cfg configFila) {
 	curado, err := buscarCurado(client, item.MalID)
 	if err != nil {
@@ -434,6 +447,9 @@ func processarSinopseTags(ctx context.Context, client *supabase.Client, item ite
 	prompt := fmt.Sprintf("Título do anime: %s\nSinopse original técnica: %s", curado.CustomTitle, curado.CustomSynopsis)
 	resp, err := ia.Gerar(ctx, ia.ConfigCuradoria(lerPromptCuradoria(client)), prompt)
 	if err != nil {
+		if devolverSeInterrompido(ctx, client, item) {
+			return
+		}
 		marcarErro(client, item, err, nil)
 		return
 	}
@@ -477,6 +493,9 @@ func processarEpisodios(ctx context.Context, client *supabase.Client, item itemF
 
 	resp1, err := ia.Gerar(ctx, ia.ConfigPesquisa(), pergunta)
 	if err != nil {
+		if devolverSeInterrompido(ctx, client, item) {
+			return
+		}
 		marcarErro(client, item, err, nil)
 		return
 	}
@@ -489,6 +508,9 @@ func processarEpisodios(ctx context.Context, client *supabase.Client, item itemF
 	estruturar := cfg.PromptEstruturar + "\n\n" + resultado.TextoBruto
 	resp2, err := ia.Gerar(ctx, ia.ConfigEstruturarEpisodios(), estruturar)
 	if err != nil {
+		if devolverSeInterrompido(ctx, client, item) {
+			return
+		}
 		marcarErro(client, item, fmt.Errorf("a estruturação falhou; o texto da pesquisa ficou guardado: %w", err), resultado)
 		return
 	}
