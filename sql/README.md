@@ -67,6 +67,7 @@ SELECT pg_get_viewdef('nome_da_view'::regclass, true);
 | `035_olheiro_tags.sql` | Pesos do Olheiro saem do código e vão para o banco, com FK na taxonomia | 19/09/2026 |
 | `036_olheiro_limite.sql` | Limite de sugestões por scan vai para `app_settings` | 19/09/2026 |
 | `037_olheiro_demanda.sql` | RPC da aba Demanda: anime em deck e fora do catálogo | 19/09/2026 |
+| `038_fila_curadoria_ia.sql` | Fila da curadoria por IA (`ai_curation_queue`, só admin), RPC `pegar_proximo_da_fila_ia` (só service role) e chaves `ai_fila_*` e `ai_prompt_*_episodios` em `app_settings` | ~31/10/2026 |
 
 Datas com `~` são a data do commit, não da aplicação no Supabase.
 

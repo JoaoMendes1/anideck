@@ -1,6 +1,7 @@
 package ia
 
 import (
+	"strings"
 	"testing"
 
 	"google.golang.org/genai"
@@ -37,6 +38,16 @@ func TestLerEpisodios(t *testing.T) {
 	}
 	if _, err := LerEpisodios("lixo"); err == nil {
 		t.Error("texto que não é JSON deveria ser recusado")
+	}
+}
+
+func TestMontarPerguntaEpisodios(t *testing.T) {
+	got := MontarPerguntaEpisodios("{titulo} #{mal_id} de {de} a {ate}, 100% {titulo}", "Frieren", 52991, 3, 14)
+	if got != "Frieren #52991 de 3 a 14, 100% Frieren" {
+		t.Fatalf("marcadores trocados errado: %q", got)
+	}
+	if !strings.Contains(MontarPerguntaEpisodios(PromptPesquisaEpisodiosPadrao, "X", 1, 1, 12), "episódios 1 a 12") {
+		t.Error("o prompt padrão deveria pedir a faixa de episódios")
 	}
 }
 

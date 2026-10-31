@@ -50,9 +50,16 @@ type configFila struct {
 	Lote             int    `json:"lote"`
 	Intervalo        int    `json:"intervalo"`
 	EpisodiosPorLote int    `json:"episodios_por_lote"`
+	PromptPesquisa   string `json:"prompt_pesquisa"`
+	PromptEstruturar string `json:"prompt_estruturar"`
 }
 
-var configFilaPadrao = configFila{Modo: modoRevisao, Lote: 5, Intervalo: 60, EpisodiosPorLote: 12}
+var configFilaPadrao = configFila{
+	Modo: modoRevisao, Lote: 5, Intervalo: 60, EpisodiosPorLote: 12,
+	PromptPesquisa: ia.PromptPesquisaEpisodiosPadrao, PromptEstruturar: ia.PromptEstruturarEpisodiosPadrao,
+}
+
+const maxPromptFila = 4000
 
 // resultadoSinopseTags é o que o worker grava para revisão de sinopse e tags.
 type resultadoSinopseTags struct {
@@ -88,6 +95,15 @@ func validarConfigFila(c configFila) string {
 	}
 	if c.EpisodiosPorLote < 1 || c.EpisodiosPorLote > 24 {
 		return "Os episódios por pesquisa vão de 1 a 24."
+	}
+	if !strings.Contains(c.PromptPesquisa, "{titulo}") {
+		return "O prompt de pesquisa precisa do marcador {titulo}: sem ele a IA não sabe qual anime pesquisar."
+	}
+	if strings.TrimSpace(c.PromptEstruturar) == "" {
+		return "O prompt de estruturação não pode ficar vazio."
+	}
+	if len([]rune(c.PromptPesquisa)) > maxPromptFila || len([]rune(c.PromptEstruturar)) > maxPromptFila {
+		return fmt.Sprintf("Cada prompt vai até %d caracteres.", maxPromptFila)
 	}
 	return ""
 }
@@ -317,7 +333,8 @@ func lerConfigFila(client *supabase.Client) configFila {
 	cfg := configFilaPadrao
 	data, _, err := client.From("app_settings").
 		Select("key,value", "", false).
-		In("key", []string{"ai_fila_modo", "ai_fila_lote", "ai_fila_intervalo", "ai_fila_episodios_por_lote"}).
+		In("key", []string{"ai_fila_modo", "ai_fila_lote", "ai_fila_intervalo", "ai_fila_episodios_por_lote",
+			"ai_prompt_pesquisa_episodios", "ai_prompt_estruturar_episodios"}).
 		Execute()
 	if err != nil {
 		log.Printf("[FILA IA] Configuração indisponível, usando o padrão: %v", err)
@@ -340,6 +357,15 @@ func lerConfigFila(client *supabase.Client) configFila {
 			lido.Intervalo = n
 		case "ai_fila_episodios_por_lote":
 			lido.EpisodiosPorLote = n
+		case "ai_prompt_pesquisa_episodios":
+			// Vazio significa "use o padrão do código": o sql/038 cria a chave vazia.
+			if strings.TrimSpace(l.Value) != "" {
+				lido.PromptPesquisa = l.Value
+			}
+		case "ai_prompt_estruturar_episodios":
+			if strings.TrimSpace(l.Value) != "" {
+				lido.PromptEstruturar = l.Value
+			}
 		}
 	}
 	if problema := validarConfigFila(lido); problema != "" {
@@ -447,11 +473,7 @@ func processarEpisodios(ctx context.Context, client *supabase.Client, item itemF
 	}
 	de, ate := faixaDeEpisodios(lerEpisodiosCurados(curado.CustomEpisodes), cfg.EpisodiosPorLote)
 
-	pergunta := fmt.Sprintf(`Pesquise na web o anime "%s" (MyAnimeList: https://myanimelist.net/anime/%d).
-Quero, para os episódios %d a %d desta temporada: o título oficial em português do Brasil (como na Crunchyroll ou em outra plataforma oficial) e a data e hora de exibição no Japão, com fuso.
-Diga também a data e hora de estreia do episódio 1 e as plataformas oficiais onde assistir no Brasil, com o link.
-Para cada dado, cite a página de onde ele saiu. Se não encontrar um dado, diga que não encontrou: não estime e não invente. Se as fontes discordarem, diga qual diz o quê.`,
-		curado.CustomTitle, item.MalID, de, ate)
+	pergunta := ia.MontarPerguntaEpisodios(cfg.PromptPesquisa, curado.CustomTitle, item.MalID, de, ate)
 
 	resp1, err := ia.Gerar(ctx, ia.ConfigPesquisa(), pergunta)
 	if err != nil {
@@ -464,7 +486,7 @@ Para cada dado, cite a página de onde ele saiu. Se não encontrar um dado, diga
 		return
 	}
 
-	estruturar := "Organize no formato pedido o que o texto abaixo afirma, sem acrescentar nada que não esteja nele. Dado ausente fica vazio, e o que o texto aponta como incerto ou divergente vai em ressalvas.\n\n" + resultado.TextoBruto
+	estruturar := cfg.PromptEstruturar + "\n\n" + resultado.TextoBruto
 	resp2, err := ia.Gerar(ctx, ia.ConfigEstruturarEpisodios(), estruturar)
 	if err != nil {
 		marcarErro(client, item, fmt.Errorf("a estruturação falhou; o texto da pesquisa ficou guardado: %w", err), resultado)
@@ -718,6 +740,8 @@ func (h *FilaIAHandler) HandleUpdateConfig(w http.ResponseWriter, r *http.Reques
 		{"key": "ai_fila_lote", "value": strconv.Itoa(cfg.Lote), "updated_at": agora},
 		{"key": "ai_fila_intervalo", "value": strconv.Itoa(cfg.Intervalo), "updated_at": agora},
 		{"key": "ai_fila_episodios_por_lote", "value": strconv.Itoa(cfg.EpisodiosPorLote), "updated_at": agora},
+		{"key": "ai_prompt_pesquisa_episodios", "value": cfg.PromptPesquisa, "updated_at": agora},
+		{"key": "ai_prompt_estruturar_episodios", "value": cfg.PromptEstruturar, "updated_at": agora},
 	}
 	if _, _, err := client.From("app_settings").Upsert(linhas, "key", "minimal", "").Execute(); err != nil {
 		log.Printf("[FILA IA] Falha ao salvar a configuração: %v", err)

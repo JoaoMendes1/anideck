@@ -39,7 +39,7 @@ Staging sobe já na Fase 1, como projeto esqueleto — mesmo padrão do JVM Syst
 | 6.9 · Catálogo Próprio & Independência | ✅ Concluída |
 | 7 · Multiusuário | ✅ Concluída — beta fechado em andamento |
 | 8 · App Instalável | ✅ Concluída (escopo reduzido) |
-| 9 · Independência da AniList na curadoria | 🚧 9.1 e 9.2 concluídas; 9.3 e 9.4 abertas |
+| 9 · Independência da AniList na curadoria | ✅ Concluída (31/10/2026); falta medir o resultado no catálogo real |
 | 10 · RAG e busca semântica | 💭 A planejar, depois da Fase 9 |
 | 11 · Home e navegação | ✅ Concluída (31/10/2026) |
 | 12 · Meu Gosto e distribuição | ✅ Concluída (31/10/2026); a importação de lista segue em avaliação |
@@ -548,16 +548,22 @@ nenhum. E mesmo o que ele guarda é uma foto: se ela morrer, congela.
       botão de Resync, com faixa de estado no topo.
 - [x] **9.2 — Pesos do Olheiro saem do código** (#113). O `map` literal `tagsDesejadas` do
       `olheiro.go` virou a tabela `olheiro_tags` (`sql/035`), editável no Painel.
-- [ ] **9.3 — Fila, worker e tela de revisão.** A base da 9.4, não um fim em si.
-      Traz junto a seção Catálogo (relatório de independência) da aba de Controle:
-      cada linha dele tem um botão "Enfileirar", que só existe depois da fila.
+- [x] **9.3 — Fila, worker e tela de revisão** (#114, 31/10/2026). Tabela
+      `ai_curation_queue` (`sql/038`), aba Revisão da IA e seção Curadoria por IA no
+      Controle. A seção Catálogo com botão "Enfileirar" por linha ficou no backlog
+      ("Levar o relatório de completude para a tela"); por ora se enfileira pela busca
+      de título na própria aba.
       Worker é binário separado (`cmd/worker/`), não goroutine no app. O motivo
       original era a hibernação do free tier; a VPS existe desde 22/09/2026 e a
       separação continua valendo por outro: processo próprio ganha container ou
       `systemd` sem ser derrubado a cada deploy do app. Molde a seguir: `StartRankingEngine` + o `atomic.Bool` com
       `CompareAndSwap`. **Usa `ServiceRoleClient()`, nunca o token da
       requisição** — ver o incidente de 12/09 na Manutenção pós-v1.
-- [ ] **9.4 — Títulos de episódio em pt-BR, datas, horários e onde assistir.**
+- [x] **9.4 — Títulos de episódio em pt-BR, datas, horários e onde assistir** (#115,
+      31/10/2026). Os dois prompts ficam em `app_settings`, editáveis no Controle.
+      **Não validado contra um anime real:** a issue pedia testar as duas chamadas no
+      AI Studio antes de codar, e isso não foi feito. A primeira rodada na fila, em modo
+      revisão, faz esse papel; se o resultado não prestar, é só descartar.
       O coração da fase. Exige busca na web: a AniList não tem título em
       português, e o usuário quer o oficial da Crunchyroll.
       **Duas chamadas ao Gemini por anime**: a API recusa `google_search` junto

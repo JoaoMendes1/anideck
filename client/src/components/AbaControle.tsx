@@ -6,6 +6,7 @@ import {
 import { useControle, type RotuloOrfao, type TagOlheiro } from '../hooks/useControle'
 import { useTaxonomia, normalizar, CAMADAS, type Camada } from '../hooks/useTaxonomia'
 import { useToast } from '../contexts/ToastContext'
+import SecaoCuradoriaIA from './SecaoCuradoriaIA'
 
 type Props = {
   apiHealth: 'OK' | 'WARNING' | 'OFFLINE'
@@ -21,6 +22,7 @@ const SECOES = [
   { id: 'ranking', nome: 'Ranking' },
   { id: 'rotulos', nome: 'Rótulos' },
   { id: 'olheiro', nome: 'Olheiro' },
+  { id: 'curadoria_ia', nome: 'Curadoria por IA' },
   { id: 'diagnostico', nome: 'Diagnóstico' },
 ] as const
 
@@ -727,6 +729,9 @@ export function AbaControle({
               )}
             </div>
           )}
+          {/* ---------- Curadoria por IA ---------- */}
+          {secao === 'curadoria_ia' && <SecaoCuradoriaIA />}
+
           {/* ---------- Diagnóstico ---------- */}
           {secao === 'diagnostico' && (
             <div className="bg-panel border border-line rounded-2xl p-5 sm:p-6">

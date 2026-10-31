@@ -18,6 +18,7 @@ import ConfigIAModal from '../components/ConfigIAModal'
 import { AbaOlheiro } from '../components/AbaOlheiro'
 import { AbaControle } from '../components/AbaControle'
 import AbaTrilhas from '../components/AbaTrilhas'
+import AbaRevisaoIA from '../components/AbaRevisaoIA'
 import type { SugestaoPendente } from '../hooks/useOlheiro'
 
 // Uma query serve os dois caminhos: busca por nome (search) e importação
@@ -117,7 +118,7 @@ export default function PainelAdmin() {
   const [configModalAberto, setConfigModalAberto] = useState(false)
   const [olheiroAberto, setOlheiroAberto] = useState(false)
 
-  const [abaAtiva, setAbaAtiva] = useState<'curadoria' | 'controle' | 'trilhas'>('curadoria')
+  const [abaAtiva, setAbaAtiva] = useState<'curadoria' | 'controle' | 'trilhas' | 'revisao_ia'>('curadoria')
 
   const [initialStateHash, setInitialStateHash] = useState('')
 
@@ -834,6 +835,7 @@ export default function PainelAdmin() {
             { id: 'curadoria', nome: 'Curadoria' },
             { id: 'controle', nome: 'Painel de Controle' },
             { id: 'trilhas', nome: 'Trilhas' },
+            { id: 'revisao_ia', nome: 'Revisão da IA' },
           ] as const).map(aba => (
             <button
               key={aba.id}
@@ -872,6 +874,16 @@ export default function PainelAdmin() {
               resyncRodando={resyncRodando}
               onAbrirCuradoria={abrirNaCuradoria}
             />
+          </>
+        )}
+
+        {abaAtiva === 'revisao_ia' && (
+          <>
+            <div className="mb-8 min-w-0">
+              <h1 className="font-anton text-3xl uppercase">Revisão da IA</h1>
+              <p className="text-muted text-sm mt-1">Marque vários animes, deixe o worker processar e aprove ou descarte depois.</p>
+            </div>
+            <AbaRevisaoIA />
           </>
         )}
 

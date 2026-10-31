@@ -96,6 +96,28 @@ func limparCercaJSON(texto string) string {
 	return strings.TrimSpace(t)
 }
 
+// PromptPesquisaEpisodiosPadrao é a primeira chamada da pesquisa de episódios, usada quando
+// app_settings.ai_prompt_pesquisa_episodios está vazio. Os marcadores entre chaves são
+// trocados pelo worker; texto editado no Painel pode omitir qualquer um, menos {titulo}.
+const PromptPesquisaEpisodiosPadrao = `Pesquise na web o anime "{titulo}" (MyAnimeList: https://myanimelist.net/anime/{mal_id}).
+Quero, para os episódios {de} a {ate} desta temporada: o título oficial em português do Brasil (como na Crunchyroll ou em outra plataforma oficial) e a data e hora de exibição no Japão, com fuso.
+Diga também a data e hora de estreia do episódio 1 e as plataformas oficiais onde assistir no Brasil, com o link.
+Para cada dado, cite a página de onde ele saiu. Se não encontrar um dado, diga que não encontrou: não estime e não invente. Se as fontes discordarem, diga qual diz o quê.`
+
+// PromptEstruturarEpisodiosPadrao é a segunda chamada: o texto da pesquisa vai logo depois.
+const PromptEstruturarEpisodiosPadrao = "Organize no formato pedido o que o texto abaixo afirma, sem acrescentar nada que não esteja nele. Dado ausente fica vazio, e o que o texto aponta como incerto ou divergente vai em ressalvas."
+
+// MontarPerguntaEpisodios troca os marcadores do prompt de pesquisa. Usa troca de texto, e
+// não fmt.Sprintf, porque o prompt é editável: um % digitado no Painel não pode quebrar nada.
+func MontarPerguntaEpisodios(modelo, titulo string, malID, de, ate int) string {
+	return strings.NewReplacer(
+		"{titulo}", titulo,
+		"{mal_id}", fmt.Sprint(malID),
+		"{de}", fmt.Sprint(de),
+		"{ate}", fmt.Sprint(ate),
+	).Replace(modelo)
+}
+
 // Fonte é uma página que a busca do Gemini usou para responder.
 type Fonte struct {
 	Titulo string `json:"titulo"`

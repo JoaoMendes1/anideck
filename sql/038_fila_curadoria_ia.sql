@@ -51,7 +51,11 @@ INSERT INTO public.app_settings (key, value) VALUES
   ('ai_fila_modo', 'revisao'),        -- revisao | automatico (só vale para sinopse_tags)
   ('ai_fila_lote', '5'),              -- itens por ciclo
   ('ai_fila_intervalo', '60'),        -- segundos entre ciclos
-  ('ai_fila_episodios_por_lote', '12')
+  ('ai_fila_episodios_por_lote', '12'),
+  -- Prompts da pesquisa de episódios. Vazio = o padrão do código (internal/ia/ia.go);
+  -- o Painel grava o texto quando você edita.
+  ('ai_prompt_pesquisa_episodios', ''),
+  ('ai_prompt_estruturar_episodios', '')
 ON CONFLICT (key) DO NOTHING;
 
 -- =============================================================================

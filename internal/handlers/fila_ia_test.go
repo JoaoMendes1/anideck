@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"encoding/json"
+	"strings"
 	"testing"
 
 	"github.com/JoaoMendes1/anideck/internal/ia"
@@ -25,15 +26,21 @@ func TestValidarConfigFila(t *testing.T) {
 	if p := validarConfigFila(configFilaPadrao); p != "" {
 		t.Fatalf("o padrão deveria ser válido: %s", p)
 	}
-	ruins := []configFila{
-		{Modo: "sempre", Lote: 5, Intervalo: 60, EpisodiosPorLote: 12},
-		{Modo: modoRevisao, Lote: 0, Intervalo: 60, EpisodiosPorLote: 12},
-		{Modo: modoRevisao, Lote: 5, Intervalo: 5, EpisodiosPorLote: 12},
-		{Modo: modoRevisao, Lote: 5, Intervalo: 60, EpisodiosPorLote: 0},
+	// Cada caso estraga um campo só do padrão, para a recusa ser por aquele campo.
+	ruins := map[string]func(c *configFila){
+		"modo":               func(c *configFila) { c.Modo = "sempre" },
+		"lote":               func(c *configFila) { c.Lote = 0 },
+		"intervalo":          func(c *configFila) { c.Intervalo = 5 },
+		"episódios":          func(c *configFila) { c.EpisodiosPorLote = 0 },
+		"sem {titulo}":       func(c *configFila) { c.PromptPesquisa = "Pesquise o anime." },
+		"estruturar vazio":   func(c *configFila) { c.PromptEstruturar = "  " },
+		"prompt muito longo": func(c *configFila) { c.PromptEstruturar = strings.Repeat("a", maxPromptFila+1) },
 	}
-	for _, c := range ruins {
+	for nome, estragar := range ruins {
+		c := configFilaPadrao
+		estragar(&c)
 		if validarConfigFila(c) == "" {
-			t.Errorf("deveria recusar %+v", c)
+			t.Errorf("%s: deveria recusar", nome)
 		}
 	}
 }
