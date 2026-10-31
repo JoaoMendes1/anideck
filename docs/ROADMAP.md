@@ -41,7 +41,7 @@ Staging sobe já na Fase 1, como projeto esqueleto — mesmo padrão do JVM Syst
 | 8 · App Instalável | ✅ Concluída (escopo reduzido) |
 | 9 · Independência da AniList na curadoria | 🚧 9.1 e 9.2 concluídas; 9.3 e 9.4 abertas |
 | 10 · RAG e busca semântica | 💭 A planejar, depois da Fase 9 |
-| 11 · Home e navegação | 💭 A planejar |
+| 11 · Home e navegação | ✅ Concluída (31/10/2026) |
 | 12 · Meu Gosto e distribuição | 💭 A planejar |
 
 ---
@@ -631,10 +631,10 @@ Motivo: a rota `/` autenticada redireciona para o Deck, e a primeira impressão 
 grade de coleção. O diferencial analítico não aparece antes da autenticação e, depois dela, fica
 atrás de um item de menu que não comunica o próprio conteúdo.
 
-- [ ] Home autenticada em `/`, com estreias do dia, retomada e vitrine (#122)
-- [ ] Trilhas curadas com nota de curadoria (#123)
-- [ ] Nova barra inferior: Início · Descobrir · Deck · Agenda · Perfil (#125)
-- [ ] Rankings vira aba dentro de Descobrir (#125)
+- [x] Home autenticada em `/`, com estreias do dia, retomada e vitrine (#122)
+- [x] Trilhas curadas com nota de curadoria (#123)
+- [x] Nova barra inferior: Início · Descobrir · Deck · Agenda · Perfil (#125)
+- [x] Rankings vira aba dentro de Descobrir (#125)
 
 Referência visual: `prototipos/anideck-app-prototipo-v1.html`.
 Dependência: a #125 depende da #122 — um item só sai da barra quando existir destino alternativo.
@@ -646,7 +646,7 @@ pouco acessível. É também a base do único artefato capaz de atrair usuários
 de base instalada.
 
 - [x] Estatísticas vira Meu Gosto, abrindo com a frase de abertura (#121)
-- [ ] Bloco "lacuna de gosto" (#124)
+- [x] Bloco "lacuna de gosto" (#124)
 - [ ] Card de gosto compartilhável em PNG (#126)
 - [ ] *(avaliar)* importar lista do AniList/MAL na landing
 

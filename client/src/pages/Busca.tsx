@@ -11,6 +11,7 @@ import { normalizar } from '../hooks/useTaxonomia'
 import SearchResultCard from '../components/SearchResultCard'
 import FilterSheet from '../components/FilterSheet'
 import FilterChipGroup from '../components/FilterChipGroup'
+import AbasDescobrir from '../components/AbasDescobrir'
 import { gradienteDoCard } from '../lib/deckHelpers'
 
 interface Anime {
@@ -314,6 +315,7 @@ export default function Busca() {
 
     return (
         <div className="w-full min-w-0 max-w-[960px] mx-auto pt-16 px-5 pb-10">
+            <AbasDescobrir />
 
             <div className="flex items-center gap-3 bg-panel border-2 border-holo-2 rounded-xl p-4 mb-4">
                 <Search className="text-muted-2 shrink-0" size={20} />

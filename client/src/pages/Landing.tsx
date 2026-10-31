@@ -1,24 +1,13 @@
-import { useEffect } from 'react'
-import { useNavigate, Link } from 'react-router-dom'
+import { Link } from 'react-router-dom'
 import { MonitorPlay, Sparkles, Layers } from 'lucide-react'
-import { supabase } from '../lib/supabase'
 import { FullLogo } from '../components/Brand'
 import { useRevealOnScroll } from '../hooks/useRevealOnScroll'
 
 export default function Landing() {
-  const navigate = useNavigate()
-
   // Mesma animação de entrada usada nas Estatísticas — o observer vive no hook.
   const addToRefs = useRevealOnScroll()
 
-  // Roteamento Inteligente: Redireciona usuários logados
-  useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      if (session) {
-        navigate('/deck')
-      }
-    })
-  }, [navigate])
+  // Quem está logado não chega aqui: a rota "/" mostra a Início (ver RaizDoSite no App).
 
   return (
     <div className="relative pt-10 pb-20">

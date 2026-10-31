@@ -23,11 +23,11 @@ export default function Auth() {
     // O login com Google volta para /login (e não /deck) porque /deck está dentro
   // de RotaProtegida: sem sessão, o guard redireciona e o erro que vem na URL
   // se perde. Como a volta bem-sucedida também cai aqui, é preciso mandar para
-  // o deck quem já chegou autenticado.
+  // a Início quem já chegou autenticado.
   useEffect(() => {
     const { data: listener } = supabase.auth.onAuthStateChange((_evento, session) => {
       if (session) {
-        navigate('/deck')
+        navigate('/')
       }
     })
 
@@ -79,8 +79,8 @@ export default function Auth() {
         // Tenta logar usando as credenciais do Supabase
         const { error } = await supabase.auth.signInWithPassword({ email, password })
         if (error) throw error
-        // Deu certo? Manda pro painel principal
-        navigate('/deck')
+        // Deu certo? Manda para a Início
+        navigate('/')
       } else {
         // Cria um novo usuário. Salvamos o "nome" dentro dos metadados brutos do Supabase.
         const { error } = await supabase.auth.signUp({

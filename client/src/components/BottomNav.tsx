@@ -1,60 +1,57 @@
 import { Link, useLocation } from 'react-router-dom'
-import { Search, Trophy, LayoutDashboard, User, CalendarDays, BarChart2 } from 'lucide-react'
+import { Home, Compass, LayoutDashboard, User, CalendarDays } from 'lucide-react'
 import { useState } from 'react'
 import { useSessao } from '../contexts/SessaoContext'
 import Sheet from './Sheet'
 import ItensPerfil from './ItensPerfil'
+
+// Rotas que acendem cada item. Rankings é uma aba do Descobrir, então acende o Descobrir.
+const ATIVO_EM: Record<string, string[]> = {
+    '/': ['/'],
+    '/descobrir': ['/descobrir', '/rankings'],
+    '/deck': ['/deck'],
+    '/calendario': ['/calendario'],
+}
 
 export default function BottomNav() {
     const location = useLocation()
     const { session } = useSessao()
     const [menuAberto, setMenuAberto] = useState(false)
 
-    const itemClasse = (rota: string) =>
+    const itemClasse = (item: string) =>
         `flex flex-col items-center justify-center w-full h-full space-y-1 ${
-            location.pathname === rota ? 'text-holo-3' : 'text-muted'
+            ATIVO_EM[item]?.includes(location.pathname) ? 'text-holo-3' : 'text-muted'
         }`
 
+    // Cinco itens é o teto para o alvo do polegar. Rankings e Meu Gosto entram pela
+    // Início e pelo Perfil; deslogado, só aparece o que não exige conta.
     return (
         <div className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-void/90 backdrop-blur-md border-t border-line pb-safe">
             <div className="flex items-center justify-around h-16 px-1">
+                <Link to="/" className={itemClasse('/')}>
+                    <Home size={18} />
+                    <span className="text-[9px] font-bold">Início</span>
+                </Link>
 
-                {/* Deslogado a busca fica aqui mesmo: sem ela a barra teria só dois
-                    itens, e quem não tem conta está no site justamente pra procurar
-                    anime. Logado, ela vira o botão flutuante do Layout e some daqui. */}
-                {!session && (
-                    <Link to="/descobrir" className={itemClasse('/descobrir')}>
-                        <Search size={18} />
-                        <span className="text-[9px] font-bold">Busca</span>
-                    </Link>
-                )}
-
-                <Link to="/rankings" className={itemClasse('/rankings')}>
-                    <Trophy size={18} />
-                    <span className="text-[9px] font-bold">Rankings</span>
+                <Link to="/descobrir" className={itemClasse('/descobrir')}>
+                    <Compass size={18} />
+                    <span className="text-[9px] font-bold">Descobrir</span>
                 </Link>
 
                 {session ? (
                     <>
-                        <Link to="/calendario" className={itemClasse('/calendario')}>
-                            <CalendarDays size={18} />
-                            <span className="text-[9px] font-bold">Agenda</span>
-                        </Link>
-
                         <Link to="/deck" className={itemClasse('/deck')}>
                             <LayoutDashboard size={18} />
                             <span className="text-[9px] font-bold">Deck</span>
                         </Link>
 
-                        <Link to="/meu-gosto" className={itemClasse('/meu-gosto')}>
-                            <BarChart2 size={18} />
-                            <span className="text-[9px] font-bold">Gosto</span>
+                        <Link to="/calendario" className={itemClasse('/calendario')}>
+                            <CalendarDays size={18} />
+                            <span className="text-[9px] font-bold">Agenda</span>
                         </Link>
 
-                        {/* Admin e Sair saíram da barra e foram pro Sheet de Perfil.
-                            Sair era o item mais fácil de acertar sem querer: ação
-                            irreversível num alvo pequeno, colada nos botões de uso
-                            diário. */}
+                        {/* Admin e Sair ficam no Sheet de Perfil: Sair é irreversível e
+                            não pode estar num alvo pequeno ao lado dos itens de uso diário. */}
                         <button
                             onClick={() => setMenuAberto(true)}
                             className="flex flex-col items-center justify-center w-full h-full space-y-1 text-muted cursor-pointer focus:outline-none select-none"

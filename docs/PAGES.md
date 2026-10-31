@@ -6,12 +6,12 @@
 | 4 | Busca / Descobrir catálogo | `Busca.tsx` | ✅ Implementada | Fase 2 |
 | 5 | Detalhe do anime | `Detalhes.tsx` | ✅ Implementada | Fase 2 / 6.6 |
 | 6 | Calendário de lançamentos | `Calendario.tsx` | ✅ Implementada | Fase 5 |
-| 7 | Rankings | `Rankings.tsx` | ✅ Implementada | Fase 2 / 6.5 |
+| 7 | Rankings (aba do Descobrir) | `Rankings.tsx` | ✅ Implementada | Fase 2 / 6.5 / 11 |
 | 8 | Meu Gosto (ex-Estatísticas), em `/meu-gosto` | `Estatisticas.tsx` | ✅ Implementada · abre com a frase-veredito | Fase 4 / 6.8 / 12 |
 | 9 | Painel Admin (curadoria) | `PainelAdmin.tsx` | ✅ Implementada | Fase 2.5 / 4.5 |
 | 10 | Configurações & Ajuda | `Configuracoes.tsx` | ✅ Implementada | Fase 2 |
 | 11 | Política de Privacidade | `Privacidade.tsx` | ✅ Implementada | Fase 7 |
-| 12 | Home logada | — | 🕐 Planejada | Fase 11 (#122) |
+| 12 | Início (home logada, em `/`) | `Inicio.tsx` | ✅ Implementada | Fase 11 (#122, #123, #124) |
 | 13 | Card de gosto compartilhável | — | 🕐 Planejada | Fase 12 |
 | 14 | Guilda (rank, XP, insígnias) | — | 💭 Só visão | `VISAO_GAMIFICACAO.md` |
 

@@ -42,9 +42,9 @@ export default function Navbar() {
     return () => window.removeEventListener('scroll', handleScroll)
   }, [])
 
-  const linkClasse = (rota: string) =>
+  const linkClasse = (...rotas: string[]) =>
     `text-sm font-bold focus:outline-none select-none transition-colors ${
-      location.pathname === rota ? 'text-text' : 'text-muted hover:text-text'
+      rotas.includes(location.pathname) ? 'text-text' : 'text-muted hover:text-text'
     }`
 
   return (
@@ -72,14 +72,14 @@ export default function Navbar() {
           {/* "Admin" saiu daqui e foi pro MenuPerfil: é destino raro e restrito,
               não merecia um slot fixo ao lado dos links de uso diário. */}
           <div className="hidden md:flex items-center gap-7">
+            <Link to="/" className={linkClasse('/')}>Início</Link>
+            <Link to="/descobrir" className={linkClasse('/descobrir', '/rankings')}>Descobrir</Link>
             {session && (
               <>
                 <Link to="/deck" className={linkClasse('/deck')}>Meu Deck</Link>
-                <Link to="/calendario" className={linkClasse('/calendario')}>Calendário</Link>
-                <Link to="/meu-gosto" className={linkClasse('/meu-gosto')}>Meu Gosto</Link>
+                <Link to="/calendario" className={linkClasse('/calendario')}>Agenda</Link>
               </>
             )}
-            <Link to="/rankings" className={linkClasse('/rankings')}>Rankings</Link>
           </div>
 
           {/* Ações (Busca, Auth/User) */}

@@ -1,4 +1,5 @@
 // client/src/pages/Rankings.tsx
+import AbasDescobrir from '../components/AbasDescobrir'
 import { useState, useEffect, useCallback } from 'react'
 import { useToast } from '../contexts/ToastContext'
 import { useNavigate } from 'react-router-dom'
@@ -266,7 +267,8 @@ export default function Rankings() {
     return (
         <div className="pb-20">
             <div className="max-w-[900px] mx-auto px-5 pt-10">
-                
+                <AbasDescobrir />
+
                 {/* --- CABEÇALHO NOVO COM ÍCONE DE INFO E CAIXA DE CREDIBILIDADE --- */}
                 <div className="mb-6">
                     <p className="font-mono text-xs text-holo-3 tracking-widest mb-2 select-none">RANKING GLOBAL</p>

@@ -6,7 +6,7 @@ import RotaProtegida from './components/RotaProtegida'
 import Layout from './components/Layout'
 import CarregandoPagina from './components/CarregandoPagina'
 import { ToastProvider } from './contexts/ToastContext'
-import { SessaoProvider } from './contexts/SessaoContext'
+import { SessaoProvider, useSessao } from './contexts/SessaoContext'
 
 // Cada página abaixo vira um arquivo JS separado, baixado só quando alguém abre a rota.
 //
@@ -27,6 +27,14 @@ const PainelAdmin = lazy(() => import('./pages/PainelAdmin'))
 const Estatisticas = lazy(() => import('./pages/Estatisticas'))
 const Configuracoes = lazy(() => import('./pages/Configuracoes'))
 const Privacidade = lazy(() => import('./pages/Privacidade'))
+const Inicio = lazy(() => import('./pages/Inicio'))
+
+// "/" é a Landing para o visitante e a Início para quem está logado.
+function RaizDoSite() {
+  const { session, carregando } = useSessao()
+  if (carregando) return <CarregandoPagina />
+  return session ? <Inicio /> : <Landing />
+}
 
 function App() {
   return (
@@ -37,7 +45,7 @@ function App() {
         <Suspense fallback={<CarregandoPagina />}>
           <Routes>
             <Route element={<Layout />}>
-              <Route path="/" element={<Landing />} />
+              <Route path="/" element={<RaizDoSite />} />
               <Route path="/descobrir" element={<Busca />} />
               <Route path="/deck" element={<RotaProtegida><MeuDeck /></RotaProtegida>} />
               <Route path="/calendario" element={<RotaProtegida><Calendario /></RotaProtegida>} />

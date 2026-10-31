@@ -17,6 +17,7 @@ import type { CuratedAnime, CuratedCharacter, CuratedEpisode, CuratedExternalLin
 import ConfigIAModal from '../components/ConfigIAModal'
 import { AbaOlheiro } from '../components/AbaOlheiro'
 import { AbaControle } from '../components/AbaControle'
+import AbaTrilhas from '../components/AbaTrilhas'
 import type { SugestaoPendente } from '../hooks/useOlheiro'
 
 // Uma query serve os dois caminhos: busca por nome (search) e importação
@@ -116,7 +117,7 @@ export default function PainelAdmin() {
   const [configModalAberto, setConfigModalAberto] = useState(false)
   const [olheiroAberto, setOlheiroAberto] = useState(false)
 
-  const [abaAtiva, setAbaAtiva] = useState<'curadoria' | 'controle'>('curadoria')
+  const [abaAtiva, setAbaAtiva] = useState<'curadoria' | 'controle' | 'trilhas'>('curadoria')
 
   const [initialStateHash, setInitialStateHash] = useState('')
 
@@ -832,6 +833,7 @@ export default function PainelAdmin() {
           {([
             { id: 'curadoria', nome: 'Curadoria' },
             { id: 'controle', nome: 'Painel de Controle' },
+            { id: 'trilhas', nome: 'Trilhas' },
           ] as const).map(aba => (
             <button
               key={aba.id}
@@ -870,6 +872,16 @@ export default function PainelAdmin() {
               resyncRodando={resyncRodando}
               onAbrirCuradoria={abrirNaCuradoria}
             />
+          </>
+        )}
+
+        {abaAtiva === 'trilhas' && (
+          <>
+            <div className="mb-8 min-w-0">
+              <h1 className="font-anton text-3xl uppercase">Trilhas curadas</h1>
+              <p className="text-muted text-sm mt-1">Agrupamentos com nome e nota do curador, exibidos na Início na ordem desta lista.</p>
+            </div>
+            <AbaTrilhas />
           </>
         )}
 
