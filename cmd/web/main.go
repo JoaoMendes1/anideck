@@ -77,6 +77,7 @@ func main() {
 	diagnosticoHandler := &handlers.DiagnosticoHandler{}
 	taxonomiaHandler := &handlers.TaxonomiaHandler{}
 	trilhasHandler := &handlers.TrilhasHandler{}
+	filaIAHandler := &handlers.FilaIAHandler{}
 
 	r := chi.NewRouter()
 	r.Use(chimw.RequestID)
@@ -175,6 +176,14 @@ func main() {
 
 		admin.Get("/api/admin/diagnostico/taxonomia", diagnosticoHandler.HandleListarTaxonomia)
 		admin.Post("/api/admin/diagnostico/taxonomia/remover", diagnosticoHandler.HandleRemoverDaTaxonomia)
+
+		// Fila de curadoria assistida por IA (o worker processa; aqui se revisa)
+		admin.Get("/api/admin/ia/fila", filaIAHandler.HandleListar)
+		admin.Post("/api/admin/ia/fila", filaIAHandler.HandleEnfileirar)
+		admin.Post("/api/admin/ia/fila/{id}/aplicar", filaIAHandler.HandleAplicar)
+		admin.Post("/api/admin/ia/fila/{id}/descartar", filaIAHandler.HandleDescartar)
+		admin.Get("/api/admin/ia/config", filaIAHandler.HandleGetConfig)
+		admin.Put("/api/admin/ia/config", filaIAHandler.HandleUpdateConfig)
 
 		// Trilhas curadas da home
 		admin.Get("/api/admin/trilhas", trilhasHandler.HandleListarAdmin)

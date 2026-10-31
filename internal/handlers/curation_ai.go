@@ -1,18 +1,15 @@
 package handlers
 
 import (
-	"context"
 	"encoding/json"
 	"fmt"
 	"log"
 	"net/http"
-	"os"
 	"sync"
-	"time"
 
 	"github.com/JoaoMendes1/anideck/internal/database"
+	"github.com/JoaoMendes1/anideck/internal/ia"
 	"github.com/JoaoMendes1/anideck/internal/middleware"
-	"google.golang.org/genai"
 )
 
 var (
@@ -133,66 +130,23 @@ func (h *CurationHandler) HandleAIRewrite(w http.ResponseWriter, r *http.Request
 		}
 	}
 
-	// Fallback hardcoded caso o banco de dados falhe
+	// Fallback caso o banco de dados falhe
 	if systemInstructionText == "" {
-		systemInstructionText = "Você é o redator-chefe do catálogo AniDeck. Seu tom de voz é instigante, moderno e direto ao ponto. Sua função é ler sinopses frias e técnicas (que podem estar em inglês), traduzi-las e reescrevê-las transformando-as em resumos empolgantes de no máximo 2 parágrafos, sem spoilers, estritamente em Português do Brasil (pt-BR). Utilize formatação Markdown para enriquecer a leitura: destaque nomes de personagens, lugares ou facções em **negrito** e use *itálico* para termos estrangeiros ou de impacto. Você também deve sugerir até 4 tags genéricas em português (ex: Ação, Drama, Cyberpunk). Retorne APENAS um objeto JSON estrito com as chaves 'sinopse' e 'tags'."
-	}
-
-	ctx := context.Background()
-
-	client, err := genai.NewClient(ctx, &genai.ClientConfig{
-		APIKey:  os.Getenv("GEMINI_API_KEY"),
-		Backend: genai.BackendGeminiAPI,
-	})
-	if err != nil {
-		log.Printf("[ERRO AI] Falha ao criar cliente Gemini: %v", err)
-		http.Error(w, "Erro interno de IA", http.StatusInternalServerError)
-		return
-	}
-
-		config := &genai.GenerateContentConfig{
-		SystemInstruction: &genai.Content{
-			Parts: []*genai.Part{{
-				Text: systemInstructionText,
-			}},
-		},
-		ResponseMIMEType: "application/json",
-		// Sem temperatura explícita o Gemini usa o padrão, que é alto: o mesmo
-		// anime com o mesmo prompt devolvia listas de tag diferentes a cada
-		// clique. Curadoria é classificação, não criação — aqui consistência
-		// vale mais que variedade.
-		Temperature: genai.Ptr[float32](0.3),
+		systemInstructionText = ia.PromptCuradoriaPadrao
 	}
 
 	prompt := fmt.Sprintf("Título do anime: %s\nSinopse original técnica: %s", req.Title, req.Synopsis)
 
-	modelsToTry := []string{"gemini-3.8-flash", "gemini-3.7-flash", "gemini-3.6-flash"}
-	var resp *genai.GenerateContentResponse
-	var apiErr error
-
-	for _, modelName := range modelsToTry {
-		attemptCtx, cancel := context.WithTimeout(r.Context(), 45*time.Second)
-		resp, apiErr = client.Models.GenerateContent(attemptCtx, modelName, genai.Text(prompt), config)
-		cancel()
-
-		if apiErr == nil {
-			log.Printf("[INFO AI] Sucesso utilizando o modelo %s", modelName)
-			break
-		}
-		log.Printf("[WARN AI] Falha no modelo %s: %v. Tentando fallback...", modelName, apiErr)
-	}
-
+	// A chamada e o fallback de modelos estão no pacote ia, compartilhado com o worker
+	// da fila de curadoria.
+	resp, apiErr := ia.Gerar(r.Context(), ia.ConfigCuradoria(systemInstructionText), prompt)
 	if apiErr != nil {
 		log.Printf("[ERRO AI] Todos os modelos falharam. Último erro: %v", apiErr)
 		http.Error(w, "Serviço de IA congestionado no momento. Tente novamente em alguns segundos.", http.StatusServiceUnavailable)
 		return
 	}
 
-	var aiResponse string
-	if resp != nil && len(resp.Candidates) > 0 && len(resp.Candidates[0].Content.Parts) > 0 {
-		aiResponse = resp.Candidates[0].Content.Parts[0].Text
-	}
-
+	aiResponse := resp.Text()
 	if aiResponse == "" {
 		http.Error(w, "IA retornou vazio", http.StatusInternalServerError)
 		return

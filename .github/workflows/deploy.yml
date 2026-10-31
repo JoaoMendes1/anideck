@@ -22,4 +22,9 @@ jobs:
             docker build -t anideck .
             cd ~/infra
             docker compose up -d --force-recreate anideck
+            # O worker usa a mesma imagem. Só é recriado se o serviço já existir no
+            # compose do servidor; sem ele, o deploy do site segue normal.
+            if docker compose config --services | grep -qx anideck-worker; then
+              docker compose up -d --force-recreate anideck-worker
+            fi
             docker image prune -f
