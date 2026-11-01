@@ -80,7 +80,7 @@ export default function AbaRevisaoIA() {
   const [filtro, setFiltro] = useState('revisar')
   const [erro, setErro] = useState<string | null>(null)
   const [ocupado, setOcupado] = useState<string | null>(null)
-  const [tipoNovo, setTipoNovo] = useState<Tipo>('sinopse_tags')
+  const [tipoNovo, setTipoNovo] = useState<Tipo | 'tudo'>('sinopse_tags')
   const [busca, setBusca] = useState('')
   const [marcados, setMarcados] = useState<number[]>([])
 
@@ -116,11 +116,16 @@ export default function AbaRevisaoIA() {
   const enfileirar = async () => {
     setOcupado('enfileirar')
     try {
-      const res = await comToken('/api/admin/ia/fila', {
-        method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ mal_ids: marcados, tipo: tipoNovo }),
-      })
-      if (!res.ok) throw new Error(await res.text())
+      // "Tudo" vira dois itens por anime, um de cada tipo: cada um é revisado e aplicado
+      // separado, porque episódio nunca entra sem aprovação e sinopse pode entrar.
+      const tipos: Tipo[] = tipoNovo === 'tudo' ? ['sinopse_tags', 'episodios'] : [tipoNovo]
+      for (const tipo of tipos) {
+        const res = await comToken('/api/admin/ia/fila', {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ mal_ids: marcados, tipo }),
+        })
+        if (!res.ok) throw new Error(await res.text())
+      }
       showToast(`${marcados.length} na fila. O worker processa no próximo ciclo.`, 'success')
       setMarcados([])
       setBusca('')
@@ -169,9 +174,10 @@ export default function AbaRevisaoIA() {
       <section className="bg-panel border border-line rounded-2xl p-4 sm:p-5">
         <h2 className="font-anton uppercase text-[15px] mb-3">Enfileirar</h2>
         <div className="flex flex-col sm:flex-row gap-3">
-          <select className={entrada} value={tipoNovo} onChange={e => setTipoNovo(e.target.value as Tipo)}>
+          <select className={entrada} value={tipoNovo} onChange={e => setTipoNovo(e.target.value as Tipo | 'tudo')}>
             <option value="sinopse_tags">{NOME_TIPO.sinopse_tags}</option>
             <option value="episodios">{NOME_TIPO.episodios}</option>
+            <option value="tudo">Tudo (sinopse, tags e episódios)</option>
           </select>
           <input className={`${entrada} flex-1`} placeholder="Buscar anime do catálogo pelo título" value={busca} onChange={e => setBusca(e.target.value)} />
         </div>
