@@ -155,6 +155,19 @@ export default function AbaRevisaoIA() {
     }
   }
 
+  // Enfileirar de novo o mesmo anime e tipo volta o item para pendente (a fila tem um
+  // item por anime e tipo, e o backend faz upsert).
+  const tentarDeNovo = async (item: ItemFila) => {
+    setOcupado(item.id)
+    const res = await comToken('/api/admin/ia/fila', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ mal_ids: [item.mal_id], tipo: item.tipo }),
+    })
+    showToast(res.ok ? 'De volta na fila.' : 'Falha ao enfileirar de novo.', res.ok ? 'success' : 'error')
+    await carregarFila()
+    setOcupado(null)
+  }
+
   const descartar = async (item: ItemFila) => {
     setOcupado(item.id)
     const res = await comToken(`/api/admin/ia/fila/${item.id}/descartar`, { method: 'POST' })
@@ -287,6 +300,14 @@ export default function AbaRevisaoIA() {
                   <summary className="cursor-pointer">Texto da pesquisa guardado</summary>
                   <p className="mt-1 whitespace-pre-line">{item.resultado.texto_bruto}</p>
                 </details>
+              )}
+
+              {item.status === 'erro' && (
+                <div>
+                  <button type="button" disabled={ocupado === item.id} onClick={() => tentarDeNovo(item)} className={`${botao} bg-panel-2 border border-line text-text`}>
+                    <RefreshCw size={12} /> Tentar de novo
+                  </button>
+                </div>
               )}
 
               {item.status === 'pronto' && (

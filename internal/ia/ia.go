@@ -16,10 +16,11 @@ import (
 )
 
 // Modelos em ordem de preferência: se um falha (congestionado, fora), tenta o seguinte.
-// Os 2.5 entram no fim como reserva: no nível gratuito cada modelo tem a própria cota
-// diária (20 pedidos), então mais modelos na lista é mais fôlego para a fila. A
-// qualidade deles é menor, mas tudo o que a fila gera passa pela revisão.
-var Modelos = []string{"gemini-3.8-flash", "gemini-3.7-flash", "gemini-3.6-flash", "gemini-2.5-flash", "gemini-2.5-flash-lite"}
+// Os do fim são reserva: no nível gratuito cada modelo tem a própria cota diária (20
+// pedidos), então mais modelos na lista é mais fôlego para a fila. O 2.5-flash-lite saiu
+// em 01/11/2026: a API devolve 404 "no longer available to new users" e indica o
+// 3.5-flash-lite no lugar.
+var Modelos = []string{"gemini-3.8-flash", "gemini-3.7-flash", "gemini-3.6-flash", "gemini-3.5-flash-lite", "gemini-2.5-flash"}
 
 // ErrIndisponivel indica que todos os modelos falharam: falha de terceiro, que vira 503.
 var ErrIndisponivel = errors.New("serviço de IA indisponível")
@@ -37,7 +38,9 @@ func Gerar(ctx context.Context, config *genai.GenerateContentConfig, texto strin
 		return nil, fmt.Errorf("criar cliente Gemini: %w", err)
 	}
 
-	var ultimoErro error
+	// Guarda o erro de cada modelo: só o último escondia que os outros tinham falhado
+	// por motivo diferente (503 de pico num, 404 de modelo aposentado noutro).
+	var falhas []string
 	for _, modelo := range Modelos {
 		tentativa, cancelar := context.WithTimeout(ctx, 90*time.Second)
 		resp, err := client.Models.GenerateContent(tentativa, modelo, genai.Text(texto), config)
@@ -46,10 +49,22 @@ func Gerar(ctx context.Context, config *genai.GenerateContentConfig, texto strin
 			log.Printf("[IA] Resposta do modelo %s", modelo)
 			return resp, nil
 		}
-		ultimoErro = err
+		falhas = append(falhas, modelo+": "+resumirErro(err))
 		log.Printf("[IA] Falha no modelo %s: %v. Tentando o próximo...", modelo, err)
 	}
-	return nil, fmt.Errorf("%w: %v", ErrIndisponivel, ultimoErro)
+	return nil, fmt.Errorf("%w. %s", ErrIndisponivel, strings.Join(falhas, " | "))
+}
+
+// resumirErro corta a mensagem da API, que traz um parágrafo de texto por modelo.
+func resumirErro(err error) string {
+	if err == nil {
+		return "resposta vazia"
+	}
+	texto := err.Error()
+	if r := []rune(texto); len(r) > 140 {
+		return string(r[:140]) + "…"
+	}
+	return texto
 }
 
 // ConfigCuradoria pede JSON com sinopse e tags, com temperatura baixa: curadoria é
