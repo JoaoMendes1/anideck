@@ -16,7 +16,10 @@ import (
 )
 
 // Modelos em ordem de preferência: se um falha (congestionado, fora), tenta o seguinte.
-var Modelos = []string{"gemini-3.8-flash", "gemini-3.7-flash", "gemini-3.6-flash"}
+// Os 2.5 entram no fim como reserva: no nível gratuito cada modelo tem a própria cota
+// diária (20 pedidos), então mais modelos na lista é mais fôlego para a fila. A
+// qualidade deles é menor, mas tudo o que a fila gera passa pela revisão.
+var Modelos = []string{"gemini-3.8-flash", "gemini-3.7-flash", "gemini-3.6-flash", "gemini-2.5-flash", "gemini-2.5-flash-lite"}
 
 // ErrIndisponivel indica que todos os modelos falharam: falha de terceiro, que vira 503.
 var ErrIndisponivel = errors.New("serviço de IA indisponível")
