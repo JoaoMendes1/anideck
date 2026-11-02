@@ -445,7 +445,7 @@ func processarSinopseTags(ctx context.Context, client *supabase.Client, item ite
 	}
 
 	prompt := fmt.Sprintf("Título do anime: %s\nSinopse original técnica: %s", curado.CustomTitle, curado.CustomSynopsis)
-	resp, err := ia.Gerar(ctx, ia.ConfigCuradoria(lerPromptCuradoria(client)), prompt)
+	texto, err := ia.GerarCuradoria(ctx, lerPromptCuradoria(client), prompt)
 	if err != nil {
 		if devolverSeInterrompido(ctx, client, item) {
 			return
@@ -453,7 +453,7 @@ func processarSinopseTags(ctx context.Context, client *supabase.Client, item ite
 		marcarErro(client, item, err, nil)
 		return
 	}
-	sugestao, err := ia.LerCuradoria(resp.Text())
+	sugestao, err := ia.LerCuradoria(texto)
 	if err != nil {
 		marcarErro(client, item, err, nil)
 		return
