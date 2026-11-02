@@ -17,10 +17,9 @@ import (
 
 // Modelos em ordem de preferência: se um falha (congestionado, fora), tenta o seguinte.
 // Os do fim são reserva: no nível gratuito cada modelo tem a própria cota diária (20
-// pedidos), então mais modelos na lista é mais fôlego para a fila. O 2.5-flash-lite saiu
-// em 01/11/2026: a API devolve 404 "no longer available to new users" e indica o
-// 3.5-flash-lite no lugar.
-var Modelos = []string{"gemini-3.8-flash", "gemini-3.7-flash", "gemini-3.6-flash", "gemini-3.5-flash-lite", "gemini-2.5-flash"}
+// pedidos), então mais modelos na lista é mais fôlego para a fila. Os 2.5 saíram em
+// 01/11 e 02/11/2026: a API devolve 404 "no longer available to new users".
+var Modelos = []string{"gemini-3.8-flash", "gemini-3.7-flash", "gemini-3.6-flash", "gemini-3.5-flash-lite"}
 
 // ErrIndisponivel indica que todos os modelos falharam: falha de terceiro, que vira 503.
 var ErrIndisponivel = errors.New("serviço de IA indisponível")

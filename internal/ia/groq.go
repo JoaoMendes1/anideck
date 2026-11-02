@@ -14,9 +14,9 @@ import (
 	"time"
 )
 
-// O Groq é a reserva gratuita do Gemini para sinopse e tags: no plano grátis ele aceita
-// cerca de 1.000 pedidos por dia, contra 20 de cada modelo Gemini. Ele não pesquisa na
-// web, então não serve para episódios. Só é usado se GROQ_API_KEY estiver no .env.
+// O Groq é o modelo principal para sinopse e tags: no plano grátis ele aceita cerca de
+// 1.000 pedidos por dia, contra 20 de cada modelo Gemini. Ele não pesquisa na web, então
+// não serve para episódios. Só é usado se GROQ_API_KEY estiver no .env.
 const (
 	ModeloGroq = "openai/gpt-oss-120b"
 	urlGroq    = "https://api.groq.com/openai/v1/chat/completions"
@@ -27,22 +27,25 @@ func GroqDisponivel() bool {
 	return strings.TrimSpace(os.Getenv("GROQ_API_KEY")) != ""
 }
 
-// GerarCuradoria tenta os Gemini e, se todos falharem, o Groq. Devolve o texto JSON com
-// sinopse e tags, para o LerCuradoria interpretar.
+// GerarCuradoria usa o Groq primeiro e o Gemini de reserva. A cota grátis do Gemini
+// (20 pedidos por dia por modelo) acaba cedo e fica guardada para a pesquisa de
+// episódios, que só ele faz, porque precisa de busca na web.
 func GerarCuradoria(ctx context.Context, instrucao, texto string) (string, error) {
-	resp, err := Gerar(ctx, ConfigCuradoria(instrucao), texto)
-	if err == nil {
-		return resp.Text(), nil
+	if GroqDisponivel() {
+		saida, err := GerarGroq(ctx, instrucao, texto)
+		if err == nil {
+			return saida, nil
+		}
+		if ctx.Err() != nil {
+			return "", err
+		}
+		log.Printf("[IA] Groq falhou (%s), tentando o Gemini", resumirErro(err))
 	}
-	if ctx.Err() != nil || !GroqDisponivel() {
+	resp, err := Gerar(ctx, ConfigCuradoria(instrucao), texto)
+	if err != nil {
 		return "", err
 	}
-	log.Printf("[IA] Gemini indisponível, tentando o Groq (%s)", ModeloGroq)
-	saida, errGroq := GerarGroq(ctx, instrucao, texto)
-	if errGroq != nil {
-		return "", fmt.Errorf("%w | groq: %s", err, resumirErro(errGroq))
-	}
-	return saida, nil
+	return resp.Text(), nil
 }
 
 // GerarGroq chama a API do Groq (formato da OpenAI) pedindo resposta em JSON.

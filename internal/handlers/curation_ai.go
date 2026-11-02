@@ -139,14 +139,12 @@ func (h *CurationHandler) HandleAIRewrite(w http.ResponseWriter, r *http.Request
 
 	// A chamada e o fallback de modelos estão no pacote ia, compartilhado com o worker
 	// da fila de curadoria.
-	resp, apiErr := ia.Gerar(r.Context(), ia.ConfigCuradoria(systemInstructionText), prompt)
+	aiResponse, apiErr := ia.GerarCuradoria(r.Context(), systemInstructionText, prompt)
 	if apiErr != nil {
-		log.Printf("[ERRO AI] Todos os modelos falharam. Último erro: %v", apiErr)
+		log.Printf("[ERRO AI] Groq e Gemini falharam: %v", apiErr)
 		http.Error(w, "Serviço de IA congestionado no momento. Tente novamente em alguns segundos.", http.StatusServiceUnavailable)
 		return
 	}
-
-	aiResponse := resp.Text()
 	if aiResponse == "" {
 		http.Error(w, "IA retornou vazio", http.StatusInternalServerError)
 		return
