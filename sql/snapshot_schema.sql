@@ -1,7 +1,7 @@
 -- =============================================================================
 -- snapshot_schema.sql — RETRATO DO BANCO. NAO EXECUTE ESTE ARQUIVO.
 -- =============================================================================
--- Regenerado em 20/09/2026 00:30 a partir do banco de producao.
+-- Regenerado em 02/11/2026 21:20 a partir do banco de producao.
 --
 -- PARA QUE SERVE: consulta rapida do estado real do banco, sem precisar abrir
 -- o painel do Supabase nem confiar nos arquivos sql/ antigos (que podem ter
@@ -24,6 +24,19 @@
 -- ATENCAO: apenas colunas, tipos e NOT NULL. NAO inclui PK, FK, DEFAULT,
 -- UNIQUE nem CHECK. Este bloco NAO recria as tabelas -- e so consulta.
 -- =============================================================================
+
+-- ai_curation_queue
+--     id                           uuid NOT NULL
+--     mal_id                       integer NOT NULL
+--     tipo                         text NOT NULL
+--     status                       text NOT NULL
+--     resultado                    jsonb
+--     relatorio                    text
+--     erro                         text
+--     tentativas                   integer NOT NULL
+--     pego_em                      timestamp with time zone
+--     created_at                   timestamp with time zone NOT NULL
+--     processed_at                 timestamp with time zone
 
 -- anime_metadata_cache
 --     mal_id                       integer NOT NULL
@@ -151,6 +164,7 @@
 -- Nao "corrigir" criando policy.
 -- =============================================================================
 
+-- ai_curation_queue         | RLS: t     | policies: 1
 -- anime_metadata_cache      | RLS: t     | policies: 3
 -- app_admins                | RLS: t     | policies: 0
 -- app_settings              | RLS: t     | policies: 3
@@ -463,6 +477,10 @@ CREATE OR REPLACE VIEW public.view_user_year_distribution WITH (security_invoker
 -- igual. O que vale e o predicado abaixo (Armadilha 15 do PITFALLS.md).
 -- =============================================================================
 
+-- ai_curation_queue      | ai_curation_queue_admin                       | ALL    | authenticated     
+--     USING:  ( SELECT is_admin() AS is_admin)
+--     CHECK:  ( SELECT is_admin() AS is_admin)
+
 -- anime_metadata_cache   | Escrita no cache restrita a admin             | INSERT | authenticated     
 --     USING:  -
 --     CHECK:  ( SELECT is_admin() AS is_admin)
@@ -598,6 +616,7 @@ CREATE OR REPLACE VIEW public.view_user_year_distribution WITH (security_invoker
 -- hook_limite_cadastros          | definer: f     | anon: f     | auth: f     | service: t     | search_path=public, pg_temp
 -- is_admin                       | definer: t     | anon: t     | auth: t     | service: t     | search_path=public, pg_temp
 -- listar_demanda_curadoria       | definer: t     | anon: f     | auth: t     | service: t     | search_path=public, pg_temp
+-- pegar_proximo_da_fila_ia       | definer: f     | anon: f     | auth: f     | service: t     | search_path=public, pg_temp
 -- process_cron_notification      | definer: t     | anon: f     | auth: f     | service: t     | search_path=public
 -- remover_tag_curadoria          | definer: t     | anon: f     | auth: t     | service: t     | search_path=public, pg_temp
 -- renomear_tag_curadoria         | definer: t     | anon: f     | auth: t     | service: t     | search_path=public, pg_temp
