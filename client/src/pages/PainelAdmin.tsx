@@ -732,6 +732,47 @@ export default function PainelAdmin() {
   //
   // Busca na lista já carregada em vez de refazer a requisição: os 114 destaques
   // vêm no boot do painel, e o curated_id da view é o mesmo `id` de lá.
+  const editarDestaque = (anime: CuratedAnime) => {
+    pedirConfirmacao(() => {
+      setEditId(anime.id || null)
+      setMalId(anime.mal_id)
+      setTitulo(anime.custom_title)
+      setFormato(anime.custom_format || 'TV')
+      setStatus(anime.custom_status || 'RELEASING')
+      setSinopse(anime.custom_synopsis || '')
+      setTags(anime.custom_tags || [])
+      setOrdem(anime.order_index)
+      setCoverImage(anime.custom_cover_image || '')
+      setBannerImage(anime.custom_banner_image || '')
+      setCharacters(anime.custom_characters || [])
+      setEpisodios(anime.custom_episodes || [])
+      setLinks(anime.custom_external_links || [])
+      setEstreia(estreiaParaInput(anime.custom_first_aired_at))
+      setDuracao(anime.custom_duration_minutes ? String(anime.custom_duration_minutes) : '')
+      // `?? true` e não `|| true`: o banco tem DEFAULT true, mas um false gravado de
+      // propósito precisa sobreviver — com `||` ele viraria true de novo.
+      setIsDestaque(anime.is_destaque ?? true)
+      setCurationStatus(anime.curation_status || 'parcial')
+      setPreviewTitulo(anime.custom_title)
+      setFormularioAberto(true)
+      window.scrollTo({ top: 0, behavior: 'smooth' })
+
+      // Sem setTimeout: a referência é montada a partir dos mesmos valores que acabaram de
+      // ser aplicados no formulário, no mesmo lote. Como isDirty agora é derivado, ele já
+      // nasce falso — o atraso de 100ms existia só para esperar o efeito antigo rodar.
+      setInitialStateHash(montarHash({
+        titulo: anime.custom_title, formato: anime.custom_format || 'TV', status: anime.custom_status || 'RELEASING',
+        ordem: anime.order_index, sinopse: anime.custom_synopsis || '', tags: anime.custom_tags || [],
+        coverImage: anime.custom_cover_image || '', bannerImage: anime.custom_banner_image || '',
+        characters: anime.custom_characters || [],
+        episodios: anime.custom_episodes || [], links: anime.custom_external_links || [],
+        estreia: estreiaParaInput(anime.custom_first_aired_at),
+        duracao: anime.custom_duration_minutes ? String(anime.custom_duration_minutes) : '',
+        isDestaque: anime.is_destaque ?? true, curationStatus: anime.curation_status || 'parcial'
+      }))
+    })
+  }
+
   const abrirNaCuradoria = (curatedId: string) => {
     const anime = destaques.find(d => d.id === curatedId)
     if (!anime) {
@@ -779,47 +820,6 @@ export default function PainelAdmin() {
     })
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [loading, isAdmin, searchParams, destaques])
-
-  const editarDestaque = (anime: CuratedAnime) => {
-    pedirConfirmacao(() => {
-      setEditId(anime.id || null)
-      setMalId(anime.mal_id)
-      setTitulo(anime.custom_title)
-      setFormato(anime.custom_format || 'TV')
-      setStatus(anime.custom_status || 'RELEASING')
-      setSinopse(anime.custom_synopsis || '')
-      setTags(anime.custom_tags || [])
-      setOrdem(anime.order_index)
-      setCoverImage(anime.custom_cover_image || '')
-      setBannerImage(anime.custom_banner_image || '')
-      setCharacters(anime.custom_characters || [])
-      setEpisodios(anime.custom_episodes || [])
-      setLinks(anime.custom_external_links || [])
-      setEstreia(estreiaParaInput(anime.custom_first_aired_at))
-      setDuracao(anime.custom_duration_minutes ? String(anime.custom_duration_minutes) : '')
-      // `?? true` e não `|| true`: o banco tem DEFAULT true, mas um false gravado de
-      // propósito precisa sobreviver — com `||` ele viraria true de novo.
-      setIsDestaque(anime.is_destaque ?? true)
-      setCurationStatus(anime.curation_status || 'parcial')
-      setPreviewTitulo(anime.custom_title)
-      setFormularioAberto(true)
-      window.scrollTo({ top: 0, behavior: 'smooth' })
-
-      // Sem setTimeout: a referência é montada a partir dos mesmos valores que acabaram de
-      // ser aplicados no formulário, no mesmo lote. Como isDirty agora é derivado, ele já
-      // nasce falso — o atraso de 100ms existia só para esperar o efeito antigo rodar.
-      setInitialStateHash(montarHash({
-        titulo: anime.custom_title, formato: anime.custom_format || 'TV', status: anime.custom_status || 'RELEASING',
-        ordem: anime.order_index, sinopse: anime.custom_synopsis || '', tags: anime.custom_tags || [],
-        coverImage: anime.custom_cover_image || '', bannerImage: anime.custom_banner_image || '',
-        characters: anime.custom_characters || [],
-        episodios: anime.custom_episodes || [], links: anime.custom_external_links || [],
-        estreia: estreiaParaInput(anime.custom_first_aired_at),
-        duracao: anime.custom_duration_minutes ? String(anime.custom_duration_minutes) : '',
-        isDestaque: anime.is_destaque ?? true, curationStatus: anime.curation_status || 'parcial'
-      }))
-    })
-  }
 
   const handleSinopseChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     setSinopse(e.target.value)
