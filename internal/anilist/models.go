@@ -1,8 +1,8 @@
 package anilist
 
 type AnimeSearchResponse struct {
-	Data []Anime `json:"data"`
-	LastUpdated string `json:"last_updated,omitempty"`
+	Data        []Anime `json:"data"`
+	LastUpdated string  `json:"last_updated,omitempty"`
 }
 
 type AnimeByIdResponse struct {
@@ -12,7 +12,7 @@ type AnimeByIdResponse struct {
 type NextAiringEpisode struct {
 	AiringAt        int `json:"airingAt"`
 	TimeUntilAiring int `json:"timeUntilAiring"`
-	Episode         int `json:"episode"`  
+	Episode         int `json:"episode"`
 }
 
 // Genre é uma categoria do anime. Tipo nomeado (e não struct anônima) porque o valor é
@@ -33,21 +33,23 @@ type Character struct {
 }
 
 type Anime struct {
-	MalID       int         `json:"mal_id"`
-	Title       string      `json:"title"`
-	Status      string      `json:"status"`
-	Synopsis    string      `json:"synopsis"`
-	Episodes    int         `json:"episodes"`
-	Duration    int         `json:"duration"` // Duração do episódio em minutos (Estatísticas)
-	Score       float64     `json:"score"`
-	Ranking     int         `json:"ranking,omitempty"`
-	Popularity    int     `json:"popularity,omitempty"`
-	BayesianScore float64 `json:"bayesian_score,omitempty"`
-	CurrentRank   int     `json:"current_rank,omitempty"`
-	PreviousRank  int     `json:"previous_rank,omitempty"`
-	BannerImage string      `json:"bannerImage,omitempty"`
-	Characters  []Character `json:"characters,omitempty"`
-	StartDate   *FuzzyDate  `json:"startDate,omitempty"`
+	MalID          int         `json:"mal_id"`
+	Title          string      `json:"title"`
+	Status         string      `json:"status"`
+	IsCurated      bool        `json:"is_curated,omitempty"`
+	CurationStatus string      `json:"curation_status,omitempty"`
+	Synopsis       string      `json:"synopsis"`
+	Episodes       int         `json:"episodes"`
+	Duration       int         `json:"duration"` // Duração do episódio em minutos (Estatísticas)
+	Score          float64     `json:"score"`
+	Ranking        int         `json:"ranking,omitempty"`
+	Popularity     int         `json:"popularity,omitempty"`
+	BayesianScore  float64     `json:"bayesian_score,omitempty"`
+	CurrentRank    int         `json:"current_rank,omitempty"`
+	PreviousRank   int         `json:"previous_rank,omitempty"`
+	BannerImage    string      `json:"bannerImage,omitempty"`
+	Characters     []Character `json:"characters,omitempty"`
+	StartDate      *FuzzyDate  `json:"startDate,omitempty"`
 
 	// FirstAiredAt é o instante exato em que o episódio 1 foi ao ar, vindo da curadoria.
 	// Guardado como texto ISO 8601 para o navegador converter ao fuso de quem está olhando.
@@ -95,7 +97,7 @@ type AnimeStatisticsResponse struct {
 }
 
 type AnimeStatistics struct {
-	Scores   []ScoreDistribution  `json:"scores"` 
+	Scores   []ScoreDistribution  `json:"scores"`
 	Statuses []StatusDistribution `json:"statuses"`
 }
 

@@ -13,7 +13,7 @@ import CuradoriaLinks from '../components/CuradoriaLinks'
 import DestaquesRail from '../components/DestaquesRail'
 import ReorderableTags from '../components/ReorderableTags'
 import imageCompression from 'browser-image-compression'
-import type { CuratedAnime, CuratedCharacter, CuratedEpisode, CuratedExternalLink, CurationStatus } from '../types/curation'
+import { totalEpisodiosCurado, type CuratedAnime, type CuratedCharacter, type CuratedEpisode, type CuratedExternalLink, type CurationStatus } from '../types/curation'
 import ConfigIAModal from '../components/ConfigIAModal'
 import { AbaOlheiro } from '../components/AbaOlheiro'
 import { AbaControle } from '../components/AbaControle'
@@ -916,7 +916,7 @@ export default function PainelAdmin() {
         </div>
 
         {abaAtiva === 'curadoria' && (() => {
-          const semEps = destaques.filter(d => (d.custom_episodes?.length ?? 0) === 0)
+          const semEps = destaques.filter(d => totalEpisodiosCurado(d) === 0)
           return (
             <div className={`mb-8 min-w-0 ${formularioAberto ? 'hidden lg:block' : 'block'}`}>
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
@@ -964,7 +964,7 @@ export default function PainelAdmin() {
               <h1 className="font-anton text-3xl uppercase">Revisão da IA</h1>
               <p className="text-muted text-sm mt-1">Marque vários animes, deixe o worker processar e aprove ou descarte depois.</p>
             </div>
-            <AbaRevisaoIA />
+            <AbaRevisaoIA curados={destaques} />
           </>
         )}
 

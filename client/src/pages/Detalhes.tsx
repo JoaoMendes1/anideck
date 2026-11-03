@@ -18,6 +18,8 @@ interface AnimeDetail {
   mal_id: number
   title: string
   status: string
+  is_curated?: boolean
+  curation_status?: string
   synopsis: string
   episodes: number
   score: number
@@ -104,8 +106,9 @@ export default function Detalhes() {
   const [isLoggedIn, setIsLoggedIn] = useState(false)
   const [isAdmin, setIsAdmin] = useState(false)
   const [enviandoIA, setEnviandoIA] = useState(false)
+  const [forcarRecurarIA, setForcarRecurarIA] = useState(false)
 
-  const enviarAnimeParaFilaIA = async () => {
+  const enviarAnimeParaFilaIA = async (tipo: 'sinopse_tags' | 'completo' = 'sinopse_tags') => {
     if (!anime) return
     setEnviandoIA(true)
     try {
@@ -117,10 +120,12 @@ export default function Detalhes() {
           'Authorization': `Bearer ${session.access_token}`,
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ mal_ids: [anime.mal_id], tipo: 'completo' }),
+        body: JSON.stringify({ mal_ids: [anime.mal_id], tipo }),
       })
       if (!res.ok) throw new Error(await res.text())
-      showToast('Enviado para a fila da IA (sinopse, tags e episódios)!', 'success')
+      const desc = tipo === 'sinopse_tags' ? 'sinopse e tags (rápido)' : 'sinopse, tags e episódios'
+      showToast(`Enviado para a fila da IA: ${desc}!`, 'success')
+      setForcarRecurarIA(false)
     } catch (e) {
       showToast(e instanceof Error ? e.message : 'Erro ao enviar para a fila da IA.', 'error')
     } finally {
@@ -129,6 +134,7 @@ export default function Detalhes() {
   }
 
   useEffect(() => {
+    setForcarRecurarIA(false)
     // Lido de novo aqui, e não só no useState acima, porque ir de um Detalhes para outro
     // troca o id sem desmontar a página.
     const emMemoria = lerDaMemoria<AnimeEmMemoria>(chaveDoAnime)
@@ -455,39 +461,84 @@ export default function Detalhes() {
           </div>
         </div>
 
-        {isAdmin && (
-          <div className="mb-6 p-3.5 rounded-2xl bg-panel/90 border border-gold/40 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-[0_0_20px_rgba(255,197,66,0.08)]">
-            <div className="flex items-center gap-2 text-xs font-bold text-gold">
-              <Wrench size={14} className="shrink-0" />
-              <span>Ferramentas de Curadoria (Admin) · MAL ID #{anime.mal_id}</span>
+        {isAdmin && (() => {
+          const jaCurado = Boolean(anime.is_curated)
+          const iaBloqueada = jaCurado && !forcarRecurarIA
+          const rotuloStatusCuradoria =
+            anime.curation_status === 'completo'
+              ? 'Completo'
+              : anime.curation_status === 'revisar'
+                ? 'Revisar'
+                : 'Parcial'
+
+          return (
+            <div className={`mb-6 p-3.5 rounded-2xl bg-panel/90 border flex flex-col gap-3 shadow-[0_0_20px_rgba(255,197,66,0.08)] ${jaCurado ? 'border-green/40' : 'border-gold/40'}`}>
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <div className="flex flex-wrap items-center gap-2 text-xs font-bold text-gold">
+                  <Wrench size={14} className="shrink-0" />
+                  <span>Ferramentas de Curadoria (Admin) · MAL ID #{anime.mal_id}</span>
+                  {jaCurado ? (
+                    <span className="px-2.5 py-0.5 rounded-full text-[10px] font-mono uppercase bg-green/15 text-green border border-green/40">
+                      ✓ Já curado · {rotuloStatusCuradoria}
+                    </span>
+                  ) : (
+                    <span className="px-2.5 py-0.5 rounded-full text-[10px] font-mono uppercase bg-gold/15 text-gold border border-gold/40">
+                      ⚠ Ainda não curado
+                    </span>
+                  )}
+                </div>
+
+                {jaCurado && (
+                  <label className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-mono bg-void/60 border border-line text-muted hover:text-text cursor-pointer select-none">
+                    <input
+                      type="checkbox"
+                      checked={forcarRecurarIA}
+                      onChange={e => setForcarRecurarIA(e.target.checked)}
+                      className="accent-gold cursor-pointer"
+                    />
+                    <span>Curar mesmo assim com IA</span>
+                  </label>
+                )}
+              </div>
+
+              <div className="flex flex-wrap items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => navigate(`/admin?aba=curadoria&mal_id=${anime.mal_id}`)}
+                  className="px-3.5 py-1.5 rounded-full text-xs font-bold bg-panel-2 border border-line text-text hover:border-gold hover:text-gold cursor-pointer transition-colors"
+                >
+                  {jaCurado ? '✏️ Editar Curadoria' : '✏️ Curar Manualmente'}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => enviarAnimeParaFilaIA('sinopse_tags')}
+                  disabled={enviandoIA || iaBloqueada}
+                  title={iaBloqueada ? 'Obra já curada. Marque "Curar mesmo assim com IA" acima para liberar.' : 'Enfileirar geração rápida de sinopse e tags'}
+                  className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-bold bg-holo-1/15 border border-holo-1/40 text-holo-1 hover:bg-holo-1 hover:text-void cursor-pointer transition-colors disabled:opacity-40 disabled:pointer-events-none"
+                >
+                  <Sparkles size={12} />
+                  {enviandoIA ? 'Enviando...' : 'IA: Sinopse + Tags'}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => enviarAnimeParaFilaIA('completo')}
+                  disabled={enviandoIA || iaBloqueada}
+                  title={iaBloqueada ? 'Obra já curada. Marque "Curar mesmo assim com IA" acima para liberar.' : 'Enfileirar sinopse, tags e pesquisa de episódios'}
+                  className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-bold bg-panel-2 border border-line text-muted hover:text-text hover:border-holo-2 cursor-pointer transition-colors disabled:opacity-40 disabled:pointer-events-none"
+                >
+                  🔎 IA: Tudo (+ Eps)
+                </button>
+                <button
+                  type="button"
+                  onClick={() => navigate('/admin?aba=revisao_ia')}
+                  className="px-3 py-1.5 rounded-full text-xs font-bold text-muted hover:text-text cursor-pointer transition-colors ml-auto"
+                >
+                  Ver Fila →
+                </button>
+              </div>
             </div>
-            <div className="flex flex-wrap items-center gap-2">
-              <button
-                type="button"
-                onClick={() => navigate(`/admin?aba=curadoria&mal_id=${anime.mal_id}`)}
-                className="px-3.5 py-1.5 rounded-full text-xs font-bold bg-panel-2 border border-line text-text hover:border-gold hover:text-gold cursor-pointer transition-colors"
-              >
-                ✏️ Curar / Editar Manualmente
-              </button>
-              <button
-                type="button"
-                onClick={enviarAnimeParaFilaIA}
-                disabled={enviandoIA}
-                className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-bold bg-holo-1/15 border border-holo-1/40 text-holo-1 hover:bg-holo-1 hover:text-void cursor-pointer transition-colors disabled:opacity-50"
-              >
-                <Sparkles size={12} />
-                {enviandoIA ? 'Enviando...' : 'Curar Automático (Fila IA)'}
-              </button>
-              <button
-                type="button"
-                onClick={() => navigate('/admin?aba=revisao_ia')}
-                className="px-3 py-1.5 rounded-full text-xs font-bold text-muted hover:text-text cursor-pointer transition-colors"
-              >
-                Ver Fila →
-              </button>
-            </div>
-          </div>
-        )}
+          )
+        })()}
 
         <div className="sticky top-[63px] md:top-[73px] z-40 bg-void/95 backdrop-blur-sm border-b border-line overflow-x-auto whitespace-nowrap py-3 mb-8 scrollbar-hide">
           <div className="flex gap-2.5">

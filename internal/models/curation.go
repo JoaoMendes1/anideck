@@ -15,16 +15,18 @@ type CuratedAnime struct {
 	CustomBannerImage string          `json:"custom_banner_image"`
 	CustomCharacters  json.RawMessage `json:"custom_characters"`
 
-
-
 	CustomEpisodes      json.RawMessage `json:"custom_episodes"`
 	CustomExternalLinks json.RawMessage `json:"custom_external_links"`
 
 	CustomFirstAiredAt    *string `json:"custom_first_aired_at"`
 	CustomDurationMinutes *int    `json:"custom_duration_minutes"`
-	
+
 	IsDestaque     *bool  `json:"is_destaque,omitempty"`
 	CurationStatus string `json:"curation_status,omitempty"`
+
+	// Preenchido apenas na listagem (HandleList) a partir de anime_metadata_cache.episodes,
+	// para o Painel Admin saber se o anime já tem episódios vindos da AniList.
+	CachedEpisodes int `json:"cached_episodes,omitempty"`
 
 	OrderIndex int    `json:"order_index"`
 	CreatedAt  string `json:"created_at,omitempty"`

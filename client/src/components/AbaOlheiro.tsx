@@ -35,11 +35,12 @@ export function AbaOlheiro({ onCurar }: Props) {
 
   const [aba, setAba] = useState<AbaId>('sugestoes')
 
-  const enviarParaIA = async (malIDs: number[]) => {
-    const ok = await enfileirarIA(malIDs)
+  const enviarParaIA = async (malIDs: number[], tipo: 'sinopse_tags' | 'completo' = 'sinopse_tags') => {
+    const ok = await enfileirarIA(malIDs, tipo)
     if (ok) {
+      const descricao = tipo === 'sinopse_tags' ? 'sinopse e tags (rápido)' : 'sinopse, tags e episódios'
       showToast(
-        `${malIDs.length} anime(s) enviado(s) para a fila da IA (sinopse, tags e episódios).`,
+        `${malIDs.length} anime(s) enviado(s) para a fila da IA: ${descricao}.`,
         'success'
       )
     }
@@ -92,7 +93,7 @@ export function AbaOlheiro({ onCurar }: Props) {
       {/* ---------- Sugestões: o que a AniList tem e combina com o gosto ---------- */}
       {aba === 'sugestoes' && (
         <>
-          <div className="flex flex-col sm:flex-row gap-2 mb-4">
+          <div className="flex flex-col sm:flex-row flex-wrap gap-2 mb-4">
             <button
               onClick={buscarNovas}
               disabled={buscando || enfileirandoIA}
@@ -101,15 +102,27 @@ export function AbaOlheiro({ onCurar }: Props) {
               {buscando ? 'Buscando na AniList...' : '🔭 Buscar novas sugestões'}
             </button>
             {sugestoes.length > 0 && (
-              <button
-                type="button"
-                onClick={() => enviarParaIA(sugestoes.map(s => s.mal_id))}
-                disabled={enfileirandoIA || buscando}
-                className="inline-flex items-center justify-center gap-1.5 py-2.5 px-5 rounded-full text-xs font-bold bg-holo-1/15 border border-holo-1/40 text-holo-1 hover:bg-holo-1 hover:text-void disabled:opacity-50 cursor-pointer transition-colors"
-              >
-                <Sparkles size={13} />
-                {enfileirandoIA ? 'Enviando para IA...' : `Curar todas com IA (${sugestoes.length})`}
-              </button>
+              <>
+                <button
+                  type="button"
+                  onClick={() => enviarParaIA(sugestoes.map(s => s.mal_id), 'sinopse_tags')}
+                  disabled={enfileirandoIA || buscando}
+                  title="Reescreve sinopse e tags via Groq (rápido e não gasta a cota de episódios)"
+                  className="inline-flex items-center justify-center gap-1.5 py-2.5 px-4 rounded-full text-xs font-bold bg-holo-1/15 border border-holo-1/40 text-holo-1 hover:bg-holo-1 hover:text-void disabled:opacity-50 cursor-pointer transition-colors"
+                >
+                  <Sparkles size={13} />
+                  {enfileirandoIA ? 'Enviando...' : `Todas: Sinopse + Tags (${sugestoes.length})`}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => enviarParaIA(sugestoes.map(s => s.mal_id), 'completo')}
+                  disabled={enfileirandoIA || buscando}
+                  title="Enfileira sinopse, tags e também a pesquisa de episódios/datas no Gemini"
+                  className="inline-flex items-center justify-center gap-1.5 py-2.5 px-4 rounded-full text-xs font-bold bg-panel-2 border border-line text-muted hover:text-text hover:border-holo-2 disabled:opacity-50 cursor-pointer transition-colors"
+                >
+                  🔎 Tudo + Eps ({sugestoes.length})
+                </button>
+              </>
             )}
           </div>
 
@@ -143,28 +156,42 @@ export function AbaOlheiro({ onCurar }: Props) {
                       afinidade {s.score.toFixed(1)}
                     </span>
 
-                    <div className="flex gap-1.5 mt-1">
-                      <button
-                        onClick={() => { onCurar(s); remover(s.id) }}
-                        className="flex-1 text-[11px] font-bold py-1.5 rounded-full bg-gradient-to-r from-holo-1 to-holo-2 text-void hover:opacity-90 cursor-pointer transition-opacity"
-                      >
-                        Curar
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => enviarParaIA([s.mal_id])}
-                        disabled={enfileirandoIA}
-                        title="Mandar para a fila de curadoria da IA"
-                        className="px-2.5 text-[11px] font-bold py-1.5 rounded-full bg-holo-1/15 border border-holo-1/40 text-holo-1 hover:bg-holo-1 hover:text-void cursor-pointer transition-colors disabled:opacity-50"
-                      >
-                        ✨ IA
-                      </button>
-                      <button
-                        onClick={() => revisar(s.id, 'dispensado')}
-                        className="px-2.5 text-[11px] font-bold py-1.5 rounded-full bg-panel border border-line text-muted hover:text-text cursor-pointer transition-colors"
-                      >
-                        ✕
-                      </button>
+                    <div className="flex flex-col gap-1.5 mt-1">
+                      <div className="flex gap-1.5">
+                        <button
+                          onClick={() => { onCurar(s); remover(s.id) }}
+                          className="flex-1 text-[11px] font-bold py-1.5 rounded-full bg-gradient-to-r from-holo-1 to-holo-2 text-void hover:opacity-90 cursor-pointer transition-opacity"
+                        >
+                          Manual
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => enviarParaIA([s.mal_id], 'sinopse_tags')}
+                          disabled={enfileirandoIA}
+                          title="Curar Sinopse + Tags com IA (rápido via Groq)"
+                          className="flex-1 text-[11px] font-bold py-1.5 rounded-full bg-holo-1/15 border border-holo-1/40 text-holo-1 hover:bg-holo-1 hover:text-void cursor-pointer transition-colors disabled:opacity-50"
+                        >
+                          ✨ Sinopse/Tags
+                        </button>
+                      </div>
+                      <div className="flex gap-1.5">
+                        <button
+                          type="button"
+                          onClick={() => enviarParaIA([s.mal_id], 'completo')}
+                          disabled={enfileirandoIA}
+                          title="Curar Tudo com IA (Sinopse, Tags e Episódios)"
+                          className="flex-1 text-[10px] font-bold py-1 rounded-full bg-panel border border-line text-muted hover:text-text hover:border-holo-2 cursor-pointer transition-colors disabled:opacity-50"
+                        >
+                          🔎 Tudo (+ Eps)
+                        </button>
+                        <button
+                          onClick={() => revisar(s.id, 'dispensado')}
+                          title="Dispensar sugestão"
+                          className="px-2.5 text-[10px] font-bold py-1 rounded-full bg-panel border border-line text-muted hover:text-coral hover:border-coral/40 cursor-pointer transition-colors"
+                        >
+                          ✕
+                        </button>
+                      </div>
                     </div>
                   </div>
                 </article>
@@ -183,15 +210,27 @@ export function AbaOlheiro({ onCurar }: Props) {
               seu deck vem na frente. Não tem "dispensar": esconder o buraco não o fecha.
             </p>
             {demanda.length > 0 && (
-              <button
-                type="button"
-                onClick={() => enviarParaIA(demanda.map(d => d.mal_id))}
-                disabled={enfileirandoIA}
-                className="shrink-0 inline-flex items-center justify-center gap-1.5 py-2 px-4 rounded-full text-xs font-bold bg-holo-1/15 border border-holo-1/40 text-holo-1 hover:bg-holo-1 hover:text-void disabled:opacity-50 cursor-pointer transition-colors"
-              >
-                <Sparkles size={13} />
-                {enfileirandoIA ? 'Enviando para IA...' : `Curar todos com IA (${demanda.length})`}
-              </button>
+              <div className="flex flex-wrap gap-2 shrink-0">
+                <button
+                  type="button"
+                  onClick={() => enviarParaIA(demanda.map(d => d.mal_id), 'sinopse_tags')}
+                  disabled={enfileirandoIA}
+                  title="Reescreve sinopse e tags via Groq (rápido e sem gastar cota do Gemini)"
+                  className="inline-flex items-center justify-center gap-1.5 py-2 px-4 rounded-full text-xs font-bold bg-holo-1/15 border border-holo-1/40 text-holo-1 hover:bg-holo-1 hover:text-void disabled:opacity-50 cursor-pointer transition-colors"
+                >
+                  <Sparkles size={13} />
+                  {enfileirandoIA ? 'Enviando...' : `Todos: Sinopse + Tags (${demanda.length})`}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => enviarParaIA(demanda.map(d => d.mal_id), 'completo')}
+                  disabled={enfileirandoIA}
+                  title="Enfileira sinopse, tags e também episódios/datas"
+                  className="inline-flex items-center justify-center gap-1.5 py-2 px-4 rounded-full text-xs font-bold bg-panel-2 border border-line text-muted hover:text-text hover:border-holo-2 disabled:opacity-50 cursor-pointer transition-colors"
+                >
+                  🔎 Tudo + Eps ({demanda.length})
+                </button>
+              </div>
             )}
           </div>
 
@@ -209,7 +248,7 @@ export function AbaOlheiro({ onCurar }: Props) {
               {demanda.map(d => (
                 <article
                   key={d.mal_id}
-                  className={`flex items-center gap-3 p-3 rounded-xl border ${d.tem_admin ? 'border-gold/40 bg-gold/5' : 'border-line bg-panel-2'
+                  className={`flex flex-wrap sm:flex-nowrap items-center gap-3 p-3 rounded-xl border ${d.tem_admin ? 'border-gold/40 bg-gold/5' : 'border-line bg-panel-2'
                     }`}
                 >
                   <div className="min-w-0 flex-1">
@@ -231,19 +270,29 @@ export function AbaOlheiro({ onCurar }: Props) {
 
                   <button
                     type="button"
-                    onClick={() => enviarParaIA([d.mal_id])}
+                    onClick={() => enviarParaIA([d.mal_id], 'sinopse_tags')}
                     disabled={enfileirandoIA}
-                    title="Curar automaticamente com IA"
+                    title="Curar Sinopse + Tags com IA (rápido via Groq)"
                     className="shrink-0 text-[11px] font-bold px-3 py-1.5 rounded-full bg-holo-1/15 border border-holo-1/40 text-holo-1 hover:bg-holo-1 hover:text-void cursor-pointer transition-colors disabled:opacity-50"
                   >
-                    ✨ IA
+                    ✨ Sinopse/Tags
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => enviarParaIA([d.mal_id], 'completo')}
+                    disabled={enfileirandoIA}
+                    title="Curar Tudo com IA (Sinopse, Tags e Episódios)"
+                    className="shrink-0 text-[11px] font-bold px-3 py-1.5 rounded-full bg-panel border border-line text-muted hover:text-text hover:border-holo-2 cursor-pointer transition-colors disabled:opacity-50"
+                  >
+                    🔎 Tudo
                   </button>
 
                   <button
                     onClick={() => curarDemanda(d)}
                     className="shrink-0 text-[11px] font-bold px-4 py-1.5 rounded-full bg-gradient-to-r from-holo-1 to-holo-2 text-void hover:opacity-90 cursor-pointer transition-opacity"
                   >
-                    Curar
+                    Manual
                   </button>
                 </article>
               ))}

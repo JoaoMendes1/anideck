@@ -7,6 +7,8 @@ import (
 	"net/http"
 	"slices"
 
+	"strconv"
+
 	"github.com/JoaoMendes1/anideck/internal/database"
 	"github.com/JoaoMendes1/anideck/internal/middleware"
 	"github.com/JoaoMendes1/anideck/internal/models"
@@ -14,7 +16,6 @@ import (
 	"github.com/microcosm-cc/bluemonday"
 	"github.com/supabase-community/postgrest-go"
 	supabase "github.com/supabase-community/supabase-go"
-	"strconv"
 )
 
 // Inicia o higienizador para evitar ataques XSS nos textos de curadoria
@@ -87,6 +88,26 @@ func (h *CurationHandler) HandleList(w http.ResponseWriter, r *http.Request) {
 	}
 	_ = json.Unmarshal(data, &resultado)
 
+	if len(resultado) > 0 {
+		if dataCache, _, errCache := database.Client.From("anime_metadata_cache").
+			Select("mal_id,episodes", "", false).
+			Execute(); errCache == nil {
+			var linhasCache []struct {
+				MalID    int `json:"mal_id"`
+				Episodes int `json:"episodes"`
+			}
+			if json.Unmarshal(dataCache, &linhasCache) == nil {
+				epsPorMalID := make(map[int]int, len(linhasCache))
+				for _, c := range linhasCache {
+					epsPorMalID[c.MalID] = c.Episodes
+				}
+				for i := range resultado {
+					resultado[i].CachedEpisodes = epsPorMalID[resultado[i].MalID]
+				}
+			}
+		}
+	}
+
 	slices.SortFunc(resultado, func(a, b models.CuratedAnime) int {
 		return cmp.Compare(a.OrderIndex, b.OrderIndex)
 	})
@@ -151,6 +172,8 @@ func (h *CurationHandler) HandleCreate(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	entrada.CachedEpisodes = 0
+	entrada.CachedEpisodes = 0
 	entrada.CustomSynopsis = sanitizer.Sanitize(entrada.CustomSynopsis)
 
 	// Os campos JSONB precisam de validação própria: o Postgres aceita qualquer JSON bem
@@ -216,6 +239,7 @@ func (h *CurationHandler) HandleUpdate(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	entrada.CachedEpisodes = 0
 	entrada.CustomSynopsis = sanitizer.Sanitize(entrada.CustomSynopsis)
 
 	// Os campos JSONB precisam de validação própria: o Postgres aceita qualquer JSON bem

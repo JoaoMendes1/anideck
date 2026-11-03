@@ -717,7 +717,7 @@ func (h *FilaIAHandler) HandleEnfileirar(w http.ResponseWriter, r *http.Request)
 	json.NewEncoder(w).Encode(map[string]int{"enfileirados": len(vistos), "tarefas": len(linhas)})
 }
 
-// HandleListar devolve a fila, do mais recente para o mais antigo.
+// HandleListar devolve a fila, do mais recente para o mais antigo, já enriquecida com título e capa.
 func (h *FilaIAHandler) HandleListar(w http.ResponseWriter, r *http.Request) {
 	client, ok := clienteDoAdmin(w, r)
 	if !ok {
@@ -733,8 +733,90 @@ func (h *FilaIAHandler) HandleListar(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Não foi possível ler a fila. A fila (sql/038) foi aplicada?", http.StatusInternalServerError)
 		return
 	}
+
+	var itens []map[string]interface{}
+	if err := json.Unmarshal(data, &itens); err != nil || len(itens) == 0 {
+		w.Header().Set("Content-Type", "application/json")
+		w.Write(data)
+		return
+	}
+
+	idsUnicos := map[int]bool{}
+	idsTexto := make([]string, 0, len(itens))
+	for _, it := range itens {
+		if m, ok := it["mal_id"].(float64); ok && int(m) > 0 && !idsUnicos[int(m)] {
+			idsUnicos[int(m)] = true
+			idsTexto = append(idsTexto, strconv.Itoa(int(m)))
+		}
+	}
+
+	titulos := map[int]string{}
+	capas := map[int]string{}
+
+	if len(idsTexto) > 0 {
+		if dCache, _, errC := client.From("anime_metadata_cache").Select("mal_id,title", "", false).In("mal_id", idsTexto).Execute(); errC == nil {
+			var lCache []struct {
+				MalID int    `json:"mal_id"`
+				Title string `json:"title"`
+			}
+			if json.Unmarshal(dCache, &lCache) == nil {
+				for _, c := range lCache {
+					if strings.TrimSpace(c.Title) != "" {
+						titulos[c.MalID] = c.Title
+					}
+				}
+			}
+		}
+		if dSug, _, errS := client.From("curation_suggestions").Select("mal_id,titulo,imagem_url", "", false).In("mal_id", idsTexto).Execute(); errS == nil {
+			var lSug []struct {
+				MalID     int    `json:"mal_id"`
+				Titulo    string `json:"titulo"`
+				ImagemURL string `json:"imagem_url"`
+			}
+			if json.Unmarshal(dSug, &lSug) == nil {
+				for _, s := range lSug {
+					if strings.TrimSpace(s.Titulo) != "" {
+						titulos[s.MalID] = s.Titulo
+					}
+					if strings.TrimSpace(s.ImagemURL) != "" {
+						capas[s.MalID] = s.ImagemURL
+					}
+				}
+			}
+		}
+		if dCur, _, errCur := client.From("curated_animes").Select("mal_id,custom_title,custom_cover_image", "", false).In("mal_id", idsTexto).Execute(); errCur == nil {
+			var lCur []struct {
+				MalID            int    `json:"mal_id"`
+				CustomTitle      string `json:"custom_title"`
+				CustomCoverImage string `json:"custom_cover_image"`
+			}
+			if json.Unmarshal(dCur, &lCur) == nil {
+				for _, cur := range lCur {
+					if strings.TrimSpace(cur.CustomTitle) != "" {
+						titulos[cur.MalID] = cur.CustomTitle
+					}
+					if strings.TrimSpace(cur.CustomCoverImage) != "" {
+						capas[cur.MalID] = cur.CustomCoverImage
+					}
+				}
+			}
+		}
+	}
+
+	for i := range itens {
+		if m, ok := itens[i]["mal_id"].(float64); ok {
+			id := int(m)
+			if t := titulos[id]; t != "" {
+				itens[i]["titulo"] = t
+			}
+			if img := capas[id]; img != "" {
+				itens[i]["imagem_url"] = img
+			}
+		}
+	}
+
 	w.Header().Set("Content-Type", "application/json")
-	w.Write(data)
+	json.NewEncoder(w).Encode(itens)
 }
 
 func buscarItemDoAdmin(client *supabase.Client, id string) (itemFila, error) {

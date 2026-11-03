@@ -53,5 +53,12 @@ export interface CuratedAnime {
   is_destaque?: boolean
   curation_status?: CurationStatus
 
+  /** Total de episódios vindo do anime_metadata_cache (AniList), usado quando custom_episodes está vazio. */
+  cached_episodes?: number
+
   order_index: number
 }
+
+/** Retorna quantos episódios o anime realmente exibe na página de Detalhes (curadoria manual ou cache da AniList). */
+export const totalEpisodiosCurado = (d: CuratedAnime): number =>
+  (d.custom_episodes?.length || 0) || (d.cached_episodes || 0)

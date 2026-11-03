@@ -25,6 +25,9 @@ import (
 // atribuir um `custom_title` vazio apaga o título real da obra. Esse bug já tinha sido
 // corrigido uma vez, mas só na cópia do ranking — seguia vivo na busca e no detalhe.
 func AplicarCuradoria(anime *anilist.Anime, curado models.CuratedAnime) {
+	anime.IsCurated = true
+	anime.CurationStatus = curado.CurationStatus
+
 	if curado.CustomTitle != "" {
 		anime.Title = curado.CustomTitle
 	}

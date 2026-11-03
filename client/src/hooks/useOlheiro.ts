@@ -111,9 +111,12 @@ export function useOlheiro() {
     setDemanda(atual => atual.filter(d => d.mal_id !== malID))
   }, [])
 
-  // Envia um ou vários animes direto para a fila da IA (sinopse, tags e episódios)
-  // em blocos de até 50 (limite do endpoint).
-  const enfileirarIA = useCallback(async (malIDs: number[]): Promise<boolean> => {
+  // Envia um ou vários animes direto para a fila da IA ('sinopse_tags' rápido via Groq
+  // ou 'completo' incluindo pesquisa de episódios via Gemini) em blocos de até 50.
+  const enfileirarIA = useCallback(async (
+    malIDs: number[],
+    tipo: 'sinopse_tags' | 'completo' = 'sinopse_tags'
+  ): Promise<boolean> => {
     if (malIDs.length === 0) return false
     setEnfileirandoIA(true)
     setErro(null)
@@ -127,7 +130,7 @@ export function useOlheiro() {
             Authorization: `Bearer ${token}`,
             'Content-Type': 'application/json',
           },
-          body: JSON.stringify({ mal_ids: lote, tipo: 'completo' }),
+          body: JSON.stringify({ mal_ids: lote, tipo }),
         })
         if (!res.ok) throw new Error(await res.text() || 'Falha ao enviar para a fila da IA')
       }

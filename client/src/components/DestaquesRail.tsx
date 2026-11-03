@@ -1,6 +1,6 @@
 import { useState, useMemo } from 'react'
 import { Search, Trash2, ImageOff, CheckCircle2, AlertCircle, Film } from 'lucide-react'
-import type { CuratedAnime } from '../types/curation'
+import { totalEpisodiosCurado, type CuratedAnime } from '../types/curation'
 
 interface DestaquesRailProps {
   destaques: CuratedAnime[]
@@ -34,7 +34,7 @@ export default function DestaquesRail({
   const [filtro, setFiltro] = useState<FiltroTipo>('ALL')
 
   const totalSemEpisodios = useMemo(
-    () => destaques.filter((d) => (d.custom_episodes?.length ?? 0) === 0).length,
+    () => destaques.filter((d) => totalEpisodiosCurado(d) === 0).length,
     [destaques]
   )
 
@@ -47,7 +47,7 @@ export default function DestaquesRail({
       if (filtro === 'COMPLETO') return d.curation_status === 'completo'
       if (filtro === 'REVISAR') return d.curation_status === 'revisar'
       if (filtro === 'NO_COVER') return !d.custom_cover_image
-      if (filtro === 'NO_EPISODES') return (d.custom_episodes?.length ?? 0) === 0
+      if (filtro === 'NO_EPISODES') return totalEpisodiosCurado(d) === 0
 
       return true
     })
@@ -144,12 +144,12 @@ export default function DestaquesRail({
                   <div className="flex items-center gap-2 mt-0.5 flex-wrap">
                     <p className="text-[10px] font-mono text-muted">
                       {anime.custom_characters?.length || 0} personagens
-                      {(anime.custom_episodes?.length ?? 0) > 0 && ` · ${anime.custom_episodes?.length} eps`}
+                      {totalEpisodiosCurado(anime) > 0 && ` · ${totalEpisodiosCurado(anime)} eps`}
                     </p>
-                    {(anime.custom_episodes?.length ?? 0) === 0 && (
+                    {totalEpisodiosCurado(anime) === 0 && (
                       <span
                         className="text-[9px] font-mono uppercase tracking-wider px-1.5 py-0.5 rounded border text-gold border-gold/40 bg-gold/10"
-                        title="Nenhum episódio cadastrado na curadoria"
+                        title="Nenhum episódio encontrado na curadoria nem no cache da AniList"
                       >
                         ⚠ 0 eps
                       </span>
