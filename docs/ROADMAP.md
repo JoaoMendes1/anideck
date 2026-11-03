@@ -631,7 +631,7 @@ Credencial de escrita numa integração segue desproporcional enquanto não houv
 ponto de restauração comprovado — não apenas capturado.
 
 ---
-## 🏠 Fase 11: Home e navegação — *a planejar*
+## 🏠 Fase 11: Home e navegação
 
 Motivo: a rota `/` autenticada redireciona para o Deck, e a primeira impressão do produto é uma
 grade de coleção. O diferencial analítico não aparece antes da autenticação e, depois dela, fica
@@ -645,7 +645,7 @@ atrás de um item de menu que não comunica o próprio conteúdo.
 Referência visual: `prototipos/anideck-app-prototipo-v1.html`.
 Dependência: a #125 depende da #122 — um item só sai da barra quando existir destino alternativo.
 
-## 🪞 Fase 12: Meu Gosto e distribuição — *a planejar*
+## 🪞 Fase 12: Meu Gosto e distribuição
 
 Motivo: a leitura do gosto individual não tem equivalente nas plataformas analisadas e hoje está
 pouco acessível. É também a base do único artefato capaz de atrair usuários externos sem depender
@@ -654,10 +654,38 @@ de base instalada.
 - [x] Estatísticas vira Meu Gosto, abrindo com a frase de abertura (#121)
 - [x] Bloco "lacuna de gosto" (#124)
 - [x] Card de gosto compartilhável em PNG (#126)
-- [ ] *(avaliar)* importar lista do AniList/MAL na landing
+- [ ] Importar lista do MyAnimeList sem sujar Streak/Horas (#140, movida para a Fase 13)
 
 A gamificação (rank F→SS, XP, insígnias) **não entra aqui**. Continua no
 `VISAO_GAMIFICACAO.md` até haver decisão explícita de fazer.
+
+## 🚀 Fase 13: Reformulação Visual, Automação de Curadoria e Inteligência de Gosto
+
+Motivo: aproveitar telas maiores (`1440px`), dar presença visual aos cards em todas as páginas,
+automatizar demandas repetitivas de curadoria no Admin e aprofundar a interatividade do Meu Gosto.
+
+### Bloco 1 — Admin, Curadoria & Produtividade
+- [ ] Persistência de aba/seção na URL (`?aba=` / `?secao=`), feedback no botão Atualizar da Revisão IA e limpeza do Roadmap (#130)
+- [ ] "Curar todos com IA" no Olheiro, alerta de 0 episódios, barra rápida de Admin em Detalhes e Resync inteligente (#131)
+
+### Bloco 2 — Espaço Global, Navegação, Detalhes & Tradução Automática
+- [ ] Container `1440px`, cards maiores, Rankings/Meu Gosto na Navbar desktop, botão flutuante de busca no mobile e filtro por ano livre (#132)
+- [ ] "Onde assistir" acima da sinopse e lista compacta para episódios sem foto (#133)
+- [ ] Tradução automática pt-BR (sinopse e gêneros) para obras não curadas + aviso de "Obra ainda não curada" (#134)
+
+### Bloco 3 — Agenda, Ranking, Meu Deck e Notificações
+- [ ] "Quero Assistir" visível em Meu Deck na Agenda, transição automática ao marcar episódio e filtro clicável no Deck (#135)
+- [ ] Cards verticais maiores na Agenda e no Ranking + "Seleção da Casa" recolhível no Meu Deck (#136)
+- [ ] Central de Notificações com leitura ao clicar, "Ler todas", aba "Não lidas" e ação rápida de marcar episódio (#137)
+
+### Bloco 4 — Meu Gosto Interativo, Preferências & Importação do MAL
+- [ ] Drill-down interativo em tags, barras de notas, status, quadrante e capas nos Recordes Pessoais (#138)
+- [ ] Onboarding de gêneros favoritos, edição em Configurações e recomendações "Inspirados no seu gosto" (#139)
+- [ ] Importação de lista XML do MyAnimeList (`watched_at = NULL`) preservando Streak e Horas (#140)
+
+### Bloco 5 — Novo Início (Logado) + Nova Landing & Login Beta
+- [ ] Reformulação da Home logada com Hero Banner, trilhos amplos e cards 16:9 de progresso (#141)
+- [ ] Nova Landing Page com vitrine ao vivo + selo Beta em Desenvolvimento e aviso de acesso limitado (`anidecksuporte@gmail.com`) (#142)
 
 ## 🔧 Manutenção pós-v1
 
@@ -673,13 +701,13 @@ A gamificação (rank F→SS, XP, insígnias) **não entra aqui**. Continua no
       contexto do build. O `client/.env` continua entrando, porque as `VITE_*` são lidas no
       build.
 
-### 22 a 24/09/2026 — Desempenho das telas (#128, aberta)
+### 22 a 24/09/2026 — Desempenho das telas (#128, fechada em 02/11/2026)
 
 - [x] Capas iniciais com carregamento antecipado e `preconnect`; bundle por página
       (`React.lazy`); vitrine em paralelo ao deck e limitada no banco; cache de telas em
       memória; miniaturas das capas curadas; cache de assets; prazo de 5 s para a AniList.
 - [x] Compressão `zstd`/`gzip` no Caddy (repositório `infra`, 23/10/2026).
-- [ ] Medir os critérios de aceite da issue para fechá-la.
+- [x] Critérios de aceite validados em produção e issue encerrada.
 
 ### 22/09/2026 — Saída do Render: VPS própria, deploy automático e backup diário
 
@@ -770,83 +798,13 @@ senha rotacionada (26), e o painel do provedor desfaz a configuração com um cl
 
 ---
 
-## 📋 Backlog / Ideias em Avaliação
-
-> Nada aqui é compromisso de escopo. Reavaliar depois do beta da Fase 7, com base em uso real.
+## 📋 Pendências Operacionais
 
 - [ ] **🔴 Testar a restauração do backup automático.** A rotina de 22/09 captura todo dia,
       mas nunca foi restaurada — a validação de 01/09 cobriu o `backup.sh` manual, que é outro
       script e outro destino. Backup não restaurado é esperança, não backup. Refazer o
       procedimento de 01/09 num projeto Supabase descartável: contagens, `security_invoker`,
       policies e RPCs. **É a pendência com maior custo em caso de acidente.**
-
-- [ ] **Homologação sem destino.** O ambiente de staging vivia no Render. O fluxo de branch do
-      `AGENTS.md` continua, mas não há onde validar antes de promover. Opções: um segundo
-      container na mesma VPS apontando para a branch `staging`, ou aceitar explicitamente que
-      a validação passou a ser local.
-
-- [ ] **Resync pular quem já está em dia.** Hoje ele refaz os 114 toda vez,
-      inclusive quem sincronizou há uma hora. Pular quem foi atualizado nos
-      últimos N dias encurta a rodada e economiza cota real. O que **não** vale
-      mexer é na velocidade: o rate limiter já gasta a cota do minuto em rajada
-      e espera o reset, que é o comportamento certo — a mensagem
-      "Limite de requisições atingido" é que parece erro sem ser.
-
-- [ ] **Meio-dia local vs. meio-dia UTC.** Data sem hora é completada com
-      meio-dia **local** no `CuradoriaEpisodios.tsx` e meio-dia **UTC** no
-      `CalcularProximoEpisodioCurado`. Os dois evitam o recuo para o dia
-      anterior (item 3), mas não são o mesmo instante — 3h de diferença em
-      Brasília. Hoje sem caso ativo: todo `aired_at` do catálogo tem hora
-      explícita. Volta a existir se entrar data sem hora por outro caminho.
-
-- [ ] **Agente Olheiro — evolução da pontuação.** A v1 nasce com fórmula simples e proposital;
-      refinar incrementalmente conforme o catálogo e a base de usuários crescerem.
-- [ ] **Relatório semanal por e-mail (Gmail API, SDK oficial em Go).** Removido do escopo da
-      Fase 4.5 em 21/08/2026 — depende do Agente Olheiro estar validado e produzindo sugestões
-      de qualidade. Mandar e-mail com recomendação ruim é pior que não mandar.
-- [ ] **Notificações de novas temporadas/sequências** — avisar quando uma sequência/temporada nova é anunciada.
-- [ ] **Filtro por ano na Busca, independente de temporada** — hoje o campo de ano só habilita se
-      uma temporada estiver selecionada (ver `docs/ideias-para-melhorias.md`, item 7.1). Aceitável
-      como está por ora; revisar se surgir demanda real de usuário.
-- [ ] **Anime que não existe nem na AniList nem no MAL.** O campo manual de `mal_id`
-      (08/09/2026) já cobre toda obra que tem id. Sobrou só a que não existe em fonte
-      nenhuma. Exige id próprio, e cada um vira uma fusão de quatro tabelas no dia em
-      que a obra ganhar `mal_id`. Só virar tarefa quando aparecer um caso concreto.
-      Ver `DECISIONS.md` de 08/09/2026.
-
-- [x] **Derivar o `equivalentes` da `genre_taxonomy` em vez de cravá-lo no `search.go`.**
-      Feito em 31/10/2026 (#127): chips e equivalência vêm da taxonomia, com cache em
-      memória. Ver item 19 do `PITFALLS.md` e o `DECISIONS.md`.
-
-- [ ] **Chat de dúvidas no Painel Admin.** Conversa com a IA sobre a obra em edição, sem
-      preencher campo. Saiu do board em 31/10/2026 (era a #81) por não estar em nenhuma fase.
-
-- [ ] **Levar o relatório de completude para a tela.** A query já existe em
-      `sql/relatorio_curadoria_v2.sql` e roda no SQL Editor. Virar seção do Painel
-      de Controle é uma view mais uma tabela, e cada linha vira item da fila da 9.3.
-      **A régua está na v2 e não pode ser afrouxada:** campo vazio **com** linha em
-      `anime_metadata_cache` não é pendência — é a AniList respondendo. A v1 contava
-      assim e acusou 114 de 114 animes "sem duração e sem estreia", que é ruído.
-
-- [ ] **Varredura de divergência — o que está *errado*, não o que falta.** Outra
-      coisa do relatório acima, que é SQL puro e exato. Aqui é comparar o banco com
-      o mundo real: uma busca web por anime, com custo. Só faz sentido nos que já
-      estão completos. **Desenho obrigatório:** o modelo mostra o que a fonte diz ao
-      lado do que está no banco, e o humano decide. Ele aponta divergência, nunca dá
-      veredito — senão você confere tudo à mão de novo, que é o trabalho a evitar.
-
-
-- [ ] **Agente de inconsistências.** Compara o que já existe no banco em vez de
-      buscar fora: data em `curated_animes` contra `anime_metadata_cache`, contagem
-      de episódios contra a AniList, numeração de `custom_episodes` fora de sequência.
-      Divergência vira sugestão na fila do Olheiro, que já existe. Quase tudo é SQL —
-      IA só entraria se você quisesse que ele fosse buscar a versão correta.
-
-- [ ] **Feeds RSS do LiveChart como fonte de calendário.** O LiveChart tem os dados
-      de agenda melhor estruturados que a AniList (horário com fuso explícito), mas
-      não tem API pública e bloqueia acesso automatizado por `robots.txt`. Oferece
-      feeds RSS. Vale investigar se dá para alimentar o Calendário sem IA e sem
-      depender de fonte única.
 
 ### Avaliado e descartado (documentado pra não reabrir sem contexto)
 

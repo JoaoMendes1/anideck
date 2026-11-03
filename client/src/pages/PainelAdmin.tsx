@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
 import { supabase } from '../lib/supabase'
-import { Navigate, useNavigate } from 'react-router-dom'
+import { Navigate, useNavigate, useSearchParams } from 'react-router-dom'
 import { useToast } from '../contexts/ToastContext'
 import { Sparkles, X, LayoutList, ArrowLeft, Activity, PowerOff } from 'lucide-react'
 import { LogoMark } from '../components/Brand'
@@ -118,7 +118,28 @@ export default function PainelAdmin() {
   const [configModalAberto, setConfigModalAberto] = useState(false)
   const [olheiroAberto, setOlheiroAberto] = useState(false)
 
-  const [abaAtiva, setAbaAtiva] = useState<'curadoria' | 'controle' | 'trilhas' | 'revisao_ia'>('curadoria')
+  type AbaAdmin = 'curadoria' | 'controle' | 'trilhas' | 'revisao_ia'
+  const [searchParams, setSearchParams] = useSearchParams()
+  const abaParam = searchParams.get('aba')
+  const abaAtiva: AbaAdmin =
+    abaParam === 'controle' || abaParam === 'trilhas' || abaParam === 'revisao_ia'
+      ? abaParam
+      : 'curadoria'
+
+  const setAbaAtiva = (novaAba: AbaAdmin) => {
+    setSearchParams(prev => {
+      const next = new URLSearchParams(prev)
+      if (novaAba === 'curadoria') {
+        next.delete('aba')
+      } else {
+        next.set('aba', novaAba)
+      }
+      if (novaAba !== 'controle') {
+        next.delete('secao')
+      }
+      return next
+    }, { replace: true })
+  }
 
   const [initialStateHash, setInitialStateHash] = useState('')
 
@@ -773,61 +794,63 @@ export default function PainelAdmin() {
     <div className="min-h-screen bg-void text-text pb-20 relative z-10">
       <div className="bg-ambient"></div>
 
-      <div className="sticky top-0 z-30 flex items-center justify-between p-4 border-b border-line bg-panel/80 backdrop-blur-md">
-        <div className="flex items-center gap-3">
-          <LogoMark className="w-8 h-8 hidden md:block" />
-          <span className="font-anton text-lg bg-gradient-to-r from-holo-1 via-holo-2 to-holo-3 text-transparent bg-clip-text hidden md:block">
-            ANIDECK
-          </span>
-          <span className="font-mono text-[10px] font-bold text-gold bg-gold/10 border border-gold/40 px-2 py-1 rounded-full">⚙ ADMIN</span>
-        </div>
-        <div className="flex gap-2 sm:gap-4 items-center">
-          <div className="flex items-center gap-1.5 sm:gap-2 bg-panel-2 border border-line rounded-full px-2 sm:px-3 py-1.5 select-none">
-            <span className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wider text-muted-2 border-r border-line pr-1.5 sm:pr-2" title="Saúde Passiva da API AniList">
-              <Activity size={12} />
-              {/* O rótulo textual da saúde some no mobile: o que importa ali é a cor
-                  do ícone. A palavra OFFLINE do Kill Switch fica, porque é ação. */}
-              <span className={`hidden sm:inline ${apiHealth === 'OK' ? 'text-green' : apiHealth === 'WARNING' ? 'text-gold' : 'text-coral'}`}>
-                {apiHealth}
-              </span>
+      <div className="sticky top-0 z-30 border-b border-line bg-void/95 backdrop-blur-md">
+        <div className="max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-8 py-3.5 flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <LogoMark className="w-8 h-8 hidden md:block" />
+            <span className="font-anton text-lg bg-gradient-to-r from-holo-1 via-holo-2 to-holo-3 text-transparent bg-clip-text hidden md:block">
+              ANIDECK
             </span>
+            <span className="font-mono text-[10px] font-bold text-gold bg-gold/10 border border-gold/40 px-2.5 py-1 rounded-full">⚙ ADMIN</span>
+          </div>
+          <div className="flex gap-2 sm:gap-3 items-center">
+            <div className="flex items-center gap-1.5 sm:gap-2 bg-panel-2 border border-line rounded-full px-2.5 sm:px-3 py-1.5 select-none">
+              <span className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wider text-muted-2 border-r border-line pr-1.5 sm:pr-2" title="Saúde Passiva da API AniList">
+                <Activity size={12} />
+                {/* O rótulo textual da saúde some no mobile: o que importa ali é a cor
+                    do ícone. A palavra OFFLINE do Kill Switch fica, porque é ação. */}
+                <span className={`hidden sm:inline ${apiHealth === 'OK' ? 'text-green' : apiHealth === 'WARNING' ? 'text-gold' : 'text-coral'}`}>
+                  {apiHealth}
+                </span>
+              </span>
+              <button
+                type="button"
+                onClick={toggleKillSwitch}
+                className={`flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wider transition-colors cursor-pointer ${forceOffline ? 'text-coral hover:text-coral/80' : 'text-muted hover:text-text'}`}
+                title={forceOffline ? "Reconectar AniList" : "Desconectar AniList (Forçar Offline)"}
+              >
+                <PowerOff size={12} />
+                {forceOffline ? 'OFFLINE' : 'ONLINE'}
+              </button>
+            </div>
             <button
               type="button"
-              onClick={toggleKillSwitch}
-              className={`flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wider transition-colors cursor-pointer ${forceOffline ? 'text-coral hover:text-coral/80' : 'text-muted hover:text-text'}`}
-              title={forceOffline ? "Reconectar AniList" : "Desconectar AniList (Forçar Offline)"}
+              onClick={() => setConfigModalAberto(true)}
+              title="Configurar a personalidade da IA"
+              className="flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-1.5 bg-gradient-to-r from-holo-1/10 to-holo-2/10 border border-holo-1/30 text-holo-1 hover:text-white hover:bg-gradient-to-r hover:from-holo-1 hover:to-holo-2 text-[11px] sm:text-xs font-bold rounded-full cursor-pointer transition-all shadow-[0_0_15px_rgba(255,79,216,0.15)] shrink-0"
             >
-              <PowerOff size={12} />
-              {forceOffline ? 'OFFLINE' : 'ONLINE'}
+              <Sparkles size={14} /> IA
+            </button>
+            <button
+              type="button"
+              onClick={() => setOlheiroAberto(true)}
+              title="Sugestões do Agente Olheiro"
+              className="flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-1.5 bg-panel-2 border border-line text-muted hover:text-text text-[11px] sm:text-xs font-bold rounded-full cursor-pointer transition-all shrink-0"
+            >
+              🔭 Olheiro
+            </button>
+            <button
+              type="button"
+              onClick={() => pedirConfirmacao(() => navigate('/'))}
+              className="text-xs sm:text-sm font-bold text-muted hover:text-text px-2.5 py-1.5 rounded-lg hover:bg-panel-2 transition-colors cursor-pointer"
+            >
+              ← Voltar
             </button>
           </div>
-          <button
-            type="button"
-            onClick={() => setConfigModalAberto(true)}
-            title="Configurar a personalidade da IA"
-            className="flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-1.5 bg-gradient-to-r from-holo-1/10 to-holo-2/10 border border-holo-1/30 text-holo-1 hover:text-white hover:bg-gradient-to-r hover:from-holo-1 hover:to-holo-2 text-[11px] sm:text-xs font-bold rounded-full cursor-pointer transition-all shadow-[0_0_15px_rgba(255,79,216,0.15)] shrink-0"
-          >
-            <Sparkles size={14} /> IA
-          </button>
-          <button
-            type="button"
-            onClick={() => setOlheiroAberto(true)}
-            title="Sugestões do Agente Olheiro"
-            className="flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-1.5 bg-panel-2 border border-line text-muted hover:text-text text-[11px] sm:text-xs font-bold rounded-full cursor-pointer transition-all shrink-0"
-          >
-            🔭 Olheiro
-          </button>
-          <button
-            type="button"
-            onClick={() => pedirConfirmacao(() => navigate('/'))}
-            className="text-sm font-bold text-muted hover:text-text transition-colors cursor-pointer"
-          >
-            ← Voltar
-          </button>
         </div>
       </div>
 
-      <div className="max-w-[1400px] mx-auto p-4 sm:p-6 lg:p-8 mt-2 relative z-10">
+      <div className="max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-8 py-6 relative z-10">
         {/* A barra de abas fica fora do bloco que o formulário esconde: com o editor
             aberto no mobile, sumir a navegação prenderia o usuário na Curadoria. */}
         <div className="flex gap-1 border-b border-line mb-6 overflow-x-auto" role="tablist">
@@ -1202,7 +1225,7 @@ export default function PainelAdmin() {
                         />
                       </div>
 
-                      <div className="flex flex-col-reverse sm:flex-row sm:items-center justify-between gap-3 pt-4 border-t border-line">
+                      <div className="sticky bottom-0 z-20 -mx-4 px-4 sm:-mx-6 sm:px-6 py-3.5 bg-panel/95 backdrop-blur-md flex flex-col-reverse sm:flex-row sm:items-center justify-between gap-3 border-t border-line rounded-b-2xl">
                         <div className="flex items-center gap-3">
                           <label className="text-xs font-bold text-muted uppercase shrink-0">Ordem Home:</label>
                           <input
@@ -1214,7 +1237,7 @@ export default function PainelAdmin() {
                         </div>
                         <button
                           onClick={salvarDestaque}
-                          className="w-full sm:w-auto bg-gradient-to-r from-holo-1 to-holo-2 text-void font-extrabold text-sm px-8 py-3 rounded-full hover:opacity-90 cursor-pointer transition-opacity"
+                          className="w-full sm:w-auto bg-gradient-to-r from-holo-1 to-holo-2 text-void font-extrabold text-sm px-8 py-3 rounded-full hover:opacity-90 cursor-pointer transition-opacity shadow-[0_0_20px_rgba(255,79,216,0.25)]"
                         >
                           {editId ? 'Salvar Alterações' : 'Publicar Destaque'}
                         </button>

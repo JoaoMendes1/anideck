@@ -83,13 +83,20 @@ export default function AbaRevisaoIA() {
   const [tipoNovo, setTipoNovo] = useState<Tipo | 'tudo'>('sinopse_tags')
   const [busca, setBusca] = useState('')
   const [marcados, setMarcados] = useState<number[]>([])
+  const [atualizando, setAtualizando] = useState(false)
 
-  const carregarFila = useCallback(async () => {
-    const res = await comToken('/api/admin/ia/fila')
-    if (!res.ok) { setErro(await res.text()); return }
-    setErro(null)
-    setItens(await res.json())
-  }, [])
+  const carregarFila = useCallback(async (comFeedback = false) => {
+    if (comFeedback) setAtualizando(true)
+    try {
+      const res = await comToken('/api/admin/ia/fila')
+      if (!res.ok) { setErro(await res.text()); return }
+      setErro(null)
+      setItens(await res.json())
+      if (comFeedback) showToast('Fila atualizada.', 'success')
+    } finally {
+      if (comFeedback) setAtualizando(false)
+    }
+  }, [showToast])
 
   useEffect(() => {
     let ativo = true
@@ -225,7 +232,15 @@ export default function AbaRevisaoIA() {
               {f.nome} · {contagem(f.status)}
             </button>
           ))}
-          <button type="button" onClick={carregarFila} className={`${botao} text-muted`}><RefreshCw size={12} /> Atualizar</button>
+          <button
+            type="button"
+            disabled={atualizando}
+            onClick={() => carregarFila(true)}
+            className={`${botao} bg-panel border border-line text-muted hover:text-text hover:border-holo-2 transition-colors ml-auto`}
+          >
+            <RefreshCw size={12} className={atualizando ? 'animate-spin text-holo-3' : ''} />
+            {atualizando ? 'Atualizando...' : 'Atualizar'}
+          </button>
         </div>
 
         {visiveis.length === 0 && <p className="text-muted text-sm">Nada aqui.</p>}

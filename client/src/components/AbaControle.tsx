@@ -1,4 +1,5 @@
 import { useState, useMemo, useEffect, useRef } from 'react'
+import { useSearchParams } from 'react-router-dom'
 import {
   Activity, PowerOff, RefreshCw, Tags, HardDrive, Trophy,
   ChevronDown, ExternalLink, AlertTriangle, Plus, Minus, Search, Trash2,
@@ -68,7 +69,17 @@ export function AbaControle({
 
   const { rotulos, carregando: carregandoTaxonomia, recarregar: recarregarTaxonomia } = useTaxonomia()
 
-  const [secao, setSecao] = useState<SecaoId>('anilist')
+  const [searchParams, setSearchParams] = useSearchParams()
+  const secaoParam = searchParams.get('secao')
+  const secao: SecaoId = SECOES.some(s => s.id === secaoParam) ? (secaoParam as SecaoId) : 'anilist'
+  const setSecao = (novaSecao: SecaoId) => {
+    setSearchParams(prev => {
+      const next = new URLSearchParams(prev)
+      if (novaSecao === 'anilist') next.delete('secao')
+      else next.set('secao', novaSecao)
+      return next
+    }, { replace: true })
+  }
   const [pesoInput, setPesoInput] = useState('')
 
   // ---------- Seção Rótulos ----------
@@ -232,42 +243,49 @@ export function AbaControle({
       {/* ---------- Faixa de estado ---------- */}
       <section
         aria-label="Estado do sistema"
-        className="bg-panel border border-line rounded-2xl p-5 mb-6 grid gap-5 md:grid-cols-3"
+        className="mb-6 grid gap-3.5 sm:gap-4 md:grid-cols-3"
       >
-        <div className="flex gap-3 items-start">
+        <div className="bg-panel border border-line rounded-2xl p-4 sm:p-5 flex gap-3.5 items-start">
           <span className={`w-2.5 h-2.5 rounded-full mt-2 shrink-0 ${forceOffline || apiHealth === 'OFFLINE' ? 'bg-coral' : apiHealth === 'WARNING' ? 'bg-gold' : 'bg-green'
             }`} />
           <div className="min-w-0">
+            <span className="block font-mono text-[10px] uppercase tracking-widest text-muted-2 mb-1">Status da Fonte</span>
             <h3 className="font-anton text-base uppercase">
               {forceOffline ? 'AniList desligada' : apiHealth === 'OFFLINE' ? 'AniList fora do ar' : 'AniList no ar'}
             </h3>
-            <p className="text-muted text-[13px] mt-0.5">
+            <p className="text-muted text-[12.5px] mt-0.5">
               {forceOffline ? 'Kill Switch ativo. A busca serve só curadoria e cache.' : `Saúde passiva: ${apiHealth}.`}
             </p>
           </div>
         </div>
 
-        <div className="flex gap-3 items-start">
-          <span className="w-2.5 h-2.5 rounded-full mt-2 shrink-0 bg-muted-2" />
+        <div className="bg-panel border border-line rounded-2xl p-4 sm:p-5 flex gap-3.5 items-start">
+          <span className="w-2.5 h-2.5 rounded-full mt-2 shrink-0 bg-holo-3" />
           <div className="min-w-0">
+            <span className="block font-mono text-[10px] uppercase tracking-widest text-muted-2 mb-1">Motor de Ranking</span>
             <h3 className="font-anton text-base uppercase">
               {carregando ? '—' : formatarInstante(ranking?.ultimo_ciclo ?? '')}
             </h3>
-            <p className="text-muted text-[13px] mt-0.5">
-              Último cálculo do ranking{ranking ? ` · ${ranking.total_animes} animes` : ''}.
+            <p className="text-muted text-[12.5px] mt-0.5">
+              Último cálculo{ranking ? ` · ${ranking.total_animes} animes` : ''}.
             </p>
           </div>
         </div>
 
-        <div className="flex gap-3 items-start">
+        <button
+          type="button"
+          onClick={() => setSecao('diagnostico')}
+          className="bg-panel border border-line hover:border-holo-2 rounded-2xl p-4 sm:p-5 flex gap-3.5 items-start text-left transition-colors cursor-pointer"
+        >
           <span className={`w-2.5 h-2.5 rounded-full mt-2 shrink-0 ${orfaos.length > 0 ? 'bg-gold' : 'bg-green'}`} />
           <div className="min-w-0">
+            <span className="block font-mono text-[10px] uppercase tracking-widest text-muted-2 mb-1">Taxonomia</span>
             <h3 className="font-anton text-2xl leading-none">{carregando ? '—' : orfaos.length}</h3>
-            <p className="text-muted text-[13px] mt-1">
+            <p className="text-muted text-[12.5px] mt-1">
               {orfaos.length === 1 ? 'rótulo fora da taxonomia' : 'rótulos fora da taxonomia'}.
             </p>
           </div>
-        </div>
+        </button>
       </section>
 
       {erro && (
