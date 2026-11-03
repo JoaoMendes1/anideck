@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/JoaoMendes1/anideck/internal/anilist"
 	"github.com/JoaoMendes1/anideck/internal/database"
@@ -188,7 +189,8 @@ func buildMetadataPayload(anime anilist.Anime) map[string]interface{} {
 		"average_score":    anime.Score,
 		// As tags da AniList são a fonte de categorias como Isekai, que não existem
 		// como "genre". Sem elas a taxonomia do AniDeck não consegue classificar o anime.
-		"tags": anime.Tags,
+		"tags":         anime.Tags,
+		"last_updated": time.Now().UTC().Format(time.RFC3339),
 	}
 
 	// Só grava o ano quando a AniList realmente devolveu um. Enviar 0 sobrescreveria
@@ -284,7 +286,7 @@ func syncMetadataCacheAsync(malID int, token string, completo bool, userID strin
 			return
 		}
 
-			if err := syncMetadataCache(context.Background(), anilist.NewClient(), malID); err != nil {
+		if err := syncMetadataCache(context.Background(), anilist.NewClient(), malID); err != nil {
 			log.Printf("[CACHE METADATA] %v", err)
 		}
 

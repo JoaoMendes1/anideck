@@ -10,14 +10,17 @@ package handlers
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"log"
 	"net/http"
-	"fmt"
+	"time"
 
 	"github.com/JoaoMendes1/anideck/internal/anilist"
 	"github.com/JoaoMendes1/anideck/internal/database"
 	"github.com/JoaoMendes1/anideck/internal/middleware"
 )
+
+const janelaResyncRecente = 24 * time.Hour
 
 // linhaMalID é o formato devolvido pelas duas consultas abaixo. Declarado uma vez porque
 // o idsUnicos recebe exatamente este tipo, e repetir a struct anônima em cada chamada faria
@@ -63,14 +66,6 @@ func (h *MetadataHandler) HandleResyncMetadata(w http.ResponseWriter, r *http.Re
 	}
 
 	// [2] O catálogo curado.
-	//
-	// Sem isto, anime curado que ninguém adicionou ao deck nunca ganha linha no cache — e
-	// como quase todo campo de curated_animes é SOBREPOSIÇÃO e não preenchimento, o que a
-	// curadoria deixou vazio não tem de onde vir. O relatório de completude de 11/09/2026
-	// mostrou 48 dos 114 nessa situação, incluindo obras que existem na AniList.
-	//
-	// Falha aqui não derruba o resync do deck: a re-sincronização parcial é melhor que
-	// nenhuma, e o log registra o que não veio.
 	var daCuradoria []linhaMalID
 	dataCurada, _, errCurada := dbClient.From("curated_animes").
 		Select("mal_id", "exact", false).
@@ -82,16 +77,39 @@ func (h *MetadataHandler) HandleResyncMetadata(w http.ResponseWriter, r *http.Re
 		daCuradoria = nil
 	}
 
-	// O idsUnicos já descarta mal_id <= 0 e repetido, então a sobreposição entre deck e
-	// curadoria (que é grande) não gasta cota da AniList duas vezes.
-	malIDs := idsUnicos(append(append([]linhaMalID{}, doDeck...), daCuradoria...))
+	todosIDs := idsUnicos(append(append([]linhaMalID{}, doDeck...), daCuradoria...))
 
-	// Roda em background: com o rate limit da AniList um catálogo grande levaria minutos, e
-	// a requisição HTTP estouraria o timeout antes de terminar.
-	//
-	// O h.AniListClient é passado adiante de propósito — ele carrega o rate limiter. Criar
-	// um client por anime daria a cada chamada um limiter zerado e a API responderia 429.
-		go func() {
+	// [3] Filtra quem já foi sincronizado nas últimas 24h (a menos que ?force=true seja enviado).
+	forcar := r.URL.Query().Get("force") == "true"
+	recentes := map[int]bool{}
+	if !forcar {
+		if dataCache, _, errCache := dbClient.From("anime_metadata_cache").
+			Select("mal_id,last_updated", "exact", false).
+			Execute(); errCache == nil {
+			var linhasCache []struct {
+				MalID       int    `json:"mal_id"`
+				LastUpdated string `json:"last_updated"`
+			}
+			if json.Unmarshal(dataCache, &linhasCache) == nil {
+				limite := time.Now().UTC().Add(-janelaResyncRecente)
+				for _, c := range linhasCache {
+					if t, errT := time.Parse(time.RFC3339, c.LastUpdated); errT == nil && t.After(limite) {
+						recentes[c.MalID] = true
+					}
+				}
+			}
+		}
+	}
+
+	malIDs := make([]int, 0, len(todosIDs))
+	for _, id := range todosIDs {
+		if !recentes[id] {
+			malIDs = append(malIDs, id)
+		}
+	}
+	pulados := len(todosIDs) - len(malIDs)
+
+	go func() {
 		ctx := context.Background()
 		sucesso := 0
 		for _, malID := range malIDs {
@@ -101,8 +119,8 @@ func (h *MetadataHandler) HandleResyncMetadata(w http.ResponseWriter, r *http.Re
 			}
 			sucesso++
 		}
-		log.Printf("[RESYNC METADATA] Concluído: %d de %d animes sincronizados (deck: %d, curadoria: %d)",
-			sucesso, len(malIDs), len(doDeck), len(daCuradoria))
+		log.Printf("[RESYNC METADATA] Concluído: %d de %d animes sincronizados (%d pulados por já estarem em dia)",
+			sucesso, len(malIDs), pulados)
 	}()
 
 	w.Header().Set("Content-Type", "application/json")
@@ -110,6 +128,7 @@ func (h *MetadataHandler) HandleResyncMetadata(w http.ResponseWriter, r *http.Re
 	json.NewEncoder(w).Encode(map[string]interface{}{
 		"status":    "em andamento",
 		"total":     len(malIDs),
+		"pulados":   pulados,
 		"deck":      len(doDeck),
 		"curadoria": len(daCuradoria),
 	})

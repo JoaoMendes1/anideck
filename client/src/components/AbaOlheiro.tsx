@@ -1,6 +1,7 @@
 import { useState } from 'react'
-import { Crown, Users } from 'lucide-react'
+import { Crown, Sparkles, Users } from 'lucide-react'
 import { useOlheiro, type SugestaoPendente, type DemandaCuradoria } from '../hooks/useOlheiro'
+import { useToast } from '../contexts/ToastContext'
 
 type Props = {
   onCurar: (sugestao: SugestaoPendente) => void
@@ -24,12 +25,25 @@ const formatarData = (iso: string) => {
 }
 
 export function AbaOlheiro({ onCurar }: Props) {
+  const { showToast } = useToast()
   const {
     sugestoes, demanda, carregando, erro,
-    revisar, remover, removerDaDemanda, buscarNovas, buscando,
+    revisar, remover, removerDaDemanda,
+    enfileirarIA, enfileirandoIA,
+    buscarNovas, buscando,
   } = useOlheiro()
 
   const [aba, setAba] = useState<AbaId>('sugestoes')
+
+  const enviarParaIA = async (malIDs: number[]) => {
+    const ok = await enfileirarIA(malIDs)
+    if (ok) {
+      showToast(
+        `${malIDs.length} anime(s) enviado(s) para a fila da IA (sinopse, tags e episódios).`,
+        'success'
+      )
+    }
+  }
 
   // A demanda não passa pela fila, então não tem id de sugestão. O id 0 sinaliza
   // isso para o Painel, que só marca 'curado' quando o id é de verdade.
@@ -78,13 +92,26 @@ export function AbaOlheiro({ onCurar }: Props) {
       {/* ---------- Sugestões: o que a AniList tem e combina com o gosto ---------- */}
       {aba === 'sugestoes' && (
         <>
-          <button
-            onClick={buscarNovas}
-            disabled={buscando}
-            className="w-full mb-4 py-2.5 rounded-full text-xs font-bold bg-gradient-to-r from-holo-1 to-holo-2 text-void disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer transition-opacity"
-          >
-            {buscando ? 'Buscando na AniList...' : '🔭 Buscar novas sugestões'}
-          </button>
+          <div className="flex flex-col sm:flex-row gap-2 mb-4">
+            <button
+              onClick={buscarNovas}
+              disabled={buscando || enfileirandoIA}
+              className="flex-1 py-2.5 px-4 rounded-full text-xs font-bold bg-gradient-to-r from-holo-1 to-holo-2 text-void disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer transition-opacity"
+            >
+              {buscando ? 'Buscando na AniList...' : '🔭 Buscar novas sugestões'}
+            </button>
+            {sugestoes.length > 0 && (
+              <button
+                type="button"
+                onClick={() => enviarParaIA(sugestoes.map(s => s.mal_id))}
+                disabled={enfileirandoIA || buscando}
+                className="inline-flex items-center justify-center gap-1.5 py-2.5 px-5 rounded-full text-xs font-bold bg-holo-1/15 border border-holo-1/40 text-holo-1 hover:bg-holo-1 hover:text-void disabled:opacity-50 cursor-pointer transition-colors"
+              >
+                <Sparkles size={13} />
+                {enfileirandoIA ? 'Enviando para IA...' : `Curar todas com IA (${sugestoes.length})`}
+              </button>
+            )}
+          </div>
 
           {carregando ? (
             <p className="text-sm text-muted py-8 text-center">Carregando sugestões...</p>
@@ -124,10 +151,19 @@ export function AbaOlheiro({ onCurar }: Props) {
                         Curar
                       </button>
                       <button
-                        onClick={() => revisar(s.id, 'dispensado')}
-                        className="flex-1 text-[11px] font-bold py-1.5 rounded-full bg-panel border border-line text-muted hover:text-text cursor-pointer transition-colors"
+                        type="button"
+                        onClick={() => enviarParaIA([s.mal_id])}
+                        disabled={enfileirandoIA}
+                        title="Mandar para a fila de curadoria da IA"
+                        className="px-2.5 text-[11px] font-bold py-1.5 rounded-full bg-holo-1/15 border border-holo-1/40 text-holo-1 hover:bg-holo-1 hover:text-void cursor-pointer transition-colors disabled:opacity-50"
                       >
-                        Dispensar
+                        ✨ IA
+                      </button>
+                      <button
+                        onClick={() => revisar(s.id, 'dispensado')}
+                        className="px-2.5 text-[11px] font-bold py-1.5 rounded-full bg-panel border border-line text-muted hover:text-text cursor-pointer transition-colors"
+                      >
+                        ✕
                       </button>
                     </div>
                   </div>
@@ -141,10 +177,23 @@ export function AbaOlheiro({ onCurar }: Props) {
       {/* ---------- Demanda: o que os usuários já salvaram e o catálogo não cobre ---------- */}
       {aba === 'demanda' && (
         <>
-          <p className="text-[13px] text-muted mb-4 max-w-[62ch]">
-            Anime no deck de alguém e fora do catálogo. Mais gente primeiro — e o que está no
-            seu deck vem na frente. Não tem "dispensar": esconder o buraco não o fecha.
-          </p>
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
+            <p className="text-[13px] text-muted max-w-[62ch]">
+              Anime no deck de alguém e fora do catálogo. Mais gente primeiro — e o que está no
+              seu deck vem na frente. Não tem "dispensar": esconder o buraco não o fecha.
+            </p>
+            {demanda.length > 0 && (
+              <button
+                type="button"
+                onClick={() => enviarParaIA(demanda.map(d => d.mal_id))}
+                disabled={enfileirandoIA}
+                className="shrink-0 inline-flex items-center justify-center gap-1.5 py-2 px-4 rounded-full text-xs font-bold bg-holo-1/15 border border-holo-1/40 text-holo-1 hover:bg-holo-1 hover:text-void disabled:opacity-50 cursor-pointer transition-colors"
+              >
+                <Sparkles size={13} />
+                {enfileirandoIA ? 'Enviando para IA...' : `Curar todos com IA (${demanda.length})`}
+              </button>
+            )}
+          </div>
 
           {carregando ? (
             <p className="text-sm text-muted py-8 text-center">Carregando demanda...</p>
@@ -179,6 +228,16 @@ export function AbaOlheiro({ onCurar }: Props) {
                   <span className="flex items-center gap-1.5 shrink-0 font-mono text-[11px] px-2.5 py-1 rounded-full border border-line text-muted">
                     <Users size={12} /> {d.total_usuarios}
                   </span>
+
+                  <button
+                    type="button"
+                    onClick={() => enviarParaIA([d.mal_id])}
+                    disabled={enfileirandoIA}
+                    title="Curar automaticamente com IA"
+                    className="shrink-0 text-[11px] font-bold px-3 py-1.5 rounded-full bg-holo-1/15 border border-holo-1/40 text-holo-1 hover:bg-holo-1 hover:text-void cursor-pointer transition-colors disabled:opacity-50"
+                  >
+                    ✨ IA
+                  </button>
 
                   <button
                     onClick={() => curarDemanda(d)}

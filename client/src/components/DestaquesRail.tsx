@@ -1,5 +1,5 @@
 import { useState, useMemo } from 'react'
-import { Search, Trash2, ImageOff, CheckCircle2, AlertCircle } from 'lucide-react'
+import { Search, Trash2, ImageOff, CheckCircle2, AlertCircle, Film } from 'lucide-react'
 import type { CuratedAnime } from '../types/curation'
 
 interface DestaquesRailProps {
@@ -11,7 +11,7 @@ interface DestaquesRailProps {
   novoAtivo: boolean
 }
 
-type FiltroTipo = 'ALL' | 'PARCIAL' | 'COMPLETO' | 'REVISAR' | 'NO_COVER'
+type FiltroTipo = 'ALL' | 'PARCIAL' | 'COMPLETO' | 'REVISAR' | 'NO_COVER' | 'NO_EPISODES'
 
 // O estado de curadoria existe para responder "onde eu parei?" com 100+ animes cadastrados.
 // Sem aparecer aqui na lista, ele só era visível abrindo cada anime um por um — que é
@@ -33,6 +33,11 @@ export default function DestaquesRail({
   const [busca, setBusca] = useState('')
   const [filtro, setFiltro] = useState<FiltroTipo>('ALL')
 
+  const totalSemEpisodios = useMemo(
+    () => destaques.filter((d) => (d.custom_episodes?.length ?? 0) === 0).length,
+    [destaques]
+  )
+
   const destaquesFiltrados = useMemo(() => {
     return destaques.filter((d) => {
       const matchBusca = d.custom_title.toLowerCase().includes(busca.toLowerCase())
@@ -42,6 +47,7 @@ export default function DestaquesRail({
       if (filtro === 'COMPLETO') return d.curation_status === 'completo'
       if (filtro === 'REVISAR') return d.curation_status === 'revisar'
       if (filtro === 'NO_COVER') return !d.custom_cover_image
+      if (filtro === 'NO_EPISODES') return (d.custom_episodes?.length ?? 0) === 0
 
       return true
     })
@@ -88,6 +94,12 @@ export default function DestaquesRail({
           <FilterChip active={filtro === 'COMPLETO'} onClick={() => setFiltro('COMPLETO')} label="Completo" icon={<CheckCircle2 size={10} />} />
           <FilterChip active={filtro === 'REVISAR'} onClick={() => setFiltro('REVISAR')} label="Revisar" icon={<AlertCircle size={10} />} />
           <FilterChip active={filtro === 'NO_COVER'} onClick={() => setFiltro('NO_COVER')} label="Sem Capa" icon={<ImageOff size={10} />} />
+          <FilterChip
+            active={filtro === 'NO_EPISODES'}
+            onClick={() => setFiltro('NO_EPISODES')}
+            label={`Sem Eps (${totalSemEpisodios})`}
+            icon={<Film size={10} />}
+          />
         </div>
       </div>
 
@@ -134,6 +146,14 @@ export default function DestaquesRail({
                       {anime.custom_characters?.length || 0} personagens
                       {(anime.custom_episodes?.length ?? 0) > 0 && ` · ${anime.custom_episodes?.length} eps`}
                     </p>
+                    {(anime.custom_episodes?.length ?? 0) === 0 && (
+                      <span
+                        className="text-[9px] font-mono uppercase tracking-wider px-1.5 py-0.5 rounded border text-gold border-gold/40 bg-gold/10"
+                        title="Nenhum episódio cadastrado na curadoria"
+                      >
+                        ⚠ 0 eps
+                      </span>
+                    )}
                     {(() => {
                       const tema = TEMA_STATUS[anime.curation_status || 'parcial']
                       return (

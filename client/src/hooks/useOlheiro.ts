@@ -95,6 +95,7 @@ export function useOlheiro() {
   // O scan leva alguns segundos (uma chamada à AniList por rótulo ativo), por
   // isso o estado próprio: o botão precisa mostrar que está trabalhando.
   const [buscando, setBuscando] = useState(false)
+  const [enfileirandoIA, setEnfileirandoIA] = useState(false)
 
   // Tira o card da tela sem gravar nada no servidor. Usado pelo Curar: a
   // sugestão só vira 'curado' depois que o destaque for salvo de verdade —
@@ -108,6 +109,38 @@ export function useOlheiro() {
   // for salva, porque aí ele deixa de existir na RPC.
   const removerDaDemanda = useCallback((malID: number) => {
     setDemanda(atual => atual.filter(d => d.mal_id !== malID))
+  }, [])
+
+  // Envia um ou vários animes direto para a fila da IA (sinopse, tags e episódios)
+  // em blocos de até 50 (limite do endpoint).
+  const enfileirarIA = useCallback(async (malIDs: number[]): Promise<boolean> => {
+    if (malIDs.length === 0) return false
+    setEnfileirandoIA(true)
+    setErro(null)
+    try {
+      const token = await buscarToken()
+      for (let i = 0; i < malIDs.length; i += 50) {
+        const lote = malIDs.slice(i, i + 50)
+        const res = await fetch('/api/admin/ia/fila', {
+          method: 'POST',
+          headers: {
+            Authorization: `Bearer ${token}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ mal_ids: lote, tipo: 'completo' }),
+        })
+        if (!res.ok) throw new Error(await res.text() || 'Falha ao enviar para a fila da IA')
+      }
+      const conjunto = new Set(malIDs)
+      setSugestoes(atual => atual.filter(s => !conjunto.has(s.mal_id)))
+      setDemanda(atual => atual.filter(d => !conjunto.has(d.mal_id)))
+      return true
+    } catch (e) {
+      setErro(e instanceof Error ? e.message : 'Erro ao enfileirar na IA')
+      return false
+    } finally {
+      setEnfileirandoIA(false)
+    }
   }, [])
 
   const buscarNovas = useCallback(async () => {
@@ -136,6 +169,7 @@ export function useOlheiro() {
     sugestoes, demanda,
     carregando, erro,
     revisar, remover, removerDaDemanda,
+    enfileirarIA, enfileirandoIA,
     recarregar: carregar, buscarNovas, buscando,
   }
 }

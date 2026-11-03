@@ -12,6 +12,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/JoaoMendes1/anideck/internal/anilist"
 	"github.com/JoaoMendes1/anideck/internal/database"
 	"github.com/JoaoMendes1/anideck/internal/ia"
 	"github.com/JoaoMendes1/anideck/internal/middleware"
@@ -403,6 +404,70 @@ func buscarCurado(client *supabase.Client, malID int) (models.CuratedAnime, erro
 	return linhas[0], nil
 }
 
+// garantirCurado cria a ficha base em curated_animes a partir da AniList quando o admin
+// enfileira um anime direto do Olheiro ou da tela de Detalhes antes de curar manualmente.
+func garantirCurado(ctx context.Context, client *supabase.Client, malID int) (models.CuratedAnime, error) {
+	curado, err := buscarCurado(client, malID)
+	if err == nil && strings.TrimSpace(curado.CustomSynopsis) != "" {
+		return curado, nil
+	}
+
+	res, errAni := anilist.NewClient().GetAnimeById(ctx, strconv.Itoa(malID))
+	if errAni != nil || res == nil {
+		if err == nil {
+			return curado, nil
+		}
+		return models.CuratedAnime{}, fmt.Errorf("não foi possível buscar mal_id %d na AniList: %w", malID, errAni)
+	}
+	anime := res.Data
+	sinopseLimpa := strings.TrimSpace(sanitizer.Sanitize(anime.Synopsis))
+
+	// Se já existia ficha mas estava sem sinopse, preenche apenas a sinopse em memória para a IA trabalhar.
+	if err == nil {
+		curado.CustomSynopsis = sinopseLimpa
+		return curado, nil
+	}
+
+	tags := make([]string, 0, len(anime.Genres))
+	for _, g := range anime.Genres {
+		if strings.TrimSpace(g.Name) != "" {
+			tags = append(tags, g.Name)
+		}
+	}
+	charsJSON, _ := json.Marshal(anime.Characters)
+	isDestaque := false
+	var duracao *int
+	if anime.Duration > 0 {
+		d := anime.Duration
+		duracao = &d
+	}
+
+	novo := models.CuratedAnime{
+		MalID:                 malID,
+		CustomTitle:           anime.Title,
+		CustomSynopsis:        sinopseLimpa,
+		CustomFormat:          "TV",
+		CustomStatus:          anime.Status,
+		CustomTags:            tags,
+		CustomCoverImage:      anime.Images.JPG.ImageURL,
+		CustomBannerImage:     anime.BannerImage,
+		CustomCharacters:      charsJSON,
+		CustomDurationMinutes: duracao,
+		IsDestaque:            &isDestaque,
+		CurationStatus:        "parcial",
+	}
+
+	data, _, errInsert := client.From("curated_animes").Insert(novo, false, "", "representation", "exact").Execute()
+	if errInsert != nil {
+		return models.CuratedAnime{}, fmt.Errorf("falha ao criar ficha base para mal_id %d: %w", malID, errInsert)
+	}
+	var criados []models.CuratedAnime
+	if err := json.Unmarshal(data, &criados); err == nil && len(criados) > 0 {
+		return criados[0], nil
+	}
+	return novo, nil
+}
+
 func atualizarItem(client *supabase.Client, id string, campos map[string]interface{}) {
 	if _, _, err := client.From("ai_curation_queue").Update(campos, "minimal", "").Eq("id", id).Execute(); err != nil {
 		log.Printf("[FILA IA] Falha ao gravar o item %s: %v", id, err)
@@ -434,13 +499,13 @@ func devolverSeInterrompido(ctx context.Context, client *supabase.Client, item i
 }
 
 func processarSinopseTags(ctx context.Context, client *supabase.Client, item itemFila, cfg configFila) {
-	curado, err := buscarCurado(client, item.MalID)
+	curado, err := garantirCurado(ctx, client, item.MalID)
 	if err != nil {
 		marcarErro(client, item, err, nil)
 		return
 	}
 	if strings.TrimSpace(curado.CustomSynopsis) == "" {
-		marcarErro(client, item, errors.New("o anime não tem sinopse curada para reescrever"), nil)
+		marcarErro(client, item, errors.New("o anime não tem sinopse na AniList nem na curadoria para reescrever"), nil)
 		return
 	}
 
@@ -482,7 +547,7 @@ func processarSinopseTags(ctx context.Context, client *supabase.Client, item ite
 }
 
 func processarEpisodios(ctx context.Context, client *supabase.Client, item itemFila, cfg configFila) {
-	curado, err := buscarCurado(client, item.MalID)
+	curado, err := garantirCurado(ctx, client, item.MalID)
 	if err != nil {
 		marcarErro(client, item, err, nil)
 		return
@@ -594,16 +659,23 @@ func (h *FilaIAHandler) HandleEnfileirar(w http.ResponseWriter, r *http.Request)
 	if req.Tipo == "" {
 		req.Tipo = tipoSinopseTags
 	}
-	if req.Tipo != tipoSinopseTags && req.Tipo != tipoEpisodios {
-		http.Error(w, "Tipo precisa ser sinopse_tags ou episodios.", http.StatusBadRequest)
+	if req.Tipo != tipoSinopseTags && req.Tipo != tipoEpisodios && req.Tipo != "completo" {
+		http.Error(w, "Tipo precisa ser sinopse_tags, episodios ou completo.", http.StatusBadRequest)
 		return
 	}
 	if len(req.MalIDs) == 0 || len(req.MalIDs) > maxEnfileirarPorVez {
 		http.Error(w, fmt.Sprintf("Envie de 1 a %d animes.", maxEnfileirarPorVez), http.StatusBadRequest)
 		return
 	}
-	linhas := make([]map[string]interface{}, 0, len(req.MalIDs))
+	tipos := []string{req.Tipo}
+	if req.Tipo == "completo" {
+		tipos = []string{tipoSinopseTags, tipoEpisodios}
+	}
+
+	linhas := make([]map[string]interface{}, 0, len(req.MalIDs)*len(tipos))
+	idsTexto := make([]string, 0, len(req.MalIDs))
 	vistos := map[int]bool{}
+	agora := agoraUTC()
 	for _, id := range req.MalIDs {
 		if err := ValidarMalID(id); err != nil {
 			http.Error(w, err.Error(), http.StatusBadRequest)
@@ -613,10 +685,13 @@ func (h *FilaIAHandler) HandleEnfileirar(w http.ResponseWriter, r *http.Request)
 			continue
 		}
 		vistos[id] = true
-		linhas = append(linhas, map[string]interface{}{
-			"mal_id": id, "tipo": req.Tipo, "status": "pendente", "resultado": nil, "relatorio": nil,
-			"erro": nil, "tentativas": 0, "pego_em": nil, "processed_at": nil, "created_at": agoraUTC(),
-		})
+		idsTexto = append(idsTexto, strconv.Itoa(id))
+		for _, t := range tipos {
+			linhas = append(linhas, map[string]interface{}{
+				"mal_id": id, "tipo": t, "status": "pendente", "resultado": nil, "relatorio": nil,
+				"erro": nil, "tentativas": 0, "pego_em": nil, "processed_at": nil, "created_at": agora,
+			})
+		}
 	}
 
 	client, ok := clienteDoAdmin(w, r)
@@ -628,8 +703,18 @@ func (h *FilaIAHandler) HandleEnfileirar(w http.ResponseWriter, r *http.Request)
 		http.Error(w, "Não foi possível enfileirar. A fila (sql/038) foi aplicada?", http.StatusInternalServerError)
 		return
 	}
+
+	// Se algum anime enfileirado estava pendente nas sugestões do Olheiro, já marca como curado.
+	if len(idsTexto) > 0 {
+		_, _, _ = client.From("curation_suggestions").
+			Update(map[string]interface{}{"status": "curado", "reviewed_at": agora}, "minimal", "").
+			In("mal_id", idsTexto).
+			Eq("status", "pendente").
+			Execute()
+	}
+
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(map[string]int{"enfileirados": len(linhas)})
+	json.NewEncoder(w).Encode(map[string]int{"enfileirados": len(vistos), "tarefas": len(linhas)})
 }
 
 // HandleListar devolve a fila, do mais recente para o mais antigo.

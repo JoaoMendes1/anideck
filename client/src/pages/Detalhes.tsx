@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useParams, Link, useNavigate } from 'react-router-dom'
-import { PlayCircle, Star, AlertCircle, Bookmark, Trophy, X, ArrowLeft } from 'lucide-react'
+import { PlayCircle, Star, AlertCircle, Bookmark, Trophy, X, ArrowLeft, Sparkles, Wrench } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import { useToast } from '../contexts/ToastContext'
 import { useCatalogoStatus } from '../contexts/CatalogoStatusContext'
@@ -102,6 +102,31 @@ export default function Detalhes() {
   const [salvandoStatus, setSalvandoStatus] = useState(false)
 
   const [isLoggedIn, setIsLoggedIn] = useState(false)
+  const [isAdmin, setIsAdmin] = useState(false)
+  const [enviandoIA, setEnviandoIA] = useState(false)
+
+  const enviarAnimeParaFilaIA = async () => {
+    if (!anime) return
+    setEnviandoIA(true)
+    try {
+      const { data: { session } } = await supabase.auth.getSession()
+      if (!session) return
+      const res = await fetch('/api/admin/ia/fila', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${session.access_token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ mal_ids: [anime.mal_id], tipo: 'completo' }),
+      })
+      if (!res.ok) throw new Error(await res.text())
+      showToast('Enviado para a fila da IA (sinopse, tags e episódios)!', 'success')
+    } catch (e) {
+      showToast(e instanceof Error ? e.message : 'Erro ao enviar para a fila da IA.', 'error')
+    } finally {
+      setEnviandoIA(false)
+    }
+  }
 
   useEffect(() => {
     // Lido de novo aqui, e não só no useState acima, porque ir de um Detalhes para outro
@@ -116,10 +141,13 @@ export default function Detalhes() {
       setIsLoggedIn(true)
 
       const cabecalho = { 'Authorization': `Bearer ${session.access_token}` }
-      const [resEntries, resEps] = await Promise.all([
+      const [resEntries, resEps, resAdmin] = await Promise.all([
         fetch('/api/entries', { headers: cabecalho }),
         fetch(`/api/entries/${id}/episodes`, { headers: cabecalho }).catch(() => null),
+        fetch('/api/admin/verify', { headers: cabecalho }).catch(() => null),
       ])
+
+      setIsAdmin(Boolean(resAdmin?.ok))
 
       if (resEntries.ok) {
         const entradas = await resEntries.json()
@@ -426,6 +454,40 @@ export default function Detalhes() {
             </div>
           </div>
         </div>
+
+        {isAdmin && (
+          <div className="mb-6 p-3.5 rounded-2xl bg-panel/90 border border-gold/40 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-[0_0_20px_rgba(255,197,66,0.08)]">
+            <div className="flex items-center gap-2 text-xs font-bold text-gold">
+              <Wrench size={14} className="shrink-0" />
+              <span>Ferramentas de Curadoria (Admin) · MAL ID #{anime.mal_id}</span>
+            </div>
+            <div className="flex flex-wrap items-center gap-2">
+              <button
+                type="button"
+                onClick={() => navigate(`/admin?aba=curadoria&mal_id=${anime.mal_id}`)}
+                className="px-3.5 py-1.5 rounded-full text-xs font-bold bg-panel-2 border border-line text-text hover:border-gold hover:text-gold cursor-pointer transition-colors"
+              >
+                ✏️ Curar / Editar Manualmente
+              </button>
+              <button
+                type="button"
+                onClick={enviarAnimeParaFilaIA}
+                disabled={enviandoIA}
+                className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-bold bg-holo-1/15 border border-holo-1/40 text-holo-1 hover:bg-holo-1 hover:text-void cursor-pointer transition-colors disabled:opacity-50"
+              >
+                <Sparkles size={12} />
+                {enviandoIA ? 'Enviando...' : 'Curar Automático (Fila IA)'}
+              </button>
+              <button
+                type="button"
+                onClick={() => navigate('/admin?aba=revisao_ia')}
+                className="px-3 py-1.5 rounded-full text-xs font-bold text-muted hover:text-text cursor-pointer transition-colors"
+              >
+                Ver Fila →
+              </button>
+            </div>
+          </div>
+        )}
 
         <div className="sticky top-[63px] md:top-[73px] z-40 bg-void/95 backdrop-blur-sm border-b border-line overflow-x-auto whitespace-nowrap py-3 mb-8 scrollbar-hide">
           <div className="flex gap-2.5">

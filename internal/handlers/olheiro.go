@@ -873,16 +873,36 @@ func (h *OlheiroHandler) HandleListarDemanda(w http.ResponseWriter, r *http.Requ
 		return
 	}
 
-	for i := range linhas {
-		if strings.TrimSpace(linhas[i].Titulo) == "" {
-			// Anime sem ficha no cache: o mal_id é o que temos, e é o bastante
-			// para abrir no editor de curadoria.
-			linhas[i].Titulo = fmt.Sprintf("mal_id %d", linhas[i].MalID)
+	emFila := map[int]bool{}
+	if dataFila, _, errFila := dbClient.From("ai_curation_queue").
+		Select("mal_id", "", false).
+		In("status", []string{"pendente", "processando", "pronto"}).
+		Execute(); errFila == nil {
+		var itensFila []struct {
+			MalID int `json:"mal_id"`
+		}
+		if json.Unmarshal(dataFila, &itensFila) == nil {
+			for _, item := range itensFila {
+				emFila[item.MalID] = true
+			}
 		}
 	}
 
+	filtradas := make([]DemandaCuradoria, 0, len(linhas))
+	for _, l := range linhas {
+		if emFila[l.MalID] {
+			continue
+		}
+		if strings.TrimSpace(l.Titulo) == "" {
+			// Anime sem ficha no cache: o mal_id é o que temos, e é o bastante
+			// para abrir no editor de curadoria.
+			l.Titulo = fmt.Sprintf("mal_id %d", l.MalID)
+		}
+		filtradas = append(filtradas, l)
+	}
+
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(linhas)
+	json.NewEncoder(w).Encode(filtradas)
 }
 
 // HandleListarSugestoes devolve a fila pendente, melhor pontuada primeiro.

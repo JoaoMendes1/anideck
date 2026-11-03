@@ -267,8 +267,9 @@ export default function PainelAdmin() {
       if (!res.ok) throw new Error()
 
       const info = await res.json()
+      const notaPulados = info.pulados ? ` (${info.pulados} já em dia foram pulados)` : ''
       showToast(
-        `Sincronizando ${info.total} animes (${info.deck} do deck, ${info.curadoria} da curadoria). ` +
+        `Sincronizando ${info.total} animes${notaPulados}. ` +
         `Leva alguns minutos — acompanhe pelo log do servidor.`,
         'success',
       )
@@ -741,6 +742,44 @@ export default function PainelAdmin() {
     editarDestaque(anime)
   }
 
+  // Quando o admin clica em "Curar / Editar no Painel" lá na página de Detalhes (/anime/:id),
+  // ele chega aqui com ?mal_id=X. Se o anime já estiver curado, abre a edição; se ainda não
+  // estiver, busca os dados na AniList e já abre o formulário preenchido pronto para salvar.
+  useEffect(() => {
+    if (loading || !isAdmin) return
+    const malIdParam = searchParams.get('mal_id')
+    if (!malIdParam) return
+    const alvoMalId = Number(malIdParam)
+    if (!alvoMalId || Number.isNaN(alvoMalId)) return
+
+    setSearchParams(prev => {
+      const next = new URLSearchParams(prev)
+      next.delete('mal_id')
+      return next
+    }, { replace: true })
+
+    const existente = destaques.find(d => d.mal_id === alvoMalId)
+    if (existente) {
+      editarDestaque(existente)
+      return
+    }
+
+    limparFormulario()
+    setFormularioAberto(true)
+    setBuscando(true)
+    buscarAnimePorIdMal(alvoMalId).then(anime => {
+      setBuscando(false)
+      if (anime) {
+        aplicarAnimeNoFormulario(anime)
+      } else {
+        setModoManual(true)
+        setMalId(alvoMalId)
+        showToast('AniList não respondeu; modo manual aberto com o MAL ID preenchido.', 'error')
+      }
+    })
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [loading, isAdmin, searchParams, destaques])
+
   const editarDestaque = (anime: CuratedAnime) => {
     pedirConfirmacao(() => {
       setEditId(anime.id || null)
@@ -876,12 +915,31 @@ export default function PainelAdmin() {
           ))}
         </div>
 
-        {abaAtiva === 'curadoria' && (
-          <div className={`mb-8 min-w-0 ${formularioAberto ? 'hidden lg:block' : 'block'}`}>
-            <h1 className="font-anton text-3xl uppercase">Painel de Curadoria</h1>
-            <p className="text-muted text-sm mt-1">Gerencie os "Destaques AniDeck" e refine a exibição de capas e personagens.</p>
-          </div>
-        )}
+        {abaAtiva === 'curadoria' && (() => {
+          const semEps = destaques.filter(d => (d.custom_episodes?.length ?? 0) === 0)
+          return (
+            <div className={`mb-8 min-w-0 ${formularioAberto ? 'hidden lg:block' : 'block'}`}>
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                <div>
+                  <h1 className="font-anton text-3xl uppercase">Painel de Curadoria</h1>
+                  <p className="text-muted text-sm mt-1">Gerencie os "Destaques AniDeck" e refine a exibição de capas e personagens.</p>
+                </div>
+                {semEps.length > 0 && (
+                  <div className="flex items-center gap-3 bg-gold/10 border border-gold/40 text-gold px-4 py-2.5 rounded-xl text-xs font-bold">
+                    <span>⚠ {semEps.length} anime(s) curado(s) sem episódios cadastrados</span>
+                    <button
+                      type="button"
+                      onClick={() => editarDestaque(semEps[0])}
+                      className="px-3 py-1 rounded-full bg-gold text-void font-extrabold hover:opacity-90 cursor-pointer transition-opacity shrink-0"
+                    >
+                      Editar 1º da fila
+                    </button>
+                  </div>
+                )}
+              </div>
+            </div>
+          )
+        })()}
 
         {abaAtiva === 'controle' && (
           <>
