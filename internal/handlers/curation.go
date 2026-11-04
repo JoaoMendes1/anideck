@@ -173,7 +173,6 @@ func (h *CurationHandler) HandleCreate(w http.ResponseWriter, r *http.Request) {
 	}
 
 	entrada.CachedEpisodes = 0
-	entrada.CachedEpisodes = 0
 	entrada.CustomSynopsis = sanitizer.Sanitize(entrada.CustomSynopsis)
 
 	// Os campos JSONB precisam de validação própria: o Postgres aceita qualquer JSON bem

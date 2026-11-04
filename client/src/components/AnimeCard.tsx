@@ -22,8 +22,6 @@ interface AnimeCardProps {
     ranking?: number
     isFavorite?: boolean
     gradientClass: string
-    /** @deprecated Sobrou do foil antigo */
-    foilDelay?: string
     statusBadge: ReactNode
     extraBadges?: ReactNode
     topRightAction?: ReactNode

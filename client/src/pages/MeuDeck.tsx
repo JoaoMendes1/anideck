@@ -10,7 +10,7 @@ import DeckSkeleton from '../components/DeckSkeleton'
 import StatCard from '../components/StatCard'
 import { Play, CheckCircle2, Bookmark, MonitorPlay, Star, XCircle, AlertCircle } from 'lucide-react'
 import type { AiringInfo } from '../lib/deckHelpers'
-import { gradienteDoCard, atrasoDoFoil } from '../lib/deckHelpers'
+import { gradienteDoCard } from '../lib/deckHelpers'
 import { usePosicaoDeLista } from '../lib/posicaoDeLista'
 import { useCatalogoStatus } from '../contexts/CatalogoStatusContext'
 import { useSessao } from '../contexts/SessaoContext'
@@ -321,7 +321,6 @@ export default function MeuDeck() {
                                 entrada={entrada}
                                 animeLocal={animesData[entrada.mal_id]}
                                 gradientClass={gradienteDoCard(index)}
-                                foilDelay={atrasoDoFoil(index)}
                                 onEdit={setEditando}
                             />
                         ))}

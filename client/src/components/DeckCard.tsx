@@ -28,11 +28,10 @@ interface DeckCardProps {
     entrada: Entrada
     animeLocal?: HydratedAnime
     gradientClass: string
-    foilDelay?: string
     onEdit: (entrada: Entrada) => void
 }
 
-export default function DeckCard({ entrada, animeLocal, gradientClass, foilDelay, onEdit }: DeckCardProps) {
+export default function DeckCard({ entrada, animeLocal, gradientClass, onEdit }: DeckCardProps) {
     const temaStatus = getStatusTheme(entrada.status)
     const { acabouDeLancar, lancaHoje, lancaAmanha } = getAiringBadge(animeLocal?.nextAiringEpisode)
     const mostraSelosDeAr = entrada.status === 'Assistindo' || entrada.status === 'Em Dia'
@@ -49,7 +48,6 @@ export default function DeckCard({ entrada, animeLocal, gradientClass, foilDelay
             ranking={animeLocal?.ranking}
             isFavorite={entrada.is_favorite}
             gradientClass={gradientClass}
-            foilDelay={foilDelay}
             nextAiringEpisode={mostraSelosDeAr ? animeLocal?.nextAiringEpisode : undefined}
             statusBadge={
                 <span className={`select-none text-[9px] md:text-[9.5px] font-extrabold px-2 py-1 rounded-md uppercase tracking-wider border truncate max-w-full ${temaStatus.bg} ${temaStatus.text} ${temaStatus.border}`}>

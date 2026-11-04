@@ -54,7 +54,7 @@ func interpretarPeso(valor string) float64 {
 
 func lerPesoVotoComunitario() float64 {
 	data, _, err := database.Client.From("app_settings").
-		Select("value", "extract", false).
+		Select("value", "", false).
 		Eq("key", chavePesoVotoComunitario).
 		Execute()
 	if err != nil {
@@ -393,7 +393,6 @@ func calcularRankingBayesiano(animes []anilist.Anime, votos map[int]communitySco
 			vLocal := float64(loc.LocalVotes) * peso
 			vTotal = vExt + vLocal
 			rComb = ((vExt * rExt) + (vLocal * loc.LocalScore)) / vTotal
-			animes[i].Score = loc.LocalScore
 		}
 
 		// Sem popularity e sem voto local, vTotal + m = 0 e a divisão daria NaN.
@@ -523,6 +522,22 @@ type RankingHandler struct {
 	AniListClient anilist.Service
 }
 
+func paginaDoRanking(animes []anilist.Anime, page, perPage int) []anilist.Anime {
+	start := (page - 1) * perPage
+	end := start + perPage
+
+	if start > len(animes) {
+		start = len(animes)
+	}
+	if end > len(animes) {
+		end = len(animes)
+	}
+
+	pagina := make([]anilist.Anime, end-start)
+	copy(pagina, animes[start:end])
+	return pagina
+}
+
 func (h *RankingHandler) HandleGetTopAnime(w http.ResponseWriter, r *http.Request) {
 	pageStr := r.URL.Query().Get("page")
 	page, err := strconv.Atoi(pageStr)
@@ -554,28 +569,18 @@ func (h *RankingHandler) HandleGetTopAnime(w http.ResponseWriter, r *http.Reques
 
 	if isDefaultRanking {
 		globalRanking.RLock()
-		defer globalRanking.RUnlock()
-
 		if len(globalRanking.Animes) > 0 {
-			start := (page - 1) * perPage
-			end := start + perPage
-
-			if start > len(globalRanking.Animes) {
-				start = len(globalRanking.Animes)
-			}
-			if end > len(globalRanking.Animes) {
-				end = len(globalRanking.Animes)
-			}
-
 			response := anilist.AnimeSearchResponse{
-				Data:        globalRanking.Animes[start:end],
+				Data:        paginaDoRanking(globalRanking.Animes, page, perPage),
 				LastUpdated: globalRanking.LastUpdated.Format(time.RFC3339),
 			}
+			globalRanking.RUnlock()
 
 			applyCuradoria(&response)
 			json.NewEncoder(w).Encode(response)
 			return
 		}
+		globalRanking.RUnlock()
 	}
 
 	resultados, err := h.AniListClient.GetTopAnime(r.Context(), page, perPage, filters)

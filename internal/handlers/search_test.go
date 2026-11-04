@@ -69,6 +69,15 @@ func TestBuildSearchFilters_Status(t *testing.T) {
 	}
 }
 
+func TestAdicionarFiltroUnico_IgnoraDuplicataSemDiferenciarMaiusculas(t *testing.T) {
+	filtros := []string{"Action"}
+	filtros = adicionarFiltroUnico(filtros, "action")
+
+	if len(filtros) != 1 || filtros[0] != "Action" {
+		t.Fatalf("esperava apenas o filtro original, recebeu %v", filtros)
+	}
+}
+
 // mkAnime é mantido para possíveis testes futuros de integração com streaming
 var _ = mkAnime
 

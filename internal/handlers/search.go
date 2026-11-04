@@ -161,6 +161,15 @@ type SearchHandler struct {
 	AniListClient anilist.Service
 }
 
+func adicionarFiltroUnico(filtros []string, novo string) []string {
+	for _, filtro := range filtros {
+		if strings.EqualFold(filtro, novo) {
+			return filtros
+		}
+	}
+	return append(filtros, novo)
+}
+
 func (h *SearchHandler) HandleSearch(w http.ResponseWriter, r *http.Request) {
 	query := strings.TrimSpace(r.URL.Query().Get("q"))
 	genres := r.URL.Query()["genre"]
@@ -239,9 +248,9 @@ func (h *SearchHandler) HandleSearch(w http.ResponseWriter, r *http.Request) {
 					break
 				}
 				if genero != "" {
-					filtroAniList.Genres = append(append([]string{}, filtroAniList.Genres...), genero)
+					filtroAniList.Genres = adicionarFiltroUnico(filtroAniList.Genres, genero)
 				} else {
-					filtroAniList.Tags = append(append([]string{}, filtroAniList.Tags...), tag)
+					filtroAniList.Tags = adicionarFiltroUnico(filtroAniList.Tags, tag)
 				}
 			}
 		}

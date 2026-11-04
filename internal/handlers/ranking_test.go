@@ -212,3 +212,39 @@ func TestInterpretarPeso(t *testing.T) {
 		})
 	}
 }
+
+func TestCalcularRankingBayesiano_PreservaNotaAniList(t *testing.T) {
+	animes := []anilist.Anime{
+		{MalID: 1, Title: "A", Score: 8.0},
+	}
+	votos := map[int]communityScoreRow{
+		1: {MalID: 1, LocalVotes: 2, LocalScore: 9.0},
+	}
+
+	_, _, ok := calcularRankingBayesiano(animes, votos, pesoVotoComunitarioPadrao)
+	if !ok {
+		t.Fatal("esperava ok=true")
+	}
+
+	if animes[0].Score != 8.0 {
+		t.Errorf("Score da AniList foi alterado para %v", animes[0].Score)
+	}
+
+	if animes[0].BayesianScore != 9.0 {
+		t.Errorf("BayesianScore deveria refletir a nota comunitária, veio %v", animes[0].BayesianScore)
+	}
+}
+
+func TestPaginaDoRanking_CopiaOsAnimes(t *testing.T) {
+	origem := []anilist.Anime{
+		{MalID: 1, Title: "Original 1"},
+		{MalID: 2, Title: "Original 2"},
+	}
+
+	pagina := paginaDoRanking(origem, 1, 1)
+	pagina[0].Title = "Curado"
+
+	if origem[0].Title != "Original 1" {
+		t.Errorf("origem foi alterada para %q", origem[0].Title)
+	}
+}
