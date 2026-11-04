@@ -10,6 +10,8 @@ export interface AnimeResumido {
   title: string
   image_url: string
   episodes: number
+  genres?: string[]
+  streaming?: { name: string; url: string }[]
   nextAiringEpisode?: { airingAt: number; episode: number }
 }
 

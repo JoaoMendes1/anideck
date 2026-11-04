@@ -316,7 +316,7 @@ export default function Calendario() {
                                         return (
                                             <div key={anime.mal_id} className={`relative flex items-center md:flex-col border rounded-xl overflow-hidden transition-colors group ${anime.is_favorite ? 'bg-panel-2 border-gold/30 shadow-[0_0_10px_rgba(255,197,66,0.05)]' : 'bg-panel border-line hover:border-holo-2'}`}>
 
-                                                <div className={`relative aspect-[2/3] w-24 md:w-full shrink-0 overflow-hidden md:border-b border-line bg-panel-2 shadow-md ${gradClass}`}>
+                                                <div className={`relative aspect-[2/3] w-28 md:w-full shrink-0 overflow-hidden md:border-b border-line bg-panel-2 shadow-md ${gradClass}`}>
                                                     {anime.image_url ? (
                                                         <img
                                                             src={anime.image_url}
@@ -329,17 +329,6 @@ export default function Calendario() {
                                                             S/ Capa
                                                         </div>
                                                     )}
-                                                    <div className="absolute top-2 right-2">
-                                                        {streamUrl ? (
-                                                            <a href={streamUrl} target="_blank" rel="noreferrer" className="w-8 h-8 rounded-full bg-void/75 border border-white/20 text-white flex items-center justify-center transition-colors hover:bg-holo-2 hover:border-holo-2 cursor-pointer shadow-lg" title="Assistir Oficial">
-                                                                <Play size={13} fill="currentColor" className="ml-0.5" />
-                                                            </a>
-                                                        ) : (
-                                                            <div className="w-8 h-8 rounded-full bg-void/60 border border-white/10 text-muted-2 flex items-center justify-center select-none" title="Sem streaming mapeado">
-                                                                <Play size={13} />
-                                                            </div>
-                                                        )}
-                                                    </div>
                                                 </div>
 
                                                 <div className="min-w-0 flex-1">
@@ -368,6 +357,13 @@ export default function Calendario() {
                                                         <span className="font-mono text-[12px] md:text-[13.5px] text-muted-2">
                                                             {formatClock(anime.nextAiringEpisode!.airingAt)}
                                                         </span>
+                                                        {streamUrl ? (
+                                                            <a href={streamUrl} target="_blank" rel="noreferrer" className="w-8 h-8 rounded-full bg-panel-2 border border-line text-muted hover:text-holo-3 hover:border-holo-3 flex items-center justify-center transition-colors" title="Assistir Oficial">
+                                                                <Play size={13} fill="currentColor" className="ml-0.5" />
+                                                            </a>
+                                                        ) : (
+                                                            <span className="w-8 h-8" aria-hidden="true" />
+                                                        )}
                                                     </div>
                                                 </div>
 

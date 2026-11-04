@@ -5,6 +5,7 @@
 import { useEffect, useState, type ReactNode } from 'react'
 import { Link } from 'react-router-dom'
 import { CalendarDays, Compass, Play, Sparkles, Trophy } from 'lucide-react'
+import { getCategoryTheme } from '../lib/filters'
 import VitrineDestaques from '../components/VitrineDestaques'
 import { useSessao } from '../contexts/SessaoContext'
 import { chaveDoUsuario, guardarNaMemoria, lerDaMemoria } from '../lib/cacheDeTela'
@@ -134,6 +135,8 @@ export default function Inicio() {
               title: m.title || 'Título indisponível',
               image_url: m.images?.jpg?.image_url || '',
               episodes: m.episodes || 0,
+              genres: m.genres?.slice(0, 3).map(g => g.name),
+              streaming: m.streaming ?? undefined,
               nextAiringEpisode: m.nextAiringEpisode,
             }
           }
@@ -213,16 +216,26 @@ export default function Inicio() {
             <ul className="flex flex-col gap-2.5">
               {hoje.map(e => (
                 <li key={e.anime.mal_id}>
-                  <Link to={`/anime/${e.anime.mal_id}`} className="flex items-center gap-3 bg-panel border border-line rounded-xl p-3 hover:border-holo-3 transition-colors">
+                  <div className="flex items-center gap-3 bg-panel border border-line rounded-xl p-3 hover:border-holo-3 transition-colors">
                     {e.anime.image_url
-                      ? <img src={miniatura(e.anime.image_url)} alt="" className="w-11 h-14 rounded-lg object-cover shrink-0" />
-                      : <div className="w-11 h-14 rounded-lg bg-panel-2 shrink-0" />}
+                      ? <img src={miniatura(e.anime.image_url)} alt="" className="w-16 h-20 rounded-lg object-cover shrink-0" />
+                      : <div className="w-16 h-20 rounded-lg bg-panel-2 shrink-0" />}
                     <div className="min-w-0 flex-1">
-                      <p className="font-bold text-sm truncate">{e.anime.title}</p>
-                      <p className="font-mono text-[11px] text-muted-2 uppercase tracking-wider">Episódio {e.episodio}</p>
+                      <Link to={`/anime/${e.anime.mal_id}`} className="font-bold text-sm line-clamp-2 hover:text-holo-3 transition-colors">{e.anime.title}</Link>
+                      <div className="flex flex-wrap gap-1 mt-1.5">
+                        {e.anime.genres?.map(g => (
+                          <span key={g} className={`px-1.5 py-0.5 rounded border font-mono text-[8px] uppercase ${getCategoryTheme(g)}`}>{g}</span>
+                        ))}
+                      </div>
+                      <p className="font-mono text-[11px] text-muted-2 uppercase tracking-wider mt-1">Episódio {e.episodio}</p>
                     </div>
                     <span className="font-anton text-lg text-holo-3 tabular-nums">{horaLocal(e.quando)}</span>
-                  </Link>
+                    {e.anime.streaming?.[0] && (
+                      <a href={e.anime.streaming[0].url} target="_blank" rel="noreferrer" aria-label={`Assistir ${e.anime.title}`} className="shrink-0 w-8 h-8 rounded-full bg-panel-2 border border-line text-muted hover:text-holo-3 hover:border-holo-3 flex items-center justify-center transition-colors">
+                        <Play size={13} fill="currentColor" className="ml-0.5" />
+                      </a>
+                    )}
+                  </div>
                 </li>
               ))}
             </ul>

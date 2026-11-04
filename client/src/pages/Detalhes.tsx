@@ -569,25 +569,9 @@ export default function Detalhes() {
         <div className="grid grid-cols-1 lg:grid-cols-[1fr_320px] gap-10" id="visao-geral">
           <div className="space-y-10 min-w-0">
 
-            {anime.streaming?.length > 0 && (
-              <section id="onde-assistir">
-                <h2 className="font-anton text-base uppercase mb-4 flex items-center gap-2 select-none">
-                  <span className="font-mono text-[11px] text-holo-3">01</span> Onde Assistir Oficial
-                </h2>
-                <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5 md:gap-3">
-                  {anime.streaming.map(st => (
-                    <a key={`${st.name}-${st.url}`} href={st.url} target="_blank" rel="noreferrer" className="select-none min-h-12 flex items-center gap-2 bg-panel border border-line rounded-xl px-3 md:px-4 py-3 text-[12px] md:text-[13px] font-bold hover:border-holo-1 hover:text-holo-1 transition-colors">
-                      <PlayCircle size={16} className="shrink-0" />
-                      <span className="truncate">{st.name}</span>
-                    </a>
-                  ))}
-                </div>
-              </section>
-            )}
-
             <section>
               <h2 className="font-anton text-base uppercase mb-4 flex items-center gap-2 select-none">
-                <span className="font-mono text-[11px] text-holo-3">02</span> Sinopse
+                <span className="font-mono text-[11px] text-holo-3">01</span> Sinopse
               </h2>
               <div className="text-muted text-[14.5px] leading-[1.7] bg-panel border border-line rounded-2xl p-6">
                 {anime.synopsis ? (
@@ -607,6 +591,22 @@ export default function Detalhes() {
                 ) : ('Sinopse não disponível nesta base de dados.')}
               </div>
             </section>
+
+            {anime.streaming?.length > 0 && (
+              <section id="onde-assistir">
+                <h2 className="font-anton text-base uppercase mb-4 flex items-center gap-2 select-none">
+                  <span className="font-mono text-[11px] text-holo-3">02</span> Onde Assistir Oficial
+                </h2>
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5 md:gap-3">
+                  {anime.streaming.map(st => (
+                    <a key={`${st.name}-${st.url}`} href={st.url} target="_blank" rel="noreferrer" className="select-none min-h-12 flex items-center gap-2 bg-panel border border-line rounded-xl px-3 md:px-4 py-3 text-[12px] md:text-[13px] font-bold hover:border-holo-1 hover:text-holo-1 transition-colors">
+                      <PlayCircle size={16} className="shrink-0" />
+                      <span className="truncate">{st.name}</span>
+                    </a>
+                  ))}
+                </div>
+              </section>
+            )}
 
             {anime.characters && anime.characters.length > 0 && (
               <section id="personagens">
