@@ -205,16 +205,12 @@ func (h *SearchHandler) HandleSearch(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Curadoria carregada uma vez e usada nos tres papeis abaixo: montar a
-	// lista propria, saber quem ja entrou, e sobrepor nos resultados da AniList.
-	var curados []models.CuratedAnime
-	dataCurados, _, _ := database.Client.From("curated_animes").Select("*", "exact", false).Execute()
-	if dataCurados != nil {
-		_ = json.Unmarshal(dataCurados, &curados)
-	}
-	curadosMap := make(map[int]models.CuratedAnime, len(curados))
-	for _, c := range curados {
-		curadosMap[c.MalID] = c
+	// CarregarCuradoria reutiliza o cache compartilhado pelas demais telas; sem ele,
+	// cada busca baixava e decodificava a tabela inteira de curadoria.
+	curadosMap := CarregarCuradoria(database.Client)
+	curados := make([]models.CuratedAnime, 0, len(curadosMap))
+	for _, curado := range curadosMap {
+		curados = append(curados, curado)
 	}
 
 	filters := anilist.SearchFilters{
