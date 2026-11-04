@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { Check, Play, ImageOff, Lock, ChevronDown } from 'lucide-react'
+import { Check, Play, Lock, ChevronDown } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import { useToast } from '../contexts/ToastContext'
 
@@ -124,19 +124,20 @@ export default function EpisodeGrid({ malId, totalEpisodes, streamingEpisodes = 
           const dataDoEpisodio = ep.airedAt ? lerDataDoEpisodio(ep.airedAt) : null
           const dataEhFutura = dataDoEpisodio ? dataDoEpisodio.getTime() > agora : false
           const isUnreleased = (nextAiringEpisode ? ep.number >= nextAiringEpisode.episode : false) || dataEhFutura
+          const isCompact = !ep.thumbnail && !isUnreleased
 
           return (
             <div 
               key={ep.number} 
-              className={`relative flex flex-col group rounded-xl overflow-hidden border transition-all select-none ${
+              className={`relative ${isCompact ? 'flex items-center gap-3 rounded-lg px-3 py-2.5' : 'flex flex-col rounded-xl overflow-hidden'} group border transition-all select-none ${
                 isUnreleased ? 'bg-panel/50 border-line/50 opacity-60' : 
                 isWatched ? 'bg-panel-2 border-green/40 shadow-[0_0_15px_rgba(160,255,120,0.1)] cursor-pointer' : 
                 'bg-panel border-line hover:border-holo-3/50 cursor-pointer'
               }`}
               onClick={() => !isUnreleased && toggleEpisode(ep.number)}
             >
-              <div className="aspect-video bg-void relative overflow-hidden flex items-center justify-center">
-                {ep.thumbnail && !isUnreleased ? (
+              {!isCompact && <div className="aspect-video bg-void relative overflow-hidden flex items-center justify-center">
+                {ep.thumbnail ? (
                   <img 
                     src={ep.thumbnail} 
                     alt={`Thumb EP ${ep.number}`} 
@@ -144,7 +145,7 @@ export default function EpisodeGrid({ malId, totalEpisodes, streamingEpisodes = 
                     loading="lazy"
                   />
                 ) : (
-                  <ImageOff size={24} className="text-line" />
+                  <span className="text-muted-2 font-mono text-[10px] uppercase tracking-widest">Sem miniatura</span>
                 )}
                 
                 {isWatched && !isUnreleased && (
@@ -161,9 +162,9 @@ export default function EpisodeGrid({ malId, totalEpisodes, streamingEpisodes = 
                     <span className="font-anton text-[11px] text-muted-2 uppercase tracking-widest">Em Breve</span>
                   </div>
                 )}
-              </div>
+              </div>}
 
-              <div className="p-3">
+              <div className={isCompact ? 'min-w-0 flex-1' : 'p-3'}>
                 <div className="flex justify-between items-start gap-2">
                   <div className="flex flex-col">
                      <div className="font-mono text-[11px] text-holo-3 font-bold leading-none mb-1">EP {ep.number}</div>
@@ -185,7 +186,7 @@ export default function EpisodeGrid({ malId, totalEpisodes, streamingEpisodes = 
                     </a>
                   )}
                 </div>
-                <div className={`text-[12px] font-bold mt-1.5 line-clamp-2 leading-tight ${isWatched ? 'text-muted-2' : 'text-text'}`}>
+                <div className={`text-[12px] font-bold mt-1.5 ${isCompact ? 'truncate' : 'line-clamp-2'} leading-tight ${isWatched ? 'text-muted-2' : 'text-text'}`}>
                   {isUnreleased ? 'Título não revelado' : ep.title}
                 </div>
               </div>

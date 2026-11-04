@@ -543,8 +543,8 @@ export default function Detalhes() {
         <div className="sticky top-[63px] md:top-[73px] z-40 bg-void/95 backdrop-blur-sm border-b border-line overflow-x-auto whitespace-nowrap py-3 mb-8 scrollbar-hide">
           <div className="flex gap-2.5">
             <a href="#visao-geral" className="select-none text-[13px] font-bold text-muted hover:text-text hover:border-holo-3 px-3.5 py-1.5 rounded-full border border-line transition-colors">Visão Geral</a>
+            {anime.streaming?.length > 0 && <a href="#onde-assistir" className="select-none text-[13px] font-bold text-muted hover:text-text hover:border-holo-3 px-3.5 py-1.5 rounded-full border border-line transition-colors">Onde Assistir</a>}
             {anime.characters && anime.characters.length > 0 && <a href="#personagens" className="select-none text-[13px] font-bold text-muted hover:text-text hover:border-holo-3 px-3.5 py-1.5 rounded-full border border-line transition-colors">Personagens</a>}
-            <a href="#onde-assistir" className="select-none text-[13px] font-bold text-muted hover:text-text hover:border-holo-3 px-3.5 py-1.5 rounded-full border border-line transition-colors">Onde Assistir</a>
             <a href="#estatisticas" className="select-none text-[13px] font-bold text-muted hover:text-text hover:border-holo-3 px-3.5 py-1.5 rounded-full border border-line transition-colors">Estatísticas</a>
             {anime.relations?.length > 0 && <a href="#relacionados" className="select-none text-[13px] font-bold text-muted hover:text-text hover:border-holo-3 px-3.5 py-1.5 rounded-full border border-line transition-colors">Relacionados</a>}
           </div>
@@ -569,9 +569,25 @@ export default function Detalhes() {
         <div className="grid grid-cols-1 lg:grid-cols-[1fr_320px] gap-10" id="visao-geral">
           <div className="space-y-10 min-w-0">
 
+            {anime.streaming?.length > 0 && (
+              <section id="onde-assistir">
+                <h2 className="font-anton text-base uppercase mb-4 flex items-center gap-2 select-none">
+                  <span className="font-mono text-[11px] text-holo-3">01</span> Onde Assistir Oficial
+                </h2>
+                <div className="flex flex-wrap gap-3">
+                  {anime.streaming.map(st => (
+                    <a key={`${st.name}-${st.url}`} href={st.url} target="_blank" rel="noreferrer" className="select-none flex items-center gap-2 bg-panel border border-line rounded-xl px-5 py-3 text-[13px] font-bold hover:border-holo-1 hover:text-holo-1 transition-colors">
+                      <PlayCircle size={16} />
+                      {st.name}
+                    </a>
+                  ))}
+                </div>
+              </section>
+            )}
+
             <section>
               <h2 className="font-anton text-base uppercase mb-4 flex items-center gap-2 select-none">
-                <span className="font-mono text-[11px] text-holo-3">01</span> Sinopse
+                <span className="font-mono text-[11px] text-holo-3">02</span> Sinopse
               </h2>
               <div className="text-muted text-[14.5px] leading-[1.7] bg-panel border border-line rounded-2xl p-6">
                 {anime.synopsis ? (
@@ -595,7 +611,7 @@ export default function Detalhes() {
             {anime.characters && anime.characters.length > 0 && (
               <section id="personagens">
                 <h2 className="font-anton text-base uppercase mb-4 flex items-center gap-2 select-none">
-                  <span className="font-mono text-[11px] text-holo-3">02</span> Personagens
+                  <span className="font-mono text-[11px] text-holo-3">03</span> Personagens
                 </h2>
                 <div className="flex gap-4 overflow-x-auto pb-4 custom-scrollbar snap-x">
                   {/* A chave cai para o nome quando o id é 0.
@@ -627,22 +643,6 @@ export default function Detalhes() {
                 startDate={anime.startDate}
                 firstAiredAt={anime.first_aired_at}
               />
-            )}
-
-            {anime.streaming?.length > 0 && (
-              <section id="onde-assistir">
-                <h2 className="font-anton text-base uppercase mb-4 flex items-center gap-2 select-none">
-                  <span className="font-mono text-[11px] text-holo-3">03</span> Onde Assistir Oficial
-                </h2>
-                <div className="flex flex-wrap gap-3">
-                  {anime.streaming.map(st => (
-                    <a key={`${st.name}-${st.url}`} href={st.url} target="_blank" rel="noreferrer" className="select-none flex items-center gap-2 bg-panel border border-line rounded-xl px-5 py-3 text-[13px] font-bold hover:border-holo-1 hover:text-holo-1 transition-colors">
-                      <PlayCircle size={16} />
-                      {st.name}
-                    </a>
-                  ))}
-                </div>
-              </section>
             )}
 
             {anime.relations?.length > 0 && (

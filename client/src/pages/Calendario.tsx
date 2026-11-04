@@ -301,7 +301,7 @@ export default function Calendario() {
                                     <div className="flex-1 h-[1px] bg-line"></div>
                                 </div>
 
-                                <div className="flex flex-col gap-3">
+                                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                                     {group.animes.map((anime, index) => {
                                         const gradClass = gradienteDoCard(index)
                                         const streamUrl = anime.streaming ? anime.streaming.find(s => s.name.toLowerCase().includes('crunchyroll'))?.url || anime.streaming.find(s => s.name.toLowerCase().includes('netflix'))?.url || anime.streaming[0]?.url : null
@@ -314,9 +314,9 @@ export default function Calendario() {
                                                 : []
 
                                         return (
-                                            <div key={anime.mal_id} className={`grid grid-cols-[48px_1fr_auto] md:grid-cols-[56px_1fr_auto_auto] gap-3.5 md:gap-5 items-center p-3 border rounded-xl transition-colors group ${anime.is_favorite ? 'bg-panel-2 border-gold/30 shadow-[0_0_10px_rgba(255,197,66,0.05)]' : 'bg-panel border-line hover:border-holo-2'}`}>
+                                            <div key={anime.mal_id} className={`relative flex flex-col border rounded-xl overflow-hidden transition-colors group ${anime.is_favorite ? 'bg-panel-2 border-gold/30 shadow-[0_0_10px_rgba(255,197,66,0.05)]' : 'bg-panel border-line hover:border-holo-2'}`}>
 
-                                                <div className={`w-12 h-16 md:w-14 md:h-20 rounded-lg flex-shrink-0 overflow-hidden border border-line bg-panel-2 relative shadow-md ${gradClass}`}>
+                                                <div className={`aspect-[2/3] w-full overflow-hidden border-b border-line bg-panel-2 relative shadow-md ${gradClass}`}>
                                                     {anime.image_url ? (
                                                         <img
                                                             src={anime.image_url}
@@ -331,7 +331,7 @@ export default function Calendario() {
                                                     )}
                                                 </div>
 
-                                                <div className="min-w-0">
+                                                <div className="min-w-0 p-4">
                                                     <Link to={`/anime/${anime.mal_id}`} className="font-bold text-[13.5px] md:text-[14.5px] truncate block hover:text-holo-3 transition-colors">
                                                         {anime.title}
                                                     </Link>
@@ -349,16 +349,16 @@ export default function Calendario() {
                                                     </div>
                                                 </div>
 
-                                                <div className="flex flex-col md:flex-row md:items-center gap-1.5 md:gap-5 text-right select-none">
+                                                <div className="flex items-center justify-between gap-2 px-4 pb-4 text-right select-none">
                                                     <span className={`inline-flex items-center justify-center font-mono text-[10.5px] md:text-[11.5px] font-extrabold px-2.5 py-1 rounded-full border ${isLancado ? 'bg-green/15 text-green border-green/30' : 'bg-holo-3/15 text-holo-3 border-holo-3/30'}`}>
                                                         {remainingText}
                                                     </span>
-                                                    <span className="font-mono text-[12px] md:text-[13.5px] text-muted-2 hidden md:block">
+                                                    <span className="font-mono text-[12px] md:text-[13.5px] text-muted-2">
                                                         {formatClock(anime.nextAiringEpisode!.airingAt)}
                                                     </span>
                                                 </div>
 
-                                                <div className="hidden md:flex ml-2">
+                                                <div className="absolute top-3 right-3">
                                                     {streamUrl ? (
                                                         <a href={streamUrl} target="_blank" rel="noreferrer" className="w-10 h-10 rounded-full border-[1.5px] border-line text-muted hover:bg-gradient-to-r hover:from-holo-1 hover:to-holo-2 hover:text-white hover:border-transparent flex items-center justify-center transition-all cursor-pointer shadow-lg" title="Assistir Oficial">
                                                             <Play size={16} fill="currentColor" className="ml-0.5" />

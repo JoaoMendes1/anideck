@@ -17,12 +17,20 @@ import { lerDaMemoria, guardarNaMemoria } from '../lib/cacheDeTela'
 import { miniatura } from '../lib/miniatura'
 
 const MAX_NA_VITRINE = 12
+const CHAVE_VITRINE_RECOLHIDA = 'anideck:vitrine-recolhida'
 
 export default function VitrineDestaques() {
   // Os destaques são os mesmos para todo mundo, por isso a chave não leva o usuário.
   const [emMemoria] = useState(() => lerDaMemoria<CuratedAnime[]>('vitrine'))
   const [destaques, setDestaques] = useState<CuratedAnime[]>(emMemoria ?? [])
   const [carregando, setCarregando] = useState(!emMemoria)
+  const [recolhida, setRecolhida] = useState(() => {
+    try {
+      return localStorage.getItem(CHAVE_VITRINE_RECOLHIDA) === 'true'
+    } catch {
+      return false
+    }
+  })
 
   // O trilho rola na horizontal por conta própria, então a rolagem da janela não
   // cobre a posição dele: sem isto, voltar de um destaque devolvia o carrossel ao
@@ -91,12 +99,29 @@ export default function VitrineDestaques() {
     <section className="mb-10">
       <div className="flex items-center justify-between mb-5 select-none">
         <h2 className="font-anton text-[17px] uppercase m-0">Destaques</h2>
-        <span className="font-mono text-[10px] text-muted-2 uppercase tracking-widest">Seleção da casa</span>
+        <button
+          type="button"
+          onClick={() => {
+            const novoEstado = !recolhida
+            setRecolhida(novoEstado)
+            try {
+              localStorage.setItem(CHAVE_VITRINE_RECOLHIDA, String(novoEstado))
+            } catch {
+              // A vitrine continua utilizável quando o navegador bloqueia o storage.
+            }
+          }}
+          className="font-mono text-[10px] text-muted-2 uppercase tracking-widest hover:text-holo-3 transition-colors cursor-pointer"
+          aria-expanded={!recolhida}
+        >
+          {recolhida ? 'Expandir seleção' : 'Recolher seleção'}
+        </button>
       </div>
 
-      {/* Mesmo padrão de rolagem do resto do Meu Deck: sangra até a borda no mobile
-          (-mx-5/px-5) e vira faixa normal no md+. */}
-      <div ref={trilho} className="flex gap-3.5 overflow-x-auto scrollbar-hide snap-x snap-mandatory -mx-5 px-5 md:mx-0 md:px-0 pb-1">
+      {!recolhida && (
+        // Mesmo padrão de rolagem do resto do Meu Deck: sangra até a borda no mobile
+        // (-mx-5/px-5) e vira faixa normal no md+).
+        <div
+        ref={trilho} className="flex gap-3.5 overflow-x-auto scrollbar-hide snap-x snap-mandatory -mx-5 px-5 md:mx-0 md:px-0 pb-1">
         {destaques.map((anime, index) => (
           <Link
             key={anime.id || anime.mal_id}
@@ -138,7 +163,8 @@ export default function VitrineDestaques() {
             )}
           </Link>
         ))}
-      </div>
+        </div>
+      )}
     </section>
   )
 }

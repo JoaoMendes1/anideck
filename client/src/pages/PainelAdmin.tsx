@@ -194,6 +194,8 @@ export default function PainelAdmin() {
 
   useEffect(() => {
     verificarAcesso()
+    // A verificação inicial deve ocorrer uma única vez ao montar o painel.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   // "Tem alteração não salva" e valor DERIVADO, não estado.

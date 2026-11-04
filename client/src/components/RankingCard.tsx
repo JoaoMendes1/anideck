@@ -87,7 +87,7 @@ export default function RankingCard({ anime, rank, mostrarVariacao, isSaved, isF
                     <img
                         src={anime.images?.jpg?.image_url}
                         alt={anime.title}
-                        className="w-[52px] h-[52px] md:w-14 md:h-14 rounded-lg object-cover bg-panel-2 border border-line"
+                        className={`${rank <= 3 ? 'w-[72px] sm:w-20' : 'w-[62px] sm:w-[70px]'} aspect-[2/3] rounded-lg object-cover bg-panel-2 border border-line`}
                     />
                     <span
                         className={`absolute -top-1.5 -left-1.5 flex items-center justify-center w-[22px] h-[22px] rounded-full font-anton text-[10px] select-none ${rankBadgeClass}`}

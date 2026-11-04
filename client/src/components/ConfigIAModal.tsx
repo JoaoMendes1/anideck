@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { supabase } from '../lib/supabase'
 import { useToast } from '../contexts/ToastContext'
 import Sheet from './Sheet'
@@ -14,7 +14,7 @@ export default function ConfigIAModal({ isOpen, onClose }: ConfigIAModalProps) {
   const [carregandoPrompt, setCarregandoPrompt] = useState(false)
   const [salvandoPrompt, setSalvandoPrompt] = useState(false)
 
-  const carregarPrompt = async () => {
+  const carregarPrompt = useCallback(async () => {
     setCarregandoPrompt(true)
     try {
       const { data: { session } } = await supabase.auth.getSession()
@@ -29,14 +29,14 @@ export default function ConfigIAModal({ isOpen, onClose }: ConfigIAModalProps) {
     } finally {
       setCarregandoPrompt(false)
     }
-  }
+  }, [showToast])
 
   // Sempre que o modal abrir, busca o prompt atual no banco
   useEffect(() => {
     if (isOpen) {
       carregarPrompt()
     }
-  }, [isOpen])
+  }, [isOpen, carregarPrompt])
 
   const salvarConfigIA = async () => {
     setSalvandoPrompt(true)

@@ -2,11 +2,11 @@
 |---|---|---|---|---|
 | 1 | Landing pública (visitante) | `Landing.tsx` | ✅ Implementada | Fase 3 |
 | 2 | Login / Cadastro | `Auth.tsx` | ✅ Implementada | Fase 2 |
-| 3 | Meu Deck (dashboard logado) | `MeuDeck.tsx` | ✅ Implementada | Fase 2/3 |
+| 3 | Meu Deck (dashboard logado) | `MeuDeck.tsx` | ✅ Implementada · vitrine recolhível com preferência persistida | Fase 2/3 |
 | 4 | Busca / Descobrir catálogo | `Busca.tsx` | ✅ Implementada | Fase 2 |
-| 5 | Detalhe do anime | `Detalhes.tsx` | ✅ Implementada | Fase 2 / 6.6 |
-| 6 | Calendário de lançamentos | `Calendario.tsx` | ✅ Implementada | Fase 5 |
-| 7 | Rankings (aba do Descobrir) | `Rankings.tsx` | ✅ Implementada | Fase 2 / 6.5 / 11 |
+| 5 | Detalhe do anime | `Detalhes.tsx` | ✅ Implementada · streaming antes da sinopse e episódios sem miniatura em lista compacta | Fase 2 / 6.6 |
+| 6 | Calendário de lançamentos | `Calendario.tsx` | ✅ Implementada · capas em pôster e grade responsiva | Fase 5 |
+| 7 | Rankings (aba do Descobrir) | `Rankings.tsx` | ✅ Implementada · pôsteres maiores com destaque no Top 3 | Fase 2 / 6.5 / 11 |
 | 8 | Meu Gosto (ex-Estatísticas), em `/meu-gosto` | `Estatisticas.tsx` | ✅ Implementada · abre com a frase-veredito | Fase 4 / 6.8 / 12 |
 | 9 | Painel Admin (curadoria) | `PainelAdmin.tsx` | ✅ Implementada | Fase 2.5 / 4.5 |
 | 10 | Configurações & Ajuda | `Configuracoes.tsx` | ✅ Implementada | Fase 2 |
