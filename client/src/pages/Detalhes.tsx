@@ -574,11 +574,11 @@ export default function Detalhes() {
                 <h2 className="font-anton text-base uppercase mb-4 flex items-center gap-2 select-none">
                   <span className="font-mono text-[11px] text-holo-3">01</span> Onde Assistir Oficial
                 </h2>
-                <div className="flex flex-wrap gap-3">
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5 md:gap-3">
                   {anime.streaming.map(st => (
-                    <a key={`${st.name}-${st.url}`} href={st.url} target="_blank" rel="noreferrer" className="select-none flex items-center gap-2 bg-panel border border-line rounded-xl px-5 py-3 text-[13px] font-bold hover:border-holo-1 hover:text-holo-1 transition-colors">
-                      <PlayCircle size={16} />
-                      {st.name}
+                    <a key={`${st.name}-${st.url}`} href={st.url} target="_blank" rel="noreferrer" className="select-none min-h-12 flex items-center gap-2 bg-panel border border-line rounded-xl px-3 md:px-4 py-3 text-[12px] md:text-[13px] font-bold hover:border-holo-1 hover:text-holo-1 transition-colors">
+                      <PlayCircle size={16} className="shrink-0" />
+                      <span className="truncate">{st.name}</span>
                     </a>
                   ))}
                 </div>

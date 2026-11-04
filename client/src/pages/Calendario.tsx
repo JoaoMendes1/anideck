@@ -314,9 +314,9 @@ export default function Calendario() {
                                                 : []
 
                                         return (
-                                            <div key={anime.mal_id} className={`relative flex flex-col border rounded-xl overflow-hidden transition-colors group ${anime.is_favorite ? 'bg-panel-2 border-gold/30 shadow-[0_0_10px_rgba(255,197,66,0.05)]' : 'bg-panel border-line hover:border-holo-2'}`}>
+                                            <div key={anime.mal_id} className={`relative flex items-center md:flex-col border rounded-xl overflow-hidden transition-colors group ${anime.is_favorite ? 'bg-panel-2 border-gold/30 shadow-[0_0_10px_rgba(255,197,66,0.05)]' : 'bg-panel border-line hover:border-holo-2'}`}>
 
-                                                <div className={`aspect-[2/3] w-full overflow-hidden border-b border-line bg-panel-2 relative shadow-md ${gradClass}`}>
+                                                <div className={`aspect-[2/3] w-20 md:w-full shrink-0 overflow-hidden md:border-b border-line bg-panel-2 relative shadow-md ${gradClass}`}>
                                                     {anime.image_url ? (
                                                         <img
                                                             src={anime.image_url}
@@ -331,34 +331,36 @@ export default function Calendario() {
                                                     )}
                                                 </div>
 
-                                                <div className="min-w-0 p-4">
-                                                    <Link to={`/anime/${anime.mal_id}`} className="font-bold text-[13.5px] md:text-[14.5px] truncate block hover:text-holo-3 transition-colors">
-                                                        {anime.title}
-                                                    </Link>
-                                                    <div className="flex flex-wrap items-center gap-1.5 font-mono text-[10px] md:text-[10.5px] text-muted-2 mt-1 select-none">
-                                                        {anime.is_favorite && <span className="text-gold text-xs leading-none drop-shadow-md" title="Favorito">👑</span>}
-                                                        {listaGeneros.map((g) => (
-                                                            <span 
-                                                                key={g} 
-                                                                className={`px-1.5 py-0.5 rounded border font-bold font-manrope hidden md:inline-block ${getCategoryTheme(g)}`}
-                                                            >
-                                                                {g}
-                                                            </span>
-                                                        ))}
-                                                        <span>EPISÓDIO {anime.nextAiringEpisode!.episode}</span>
+                                                <div className="min-w-0 flex-1">
+                                                    <div className="p-3 md:p-4">
+                                                        <Link to={`/anime/${anime.mal_id}`} className="font-bold text-[13.5px] md:text-[14.5px] line-clamp-2 md:truncate block hover:text-holo-3 transition-colors">
+                                                            {anime.title}
+                                                        </Link>
+                                                        <div className="flex flex-wrap items-center gap-1.5 font-mono text-[10px] md:text-[10.5px] text-muted-2 mt-1 select-none">
+                                                            {anime.is_favorite && <span className="text-gold text-xs leading-none drop-shadow-md" title="Favorito">👑</span>}
+                                                            {listaGeneros.map((g) => (
+                                                                <span
+                                                                    key={g}
+                                                                    className={`px-1.5 py-0.5 rounded border font-bold font-manrope hidden md:inline-block ${getCategoryTheme(g)}`}
+                                                                >
+                                                                    {g}
+                                                                </span>
+                                                            ))}
+                                                            <span>EPISÓDIO {anime.nextAiringEpisode!.episode}</span>
+                                                        </div>
+                                                    </div>
+
+                                                    <div className="flex items-center justify-between gap-2 px-3 pb-3 md:px-4 md:pb-4 text-right select-none">
+                                                        <span className={`inline-flex items-center justify-center font-mono text-[10.5px] md:text-[11.5px] font-extrabold px-2.5 py-1 rounded-full border ${isLancado ? 'bg-green/15 text-green border-green/30' : 'bg-holo-3/15 text-holo-3 border-holo-3/30'}`}>
+                                                            {remainingText}
+                                                        </span>
+                                                        <span className="font-mono text-[12px] md:text-[13.5px] text-muted-2">
+                                                            {formatClock(anime.nextAiringEpisode!.airingAt)}
+                                                        </span>
                                                     </div>
                                                 </div>
 
-                                                <div className="flex items-center justify-between gap-2 px-4 pb-4 text-right select-none">
-                                                    <span className={`inline-flex items-center justify-center font-mono text-[10.5px] md:text-[11.5px] font-extrabold px-2.5 py-1 rounded-full border ${isLancado ? 'bg-green/15 text-green border-green/30' : 'bg-holo-3/15 text-holo-3 border-holo-3/30'}`}>
-                                                        {remainingText}
-                                                    </span>
-                                                    <span className="font-mono text-[12px] md:text-[13.5px] text-muted-2">
-                                                        {formatClock(anime.nextAiringEpisode!.airingAt)}
-                                                    </span>
-                                                </div>
-
-                                                <div className="absolute top-3 right-3">
+                                                <div className="absolute top-3 right-3 md:top-3 md:right-3">
                                                     {streamUrl ? (
                                                         <a href={streamUrl} target="_blank" rel="noreferrer" className="w-10 h-10 rounded-full border-[1.5px] border-line text-muted hover:bg-gradient-to-r hover:from-holo-1 hover:to-holo-2 hover:text-white hover:border-transparent flex items-center justify-center transition-all cursor-pointer shadow-lg" title="Assistir Oficial">
                                                             <Play size={16} fill="currentColor" className="ml-0.5" />
