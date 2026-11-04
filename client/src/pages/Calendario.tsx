@@ -316,7 +316,7 @@ export default function Calendario() {
                                         return (
                                             <div key={anime.mal_id} className={`relative flex items-center md:flex-col border rounded-xl overflow-hidden transition-colors group ${anime.is_favorite ? 'bg-panel-2 border-gold/30 shadow-[0_0_10px_rgba(255,197,66,0.05)]' : 'bg-panel border-line hover:border-holo-2'}`}>
 
-                                                <div className={`aspect-[2/3] w-20 md:w-full shrink-0 overflow-hidden md:border-b border-line bg-panel-2 relative shadow-md ${gradClass}`}>
+                                                <div className={`relative aspect-[2/3] w-24 md:w-full shrink-0 overflow-hidden md:border-b border-line bg-panel-2 shadow-md ${gradClass}`}>
                                                     {anime.image_url ? (
                                                         <img
                                                             src={anime.image_url}
@@ -329,6 +329,17 @@ export default function Calendario() {
                                                             S/ Capa
                                                         </div>
                                                     )}
+                                                    <div className="absolute top-2 right-2">
+                                                        {streamUrl ? (
+                                                            <a href={streamUrl} target="_blank" rel="noreferrer" className="w-8 h-8 rounded-full bg-void/75 border border-white/20 text-white flex items-center justify-center transition-colors hover:bg-holo-2 hover:border-holo-2 cursor-pointer shadow-lg" title="Assistir Oficial">
+                                                                <Play size={13} fill="currentColor" className="ml-0.5" />
+                                                            </a>
+                                                        ) : (
+                                                            <div className="w-8 h-8 rounded-full bg-void/60 border border-white/10 text-muted-2 flex items-center justify-center select-none" title="Sem streaming mapeado">
+                                                                <Play size={13} />
+                                                            </div>
+                                                        )}
+                                                    </div>
                                                 </div>
 
                                                 <div className="min-w-0 flex-1">
@@ -338,10 +349,10 @@ export default function Calendario() {
                                                         </Link>
                                                         <div className="flex flex-wrap items-center gap-1.5 font-mono text-[10px] md:text-[10.5px] text-muted-2 mt-1 select-none">
                                                             {anime.is_favorite && <span className="text-gold text-xs leading-none drop-shadow-md" title="Favorito">👑</span>}
-                                                            {listaGeneros.map((g) => (
+                                                            {listaGeneros.slice(0, 3).map((g) => (
                                                                 <span
                                                                     key={g}
-                                                                    className={`px-1.5 py-0.5 rounded border font-bold font-manrope hidden md:inline-block ${getCategoryTheme(g)}`}
+                                                                    className={`max-w-[96px] truncate px-1.5 py-0.5 rounded border font-bold font-manrope text-[9px] md:text-[10px] ${getCategoryTheme(g)}`}
                                                                 >
                                                                     {g}
                                                                 </span>
@@ -360,17 +371,6 @@ export default function Calendario() {
                                                     </div>
                                                 </div>
 
-                                                <div className="absolute top-3 right-3 md:top-3 md:right-3">
-                                                    {streamUrl ? (
-                                                        <a href={streamUrl} target="_blank" rel="noreferrer" className="w-10 h-10 rounded-full border-[1.5px] border-line text-muted hover:bg-gradient-to-r hover:from-holo-1 hover:to-holo-2 hover:text-white hover:border-transparent flex items-center justify-center transition-all cursor-pointer shadow-lg" title="Assistir Oficial">
-                                                            <Play size={16} fill="currentColor" className="ml-0.5" />
-                                                        </a>
-                                                    ) : (
-                                                        <div className="w-10 h-10 rounded-full border-[1.5px] border-line/50 text-line flex items-center justify-center select-none" title="Sem streaming mapeado">
-                                                            <Play size={16} />
-                                                        </div>
-                                                    )}
-                                                </div>
                                             </div>
                                         )
                                     })}
