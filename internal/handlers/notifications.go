@@ -9,6 +9,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"strconv"
 	"strings"
 	"time"
 
@@ -138,30 +139,25 @@ func (h *NotificationsHandler) HandleGetNotifications(w http.ResponseWriter, r *
 	}
 
 	// Cruza as notificações com episode_progress para que o sino já saiba quais
-	// episódios o usuário marcou como vistos na página da obra ou na Início.
+	// episódios o usuário marcou como vistos na página da obra ou na Início. Lê só os
+	// animes das notificações e pagina: sem filtro, o PostgREST cortava em 1.000 linhas
+	// e os episódios marcados por último ficavam de fora (PITFALLS, item 28).
 	var notificacoes []map[string]interface{}
 	if errUnmarshal := json.Unmarshal(data, &notificacoes); errUnmarshal == nil && len(notificacoes) > 0 {
-		vistos := make(map[string]bool)
-		if epData, _, errEp := dbClient.From("episode_progress").
-			Select("mal_id,episode_number", "exact", false).
-			Eq("user_id", userID).
-			Execute(); errEp == nil {
-			var progresso []struct {
-				MalID         int `json:"mal_id"`
-				EpisodeNumber int `json:"episode_number"`
-			}
-			if json.Unmarshal(epData, &progresso) == nil {
-				for _, p := range progresso {
-					vistos[fmt.Sprintf("%d:%d", p.MalID, p.EpisodeNumber)] = true
-				}
+		vistos := idsDeAnimeDasNotificacoes(notificacoes)
+		marcados := map[int]map[int]bool{}
+		if len(vistos) > 0 {
+			if lidos, errEp := lerEpisodiosMarcados(dbClient, userID, vistos); errEp == nil {
+				marcados = lidos
+			} else {
+				log.Printf("[ERRO DB] HandleGetNotifications episódios (user=%s): %v", userID, errEp)
 			}
 		}
 
 		for i := range notificacoes {
 			malID, _ := notificacoes[i]["mal_id"].(float64)
 			epNum, _ := notificacoes[i]["episode_number"].(float64)
-			chave := fmt.Sprintf("%d:%d", int(malID), int(epNum))
-			notificacoes[i]["episode_watched"] = vistos[chave]
+			notificacoes[i]["episode_watched"] = marcados[int(malID)][int(epNum)]
 		}
 
 		if enriquecido, errMarshal := json.Marshal(notificacoes); errMarshal == nil {
@@ -481,4 +477,19 @@ func removerAssinaturaPush(endpoint string) {
 	if _, _, err := client.From("push_subscriptions").Delete("", "").Eq("endpoint", endpoint).Execute(); err != nil {
 		log.Printf("[WEB PUSH] Falha ao remover assinatura expirada: %v", err)
 	}
+}
+
+// idsDeAnimeDasNotificacoes junta, sem repetir, os mal_id das notificações de episódio.
+// Convite de beta e outros avisos sem anime (mal_id 0) ficam de fora.
+func idsDeAnimeDasNotificacoes(notificacoes []map[string]interface{}) []string {
+	vistos := map[int]bool{}
+	ids := []string{}
+	for _, n := range notificacoes {
+		malID, _ := n["mal_id"].(float64)
+		if id := int(malID); id > 0 && !vistos[id] {
+			vistos[id] = true
+			ids = append(ids, strconv.Itoa(id))
+		}
+	}
+	return ids
 }

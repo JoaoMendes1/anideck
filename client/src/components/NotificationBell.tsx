@@ -121,7 +121,19 @@ export default function NotificationBell() {
           console.error('Service Worker registration failed:', err);
         });
     }
-    const aoAtualizarEpisodio = () => {
+    // Marcado ou desmarcado em outra tela: o "visto" muda na hora, pelo próprio evento, e a
+    // busca em seguida confirma com o servidor.
+    const aoAtualizarEpisodio = (ev: Event) => {
+      const d = (ev as CustomEvent<{ malId?: number; episodeNumber?: number; watched?: boolean }>).detail;
+      if (d && typeof d.malId === 'number' && typeof d.episodeNumber === 'number' && typeof d.watched === 'boolean') {
+        setNotifications(lista =>
+          lista.map(n =>
+            n.mal_id === d.malId && n.episode_number === d.episodeNumber ? { ...n, episode_watched: d.watched } : n
+          )
+        );
+        // Desmarcado: as marcações locais saem e vale o estado do servidor.
+        if (!d.watched) setEpisodiosMarcados({});
+      }
       fetchNotifications();
     };
     window.addEventListener('anideck:episodio-atualizado', aoAtualizarEpisodio);

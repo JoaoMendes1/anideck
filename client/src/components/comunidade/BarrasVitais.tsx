@@ -3,6 +3,7 @@
 // onde explica como cada barra sobe e desce.
 import { Heart, Droplet } from 'lucide-react'
 import { faixaDoHP, type EstadoComunidade } from '../../lib/comunidade'
+import { minutosParaManaCheia, textoDoTempo } from '../../lib/hud'
 
 const FRASE_HP = {
   cheio: 'Vitalidade cheia: você está em dia com seus animes.',
@@ -20,7 +21,10 @@ function Barra({ valor, maximo, classe }: { valor: number; maximo: number; class
 }
 
 export default function BarrasVitais({ estado, compacta = false }: { estado: EstadoComunidade; compacta?: boolean }) {
-  const { hp, mana, regras, em_descanso: emDescanso } = estado
+  const { hp, regras, em_descanso: emDescanso } = estado
+  // A Mana chega fracionada (recarga contínua); a tela mostra a parte inteira.
+  const mana = Math.floor(estado.mana)
+  const faltam = minutosParaManaCheia(estado.mana, regras.mp_max, regras.mp_regen_dia)
   const faixa = faixaDoHP(hp)
 
   return (
@@ -56,7 +60,7 @@ export default function BarrasVitais({ estado, compacta = false }: { estado: Est
         <Barra valor={mana} maximo={regras.mp_max} classe="bg-holo-3" />
         {!compacta && (
           <p className="text-[11.5px] text-muted-2 mt-1.5 mb-0">
-            Cada comentário custa {regras.mp_custo_comentario} de Mana. Ela recarrega sozinha, {regras.mp_regen_dia} por dia.
+            Cada comentário custa {regras.mp_custo_comentario} de Mana. Ela recarrega sozinha, {regras.mp_regen_dia} por dia{faltam > 0 ? `: cheia ${textoDoTempo(faltam)}.` : ', e está cheia.'}
           </p>
         )}
       </div>

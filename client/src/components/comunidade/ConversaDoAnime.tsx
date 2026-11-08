@@ -339,7 +339,7 @@ export default function ConversaDoAnime({ malId, totalEpisodes, proximoAoAr, ass
                   malId={malId}
                   episodio={episodioAtual}
                   token={token}
-                  mana={estado.mana}
+                  mana={Math.floor(estado.mana)}
                   custo={estado.regras.mp_custo_comentario}
                   onComentar={aoComentar}
                 />

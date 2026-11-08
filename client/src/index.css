@@ -369,3 +369,17 @@ html[data-tema='estudio'] {
 }
 .regua-nota:focus { outline: none; }
 .regua-nota:focus-visible::-webkit-slider-thumb { outline: 2px solid var(--color-holo-1); outline-offset: 2px; }
+
+/* Aviso de ganho do HUD da Navbar (+XP, +HP, −MP): sobe um pouco e some. A duração
+   bate com DURACAO_AVISO em PilulaGuilda.tsx. */
+@keyframes aviso-hud-subir {
+  0% { opacity: 0; transform: translateY(6px) scale(0.9); }
+  12% { opacity: 1; transform: translateY(0) scale(1.05); }
+  22% { transform: translateY(0) scale(1); }
+  80% { opacity: 1; transform: translateY(-4px); }
+  100% { opacity: 0; transform: translateY(-12px); }
+}
+.aviso-hud { animation: aviso-hud-subir 1.8s ease-out forwards; }
+@media (prefers-reduced-motion: reduce) {
+  .aviso-hud { animation: none; }
+}

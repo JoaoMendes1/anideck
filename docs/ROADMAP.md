@@ -739,6 +739,14 @@ atual. **Pré-requisito:** abrir o beta (`beta_signup_limit`).
 > numeração e não abrem escopo novo. Ficam registrados aqui em ordem cronológica inversa para
 > não sumirem: fase concluída não deve ser reaberta só para receber um conserto.
 
+### 08/11/2026 — Sino sem episódio fantasma e HUD de status (#163 e #164)
+
+- [x] **Sino (#163):** episódio já visto continuava pedindo "Marcar visto" para quem tem mais
+      de mil episódios marcados. Leitura paginada no sino, na importação do MyAnimeList e no XP
+      total da Guilda (PITFALLS, item 28).
+- [x] **HUD em todas as páginas (#164):** a pílula da Navbar mostra XP, Vitalidade e Mana; o
+      ganho sobe da pílula na hora ("+12 XP", "+8 HP", "−5 MP") e a Mana recarrega na tela.
+
 ### 08/11/2026 — Nota precisa, coroa no favorito e 16 reações (#161 e #162)
 
 - [x] **Nota como antes (#161):** digitada com até duas casas, régua de 0,1 e botões − e +;

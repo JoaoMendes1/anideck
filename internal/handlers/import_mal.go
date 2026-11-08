@@ -191,21 +191,12 @@ var executarImportacaoMAL = func(token, userID string, itens []ItemImportacaoMAL
 	}
 
 	// 2. Lê episódios já marcados pelo usuário para nunca sobrescrever um watched_at real
-	epBytes, _, _ := dbClient.From("episode_progress").
-		Select("mal_id, episode_number", "", false).
-		Eq("user_id", userID).
-		Execute()
-	var epExistentes []struct {
-		MalID         int `json:"mal_id"`
-		EpisodeNumber int `json:"episode_number"`
-	}
-	_ = json.Unmarshal(epBytes, &epExistentes)
-	marcadosPorAnime := make(map[int]map[int]bool)
-	for _, ep := range epExistentes {
-		if marcadosPorAnime[ep.MalID] == nil {
-			marcadosPorAnime[ep.MalID] = make(map[int]bool)
-		}
-		marcadosPorAnime[ep.MalID][ep.EpisodeNumber] = true
+	// Paginado: acima de 1.000 linhas o PostgREST cortava a leitura, a importação tentava
+	// regravar episódios que já existiam e o lote inteiro falhava (PITFALLS, item 28).
+	marcadosPorAnime, errEps := lerEpisodiosMarcados(dbClient, userID, nil)
+	if errEps != nil {
+		log.Printf("[IMPORT MAL] Erro ao ler episódios já marcados (user=%s): %v", userID, errEps)
+		return resumo, errEps
 	}
 
 	novasEntradas := make([]map[string]interface{}, 0, len(itens))

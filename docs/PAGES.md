@@ -13,7 +13,7 @@
 | 11 | Política de Privacidade | `Privacidade.tsx` | ✅ Implementada · cobre perfil público e conteúdo publicado (08/11/2026) | Fase 7 / 15 (#154) |
 | 12 | Início (home logada, em `/`) | `Inicio.tsx` | ✅ Implementada · próximo episódio no topo (carrossel de destaques sem anime em andamento), Sua semana, ficha da Guilda com Vitalidade e Mana, trilhas em cartões e Recomendados para Você | Fase 11 / 13 / 15 (#139, #141, #151) |
 | 13 | Card de gosto compartilhável (no Meu Gosto) | `CompartilharGosto.tsx` | ✅ Implementada | Fase 12 (#126) |
-| 14 | Guilda (rank, XP, insígnias, especialista de gênero) | `Guilda.tsx` | ✅ Implementada · anel F→SS, extrato do ledger, especialista N1→N5, insígnias Foil, pílula na Navbar e Vitalidade & Mana | Fase 14 / 15 (#146, #154) |
+| 14 | Guilda (rank, XP, insígnias, especialista de gênero) | `Guilda.tsx` | ✅ Implementada · anel F→SS, extrato do ledger, especialista N1→N5, insígnias Foil, pílula na Navbar (HUD com XP, Vitalidade e Mana em todas as páginas, painel de status e avisos de ganho) e Vitalidade & Mana | Fase 14 / 15 (#146, #154, #164) |
 | 15 | Ranking de membros (aba do Descobrir, em `/membros`) | `Membros.tsx` | ✅ Implementada · liga da semana e Hall da Fama, só perfis públicos | Fase 15 (#154) |
 | 16 | Perfil público de membro (`/u/:handle`) | `PerfilMembro.tsx` | ✅ Implementada · ficha da Guilda, vitrine de cinco cartas, contagem do deck sem títulos e bloqueio | Fase 15 (#154) |
 

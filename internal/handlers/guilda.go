@@ -586,21 +586,38 @@ type linhaLedgerBanco struct {
 	EarnedAt      string `json:"earned_at"`
 }
 
-// carregarLedgerUsuario busca todas as entradas de XP do usuário, da mais recente para a mais antiga.
+// carregarLedgerUsuario busca todas as entradas de XP do usuário, da mais recente para a
+// mais antiga. Pagina por id: o Limit(5000) de antes esbarrava no teto de 1.000 linhas do
+// PostgREST, e o XP total pararia de crescer na milésima entrada (PITFALLS, item 28).
 func carregarLedgerUsuario(dbClient *supabase.Client, userID string) []linhaLedgerBanco {
-	data, _, err := dbClient.From("xp_ledger").
-		Select("mal_id,episode_number,xp_earned,reason,earned_at", "", false).
-		Eq("user_id", userID).
-		Order("earned_at", &postgrest.OrderOpts{Ascending: false}).
-		Limit(5000, "").
-		Execute()
+	linhas, err := paginar[linhaLedgerBanco](func(de, ate int) ([]byte, error) {
+		dados, _, errPagina := dbClient.From("xp_ledger").
+			Select("mal_id,episode_number,xp_earned,reason,earned_at", "", false).
+			Eq("user_id", userID).
+			Order("id", &postgrest.OrderOpts{Ascending: true}).
+			Range(de, ate, "").
+			Execute()
+		return dados, errPagina
+	}, tamanhoPaginaPostgREST)
 	if err != nil {
 		log.Printf("[GUILDA] Falha ao ler xp_ledger (user=%s): %v", userID, err)
 		return nil
 	}
-	var linhas []linhaLedgerBanco
-	_ = json.Unmarshal(data, &linhas)
+	ordenarLedgerRecentePrimeiro(linhas)
 	return linhas
+}
+
+// ordenarLedgerRecentePrimeiro põe a entrada mais nova na frente, comparando o instante e
+// não o texto (a fração de segundo do Postgres varia de tamanho).
+func ordenarLedgerRecentePrimeiro(linhas []linhaLedgerBanco) {
+	instante := func(l linhaLedgerBanco) time.Time {
+		t, err := time.Parse(time.RFC3339Nano, l.EarnedAt)
+		if err != nil {
+			return time.Time{}
+		}
+		return t
+	}
+	sort.SliceStable(linhas, func(i, j int) bool { return instante(linhas[i]).After(instante(linhas[j])) })
 }
 
 // HandleResumoGuilda devolve apenas os indicadores da pílula da Navbar e do menu de Perfil.

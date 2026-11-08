@@ -3,6 +3,7 @@ package handlers
 import (
 	"encoding/json"
 	"log"
+	"math"
 	"net/http"
 	"sort"
 	"strconv"
@@ -83,7 +84,7 @@ type perfilProprio struct {
 
 type estadoComunidade struct {
 	Perfil  perfilProprio    `json:"perfil"`
-	Mana    int              `json:"mana"`
+	Mana    float64          `json:"mana"`
 	HP      int              `json:"hp"`
 	Regras  RegrasComunidade `json:"regras"`
 	EmPausa bool             `json:"em_descanso"`
@@ -139,19 +140,20 @@ func lerDiasAtivos(client *supabase.Client) []string {
 	return dias
 }
 
-// lerMinhaMana chama a função do banco, que já aplica a recarga desde o último gasto.
-func lerMinhaMana(client *supabase.Client, regras RegrasComunidade) int {
+// lerMinhaMana chama a função do banco, que já aplica a recarga desde o último gasto. Vai
+// com a fração (duas casas): a tela continua a recarga a partir dela, sem pular um ponto.
+func lerMinhaMana(client *supabase.Client, regras RegrasComunidade) float64 {
 	bruto := strings.TrimSpace(client.Rpc("minha_mana", "", map[string]interface{}{}))
 	if bruto == "" || bruto == "null" {
 		// Sem perfil ainda: a Mana nasce cheia na criação.
-		return regras.MPMax
+		return float64(regras.MPMax)
 	}
 	valor, err := strconv.ParseFloat(bruto, 64)
 	if err != nil {
 		log.Printf("[COMUNIDADE] minha_mana devolveu %q", bruto)
 		return 0
 	}
-	return int(valor)
+	return math.Floor(valor*100) / 100
 }
 
 func (h *ComunidadeHandler) montarEstado(client *supabase.Client, userID string) (estadoComunidade, error) {

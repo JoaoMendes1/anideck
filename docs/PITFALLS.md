@@ -809,6 +809,38 @@ Container não devem criar nada. Para desfazer a migração um dia, a ordem é p
 
 ---
 
+## 28. ✂️ Leitura sem filtro corta em 1.000 linhas, sem erro
+
+O PostgREST do Supabase devolve no máximo **1.000 linhas por pedido** (*Max Rows* nas
+configurações da API). Acima disso a resposta vem cortada, com status 200 e sem aviso. Sem
+`ORDER BY`, a ordem é a física da tabela: as linhas que ficam de fora tendem a ser **as mais
+novas**.
+
+**Incidente (08/11/2026, #163):** o sino lia todo o `episode_progress` da pessoa para saber o
+que já tinha sido visto. Com mais de mil episódios marcados (a importação do MyAnimeList chega lá
+num clique), os episódios marcados por último nunca apareciam como vistos: *Tensei Kizoku* no
+ep. 7 no deck e a notificação do ep. 3 ainda pedindo "Marcar visto". A importação fazia a mesma
+leitura para não regravar episódio existente; acima de mil linhas, ela tentava inserir de novo o
+que já existia e o lote de 500 inteiro falhava com `23505`, levando junto os episódios novos.
+
+Correção: `lerEpisodiosMarcados` (`internal/handlers/episodios_marcados.go`) filtra pelos animes
+que interessam quando pode e **pagina sempre**, de mil em mil, ordenando por `id` para as
+páginas não se sobreporem.
+
+Achado na mesma revisão: o XP total da Guilda somava o `xp_ledger` com `Limit(5000)`. O teto
+de 1.000 vale por cima do `limit`, então o total pararia de crescer na milésima entrada de XP.
+`carregarLedgerUsuario` também pagina agora.
+
+Onde ainda mora o risco: qualquer `From(...).Select(...)` por `user_id` sem `Limit`/`Range` em
+tabela que cresce com o uso (`episode_progress`, `xp_ledger`, `notifications`).
+`HandleResumoProgresso` já declara o teto de propósito (`limiteLinhasProgresso`, ordenado do mais
+recente).
+
+> **Pergunta obrigatória:** esta leitura pode passar de mil linhas para uma pessoa que usa muito o
+> app? Se pode, ela pagina ou filtra — nunca confia que veio tudo.
+
+---
+
 ## 🧭 Como manter este arquivo
 
 - Toda vez que um bug **silencioso** chegar a produção (não quebrou, só devolveu dado errado),
