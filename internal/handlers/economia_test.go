@@ -121,7 +121,7 @@ func TestEconomiaTransferir_Validacoes(t *testing.T) {
 	handler := &EconomiaHandler{}
 
 	t.Run("rejeita sem autenticacao", func(t *testing.T) {
-		req := httptest.NewRequest(http.MethodPost, "/api/economia/transferir", nil)
+		req := httptest.NewRequest(http.MethodPost, "/api/admin/economia/transferir", nil)
 		rec := httptest.NewRecorder()
 		handler.HandleTransferirAniCoins(rec, req)
 		if rec.Code != http.StatusUnauthorized {
@@ -134,7 +134,7 @@ func TestEconomiaTransferir_Validacoes(t *testing.T) {
 			DestinatarioHandle: "",
 			Quantidade:         10,
 		})
-		req := httptest.NewRequest(http.MethodPost, "/api/economia/transferir", bytes.NewReader(corpo))
+		req := httptest.NewRequest(http.MethodPost, "/api/admin/economia/transferir", bytes.NewReader(corpo))
 		ctx := context.WithValue(req.Context(), middleware.UserIDKey, "user-remetente")
 		req = req.WithContext(ctx)
 		rec := httptest.NewRecorder()
@@ -150,7 +150,7 @@ func TestEconomiaTransferir_Validacoes(t *testing.T) {
 			DestinatarioHandle: "joao",
 			Quantidade:         -5,
 		})
-		req := httptest.NewRequest(http.MethodPost, "/api/economia/transferir", bytes.NewReader(corpo))
+		req := httptest.NewRequest(http.MethodPost, "/api/admin/economia/transferir", bytes.NewReader(corpo))
 		ctx := context.WithValue(req.Context(), middleware.UserIDKey, "user-remetente")
 		req = req.WithContext(ctx)
 		rec := httptest.NewRecorder()
@@ -166,7 +166,7 @@ func TestEconomiaTransferir_Validacoes(t *testing.T) {
 			DestinatarioHandle: "joao",
 			Quantidade:         100000,
 		})
-		req := httptest.NewRequest(http.MethodPost, "/api/economia/transferir", bytes.NewReader(corpo))
+		req := httptest.NewRequest(http.MethodPost, "/api/admin/economia/transferir", bytes.NewReader(corpo))
 		ctx := context.WithValue(req.Context(), middleware.UserIDKey, "user-remetente")
 		req = req.WithContext(ctx)
 		rec := httptest.NewRecorder()
@@ -180,7 +180,7 @@ func TestEconomiaTransferir_Validacoes(t *testing.T) {
 
 func TestEconomiaBuscarDestinatario_TermoCurto(t *testing.T) {
 	handler := &EconomiaHandler{}
-	req := httptest.NewRequest(http.MethodGet, "/api/economia/buscar-destinatario?q=a", nil)
+	req := httptest.NewRequest(http.MethodGet, "/api/admin/economia/buscar-destinatario?q=a", nil)
 	rec := httptest.NewRecorder()
 
 	handler.HandleBuscarDestinatario(rec, req)

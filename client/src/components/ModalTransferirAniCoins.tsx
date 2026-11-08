@@ -63,7 +63,7 @@ export default function ModalTransferirAniCoins({
         const { data: { session } } = await supabase.auth.getSession()
         if (!session?.access_token) return
 
-        const res = await fetch(`/api/economia/buscar-destinatario?q=${encodeURIComponent(termo)}`, {
+        const res = await fetch(`/api/admin/economia/buscar-destinatario?q=${encodeURIComponent(termo)}`, {
           headers: { Authorization: `Bearer ${session.access_token}` },
         })
         if (res.ok) {
@@ -115,7 +115,7 @@ export default function ModalTransferirAniCoins({
       const { data: { session } } = await supabase.auth.getSession()
       if (!session?.access_token) throw new Error('Sessão expirada. Faça login novamente.')
 
-      const res = await fetch('/api/economia/transferir', {
+      const res = await fetch('/api/admin/economia/transferir', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

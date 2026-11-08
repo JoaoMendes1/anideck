@@ -142,8 +142,6 @@ func main() {
 		protegido.Get("/api/guilda/resumo", guildaHandler.HandleResumoGuilda)
 		protegido.Get("/api/guilda", guildaHandler.HandleGetGuilda)
 		protegido.Get("/api/economia/carteira", economiaHandler.HandleGetCarteira)
-		protegido.Post("/api/economia/transferir", economiaHandler.HandleTransferirAniCoins)
-		protegido.Get("/api/economia/buscar-destinatario", economiaHandler.HandleBuscarDestinatario)
 
 		// Comunidade: perfil público, Mana e Vitalidade, conversa por episódio.
 		// O escudo de spoiler é a RLS do sql/041; aqui tudo usa o token de quem pede.
@@ -231,10 +229,12 @@ func main() {
 		admin.Get("/api/admin/guilda", guildaHandler.HandleGetAdminGuilda)
 		admin.Put("/api/admin/guilda", guildaHandler.HandleSaveAdminGuilda)
 
-		// Economia de Cristais: carteira global, auditoria e ajuste manual
+		// Economia de AniCoins: carteira global, auditoria, ajuste manual e transferência (exclusivo admin)
 		admin.Get("/api/admin/economia", economiaHandler.HandleGetAdminEconomia)
 		admin.Put("/api/admin/economia", economiaHandler.HandleSaveAdminEconomia)
 		admin.Post("/api/admin/economia/ajuste", economiaHandler.HandleAjusteManual)
+		admin.Post("/api/admin/economia/transferir", economiaHandler.HandleTransferirAniCoins)
+		admin.Get("/api/admin/economia/buscar-destinatario", economiaHandler.HandleBuscarDestinatario)
 
 		// Agente Olheiro: scan sob demanda e revisão da fila de sugestões
 		admin.Get("/api/admin/olheiro/tags", olheiroHandler.HandleListarTagsDesejadas)

@@ -15,7 +15,7 @@ import {
 } from '../lib/guilda'
 
 export default function Guilda() {
-  const { session } = useSessao()
+  const { session, isAdmin } = useSessao()
   const userId = session?.user.id
   const chave = chaveDoUsuario(userId, 'guilda')
   const [emMemoria] = useState(() => lerDaMemoria<DadosDaGuilda>(chave))
@@ -298,13 +298,15 @@ export default function Guilda() {
                     </div>
                   </div>
                   <div className="flex items-center gap-2">
-                    <button
-                      type="button"
-                      onClick={() => setModalTransferirAberto(true)}
-                      className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full border border-holo-3/40 bg-holo-3/15 text-holo-3 hover:bg-holo-3/25 text-xs font-bold transition-colors cursor-pointer"
-                    >
-                      <Send size={12} /> Transferir AniCoins
-                    </button>
+                    {isAdmin && (
+                      <button
+                        type="button"
+                        onClick={() => setModalTransferirAberto(true)}
+                        className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full border border-holo-3/40 bg-holo-3/15 text-holo-3 hover:bg-holo-3/25 text-xs font-bold transition-colors cursor-pointer"
+                      >
+                        <Send size={12} /> Transferir AniCoins
+                      </button>
+                    )}
                     <span className="font-mono text-[10.5px] text-muted hidden sm:inline">
                       {movimentosCristais.length} {movimentosCristais.length === 1 ? 'movimento' : 'movimentos'}
                     </span>
