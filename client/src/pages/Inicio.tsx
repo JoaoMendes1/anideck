@@ -4,7 +4,7 @@ import { useEffect, useRef, useState, type ReactNode } from 'react'
 import { Link } from 'react-router-dom'
 import {
   CalendarDays, Compass, Play, Sparkles, Trophy, Plus, Check,
-  SlidersHorizontal, ChevronLeft, ChevronRight, Upload, Lock, AlertTriangle,
+  ChevronLeft, ChevronRight, Upload, Lock, AlertTriangle,
 } from 'lucide-react'
 import { getCategoryTheme } from '../lib/filters'
 import VitrineDestaques from '../components/VitrineDestaques'
@@ -21,6 +21,8 @@ import {
 import SuaSemana from '../components/inicio/SuaSemana'
 import ResumoGuildaCard from '../components/inicio/ResumoGuildaCard'
 import HeroProximoEpisodio from '../components/inicio/HeroProximoEpisodio'
+import PlayerHudInicio from '../components/inicio/PlayerHudInicio'
+import CardMissoesDiarias from '../components/inicio/CardMissoesDiarias'
 import TrilhasDaCuradoria, { type TrilhaDaHome } from '../components/inicio/TrilhasDaCuradoria'
 import { encontrarLacuna, type AfinidadeComNota } from '../lib/lacuna'
 import {
@@ -427,30 +429,12 @@ export default function Inicio() {
 
   return (
     <div className="w-full min-w-0 max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-10 pt-6 pb-24">
-      {/* Cabeçalho compacto com ações rápidas */}
-      <header className="flex flex-wrap items-end justify-between gap-4 mb-6 select-none">
-        <div>
-          <p className="font-mono text-[10px] text-muted-2 uppercase tracking-widest mb-1">{dataDeHoje}</p>
-          <h1 className="font-anton text-[clamp(1.6rem,3.4vw,2.2rem)] uppercase m-0 leading-none">
-            {nome ? `Olá, ${nome}` : 'Sua Central'}
-          </h1>
-        </div>
-        <div className="flex items-center gap-2.5 flex-wrap">
-          <button
-            type="button"
-            onClick={() => setModalGostoAberto(true)}
-            className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-full bg-panel border border-line hover:border-holo-2 text-xs font-bold text-text transition-colors cursor-pointer"
-          >
-            <SlidersHorizontal size={13} className="text-holo-2" /> Ajustar meu gosto
-          </button>
-          <Link
-            to="/meu-gosto"
-            className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-full bg-holo-2/15 border border-holo-2/30 text-xs font-bold text-holo-2 hover:bg-holo-2/25 transition-colors"
-          >
-            <Sparkles size={13} /> Meu Gosto →
-          </Link>
-        </div>
-      </header>
+      {/* HUD Gamificado do Jogador (Mobile & Desktop) */}
+      <PlayerHudInicio
+        nome={nome}
+        dataHoje={dataDeHoje}
+        aoAbrirGosto={() => setModalGostoAberto(true)}
+      />
 
       {/* Topo: o próximo episódio de quem tem anime em andamento (com carrossel); sem nenhum, os destaques da curadoria. */}
       {itensHero.length > 0 ? (
@@ -564,6 +548,7 @@ export default function Inicio() {
       {/* No monitor largo, o conteúdo ganha uma coluna lateral com a Guilda e a semana. */}
       <div className="xl:grid xl:grid-cols-[minmax(0,1fr)_340px] xl:gap-10 xl:items-start">
       <div className="min-w-0">
+      <CardMissoesDiarias />
       {carregando && (
         <div className="flex gap-4 overflow-hidden mb-10">
           {Array.from({ length: 6 }).map((_, i) => (

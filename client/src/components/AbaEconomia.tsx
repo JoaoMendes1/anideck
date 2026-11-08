@@ -519,9 +519,9 @@ export default function AbaEconomia() {
             type="button"
             disabled={atualizando}
             onClick={() => carregar(true)}
-            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-line bg-panel-2 text-xs font-bold text-muted hover:text-text hover:border-holo-2 cursor-pointer transition-colors disabled:opacity-50"
+            className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full border border-line bg-panel-2 text-xs font-bold text-muted hover:text-text hover:border-holo-2 active:scale-95 transition-all shadow-sm hover:shadow-[0_0_12px_rgba(34,211,238,0.25)] cursor-pointer disabled:opacity-50"
           >
-            <RefreshCw size={12} className={atualizando ? 'animate-spin text-holo-3' : ''} />
+            <RefreshCw size={13} className={atualizando ? 'animate-spin text-holo-3' : 'transition-transform duration-300'} />
             {atualizando ? 'Atualizando...' : 'Atualizar'}
           </button>
         </div>

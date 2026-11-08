@@ -46,7 +46,7 @@ Staging sobe já na Fase 1, como projeto esqueleto — mesmo padrão do JVM Syst
 | 13 · Reformulação Visual, Automação de Curadoria e Inteligência de Gosto | ✅ Concluída (08/11/2026) |
 | 14 · Guilda & Gamificação | ✅ Concluída (08/11/2026) |
 | 15 · Comunidade base | ✅ Concluída (08/11/2026, #154); falta abrir o beta |
-| 16 · Economia e cartas | 🚧 Em andamento (16.0 concluído, #166); falta abrir o beta |
+| 16 · Economia e cartas | 🚧 Em andamento (16.0, 16.1a e 16.1b concluídos); falta abrir o beta |
 | 17 · Comunidade viva | 📋 Planejada, com issues (#179) |
 
 ---
@@ -725,7 +725,7 @@ Motivo: um motivo diário para voltar (`VISAO_COMUNIDADE.md`: Economia, Cartas, 
 - [x] 16.0 Tarefas periódicas no worker: base da liga, da raridade das cartas e da Fase 17 (#166)
 - [ ] 16.1 Cristais, missões e bônus de Vitalidade
   - [x] 16.1a Cristais: carteira com extrato e painel de economia (#167)
-  - [ ] 16.1b Missões diárias (#168)
+  - [x] 16.1b Missões diárias (#168)
   - [ ] 16.1c Bônus de XP por Vitalidade alta e Mana mais rápida (#169)
 - [ ] 16.2 Loja cosmética
   - [ ] 16.2a Catálogo e compra com Cristais (#170)

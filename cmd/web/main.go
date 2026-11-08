@@ -81,6 +81,7 @@ func main() {
 	guildaHandler := &handlers.GuildaHandler{}
 	comunidadeHandler := &handlers.ComunidadeHandler{}
 	economiaHandler := &handlers.EconomiaHandler{}
+	missoesHandler := &handlers.MissoesHandler{}
 
 	r := chi.NewRouter()
 	r.Use(chimw.RequestID)
@@ -142,6 +143,10 @@ func main() {
 		protegido.Get("/api/guilda/resumo", guildaHandler.HandleResumoGuilda)
 		protegido.Get("/api/guilda", guildaHandler.HandleGetGuilda)
 		protegido.Get("/api/economia/carteira", economiaHandler.HandleGetCarteira)
+
+		// Missões Diárias (Fase 16, #168): sorteio determinístico e resgate de AniCoins
+		protegido.Get("/api/missoes/hoje", missoesHandler.HandleGetMissoesHoje)
+		protegido.Post("/api/missoes/{id}/resgatar", missoesHandler.HandleResgatarMissao)
 
 		// Comunidade: perfil público, Mana e Vitalidade, conversa por episódio.
 		// O escudo de spoiler é a RLS do sql/041; aqui tudo usa o token de quem pede.

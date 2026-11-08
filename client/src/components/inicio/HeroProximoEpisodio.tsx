@@ -96,46 +96,6 @@ export default function HeroProximoEpisodio({
       <div className="absolute inset-0 bg-gradient-to-r from-void via-void/90 to-void/40" />
       <div className="absolute inset-0 bg-gradient-to-t from-void via-void/50 to-transparent" />
 
-      {/* Controles do carrossel no topo direito */}
-      {listaItens.length > 1 && (
-        <div className="absolute top-4 right-4 sm:top-6 sm:right-6 z-20 flex items-center gap-2">
-          <button
-            type="button"
-            onClick={() => mudarIndice((indice - 1 + listaItens.length) % listaItens.length)}
-            className="w-8 h-8 rounded-full bg-void/80 hover:bg-void border border-line hover:border-holo-3 text-text hover:text-holo-3 flex items-center justify-center cursor-pointer transition-all shadow-lg active:scale-90"
-            title="Anime anterior"
-            aria-label="Anime anterior"
-          >
-            <ChevronLeft size={16} />
-          </button>
-          <div className="hidden sm:flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-void/80 border border-line">
-            {listaItens.map((_, i) => (
-              <button
-                key={i}
-                type="button"
-                onClick={() => mudarIndice(i)}
-                className={`transition-all rounded-full cursor-pointer ${
-                  i === indice ? 'w-4 h-1.5 bg-holo-3' : 'w-1.5 h-1.5 bg-white/30 hover:bg-white/60'
-                }`}
-                aria-label={`Ir para anime ${i + 1}`}
-              />
-            ))}
-          </div>
-          <span className="sm:hidden font-mono text-[11px] text-muted font-bold px-2 py-0.5 rounded-full bg-void/80 border border-line">
-            {indice + 1}/{listaItens.length}
-          </span>
-          <button
-            type="button"
-            onClick={() => mudarIndice((indice + 1) % listaItens.length)}
-            className="w-8 h-8 rounded-full bg-void/80 hover:bg-void border border-line hover:border-holo-3 text-text hover:text-holo-3 flex items-center justify-center cursor-pointer transition-all shadow-lg active:scale-90"
-            title="Próximo anime"
-            aria-label="Próximo anime"
-          >
-            <ChevronRight size={16} />
-          </button>
-        </div>
-      )}
-
       <div className="relative z-10 w-full p-5 sm:p-8 flex flex-col md:flex-row md:items-end gap-5 md:gap-7">
         <Link to={`/anime/${anime.mal_id}`} className="shrink-0 hidden sm:block group relative">
           {anime.image_url ? (
@@ -151,16 +111,69 @@ export default function HeroProximoEpisodio({
         </Link>
 
         <div className="flex-1 min-w-0">
-          <div className="flex flex-wrap items-center gap-2 mb-2.5">
-            <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-holo-1/15 border border-holo-1/35 text-holo-1 font-mono text-[10px] font-bold uppercase tracking-widest">
-              <Play size={10} fill="currentColor" /> Seu próximo episódio
-            </span>
-            {anime.genres?.slice(0, 3).map((g) => (
-              <span key={g} className="px-2 py-0.5 rounded-full bg-panel-2/90 border border-line text-muted font-mono text-[10px]">
-                {g}
+          {/* Cabeçalho do Card: Badge + Tags (desktop) e Controles do Carrossel em linha */}
+          <div className="flex items-center justify-between gap-3 mb-2.5">
+            <div className="flex flex-wrap items-center gap-2 min-w-0">
+              <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-holo-1/15 border border-holo-1/35 text-holo-1 font-mono text-[10px] font-bold uppercase tracking-widest shrink-0">
+                <Play size={10} fill="currentColor" /> Seu próximo episódio
               </span>
-            ))}
+              {anime.genres?.slice(0, 3).map((g) => (
+                <span key={g} className="hidden sm:inline-block px-2 py-0.5 rounded-full bg-panel-2/90 border border-line text-muted font-mono text-[10px] shrink-0">
+                  {g}
+                </span>
+              ))}
+            </div>
+
+            {listaItens.length > 1 && (
+              <div className="flex items-center gap-1.5 shrink-0 z-20">
+                <button
+                  type="button"
+                  onClick={() => mudarIndice((indice - 1 + listaItens.length) % listaItens.length)}
+                  className="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-void/80 hover:bg-void border border-line hover:border-holo-3 text-text hover:text-holo-3 flex items-center justify-center cursor-pointer transition-all shadow-lg active:scale-90"
+                  title="Anime anterior"
+                  aria-label="Anime anterior"
+                >
+                  <ChevronLeft size={15} />
+                </button>
+                <div className="hidden sm:flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-void/80 border border-line">
+                  {listaItens.map((_, i) => (
+                    <button
+                      key={i}
+                      type="button"
+                      onClick={() => mudarIndice(i)}
+                      className={`transition-all rounded-full cursor-pointer ${
+                        i === indice ? 'w-4 h-1.5 bg-holo-3' : 'w-1.5 h-1.5 bg-white/30 hover:bg-white/60'
+                      }`}
+                      aria-label={`Ir para anime ${i + 1}`}
+                    />
+                  ))}
+                </div>
+                <span className="sm:hidden font-mono text-[10.5px] text-muted font-bold px-2 py-0.5 rounded-full bg-void/80 border border-line tabular-nums">
+                  {indice + 1}/{listaItens.length}
+                </span>
+                <button
+                  type="button"
+                  onClick={() => mudarIndice((indice + 1) % listaItens.length)}
+                  className="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-void/80 hover:bg-void border border-line hover:border-holo-3 text-text hover:text-holo-3 flex items-center justify-center cursor-pointer transition-all shadow-lg active:scale-90"
+                  title="Próximo anime"
+                  aria-label="Próximo anime"
+                >
+                  <ChevronRight size={15} />
+                </button>
+              </div>
+            )}
           </div>
+
+          {/* Tags visíveis no mobile abaixo do cabeçalho sem colidir */}
+          {anime.genres && anime.genres.length > 0 && (
+            <div className="flex sm:hidden flex-wrap gap-1.5 mb-2">
+              {anime.genres.slice(0, 3).map((g) => (
+                <span key={g} className="px-2 py-0.5 rounded-full bg-panel-2/90 border border-line text-muted font-mono text-[9.5px]">
+                  {g}
+                </span>
+              ))}
+            </div>
+          )}
 
           <Link to={`/anime/${anime.mal_id}`}>
             <h2 className="font-anton text-2xl sm:text-4xl uppercase leading-tight text-text hover:text-holo-3 transition-colors line-clamp-2 m-0">

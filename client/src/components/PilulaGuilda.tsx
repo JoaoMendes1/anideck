@@ -27,7 +27,7 @@ const ESTILO_DO_AVISO: Record<AvisoDoHud['tipo'], string> = {
 // O `largura` muda conforme o lugar: na coluna, flex-1 encolheria a altura a zero.
 function MiniBarra({ pct, classe, largura = 'w-full' }: { pct: number; classe: string; largura?: string }) {
   return (
-    <span className={`h-1 rounded-full bg-panel-2 overflow-hidden block ${largura}`}>
+    <span className={`h-1.5 rounded-full bg-panel-2 overflow-hidden block ${largura} border border-line/30`}>
       <i className={`block h-full transition-all duration-700 ${classe}`} style={{ width: `${Math.min(100, Math.max(0, pct))}%` }} />
     </span>
   )
@@ -128,8 +128,8 @@ export default function PilulaGuilda() {
           <MiniBarra pct={status.progresso_pct} classe={estilo.corBarra} />
           {estado && (
             <span className="flex gap-1">
-              <MiniBarra pct={estado.hp} classe="bg-coral" largura="flex-1" />
-              <MiniBarra pct={(estado.mana / estado.regras.mp_max) * 100} classe="bg-holo-3" largura="flex-1" />
+              <MiniBarra pct={estado.hp} classe="bg-gradient-to-r from-rose-500 to-coral shadow-[0_0_6px_rgba(255,107,107,0.4)]" largura="flex-1" />
+              <MiniBarra pct={(estado.mana / estado.regras.mp_max) * 100} classe="bg-gradient-to-r from-sky-400 to-holo-3 shadow-[0_0_6px_rgba(34,211,238,0.4)]" largura="flex-1" />
             </span>
           )}
         </span>

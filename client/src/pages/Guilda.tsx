@@ -6,6 +6,7 @@ import { useCarteira } from '../hooks/useCarteira'
 import CartaoVitais from '../components/comunidade/CartaoVitais'
 import IconeAniCoin from '../components/IconeAniCoin'
 import ModalTransferirAniCoins from '../components/ModalTransferirAniCoins'
+import CardMissoesDiarias from '../components/inicio/CardMissoesDiarias'
 import { chaveDoUsuario, lerDaMemoria, guardarNaMemoria } from '../lib/cacheDeTela'
 import {
   obterEstiloRank,
@@ -193,6 +194,9 @@ export default function Guilda() {
               </div>
             </div>
           </section>
+
+          {/* MISSÕES DIÁRIAS (Fase 16, #168) */}
+          <CardMissoesDiarias />
 
           {/* LIVRO-RAZÃO: XP E CRISTAIS */}
           <section className="p-5 sm:p-6 rounded-2xl bg-panel border border-line">

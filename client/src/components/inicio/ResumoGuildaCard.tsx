@@ -1,15 +1,18 @@
 // client/src/components/inicio/ResumoGuildaCard.tsx
-// A ficha da Guilda na coluna lateral da Início: rank, nível, XP de hoje, streak, Vitalidade e Mana.
+// A ficha da Guilda na coluna lateral da Início: rank, nível, XP de hoje, streak, Vitalidade, Mana e AniCoins.
 import { Link } from 'react-router-dom'
 import { Flame, Shield } from 'lucide-react'
+import IconeAniCoin from '../IconeAniCoin'
 import { obterEstiloRank } from '../../lib/guilda'
 import { useResumoGuilda } from '../../hooks/useResumoGuilda'
 import { useComunidade } from '../../hooks/useComunidade'
+import { useCarteira } from '../../hooks/useCarteira'
 import BarrasVitais from '../comunidade/BarrasVitais'
 
 export default function ResumoGuildaCard() {
   const status = useResumoGuilda()
   const { estado } = useComunidade()
+  const { saldo } = useCarteira()
   if (!status || !status.gamificacao_ativa) return null
 
   const estilo = obterEstiloRank(status.rank)
@@ -49,9 +52,16 @@ export default function ResumoGuildaCard() {
         <span>
           Hoje: <b className="text-green">{status.xp_hoje}</b> / {status.teto_diario} XP
         </span>
-        <span className="w-16 h-1 rounded-full bg-panel-2 overflow-hidden">
-          <span className="block h-full bg-green" style={{ width: `${pctHoje}%` }} />
+        <span className="w-16 h-1.5 rounded-full bg-panel-2 overflow-hidden border border-line/40">
+          <span className="block h-full bg-gradient-to-r from-emerald-500 to-green-400 shadow-[0_0_6px_rgba(16,185,129,0.4)]" style={{ width: `${pctHoje}%` }} />
         </span>
+      </div>
+
+      <div className="flex items-center justify-between font-mono text-[10.5px] mt-2.5 pt-2 border-t border-line/50">
+        <span className="flex items-center gap-1.5 text-muted">
+          <IconeAniCoin size={13} animar /> AniCoins
+        </span>
+        <span className="font-bold text-holo-3">{saldo.toLocaleString('pt-BR')} ₳</span>
       </div>
 
       {estado && (

@@ -39,7 +39,15 @@ export default function BarrasVitais({ estado, compacta = false }: { estado: Est
             <span className="text-muted-2">/100</span>
           </span>
         </div>
-        <Barra valor={hp} maximo={100} classe={faixa === 'baixo' ? 'bg-coral/60' : 'bg-coral'} />
+        <Barra
+          valor={hp}
+          maximo={100}
+          classe={
+            faixa === 'baixo'
+              ? 'bg-gradient-to-r from-rose-600/70 to-coral/70'
+              : 'bg-gradient-to-r from-rose-500 via-coral to-amber-500 shadow-[0_0_8px_rgba(255,107,107,0.45)]'
+          }
+        />
         {!compacta && (
           <p className="text-[11.5px] text-muted-2 mt-1.5 mb-0">
             {emDescanso ? 'Modo Descanso ativo: sua Vitalidade está congelada.' : FRASE_HP[faixa]}
@@ -57,7 +65,11 @@ export default function BarrasVitais({ estado, compacta = false }: { estado: Est
             <span className="text-muted-2">/{regras.mp_max}</span>
           </span>
         </div>
-        <Barra valor={mana} maximo={regras.mp_max} classe="bg-holo-3" />
+        <Barra
+          valor={mana}
+          maximo={regras.mp_max}
+          classe="bg-gradient-to-r from-sky-500 via-cyan-400 to-holo-3 shadow-[0_0_8px_rgba(34,211,238,0.45)]"
+        />
         {!compacta && (
           <p className="text-[11.5px] text-muted-2 mt-1.5 mb-0">
             Cada comentário custa {regras.mp_custo_comentario} de Mana. Ela recarrega sozinha, {regras.mp_regen_dia} por dia{faltam > 0 ? `: cheia ${textoDoTempo(faltam)}.` : ', e está cheia.'}
