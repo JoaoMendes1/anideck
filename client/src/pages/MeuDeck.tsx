@@ -4,7 +4,6 @@ import { Link } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import EditarEntradaModal from '../components/EditarEntradaModal'
 import DeckCard from '../components/DeckCard'
-import VitrineDestaques from '../components/VitrineDestaques'
 import type { AnimeDaApi } from '../types/anime'
 import DeckSkeleton from '../components/DeckSkeleton'
 import StatCard from '../components/StatCard'
@@ -232,11 +231,6 @@ export default function MeuDeck() {
                             <div key={i} className="shrink-0 w-[132px] md:w-auto h-[92px] rounded-[14px] shimmer" />
                         ))}
                     </div>
-                    {/* A vitrine ocupa a MESMA posição (terceiro filho deste div) aqui e no
-                        retorno carregado. É isso que faz o React mantê-la viva quando o
-                        loading acaba, em vez de desmontar e buscar de novo. Mudou a
-                        estrutura de um dos dois retornos, mude a do outro junto. */}
-                    <VitrineDestaques />
                     <DeckSkeleton />
                 </div>
             </div>
@@ -280,8 +274,6 @@ export default function MeuDeck() {
                     <StatCard icon={<Star size={14} />} value={stats.notaMedia} label="Sua Nota Média" accentColor="holo-1" />
                 </div>
 
-                <VitrineDestaques />
-
                 <div className="flex items-center justify-between mb-5 select-none">
                     <h2 className="font-anton text-[17px] uppercase m-0">Meu Deck</h2>
                 </div>
@@ -321,7 +313,7 @@ export default function MeuDeck() {
                         <p className="text-sm text-muted">Nenhum anime encontrado com este status.</p>
                     </div>
                 ) : (
-                    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3.5 sm:gap-5">
+                    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3.5 sm:gap-5">
                         {entradasOrdenadas.map((entrada, index) => (
                             <DeckCard
                                 key={entrada.id}

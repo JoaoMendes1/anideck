@@ -63,10 +63,19 @@ export default function Navbar() {
               Ani<span className="text-holo">Deck</span>
             </div>
           </Link>
-          {session && !ehDesktop && (
+          {/* No celular a busca fica no topo: o botão flutuante cobria o conteúdo das páginas. */}
+          {!ehDesktop && (
             <div className="flex md:hidden items-center gap-2">
-              <PilulaGuilda />
-              <NotificationBell />
+              <Link
+                to="/descobrir?foco=1"
+                aria-label="Buscar anime"
+                title="Buscar anime"
+                className="w-9 h-9 rounded-full border border-line bg-panel text-muted flex items-center justify-center transition-colors hover:border-holo-3 hover:text-holo-3"
+              >
+                <Search size={16} />
+              </Link>
+              {session && <PilulaGuilda />}
+              {session && <NotificationBell />}
             </div>
           )}
 

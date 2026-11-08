@@ -23,8 +23,7 @@ export default function BottomNav() {
             ATIVO_EM[item]?.includes(location.pathname) ? 'text-holo-3' : 'text-muted'
         }`
 
-    // No celular, a busca tem o botão flutuante dedicado (BotaoBusca em Layout.tsx),
-    // liberando espaço na barra inferior para Rankings e Meu Gosto ficarem sempre à mão.
+    // A busca fica no topo (Navbar), liberando a barra inferior para Rankings e Meu Gosto.
     return (
         <div className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-void/90 backdrop-blur-md border-t border-line pb-safe">
             <div className="flex items-center justify-around h-16 px-1">

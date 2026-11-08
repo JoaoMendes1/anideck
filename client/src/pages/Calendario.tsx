@@ -285,7 +285,10 @@ export default function Calendario() {
                         <p className="text-sm text-muted">Nenhum episódio previsto para a aba selecionada.</p>
                     </div>
                 ) : (
-                    groups.map((group) => {
+                    // No monitor, dois dias lado a lado: um card por dia numa grade de três
+                    // colunas deixava dois terços da tela vazios.
+                    <div className="grid grid-cols-1 xl:grid-cols-2 xl:gap-x-10 items-start">
+                    {groups.map((group) => {
                         let badgeColor = 'bg-panel border-line text-muted-2'
                         if (group.label === 'Hoje') badgeColor = 'bg-coral/15 border-coral/35 text-coral'
                         if (group.label === 'Amanhã') badgeColor = 'bg-gold/15 border-gold/35 text-gold'
@@ -305,7 +308,7 @@ export default function Calendario() {
                                     <div className="flex-1 h-[1px] bg-line"></div>
                                 </div>
 
-                                <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 sm:gap-5">
+                                <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-1 gap-4 sm:gap-5">
                                     {group.animes.map((anime, index) => {
                                         const gradClass = gradienteDoCard(index)
                                         const streamUrl = anime.streaming ? anime.streaming.find(s => s.name.toLowerCase().includes('crunchyroll'))?.url || anime.streaming.find(s => s.name.toLowerCase().includes('netflix'))?.url || anime.streaming[0]?.url : null
@@ -420,7 +423,8 @@ export default function Calendario() {
                                 </div>
                             </div>
                         )
-                    })
+                    })}
+                    </div>
                 )}
             </div>
         </div>

@@ -281,6 +281,7 @@ export default function NotificationBell() {
     <>
       <button
         onClick={abrir}
+        aria-label={naoLidas > 0 ? `Notificações, ${naoLidas} não lidas` : 'Notificações'}
         className="relative w-9 h-9 rounded-full border border-line bg-panel text-muted flex items-center justify-center transition-all hover:border-holo-3 hover:text-holo-3 cursor-pointer select-none"
         title="Notificações"
       >
@@ -426,7 +427,7 @@ export default function NotificationBell() {
                           <button
                             onClick={() => markAsRead(n.id)}
                             className="text-muted hover:text-green transition-colors p-1.5 cursor-pointer flex-shrink-0"
-                            title="Marcar como lido"
+                            title="Marcar como lida" aria-label="Marcar notificação como lida"
                           >
                             <Check size={16} />
                           </button>
@@ -510,7 +511,7 @@ export default function NotificationBell() {
                         <button
                           onClick={() => markAsRead(n.id)}
                           className="text-muted hover:text-green transition-colors p-1.5 cursor-pointer flex-shrink-0"
-                          title="Marcar como lido"
+                          title="Marcar como lida" aria-label="Marcar notificação como lida"
                         >
                           <Check size={16} />
                         </button>

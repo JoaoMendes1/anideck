@@ -116,7 +116,7 @@ export default function AnimeCard({
                 {statusBadge}
                 {extraBadges}
                 {temRanking && (
-                    <div className="flex items-center gap-1 font-anton text-[9.5px] px-1.5 py-0.5 rounded-md bg-void/80 text-holo-3 border border-holo-3/40 shadow-[0_0_8px_rgba(63,224,240,0.25)]">
+                    <div title={`#${ranking} no ranking geral da AniList`} className="flex items-center gap-1 font-anton text-[9.5px] px-1.5 py-0.5 rounded-md bg-void/80 text-holo-3 border border-holo-3/40 shadow-[0_0_8px_rgba(63,224,240,0.25)]">
                         <span className="text-[8.5px] leading-none">🏆</span>#{ranking}
                     </div>
                 )}

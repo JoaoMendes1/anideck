@@ -366,6 +366,42 @@ export default function Detalhes() {
     startDate: anime.startDate,
   })
 
+  // No celular o bloco do Deck vai para o topo do conteúdo; no monitor fica na coluna da direita.
+  const blocoMeuDeck = (
+    <section>
+      <h2 className="font-anton text-base uppercase mb-4 flex items-center gap-2 select-none">
+        <span className="font-mono text-[11px] text-holo-3">MEU DECK</span>
+      </h2>
+      {minhaEntrada ? (
+        <div className="bg-gradient-to-br from-panel to-panel-2 border border-holo-3/30 rounded-2xl p-5 shadow-lg">
+          <div className="text-xs font-bold text-muted uppercase mb-1 select-none">Status Atual</div>
+          <div className="font-anton text-2xl text-text mb-4 tracking-wide flex items-center gap-2">
+            {minhaEntrada.status}
+          </div>
+
+          {minhaEntrada.anotacao && (
+            <div className="mb-4 p-3 bg-void/50 border border-line rounded-lg">
+              <p className="font-mono text-[9px] text-muted-2 uppercase mb-1">Sua Anotação:</p>
+              <p className="text-[13px] text-muted italic break-words leading-relaxed">"{minhaEntrada.anotacao}"</p>
+            </div>
+          )}
+
+          <button onClick={() => setIsModalOpen(true)} className="select-none block text-center w-full py-2.5 rounded-xl border border-line text-sm font-bold bg-panel-2 hover:bg-holo-3/20 hover:text-holo-3 hover:border-holo-3 transition-colors cursor-pointer">
+            Editar Avaliação
+          </button>
+        </div>
+      ) : (
+        <div className="bg-panel border border-dashed border-line rounded-2xl p-6 text-center">
+          <Bookmark size={24} className="mx-auto mb-3 text-muted-2" />
+          <p className="text-sm font-bold text-text mb-4">Ainda não está no seu Deck.</p>
+          <button onClick={() => setIsModalOpen(true)} className="select-none bg-gradient-to-r from-holo-1 to-holo-3 text-void w-full py-2.5 rounded-xl font-extrabold text-sm hover:opacity-90 transition-opacity cursor-pointer">
+            + Adicionar ao Deck
+          </button>
+        </div>
+      )}
+    </section>
+  )
+
   return (
     <div className="-mt-24 pb-20">
 
@@ -591,14 +627,16 @@ export default function Detalhes() {
         <div className="grid grid-cols-1 lg:grid-cols-[1fr_320px] gap-10" id="visao-geral">
           <div className="space-y-10 min-w-0">
 
+            <div className="lg:hidden">{blocoMeuDeck}</div>
+
             <section>
               <div className="flex flex-wrap items-center justify-between gap-2 mb-4 select-none">
                 <h2 className="font-anton text-base uppercase flex items-center gap-2 m-0">
                   <span className="font-mono text-[11px] text-holo-3">01</span> Sinopse
                 </h2>
                 {!anime.is_curated && (
-                  <span className="inline-flex items-center gap-1.5 font-mono text-[10px] font-bold uppercase tracking-wider px-2.5 py-1 rounded-full bg-gold/15 border border-gold/40 text-gold">
-                    ⚠ Obra ainda não curada (tradução automática)
+                  <span className="font-mono text-[10px] uppercase tracking-wider text-muted-2">
+                    Tradução automática
                   </span>
                 )}
               </div>
@@ -757,38 +795,7 @@ export default function Detalhes() {
 
           <div className="space-y-10 min-w-0" id="estatisticas">
 
-            <section>
-              <h2 className="font-anton text-base uppercase mb-4 flex items-center gap-2 select-none">
-                <span className="font-mono text-[11px] text-holo-3">MEU DECK</span>
-              </h2>
-              {minhaEntrada ? (
-                <div className="bg-gradient-to-br from-panel to-panel-2 border border-holo-3/30 rounded-2xl p-5 shadow-lg">
-                  <div className="text-xs font-bold text-muted uppercase mb-1 select-none">Status Atual</div>
-                  <div className="font-anton text-2xl text-text mb-4 tracking-wide flex items-center gap-2">
-                    {minhaEntrada.status}
-                  </div>
-
-                  {minhaEntrada.anotacao && (
-                    <div className="mb-4 p-3 bg-void/50 border border-line rounded-lg">
-                      <p className="font-mono text-[9px] text-muted-2 uppercase mb-1">Sua Anotação:</p>
-                      <p className="text-[13px] text-muted italic break-words leading-relaxed">"{minhaEntrada.anotacao}"</p>
-                    </div>
-                  )}
-
-                  <button onClick={() => setIsModalOpen(true)} className="select-none block text-center w-full py-2.5 rounded-xl border border-line text-sm font-bold bg-panel-2 hover:bg-holo-3/20 hover:text-holo-3 hover:border-holo-3 transition-colors cursor-pointer">
-                    Editar Avaliação
-                  </button>
-                </div>
-              ) : (
-                <div className="bg-panel border border-dashed border-line rounded-2xl p-6 text-center">
-                  <Bookmark size={24} className="mx-auto mb-3 text-muted-2" />
-                  <p className="text-sm font-bold text-text mb-4">Ainda não está no seu Deck.</p>
-                  <button onClick={() => setIsModalOpen(true)} className="select-none bg-gradient-to-r from-holo-1 to-holo-3 text-void w-full py-2.5 rounded-xl font-extrabold text-sm hover:opacity-90 transition-opacity cursor-pointer">
-                    + Adicionar ao Deck
-                  </button>
-                </div>
-              )}
-            </section>
+            <div className="hidden lg:block">{blocoMeuDeck}</div>
 
             {stats && stats.scores && (
               <section>

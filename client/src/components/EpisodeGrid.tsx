@@ -208,7 +208,7 @@ export default function EpisodeGrid({ malId, totalEpisodes, streamingEpisodes = 
           )}
         </div>
       ) : (
-      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-5">
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2.5 sm:gap-4 md:gap-5">
         {displayEpisodes.map((ep) => {
           const isWatched = watched.includes(ep.number)
           const obraNaoLancada = status === 'NOT_YET_RELEASED' || status === 'Ainda não lançado'
@@ -216,7 +216,9 @@ export default function EpisodeGrid({ malId, totalEpisodes, streamingEpisodes = 
           const dataDoEpisodio = calcularDataEstimadaDoEpisodio(ep.number, ep.airedAt)
           const dataEhFutura = dataDoEpisodio ? dataDoEpisodio.getTime() > agora : false
           const isUnreleased = obraNaoLancada || (nextAiringEpisode ? ep.number >= nextAiringEpisode.episode : false) || dataEhFutura
-          const isCompact = !ep.thumbnail && !isUnreleased
+          // Episódio sem miniatura ou ainda não lançado vira linha compacta: um bloco de
+          // imagem vazio por episódio futuro deixava a página com milhares de pixels.
+          const isCompact = !ep.thumbnail || isUnreleased
 
           return (
             <div 
@@ -244,7 +246,7 @@ export default function EpisodeGrid({ malId, totalEpisodes, streamingEpisodes = 
                   <span className="text-muted-2 font-mono text-[10px] uppercase tracking-widest">Sem miniatura</span>
                 )}
                 
-                {isWatched && !isUnreleased && (
+                {isWatched && (
                   <div className="absolute inset-0 flex items-center justify-center bg-green/10">
                     <div className="w-10 h-10 rounded-full bg-green text-void flex items-center justify-center shadow-[0_0_20px_rgba(160,255,120,0.4)]">
                       <Check size={20} strokeWidth={3} />
@@ -252,17 +254,13 @@ export default function EpisodeGrid({ malId, totalEpisodes, streamingEpisodes = 
                   </div>
                 )}
 
-                {isUnreleased && (
-                  <div className="absolute inset-0 flex flex-col items-center justify-center bg-void/85 backdrop-blur-[2px] px-3 text-center">
-                    <Lock size={20} className={isWatched ? 'text-coral mb-1' : 'text-muted-2 mb-1'} />
-                    <span className={`font-anton text-[11px] uppercase tracking-widest ${isWatched ? 'text-coral' : 'text-muted-2'}`}>
-                      {isWatched ? 'Marcado por engano (clique p/ remover)' : 'Bloqueado · Não Lançado'}
-                    </span>
-                  </div>
-                )}
               </div>}
 
-              <div className={isCompact ? 'min-w-0 flex-1' : 'p-3'}>
+              {isCompact && isUnreleased && (
+                <Lock size={14} className={`shrink-0 ${isWatched ? 'text-coral' : 'text-muted-2'}`} />
+              )}
+
+              <div className={isCompact ? 'min-w-0 flex-1' : 'p-2.5 sm:p-3'}>
                 <div className="flex justify-between items-start gap-2">
                   <div className="flex flex-col">
                      <div className="font-mono text-[11px] text-holo-3 font-bold leading-none mb-1">EP {ep.number}</div>
@@ -285,7 +283,7 @@ export default function EpisodeGrid({ malId, totalEpisodes, streamingEpisodes = 
                   )}
                 </div>
                 <div className={`text-[12px] font-bold mt-1.5 ${isCompact ? 'truncate' : 'line-clamp-2'} leading-tight ${isWatched ? 'text-muted-2' : 'text-text'}`}>
-                  {isUnreleased ? 'Episódio ainda não lançado' : ep.title}
+                  {isUnreleased ? (isWatched ? 'Marcado por engano · toque para remover' : 'Ainda não lançado') : ep.title}
                 </div>
               </div>
             </div>
@@ -305,7 +303,7 @@ export default function EpisodeGrid({ malId, totalEpisodes, streamingEpisodes = 
 
       {isLoggedIn && episodesCount > 0 && (
         <p className="font-mono text-[10.5px] text-muted-2 mt-3 mb-0">
-          Marcar episódio rende <b className="text-text">+25 XP</b> na Guilda (+10 XP no lançamento); a partir do 3º do dia aplica retorno decrescente.
+          Marcar episódio rende <b className="text-text">XP na Guilda</b>, com bônus para quem assiste no lançamento; a partir do 3º do dia, o ganho diminui.
         </p>
       )}
     </section>
