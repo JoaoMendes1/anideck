@@ -73,9 +73,9 @@ export default function VitrineDestaques() {
         <div className="h-[25.5px] flex items-center mb-5">
           <div className="h-5 w-32 rounded-full shimmer" />
         </div>
-        <div className="flex gap-3.5 overflow-hidden">
+        <div className="flex gap-4 overflow-hidden">
           {Array.from({ length: 6 }).map((_, i) => (
-            <div key={i} className="shrink-0 w-[140px] md:w-[158px]">
+            <div key={i} className="shrink-0 w-[148px] sm:w-[168px] lg:w-[188px]">
               <div className="aspect-[2/3] rounded-[14px] shimmer" />
               <div className="mt-2.5 h-[31.25px] flex flex-col justify-center gap-1.5">
                 <div className="h-3 w-4/5 rounded-full shimmer" />
@@ -121,12 +121,12 @@ export default function VitrineDestaques() {
         // Mesmo padrão de rolagem do resto do Meu Deck: sangra até a borda no mobile
         // (-mx-5/px-5) e vira faixa normal no md+).
         <div
-        ref={trilho} className="flex gap-3.5 overflow-x-auto scrollbar-hide snap-x snap-mandatory -mx-5 px-5 md:mx-0 md:px-0 pb-1">
+        ref={trilho} className="flex gap-4 overflow-x-auto scrollbar-hide snap-x snap-mandatory -mx-4 px-4 sm:mx-0 sm:px-0 pb-1">
         {destaques.map((anime, index) => (
           <Link
             key={anime.id || anime.mal_id}
             to={`/anime/${anime.mal_id}`}
-            className="group shrink-0 w-[140px] md:w-[158px] snap-start"
+            className="group shrink-0 w-[148px] sm:w-[168px] lg:w-[188px] snap-start"
           >
             {/* A proporção virou 2/3, que é a da arte de pôster: o 3/4.2 anterior
                 deformava ou cortava toda capa que chegava no formato original. */}

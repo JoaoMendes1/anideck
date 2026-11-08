@@ -160,7 +160,7 @@ export default function Rankings() {
         selectedFilters.forEach(f => params.append(f.type === 'genre' ? 'genre' : 'tag', f.value))
         if (selectedStatus) params.set('status', selectedStatus)
         if (selectedSeason) params.set('season', selectedSeason)
-        if (selectedSeason && selectedYear) params.set('year', selectedYear)
+        if (selectedYear) params.set('year', selectedYear)
         params.append('sort', selectedSort)
 
         try {
@@ -266,7 +266,7 @@ export default function Rankings() {
 
     return (
         <div className="pb-20">
-            <div className="max-w-[900px] mx-auto px-5 pt-10">
+            <div className="max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-10 pt-10">
                 <AbasDescobrir />
 
                 {/* --- CABEÇALHO NOVO COM ÍCONE DE INFO E CAIXA DE CREDIBILIDADE --- */}
@@ -366,36 +366,35 @@ export default function Rankings() {
                             onToggle={(v) => setSelectedStatus(selectedStatus === v ? '' : v)}
                         />
 
-                        <div>
+                                                <div>
                             <FilterChipGroup
                                 label="Temporada"
                                 options={SEASON_OPTIONS}
                                 isActive={(v) => selectedSeason === v}
                                 onToggle={(v) => {
                                     setSelectedSeason(selectedSeason === v ? '' : v)
-                                    if (selectedSeason === v) setSelectedYear('')
                                 }}
                             />
 
-                            {selectedSeason && (
-                                <div className="flex flex-wrap gap-2 p-3 mt-3 bg-panel-2 border border-line rounded-xl">
-                                    <span className="text-[11px] font-bold text-muted uppercase w-full mb-1">Selecione o Ano:</span>
-                                    {YEAR_OPTIONS.map(y => (
-                                        <button
-                                            key={y}
-                                            onClick={() => setSelectedYear(selectedYear === String(y) ? '' : String(y))}
-                                            className={`select-none px-3 py-1.5 rounded-full text-xs font-bold transition-all duration-150 cursor-pointer ${selectedYear === String(y)
-                                                    ? 'bg-holo-3/20 border border-holo-3/50 text-holo-3'
-                                                    : 'bg-panel border border-line text-muted hover:border-holo-3 hover:text-text'
-                                                }`}
-                                        >
-                                            {y}
-                                        </button>
-                                    ))}
-                                </div>
-                            )}
+                            <div className="flex flex-wrap gap-2 p-3 mt-3 bg-panel-2 border border-line rounded-xl">
+                                <span className="text-[11px] font-bold text-muted uppercase w-full mb-1">
+                                    Ano de lançamento (opcional com ou sem temporada):
+                                </span>
+                                {YEAR_OPTIONS.map(y => (
+                                    <button
+                                        key={y}
+                                        onClick={() => setSelectedYear(selectedYear === String(y) ? '' : String(y))}
+                                        className={`select-none px-3 py-1.5 rounded-full text-xs font-bold transition-all duration-150 cursor-pointer ${selectedYear === String(y)
+                                                ? 'bg-holo-3/20 border border-holo-3/50 text-holo-3'
+                                                : 'bg-panel border-line text-muted hover:border-holo-3 hover:text-text'
+                                            }`}
+                                    >
+                                        {y}
+                                    </button>
+                                ))}
+                            </div>
                         </div>
-
+                        
                         <div>
                             <p className="font-mono text-[10px] text-muted-2 tracking-widest mb-3 select-none uppercase">
                                 Gêneros e Tags

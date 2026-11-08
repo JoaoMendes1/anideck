@@ -430,7 +430,7 @@ export default function Estatisticas() {
 
   return (
     <div className="pb-20">
-      <div className="max-w-[980px] mx-auto px-5 pt-8 relative z-10">
+      <div className="max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-10 pt-8 relative z-10">
 
         <div ref={registrar} className="reveal mb-8">
           <h1 className="font-anton text-[clamp(1.6rem,3.6vw,2.2rem)] uppercase mb-3">Meu Gosto</h1>

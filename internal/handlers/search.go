@@ -91,11 +91,14 @@ func temporadaDeEstreia(firstAiredAt string) (temporada string, ano int, ok bool
 // curadoria subia para o topo da página. Se a AniList devolver o anime para essa
 // temporada, ele continua aparecendo pelo resultado dela, que conhece a temporada.
 func bateComTemporada(a anilist.Anime, temporada string, ano int) bool {
-	if temporada == "" {
+	if temporada == "" && ano == 0 {
 		return true
 	}
 	t, anoDoAnime, ok := temporadaDeEstreia(a.FirstAiredAt)
-	if !ok || t != temporada {
+	if !ok {
+		return false
+	}
+	if temporada != "" && t != temporada {
 		return false
 	}
 	return ano == 0 || anoDoAnime == ano
@@ -194,13 +197,11 @@ func (h *SearchHandler) HandleSearch(w http.ResponseWriter, r *http.Request) {
 	}
 
 	seasonYear := 0
-	if season != "" {
-		if y, err := strconv.Atoi(r.URL.Query().Get("year")); err == nil && y > 0 {
-			seasonYear = y
-		}
+	if y, err := strconv.Atoi(r.URL.Query().Get("year")); err == nil && y > 0 {
+		seasonYear = y
 	}
 
-	if query == "" && len(genres) == 0 && len(tags) == 0 && len(rotulos) == 0 && season == "" && status == "" {
+	if query == "" && len(genres) == 0 && len(tags) == 0 && len(rotulos) == 0 && season == "" && seasonYear == 0 && status == "" {
 		http.Error(w, "É necessário informar ao menos um critério de busca", http.StatusBadRequest)
 		return
 	}

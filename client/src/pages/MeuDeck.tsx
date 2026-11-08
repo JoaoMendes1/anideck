@@ -216,7 +216,7 @@ export default function MeuDeck() {
     if (loading) {
         return (
             <div className="pb-20">
-                <div className="max-w-[1180px] mx-auto px-5 pt-8">
+                <div className="max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-10 pt-8">
                     <div className="mb-8 space-y-2">
                         <div className="h-7 w-64 max-w-full rounded-full shimmer" />
                         <div className="h-4 w-48 rounded-full shimmer" />
@@ -239,7 +239,7 @@ export default function MeuDeck() {
 
     if (error) {
         return (
-            <div className="max-w-[1180px] mx-auto px-5 pt-16 pb-20 text-center text-coral">
+            <div className="max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-10 pt-16 pb-20 text-center text-coral">
                 <AlertCircle className="mx-auto mb-2 opacity-80" size={28} />
                 <p className="text-sm select-none">{error}</p>
             </div>
@@ -248,7 +248,7 @@ export default function MeuDeck() {
 
     return (
         <div className="pb-20">
-            <div className="max-w-[1180px] mx-auto px-5 pt-8 relative z-10">
+            <div className="max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-10 pt-8 relative z-10">
                 <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-5 mb-8">
                     <div>
                         <h1 className="font-anton text-[clamp(1.6rem,3.6vw,2.2rem)] uppercase mb-1 select-none">

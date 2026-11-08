@@ -53,7 +53,7 @@ export default function Navbar() {
         className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${scrolled ? 'py-3 bg-void/85 backdrop-blur-md border-b border-line' : 'py-5 bg-transparent'
           }`}
       >
-        <div className="max-w-[1140px] mx-auto px-5 flex items-center justify-between gap-4">
+        <div className="max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-10 flex items-center justify-between gap-4">
 
           {/* Logo */}
           <Link to="/" className="flex items-center gap-2.5 z-50 group">
@@ -71,13 +71,15 @@ export default function Navbar() {
           {/* LINKS DE NAVEGAÇÃO DESKTOP */}
           {/* "Admin" saiu daqui e foi pro MenuPerfil: é destino raro e restrito,
               não merecia um slot fixo ao lado dos links de uso diário. */}
-          <div className="hidden md:flex items-center gap-7">
+          <div className="hidden md:flex items-center gap-6 lg:gap-7">
             <Link to="/" className={linkClasse('/')}>Início</Link>
-            <Link to="/descobrir" className={linkClasse('/descobrir', '/rankings')}>Descobrir</Link>
+            <Link to="/descobrir" className={linkClasse('/descobrir')}>Descobrir</Link>
+            <Link to="/rankings" className={linkClasse('/rankings')}>Rankings</Link>
             {session && (
               <>
                 <Link to="/deck" className={linkClasse('/deck')}>Meu Deck</Link>
                 <Link to="/calendario" className={linkClasse('/calendario')}>Agenda</Link>
+                <Link to="/meu-gosto" className={linkClasse('/meu-gosto')}>Meu Gosto</Link>
               </>
             )}
           </div>

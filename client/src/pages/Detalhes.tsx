@@ -391,7 +391,7 @@ export default function Detalhes() {
         </button>
       </div>
 
-      <div className="max-w-[1040px] mx-auto px-5 -mt-[120px] md:-mt-[160px] relative z-20 pb-2">
+      <div className="max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-10 -mt-[120px] md:-mt-[160px] relative z-20 pb-2">
 
         <div className="flex flex-col sm:flex-row gap-5 sm:items-end mb-8 text-center sm:text-left items-center">
           <div className="relative">

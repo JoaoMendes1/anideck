@@ -462,7 +462,7 @@ func (c *Client) SearchAnime(ctx context.Context, query string, page int, perPag
 	if f.Season != "" {
 		variables["season"] = f.Season
 	}
-	if f.SeasonYear > 0 && f.Season != "" {
+	if f.SeasonYear > 0 {
 		variables["seasonYear"] = f.SeasonYear
 	}
 	if f.Status != "" {
@@ -657,7 +657,7 @@ func (c *Client) GetTopAnime(ctx context.Context, page int, perPage int, f Searc
 	if f.Season != "" {
 		variables["season"] = f.Season
 	}
-	if f.SeasonYear > 0 && f.Season != "" {
+	if f.SeasonYear > 0 {
 		variables["seasonYear"] = f.SeasonYear
 	}
 	if f.Status != "" {

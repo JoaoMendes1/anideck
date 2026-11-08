@@ -236,7 +236,7 @@ export default function Calendario() {
 
     return (
         <div className="pb-20">
-            <div className="max-w-[900px] mx-auto px-5 pt-8 relative z-10">
+            <div className="max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-10 pt-8 relative z-10">
                 <div className="mb-8">
                     <h1 className="font-anton text-[clamp(1.6rem,3.6vw,2.2rem)] uppercase mb-1 text-text select-none">
                         Calendário de Lançamentos
@@ -301,7 +301,7 @@ export default function Calendario() {
                                     <div className="flex-1 h-[1px] bg-line"></div>
                                 </div>
 
-                                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                                <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 sm:gap-5">
                                     {group.animes.map((anime, index) => {
                                         const gradClass = gradienteDoCard(index)
                                         const streamUrl = anime.streaming ? anime.streaming.find(s => s.name.toLowerCase().includes('crunchyroll'))?.url || anime.streaming.find(s => s.name.toLowerCase().includes('netflix'))?.url || anime.streaming[0]?.url : null
@@ -314,9 +314,18 @@ export default function Calendario() {
                                                 : []
 
                                         return (
-                                            <div key={anime.mal_id} className={`relative flex items-center md:flex-col border rounded-xl overflow-hidden transition-colors group ${anime.is_favorite ? 'bg-panel-2 border-gold/30 shadow-[0_0_10px_rgba(255,197,66,0.05)]' : 'bg-panel border-line hover:border-holo-2'}`}>
-
-                                                <div className={`relative aspect-[2/3] w-28 md:w-full shrink-0 overflow-hidden md:border-b border-line bg-panel-2 shadow-md ${gradClass}`}>
+                                            <div
+                                                key={anime.mal_id}
+                                                className={`relative flex items-stretch border rounded-2xl overflow-hidden transition-all duration-200 group ${
+                                                    anime.is_favorite
+                                                        ? 'bg-panel-2 border-gold/40 shadow-[0_0_15px_rgba(255,197,66,0.08)]'
+                                                        : 'bg-panel border-line hover:border-holo-2/70'
+                                                }`}
+                                            >
+                                                <Link
+                                                    to={`/anime/${anime.mal_id}`}
+                                                    className={`relative aspect-[2/3] w-28 sm:w-32 shrink-0 overflow-hidden border-r border-line bg-panel-2 ${gradClass}`}
+                                                >
                                                     {anime.image_url ? (
                                                         <img
                                                             src={anime.image_url}
@@ -325,48 +334,67 @@ export default function Calendario() {
                                                             className="w-full h-full object-cover object-center group-hover:scale-105 transition-transform duration-300"
                                                         />
                                                     ) : (
-                                                        <div className="w-full h-full flex items-center justify-center font-mono text-[8px] text-muted-2 uppercase text-center p-1">
+                                                        <div className="w-full h-full flex items-center justify-center font-mono text-[9px] text-muted-2 uppercase text-center p-2">
                                                             S/ Capa
                                                         </div>
                                                     )}
-                                                </div>
+                                                </Link>
 
-                                                <div className="min-w-0 flex-1">
-                                                    <div className="p-3 md:p-4">
-                                                        <Link to={`/anime/${anime.mal_id}`} className="font-bold text-[13.5px] md:text-[14.5px] line-clamp-2 md:truncate block hover:text-holo-3 transition-colors">
+                                                <div className="min-w-0 flex-1 flex flex-col justify-between p-3.5 sm:p-4">
+                                                    <div>
+                                                        <div className="flex items-center justify-between gap-2 mb-1.5 select-none">
+                                                            <span className="font-mono text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-md bg-void/70 border border-line text-holo-3">
+                                                                EPISÓDIO {anime.nextAiringEpisode!.episode}
+                                                            </span>
+                                                            {anime.is_favorite && (
+                                                                <span className="text-gold text-xs leading-none drop-shadow-md" title="Favorito">👑</span>
+                                                            )}
+                                                        </div>
+
+                                                        <Link
+                                                            to={`/anime/${anime.mal_id}`}
+                                                            className="font-bold text-[14px] sm:text-[15px] leading-snug line-clamp-2 text-text hover:text-holo-3 transition-colors"
+                                                        >
                                                             {anime.title}
                                                         </Link>
-                                                        <div className="flex flex-wrap items-center gap-1.5 font-mono text-[10px] md:text-[10.5px] text-muted-2 mt-1 select-none">
-                                                            {anime.is_favorite && <span className="text-gold text-xs leading-none drop-shadow-md" title="Favorito">👑</span>}
-                                                            {listaGeneros.slice(0, 3).map((g) => (
-                                                                <span
-                                                                    key={g}
-                                                                    className={`max-w-[96px] truncate px-1.5 py-0.5 rounded border font-bold font-manrope text-[9px] md:text-[10px] ${getCategoryTheme(g)}`}
-                                                                >
-                                                                    {g}
-                                                                </span>
-                                                            ))}
-                                                            <span>EPISÓDIO {anime.nextAiringEpisode!.episode}</span>
-                                                        </div>
-                                                    </div>
 
-                                                    <div className="flex items-center justify-between gap-2 px-3 pb-3 md:px-4 md:pb-4 text-right select-none">
-                                                        <span className={`inline-flex items-center justify-center font-mono text-[10.5px] md:text-[11.5px] font-extrabold px-2.5 py-1 rounded-full border ${isLancado ? 'bg-green/15 text-green border-green/30' : 'bg-holo-3/15 text-holo-3 border-holo-3/30'}`}>
-                                                            {remainingText}
-                                                        </span>
-                                                        <span className="font-mono text-[12px] md:text-[13.5px] text-muted-2">
-                                                            {formatClock(anime.nextAiringEpisode!.airingAt)}
-                                                        </span>
-                                                        {streamUrl ? (
-                                                            <a href={streamUrl} target="_blank" rel="noreferrer" className="w-8 h-8 rounded-full bg-panel-2 border border-line text-muted hover:text-holo-3 hover:border-holo-3 flex items-center justify-center transition-colors" title="Assistir Oficial">
-                                                                <Play size={13} fill="currentColor" className="ml-0.5" />
-                                                            </a>
-                                                        ) : (
-                                                            <span className="w-8 h-8" aria-hidden="true" />
+                                                        {listaGeneros.length > 0 && (
+                                                            <div className="flex flex-wrap items-center gap-1.5 mt-2 select-none">
+                                                                {listaGeneros.slice(0, 3).map((g) => (
+                                                                    <span
+                                                                        key={g}
+                                                                        className={`max-w-[110px] truncate px-2 py-0.5 rounded-full border font-bold font-manrope text-[9.5px] ${getCategoryTheme(g)}`}
+                                                                    >
+                                                                        {g}
+                                                                    </span>
+                                                                ))}
+                                                            </div>
                                                         )}
                                                     </div>
-                                                </div>
 
+                                                    <div className="flex items-center justify-between gap-2 pt-3 mt-3 border-t border-line/60 select-none">
+                                                        <span className={`inline-flex items-center justify-center font-mono text-[10.5px] sm:text-[11px] font-extrabold px-2.5 py-1 rounded-full border ${isLancado ? 'bg-green/15 text-green border-green/30' : 'bg-holo-3/15 text-holo-3 border-holo-3/30'}`}>
+                                                            {remainingText}
+                                                        </span>
+
+                                                        <div className="flex items-center gap-2.5">
+                                                            <span className="font-mono text-[12px] sm:text-[13px] font-bold text-muted tabular-nums">
+                                                                {formatClock(anime.nextAiringEpisode!.airingAt)}
+                                                            </span>
+                                                            {streamUrl && (
+                                                                <a
+                                                                    href={streamUrl}
+                                                                    target="_blank"
+                                                                    rel="noreferrer"
+                                                                    className="w-8 h-8 rounded-full bg-panel-2 border border-line text-muted hover:text-holo-3 hover:border-holo-3 flex items-center justify-center transition-colors"
+                                                                    title="Assistir Oficial"
+                                                                >
+                                                                    <Play size={13} fill="currentColor" className="ml-0.5" />
+                                                                </a>
+                                                            )}
+                                                        </div>
+                                                    </div>
+                                                </div>
                                             </div>
                                         )
                                     })}

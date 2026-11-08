@@ -41,8 +41,6 @@ func TestBuildSearchFilters_GenresAndTags(t *testing.T) {
 }
 
 func TestBuildSearchFilters_SeasonYear(t *testing.T) {
-	// seasonYear só deve ser usado quando season também está presente —
-	// ano sem temporada não faz sentido na AniList
 	f := anilist.SearchFilters{
 		Season:     "SUMMER",
 		SeasonYear: 2026,
@@ -55,10 +53,9 @@ func TestBuildSearchFilters_SeasonYear(t *testing.T) {
 		t.Fatalf("esperado year 2026, recebido %d", f.SeasonYear)
 	}
 
-	// Sem season, seasonYear não deve ser enviado para a AniList
 	fSemSeason := anilist.SearchFilters{SeasonYear: 2026}
-	if fSemSeason.Season != "" {
-		t.Fatal("season deveria estar vazio quando não fornecido")
+	if fSemSeason.Season != "" || fSemSeason.SeasonYear != 2026 {
+		t.Fatalf("esperado filtro só por ano 2026, recebido %+v", fSemSeason)
 	}
 }
 
@@ -165,6 +162,20 @@ func TestCuradosQueBatem_TemporadaSemAnoAceitaQualquerAno(t *testing.T) {
 
 	got := idsDe(curadosQueBatem(nil, curados, "", anilist.SearchFilters{Season: "FALL"}, nil))
 	if want := []int{1, 4}; !mesmosIDs(got, want) {
+		t.Fatalf("esperado %v, recebido %v", want, got)
+	}
+}
+
+func TestCuradosQueBatem_SoAnoAceitaQualquerTemporadaDoAno(t *testing.T) {
+	curados := []models.CuratedAnime{
+		curado(1, "Primavera 2025", "2025-04-05T15:00:00Z"),
+		curado(2, "Outono 2025", "2025-10-04T15:00:00Z"),
+		curado(3, "Inverno 2026", "2026-01-10T15:00:00Z"),
+		curado(4, "Sem data", ""),
+	}
+
+	got := idsDe(curadosQueBatem(nil, curados, "", anilist.SearchFilters{SeasonYear: 2025}, nil))
+	if want := []int{1, 2}; !mesmosIDs(got, want) {
 		t.Fatalf("esperado %v, recebido %v", want, got)
 	}
 }

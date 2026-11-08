@@ -71,9 +71,9 @@ function Secao({ titulo, icone, link, children }: { titulo: string; icone: React
 
 function Trilho({ cartazes }: { cartazes: Cartaz[] }) {
   return (
-    <div className="flex gap-3.5 overflow-x-auto scrollbar-hide snap-x snap-mandatory -mx-5 px-5 md:mx-0 md:px-0 pb-1">
+    <div className="flex gap-4 overflow-x-auto scrollbar-hide snap-x snap-mandatory -mx-4 px-4 sm:mx-0 sm:px-0 pb-1">
       {cartazes.map((c, i) => (
-        <Link key={c.mal_id} to={`/anime/${c.mal_id}`} className="group shrink-0 w-[128px] md:w-[148px] snap-start">
+        <Link key={c.mal_id} to={`/anime/${c.mal_id}`} className="group shrink-0 w-[144px] sm:w-[164px] lg:w-[184px] snap-start">
           <div className={`relative aspect-[2/3] rounded-[14px] overflow-hidden border border-line bg-panel ${gradienteDoCard(i)} transition-transform group-hover:-translate-y-1`}>
             {c.imagem && (
               <img
@@ -181,7 +181,7 @@ export default function Inicio() {
   const dataDeHoje = agora.toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long' })
 
   return (
-    <div className="w-full min-w-0 max-w-[980px] mx-auto px-5 pt-8 pb-24">
+    <div className="w-full min-w-0 max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-10 pt-8 pb-24">
       <header className="mb-8 select-none">
         <p className="font-mono text-[10px] text-muted-2 uppercase tracking-widest mb-1">{dataDeHoje}</p>
         <h1 className="font-anton text-[clamp(1.6rem,3.6vw,2.2rem)] uppercase m-0">{nome ? `Olá, ${nome}` : 'Olá'}</h1>
@@ -191,9 +191,9 @@ export default function Inicio() {
       </header>
 
       {carregando && (
-        <div className="flex gap-3.5 overflow-hidden mb-10">
-          {Array.from({ length: 5 }).map((_, i) => (
-            <div key={i} className="shrink-0 w-[128px] md:w-[148px] aspect-[2/3] rounded-[14px] shimmer" />
+        <div className="flex gap-4 overflow-hidden mb-10">
+          {Array.from({ length: 6 }).map((_, i) => (
+            <div key={i} className="shrink-0 w-[144px] sm:w-[164px] lg:w-[184px] aspect-[2/3] rounded-[14px] shimmer" />
           ))}
         </div>
       )}

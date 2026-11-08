@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react'
+import { useState, useEffect, useMemo, useRef } from 'react'
 import { useToast } from '../contexts/ToastContext'
 import { useCatalogoStatus } from '../contexts/CatalogoStatusContext'
 import { useNavigate, useSearchParams } from 'react-router-dom'
@@ -73,8 +73,18 @@ export default function Busca() {
     // do retrato num render e o resto noutro, o bloco `tinhaFiltro` mais abaixo
     // leria a discordância como "o filtro mudou" e jogaria fora a lista restaurada.
     const retrato = useDadosRestaurados<EstadoBusca>()
-    const [searchParams] = useSearchParams()
+    const [searchParams, setSearchParams] = useSearchParams()
     const { rotulos } = useRotulos()
+    const inputBuscaRef = useRef<HTMLInputElement>(null)
+
+    useEffect(() => {
+        if (searchParams.get('foco') === '1') {
+            inputBuscaRef.current?.focus()
+            const novos = new URLSearchParams(searchParams)
+            novos.delete('foco')
+            setSearchParams(novos, { replace: true })
+        }
+    }, [searchParams, setSearchParams])
 
     const [query, setQuery] = useState(retrato?.query ?? '')
     // Um link pode chegar com ?rotulo=Nome (ex.: a sugestão de gosto): o filtro já abre aplicado.
@@ -130,7 +140,8 @@ export default function Busca() {
         query.trim() !== '' ||
         selectedRotulos.length > 0 ||
         !!selectedStatus ||
-        !!selectedSeason
+        !!selectedSeason ||
+        !!selectedYear
 
     // A limpeza dos resultados acontece na TRANSIÇÃO para "sem filtro", ajustada durante o
     // render em vez de dentro do efeito.
@@ -186,10 +197,8 @@ export default function Busca() {
             if (query.trim()) params.append('q', query.trim())
             selectedRotulos.forEach(nome => params.append('rotulo', nome))
             if (selectedStatus) params.set('status', selectedStatus)
-            if (selectedSeason) {
-                params.set('season', selectedSeason)
-                if (selectedYear) params.set('year', selectedYear)
-            }
+            if (selectedSeason) params.set('season', selectedSeason)
+            if (selectedYear) params.set('year', selectedYear)
             params.append('sort', selectedSort)
             params.append('page', String(page))
             params.append('perPage', '40')
@@ -314,12 +323,13 @@ export default function Busca() {
     }
 
     return (
-        <div className="w-full min-w-0 max-w-[960px] mx-auto pt-16 px-5 pb-10">
+        <div className="w-full min-w-0 max-w-[1440px] mx-auto pt-16 px-4 sm:px-6 lg:px-10 pb-10">
             <AbasDescobrir />
 
             <div className="flex items-center gap-3 bg-panel border-2 border-holo-2 rounded-xl p-4 mb-4">
                 <Search className="text-muted-2 shrink-0" size={20} />
                 <input
+                    ref={inputBuscaRef}
                     type="text"
                     value={query}
                     onChange={(e) => { setQuery(e.target.value); setPage(1); }}
@@ -406,9 +416,11 @@ export default function Busca() {
                                 <button onClick={() => { setSelectedStatus(''); setPage(1) }} className="cursor-pointer hover:text-white"><X size={10} /></button>
                             </span>
                         )}
-                        {selectedSeason && (
+                        {(selectedSeason || selectedYear) && (
                             <span className="flex items-center shrink-0 gap-1 px-2.5 py-1.5 rounded-full bg-holo-1/20 border border-holo-1/40 text-holo-1 text-[11px] font-bold">
-                                {SEASON_OPTIONS.find(s => s.value === selectedSeason)?.emoji} {SEASON_OPTIONS.find(s => s.value === selectedSeason)?.label} {selectedYear}
+                                {selectedSeason
+                                    ? `${SEASON_OPTIONS.find(s => s.value === selectedSeason)?.emoji} ${SEASON_OPTIONS.find(s => s.value === selectedSeason)?.label}${selectedYear ? ` ${selectedYear}` : ''}`
+                                    : `📅 Ano ${selectedYear}`}
                                 <button onClick={() => { setSelectedSeason(''); setSelectedYear(''); setPage(1) }} className="cursor-pointer hover:text-white"><X size={10} /></button>
                             </span>
                         )}
@@ -439,32 +451,26 @@ export default function Busca() {
                         isActive={(v) => selectedSeason === v}
                         onToggle={(v) => {
                             setSelectedSeason(selectedSeason === v ? '' : v)
-                            if (selectedSeason === v) setSelectedYear('')
                             setPage(1)
                         }}
                     />
 
                     <div className="flex flex-wrap gap-2 p-3 bg-panel-2 border border-line rounded-xl">
                         <span className="text-[11px] font-bold text-muted uppercase w-full mb-1">
-                            Selecione o Ano {selectedSeason ? '' : '(Escolha uma temporada primeiro)'}:
+                            Ano de lançamento (opcional com ou sem temporada):
                         </span>
                         {YEAR_OPTIONS.map(y => (
                             <button
                                 key={y}
                                 onClick={() => {
-                                    if (selectedSeason) {
-                                        setSelectedYear(selectedYear === String(y) ? '' : String(y))
-                                        setPage(1)
-                                    } else {
-                                        showToast('Por favor, selecione uma temporada (Inverno, Primavera...) antes de escolher o ano.', 'error')
-                                    }
+                                    setSelectedYear(selectedYear === String(y) ? '' : String(y))
+                                    setPage(1)
                                 }}
-                                className={`px-3 py-1.5 rounded-full text-xs font-bold transition-all duration-150 border ${!selectedSeason
-                                    ? 'bg-panel border-line text-muted/50 cursor-not-allowed'
-                                    : selectedYear === String(y)
-                                        ? 'bg-holo-3/20 border-holo-3/50 text-holo-3 cursor-pointer'
-                                        : 'bg-panel border-line text-muted hover:border-holo-3 hover:text-text cursor-pointer'
-                                    }`}
+                                className={`px-3 py-1.5 rounded-full text-xs font-bold transition-all duration-150 border cursor-pointer ${
+                                    selectedYear === String(y)
+                                        ? 'bg-holo-3/20 border-holo-3/50 text-holo-3'
+                                        : 'bg-panel border-line text-muted hover:border-holo-3 hover:text-text'
+                                }`}
                             >
                                 {y}
                             </button>

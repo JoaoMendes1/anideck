@@ -554,16 +554,21 @@ func (h *RankingHandler) HandleGetTopAnime(w http.ResponseWriter, r *http.Reques
 	season := strings.ToUpper(strings.TrimSpace(r.URL.Query().Get("season")))
 	status := strings.ToUpper(strings.TrimSpace(r.URL.Query().Get("status")))
 	sortParam := r.URL.Query().Get("sort")
-
-	filters := anilist.SearchFilters{
-		Genres: r.URL.Query()["genre"],
-		Tags:   r.URL.Query()["tag"],
-		Season: season,
-		Status: status,
-		Sort:   sortParam,
+	seasonYear := 0
+	if y, err := strconv.Atoi(r.URL.Query().Get("year")); err == nil && y > 0 {
+		seasonYear = y
 	}
 
-	isDefaultRanking := page >= 1 && season == "" && status == "" && (sortParam == "" || sortParam == "POPULARITY_DESC") && len(filters.Genres) == 0 && len(filters.Tags) == 0
+	filters := anilist.SearchFilters{
+		Genres:     r.URL.Query()["genre"],
+		Tags:       r.URL.Query()["tag"],
+		Season:     season,
+		SeasonYear: seasonYear,
+		Status:     status,
+		Sort:       sortParam,
+	}
+
+	isDefaultRanking := page >= 1 && season == "" && seasonYear == 0 && status == "" && (sortParam == "" || sortParam == "POPULARITY_DESC") && len(filters.Genres) == 0 && len(filters.Tags) == 0
 
 	w.Header().Set("Content-Type", "application/json")
 

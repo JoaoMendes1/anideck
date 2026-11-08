@@ -665,17 +665,17 @@ Motivo: aproveitar telas maiores (`1440px`), dar presença visual aos cards em t
 automatizar demandas repetitivas de curadoria no Admin e aprofundar a interatividade do Meu Gosto.
 
 ### Bloco 1 — Admin, Curadoria & Produtividade
-- [ ] Persistência de aba/seção na URL (`?aba=` / `?secao=`), feedback no botão Atualizar da Revisão IA e limpeza do Roadmap (#130)
-- [ ] "Curar todos com IA" no Olheiro, alerta de 0 episódios, barra rápida de Admin em Detalhes e Resync inteligente (#131)
+- [x] Persistência de aba/seção na URL (`?aba=` / `?secao=`), feedback no botão Atualizar da Revisão IA e limpeza do Roadmap (#130)
+- [x] "Curar todos com IA" no Olheiro, alerta de 0 episódios, barra rápida de Admin em Detalhes e Resync inteligente (#131)
 
 ### Bloco 2 — Espaço Global, Navegação, Detalhes & Tradução Automática
-- [ ] Container `1440px`, cards maiores, Rankings/Meu Gosto na Navbar desktop, botão flutuante de busca no mobile e filtro por ano livre (#132)
-- [ ] "Onde assistir" acima da sinopse e lista compacta para episódios sem foto (#133)
+- [x] Container `1440px`, cards maiores, Rankings/Meu Gosto na Navbar desktop, botão flutuante de busca no mobile e filtro por ano livre (#132)
+- [x] "Onde assistir" acima da sinopse e lista compacta para episódios sem foto (#133)
 - [ ] Tradução automática pt-BR (sinopse e gêneros) para obras não curadas + aviso de "Obra ainda não curada" (#134)
 
 ### Bloco 3 — Agenda, Ranking, Meu Deck e Notificações
 - [ ] "Quero Assistir" visível em Meu Deck na Agenda, transição automática ao marcar episódio e filtro clicável no Deck (#135)
-- [ ] Cards verticais maiores na Agenda e no Ranking + "Seleção da Casa" recolhível no Meu Deck (#136)
+- [x] Cards verticais maiores na Agenda e no Ranking + "Seleção da Casa" recolhível no Meu Deck (#136)
 - [ ] Central de Notificações com leitura ao clicar, "Ler todas", aba "Não lidas" e ação rápida de marcar episódio (#137)
 
 ### Bloco 4 — Meu Gosto Interativo, Preferências & Importação do MAL

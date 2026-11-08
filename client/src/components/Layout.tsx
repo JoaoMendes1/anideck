@@ -1,5 +1,6 @@
 import { Suspense } from 'react'
-import { Outlet } from 'react-router-dom'
+import { Outlet, Link, useLocation } from 'react-router-dom'
+import { Search } from 'lucide-react'
 import Navbar from './Navbar'
 import BottomNav from './BottomNav'
 import CarregandoPagina from './CarregandoPagina'
@@ -21,6 +22,22 @@ function AvisoCatalogo() {
   )
 }
 
+function BotaoBusca() {
+  const location = useLocation()
+  if (location.pathname === '/descobrir') return null
+
+  return (
+    <Link
+      to="/descobrir?foco=1"
+      aria-label="Buscar anime"
+      title="Buscar anime"
+      className="md:hidden fixed bottom-20 right-4 z-40 w-12 h-12 rounded-full bg-gradient-to-br from-holo-1 to-holo-3 text-void flex items-center justify-center shadow-lg shadow-holo-2/30 active:scale-95 transition-transform"
+    >
+      <Search size={19} />
+    </Link>
+  )
+}
+
 function LayoutInterno() {
   return (
     <div className="relative min-h-screen flex flex-col">
@@ -39,6 +56,7 @@ function LayoutInterno() {
       </main>
 
       {/* A BottomNav tem a classe md:hidden internamente, então só renderiza no mobile */}
+      <BotaoBusca />
       <BottomNav />
     </div>
   )
