@@ -115,6 +115,23 @@ func TestEconomiaAjusteManual_Validacoes(t *testing.T) {
 			t.Fatalf("Esperado 400 para motivo curto, recebido %d", rec.Code)
 		}
 	})
+
+	t.Run("aceita motivo no campo motivo direto", func(t *testing.T) {
+		corpo, _ := json.Marshal(AjusteManualPayload{
+			UserID:     "user-1",
+			Quantidade: 15,
+			Motivo:     "oi",
+		})
+		req := httptest.NewRequest(http.MethodPost, "/api/admin/economia/ajuste", bytes.NewReader(corpo))
+		ctx := context.WithValue(req.Context(), middleware.UserIDKey, "admin-1")
+		req = req.WithContext(ctx)
+		rec := httptest.NewRecorder()
+
+		handler.HandleAjusteManual(rec, req)
+		if rec.Code != http.StatusBadRequest {
+			t.Fatalf("Esperado 400 para motivo < 3 chars, recebido %d", rec.Code)
+		}
+	})
 }
 
 func TestEconomiaTransferir_Validacoes(t *testing.T) {

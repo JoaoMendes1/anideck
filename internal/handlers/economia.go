@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"regexp"
 	"strconv"
 	"strings"
 	"time"
@@ -15,28 +16,43 @@ import (
 	"github.com/supabase-community/supabase-go"
 )
 
+var uuidRegex = regexp.MustCompile(`^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$`)
+
+func responderErroJSON(w http.ResponseWriter, status int, msg string) {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(status)
+	json.NewEncoder(w).Encode(map[string]string{"error": msg})
+}
+
 // RegrasEconomia são os números editáveis no Painel Admin, guardados em
 // app_settings.economia_cristais (Fase 16, #167).
 type RegrasEconomia struct {
-	TetoDiarioCristais    int `json:"teto_diario_cristais"`
-	GanhoMissaoDiaria     int `json:"ganho_missao_diaria"`
-	GanhoDesafioSemanal   int `json:"ganho_desafio_semanal"`
-	GanhoVitoriaLiga      int `json:"ganho_vitoria_liga"`
-	GanhoSubidaDivisao    int `json:"ganho_subida_divisao"`
-	GanhoPrimeiraCartaDia int `json:"ganho_primeira_carta_dia"`
+	Ativo                   bool `json:"ativo"`
+	TetoDiarioCristais      int  `json:"teto_diario_cristais"`
+	GanhoMissaoDiaria       int  `json:"ganho_missao_diaria"`
+	CristaisPorMissaoDiaria int  `json:"cristais_por_missao_diaria,omitempty"`
+	GanhoDesafioSemanal     int  `json:"ganho_desafio_semanal"`
+	GanhoVitoriaLiga        int  `json:"ganho_vitoria_liga"`
+	GanhoSubidaDivisao      int  `json:"ganho_subida_divisao"`
+	GanhoPrimeiraCartaDia   int  `json:"ganho_primeira_carta_dia"`
+	CustoPadraoCarta        int  `json:"custo_padrao_carta"`
+	CustoPadraoCosmetico    int  `json:"custo_padrao_cosmetico"`
 }
 
 const ChaveEconomiaCristais = "economia_cristais"
 
-// RegrasEconomiaPadrao espelha os valores iniciais da economia de Cristais.
+// RegrasEconomiaPadrao espelha os valores iniciais da economia de Cristais/AniCoins.
 func RegrasEconomiaPadrao() RegrasEconomia {
 	return RegrasEconomia{
+		Ativo:                 true,
 		TetoDiarioCristais:    100,
 		GanhoMissaoDiaria:     15,
 		GanhoDesafioSemanal:   50,
 		GanhoVitoriaLiga:      100,
 		GanhoSubidaDivisao:    40,
 		GanhoPrimeiraCartaDia: 10,
+		CustoPadraoCarta:      100,
+		CustoPadraoCosmetico:  500,
 	}
 }
 
@@ -55,6 +71,10 @@ func ValidarRegrasEconomia(r RegrasEconomia) string {
 		return "O ganho por subida de divisão deve ficar entre 1 e 5.000."
 	case r.GanhoPrimeiraCartaDia < 1 || r.GanhoPrimeiraCartaDia > r.TetoDiarioCristais:
 		return "O ganho pela primeira carta do dia deve ficar entre 1 e o teto diário."
+	case r.CustoPadraoCarta < 1 || r.CustoPadraoCarta > 50000:
+		return "O custo padrão de carta deve ficar entre 1 e 50.000."
+	case r.CustoPadraoCosmetico < 1 || r.CustoPadraoCosmetico > 50000:
+		return "O custo padrão de cosmético deve ficar entre 1 e 50.000."
 	}
 	return ""
 }
@@ -76,8 +96,24 @@ func LerRegrasEconomia(client *supabase.Client) RegrasEconomia {
 		return regras
 	}
 	lidas := RegrasEconomiaPadrao()
-	if json.Unmarshal([]byte(linhas[0].Value), &lidas) != nil || ValidarRegrasEconomia(lidas) != "" {
+	if json.Unmarshal([]byte(linhas[0].Value), &lidas) != nil {
 		return regras
+	}
+	if lidas.TetoDiarioCristais == 0 {
+		lidas.TetoDiarioCristais = 100
+	}
+	if lidas.GanhoMissaoDiaria == 0 {
+		if lidas.CristaisPorMissaoDiaria > 0 {
+			lidas.GanhoMissaoDiaria = lidas.CristaisPorMissaoDiaria
+		} else {
+			lidas.GanhoMissaoDiaria = 15
+		}
+	}
+	if lidas.CustoPadraoCarta == 0 {
+		lidas.CustoPadraoCarta = 100
+	}
+	if lidas.CustoPadraoCosmetico == 0 {
+		lidas.CustoPadraoCosmetico = 500
 	}
 	return lidas
 }
@@ -87,6 +123,7 @@ type EconomiaHandler struct{}
 type MovimentoCristal struct {
 	ID         string    `json:"id"`
 	UserID     string    `json:"user_id,omitempty"`
+	UserHandle string    `json:"user_handle,omitempty"`
 	Quantidade int       `json:"quantidade"`
 	Motivo     string    `json:"motivo"`
 	Referencia string    `json:"referencia"`
@@ -178,23 +215,24 @@ func (h *EconomiaHandler) HandleGetCarteira(w http.ResponseWriter, r *http.Reque
 }
 
 type AdminEconomiaResponse struct {
-	Regras            RegrasEconomia     `json:"regras"`
-	TotalCirculacao   int                `json:"total_circulacao"`
-	TotalTransacoes   int                `json:"total_transacoes"`
-	UltimosMovimentos []MovimentoCristal `json:"ultimos_movimentos"`
+	Regras              RegrasEconomia     `json:"regras"`
+	TotalCirculacao     int                `json:"total_circulacao"`
+	TotalTransacoes     int                `json:"total_transacoes"`
+	UltimosMovimentos   []MovimentoCristal `json:"ultimos_movimentos"`
+	MovimentosAuditoria []MovimentoCristal `json:"movimentos_auditoria"`
 }
 
 // HandleGetAdminEconomia devolve as configurações globais, volume em circulação e extrato auditável.
 func (h *EconomiaHandler) HandleGetAdminEconomia(w http.ResponseWriter, r *http.Request) {
 	token, ok := r.Context().Value(middleware.TokenKey).(string)
 	if !ok {
-		http.Error(w, "Não autorizado", http.StatusUnauthorized)
+		responderErroJSON(w, http.StatusUnauthorized, "Não autorizado")
 		return
 	}
 
 	dbClient, err := database.ClientWithToken(token)
 	if err != nil {
-		http.Error(w, "Erro interno de conexão", http.StatusInternalServerError)
+		responderErroJSON(w, http.StatusInternalServerError, "Erro interno de conexão")
 		return
 	}
 
@@ -222,12 +260,50 @@ func (h *EconomiaHandler) HandleGetAdminEconomia(w http.ResponseWriter, r *http.
 		json.Unmarshal(data, &movimentos)
 	}
 
+	// Enriquece movimentos com user_handle para exibir @handle em vez de UUID cru
+	if len(movimentos) > 0 && database.Client != nil {
+		userIDsMap := make(map[string]bool)
+		for _, m := range movimentos {
+			if m.UserID != "" {
+				userIDsMap[m.UserID] = true
+			}
+		}
+		var userIDs []string
+		for id := range userIDsMap {
+			userIDs = append(userIDs, id)
+		}
+		if len(userIDs) > 0 {
+			profData, _, pErr := database.Client.From("profiles").
+				Select("user_id,handle", "", false).
+				In("user_id", userIDs).
+				Execute()
+			if pErr == nil {
+				var profs []struct {
+					UserID string `json:"user_id"`
+					Handle string `json:"handle"`
+				}
+				if json.Unmarshal(profData, &profs) == nil {
+					hMap := make(map[string]string)
+					for _, p := range profs {
+						hMap[p.UserID] = p.Handle
+					}
+					for i := range movimentos {
+						if h, ok := hMap[movimentos[i].UserID]; ok {
+							movimentos[i].UserHandle = h
+						}
+					}
+				}
+			}
+		}
+	}
+
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(AdminEconomiaResponse{
-		Regras:            regras,
-		TotalCirculacao:   totalCirculacao,
-		TotalTransacoes:   int(count),
-		UltimosMovimentos: movimentos,
+		Regras:              regras,
+		TotalCirculacao:     totalCirculacao,
+		TotalTransacoes:     int(count),
+		UltimosMovimentos:   movimentos,
+		MovimentosAuditoria: movimentos,
 	})
 }
 
@@ -235,30 +311,54 @@ func (h *EconomiaHandler) HandleGetAdminEconomia(w http.ResponseWriter, r *http.
 func (h *EconomiaHandler) HandleSaveAdminEconomia(w http.ResponseWriter, r *http.Request) {
 	token, ok := r.Context().Value(middleware.TokenKey).(string)
 	if !ok {
-		http.Error(w, "Não autorizado", http.StatusUnauthorized)
+		responderErroJSON(w, http.StatusUnauthorized, "Não autorizado")
 		return
 	}
 
-	var regras RegrasEconomia
-	if err := json.NewDecoder(r.Body).Decode(&regras); err != nil {
-		http.Error(w, "Corpo inválido", http.StatusBadRequest)
+	var payload struct {
+		Ativo                   bool `json:"ativo"`
+		TetoDiarioCristais      int  `json:"teto_diario_cristais"`
+		GanhoMissaoDiaria       int  `json:"ganho_missao_diaria"`
+		CristaisPorMissaoDiaria int  `json:"cristais_por_missao_diaria"`
+		CustoPadraoCarta        int  `json:"custo_padrao_carta"`
+		CustoPadraoCosmetico    int  `json:"custo_padrao_cosmetico"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
+		responderErroJSON(w, http.StatusBadRequest, "Corpo inválido")
 		return
 	}
 
-	if motivo := ValidarRegrasEconomia(regras); motivo != "" {
-		http.Error(w, motivo, http.StatusBadRequest)
+	existentes := LerRegrasEconomia(database.Client)
+	existentes.Ativo = payload.Ativo
+	if payload.TetoDiarioCristais > 0 {
+		existentes.TetoDiarioCristais = payload.TetoDiarioCristais
+	}
+	if payload.GanhoMissaoDiaria > 0 {
+		existentes.GanhoMissaoDiaria = payload.GanhoMissaoDiaria
+	} else if payload.CristaisPorMissaoDiaria > 0 {
+		existentes.GanhoMissaoDiaria = payload.CristaisPorMissaoDiaria
+	}
+	if payload.CustoPadraoCarta > 0 {
+		existentes.CustoPadraoCarta = payload.CustoPadraoCarta
+	}
+	if payload.CustoPadraoCosmetico > 0 {
+		existentes.CustoPadraoCosmetico = payload.CustoPadraoCosmetico
+	}
+
+	if motivo := ValidarRegrasEconomia(existentes); motivo != "" {
+		responderErroJSON(w, http.StatusBadRequest, motivo)
 		return
 	}
 
 	dbClient, err := database.ClientWithToken(token)
 	if err != nil {
-		http.Error(w, "Erro interno de conexão", http.StatusInternalServerError)
+		responderErroJSON(w, http.StatusInternalServerError, "Erro interno de conexão")
 		return
 	}
 
-	jsonBytes, err := json.Marshal(regras)
+	jsonBytes, err := json.Marshal(existentes)
 	if err != nil {
-		http.Error(w, "Erro ao serializar regras", http.StatusInternalServerError)
+		responderErroJSON(w, http.StatusInternalServerError, "Erro ao serializar regras")
 		return
 	}
 
@@ -271,51 +371,86 @@ func (h *EconomiaHandler) HandleSaveAdminEconomia(w http.ResponseWriter, r *http
 	_, _, err = dbClient.From("app_settings").Upsert(linha, "key", "minimal", "").Execute()
 	if err != nil {
 		log.Printf("[ECONOMIA] Erro ao gravar regras em app_settings: %v", err)
-		http.Error(w, "Erro ao salvar configurações", http.StatusInternalServerError)
+		responderErroJSON(w, http.StatusInternalServerError, "Erro ao salvar configurações")
 		return
 	}
 
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(map[string]interface{}{
 		"ok":     true,
-		"regras": regras,
+		"regras": existentes,
 	})
 }
 
 type AjusteManualPayload struct {
 	UserID          string `json:"user_id"`
 	Quantidade      int    `json:"quantidade"`
+	Motivo          string `json:"motivo"`
 	MotivoDetalhado string `json:"motivo_detalhado"`
 }
 
-// HandleAjusteManual credita ou debita Cristais de um usuário manualmente via suporte.
+// HandleAjusteManual credita ou debita AniCoins de um usuário manualmente via suporte.
+// Aceita tanto UUID direto quanto @handle (resolvendo automaticamente o perfil).
 func (h *EconomiaHandler) HandleAjusteManual(w http.ResponseWriter, r *http.Request) {
 	adminID, _ := r.Context().Value(middleware.UserIDKey).(string)
 
 	var body AjusteManualPayload
 	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
-		http.Error(w, "Corpo da requisição inválido", http.StatusBadRequest)
+		responderErroJSON(w, http.StatusBadRequest, "Corpo da requisição inválido")
 		return
 	}
 
-	userID := strings.TrimSpace(body.UserID)
-	if userID == "" {
-		http.Error(w, "user_id é obrigatório", http.StatusBadRequest)
+	rawUser := strings.TrimSpace(body.UserID)
+	if rawUser == "" {
+		responderErroJSON(w, http.StatusBadRequest, "Informe o @handle ou UUID do usuário.")
 		return
 	}
 	if body.Quantidade == 0 {
-		http.Error(w, "A quantidade de Cristais não pode ser zero", http.StatusBadRequest)
+		responderErroJSON(w, http.StatusBadRequest, "A quantidade de AniCoins não pode ser zero.")
 		return
 	}
-	motivo := strings.TrimSpace(body.MotivoDetalhado)
+
+	motivo := strings.TrimSpace(body.Motivo)
+	if motivo == "" {
+		motivo = strings.TrimSpace(body.MotivoDetalhado)
+	}
 	if len(motivo) < 3 {
-		http.Error(w, "O motivo detalhado do ajuste é obrigatório (mínimo 3 caracteres)", http.StatusBadRequest)
+		responderErroJSON(w, http.StatusBadRequest, "O motivo do ajuste é obrigatório (mínimo 3 caracteres).")
 		return
 	}
 
 	if database.Client == nil {
-		http.Error(w, "Cliente de banco indisponível", http.StatusInternalServerError)
+		responderErroJSON(w, http.StatusServiceUnavailable, "Serviço de banco de dados indisponível")
 		return
+	}
+
+	var finalUserID string
+	var userHandle string
+
+	if uuidRegex.MatchString(rawUser) {
+		finalUserID = rawUser
+	} else {
+		handleLimpo := strings.ToLower(strings.TrimPrefix(rawUser, "@"))
+		data, _, err := database.Client.From("profiles").
+			Select("user_id,handle,nome", "", false).
+			Eq("handle", handleLimpo).
+			Execute()
+		if err != nil {
+			log.Printf("[ECONOMIA] Erro ao buscar perfil por handle (%s): %v", handleLimpo, err)
+			responderErroJSON(w, http.StatusInternalServerError, "Erro ao buscar usuário de destino")
+			return
+		}
+
+		var perfis []struct {
+			UserID string `json:"user_id"`
+			Handle string `json:"handle"`
+		}
+		if err := json.Unmarshal(data, &perfis); err != nil || len(perfis) == 0 {
+			responderErroJSON(w, http.StatusNotFound, fmt.Sprintf("Usuário '@%s' não foi encontrado.", handleLimpo))
+			return
+		}
+		finalUserID = perfis[0].UserID
+		userHandle = perfis[0].Handle
 	}
 
 	ref := fmt.Sprintf("ajuste_admin:%d:%s", time.Now().Unix(), motivo)
@@ -326,28 +461,40 @@ func (h *EconomiaHandler) HandleAjusteManual(w http.ResponseWriter, r *http.Requ
 	var resSaldo string
 	if body.Quantidade > 0 {
 		resSaldo = strings.TrimSpace(database.Client.Rpc("creditar_cristais", "", map[string]interface{}{
-			"p_user_id":    userID,
+			"p_user_id":    finalUserID,
 			"p_quantidade": body.Quantidade,
 			"p_motivo":     "ajuste_admin",
 			"p_referencia": ref,
 		}))
 	} else {
 		resSaldo = strings.TrimSpace(database.Client.Rpc("debitar_cristais", "", map[string]interface{}{
-			"p_user_id":    userID,
+			"p_user_id":    finalUserID,
 			"p_quantidade": -body.Quantidade,
 			"p_motivo":     "ajuste_admin",
 			"p_referencia": ref,
 		}))
 	}
 
+	if strings.Contains(resSaldo, "error") || strings.Contains(resSaldo, "code") || strings.Contains(resSaldo, "Exception") || strings.Contains(resSaldo, "P000") {
+		log.Printf("[ECONOMIA] Erro na RPC de ajuste manual (user=%s, qtd=%d): %s", finalUserID, body.Quantidade, resSaldo)
+		if strings.Contains(resSaldo, "Saldo insuficiente") || strings.Contains(resSaldo, "P0002") {
+			responderErroJSON(w, http.StatusBadRequest, "Saldo insuficiente para debitar essa quantidade de AniCoins.")
+			return
+		}
+		responderErroJSON(w, http.StatusBadRequest, "Falha ao registrar ajuste manual no banco de dados.")
+		return
+	}
+
 	novoSaldo, _ := strconv.Atoi(resSaldo)
-	log.Printf("[ECONOMIA] Ajuste manual por admin=%s: user=%s, qtd=%d, novo_saldo=%d, ref=%s", adminID, userID, body.Quantidade, novoSaldo, ref)
+	log.Printf("[ECONOMIA] Ajuste manual por admin=%s: user=%s (@%s), qtd=%d, novo_saldo=%d, ref=%s", adminID, finalUserID, userHandle, body.Quantidade, novoSaldo, ref)
 
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(map[string]interface{}{
-		"ok":         true,
-		"novo_saldo": novoSaldo,
-		"mensagem":   fmt.Sprintf("Ajuste de %d Cristais realizado com sucesso.", body.Quantidade),
+		"ok":                  true,
+		"novo_saldo":          novoSaldo,
+		"user_id":             finalUserID,
+		"destinatario_handle": userHandle,
+		"mensagem":            fmt.Sprintf("Ajuste de %d AniCoins realizado com sucesso.", body.Quantidade),
 	})
 }
 
