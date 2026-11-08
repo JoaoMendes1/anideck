@@ -46,8 +46,8 @@ Staging sobe já na Fase 1, como projeto esqueleto — mesmo padrão do JVM Syst
 | 13 · Reformulação Visual, Automação de Curadoria e Inteligência de Gosto | ✅ Concluída (08/11/2026) |
 | 14 · Guilda & Gamificação | ✅ Concluída (08/11/2026) |
 | 15 · Comunidade base | ✅ Concluída (08/11/2026, #154); falta abrir o beta |
-| 16 · Economia e cartas | 📋 Planejada |
-| 17 · Comunidade viva | 📋 Planejada |
+| 16 · Economia e cartas | 📋 Planejada, com issues (#165) |
+| 17 · Comunidade viva | 📋 Planejada, com issues (#179) |
 
 ---
 
@@ -716,22 +716,53 @@ atual. **Pré-requisito:** abrir o beta (`beta_signup_limit`).
       *Divisões de 20 que sobem e descem esperam base suficiente.*
 - [x] 15.7 Privacidade atualizada para conteúdo publicado e perfil público
 
-## 💎 Fase 16: Economia e cartas — *planejada*
+## 💎 Fase 16: Economia e cartas — *planejada (épico #165)*
 
-- [ ] 16.1 Cristais e missões diárias, com painel de economia, e o bônus de XP por Vitalidade alta
-- [ ] 16.2 Loja cosmética (moldura, tema, cor do nome, vitrine maior)
-- [ ] 16.3 Cartas por anime terminado, com raridade, e duelo de gosto
-- [ ] 16.4 Rankings de temporada, top por gênero e ranking de reações da temporada
-- [ ] 16.5 Apoiador (link externo de apoio antes de pagamento integrado)
+Motivo: um motivo diário para voltar (`VISAO_COMUNIDADE.md`: Economia, Cartas, Rankings e Receita).
+**Pré-requisitos:** Fase 15 publicada e o beta aberto. As convenções de implementação estão no
+épico; cada item tem a sua issue, com decisões, armadilhas e critérios de aceite.
 
-## 🐉 Fase 17: Comunidade viva — *planejada*
+- [ ] 16.0 Tarefas periódicas no worker: base da liga, da raridade das cartas e da Fase 17 (#166)
+- [ ] 16.1 Cristais, missões e bônus de Vitalidade
+  - [ ] 16.1a Cristais: carteira com extrato e painel de economia (#167)
+  - [ ] 16.1b Missões diárias (#168)
+  - [ ] 16.1c Bônus de XP por Vitalidade alta e Mana mais rápida (#169)
+- [ ] 16.2 Loja cosmética
+  - [ ] 16.2a Catálogo e compra com Cristais (#170)
+  - [ ] 16.2b Aplicar cosméticos: moldura, tema, cor do nome, emblema e vitrine maior (#171)
+- [ ] 16.3 Cartas
+  - [ ] 16.3a Carta por anime terminado, com raridade (#172)
+  - [ ] 16.3b Duelo de gosto entre perfis públicos (#173)
+  - [ ] 16.3c Cartas de personagem a partir dos favoritos (#174)
+- [ ] 16.4 Rankings
+  - [ ] 16.4a Ranking da temporada e top por gênero (#175)
+  - [ ] 16.4b Liga semanal com divisões, ativada pelo tamanho da base (#176)
+  - [ ] 16.4c Clima da temporada: ranking de reações (#177)
+- [ ] 16.5 Apoiador por link externo, sem pagamento integrado (#178)
 
-- [ ] 17.1 Guildas como clãs, desafio semanal e liga de guildas
-- [ ] 17.2 Sala de estreia (chat ao vivo por três horas a partir do lançamento)
-- [ ] 17.3 Chefão da Temporada
-- [ ] 17.4 Previsões, classes e títulos
-- [ ] 17.5 AniDeck Wrapped e convite com recompensa
-- [ ] 17.6 Avatar montável (depende de arte original)
+## 🐉 Fase 17: Comunidade viva — *planejada (épico #179)*
+
+Motivo: fazer a base jogar junta (`VISAO_COMUNIDADE.md`: Guildas como clãs, Conversa e Outras
+mecânicas). **Pré-requisitos:** Fase 16 concluída e base com gente suficiente (o épico sugere o mínimo).
+
+- [ ] 17.1 Clãs (o nome é a primeira decisão: "Guilda" já é a progressão pessoal)
+  - [ ] 17.1a Clãs de 10 a 30 membros (#180)
+  - [ ] 17.1b Desafio semanal coletivo (#181)
+  - [ ] 17.1c Liga de clãs por temporada (#182)
+- [ ] 17.2 Sala de estreia
+  - [ ] 17.2a Chat ao vivo nas três horas depois do lançamento (#183)
+  - [ ] 17.2b Destaques viram comentários e aviso de sala aberta (#184)
+- [ ] 17.3 Chefão da Temporada (#185)
+- [ ] 17.4 Títulos, previsões e classes
+  - [ ] 17.4a Títulos ganhos (#186)
+  - [ ] 17.4b Previsões apostando Mana (#187)
+  - [ ] 17.4c Classes Bardo, Ranger e Paladino (#189)
+- [ ] 17.5 AniDeck Wrapped e convite
+  - [ ] 17.5a AniDeck Wrapped (#190)
+  - [ ] 17.5b Convite com recompensa (#191)
+- [ ] 17.6 Avatar montável, bloqueado até ter arte original (#192)
+- [ ] 17.7 Curadoria colaborativa: membros de rank alto sugerem correções (#188). *Estava na
+      visão e faltava aqui.*
 
 ## 🔧 Manutenção pós-v1
 
