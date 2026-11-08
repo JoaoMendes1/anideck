@@ -32,6 +32,7 @@ const QUERY_ANILIST = `
       media(search: $search, idMal: $idMal, type: ANIME) {
         id idMal title { romaji english native } coverImage { large } bannerImage format status genres synopsis: description
         episodes
+        nextAiringEpisode { episode airingAt }
         streamingEpisodes { title thumbnail }
         characters(sort: [ROLE, RELEVANCE], perPage: 15) {
           edges { role node { name { full } image { large } } }
@@ -376,47 +377,61 @@ export default function PainelAdmin() {
     }
   }
   // Preenche o formulário a partir de um anime da AniList e grava o hash na
-  // mesma passada. Serve os dois caminhos de entrada — busca por nome e Curar
-  // do Olheiro — para que o formulário nasça idêntico nos dois casos.
+  // mesma passada. Se a obra já estiver curada, reaproveita o registro existente
+  // para preservar episódios, links, ID de edição e customizações manuais.
   const aplicarAnimeNoFormulario = (anime: AniListMedia) => {
-    const tituloCorreto = anime.title.romaji || anime.title.english || anime.title.native || ''
-    const formatoAnime = anime.format || 'TV'
-    const statusAnime = anime.status || 'RELEASING'
-    const sinopseLimpa = anime.synopsis ? anime.synopsis.replace(/<[^>]*>?/gm, '') : ''
-    const tagsAnime = anime.genres || []
-    const capa = anime.coverImage?.large || ''
-    const banner = anime.bannerImage || ''
+    const existente = destaques.find((d) => d.mal_id === anime.idMal)
 
-    const importedChars = anime.characters?.edges?.map((edge) => ({
-      name: edge.node.name?.full || 'Desconhecido',
-      image: edge.node.image?.large || '',
-      role: edge.role || 'SUPPORTING'
-    })) || []
+    const tituloCorreto = existente?.custom_title || anime.title.romaji || anime.title.english || anime.title.native || ''
+    const formatoAnime = existente?.custom_format || anime.format || 'TV'
+    const statusAnime = existente?.custom_status || anime.status || 'RELEASING'
+    const sinopseLimpa = existente?.custom_synopsis || (anime.synopsis ? anime.synopsis.replace(/<[^>]*>?/gm, '') : '')
+    const tagsAnime = existente?.custom_tags || anime.genres || []
+    const capa = existente?.custom_cover_image || anime.coverImage?.large || ''
+    const banner = existente?.custom_banner_image || anime.bannerImage || ''
+    const ordemAnime = existente?.order_index ?? 0
+    const epsAnime = existente?.custom_episodes || []
+    const linksAnime = existente?.custom_external_links || []
+    const estreiaAnime = estreiaParaInput(existente?.custom_first_aired_at)
+    const duracaoAnime = existente?.custom_duration_minutes ? String(existente.custom_duration_minutes) : ''
+    const destaqueAnime = existente?.is_destaque ?? true
+    const statusCuracao = existente?.curation_status || 'parcial'
 
+    const importedChars = existente?.custom_characters?.length
+      ? existente.custom_characters
+      : anime.characters?.edges?.map((edge) => ({
+          name: edge.node.name?.full || 'Desconhecido',
+          image: edge.node.image?.large || '',
+          role: edge.role || 'SUPPORTING'
+        })) || []
+
+    setEditId(existente?.id || null)
     setMalId(anime.idMal)
     setTitulo(tituloCorreto)
     setFormato(formatoAnime)
     setStatus(statusAnime)
     setSinopse(sinopseLimpa)
     setTags(tagsAnime)
-    setOrdem(0)
+    setOrdem(ordemAnime)
     setCoverImage(capa)
     setBannerImage(banner)
     setCharacters(importedChars)
+    setEpisodios(epsAnime)
+    setLinks(linksAnime)
+    setEstreia(estreiaAnime)
+    setDuracao(duracaoAnime)
+    setIsDestaque(destaqueAnime)
+    setCurationStatus(statusCuracao)
     setPreviewTitulo(tituloCorreto)
     setResultadosBusca([])
     setTermoBusca('')
 
-    // Sem setTimeout: o hash é montado a partir das constantes acima, não do
-    // state. O React aplica tudo no mesmo lote, então o efeito de comparação
-    // roda uma vez só — já com hash e state batendo — e o formulário nasce
-    // limpo, sem a bolinha de "alterações não salvas".
     setInitialStateHash(montarHash({
       titulo: tituloCorreto, formato: formatoAnime, status: statusAnime,
-      ordem: 0, sinopse: sinopseLimpa, tags: tagsAnime,
+      ordem: ordemAnime, sinopse: sinopseLimpa, tags: tagsAnime,
       coverImage: capa, bannerImage: banner, characters: importedChars,
-      episodios: [], links: [], estreia: '', duracao: '',
-      isDestaque: true, curationStatus: 'parcial'
+      episodios: epsAnime, links: linksAnime, estreia: estreiaAnime, duracao: duracaoAnime,
+      isDestaque: destaqueAnime, curationStatus: statusCuracao
     }))
   }
 
@@ -460,7 +475,8 @@ export default function PainelAdmin() {
       }
 
       const comTitulo = anime.streamingEpisodes || []
-      const total = anime.episodes || comTitulo.length
+      const lancadosAteAgora = anime.nextAiringEpisode?.episode ? Math.max(0, anime.nextAiringEpisode.episode - 1) : 0
+      const total = anime.episodes || comTitulo.length || lancadosAteAgora
 
       return Array.from({ length: total }, (_, i) => ({
         number: i + 1,

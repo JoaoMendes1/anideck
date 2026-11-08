@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import {
+  artigoStreaming,
   continuarAssistindo,
   escolherLinkStreaming,
   estreiasDeHoje,
@@ -71,19 +72,27 @@ describe('continuarAssistindo', () => {
     expect(continuarAssistindo(progresso, entradas, animes, 2)).toHaveLength(2)
   })
 
-  it('sinaliza bloqueadoPorLancamento para episódio futuro e semEpisodios quando episodes <= 0', () => {
+  it('sinaliza bloqueadoPorLancamento para episódio futuro e semEpisodios quando episodes <= 0 e sem nextAiring', () => {
     const catalogo = {
       10: anime(10, { episodes: 26, nextAiringEpisode: { airingAt: 9999999999, episode: 20 } }),
       11: anime(11, { episodes: 0 }),
+      12: anime(12, { episodes: 0, nextAiringEpisode: { airingAt: 9999999999, episode: 8 } }),
     }
     const lista = continuarAssistindo(
-      [{ mal_id: 10, ultimo_episodio: 19, marcados: 19 }, { mal_id: 11, ultimo_episodio: 6, marcados: 6 }],
-      [{ mal_id: 10, status: 'Assistindo' }, { mal_id: 11, status: 'Assistindo' }],
+      [
+        { mal_id: 10, ultimo_episodio: 19, marcados: 19 },
+        { mal_id: 11, ultimo_episodio: 6, marcados: 6 },
+        { mal_id: 12, ultimo_episodio: 3, marcados: 3 },
+      ],
+      [{ mal_id: 10, status: 'Assistindo' }, { mal_id: 11, status: 'Assistindo' }, { mal_id: 12, status: 'Assistindo' }],
       catalogo,
     )
     expect(lista[0].bloqueadoPorLancamento).toBe(true)
     expect(lista[0].semEpisodios).toBe(false)
     expect(lista[1].semEpisodios).toBe(true)
+    // O anime 12 tem episodes: 0, mas nextAiringEpisode.episode é 8 (já lançou até o 7), então semEpisodios é falso
+    expect(lista[2].semEpisodios).toBe(false)
+    expect(lista[2].proximoEpisodio).toBe(4)
   })
 })
 
@@ -172,7 +181,18 @@ describe('filtrarLinksStreaming e escolherLinkStreaming', () => {
     const links = [
       { name: 'Twitter', url: 'https://twitter.com/anime' },
       { name: 'Official Site', url: 'https://anime.jp' },
+      { name: 'YouTube', url: 'https://www.youtube.com/@animetoman' },
     ]
     expect(escolherLinkStreaming(links)).toBeUndefined()
+  })
+
+  it('determina o artigo correto por plataforma', () => {
+    expect(artigoStreaming('Crunchyroll')).toBe('na')
+    expect(artigoStreaming('Netflix')).toBe('na')
+    expect(artigoStreaming('Anime Onegai')).toBe('na')
+    expect(artigoStreaming('YouTube')).toBe('no')
+    expect(artigoStreaming('Prime Video')).toBe('no')
+    expect(artigoStreaming('Disney+')).toBe('no')
+    expect(artigoStreaming('Max')).toBe('no')
   })
 })

@@ -256,9 +256,11 @@ export default function Inicio() {
               mal_id: m.mal_id,
               title: m.title || 'Título indisponível',
               image_url: m.images?.jpg?.image_url || '',
-              episodes: m.episodes || m.streamingEpisodes?.length || 0,
+              episodes: m.episodes || m.streamingEpisodes?.length || (m.nextAiringEpisode?.episode ? m.nextAiringEpisode.episode - 1 : 0),
+              synopsis: m.synopsis,
               genres: m.genres?.slice(0, 3).map(g => g.name),
               streaming: m.streaming ?? undefined,
+              streamingEpisodes: m.streamingEpisodes,
               nextAiringEpisode: m.nextAiringEpisode,
               banner: m.bannerImage,
             }

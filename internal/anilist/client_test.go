@@ -159,6 +159,8 @@ func TestFiltrarLinksStreaming_DescartaTwitterEPriorizaCrunchyroll(t *testing.T)
 		{Site: "Official Site", URL: "https://frieren-anime.jp/", Type: "INFO"},
 		{Site: "Twitter", URL: "https://twitter.com/Anime_Frieren", Type: "SOCIAL"},
 		{Site: "X", URL: "https://x.com/Anime_Frieren", Type: ""},
+		{Site: "YouTube", URL: "https://www.youtube.com/@animetoman", Type: "STREAMING"},
+		{Site: "YouTube", URL: "https://www.youtube.com/watch?v=dQw4w9WgXcQ", Type: "STREAMING"},
 		{Site: "Bilibili", URL: "https://www.bilibili.tv/en/media/123", Type: "STREAMING"},
 		{Site: "Netflix", URL: "https://www.netflix.com/title/81726714", Type: "STREAMING"},
 		{Site: "Crunchyroll", URL: "https://www.crunchyroll.com/series/GG5H5XQX4", Type: "STREAMING"},
@@ -168,10 +170,27 @@ func TestFiltrarLinksStreaming_DescartaTwitterEPriorizaCrunchyroll(t *testing.T)
 	quero := []StreamingLink{
 		{Name: "Crunchyroll", URL: "https://www.crunchyroll.com/series/GG5H5XQX4"},
 		{Name: "Netflix", URL: "https://www.netflix.com/title/81726714"},
+		{Name: "YouTube", URL: "https://www.youtube.com/watch?v=dQw4w9WgXcQ"},
 		{Name: "Bilibili", URL: "https://www.bilibili.tv/en/media/123"},
 	}
 
 	if !reflect.DeepEqual(got, quero) {
 		t.Fatalf("filtrarLinksStreaming() = %+v, queria %+v", got, quero)
+	}
+}
+
+func TestToAnime_FallbackEpisodiosEmLancamento(t *testing.T) {
+	m := &aniListMedia{
+		IDMal:    60601,
+		Episodes: 0,
+		NextAiringEpisode: &NextAiringEpisode{
+			Episode: 8,
+		},
+	}
+	m.Title.Romaji = "Tensei Kizoku 3"
+
+	anime := m.toAnime()
+	if anime.Episodes != 7 {
+		t.Errorf("Episodes = %d, queria 7 (fallback de NextAiringEpisode.Episode - 1)", anime.Episodes)
 	}
 }

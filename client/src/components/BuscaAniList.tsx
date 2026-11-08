@@ -20,6 +20,8 @@ export interface AniListMedia {
 
   /** Total de episódios anunciado pela AniList. Nulo em obras ainda sem contagem definida. */
   episodes?: number | null
+  /** Próximo episódio a ir ao ar (útil para estimar episódios já lançados quando episodes é nulo). */
+  nextAiringEpisode?: { episode: number; airingAt: number } | null
   /** Episódios com título e capa. Cobertura irregular: muitos animes vêm com a lista vazia. */
   streamingEpisodes?: { title?: string; thumbnail?: string }[]
 }

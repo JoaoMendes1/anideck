@@ -10,8 +10,10 @@ export interface AnimeResumido {
   title: string
   image_url: string
   episodes: number
+  synopsis?: string
   genres?: string[]
   streaming?: { name: string; url: string }[]
+  streamingEpisodes?: { title?: string; thumbnail?: string; url?: string; site?: string }[]
   nextAiringEpisode?: { airingAt: number; episode: number }
   banner?: string
 }
@@ -80,11 +82,14 @@ export function continuarAssistindo(
     const anime = animes[p.mal_id]
     if (!anime) continue
     const proximoEpisodio = p.ultimo_episodio + 1
-    if (anime.episodes > 0 && proximoEpisodio > anime.episodes) continue
+    const totalDisponivel = anime.episodes > 0
+      ? anime.episodes
+      : Math.max(anime.streamingEpisodes?.length || 0, anime.nextAiringEpisode?.episode ? anime.nextAiringEpisode.episode - 1 : 0)
+    if (totalDisponivel > 0 && proximoEpisodio > totalDisponivel) continue
     const bloqueadoPorLancamento = Boolean(
       anime.nextAiringEpisode?.episode && proximoEpisodio >= anime.nextAiringEpisode.episode,
     )
-    const semEpisodios = anime.episodes <= 0
+    const semEpisodios = totalDisponivel <= 0
     lista.push({ anime, proximoEpisodio, bloqueadoPorLancamento, semEpisodios })
     if (lista.length >= limite) break
   }
@@ -180,7 +185,29 @@ export function ehLinkDeStreaming(link?: LinkStreaming | null): link is LinkStre
   if (nome === 'x' || nome === 'ann') return false
   if (SITES_NAO_STREAMING.some(s => nome.includes(s))) return false
   if (DOMINIOS_NAO_STREAMING.some(d => url.includes(d))) return false
+  // Perfis ou canais no YouTube nunca são links diretos para assistir episódios
+  if (
+    url.includes('youtube.com/@') ||
+    url.includes('youtube.com/channel/') ||
+    url.includes('youtube.com/user/') ||
+    url.includes('youtube.com/c/')
+  ) {
+    return false
+  }
   return true
+}
+
+/**
+ * Retorna o artigo gramatical adequado para cada plataforma de streaming em português:
+ * "no YouTube", "no Prime Video", "no Disney+", "no Max", "no Hulu", "no Star+", "no Globoplay",
+ * "na Crunchyroll", "na Netflix", "na Anime Onegai".
+ */
+export function artigoStreaming(nome?: string): string {
+  const n = (nome || '').trim().toLowerCase()
+  if (n.includes('crunchyroll') || n.includes('netflix') || n.includes('anime onegai') || n.includes('funimation')) {
+    return 'na'
+  }
+  return 'no'
 }
 
 function prioridadeStreaming(link: LinkStreaming): number {

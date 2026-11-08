@@ -869,11 +869,33 @@ Go e no React, qualquer link externo era copiado diretamente para `StreamingLink
    topo, seguido por **Netflix**, **Prime Video**, **Disney+**, **Max**, **HIDIVE** e **YouTube**.
 4. No frontend (`client/src/lib/inicio.ts`), as funções `filtrarLinksStreaming` e
    `escolherLinkStreaming` aplicam a mesma filtragem e ordenação defensiva, garantindo que o botão
-   "Assistir na ..." aponte sempre para uma plataforma de streaming válida mesmo se o dado vier do
+   "Assistir ..." aponte sempre para uma plataforma de streaming válida mesmo se o dado vier do
    cache antigo.
+5. Canais/perfis do YouTube (`youtube.com/@...`, `/channel/`, `/c/`, `/user/`) são descartados,
+   mantendo apenas URLs diretas de exibição de episódios/vídeos (`watch?v=`, `/v/`).
+6. Concordância gramatical tratada por `artigoStreaming` ("no YouTube", "no Disney+", "na Crunchyroll",
+   "na Netflix").
 
 > **Pergunta obrigatória:** este link externo é de fato uma plataforma de vídeo sob demanda antes de
-> ser rotulado como "Assistir na ..."?
+> ser rotulado como "Assistir ..."? Se for YouTube, é um vídeo/player e não o canal promocional do estúdio?
+
+---
+
+## 30. ⏳ Animes em exibição devolvem `episodes: null` na AniList e viram "0 episódios"
+
+A AniList não define `episodes` para obras em lançamento (`RELEASING`), porque a contagem total de episódios pode não estar confirmada. O campo vem `null` no GraphQL.
+
+**Incidente (08/11/2026, #194):** no Go, `Episodes` é `int`. Ao desserializar `null`, vira `0` (zero-value, item 16 deste documento). A interface tratava `episodes <= 0` como anime sem episódios:
+- O Hero Banner exibia "🚨 Aviso de Emergência · Obra sem Episódios (0 EP)" para animes com episódios semanais em exibição (*Tensei Goblin*, *Tokyo Revengers*, etc.).
+- A grade de episódios travava com banner de erro e impedia a marcação.
+- No Painel Admin, abrir um anime em lançamento aplicava `episodes = null` e sobrescrevia os episódios curados com vazio ao salvar sem querer.
+
+**Correção:**
+1. No backend Go (`internal/anilist/client.go`), ao mapear mídia `RELEASING` com `Episodes == 0`, o sistema calcula o fallback: se houver `streamingEpisodes`, adota seu tamanho; se houver `nextAiringEpisode` com episódio > 1, adota `nextAiringEpisode.episode - 1` (os já lançados).
+2. No frontend (`client/src/components/EpisodeGrid.tsx`, `client/src/lib/inicio.ts`, `client/src/pages/Detalhes.tsx`), o total disponível e a condição `semEpisodios` agora consideram `anime.episodes`, `streamingEpisodes.length`, `nextAiringEpisode.episode - 1` e os episódios já marcados pelo usuário.
+3. No Painel Admin (`client/src/pages/PainelAdmin.tsx`), a busca AniList agora preserva curadorias existentes se a obra já estiver no catálogo, evitando resetar `editId` e zerar episódios já cadastrados.
+
+> **Pergunta obrigatória:** ao ler contagem de episódios de uma obra em lançamento, o sistema considerou que a API externa manda `null` e usou o fallback de episódios já exibidos?
 
 ---
 

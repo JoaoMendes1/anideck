@@ -52,7 +52,14 @@ export default function EpisodeGrid({ malId, totalEpisodes, streamingEpisodes = 
     return () => window.removeEventListener('anideck:episodio-atualizado', aoAtualizar)
   }, [malId])
 
-  const episodesCount = totalEpisodes > 0 ? totalEpisodes : streamingEpisodes.length
+  const episodiosJaLancados = nextAiringEpisode?.episode ? Math.max(0, nextAiringEpisode.episode - 1) : 0
+  const maxAssistido = watched.length > 0 ? Math.max(...watched) : 0
+  const episodesCount = Math.max(
+    totalEpisodes || 0,
+    streamingEpisodes.length,
+    episodiosJaLancados,
+    maxAssistido
+  )
 
   const allEpisodes = Array.from({ length: episodesCount }, (_, i) => {
     const epNum = i + 1

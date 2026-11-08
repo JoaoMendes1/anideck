@@ -391,6 +391,14 @@ func (m *aniListMedia) toAnime() Anime {
 		startDate = &FuzzyDate{Year: m.StartDate.Year, Month: m.StartDate.Month, Day: m.StartDate.Day}
 	}
 
+	episodes := m.Episodes
+	if episodes == 0 && len(streamingEps) > 0 {
+		episodes = len(streamingEps)
+	}
+	if episodes == 0 && m.NextAiringEpisode != nil && m.NextAiringEpisode.Episode > 1 {
+		episodes = m.NextAiringEpisode.Episode - 1
+	}
+
 	return Anime{
 		MalID:             m.IDMal,
 		Title:             title,
@@ -400,7 +408,7 @@ func (m *aniListMedia) toAnime() Anime {
 		SeasonYear:        m.resolveSeasonYear(),
 		Tags:              m.relevantTags(),
 		Synopsis:          stripHTML.Sanitize(m.Description),
-		Episodes:          m.Episodes,
+		Episodes:          episodes,
 		Duration:          m.Duration,
 		Score:             float64(m.AverageScore) / 10.0,
 		Popularity:        m.Popularity,
@@ -888,6 +896,14 @@ func EhPlataformaDeStreaming(site, urlStr, tipo string) bool {
 		if strings.Contains(u, dominio) {
 			return false
 		}
+	}
+
+	// Perfis, canais ou páginas de criadores no YouTube nunca são links diretos para assistir episódios
+	if strings.Contains(u, "youtube.com/@") ||
+		strings.Contains(u, "youtube.com/channel/") ||
+		strings.Contains(u, "youtube.com/c/") ||
+		strings.Contains(u, "youtube.com/user/") {
+		return false
 	}
 
 	return true

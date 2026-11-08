@@ -6,8 +6,8 @@ import (
 	"log"
 	"net/http"
 	"slices"
-
 	"strconv"
+	"strings"
 
 	"github.com/JoaoMendes1/anideck/internal/database"
 	"github.com/JoaoMendes1/anideck/internal/middleware"
@@ -89,27 +89,48 @@ func (h *CurationHandler) HandleList(w http.ResponseWriter, r *http.Request) {
 	_ = json.Unmarshal(data, &resultado)
 
 	if len(resultado) > 0 {
-		if dataCache, _, errCache := database.Client.From("anime_metadata_cache").
-			Select("mal_id,episodes", "", false).
-			Execute(); errCache == nil {
-			var linhasCache []struct {
-				MalID    int `json:"mal_id"`
-				Episodes int `json:"episodes"`
+		idsTexto := make([]string, len(resultado))
+		for i, r := range resultado {
+			idsTexto[i] = strconv.Itoa(r.MalID)
+		}
+		// Consulta os metadados filtrando pelos mal_ids em lotes (PITFALL 28)
+		epsPorMalID := make(map[int]int, len(resultado))
+		chunkSize := 100
+		for i := 0; i < len(idsTexto); i += chunkSize {
+			end := i + chunkSize
+			if end > len(idsTexto) {
+				end = len(idsTexto)
 			}
-			if json.Unmarshal(dataCache, &linhasCache) == nil {
-				epsPorMalID := make(map[int]int, len(linhasCache))
-				for _, c := range linhasCache {
-					epsPorMalID[c.MalID] = c.Episodes
+			dataCache, _, errCache := database.Client.From("anime_metadata_cache").
+				Select("mal_id,episodes", "", false).
+				In("mal_id", idsTexto[i:end]).
+				Execute()
+			if errCache == nil {
+				var linhasCache []struct {
+					MalID    int `json:"mal_id"`
+					Episodes int `json:"episodes"`
 				}
-				for i := range resultado {
-					resultado[i].CachedEpisodes = epsPorMalID[resultado[i].MalID]
+				if json.Unmarshal(dataCache, &linhasCache) == nil {
+					for _, c := range linhasCache {
+						epsPorMalID[c.MalID] = c.Episodes
+					}
 				}
 			}
 		}
+		for i := range resultado {
+			resultado[i].CachedEpisodes = epsPorMalID[resultado[i].MalID]
+		}
 	}
 
+	// Ordenação estável e determinística: order_index ASC, depois título alfabético, depois mal_id
 	slices.SortFunc(resultado, func(a, b models.CuratedAnime) int {
-		return cmp.Compare(a.OrderIndex, b.OrderIndex)
+		if c := cmp.Compare(a.OrderIndex, b.OrderIndex); c != 0 {
+			return c
+		}
+		if c := cmp.Compare(strings.ToLower(a.CustomTitle), strings.ToLower(b.CustomTitle)); c != 0 {
+			return c
+		}
+		return cmp.Compare(a.MalID, b.MalID)
 	})
 
 	w.Header().Set("Content-Type", "application/json")

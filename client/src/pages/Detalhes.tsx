@@ -325,11 +325,18 @@ export default function Detalhes() {
     firstAiredAt: anime.first_aired_at,
     startDate: anime.startDate,
   })
-  const totalEpisodios = anime.episodes || anime.streamingEpisodes?.length || 0
+  const episodiosJaLancados = anime.nextAiringEpisode?.episode ? Math.max(0, anime.nextAiringEpisode.episode - 1) : 0
+  const maxAssistido = episodiosAssistidos.length > 0 ? Math.max(...episodiosAssistidos) : 0
+  const totalEpisodios = Math.max(
+    anime.episodes || 0,
+    anime.streamingEpisodes?.length || 0,
+    episodiosJaLancados,
+    maxAssistido
+  )
   const naoLancado = anime.status === 'NOT_YET_RELEASED' || anime.status === 'Not yet aired'
   const ultimoDisponivel = naoLancado ? 0 : ultimoEpisodioDisponivel(totalEpisodios, anime.nextAiringEpisode?.episode, episodiosAssistidos)
   const obraTerminou = anime.status === 'FINISHED' || anime.status === 'Finished Airing'
-  const semEpisodios = (anime.episodes || 0) <= 0 && (anime.streamingEpisodes?.length ?? 0) === 0
+  const semEpisodios = totalEpisodios <= 0
   const relacoes = (anime.relations ?? []).filter(r => RELACOES_MOSTRADAS.includes(r.relation) && r.entry[0])
   const sinopse = anime.synopsis?.replace(/&#34;/g, '"').replace(/&#39;/g, "'") ?? ''
   const sinopseLonga = sinopse.length > 420
