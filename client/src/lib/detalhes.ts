@@ -26,15 +26,27 @@ export function rotuloDaNota(nota: number | null | undefined): string {
   return 'Ruim'
 }
 
-/** 8.5 → "8,5"; 8 → "8". */
+/** 8 → "8"; 8.5 → "8,5"; 7.25 → "7,25". Até duas casas, sem zero sobrando. */
 export function formatarNota(nota: number): string {
-  return Number.isInteger(nota) ? String(nota) : nota.toFixed(1).replace('.', ',')
+  return String(Math.round(nota * 100) / 100).replace('.', ',')
 }
 
-/** Arredonda para meio ponto e prende entre 0 e 10, como a régua grava. */
+/** Passo da régua e dos botões − e +: 0,1, preso entre 0 e 10. */
 export function ajustarNota(valor: number): number {
   if (!Number.isFinite(valor)) return 0
-  return Math.min(10, Math.max(0, Math.round(valor * 2) / 2))
+  return Math.min(10, Math.max(0, Math.round(valor * 10) / 10))
+}
+
+/**
+ * Nota digitada, como na antiga folha de edição: "7,3", "8.25", "10". Vazio é "sem nota"
+ * (null); fora de 0 a 10 ou com mais de duas casas devolve NaN, para a tela recusar.
+ */
+export function lerNotaDigitada(texto: string): number | null {
+  const t = texto.trim().replace(',', '.')
+  if (t === '') return null
+  if (!/^\d{1,2}(\.\d{1,2})?$/.test(t)) return NaN
+  const n = Number(t)
+  return n > 10 ? NaN : n
 }
 
 /**

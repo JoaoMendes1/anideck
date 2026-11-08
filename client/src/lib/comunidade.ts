@@ -83,14 +83,29 @@ export interface PerfilPublico {
   hp: number
 }
 
-/** Reações aceitas pelo banco, na ordem em que a tela mostra. */
+/**
+ * Reações aceitas pelo banco (sql/043 e reacoesValidas no Go), na ordem em que a tela
+ * mostra. Cada uma traz a cor da fatia no termômetro (classe inteira, por causa do
+ * Tailwind) e o veredito quando ela lidera. Só emoji anteriores ao Unicode 14, que
+ * aparecem até no Windows 10 e em celulares antigos.
+ */
 export const REACOES = [
-  { id: 'chorei', emoji: '😭', rotulo: 'Chorei' },
-  { id: 'plot_twist', emoji: '🤯', rotulo: 'Plot twist' },
-  { id: 'animacao', emoji: '✨', rotulo: 'Animação absurda' },
-  { id: 'engracado', emoji: '😂', rotulo: 'Engraçado' },
-  { id: 'tenso', emoji: '😰', rotulo: 'Tenso' },
-  { id: 'enrolacao', emoji: '💤', rotulo: 'Enrolação' },
+  { id: 'chorei', emoji: '😭', rotulo: 'Chorei', cor: 'bg-holo-3', veredito: 'fez a comunidade chorar' },
+  { id: 'hype', emoji: '🔥', rotulo: 'Hype', cor: 'bg-coral', veredito: 'deixou todo mundo no hype' },
+  { id: 'plot_twist', emoji: '🤯', rotulo: 'Plot twist', cor: 'bg-holo-1', veredito: 'virou a história de cabeça para baixo' },
+  { id: 'luta', emoji: '⚔️', rotulo: 'Luta épica', cor: 'bg-gold', veredito: 'entregou uma luta épica' },
+  { id: 'animacao', emoji: '✨', rotulo: 'Animação absurda', cor: 'bg-holo-2', veredito: 'brilhou na animação' },
+  { id: 'trilha', emoji: '🎵', rotulo: 'Trilha sonora', cor: 'bg-holo-3/60', veredito: 'marcou pela trilha sonora' },
+  { id: 'engracado', emoji: '😂', rotulo: 'Engraçado', cor: 'bg-green', veredito: 'arrancou risadas' },
+  { id: 'fofo', emoji: '🥰', rotulo: 'Fofura', cor: 'bg-holo-1/60', veredito: 'derreteu corações' },
+  { id: 'shippo', emoji: '💘', rotulo: 'Shippo', cor: 'bg-holo-1/80', veredito: 'fez a comunidade shippar' },
+  { id: 'tenso', emoji: '😰', rotulo: 'Tenso', cor: 'bg-coral/70', veredito: 'deixou todo mundo tenso' },
+  { id: 'medo', emoji: '😱', rotulo: 'Medo', cor: 'bg-holo-2/60', veredito: 'deu medo de verdade' },
+  { id: 'raiva', emoji: '😡', rotulo: 'Raiva', cor: 'bg-coral/50', veredito: 'deixou a comunidade com raiva' },
+  { id: 'genial', emoji: '🧠', rotulo: 'Genial', cor: 'bg-green/60', veredito: 'foi genial' },
+  { id: 'gancho', emoji: '⁉️', rotulo: 'Que gancho', cor: 'bg-gold/60', veredito: 'terminou num gancho daqueles' },
+  { id: 'vergonha', emoji: '😬', rotulo: 'Vergonha alheia', cor: 'bg-muted', veredito: 'deu vergonha alheia' },
+  { id: 'enrolacao', emoji: '💤', rotulo: 'Enrolação', cor: 'bg-muted-2', veredito: 'foi considerado enrolação' },
 ] as const
 
 export const MOTIVOS_DENUNCIA = [
@@ -218,6 +233,8 @@ export interface FatiaDoClima {
   id: string
   emoji: string
   rotulo: string
+  cor: string
+  veredito: string
   n: number
   pct: number
 }
@@ -227,7 +244,7 @@ export interface FatiaDoClima {
  * menos, com a porcentagem de cada uma. Alimenta a barra do termômetro.
  */
 export function climaDoEpisodio(reacoes: Record<string, number> | undefined): { total: number; fatias: FatiaDoClima[] } {
-  const fatias = REACOES.map(r => ({ id: r.id, emoji: r.emoji, rotulo: r.rotulo, n: Math.max(0, reacoes?.[r.id] ?? 0), pct: 0 })).filter(f => f.n > 0)
+  const fatias: FatiaDoClima[] = REACOES.map(r => ({ id: r.id, emoji: r.emoji, rotulo: r.rotulo, cor: r.cor, veredito: r.veredito, n: Math.max(0, reacoes?.[r.id] ?? 0), pct: 0 })).filter(f => f.n > 0)
   const total = fatias.reduce((s, f) => s + f.n, 0)
   for (const f of fatias) f.pct = total > 0 ? Math.round((f.n / total) * 100) : 0
   fatias.sort((a, b) => b.n - a.n)

@@ -34,26 +34,6 @@ interface Props {
   aoIrParaEpisodios?: () => void
 }
 
-// Cor de cada reação no termômetro: classes inteiras, porque o Tailwind não gera classe montada.
-const COR_DA_REACAO: Record<string, string> = {
-  chorei: 'bg-holo-3',
-  plot_twist: 'bg-holo-1',
-  animacao: 'bg-gold',
-  engracado: 'bg-green',
-  tenso: 'bg-coral',
-  enrolacao: 'bg-muted-2',
-}
-
-// O veredito do termômetro, pela reação que lidera.
-const VEREDITO: Record<string, string> = {
-  chorei: 'fez a comunidade chorar',
-  plot_twist: 'virou a história de cabeça para baixo',
-  animacao: 'brilhou na animação',
-  engracado: 'arrancou risadas',
-  tenso: 'deixou todo mundo tenso',
-  enrolacao: 'foi considerado enrolação',
-}
-
 const CHIPS_MAXIMOS = 60
 
 async function lerErro(res: Response, padrao: string): Promise<string> {
@@ -467,7 +447,7 @@ function EscudoDeSpoiler({ episodio, contagem, logado, marcando, onMarcar, aoIrP
   )
 }
 
-// Reação de um toque, numa linha só, e o termômetro: a mistura das reações da comunidade
+// Reação de um toque, em grade compacta, e o termômetro: a mistura das reações da comunidade
 // numa barra, com o veredito de quem lidera. Mostra como o episódio foi sentido, não só
 // quantos botões foram apertados.
 function TermometroDoEpisodio({ episodio, reacoes, minhas, habilitado, onAlternar }: {
@@ -488,17 +468,18 @@ function TermometroDoEpisodio({ episodio, reacoes, minhas, habilitado, onAlterna
       {total > 0 && (
         <div className="flex h-2 rounded-full overflow-hidden bg-void/50 border border-line/60 mb-1.5" role="img" aria-label={fatias.map(f => `${f.rotulo} ${f.pct}%`).join(', ')}>
           {fatias.map(f => (
-            <span key={f.id} className={`h-full ${COR_DA_REACAO[f.id]}`} style={{ width: `${f.pct}%` }} />
+            <span key={f.id} className={`h-full ${f.cor}`} style={{ width: `${f.pct}%` }} />
           ))}
         </div>
       )}
       {lider && (
         <p className="text-[11.5px] text-muted mt-0 mb-2.5">
-          {lider.emoji} Para quem viu, este episódio {VEREDITO[lider.id]} ({lider.pct}%).
+          {lider.emoji} Para quem viu, este episódio {lider.veredito} ({lider.pct}%).
         </p>
       )}
-      {/* Celular: seis botões numa linha, só emoji e contagem. Monitor: com o nome ao lado. */}
-      <div className="grid grid-cols-6 gap-1.5 sm:flex sm:flex-wrap sm:gap-2" role="group" aria-label="Reagir ao episódio">
+      {/* Celular e tablet: grade de 8 por linha, só emoji e contagem (o nome vai no título e no
+          leitor de tela). Monitor: grade de 4 por linha, com o nome ao lado. */}
+      <div className="grid grid-cols-8 gap-1.5 lg:grid-cols-4 lg:gap-2" role="group" aria-label="Reagir ao episódio">
         {REACOES.map(r => {
           const ligada = minhas.includes(r.id)
           const n = reacoes?.[r.id] ?? 0
@@ -511,15 +492,15 @@ function TermometroDoEpisodio({ episodio, reacoes, minhas, habilitado, onAlterna
               title={r.rotulo}
               disabled={!habilitado}
               onClick={() => onAlternar(r.id)}
-              className={`h-12 sm:h-10 sm:px-3.5 rounded-xl sm:rounded-full border flex flex-col sm:flex-row items-center justify-center gap-0.5 sm:gap-2 transition-all cursor-pointer disabled:opacity-50 active:scale-95 ${
+              className={`h-11 lg:h-10 lg:px-3 min-w-0 rounded-xl border flex flex-col lg:flex-row items-center justify-center lg:justify-start gap-0.5 lg:gap-2 transition-all cursor-pointer disabled:opacity-50 active:scale-95 ${
                 ligada ? 'border-holo-1 bg-holo-1/12 shadow-[0_0_12px_rgba(255,79,216,0.18)]' : 'border-line bg-panel-2 hover:border-holo-1/50'
               }`}
             >
-              <span className={`text-[19px] sm:text-[16px] leading-none ${ligada ? '' : 'grayscale-[35%]'}`} aria-hidden>
+              <span className={`text-[18px] lg:text-[15px] leading-none ${ligada ? '' : 'grayscale-[35%]'}`} aria-hidden>
                 {r.emoji}
               </span>
-              <span className={`hidden sm:inline text-[12.5px] font-bold ${ligada ? 'text-text' : 'text-muted'}`}>{r.rotulo}</span>
-              <span className={`block h-[10px] sm:h-auto font-mono text-[9.5px] sm:text-[11px] leading-[10px] sm:leading-none ${ligada ? 'text-holo-1' : 'text-muted-2'}`}>{n > 0 ? n : ''}</span>
+              <span className={`hidden lg:inline min-w-0 truncate text-[12.5px] font-bold ${ligada ? 'text-text' : 'text-muted'}`}>{r.rotulo}</span>
+              <span className={`block h-[10px] lg:h-auto lg:ml-auto font-mono text-[9px] lg:text-[11px] leading-[10px] lg:leading-none ${ligada ? 'text-holo-1' : 'text-muted-2'}`}>{n > 0 ? n : ''}</span>
             </button>
           )
         })}

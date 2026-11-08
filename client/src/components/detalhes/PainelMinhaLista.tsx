@@ -3,11 +3,11 @@
 // do anime. Cada mudança salva sozinha; antes, tudo passava pela folha "Editar entrada".
 import { useEffect, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { Check, ChevronDown, Heart, Loader2, MoreHorizontal, NotebookPen, Play, Plus, Star, Trash2, X } from 'lucide-react'
+import { Check, ChevronDown, Crown, Loader2, MoreHorizontal, NotebookPen, Play, Plus, Star, Trash2, X } from 'lucide-react'
 import { useSessao } from '../../contexts/SessaoContext'
 import { useToast } from '../../contexts/ToastContext'
 import { invalidarCachesDoDeck } from '../../lib/cacheDeTela'
-import { STATUS_DO_DECK, ajustarNota, formatarNota, proximoEpisodio, rotuloDaNota, type EntradaNoDeck } from '../../lib/detalhes'
+import { STATUS_DO_DECK, ajustarNota, formatarNota, lerNotaDigitada, proximoEpisodio, rotuloDaNota, type EntradaNoDeck } from '../../lib/detalhes'
 
 interface Props {
   malId: number
@@ -198,13 +198,13 @@ export default function PainelMinhaLista({ malId, entrada, assistidos, ultimoDis
       type="button"
       onClick={() => salvar({ is_favorite: !entrada.is_favorite }, entrada.is_favorite ? undefined : 'Agora é uma carta rara do seu deck!')}
       aria-pressed={!!entrada.is_favorite}
-      aria-label={entrada.is_favorite ? 'Tirar dos favoritos' : 'Marcar como favorito'}
-      title={entrada.is_favorite ? 'Tirar dos favoritos' : 'Favorito'}
+      aria-label={entrada.is_favorite ? 'Tirar dos favoritos (carta rara)' : 'Marcar como favorito (carta rara)'}
+      title={entrada.is_favorite ? 'Favorito: carta rara do deck. Toque para tirar' : 'Marcar como favorito (carta rara)'}
       className={`w-10 h-10 shrink-0 grid place-items-center rounded-full border cursor-pointer transition-colors ${
-        entrada.is_favorite ? 'border-holo-1/60 bg-holo-1/15 text-holo-1' : 'border-line bg-panel-2 text-muted hover:text-text'
+        entrada.is_favorite ? 'border-gold/70 bg-gold/15 text-gold shadow-[0_0_12px_rgba(255,197,66,0.35)]' : 'border-line bg-panel-2 text-muted hover:text-gold'
       }`}
     >
-      <Heart size={16} fill={entrada.is_favorite ? 'currentColor' : 'none'} aria-hidden />
+      <Crown size={17} fill={entrada.is_favorite ? 'currentColor' : 'none'} aria-hidden />
     </button>
   )
 
@@ -430,41 +430,80 @@ export default function PainelMinhaLista({ malId, entrada, assistidos, ultimoDis
   )
 }
 
-// Régua de 0 a 10 com meio ponto. Salva sozinha um instante depois de soltar; sem nota,
-// a régua aparece apagada e o primeiro toque já define o valor.
+// Nota como antes (digitada, com uma ou duas casas) e uma régua de 0,1 para quem prefere
+// arrastar. Os botões − e + acertam o décimo no celular, onde a régua sozinha é imprecisa.
+// Nada é gravado só por abrir: a nota antiga só muda quando a pessoa mexe.
 function ReguaDeNota({ nota, onSalvar }: { nota: number | null; onSalvar: (nota: number | null) => void }) {
   const [valor, setValor] = useState<number | null>(nota)
+  const [texto, setTexto] = useState(nota === null ? '' : formatarNota(nota))
+  const [digitando, setDigitando] = useState(false)
   const temporizador = useRef<number | undefined>(undefined)
 
   useEffect(() => {
     setValor(nota)
+    if (!digitando) setTexto(nota === null ? '' : formatarNota(nota))
+    // A nota que chega do servidor só substitui o texto quando a pessoa não está digitando.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [nota])
   useEffect(() => () => window.clearTimeout(temporizador.current), [])
 
-  const agendar = (novo: number | null) => {
+  const agendar = (novo: number | null, espera = 700) => {
     setValor(novo)
+    if (!digitando) setTexto(novo === null ? '' : formatarNota(novo))
     window.clearTimeout(temporizador.current)
     temporizador.current = window.setTimeout(() => {
       if (novo !== nota) onSalvar(novo)
-    }, 700)
+    }, espera)
   }
 
+  const lido = lerNotaDigitada(texto)
+  const textoInvalido = lido !== null && Number.isNaN(lido)
+
+  const confirmarTexto = () => {
+    setDigitando(false)
+    if (textoInvalido) {
+      setTexto(valor === null ? '' : formatarNota(valor))
+      return
+    }
+    if (lido !== valor) agendar(lido, 0)
+    else setTexto(lido === null ? '' : formatarNota(lido))
+  }
+
+  // Sem nota, o primeiro toque em − ou + começa no meio da régua.
+  const passo = (delta: number) => agendar(valor === null ? 5 : ajustarNota(valor + delta))
   const pct = valor === null ? 0 : (valor / 10) * 100
+  const botaoPasso = 'w-10 h-10 shrink-0 grid place-items-center rounded-full border border-line bg-void/40 text-text text-lg font-bold cursor-pointer hover:border-holo-3 active:scale-95 disabled:opacity-30 disabled:cursor-not-allowed'
 
   return (
     <div>
-      <div className="flex items-end justify-between gap-2 mb-2">
-        <div className="flex items-baseline gap-2">
-          <span className={`font-anton text-[32px] leading-none ${valor === null ? 'text-muted-2' : 'text-holo-3'}`}>
-            {valor === null ? '–' : formatarNota(valor)}
-          </span>
-          <span className="text-[12.5px] font-bold text-muted">{rotuloDaNota(valor)}</span>
+      <div className="flex items-center gap-2 mb-2">
+        <button type="button" onClick={() => passo(-0.1)} disabled={valor !== null && valor <= 0} aria-label="Diminuir 0,1" className={botaoPasso}>
+          −
+        </button>
+        <div className="flex-1 min-w-0 flex items-baseline justify-center gap-2">
+          <label htmlFor="nota-digitada" className="sr-only">Sua nota de 0 a 10</label>
+          <input
+            id="nota-digitada"
+            value={texto}
+            inputMode="decimal"
+            autoComplete="off"
+            placeholder="–"
+            aria-invalid={textoInvalido}
+            onFocus={() => setDigitando(true)}
+            onChange={e => setTexto(e.target.value)}
+            onBlur={confirmarTexto}
+            onKeyDown={e => {
+              if (e.key === 'Enter') (e.target as HTMLInputElement).blur()
+            }}
+            className={`w-[4.5ch] bg-transparent text-center font-anton text-[32px] leading-none outline-none border-b-2 transition-colors ${
+              textoInvalido ? 'border-coral text-coral' : valor === null ? 'border-line text-muted-2' : 'border-transparent focus:border-holo-3 text-holo-3'
+            }`}
+          />
+          <span className="text-[12.5px] font-bold text-muted truncate">{textoInvalido ? 'de 0 a 10' : rotuloDaNota(valor)}</span>
         </div>
-        {valor !== null && (
-          <button type="button" onClick={() => agendar(null)} className="font-mono text-[10.5px] text-muted-2 uppercase tracking-wider hover:text-coral cursor-pointer">
-            Limpar
-          </button>
-        )}
+        <button type="button" onClick={() => passo(0.1)} disabled={valor !== null && valor >= 10} aria-label="Aumentar 0,1" className={botaoPasso}>
+          +
+        </button>
       </div>
       <div className="relative h-8 flex items-center">
         <div className="absolute inset-x-0 h-2 rounded-full bg-void/50 border border-line overflow-hidden">
@@ -474,18 +513,24 @@ function ReguaDeNota({ nota, onSalvar }: { nota: number | null; onSalvar: (nota:
           type="range"
           min={0}
           max={10}
-          step={0.5}
+          step={0.1}
           value={valor ?? 0}
-          aria-label="Sua nota de 0 a 10"
+          aria-label="Régua da nota, de 0 a 10"
           aria-valuetext={valor === null ? 'Sem nota' : `${formatarNota(valor)}, ${rotuloDaNota(valor)}`}
           onChange={e => agendar(ajustarNota(Number(e.target.value)))}
           className={`regua-nota relative w-full appearance-none bg-transparent cursor-pointer ${valor === null ? 'opacity-50' : ''}`}
         />
       </div>
-      <div className="flex justify-between font-mono text-[9.5px] text-muted-2 px-0.5 select-none" aria-hidden>
-        <span>0</span>
-        <span>5</span>
-        <span>10</span>
+      <div className="flex items-center justify-between font-mono text-[9.5px] text-muted-2 px-0.5 select-none">
+        <span aria-hidden>0</span>
+        {valor !== null ? (
+          <button type="button" onClick={() => agendar(null, 0)} className="text-[10px] uppercase tracking-wider hover:text-coral cursor-pointer">
+            Limpar nota
+          </button>
+        ) : (
+          <span aria-hidden>toque, arraste ou digite</span>
+        )}
+        <span aria-hidden>10</span>
       </div>
     </div>
   )

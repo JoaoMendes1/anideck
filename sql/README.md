@@ -72,6 +72,7 @@ SELECT pg_get_viewdef('nome_da_view'::regclass, true);
 | `040_streak_no_fuso_de_brasilia.sql` | `view_user_watch_dates` agrupa os dias no fuso de Brasília, igual ao "XP de hoje" da Guilda | ~08/11/2026 |
 | `041_comunidade_base.sql` | Fase 15: `profiles` (com GRANT por coluna), `episode_reactions`, `episode_comments` (escudo de spoiler na RLS), Mana cobrada por gatilho, `ativar_descanso`, curtidas, denúncias, bloqueios e as funções públicas `contagem_conversa`, `ranking_membros` e `perfil_publico`. Aplicar **antes** de promover o código da Fase 15 | ~08/11/2026 |
 | `042_handle_reservado.sql` | Gatilho em `profiles`: @ reservado (admin, administrador, anideck...) só para quem está em `app_admins` | — |
+| `043_mais_reacoes.sql` | `episode_reactions` passa de 6 para 16 reações (troca o `CHECK`). Aplicar antes de promover o código | — |
 
 Datas com `~` são a data do commit, não da aplicação no Supabase.
 

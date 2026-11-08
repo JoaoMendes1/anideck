@@ -157,3 +157,19 @@ func TestErroDoBanco(t *testing.T) {
 		}
 	}
 }
+
+func TestReacaoValida(t *testing.T) {
+	for _, r := range []string{"chorei", "hype", "gancho", "enrolacao"} {
+		if !reacaoValida(r) {
+			t.Errorf("%q deveria valer", r)
+		}
+	}
+	for _, r := range []string{"", "Chorei", "inventada", "chorei "} {
+		if reacaoValida(r) {
+			t.Errorf("%q deveria ser recusada", r)
+		}
+	}
+	if len(reacoesValidas) != 16 {
+		t.Errorf("a lista precisa bater com o sql/043 e o front: %d reações", len(reacoesValidas))
+	}
+}

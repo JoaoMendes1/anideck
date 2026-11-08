@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, type ReactNode } from 'react'
 import { useParams, Link, useNavigate, useSearchParams, useLocation } from 'react-router-dom'
-import { PlayCircle, Star, AlertCircle, Trophy, X, ArrowLeft, CalendarDays, Heart, ChevronDown } from 'lucide-react'
+import { PlayCircle, Star, AlertCircle, Trophy, X, ArrowLeft, CalendarDays, ChevronDown } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import { useToast } from '../contexts/ToastContext'
 import { useCatalogoStatus } from '../contexts/CatalogoStatusContext'
@@ -399,13 +399,14 @@ export default function Detalhes() {
             onClick={() => capa && setImagemAmpliada(capa)}
             aria-label="Ampliar a capa"
             className={`relative shrink-0 w-[176px] md:w-[240px] aspect-[2/3] rounded-2xl overflow-hidden bg-panel-2 border-[3px] shadow-[0_24px_50px_-14px_rgba(0,0,0,0.85)] cursor-zoom-in ${
-              minhaEntrada?.is_favorite ? 'border-holo-1/80' : 'border-panel'
+              minhaEntrada?.is_favorite ? 'border-gold/80 shadow-[0_0_28px_rgba(255,197,66,0.25)]' : 'border-panel'
             }`}
           >
             {capa && <img src={capa} alt={`Capa de ${anime.title}`} className="w-full h-full object-cover" />}
             {minhaEntrada?.is_favorite && (
-              <span className="absolute top-2 right-2 w-8 h-8 rounded-full bg-void/80 border border-holo-1/60 grid place-items-center text-holo-1" title="Favorito">
-                <Heart size={15} fill="currentColor" aria-hidden />
+              // A mesma coroa do card no Meu Deck: favorito é a "carta rara" do deck.
+              <span className="absolute top-2 left-2 w-8 h-8 rounded-full bg-void/85 border border-gold/60 grid place-items-center text-sm shadow-[0_0_12px_rgba(255,197,66,0.45)]" title="Favorito (carta rara)">
+                <span aria-hidden>👑</span>
               </span>
             )}
           </button>

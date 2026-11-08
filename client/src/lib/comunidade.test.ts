@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import {
+  REACOES,
   climaDoEpisodio,
   ehDaEquipe,
   episodioInicial,
@@ -123,5 +124,17 @@ describe('climaDoEpisodio', () => {
   })
   it('sem reação, termômetro vazio', () => {
     expect(climaDoEpisodio(undefined)).toEqual({ total: 0, fatias: [] })
+  })
+  it('reação nova lidera com cor e veredito próprios; desconhecida é ignorada', () => {
+    const { total, fatias } = climaDoEpisodio({ hype: 5, gancho: 1, inventada: 9 })
+    expect(total).toBe(6)
+    expect(fatias[0]).toMatchObject({ id: 'hype', emoji: '🔥', cor: 'bg-coral', veredito: 'deixou todo mundo no hype' })
+  })
+})
+
+describe('REACOES', () => {
+  it('tem 16 reações sem id repetido', () => {
+    expect(REACOES).toHaveLength(16)
+    expect(new Set(REACOES.map(r => r.id)).size).toBe(16)
   })
 })

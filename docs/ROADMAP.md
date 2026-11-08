@@ -739,6 +739,13 @@ atual. **Pré-requisito:** abrir o beta (`beta_signup_limit`).
 > numeração e não abrem escopo novo. Ficam registrados aqui em ordem cronológica inversa para
 > não sumirem: fase concluída não deve ser reaberta só para receber um conserto.
 
+### 08/11/2026 — Nota precisa, coroa no favorito e 16 reações (#161 e #162)
+
+- [x] **Nota como antes (#161):** digitada com até duas casas, régua de 0,1 e botões − e +;
+      abrir a página não regrava nota antiga. O favorito volta a ser a coroa do deck.
+- [x] **16 reações por episódio (#162):** `sql/043`, com cor e veredito do termômetro na
+      própria lista de reações.
+
 ### 08/11/2026 — Página do anime, Início no celular e @ da equipe (#155 a #157)
 
 - [x] **Página do anime redesenhada (#155):** abas que trocam o conteúdo, capa maior, status e

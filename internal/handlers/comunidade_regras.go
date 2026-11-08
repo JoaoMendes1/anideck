@@ -124,8 +124,12 @@ func ehDaEquipe(userID string) bool {
 	return admin != "" && userID == admin
 }
 
-// Reações aceitas pelo banco (CHECK do sql/041), na ordem em que a tela mostra.
-var reacoesValidas = []string{"chorei", "plot_twist", "animacao", "engracado", "tenso", "enrolacao"}
+// Reações aceitas pelo banco (CHECK do sql/043), na ordem em que a tela mostra. A mesma
+// lista está em REACOES (client/src/lib/comunidade.ts).
+var reacoesValidas = []string{
+	"chorei", "hype", "plot_twist", "luta", "animacao", "trilha", "engracado", "fofo",
+	"shippo", "tenso", "medo", "raiva", "genial", "gancho", "vergonha", "enrolacao",
+}
 
 func reacaoValida(r string) bool {
 	for _, v := range reacoesValidas {

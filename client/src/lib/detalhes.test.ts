@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { abaDaUrl, ajustarNota, formatarNota, proximoEpisodio, rotuloDaNota } from './detalhes'
+import { abaDaUrl, ajustarNota, formatarNota, lerNotaDigitada, proximoEpisodio, rotuloDaNota } from './detalhes'
 
 describe('abaDaUrl', () => {
   it('lê a aba da query e cai em Sobre quando não conhece', () => {
@@ -23,13 +23,25 @@ describe('nota', () => {
   it('formata com vírgula só quando tem meio ponto', () => {
     expect(formatarNota(8)).toBe('8')
     expect(formatarNota(8.5)).toBe('8,5')
+    expect(formatarNota(7.3)).toBe('7,3')
+    expect(formatarNota(7.25)).toBe('7,25')
   })
-  it('ajusta para meio ponto entre 0 e 10', () => {
-    expect(ajustarNota(8.26)).toBe(8.5)
-    expect(ajustarNota(8.2)).toBe(8)
+  it('ajusta para 0,1 entre 0 e 10, sem virar meio ponto', () => {
+    expect(ajustarNota(7.3)).toBe(7.3)
+    expect(ajustarNota(8.26)).toBe(8.3)
+    expect(ajustarNota(7.25 + 0.1)).toBe(7.4)
     expect(ajustarNota(12)).toBe(10)
     expect(ajustarNota(-1)).toBe(0)
     expect(ajustarNota(NaN)).toBe(0)
+  })
+  it('lê a nota digitada como na folha antiga', () => {
+    expect(lerNotaDigitada('7,3')).toBe(7.3)
+    expect(lerNotaDigitada(' 8.25 ')).toBe(8.25)
+    expect(lerNotaDigitada('10')).toBe(10)
+    expect(lerNotaDigitada('')).toBeNull()
+    expect(lerNotaDigitada('10,5')).toBeNaN()
+    expect(lerNotaDigitada('7,333')).toBeNaN()
+    expect(lerNotaDigitada('abc')).toBeNaN()
   })
 })
 
