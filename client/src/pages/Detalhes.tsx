@@ -7,6 +7,7 @@ import { useCatalogoStatus } from '../contexts/CatalogoStatusContext'
 import BotaoCopiar from '../components/BotaoCopiar'
 import ReactMarkdown from 'react-markdown'
 import EpisodeGrid from '../components/EpisodeGrid'
+import ConversaDoAnime from '../components/comunidade/ConversaDoAnime'
 import EditarEntradaModal from '../components/EditarEntradaModal'
 import { getCategoryTheme } from '../lib/filters'
 import { obterTextoDiaLancamento } from '../lib/deckHelpers'
@@ -604,6 +605,7 @@ export default function Detalhes() {
             {anime.streaming?.length > 0 && <a href="#onde-assistir" className="select-none text-[13px] font-bold text-muted hover:text-text hover:border-holo-3 px-3.5 py-1.5 rounded-full border border-line transition-colors">Onde Assistir</a>}
             {anime.characters && anime.characters.length > 0 && <a href="#personagens" className="select-none text-[13px] font-bold text-muted hover:text-text hover:border-holo-3 px-3.5 py-1.5 rounded-full border border-line transition-colors">Personagens</a>}
             <a href="#estatisticas" className="select-none text-[13px] font-bold text-muted hover:text-text hover:border-holo-3 px-3.5 py-1.5 rounded-full border border-line transition-colors">Estatísticas</a>
+            {(anime.episodes > 0 || (anime.nextAiringEpisode?.episode ?? 0) > 1) && <a href="#conversa" className="select-none text-[13px] font-bold text-muted hover:text-text hover:border-holo-3 px-3.5 py-1.5 rounded-full border border-line transition-colors">Conversa</a>}
             {anime.relations?.length > 0 && <a href="#relacionados" className="select-none text-[13px] font-bold text-muted hover:text-text hover:border-holo-3 px-3.5 py-1.5 rounded-full border border-line transition-colors">Relacionados</a>}
           </div>
         </div>
@@ -739,6 +741,13 @@ export default function Detalhes() {
                   }
                 }
               }}
+            />
+
+            <ConversaDoAnime
+              malId={anime.mal_id}
+              totalEpisodes={anime.episodes}
+              proximoAoAr={anime.nextAiringEpisode?.episode}
+              assistidosIniciais={episodiosAssistidos}
             />
 
             {anime.relations?.length > 0 && (

@@ -29,6 +29,8 @@ const Configuracoes = lazy(() => import('./pages/Configuracoes'))
 const Privacidade = lazy(() => import('./pages/Privacidade'))
 const Inicio = lazy(() => import('./pages/Inicio'))
 const Guilda = lazy(() => import('./pages/Guilda'))
+const Membros = lazy(() => import('./pages/Membros'))
+const PerfilMembro = lazy(() => import('./pages/PerfilMembro'))
 
 // "/" é a Landing para o visitante e a Início para quem está logado.
 function RaizDoSite() {
@@ -52,6 +54,8 @@ function App() {
               <Route path="/calendario" element={<RotaProtegida><Calendario /></RotaProtegida>} />
               <Route path="/anime/:id" element={<Detalhes />} />
               <Route path="/rankings" element={<Rankings />} />
+              <Route path="/membros" element={<Membros />} />
+              <Route path="/u/:handle" element={<PerfilMembro />} />
               <Route path="/privacidade" element={<Privacidade />} />
               <Route path="/meu-gosto" element={<RotaProtegida><Estatisticas /></RotaProtegida>} />
               <Route path="/guilda" element={<RotaProtegida><Guilda /></RotaProtegida>} />

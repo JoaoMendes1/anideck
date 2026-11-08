@@ -1,12 +1,15 @@
 // client/src/components/inicio/ResumoGuildaCard.tsx
-// A ficha da Guilda na coluna lateral da Início: rank, nível, XP de hoje e streak.
+// A ficha da Guilda na coluna lateral da Início: rank, nível, XP de hoje, streak, Vitalidade e Mana.
 import { Link } from 'react-router-dom'
 import { Flame, Shield } from 'lucide-react'
 import { obterEstiloRank } from '../../lib/guilda'
 import { useResumoGuilda } from '../../hooks/useResumoGuilda'
+import { useComunidade } from '../../hooks/useComunidade'
+import BarrasVitais from '../comunidade/BarrasVitais'
 
 export default function ResumoGuildaCard() {
   const status = useResumoGuilda()
+  const { estado } = useComunidade()
   if (!status || !status.gamificacao_ativa) return null
 
   const estilo = obterEstiloRank(status.rank)
@@ -50,6 +53,12 @@ export default function ResumoGuildaCard() {
           <span className="block h-full bg-green" style={{ width: `${pctHoje}%` }} />
         </span>
       </div>
+
+      {estado && (
+        <div className="mt-4 pt-3 border-t border-line">
+          <BarrasVitais estado={estado} compacta />
+        </div>
+      )}
     </Link>
   )
 }

@@ -85,7 +85,7 @@ export default function Navbar() {
           <div className="hidden md:flex items-center gap-6 lg:gap-7">
             <Link to="/" className={linkClasse('/')}>Início</Link>
             <Link to="/descobrir" className={linkClasse('/descobrir')}>Descobrir</Link>
-            <Link to="/rankings" className={linkClasse('/rankings')}>Rankings</Link>
+            <Link to="/rankings" className={linkClasse('/rankings', '/membros')}>Rankings</Link>
             {session && (
               <>
                 <Link to="/deck" className={linkClasse('/deck')}>Meu Deck</Link>

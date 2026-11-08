@@ -7,7 +7,7 @@ import ItensPerfil from './ItensPerfil'
 
 const ATIVO_EM: Record<string, string[]> = {
     '/': ['/'],
-    '/rankings': ['/rankings'],
+    '/rankings': ['/rankings', '/membros'],
     '/deck': ['/deck'],
     '/calendario': ['/calendario'],
     '/meu-gosto': ['/meu-gosto', '/estatisticas'],

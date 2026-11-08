@@ -20,6 +20,7 @@ import { AbaControle } from '../components/AbaControle'
 import AbaTrilhas from '../components/AbaTrilhas'
 import AbaRevisaoIA from '../components/AbaRevisaoIA'
 import AbaGuilda from '../components/AbaGuilda'
+import AbaModeracao from '../components/AbaModeracao'
 import type { SugestaoPendente } from '../hooks/useOlheiro'
 
 // Uma query serve os dois caminhos: busca por nome (search) e importação
@@ -71,7 +72,7 @@ const montarHash = (c: CamposDoFormulario) => JSON.stringify([
 
 // Menu do painel agrupado por assunto. As seções do Controle viram itens próprios, para
 // não haver um segundo menu dentro da aba.
-type AbaDoMenu = 'curadoria' | 'controle' | 'trilhas' | 'revisao_ia' | 'guilda'
+type AbaDoMenu = 'curadoria' | 'controle' | 'trilhas' | 'revisao_ia' | 'guilda' | 'moderacao'
 interface ItemDoMenu { id: string; nome: string; aba: AbaDoMenu; secao?: string }
 const GRUPOS_ADMIN: { titulo: string; itens: ItemDoMenu[] }[] = [
   { titulo: 'Catálogo', itens: [
@@ -85,6 +86,7 @@ const GRUPOS_ADMIN: { titulo: string; itens: ItemDoMenu[] }[] = [
     { id: 'controle:olheiro', nome: 'Olheiro', aba: 'controle', secao: 'olheiro' },
   ] },
   { titulo: 'Comunidade', itens: [
+    { id: 'moderacao', nome: 'Moderação', aba: 'moderacao' },
     { id: 'guilda', nome: 'Guilda e XP', aba: 'guilda' },
     { id: 'controle:ranking', nome: 'Ranking', aba: 'controle', secao: 'ranking' },
   ] },
@@ -144,11 +146,11 @@ export default function PainelAdmin() {
   const [configModalAberto, setConfigModalAberto] = useState(false)
   const [olheiroAberto, setOlheiroAberto] = useState(false)
 
-  type AbaAdmin = 'curadoria' | 'controle' | 'trilhas' | 'revisao_ia' | 'guilda'
+  type AbaAdmin = 'curadoria' | 'controle' | 'trilhas' | 'revisao_ia' | 'guilda' | 'moderacao'
   const [searchParams, setSearchParams] = useSearchParams()
   const abaParam = searchParams.get('aba')
   const abaAtiva: AbaAdmin =
-    abaParam === 'controle' || abaParam === 'trilhas' || abaParam === 'revisao_ia' || abaParam === 'guilda'
+    abaParam === 'controle' || abaParam === 'trilhas' || abaParam === 'revisao_ia' || abaParam === 'guilda' || abaParam === 'moderacao'
       ? abaParam
       : 'curadoria'
 
@@ -1040,6 +1042,16 @@ export default function PainelAdmin() {
               <p className="text-muted text-sm mt-1">Agrupamentos com nome e nota do curador, exibidos na Início na ordem desta lista.</p>
             </div>
             <AbaTrilhas />
+          </>
+        )}
+
+        {abaAtiva === 'moderacao' && (
+          <>
+            <div className="mb-8 min-w-0">
+              <h1 className="font-anton text-3xl uppercase">Moderação</h1>
+              <p className="text-muted text-sm mt-1">Denúncias dos comentários de episódio e as regras da Mana e da Vitalidade.</p>
+            </div>
+            <AbaModeracao />
           </>
         )}
 

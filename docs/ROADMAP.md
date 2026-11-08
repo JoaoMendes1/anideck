@@ -45,7 +45,7 @@ Staging sobe já na Fase 1, como projeto esqueleto — mesmo padrão do JVM Syst
 | 12 · Meu Gosto e distribuição | ✅ Concluída (08/11/2026) |
 | 13 · Reformulação Visual, Automação de Curadoria e Inteligência de Gosto | ✅ Concluída (08/11/2026) |
 | 14 · Guilda & Gamificação | ✅ Concluída (08/11/2026) |
-| 15 · Comunidade base | 📋 Planejada (`VISAO_COMUNIDADE.md`) |
+| 15 · Comunidade base | 🚧 Código pronto na `staging` (08/11/2026); falta aplicar o `sql/041` e abrir o beta |
 | 16 · Economia e cartas | 📋 Planejada |
 | 17 · Comunidade viva | 📋 Planejada |
 
@@ -700,25 +700,28 @@ Motivo: materializar a visão de progressão de longo prazo (`VISAO_GAMIFICACAO.
 - [x] Tela da Guilda (`/guilda`), pílula de Nível/Rank na Navbar, atalho no menu de Perfil e feedback `+XX XP` ao marcar episódio (#146)
 - [x] Aba Guilda no Painel Admin: economia de XP, faixas `F`→`SS` com prévia de distribuição, insígnias, auditoria e Kill Switch (#147)
 
-## 💬 Fase 15: Comunidade base — *planejada*
+## 💬 Fase 15: Comunidade base — *código pronto, aguardando o `sql/041`*
 
 Motivo: a direção de 08/11/2026 (`VISAO_COMUNIDADE.md`). Tudo aqui precisa funcionar com a base
 atual. **Pré-requisito:** abrir o beta (`beta_signup_limit`).
 
-- [ ] 15.1 Perfil público com @usuário e vitrine
-- [ ] 15.2 Reação de um toque por episódio, com ranking de reações
-- [ ] 15.3 Comentário por episódio com escudo de spoiler pelo progresso e momento marcado
-- [ ] 15.4 Moderação: denunciar, ocultar, bloquear, fila no Painel Admin e limite de taxa
-- [ ] 15.5 HP e MP, com Modo Descanso e painel de regras
-- [ ] 15.6 Rankings de usuários: liga semanal e Hall da Fama
-- [ ] 15.7 Privacidade atualizada para conteúdo publicado e perfil público
+- [x] 15.1 Perfil público com @usuário e vitrine (`/u/:handle`, seção "Perfil público" nas Configurações)
+- [x] 15.2 Reação de um toque por episódio, com contagem por episódio. *O ranking de reações da
+      temporada ("o episódio que mais fez chorar") fica para a 16.4, junto dos rankings de temporada.*
+- [x] 15.3 Comentário por episódio com escudo de spoiler pelo progresso (RLS) e momento marcado
+- [x] 15.4 Moderação: denunciar, ocultar, bloquear, fila no Painel Admin e limite de taxa
+- [x] 15.5 HP e MP, com Modo Descanso e painel de regras. *O bônus de XP por HP alto fica para a
+      Fase 16, junto da economia.*
+- [x] 15.6 Rankings de usuários: liga semanal e Hall da Fama (`/membros`, aba do Descobrir).
+      *Divisões de 20 que sobem e descem esperam base suficiente.*
+- [x] 15.7 Privacidade atualizada para conteúdo publicado e perfil público
 
 ## 💎 Fase 16: Economia e cartas — *planejada*
 
-- [ ] 16.1 Cristais e missões diárias, com painel de economia
+- [ ] 16.1 Cristais e missões diárias, com painel de economia, e o bônus de XP por Vitalidade alta
 - [ ] 16.2 Loja cosmética (moldura, tema, cor do nome, vitrine maior)
 - [ ] 16.3 Cartas por anime terminado, com raridade, e duelo de gosto
-- [ ] 16.4 Rankings de temporada e top por gênero
+- [ ] 16.4 Rankings de temporada, top por gênero e ranking de reações da temporada
 - [ ] 16.5 Apoiador (link externo de apoio antes de pagamento integrado)
 
 ## 🐉 Fase 17: Comunidade viva — *planejada*

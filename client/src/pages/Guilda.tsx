@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import { Shield, Sparkles, Lock, Flame, Award, ChevronRight } from 'lucide-react'
 import { useSessao } from '../contexts/SessaoContext'
+import CartaoVitais from '../components/comunidade/CartaoVitais'
 import { chaveDoUsuario, lerDaMemoria, guardarNaMemoria } from '../lib/cacheDeTela'
 import {
   obterEstiloRank,
@@ -318,6 +319,8 @@ export default function Guilda() {
 
         {/* COLUNA LATERAL */}
         <aside className="flex flex-col gap-6 lg:sticky lg:top-24">
+          <CartaoVitais />
+
           {/* INSÍGNIAS (CARTAS FOIL) */}
           <section className="p-5 rounded-2xl bg-panel border border-line">
             <div className="flex items-center justify-between gap-2 mb-3">

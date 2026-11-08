@@ -4,6 +4,7 @@ import { supabase } from '../lib/supabase'
 import { useToast } from '../contexts/ToastContext'
 import { useCatalogoStatus } from '../contexts/CatalogoStatusContext'
 import EmBreve from '../components/EmBreve'
+import PerfilPublicoConfig from '../components/comunidade/PerfilPublicoConfig'
 import { TEMAS, aplicarTema, useTema } from '../lib/temas'
 import { ChevronDown, MessageSquare, Check, AlertTriangle, Sparkles, Ban, Upload, FileText } from 'lucide-react'
 import { Link, useNavigate } from 'react-router-dom'
@@ -13,6 +14,7 @@ import { invalidarCachesDoDeck, removerDaMemoria, chaveDoUsuario } from '../lib/
 
 const ABAS = [
     { id: 'perfil', label: 'Perfil' },
+    { id: 'comunidade', label: 'Perfil público' },
     { id: 'gosto', label: 'Preferências de Gosto' },
     { id: 'importar', label: 'Importar Lista' },
     { id: 'aparencia', label: 'Aparência' },
@@ -503,6 +505,11 @@ export default function Configuracoes() {
                         </button>
                     </div>
                 </Card>
+            </Secao>
+
+            {/* PERFIL PÚBLICO NA COMUNIDADE */}
+            <Secao id="comunidade" titulo="Perfil público">
+                <PerfilPublicoConfig nomeSugerido={nomeOriginal || nome} />
             </Secao>
 
             {/* PREFERÊNCIAS DE GOSTO (#139) */}

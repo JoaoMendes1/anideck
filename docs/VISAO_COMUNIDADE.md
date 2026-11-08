@@ -59,13 +59,23 @@ já leva todos para o mesmo lugar.
 
 | | HP · Vitalidade | MP · Mana |
 |---|---|---|
-| **Mede** | Constância recente | Energia para ações sociais |
-| **Sobe** | Ao marcar episódio | Recarga diária, mais rápida com HP alto |
-| **Desce** | Depois de 7 dias sem atividade, cerca de 5 por dia, com piso em 20 | Ao gastar em ação social |
-| **Efeito** | HP alto dá até +10% de XP; HP baixo só perde o bônus | Paga reação especial, previsão, destaque de comentário e enquete |
+| **Mede** | Constância recente: dias com episódio marcado nos últimos 14 dias | Energia para ações sociais |
+| **Sobe** | Cada dia ativo vale cerca de 8; 10 dias ativos na janela já enchem a barra | Recarga contínua, 20 por dia, até 50 |
+| **Desce** | Quando um dia ativo sai da janela; piso em 20 | 5 por comentário, cobrados no banco |
+| **Efeito** | Por enquanto, só mostra a constância (Guilda, Início e perfil público) | Paga o comentário; depois, previsão, destaque e enquete |
 
-- **MP como antispam:** substitui o "limite de N comentários por dia" por uma regra de jogo.
-- **Modo Descanso:** até 14 dias por mês com o HP congelado (viagem, provas).
+Como implementado na Fase 15 (números editáveis no Painel Admin, `app_settings.comunidade_regras`):
+
+- **Queda leve de verdade:** quem marcou episódio todo dia pode ficar 4 dias parado sem perder
+  nada, porque ainda sobram 10 dias ativos na janela. Do quinto dia em diante, cai cerca de 8 por
+  dia até o piso. Um episódio novo já devolve parte da barra.
+- **XP nunca é tocado:** a Vitalidade não reduz XP, nível nem rank.
+- **MP como antispam:** substitui o "limite de N comentários por dia" por uma regra de jogo. O
+  servidor tem, além dela, um limite de taxa contra rajada.
+- **Modo Descanso:** até 14 dias, uma vez a cada 30, com a Vitalidade congelada: a janela pula
+  esses dias (viagem, provas).
+- **Ficou para depois:** o bônus de até +10% de XP com HP alto e a recarga de MP mais rápida com
+  HP alto mexem na economia da Guilda e entram junto com os Cristais (Fase 16).
 - **Retorno sem culpa:** quem volta depois de muito tempo recebe HP de boas-vindas, não a conta
   do que perdeu.
 
@@ -75,7 +85,7 @@ já leva todos para o mesmo lugar.
 
 | Ranking | Mede | Reinicia |
 |---|---|---|
-| **Liga semanal** | XP da semana, em grupos de 20 que sobem e descem de divisão | Toda semana |
+| **Liga semanal** | XP da semana; na Fase 15, um ranking único. Os grupos de 20 que sobem e descem de divisão esperam base suficiente | Toda semana (segunda, horário de Brasília) |
 | **Temporada** | XP da temporada de anime | A cada três meses |
 | **Hall da Fama** | XP total | Nunca |
 | **Top por gênero** | Especialista de gênero (já calculado na Guilda) | Nunca |

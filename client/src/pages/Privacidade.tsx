@@ -7,7 +7,7 @@ import { Link } from 'react-router-dom'
 
 const EMAIL_CONTATO = 'anidecksuporte@gmail.com'
 const CONTROLADOR = 'João Victor Mendes'
-const ATUALIZADA_EM = '3 de setembro de 2026'
+const ATUALIZADA_EM = '8 de novembro de 2026'
 
 function Secao({ titulo, children }: { titulo: string; children: ReactNode }) {
     return (
@@ -40,6 +40,10 @@ const DADOS_COLETADOS = [
         itens: 'Quais episódios você marcou como assistidos e o momento em que marcou cada um. É esse registro que alimenta a página Meu Gosto.',
     },
     {
+        titulo: 'Perfil público e comunidade',
+        itens: 'Se você criar um perfil público: o @, o nome, a bio e a vitrine que escolher. E o que você publica: comentários de episódio (com o minuto da cena, se marcar), reações, curtidas, denúncias e bloqueios. Mana e Vitalidade são calculadas a partir do seu progresso, não de dado novo.',
+    },
+    {
         titulo: 'Notificações push',
         itens: 'Se você autorizar notificações, guardamos as credenciais que o seu navegador gera para receber avisos, além do histórico de avisos enviados.',
     },
@@ -51,8 +55,8 @@ const TERCEIROS = [
         papel: 'Banco de dados e autenticação. É onde seus dados ficam guardados. Os servidores ficam fora do Brasil.',
     },
     {
-        nome: 'Render',
-        papel: 'Hospedagem da aplicação. Os servidores ficam fora do Brasil.',
+        nome: 'Integrator',
+        papel: 'Hospedagem da aplicação, num servidor virtual dedicado ao AniDeck.',
     },
     {
         nome: 'Google',
@@ -160,6 +164,26 @@ export default function Privacidade() {
                 </p>
             </Secao>
 
+            <Secao titulo="O que outras pessoas veem">
+                <p>
+                    Sem perfil público, nada seu aparece para ninguém. Com perfil público, a sua
+                    página mostra o @, o nome, a bio, a vitrine, o nível e o rank da Guilda, o XP
+                    total, quantos episódios você viu, quantos comentários publicou, a Vitalidade e
+                    quantas obras há em cada status do deck. Os títulos do deck, as notas e as
+                    anotações continuam privados.
+                </p>
+                <p>
+                    Um comentário aparece, com o seu @ e nome, para quem já marcou aquele episódio
+                    como visto. Reações aparecem só somadas, sem dizer quem reagiu. Denúncias são
+                    vistas apenas pela moderação, e bloqueios não são avisados a ninguém.
+                </p>
+                <p>
+                    Você pode esconder o perfil a qualquer momento nas Configurações: ele sai do
+                    ranking de membros e a página pública deixa de existir. Comentário denunciado
+                    pode ser ocultado ou removido pela moderação.
+                </p>
+            </Secao>
+
             <Secao titulo="Armazenamento no seu navegador">
                 <p>
                     O AniDeck guarda no seu navegador a sua sessão de login e a paleta de cores que
@@ -172,8 +196,10 @@ export default function Privacidade() {
                 <p>
                     Enquanto sua conta existir. Quando você exclui a conta, tudo que está ligado a
                     ela é apagado junto, na mesma operação: lista, notas, anotações, progresso,
-                    notificações e credenciais de push. Não guardamos uma versão anonimizada e não
-                    há como desfazer.
+                    notificações, credenciais de push, perfil público, comentários, reações,
+                    curtidas, denúncias e bloqueios. Não guardamos uma versão anonimizada e não há
+                    como desfazer. Um comentário pode ser apagado sozinho a qualquer momento, na
+                    própria conversa do episódio.
                 </p>
                 <p>
                     <span className="font-bold text-text">Uma ressalva honesta sobre backups:</span>{' '}
@@ -194,8 +220,9 @@ export default function Privacidade() {
                     ))}
                 </ul>
                 <p className="pt-1">
-                    Dois deles já são autoatendimento: você troca o nome de exibição e exclui a
-                    conta na tela de Configurações, sem precisar pedir a ninguém.
+                    Boa parte já é autoatendimento: nas Configurações você troca o nome de
+                    exibição, edita ou esconde o perfil público e exclui a conta; na conversa de
+                    cada episódio, apaga os próprios comentários. Sem precisar pedir a ninguém.
                 </p>
                 <p>
                     Para os demais — inclusive receber uma cópia dos seus dados — ainda não existe

@@ -79,6 +79,7 @@ func main() {
 	trilhasHandler := &handlers.TrilhasHandler{}
 	filaIAHandler := &handlers.FilaIAHandler{}
 	guildaHandler := &handlers.GuildaHandler{}
+	comunidadeHandler := &handlers.ComunidadeHandler{}
 
 	r := chi.NewRouter()
 	r.Use(chimw.RequestID)
@@ -100,6 +101,10 @@ func main() {
 	r.Get("/api/trilhas", trilhasHandler.HandleListarPublicas)
 	r.Get("/api/anime/{id}", animeHandler.HandleGetAnime)
 	r.Get("/api/anime/{id}/statistics", animeHandler.HandleGetStats)
+	// Comunidade (Fase 15): só contagens e perfis públicos, sem conteúdo de comentário
+	r.Get("/api/anime/{id}/conversa", comunidadeHandler.HandleContagemConversa)
+	r.Get("/api/membros/ranking", comunidadeHandler.HandleRankingMembros)
+	r.Get("/api/membros/{handle}", comunidadeHandler.HandlePerfilPublico)
 	r.Get("/api/ranking", rankingHandler.HandleGetTopAnime)
 	r.Get("/api/curation", curationHandler.HandleList)
 	r.Post("/api/anime/bulk", animeHandler.HandleGetAnimesByIDs)
@@ -135,6 +140,23 @@ func main() {
 
 		protegido.Get("/api/guilda/resumo", guildaHandler.HandleResumoGuilda)
 		protegido.Get("/api/guilda", guildaHandler.HandleGetGuilda)
+
+		// Comunidade: perfil público, Mana e Vitalidade, conversa por episódio.
+		// O escudo de spoiler é a RLS do sql/041; aqui tudo usa o token de quem pede.
+		protegido.Get("/api/comunidade/eu", comunidadeHandler.HandleGetEu)
+		protegido.Put("/api/comunidade/eu", comunidadeHandler.HandleSalvarEu)
+		protegido.Post("/api/comunidade/descanso", comunidadeHandler.HandleAtivarDescanso)
+		protegido.Get("/api/comunidade/bloqueios", comunidadeHandler.HandleListarBloqueios)
+		protegido.Post("/api/comunidade/bloqueios/{handle}", comunidadeHandler.HandleBloquear)
+		protegido.Delete("/api/comunidade/bloqueios/{handle}", comunidadeHandler.HandleBloquear)
+		protegido.Get("/api/anime/{id}/episodios/{n}/conversa", comunidadeHandler.HandleConversaDoEpisodio)
+		protegido.Post("/api/anime/{id}/episodios/{n}/comentarios", comunidadeHandler.HandleComentar)
+		protegido.Put("/api/anime/{id}/episodios/{n}/reacoes/{reacao}", comunidadeHandler.HandleReagir)
+		protegido.Delete("/api/anime/{id}/episodios/{n}/reacoes/{reacao}", comunidadeHandler.HandleReagir)
+		protegido.Delete("/api/comunidade/comentarios/{cid}", comunidadeHandler.HandleApagarComentario)
+		protegido.Post("/api/comunidade/comentarios/{cid}/curtida", comunidadeHandler.HandleCurtir)
+		protegido.Delete("/api/comunidade/comentarios/{cid}/curtida", comunidadeHandler.HandleCurtir)
+		protegido.Post("/api/comunidade/comentarios/{cid}/denuncia", comunidadeHandler.HandleDenunciar)
 
 		protegido.Delete("/api/account", accountHandler.HandleDeleteAccount)
 	})
@@ -213,6 +235,12 @@ func main() {
 		admin.Get("/api/admin/olheiro/sugestoes", olheiroHandler.HandleListarSugestoes)
 		admin.Get("/api/admin/olheiro/demanda", olheiroHandler.HandleListarDemanda)
 		admin.Patch("/api/admin/olheiro/sugestoes/{id}", olheiroHandler.HandleRevisarSugestao)
+
+		// Comunidade: fila de denúncias e regras da Mana e da Vitalidade
+		admin.Get("/api/admin/moderacao", comunidadeHandler.HandleListarModeracao)
+		admin.Post("/api/admin/moderacao/{cid}", comunidadeHandler.HandleModerar)
+		admin.Get("/api/admin/comunidade/regras", comunidadeHandler.HandleGetRegrasComunidade)
+		admin.Put("/api/admin/comunidade/regras", comunidadeHandler.HandleSalvarRegrasComunidade)
 	})
 
 	workDir, _ := os.Getwd()

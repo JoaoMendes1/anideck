@@ -1,11 +1,12 @@
 // client/src/components/AbasDescobrir.tsx
-// Busca e Rankings são as duas abas do Descobrir. Cada uma mantém a própria rota, para
+// Busca, Rankings e Membros são as abas do Descobrir. Cada uma mantém a própria rota, para
 // link direto e botão voltar continuarem funcionando como antes.
 import { NavLink } from 'react-router-dom'
 
 const ABAS = [
   { para: '/descobrir', texto: 'Buscar' },
   { para: '/rankings', texto: 'Rankings' },
+  { para: '/membros', texto: 'Membros' },
 ]
 
 export default function AbasDescobrir() {
