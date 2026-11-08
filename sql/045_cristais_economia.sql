@@ -187,10 +187,10 @@ GRANT EXECUTE ON FUNCTION public.debitar_cristais(UUID, INTEGER, TEXT, TEXT) TO 
 -- =============================================================================
 -- 4. Chave inicial em app_settings
 -- =============================================================================
-INSERT INTO public.app_settings (key, value, description)
+INSERT INTO public.app_settings (key, value, updated_at)
 VALUES (
   'economia_cristais',
   '{"teto_diario_cristais":100,"ganho_missao_diaria":15,"ganho_desafio_semanal":50,"ganho_vitoria_liga":100,"ganho_subida_divisao":40,"ganho_primeira_carta_dia":10}',
-  'Configurações da economia de Cristais (Fase 16, #167): teto diário e ganhos por atividade'
+  now()
 )
 ON CONFLICT (key) DO NOTHING;
