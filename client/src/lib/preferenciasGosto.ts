@@ -1,4 +1,3 @@
-import { supabase } from './supabase'
 import type { AfinidadeComNota } from './lacuna'
 
 export interface PreferenciasDeGosto {
@@ -85,6 +84,7 @@ export async function salvarPreferenciasDeGosto(
     }
   }
 
+  const { supabase } = await import('./supabase')
   await supabase.auth.updateUser({
     data: {
       favorite_genres: favoritos,
