@@ -3,7 +3,7 @@
 // próximo episódio liberado e o botão de marcar, sem precisar abrir o anime.
 import { Link } from 'react-router-dom'
 import { Check, Lock, Play, Plus } from 'lucide-react'
-import type { ParaContinuar } from '../../lib/inicio'
+import { escolherLinkStreaming, type ParaContinuar } from '../../lib/inicio'
 
 interface Props {
   item: ParaContinuar
@@ -21,7 +21,7 @@ export default function HeroProximoEpisodio({ item, episodio, marcando, jaMarcad
   const vistos = episodio - 1
   const pct = total > 0 ? Math.min(100, Math.round((vistos / total) * 100)) : 0
   const fundo = anime.banner || anime.image_url
-  const streaming = anime.streaming?.[0]
+  const streaming = escolherLinkStreaming(anime.streaming)
 
   return (
     <section className="relative rounded-[24px] overflow-hidden border border-line bg-panel mb-10 min-h-[260px] sm:min-h-[300px] flex items-end">

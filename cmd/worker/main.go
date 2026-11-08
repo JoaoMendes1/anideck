@@ -28,9 +28,11 @@ func main() {
 	ctx, parar := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
 	defer parar()
 
-	log.Println("[WORKER] Fila de curadoria iniciada")
+	log.Printf("[WORKER] Fila de curadoria e tarefas periódicas iniciadas (%d registradas: %s)",
+		len(handlers.TarefasPeriodicasRegistradas()), handlers.NomesTarefasPeriodicas())
 	for {
 		espera := handlers.RodarCicloFilaIA(ctx)
+		handlers.RodarTarefasPeriodicas(ctx)
 		select {
 		case <-ctx.Done():
 			log.Println("[WORKER] Encerrado")

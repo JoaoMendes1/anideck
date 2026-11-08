@@ -91,53 +91,72 @@ export default function CuradoriaLinks({
         Cadastrar qualquer link aqui substitui todos os da AniList para este anime.
       </p>
 
-      <div className={`flex flex-col sm:flex-row sm:items-end gap-3 mb-4 p-3 rounded-lg border transition-colors ${emEdicao ? 'bg-holo-3/5 border-holo-3' : 'bg-panel border-line'}`}>
-        <div className="sm:w-44 shrink-0">
-          <label className="block text-[10px] mb-1 font-bold text-muted">Plataforma</label>
-          <input
-            type="text"
-            list="plataformas-sugeridas"
-            value={plataforma}
-            onChange={(e) => setPlataforma(e.target.value)}
-            className="w-full bg-panel-2 border border-line rounded px-2 py-1.5 text-xs outline-none focus:border-holo-2 text-text"
-            placeholder="Crunchyroll"
-          />
-          <datalist id="plataformas-sugeridas">
-            {PLATAFORMAS_SUGERIDAS.map((p) => (
-              <option key={p} value={p} />
-            ))}
-          </datalist>
+      <div className={`flex flex-col gap-3 mb-4 p-3 rounded-lg border transition-colors ${emEdicao ? 'bg-holo-3/5 border-holo-3' : 'bg-panel border-line'}`}>
+        <div className="flex flex-wrap items-center gap-1.5">
+          <span className="font-mono text-[9.5px] uppercase tracking-wider text-muted-2 mr-1">Atalhos:</span>
+          {PLATAFORMAS_SUGERIDAS.map((p) => {
+            const ativa = plataforma.trim().toLowerCase() === p.toLowerCase()
+            return (
+              <button
+                key={p}
+                type="button"
+                onClick={() => setPlataforma(p)}
+                className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold border transition-colors cursor-pointer ${
+                  ativa
+                    ? 'bg-holo-2/20 border-holo-2 text-holo-2'
+                    : 'bg-panel-2 border-line text-muted hover:text-text hover:border-muted-2'
+                }`}
+              >
+                {p}
+              </button>
+            )
+          })}
         </div>
 
-        <div className="flex-1 min-w-0">
-          <label className="block text-[10px] mb-1 font-bold text-muted">Link</label>
-          <input
-            type="url"
-            value={url}
-            onChange={(e) => setUrl(e.target.value)}
-            className="w-full bg-panel-2 border border-line rounded px-2 py-1.5 text-xs outline-none focus:border-holo-2 text-text"
-            placeholder="https://"
-          />
-        </div>
+        <div className="flex flex-col sm:flex-row sm:items-end gap-3">
+          <div className="sm:w-44 shrink-0">
+            <label className="block text-[10px] mb-1 font-bold text-muted">Plataforma</label>
+            <input
+              type="text"
+              value={plataforma}
+              onChange={(e) => setPlataforma(e.target.value)}
+              className="w-full bg-panel-2 border border-line rounded px-2 py-1.5 text-xs outline-none focus:border-holo-2 text-text"
+              placeholder="Crunchyroll"
+            />
+          </div>
 
-        <div className="flex items-end gap-2">
-          {emEdicao && (
+          <div className="flex-1 min-w-0">
+            <label className="block text-[10px] mb-1 font-bold text-muted">Link</label>
+            <input
+              type="url"
+              value={url}
+              onChange={(e) => setUrl(e.target.value)}
+              className="w-full bg-panel-2 border border-line rounded px-2 py-1.5 text-xs outline-none focus:border-holo-2 text-text"
+              placeholder="https://"
+            />
+          </div>
+
+          <div className="flex items-end gap-2">
+            {emEdicao && (
+              <button
+                type="button"
+                onClick={cancelarEdicao}
+                aria-label="Cancelar edição"
+                className="bg-panel-2 border border-line text-muted p-1.5 rounded cursor-pointer hover:text-white transition-colors shrink-0"
+              >
+                <X size={16} />
+              </button>
+            )}
+
             <button
-              onClick={cancelarEdicao}
-              aria-label="Cancelar edição"
-              className="bg-panel-2 border border-line text-muted p-1.5 rounded cursor-pointer hover:text-white transition-colors shrink-0"
+              type="button"
+              onClick={salvar}
+              aria-label={emEdicao ? 'Salvar edição' : 'Adicionar link'}
+              className={`${emEdicao ? 'bg-holo-3 text-void' : 'bg-holo-2 text-white'} p-1.5 rounded cursor-pointer hover:opacity-80 shrink-0 transition-colors shadow-lg`}
             >
-              <X size={16} />
+              {emEdicao ? <Check size={16} /> : <Plus size={16} />}
             </button>
-          )}
-
-          <button
-            onClick={salvar}
-            aria-label={emEdicao ? 'Salvar edição' : 'Adicionar link'}
-            className={`${emEdicao ? 'bg-holo-3 text-void' : 'bg-holo-2 text-white'} p-1.5 rounded cursor-pointer hover:opacity-80 shrink-0 transition-colors shadow-lg`}
-          >
-            {emEdicao ? <Check size={16} /> : <Plus size={16} />}
-          </button>
+          </div>
         </div>
       </div>
 

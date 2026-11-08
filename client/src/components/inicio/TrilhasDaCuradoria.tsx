@@ -22,7 +22,7 @@ export default function TrilhasDaCuradoria({ trilhas }: { trilhas: TrilhaDaHome[
 
   return (
     <>
-      <div className="flex gap-4 overflow-x-auto scrollbar-hide snap-x snap-mandatory -mx-4 px-4 scroll-px-4 sm:mx-0 sm:px-0 sm:scroll-px-0 pb-2 md:grid md:grid-cols-2 xl:grid-cols-3 md:overflow-visible">
+      <div className="flex gap-4 overflow-x-auto custom-scrollbar snap-x snap-mandatory -mx-4 px-4 scroll-px-4 sm:mx-0 sm:px-0 sm:scroll-px-0 pb-2.5 md:grid md:grid-cols-2 xl:grid-cols-3 md:overflow-visible">
         {trilhas.map(t => (
           <button
             key={t.id}

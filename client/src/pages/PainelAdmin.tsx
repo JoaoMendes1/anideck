@@ -939,56 +939,75 @@ export default function PainelAdmin() {
       </div>
 
       <div className="max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-8 py-6 relative z-10">
-        {/* O menu fica fora do bloco que o formulário esconde: com o editor aberto no
-            celular, sumir a navegação prenderia o usuário na Curadoria. */}
-        <div className="lg:grid lg:grid-cols-[210px_minmax(0,1fr)] lg:gap-8 lg:items-start">
-        <nav aria-label="Seções do painel" className="hidden lg:flex flex-col gap-5 sticky top-24">
-          {GRUPOS_ADMIN.map(grupo => (
-            <div key={grupo.titulo}>
-              <p className="font-mono text-[10px] text-muted-2 uppercase tracking-widest mb-1.5 px-3">{grupo.titulo}</p>
-              <div className="flex flex-col gap-0.5">
-                {grupo.itens.map(item => (
-                  <button
-                    key={item.id}
-                    type="button"
-                    onClick={() => irParaItem(item.id)}
-                    aria-current={itemAtivo === item.id ? 'page' : undefined}
-                    className={`text-left text-sm font-bold px-3 py-2 rounded-xl border cursor-pointer transition-colors ${itemAtivo === item.id
-                      ? 'bg-panel-2 border-line text-text'
-                      : 'border-transparent text-muted hover:bg-panel hover:text-text'
+        {(() => {
+          const grupoAtivo = GRUPOS_ADMIN.find(g => g.itens.some(i => i.id === itemAtivo)) ?? GRUPOS_ADMIN[0]
+          return (
+            <nav
+              aria-label="Seções do painel"
+              className="mb-7 bg-panel border border-line rounded-2xl p-2 sm:p-2.5 shadow-lg select-none"
+            >
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-1.5 pb-2 mb-2 border-b border-line/70">
+                {GRUPOS_ADMIN.map(grupo => {
+                  const ativo = grupo.titulo === grupoAtivo.titulo
+                  return (
+                    <button
+                      key={grupo.titulo}
+                      type="button"
+                      onClick={() => {
+                        if (!ativo && grupo.itens[0]) irParaItem(grupo.itens[0].id)
+                      }}
+                      className={`px-3 py-2 rounded-xl text-xs font-extrabold uppercase tracking-wider transition-all cursor-pointer text-center truncate ${
+                        ativo
+                          ? 'bg-gradient-to-r from-holo-1/20 to-holo-2/20 border border-holo-2/60 text-text shadow-[0_0_14px_rgba(123,92,255,0.18)]'
+                          : 'border border-transparent bg-panel-2/50 text-muted hover:bg-panel-2 hover:text-text'
                       }`}
-                  >
-                    {item.nome}
-                  </button>
-                ))}
+                    >
+                      {grupo.titulo}
+                    </button>
+                  )
+                })}
               </div>
-            </div>
-          ))}
-        </nav>
+
+              <div className="flex flex-wrap items-center gap-1.5 px-0.5">
+                <span className="font-mono text-[10px] uppercase tracking-widest text-muted-2 mr-1.5 hidden sm:inline">
+                  {grupoAtivo.titulo}:
+                </span>
+                {grupoAtivo.itens.map(item => {
+                  const ativo = itemAtivo === item.id
+                  return (
+                    <button
+                      key={item.id}
+                      type="button"
+                      onClick={() => irParaItem(item.id)}
+                      aria-current={ativo ? 'page' : undefined}
+                      className={`px-3.5 py-1.5 rounded-full text-xs font-bold border transition-all cursor-pointer ${
+                        ativo
+                          ? 'bg-holo-3/15 border-holo-3/60 text-holo-3 shadow-[0_0_10px_rgba(63,224,240,0.15)]'
+                          : 'bg-panel-2 border-line text-muted hover:text-text hover:border-muted-2'
+                      }`}
+                    >
+                      {item.nome}
+                    </button>
+                  )
+                })}
+              </div>
+            </nav>
+          )
+        })()}
 
         <div className="min-w-0">
-        <label className="lg:hidden block mb-6">
-          <span className="sr-only">Seção do painel</span>
-          <select
-            value={itemAtivo}
-            onChange={e => irParaItem(e.target.value)}
-            className="w-full bg-panel border border-line rounded-xl px-4 py-3 text-sm font-bold text-text outline-none focus:border-holo-2"
-          >
-            {GRUPOS_ADMIN.map(grupo => (
-              <optgroup key={grupo.titulo} label={grupo.titulo}>
-                {grupo.itens.map(item => <option key={item.id} value={item.id}>{item.nome}</option>)}
-              </optgroup>
-            ))}
-          </select>
-        </label>
-
         {abaAtiva === 'curadoria' && (() => {
           const semEps = destaques.filter(d => totalEpisodiosCurado(d) === 0)
           return (
-            <div className={`mb-8 min-w-0 ${formularioAberto ? 'hidden lg:block' : 'block'}`}>
+            <div className={`mb-6 min-w-0 ${formularioAberto ? 'hidden lg:block' : 'block'}`}>
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                 <div>
-                  <h1 className="font-anton text-3xl uppercase">Obras curadas</h1>
+                  <div className="flex items-center gap-2.5">
+                    <h1 className="font-anton text-3xl uppercase m-0">Obras curadas</h1>
+                    <span className="font-mono text-xs bg-panel border border-line px-2.5 py-0.5 rounded-full text-muted">
+                      {destaques.length}
+                    </span>
+                  </div>
                   <p className="text-muted text-sm mt-1">Sinopse, tags, episódios, capas e personagens de cada obra do catálogo. Marque como destaque para aparecer na vitrine.</p>
                 </div>
                 {semEps.length > 0 && (
@@ -1310,20 +1329,32 @@ export default function PainelAdmin() {
 
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                           <div>
-                            <label className="block text-[10px] mb-1 font-bold text-muted">Estado da curadoria</label>
-                            <select
-                              value={curationStatus}
-                              onChange={(e) => setCurationStatus(e.target.value as CurationStatus)}
-                              className="w-full bg-panel border border-line rounded px-2 py-1.5 text-xs outline-none text-text"
-                            >
-                              <option value="parcial">Parcial — ainda falta coisa</option>
-                              <option value="completo">Completo — nada pendente</option>
-                              <option value="revisar">Revisar — tem algo errado</option>
-                            </select>
+                            <span className="block text-[10px] mb-1.5 font-bold text-muted uppercase tracking-wide">Estado da curadoria</span>
+                            <div className="flex flex-wrap gap-1.5">
+                              {([
+                                { value: 'parcial', label: 'Parcial', activeClass: 'bg-panel border-holo-2 text-holo-2' },
+                                { value: 'completo', label: 'Completo', activeClass: 'bg-green/15 border-green text-green' },
+                                { value: 'revisar', label: 'Revisar', activeClass: 'bg-coral/15 border-coral text-coral' },
+                              ] as const).map((opt) => {
+                                const ativo = curationStatus === opt.value
+                                return (
+                                  <button
+                                    key={opt.value}
+                                    type="button"
+                                    onClick={() => setCurationStatus(opt.value)}
+                                    className={`px-3 py-1.5 rounded-full text-xs font-bold border transition-colors cursor-pointer ${
+                                      ativo ? opt.activeClass : 'bg-panel border-line text-muted hover:text-text'
+                                    }`}
+                                  >
+                                    {opt.label}
+                                  </button>
+                                )
+                              })}
+                            </div>
                           </div>
 
                           <div className="flex items-end">
-                            <label className="flex items-center gap-2.5 cursor-pointer select-none w-full bg-panel border border-line rounded px-3 py-2 hover:border-holo-2 transition-colors">
+                            <label className="flex items-center gap-2.5 cursor-pointer select-none w-full bg-panel border border-line rounded-xl px-3 py-2 hover:border-holo-2 transition-colors">
                               <input
                                 type="checkbox"
                                 checked={isDestaque}
@@ -1393,7 +1424,6 @@ export default function PainelAdmin() {
               )}
             </div>
           </div>)}
-        </div>
         </div>
       </div>
 

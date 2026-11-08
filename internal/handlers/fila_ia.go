@@ -245,6 +245,10 @@ func mesclarLinks(atuais []linkCurado, pesquisados []ia.LinkPesquisado) ([]linkC
 			relatorio = append(relatorio, fmt.Sprintf("Link %q recusado: precisa de plataforma e endereço http(s).", l.URL))
 			continue
 		}
+		if !anilist.EhPlataformaDeStreaming(l.Plataforma, l.URL, "") {
+			relatorio = append(relatorio, fmt.Sprintf("Link %q (%s) recusado: não é plataforma de streaming.", l.URL, l.Plataforma))
+			continue
+		}
 		resultado = append(resultado, linkCurado{Platform: strings.TrimSpace(l.Plataforma), URL: strings.TrimSpace(l.URL)})
 	}
 	return resultado, relatorio

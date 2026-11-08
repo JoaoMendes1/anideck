@@ -153,3 +153,25 @@ func TestParseRetryAfter(t *testing.T) {
 		})
 	}
 }
+
+func TestFiltrarLinksStreaming_DescartaTwitterEPriorizaCrunchyroll(t *testing.T) {
+	links := []anilistExternalLink{
+		{Site: "Official Site", URL: "https://frieren-anime.jp/", Type: "INFO"},
+		{Site: "Twitter", URL: "https://twitter.com/Anime_Frieren", Type: "SOCIAL"},
+		{Site: "X", URL: "https://x.com/Anime_Frieren", Type: ""},
+		{Site: "Bilibili", URL: "https://www.bilibili.tv/en/media/123", Type: "STREAMING"},
+		{Site: "Netflix", URL: "https://www.netflix.com/title/81726714", Type: "STREAMING"},
+		{Site: "Crunchyroll", URL: "https://www.crunchyroll.com/series/GG5H5XQX4", Type: "STREAMING"},
+	}
+
+	got := filtrarLinksStreaming(links)
+	quero := []StreamingLink{
+		{Name: "Crunchyroll", URL: "https://www.crunchyroll.com/series/GG5H5XQX4"},
+		{Name: "Netflix", URL: "https://www.netflix.com/title/81726714"},
+		{Name: "Bilibili", URL: "https://www.bilibili.tv/en/media/123"},
+	}
+
+	if !reflect.DeepEqual(got, quero) {
+		t.Fatalf("filtrarLinksStreaming() = %+v, queria %+v", got, quero)
+	}
+}

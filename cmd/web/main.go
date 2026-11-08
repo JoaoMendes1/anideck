@@ -197,6 +197,8 @@ func main() {
 		// Diagnóstico: coisas que hoje só aparecem no SQL Editor
 		admin.Get("/api/admin/diagnostico/rotulos-orfaos", diagnosticoHandler.HandleListarRotulosOrfaos)
 		admin.Get("/api/admin/diagnostico/bucket", diagnosticoHandler.HandleUsoDoBucket)
+		admin.Get("/api/admin/sistema/tarefas", diagnosticoHandler.HandleListarTarefasPeriodicas)
+		admin.Post("/api/admin/sistema/tarefas/{nome}/executar", diagnosticoHandler.HandleExecutarTarefaPeriodica)
 
 		// Correção de rótulos: listar os animes de uma tag órfã, renomear e remover
 		// em lote, e cadastrar a entrada na taxonomia

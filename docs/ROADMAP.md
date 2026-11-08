@@ -46,7 +46,7 @@ Staging sobe já na Fase 1, como projeto esqueleto — mesmo padrão do JVM Syst
 | 13 · Reformulação Visual, Automação de Curadoria e Inteligência de Gosto | ✅ Concluída (08/11/2026) |
 | 14 · Guilda & Gamificação | ✅ Concluída (08/11/2026) |
 | 15 · Comunidade base | ✅ Concluída (08/11/2026, #154); falta abrir o beta |
-| 16 · Economia e cartas | 📋 Planejada, com issues (#165) |
+| 16 · Economia e cartas | 🚧 Em andamento (16.0 concluído, #166); falta abrir o beta |
 | 17 · Comunidade viva | 📋 Planejada, com issues (#179) |
 
 ---
@@ -722,7 +722,7 @@ Motivo: um motivo diário para voltar (`VISAO_COMUNIDADE.md`: Economia, Cartas, 
 **Pré-requisitos:** Fase 15 publicada e o beta aberto. As convenções de implementação estão no
 épico; cada item tem a sua issue, com decisões, armadilhas e critérios de aceite.
 
-- [ ] 16.0 Tarefas periódicas no worker: base da liga, da raridade das cartas e da Fase 17 (#166)
+- [x] 16.0 Tarefas periódicas no worker: base da liga, da raridade das cartas e da Fase 17 (#166)
 - [ ] 16.1 Cristais, missões e bônus de Vitalidade
   - [ ] 16.1a Cristais: carteira com extrato e painel de economia (#167)
   - [ ] 16.1b Missões diárias (#168)
@@ -769,6 +769,12 @@ mecânicas). **Pré-requisitos:** Fase 16 concluída e base com gente suficiente
 > Correção e ajuste feitos depois do escopo da v1 fechar. **Não são fases** — não seguem a
 > numeração e não abrem escopo novo. Ficam registrados aqui em ordem cronológica inversa para
 > não sumirem: fase concluída não deve ser reaberta só para receber um conserto.
+
+### 08/11/2026 — Link de streaming no banner, rolagem desktop e navegação do Admin (#193)
+
+- [x] **Link de streaming e descarte de redes sociais (#193):** a AniList devolvia Twitter/X e sites oficiais misturados em `externalLinks`; agora os links passam por filtro rigoroso descartando redes sociais, wikis e sites institucionais, com ordenação por prioridade das plataformas reais de vídeo (Crunchyroll primeiro, depois Netflix, Prime Video, Disney+, Max).
+- [x] **Rolagem horizontal no desktop na Início (#193):** "Continue de onde parou" e os trilhos ganharam botões de navegação lateral (`‹` e `›`) para mouse no desktop e scrollbar customizada com borda transparente e padding-box para não quebrar nos fundos escuros.
+- [x] **Navegação limpa no Painel Admin (#193):** substituído o menu `<select>`/`<optgroup>` e o aperto de 3 colunas por barra superior agrupada responsiva com pills de navegação rápida; eliminada repetição do título "Obras curadas" no rail; e seletor nativo de estado de curadoria, papéis de personagem e plataformas trocados por chips interativos.
 
 ### 08/11/2026 — Sino sem episódio fantasma e HUD de status (#163 e #164)
 

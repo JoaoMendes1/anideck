@@ -1,5 +1,13 @@
 import { describe, expect, it } from 'vitest'
-import { continuarAssistindo, estreiasDeHoje, proximoEpisodioEmDestaque, semanaDoDeck, type AnimeResumido } from './inicio'
+import {
+  continuarAssistindo,
+  escolherLinkStreaming,
+  estreiasDeHoje,
+  filtrarLinksStreaming,
+  proximoEpisodioEmDestaque,
+  semanaDoDeck,
+  type AnimeResumido,
+} from './inicio'
 import { encontrarLacuna } from './lacuna'
 
 const agora = new Date(2026, 9, 31, 12, 0, 0) // 31/10/2026, meio-dia local
@@ -138,5 +146,33 @@ describe('proximoEpisodioEmDestaque', () => {
     ]
     expect(proximoEpisodioEmDestaque(lista)?.anime.mal_id).toBe(3)
     expect(proximoEpisodioEmDestaque([])).toBeNull()
+  })
+})
+
+describe('filtrarLinksStreaming e escolherLinkStreaming', () => {
+  it('descarta Twitter/X/Official Site e prioriza Crunchyroll na frente', () => {
+    const links = [
+      { name: 'Official Site', url: 'https://frieren-anime.jp/' },
+      { name: 'Twitter', url: 'https://twitter.com/Anime_Frieren' },
+      { name: 'X', url: 'https://x.com/Anime_Frieren' },
+      { name: 'Netflix', url: 'https://www.netflix.com/title/81726714' },
+      { name: 'Crunchyroll', url: 'https://www.crunchyroll.com/series/GG5H5XQX4' },
+    ]
+    expect(filtrarLinksStreaming(links)).toEqual([
+      { name: 'Crunchyroll', url: 'https://www.crunchyroll.com/series/GG5H5XQX4' },
+      { name: 'Netflix', url: 'https://www.netflix.com/title/81726714' },
+    ])
+    expect(escolherLinkStreaming(links)).toEqual({
+      name: 'Crunchyroll',
+      url: 'https://www.crunchyroll.com/series/GG5H5XQX4',
+    })
+  })
+
+  it('devolve undefined quando só há redes sociais ou site oficial', () => {
+    const links = [
+      { name: 'Twitter', url: 'https://twitter.com/anime' },
+      { name: 'Official Site', url: 'https://anime.jp' },
+    ]
+    expect(escolherLinkStreaming(links)).toBeUndefined()
   })
 })

@@ -56,6 +56,7 @@ export function AbaControle({
   const { showToast } = useToast()
   const {
     ranking, orfaos, bucket, tagsOlheiro,
+    tarefasPeriodicas, executandoTarefa, executarTarefaPeriodica,
     carregando, erro, carregar,
     salvarPeso, salvandoPeso,
     recalcular, recalculando,
@@ -913,6 +914,92 @@ export function AbaControle({
                 >
                   <RefreshCw size={13} /> {resyncRodando ? 'Sincronizando…' : 'Resync'}
                 </button>
+              </div>
+
+              <div className="py-4 border-t border-line">
+                <div className="mb-3">
+                  <strong className="block text-[14.5px] font-bold">Tarefas periódicas do worker</strong>
+                  <span className="text-muted text-[13px]">
+                    Ciclos agendados no fuso de Brasília (UTC−3) com trava de idempotência por período (sql/044).
+                  </span>
+                </div>
+
+                {carregando ? (
+                  <p className="text-muted text-sm">Carregando tarefas…</p>
+                ) : tarefasPeriodicas.length === 0 ? (
+                  <p className="text-muted text-[13px]">
+                    Nenhuma tarefa disponível (verifique se a migration <code className="font-mono text-muted-2">sql/044</code> foi aplicada).
+                  </p>
+                ) : (
+                  <div className="flex flex-col gap-2.5">
+                    {tarefasPeriodicas.map(t => {
+                      const u = t.ultima_execucao
+                      const rodando = executandoTarefa === t.nome
+                      const temErro = Boolean(u?.erro)
+                      const concluida = Boolean(u?.concluida_em)
+
+                      return (
+                        <div
+                          key={t.nome}
+                          className="rounded-xl border border-line bg-panel-2 p-3.5 flex flex-col sm:flex-row sm:items-center justify-between gap-3"
+                        >
+                          <div className="min-w-0 flex-1">
+                            <div className="flex flex-wrap items-center gap-2 mb-1">
+                              <strong className="text-[13.5px] font-bold text-text">{t.titulo}</strong>
+                              <span className="font-mono text-[10px] uppercase tracking-wider px-2 py-0.5 rounded-full bg-panel border border-line text-muted-2">
+                                {t.frequencia}
+                              </span>
+                              <span className="font-mono text-[10px] px-2 py-0.5 rounded-full bg-holo-3/10 border border-holo-3/30 text-holo-3">
+                                Período {t.periodo_atual}
+                              </span>
+                            </div>
+                            <p className="text-[12.5px] text-muted m-0">{t.descricao}</p>
+
+                            <div className="mt-2 font-mono text-[11px] flex flex-wrap items-center gap-x-3 gap-y-1">
+                              {u ? (
+                                <>
+                                  <span className={temErro ? 'text-coral' : concluida ? 'text-green' : 'text-gold'}>
+                                    {temErro
+                                      ? `Falhou em ${formatarInstante(u.iniciada_em)}`
+                                      : concluida
+                                        ? `Concluída em ${formatarInstante(u.concluida_em!)} (${u.periodo})`
+                                        : `Em andamento desde ${formatarInstante(u.iniciada_em)}`}
+                                  </span>
+                                  {u.resumo && !temErro && (
+                                    <span className="text-muted-2">· {u.resumo}</span>
+                                  )}
+                                  {u.erro && (
+                                    <span className="text-coral">· {u.erro}</span>
+                                  )}
+                                </>
+                              ) : (
+                                <span className="text-muted-2">Ainda não executada neste ambiente.</span>
+                              )}
+                            </div>
+                          </div>
+
+                          <button
+                            type="button"
+                            disabled={rodando}
+                            onClick={async () => {
+                              const res = await executarTarefaPeriodica(t.nome)
+                              if (typeof res === 'string') {
+                                showToast(res, 'error')
+                              } else if (res.executou) {
+                                showToast(res.resumo || `Tarefa ${t.titulo} concluída (${res.periodo}).`, 'success')
+                              } else {
+                                showToast(res.mensagem || `Período ${res.periodo} já concluído.`, 'success')
+                              }
+                            }}
+                            className="shrink-0 self-start sm:self-center px-3.5 py-2 rounded-full text-xs font-bold bg-panel border border-line text-muted hover:text-text hover:border-holo-3 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer transition-colors"
+                          >
+                            {rodando ? 'Executando…' : 'Rodar agora'}
+                          </button>
+                        </div>
+                      )
+                    })}
+                  </div>
+                )}
               </div>
             </div>
           )}

@@ -1,6 +1,6 @@
 // client/src/pages/Inicio.tsx
 // A home de quem está logado: responde "o que eu faço agora" antes de mostrar a coleção.
-import { useEffect, useState, type ReactNode } from 'react'
+import { useEffect, useRef, useState, type ReactNode } from 'react'
 import { Link } from 'react-router-dom'
 import {
   CalendarDays, Compass, Play, Sparkles, Trophy, Plus, Check,
@@ -114,9 +114,47 @@ function Secao({
   )
 }
 
+function FaixaRolavel({ children, ariaLabel }: { children: ReactNode; ariaLabel?: string }) {
+  const ref = useRef<HTMLDivElement>(null)
+
+  const rolar = (direcao: -1 | 1) => {
+    const el = ref.current
+    if (!el) return
+    const passo = Math.max(260, Math.round(el.clientWidth * 0.72))
+    el.scrollBy({ left: direcao * passo, behavior: 'smooth' })
+  }
+
+  return (
+    <div className="relative group/trilho">
+      <button
+        type="button"
+        onClick={() => rolar(-1)}
+        aria-label={`Rolar ${ariaLabel ?? 'lista'} para a esquerda`}
+        className="hidden sm:flex items-center justify-center absolute -left-3 top-1/2 -translate-y-1/2 z-20 w-9 h-9 rounded-full bg-void/90 border border-line text-text hover:border-holo-3 hover:text-holo-3 shadow-lg opacity-0 group-hover/trilho:opacity-100 focus:opacity-100 transition-all cursor-pointer"
+      >
+        <ChevronLeft size={18} />
+      </button>
+      <div
+        ref={ref}
+        className="flex gap-4 sm:gap-5 overflow-x-auto custom-scrollbar snap-x snap-mandatory -mx-4 px-4 scroll-px-4 sm:mx-0 sm:px-0 sm:scroll-px-0 pb-3"
+      >
+        {children}
+      </div>
+      <button
+        type="button"
+        onClick={() => rolar(1)}
+        aria-label={`Rolar ${ariaLabel ?? 'lista'} para a direita`}
+        className="hidden sm:flex items-center justify-center absolute -right-3 top-1/2 -translate-y-1/2 z-20 w-9 h-9 rounded-full bg-void/90 border border-line text-text hover:border-holo-3 hover:text-holo-3 shadow-lg opacity-0 group-hover/trilho:opacity-100 focus:opacity-100 transition-all cursor-pointer"
+      >
+        <ChevronRight size={18} />
+      </button>
+    </div>
+  )
+}
+
 function Trilho({ cartazes }: { cartazes: Cartaz[] }) {
   return (
-    <div className="flex gap-4 sm:gap-5 overflow-x-auto scrollbar-hide snap-x snap-mandatory -mx-4 px-4 scroll-px-4 sm:mx-0 sm:px-0 sm:scroll-px-0 pb-2">
+    <FaixaRolavel>
       {cartazes.map((c, i) => (
         <Link
           key={c.mal_id}
@@ -152,7 +190,7 @@ function Trilho({ cartazes }: { cartazes: Cartaz[] }) {
           </h3>
         </Link>
       ))}
-    </div>
+    </FaixaRolavel>
   )
 }
 
@@ -530,7 +568,7 @@ export default function Inicio() {
           icone={<Play size={17} className="text-holo-1" />}
           link={{ para: '/deck', texto: 'Meu deck' }}
         >
-          <div className="flex gap-4 sm:gap-5 overflow-x-auto scrollbar-hide snap-x snap-mandatory -mx-4 px-4 scroll-px-4 sm:mx-0 sm:px-0 sm:scroll-px-0 pb-2">
+          <FaixaRolavel ariaLabel="Continue de onde parou">
             {continuar.map((c, idx) => {
               const epAlvo = recemMarcados[c.anime.mal_id]
                 ? recemMarcados[c.anime.mal_id] + 1
@@ -645,7 +683,7 @@ export default function Inicio() {
                 </div>
               )
             })}
-          </div>
+          </FaixaRolavel>
         </Secao>
       )}
 

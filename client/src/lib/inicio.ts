@@ -126,3 +126,94 @@ export function semanaDoDeck(
 export function proximoEpisodioEmDestaque(lista: ParaContinuar[]): ParaContinuar | null {
   return lista.find(c => !c.bloqueadoPorLancamento && !c.semEpisodios) ?? null
 }
+
+const SITES_NAO_STREAMING = [
+  'twitter',
+  'official site',
+  'site oficial',
+  'facebook',
+  'instagram',
+  'tiktok',
+  'weibo',
+  'wikipedia',
+  'wikia',
+  'fandom',
+  'myanimelist',
+  'anilist',
+  'anidb',
+  'anime news network',
+  'kitsu',
+  'syoboi',
+  'livechart',
+  'reddit',
+  'discord',
+  'pixiv',
+  'natalie',
+  'oricon',
+]
+
+const DOMINIOS_NAO_STREAMING = [
+  'twitter.com/',
+  '//x.com/',
+  '.x.com/',
+  'facebook.com/',
+  'instagram.com/',
+  'tiktok.com/',
+  'weibo.com/',
+  'wikipedia.org/',
+  'myanimelist.net/',
+  'anilist.co/',
+  'reddit.com/',
+  'pixiv.net/',
+]
+
+export interface LinkStreaming {
+  name: string
+  url: string
+}
+
+export function ehLinkDeStreaming(link?: LinkStreaming | null): link is LinkStreaming {
+  if (!link) return false
+  const nome = (link.name ?? '').trim().toLowerCase()
+  const url = (link.url ?? '').trim().toLowerCase()
+  if (!nome || !url) return false
+  if (nome === 'x' || nome === 'ann') return false
+  if (SITES_NAO_STREAMING.some(s => nome.includes(s))) return false
+  if (DOMINIOS_NAO_STREAMING.some(d => url.includes(d))) return false
+  return true
+}
+
+function prioridadeStreaming(link: LinkStreaming): number {
+  const nome = link.name.trim().toLowerCase()
+  const url = link.url.trim().toLowerCase()
+  if (nome.includes('crunchyroll') || url.includes('crunchyroll.com')) return 1
+  if (nome.includes('netflix') || url.includes('netflix.com')) return 2
+  if (nome.includes('prime video') || nome.includes('amazon') || url.includes('primevideo.com')) return 3
+  if (nome.includes('disney') || url.includes('disneyplus.com')) return 4
+  if (nome.includes('max') || nome.includes('hbo') || url.includes('max.com')) return 5
+  if (nome.includes('hidive') || url.includes('hidive.com')) return 6
+  if (nome.includes('youtube') || url.includes('youtube.com') || url.includes('youtu.be')) return 7
+  if (nome.includes('bilibili') || nome.includes('iqiyi') || nome.includes('hulu') || nome.includes('adult swim')) return 8
+  return 9
+}
+
+/**
+ * Filtra links que não são plataformas de vídeo (Twitter/X, site oficial, wikis) e ordena
+ * priorizando Crunchyroll, Netflix, Prime Video, Disney+ e Max.
+ */
+export function filtrarLinksStreaming(links?: LinkStreaming[] | null): LinkStreaming[] {
+  if (!links || links.length === 0) return []
+  return links
+    .filter(ehLinkDeStreaming)
+    .map((link, idx) => ({ link, idx, prio: prioridadeStreaming(link) }))
+    .sort((a, b) => a.prio - b.prio || a.idx - b.idx)
+    .map(item => item.link)
+}
+
+/**
+ * Escolhe o link principal para o botão "Assistir na ...", priorizando Crunchyroll e
+ * ignorando redes sociais ou site oficial que venham no cache antigo da AniList.
+ */
+export function escolherLinkStreaming(links?: LinkStreaming[] | null): LinkStreaming | undefined {
+  return filtrarLinksStreaming(links)[0]
+}

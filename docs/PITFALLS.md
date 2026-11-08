@@ -841,6 +841,42 @@ recente).
 
 ---
 
+## 29. 🎬 `externalLinks` da AniList mistura redes sociais, sites oficiais e streaming
+
+A API da AniList entrega na chave `externalLinks` todo link externo associado a uma obra —
+incluindo links de redes sociais (`Twitter`, `X`, `Facebook`, `Instagram`), wikis (`Wikipedia`,
+`Fandom`, `MyAnimeList`), sites oficiais japoneses (`Official Site`) e agregadores de notícias
+(`ANN`), misturados com os serviços reais de vídeo.
+
+**Incidente (08/11/2026, #193):** no banner principal da tela de Início (e no componente
+`HeroProximoEpisodio`), animes em exibição apresentavam o botão de reprodução como
+**"Assistir na Twitter"** ou **"Assistir na Official Site"**, porque o Twitter ou o site oficial
+frequentemente vinha na posição 0 do array `externalLinks` retornado pela AniList. Como o
+mapeamento Go e os componentes pegavam o primeiro link sem filtrar, o usuário era direcionado a
+redes sociais em vez de plataformas de streaming.
+
+**Causa:** as queries GraphQL da AniList pediam apenas `externalLinks { site url }` sem inspecionar
+o campo `type` (`STREAMING`, `INFO`, `SOCIAL`) e sem verificar nomes e domínios de redes sociais. No
+Go e no React, qualquer link externo era copiado diretamente para `StreamingLink` sem sanitização.
+
+**Correção:**
+1. No backend Go (`internal/anilist/client.go`), as queries GraphQL passaram a solicitar
+   `externalLinks { site url type }`.
+2. Criadas as funções `EhPlataformaDeStreaming` e `OrdenarLinksStreaming`: links com tipo diferente
+   de `STREAMING` ou que contenham domínios e nomes bloqueados (`twitter`, `x.com`, `official site`,
+   `facebook`, `instagram`, `tiktok`, `wikipedia`, `reddit`, etc.) são descartados.
+3. Ordenação por prioridade: os serviços de vídeo reais são ordenados priorizando **Crunchyroll** no
+   topo, seguido por **Netflix**, **Prime Video**, **Disney+**, **Max**, **HIDIVE** e **YouTube**.
+4. No frontend (`client/src/lib/inicio.ts`), as funções `filtrarLinksStreaming` e
+   `escolherLinkStreaming` aplicam a mesma filtragem e ordenação defensiva, garantindo que o botão
+   "Assistir na ..." aponte sempre para uma plataforma de streaming válida mesmo se o dado vier do
+   cache antigo.
+
+> **Pergunta obrigatória:** este link externo é de fato uma plataforma de vídeo sob demanda antes de
+> ser rotulado como "Assistir na ..."?
+
+---
+
 ## 🧭 Como manter este arquivo
 
 - Toda vez que um bug **silencioso** chegar a produção (não quebrou, só devolveu dado errado),

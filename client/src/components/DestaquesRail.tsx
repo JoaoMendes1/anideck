@@ -1,5 +1,5 @@
 import { useState, useMemo } from 'react'
-import { Search, Trash2, ImageOff, CheckCircle2, AlertCircle, Film } from 'lucide-react'
+import { Search, Trash2, ImageOff, CheckCircle2, AlertCircle, Film, Plus, X } from 'lucide-react'
 import { totalEpisodiosCurado, type CuratedAnime } from '../types/curation'
 
 interface DestaquesRailProps {
@@ -33,19 +33,36 @@ export default function DestaquesRail({
   const [busca, setBusca] = useState('')
   const [filtro, setFiltro] = useState<FiltroTipo>('ALL')
 
-  const totalSemEpisodios = useMemo(
-    () => destaques.filter((d) => totalEpisodiosCurado(d) === 0).length,
-    [destaques]
-  )
+  const contagens = useMemo(() => {
+    let parcial = 0
+    let completo = 0
+    let revisar = 0
+    let semCapa = 0
+    let semEps = 0
+    for (const d of destaques) {
+      const st = d.curation_status || 'parcial'
+      if (st === 'parcial') parcial++
+      else if (st === 'completo') completo++
+      else if (st === 'revisar') revisar++
+      if (!d.custom_cover_image) semCapa++
+      if (totalEpisodiosCurado(d) === 0) semEps++
+    }
+    return { parcial, completo, revisar, semCapa, semEps }
+  }, [destaques])
 
   const destaquesFiltrados = useMemo(() => {
+    const termo = busca.trim().toLowerCase()
     return destaques.filter((d) => {
-      const matchBusca = d.custom_title.toLowerCase().includes(busca.toLowerCase())
+      const matchBusca =
+        !termo ||
+        d.custom_title.toLowerCase().includes(termo) ||
+        String(d.mal_id || '').includes(termo)
       if (!matchBusca) return false
 
-      if (filtro === 'PARCIAL') return d.curation_status === 'parcial'
-      if (filtro === 'COMPLETO') return d.curation_status === 'completo'
-      if (filtro === 'REVISAR') return d.curation_status === 'revisar'
+      const st = d.curation_status || 'parcial'
+      if (filtro === 'PARCIAL') return st === 'parcial'
+      if (filtro === 'COMPLETO') return st === 'completo'
+      if (filtro === 'REVISAR') return st === 'revisar'
       if (filtro === 'NO_COVER') return !d.custom_cover_image
       if (filtro === 'NO_EPISODES') return totalEpisodiosCurado(d) === 0
 
@@ -54,57 +71,71 @@ export default function DestaquesRail({
   }, [destaques, busca, filtro])
 
   return (
-    <div className="flex flex-col gap-4">
-      <div className="flex items-center justify-between">
-        <h2 className="font-anton text-xl flex items-center gap-2">
-          <span className="text-coral">📚</span> Obras curadas{' '}
-          <span className="text-xs font-mono bg-panel-2 border border-line px-2 py-0.5 rounded-full text-muted">
-            {destaques.length}
+    <div className="bg-panel border border-line rounded-2xl p-3.5 sm:p-4 flex flex-col gap-3.5 shadow-xl">
+      {/* Cabeçalho da coluna de catálogo + ação rápida */}
+      <div className="flex items-center justify-between gap-2">
+        <div className="flex items-center gap-2 min-w-0">
+          <span className="font-mono text-[10px] uppercase tracking-widest text-muted-2">
+            Catálogo ({destaquesFiltrados.length}/{destaques.length})
           </span>
-        </h2>
+        </div>
+        <button
+          type="button"
+          onClick={onNovo}
+          className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-extrabold border transition-all cursor-pointer shrink-0 ${
+            novoAtivo
+              ? 'bg-holo-2 text-void border-holo-2 shadow-[0_0_12px_rgba(123,92,255,0.3)]'
+              : 'bg-panel-2 border-line text-text hover:border-holo-2 hover:text-holo-2'
+          }`}
+        >
+          <Plus size={13} /> Nova obra
+        </button>
       </div>
 
-      <button
-        onClick={onNovo}
-        className={`w-full py-3 rounded-xl border border-dashed font-bold text-sm transition-all flex items-center justify-center gap-2 ${
-          novoAtivo
-            ? 'bg-holo-2/10 border-holo-2 text-holo-2'
-            : 'bg-panel border-line text-muted hover:border-holo-2 hover:text-holo-2'
-        }`}
-      >
-        + Curar nova obra
-      </button>
-
-      {/* Área de Filtros e Busca Local */}
-      <div className="flex flex-col gap-3 bg-panel border border-line p-3 rounded-xl">
+      {/* Busca e chips de filtro */}
+      <div className="flex flex-col gap-2.5">
         <div className="relative">
-          <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted" />
+          <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted pointer-events-none" />
           <input
             type="text"
-            placeholder="Buscar nas obras curadas..."
+            placeholder="Buscar por título ou MAL ID..."
             value={busca}
             onChange={(e) => setBusca(e.target.value)}
-            className="w-full bg-panel-2 border border-line rounded-lg pl-9 pr-4 py-2 text-sm outline-none focus:border-holo-2 text-text placeholder:text-muted/50"
+            className="w-full bg-panel-2 border border-line rounded-xl pl-9 pr-8 py-2 text-sm outline-none focus:border-holo-2 text-text placeholder:text-muted/50 transition-colors"
           />
+          {busca && (
+            <button
+              type="button"
+              onClick={() => setBusca('')}
+              aria-label="Limpar busca"
+              className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted hover:text-text p-0.5 cursor-pointer"
+            >
+              <X size={13} />
+            </button>
+          )}
         </div>
-        
-        <div className="flex flex-wrap gap-2">
-          <FilterChip active={filtro === 'ALL'} onClick={() => setFiltro('ALL')} label="Todos" />
-          <FilterChip active={filtro === 'PARCIAL'} onClick={() => setFiltro('PARCIAL')} label="Parcial" />
-          <FilterChip active={filtro === 'COMPLETO'} onClick={() => setFiltro('COMPLETO')} label="Completo" icon={<CheckCircle2 size={10} />} />
-          <FilterChip active={filtro === 'REVISAR'} onClick={() => setFiltro('REVISAR')} label="Revisar" icon={<AlertCircle size={10} />} />
-          <FilterChip active={filtro === 'NO_COVER'} onClick={() => setFiltro('NO_COVER')} label="Sem Capa" icon={<ImageOff size={10} />} />
+
+        <div className="flex flex-wrap gap-1.5">
+          <FilterChip active={filtro === 'ALL'} onClick={() => setFiltro('ALL')} label={`Todos (${destaques.length})`} />
+          <FilterChip active={filtro === 'COMPLETO'} onClick={() => setFiltro('COMPLETO')} label={`Completo (${contagens.completo})`} icon={<CheckCircle2 size={10} />} />
+          <FilterChip active={filtro === 'PARCIAL'} onClick={() => setFiltro('PARCIAL')} label={`Parcial (${contagens.parcial})`} />
+          {contagens.revisar > 0 && (
+            <FilterChip active={filtro === 'REVISAR'} onClick={() => setFiltro('REVISAR')} label={`Revisar (${contagens.revisar})`} icon={<AlertCircle size={10} />} />
+          )}
+          {contagens.semCapa > 0 && (
+            <FilterChip active={filtro === 'NO_COVER'} onClick={() => setFiltro('NO_COVER')} label={`Sem Capa (${contagens.semCapa})`} icon={<ImageOff size={10} />} />
+          )}
           <FilterChip
             active={filtro === 'NO_EPISODES'}
             onClick={() => setFiltro('NO_EPISODES')}
-            label={`Sem Eps (${totalSemEpisodios})`}
+            label={`Sem Eps (${contagens.semEps})`}
             icon={<Film size={10} />}
           />
         </div>
       </div>
 
       {/* Lista com scroll otimizado */}
-      <div className="flex flex-col gap-2 overflow-y-auto max-h-[calc(100vh-280px)] custom-scrollbar pr-1 pb-4">
+      <div className="flex flex-col gap-2 overflow-y-auto max-h-[calc(100vh-300px)] custom-scrollbar pr-1 pt-0.5">
         {destaquesFiltrados.length === 0 ? (
           <div className="text-center p-6 text-sm text-muted font-mono bg-panel-2 rounded-xl border border-line border-dashed">
             Nenhum anime encontrado nos filtros.
@@ -119,7 +150,7 @@ export default function DestaquesRail({
                 className={`group flex items-center gap-3 p-2 rounded-xl border cursor-pointer transition-all ${
                   isSelected
                     ? 'bg-panel-2 border-holo-2 shadow-[0_0_15px_rgba(123,92,255,0.15)]'
-                    : 'bg-panel border-line hover:border-muted-2'
+                    : 'bg-panel-2/50 border-line hover:bg-panel-2 hover:border-muted-2'
                 }`}
               >
                 <div className="w-10 h-14 rounded-md bg-void border border-line overflow-hidden shrink-0 flex items-center justify-center relative">
@@ -179,8 +210,8 @@ export default function DestaquesRail({
                     e.stopPropagation()
                     if (anime.id) onDelete(anime.id, anime.custom_title)
                   }}
-                  /* CORREÇÃO DO BUG: Opacidade 100 no mobile, e esconde apenas no desktop (lg:opacity-0) */
-                  className="p-2 text-muted hover:text-coral active:bg-coral/20 lg:hover:bg-coral/10 rounded-lg opacity-100 lg:opacity-0 lg:group-hover:opacity-100 transition-all"
+                  /* Opacidade 100 no mobile, e esconde apenas no desktop (lg:opacity-0) */
+                  className="p-2 text-muted hover:text-coral active:bg-coral/20 lg:hover:bg-coral/10 rounded-lg opacity-100 lg:opacity-0 lg:group-hover:opacity-100 transition-all cursor-pointer"
                   aria-label="Excluir destaque"
                 >
                   <Trash2 size={16} />
@@ -197,11 +228,12 @@ export default function DestaquesRail({
 function FilterChip({ active, onClick, label, icon }: { active: boolean; onClick: () => void; label: string; icon?: React.ReactNode }) {
   return (
     <button
+      type="button"
       onClick={onClick}
-      className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold border transition-colors ${
+      className={`flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-bold border transition-colors cursor-pointer ${
         active
           ? 'bg-holo-2/20 border-holo-2 text-holo-2'
-          : 'bg-panel-2 border-line text-muted hover:border-muted-2'
+          : 'bg-panel-2 border-line text-muted hover:text-text hover:border-muted-2'
       }`}
     >
       {icon}

@@ -4,7 +4,7 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { Play } from 'lucide-react'
-import type { DiaDaSemana } from '../../lib/inicio'
+import { escolherLinkStreaming, type DiaDaSemana } from '../../lib/inicio'
 import { miniatura } from '../../lib/miniatura'
 
 const horaLocal = (ms: number) => new Date(ms).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })
@@ -69,17 +69,21 @@ export default function SuaSemana({ semana, compacta = false }: { semana: DiaDaS
                   {e.anime.title}
                 </Link>
               </div>
-              {e.anime.streaming?.[0] && (
-                <a
-                  href={e.anime.streaming[0].url}
-                  target="_blank"
-                  rel="noreferrer"
-                  aria-label={`Assistir ${e.anime.title} em ${e.anime.streaming[0].name}`}
-                  className="shrink-0 w-8 h-8 rounded-full bg-holo-3/15 border border-holo-3/40 text-holo-3 hover:bg-holo-3 hover:text-void flex items-center justify-center transition-colors"
-                >
-                  <Play size={12} fill="currentColor" className="ml-0.5" />
-                </a>
-              )}
+              {(() => {
+                const st = escolherLinkStreaming(e.anime.streaming)
+                if (!st) return null
+                return (
+                  <a
+                    href={st.url}
+                    target="_blank"
+                    rel="noreferrer"
+                    aria-label={`Assistir ${e.anime.title} em ${st.name}`}
+                    className="shrink-0 w-8 h-8 rounded-full bg-holo-3/15 border border-holo-3/40 text-holo-3 hover:bg-holo-3 hover:text-void flex items-center justify-center transition-colors"
+                  >
+                    <Play size={12} fill="currentColor" className="ml-0.5" />
+                  </a>
+                )
+              })()}
             </li>
           ))}
         </ul>

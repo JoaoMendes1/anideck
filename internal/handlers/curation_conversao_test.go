@@ -159,6 +159,14 @@ func TestConverterLinks(t *testing.T) {
 			bruto: json.RawMessage(`[{"platform": "Netflix", "url": ""}, {"platform": "Crunchyroll", "url": "https://ok.com"}]`),
 			quero: []anilist.StreamingLink{{Name: "Crunchyroll", URL: "https://ok.com"}},
 		},
+		{
+			name:  "descarta redes sociais e prioriza Crunchyroll na frente",
+			bruto: json.RawMessage(`[{"platform": "Twitter", "url": "https://twitter.com/anime"}, {"platform": "Netflix", "url": "https://netflix.com/title/1"}, {"platform": "Crunchyroll", "url": "https://crunchyroll.com/series/1"}]`),
+			quero: []anilist.StreamingLink{
+				{Name: "Crunchyroll", URL: "https://crunchyroll.com/series/1"},
+				{Name: "Netflix", URL: "https://netflix.com/title/1"},
+			},
+		},
 	}
 
 	for _, tt := range tests {

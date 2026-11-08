@@ -47,6 +47,27 @@ export type TesteAniList = {
   detalhe?: string
 }
 
+export type ExecucaoTarefaPeriodica = {
+  id: string
+  nome: string
+  periodo: string
+  iniciada_em: string
+  concluida_em?: string | null
+  erro?: string | null
+  resumo?: string | null
+}
+
+export type StatusTarefaPeriodica = {
+  nome: string
+  titulo: string
+  descricao: string
+  frequencia: string
+  periodo_atual: string
+  pendente_agora: boolean
+  ultima_execucao?: ExecucaoTarefaPeriodica | null
+  historico: ExecucaoTarefaPeriodica[]
+}
+
 export type Camada = 'genero' | 'tag_tematica' | 'demografia' | 'ignorado'
 
 // Todas as rotas daqui são de admin e exigem o JWT. Centralizado numa função só
@@ -79,6 +100,8 @@ export function useControle() {
   const [tagsOlheiro, setTagsOlheiro] = useState<TagOlheiro[]>([])
   const [limiteOlheiro, setLimiteOlheiro] = useState(10)
   const [disponiveisOlheiro, setDisponiveisOlheiro] = useState<RotuloDisponivel[]>([])
+  const [tarefasPeriodicas, setTarefasPeriodicas] = useState<StatusTarefaPeriodica[]>([])
+  const [executandoTarefa, setExecutandoTarefa] = useState<string | null>(null)
 
   const [carregando, setCarregando] = useState(true)
   const [erro, setErro] = useState<string | null>(null)
@@ -102,13 +125,14 @@ export function useControle() {
     setCarregando(true)
     setErro(null)
 
-    const [r, o, b, t, s, d] = await Promise.allSettled([
+    const [r, o, b, t, s, d, tp] = await Promise.allSettled([
       comToken('/api/admin/ranking/settings').then(res => res.json()),
       comToken('/api/admin/diagnostico/rotulos-orfaos').then(res => res.json()),
       comToken('/api/admin/diagnostico/bucket').then(res => res.json()),
       comToken('/api/admin/olheiro/tags').then(res => res.json()),
       comToken('/api/admin/olheiro/settings').then(res => res.json()),
       comToken('/api/admin/olheiro/disponiveis').then(res => res.json()),
+      comToken('/api/admin/sistema/tarefas').then(res => (res.ok ? res.json() : [])),
     ])
 
     if (r.status === 'fulfilled') setRanking(r.value)
@@ -122,6 +146,9 @@ export function useControle() {
     // inteira de vermelho — só deixa a lista de rótulos disponíveis vazia.
     if (d.status === 'fulfilled') {
       setDisponiveisOlheiro(Array.isArray(d.value) ? d.value : [])
+    }
+    if (tp.status === 'fulfilled') {
+      setTarefasPeriodicas(Array.isArray(tp.value) ? tp.value : [])
     }
 
     if ([r, o, b, t, s].some(p => p.status === 'rejected')) {
@@ -369,8 +396,28 @@ export function useControle() {
     }
   }
 
+  const executarTarefaPeriodica = async (
+    nome: string,
+  ): Promise<{ executou: boolean; periodo: string; resumo?: string; mensagem?: string } | string> => {
+    setExecutandoTarefa(nome)
+    try {
+      const res = await comToken(`/api/admin/sistema/tarefas/${encodeURIComponent(nome)}/executar`, {
+        method: 'POST',
+      })
+      if (!res.ok) return (await res.text()).trim() || 'Não foi possível executar a tarefa.'
+      const dados = await res.json()
+      await carregar()
+      return dados
+    } catch {
+      return 'Erro de conexão ao executar a tarefa.'
+    } finally {
+      setExecutandoTarefa(null)
+    }
+  }
+
   return {
     ranking, orfaos, bucket, tagsOlheiro,
+    tarefasPeriodicas, executandoTarefa, executarTarefaPeriodica,
     carregando, erro, carregar,
     salvarPeso, salvandoPeso,
     recalcular, recalculando,

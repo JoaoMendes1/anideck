@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"sort"
 	"strconv"
 	"strings"
 	"sync"
@@ -172,11 +173,17 @@ query ($page: Int, $perPage: Int, $search: String, $sort: [MediaSort], $genre_in
 	  popularity
       coverImage { large }
       genres
-      externalLinks { site url }
+      externalLinks { site url type }
       nextAiringEpisode { airingAt timeUntilAiring episode }
     }
   }
 }`
+
+type anilistExternalLink struct {
+	Site string `json:"site"`
+	URL  string `json:"url"`
+	Type string `json:"type"`
+}
 
 type aniListMedia struct {
 	IDMal         int                              `json:"idMal"`
@@ -193,11 +200,8 @@ type aniListMedia struct {
 	BannerImage   string                           `json:"bannerImage"`
 	CoverImage    struct{ Large string }           `json:"coverImage"`
 	Genres        []string                         `json:"genres"`
-	ExternalLinks []struct {
-		Site string `json:"site"`
-		URL  string `json:"url"`
-	} `json:"externalLinks"`
-	Rankings []struct {
+	ExternalLinks []anilistExternalLink            `json:"externalLinks"`
+	Rankings      []struct {
 		Rank    int    `json:"rank"`
 		Type    string `json:"type"`
 		AllTime bool   `json:"allTime"`
@@ -309,13 +313,7 @@ func (m *aniListMedia) toAnime() Anime {
 		genres = append(genres, Genre{Name: g})
 	}
 
-	streaming := make([]StreamingLink, 0, len(m.ExternalLinks))
-	for _, link := range m.ExternalLinks {
-		streaming = append(streaming, StreamingLink{
-			Name: link.Site,
-			URL:  link.URL,
-		})
-	}
+	streaming := filtrarLinksStreaming(m.ExternalLinks)
 
 	var bestRanking int
 	for _, r := range m.Rankings {
@@ -501,9 +499,8 @@ query ($idMal: Int) {
     bannerImage
     genres
 	tags { name rank isGeneralSpoiler isMediaSpoiler }
-    externalLinks { site url }
+    externalLinks { site url type }
 	rankings { rank type allTime }
-	streamingEpisodes { title thumbnail url site }
 	streamingEpisodes { title thumbnail url site }
     nextAiringEpisode { airingAt timeUntilAiring episode }
     characters(sort: ROLE, perPage: 15) {
@@ -534,7 +531,7 @@ query ($idMal_in: [Int]) {
 	  popularity
       coverImage { large }
       genres
-      externalLinks { site url }
+      externalLinks { site url type }
       rankings { rank type allTime }
       nextAiringEpisode { airingAt timeUntilAiring episode }
     }
@@ -626,7 +623,7 @@ query ($page: Int, $perPage: Int, $sort: [MediaSort], $genre_in: [String], $tag_
       coverImage { large }
       genres
 	  tags { name rank isGeneralSpoiler isMediaSpoiler }
-      externalLinks { site url }
+      externalLinks { site url type }
       nextAiringEpisode { airingAt timeUntilAiring episode }
     }
   }
@@ -699,7 +696,7 @@ func (c *Client) fetchByAliases(ctx context.Context, missingIDs []int) ([]Anime,
     averageScore
     coverImage { large }
     genres
-    externalLinks { site url }
+    externalLinks { site url type }
     rankings { rank type allTime }
     nextAiringEpisode { airingAt timeUntilAiring episode }
   }
@@ -822,4 +819,133 @@ func (c *Client) GetVocabulario(ctx context.Context) (*Vocabulario, error) {
 	}
 
 	return v, nil
+}
+
+// EhPlataformaDeStreaming verifica se um link externo aponta para uma plataforma real
+// de vídeo (descartando redes sociais, sites oficiais, wikis e agregadores que a
+// AniList também entrega em externalLinks).
+func EhPlataformaDeStreaming(site, urlStr, tipo string) bool {
+	s := strings.ToLower(strings.TrimSpace(site))
+	u := strings.ToLower(strings.TrimSpace(urlStr))
+	t := strings.ToUpper(strings.TrimSpace(tipo))
+
+	if s == "" || u == "" {
+		return false
+	}
+	if t != "" && t != "STREAMING" {
+		return false
+	}
+
+	if s == "x" || s == "ann" {
+		return false
+	}
+
+	sitesExcluidos := []string{
+		"twitter",
+		"official site",
+		"site oficial",
+		"facebook",
+		"instagram",
+		"tiktok",
+		"weibo",
+		"wikipedia",
+		"wikia",
+		"fandom",
+		"myanimelist",
+		"anilist",
+		"anidb",
+		"anime news network",
+		"kitsu",
+		"syoboi",
+		"livechart",
+		"reddit",
+		"discord",
+		"pixiv",
+		"natalie",
+		"oricon",
+	}
+	for _, bloqueado := range sitesExcluidos {
+		if strings.Contains(s, bloqueado) {
+			return false
+		}
+	}
+
+	dominiosExcluidos := []string{
+		"twitter.com/",
+		"//x.com/",
+		".x.com/",
+		"facebook.com/",
+		"instagram.com/",
+		"tiktok.com/",
+		"weibo.com/",
+		"wikipedia.org/",
+		"myanimelist.net/",
+		"anilist.co/",
+		"reddit.com/",
+		"pixiv.net/",
+	}
+	for _, dominio := range dominiosExcluidos {
+		if strings.Contains(u, dominio) {
+			return false
+		}
+	}
+
+	return true
+}
+
+func prioridadeStreaming(site, urlStr string) int {
+	s := strings.ToLower(strings.TrimSpace(site))
+	u := strings.ToLower(strings.TrimSpace(urlStr))
+
+	switch {
+	case strings.Contains(s, "crunchyroll") || strings.Contains(u, "crunchyroll.com"):
+		return 1
+	case strings.Contains(s, "netflix") || strings.Contains(u, "netflix.com"):
+		return 2
+	case strings.Contains(s, "prime video") || strings.Contains(s, "amazon") || strings.Contains(u, "primevideo.com"):
+		return 3
+	case strings.Contains(s, "disney") || strings.Contains(u, "disneyplus.com"):
+		return 4
+	case strings.Contains(s, "max") || strings.Contains(s, "hbo") || strings.Contains(u, "max.com"):
+		return 5
+	case strings.Contains(s, "hidive") || strings.Contains(u, "hidive.com"):
+		return 6
+	case strings.Contains(s, "youtube") || strings.Contains(u, "youtube.com") || strings.Contains(u, "youtu.be"):
+		return 7
+	case strings.Contains(s, "bilibili") || strings.Contains(s, "iqiyi") || strings.Contains(s, "hulu") || strings.Contains(s, "adult swim"):
+		return 8
+	default:
+		return 9
+	}
+}
+
+// OrdenarLinksStreaming filtra links inválidos/sociais e ordena priorizando Crunchyroll,
+// Netflix, Prime Video, Disney+ e Max para que o botão principal ("Assistir na ...")
+// aponte sempre para o serviço de vídeo mais relevante.
+func OrdenarLinksStreaming(links []StreamingLink) []StreamingLink {
+	filtrados := make([]StreamingLink, 0, len(links))
+	for _, l := range links {
+		if !EhPlataformaDeStreaming(l.Name, l.URL, "") {
+			continue
+		}
+		filtrados = append(filtrados, l)
+	}
+	sort.SliceStable(filtrados, func(i, j int) bool {
+		return prioridadeStreaming(filtrados[i].Name, filtrados[i].URL) < prioridadeStreaming(filtrados[j].Name, filtrados[j].URL)
+	})
+	return filtrados
+}
+
+func filtrarLinksStreaming(links []anilistExternalLink) []StreamingLink {
+	filtrados := make([]StreamingLink, 0, len(links))
+	for _, l := range links {
+		if !EhPlataformaDeStreaming(l.Site, l.URL, l.Type) {
+			continue
+		}
+		filtrados = append(filtrados, StreamingLink{Name: l.Site, URL: l.URL})
+	}
+	sort.SliceStable(filtrados, func(i, j int) bool {
+		return prioridadeStreaming(filtrados[i].Name, filtrados[i].URL) < prioridadeStreaming(filtrados[j].Name, filtrados[j].URL)
+	})
+	return filtrados
 }

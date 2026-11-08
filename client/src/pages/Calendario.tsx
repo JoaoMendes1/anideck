@@ -9,6 +9,7 @@ import { Play, Calendar as CalendarIcon } from 'lucide-react'
 import { getCategoryTheme } from '../lib/filters'
 import type { AnimeDaApi } from '../types/anime'
 import { gradienteDoCard, getStatusTheme, obterTextoDiaLancamento } from '../lib/deckHelpers'
+import { escolherLinkStreaming } from '../lib/inicio'
 
 interface Entrada {
     mal_id: number
@@ -311,7 +312,7 @@ export default function Calendario() {
                                 <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-1 gap-4 sm:gap-5">
                                     {group.animes.map((anime, index) => {
                                         const gradClass = gradienteDoCard(index)
-                                        const streamUrl = anime.streaming ? anime.streaming.find(s => s.name.toLowerCase().includes('crunchyroll'))?.url || anime.streaming.find(s => s.name.toLowerCase().includes('netflix'))?.url || anime.streaming[0]?.url : null
+                                        const streamUrl = escolherLinkStreaming(anime.streaming)?.url ?? null
                                         const remainingText = formatTimeRemaining(anime.nextAiringEpisode!.airingAt)
                                         const isLancado = remainingText === 'Lançado!'
                                         const diaSemanal = obterTextoDiaLancamento({ nextAiringEpisode: anime.nextAiringEpisode })

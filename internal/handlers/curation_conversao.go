@@ -96,13 +96,19 @@ func ConverterEpisodios(bruto json.RawMessage, daAniList []anilist.StreamingEpis
 // obra não tem onde assistir" e zera a lista.
 func ConverterLinks(bruto json.RawMessage, daAniList []anilist.StreamingLink) []anilist.StreamingLink {
 	if jsonAusente(bruto) {
-		return daAniList
+		if daAniList == nil {
+			return nil
+		}
+		return anilist.OrdenarLinksStreaming(daAniList)
 	}
 
 	var curados []linkCurado
 	if err := json.Unmarshal(bruto, &curados); err != nil {
 		log.Printf("[CURADORIA] custom_external_links inválido, usando os links da AniList: %v", err)
-		return daAniList
+		if daAniList == nil {
+			return nil
+		}
+		return anilist.OrdenarLinksStreaming(daAniList)
 	}
 
 	links := make([]anilist.StreamingLink, 0, len(curados))
@@ -113,7 +119,7 @@ func ConverterLinks(bruto json.RawMessage, daAniList []anilist.StreamingLink) []
 		}
 		links = append(links, anilist.StreamingLink{Name: l.Platform, URL: l.URL})
 	}
-	return links
+	return anilist.OrdenarLinksStreaming(links)
 }
 
 // formatosDeEstreia cobre o que o PostgREST devolve para uma coluna TIMESTAMPTZ e também a

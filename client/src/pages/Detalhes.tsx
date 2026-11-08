@@ -17,6 +17,7 @@ import { temHistoriaNoApp, veioDeListaRestauravel } from '../lib/posicaoDeLista'
 import ImagemAmpliada from '../components/ImagemAmpliada'
 import { lerDaMemoria, guardarNaMemoria, invalidarCachesDoDeck } from '../lib/cacheDeTela'
 import { abaDaUrl, type AbaDetalhes, type EntradaNoDeck } from '../lib/detalhes'
+import { filtrarLinksStreaming } from '../lib/inicio'
 import { ultimoEpisodioDisponivel } from '../lib/comunidade'
 import { useMidia } from '../hooks/useMidia'
 
@@ -559,30 +560,34 @@ export default function Detalhes() {
                     )}
                   </section>
 
-                  {anime.streaming?.length > 0 && (
-                    <section>
-                      <TituloDeBloco>Onde assistir</TituloDeBloco>
-                      <div className="flex flex-wrap gap-2">
-                        {anime.streaming.map(st => (
-                          <a
-                            key={`${st.name}-${st.url}`}
-                            href={st.url}
-                            target="_blank"
-                            rel="noreferrer"
-                            className="inline-flex items-center gap-2 bg-panel border border-line rounded-full pl-3 pr-4 py-2 text-[13px] font-bold hover:border-holo-1 hover:text-holo-1 transition-colors"
-                          >
-                            <PlayCircle size={16} className="shrink-0" aria-hidden />
-                            {st.name}
-                          </a>
-                        ))}
-                      </div>
-                    </section>
-                  )}
+                  {(() => {
+                    const linksStreaming = filtrarLinksStreaming(anime.streaming)
+                    if (linksStreaming.length === 0) return null
+                    return (
+                      <section>
+                        <TituloDeBloco>Onde assistir</TituloDeBloco>
+                        <div className="flex flex-wrap gap-2">
+                          {linksStreaming.map(st => (
+                            <a
+                              key={`${st.name}-${st.url}`}
+                              href={st.url}
+                              target="_blank"
+                              rel="noreferrer"
+                              className="inline-flex items-center gap-2 bg-panel border border-line rounded-full pl-3 pr-4 py-2 text-[13px] font-bold hover:border-holo-1 hover:text-holo-1 transition-colors"
+                            >
+                              <PlayCircle size={16} className="shrink-0" aria-hidden />
+                              {st.name}
+                            </a>
+                          ))}
+                        </div>
+                      </section>
+                    )
+                  })()}
 
                   {anime.characters && anime.characters.length > 0 && (
                     <section>
                       <TituloDeBloco>Personagens</TituloDeBloco>
-                      <div className="flex gap-3 overflow-x-auto pb-2 -mx-4 px-4 scroll-px-4 sm:mx-0 sm:px-0 sm:scroll-px-0 scrollbar-hide snap-x">
+                      <div className="flex gap-3 overflow-x-auto pb-2.5 -mx-4 px-4 scroll-px-4 sm:mx-0 sm:px-0 sm:scroll-px-0 custom-scrollbar snap-x">
                         {/* A chave cai para o nome quando o id falta: o elenco curado no Painel é
                             gravado sem id e chegaria com chaves repetidas. */}
                         {anime.characters.map(char => (
@@ -601,7 +606,7 @@ export default function Detalhes() {
                   {relacoes.length > 0 && (
                     <section>
                       <TituloDeBloco>Da mesma história</TituloDeBloco>
-                      <div className="flex gap-3 overflow-x-auto pb-2 -mx-4 px-4 scroll-px-4 sm:mx-0 sm:px-0 sm:scroll-px-0 scrollbar-hide snap-x">
+                      <div className="flex gap-3 overflow-x-auto pb-2.5 -mx-4 px-4 scroll-px-4 sm:mx-0 sm:px-0 sm:scroll-px-0 custom-scrollbar snap-x">
                         {relacoes.map((rel, i) => {
                           const relacionado = rel.entry[0]
                           // Sem mal_id não existe página de destino: o card sai igual, só não vira link.

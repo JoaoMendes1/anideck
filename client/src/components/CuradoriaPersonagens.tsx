@@ -121,15 +121,29 @@ export default function CuradoriaPersonagens({
 
         <div className="flex items-end gap-2">
           <div className="flex-1 sm:flex-none">
-            <label className="block text-[10px] mb-1 font-bold text-muted">Papel</label>
-            <select
-              value={charRole}
-              onChange={(e) => setCharRole(e.target.value)}
-              className="w-full sm:w-auto bg-panel-2 border border-line rounded px-2 py-1.5 text-xs outline-none text-text"
-            >
-              <option value="MAIN">Principal</option>
-              <option value="SUPPORTING">Coadjuvante</option>
-            </select>
+            <span className="block text-[10px] mb-1 font-bold text-muted">Papel</span>
+            <div className="inline-flex rounded-lg bg-panel-2 border border-line p-0.5">
+              {([
+                { value: 'MAIN', label: 'Principal' },
+                { value: 'SUPPORTING', label: 'Coadjuvante' },
+              ] as const).map((opt) => {
+                const ativo = charRole === opt.value
+                return (
+                  <button
+                    key={opt.value}
+                    type="button"
+                    onClick={() => setCharRole(opt.value)}
+                    className={`px-2.5 py-1 rounded-md text-[11px] font-bold transition-colors cursor-pointer ${
+                      ativo
+                        ? 'bg-holo-2/20 text-holo-2 border border-holo-2/50'
+                        : 'text-muted hover:text-text border border-transparent'
+                    }`}
+                  >
+                    {opt.label}
+                  </button>
+                )
+              })}
+            </div>
           </div>
           
           {editIndex !== null && (
