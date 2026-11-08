@@ -69,6 +69,31 @@ const montarHash = (c: CamposDoFormulario) => JSON.stringify([
   c.characters, c.episodios, c.links, c.estreia, c.duracao, c.isDestaque, c.curationStatus,
 ])
 
+// Menu do painel agrupado por assunto. As seções do Controle viram itens próprios, para
+// não haver um segundo menu dentro da aba.
+type AbaDoMenu = 'curadoria' | 'controle' | 'trilhas' | 'revisao_ia' | 'guilda'
+interface ItemDoMenu { id: string; nome: string; aba: AbaDoMenu; secao?: string }
+const GRUPOS_ADMIN: { titulo: string; itens: ItemDoMenu[] }[] = [
+  { titulo: 'Catálogo', itens: [
+    { id: 'curadoria', nome: 'Obras curadas', aba: 'curadoria' },
+    { id: 'trilhas', nome: 'Trilhas', aba: 'trilhas' },
+    { id: 'controle:rotulos', nome: 'Rótulos', aba: 'controle', secao: 'rotulos' },
+  ] },
+  { titulo: 'Inteligência artificial', itens: [
+    { id: 'revisao_ia', nome: 'Fila de revisão', aba: 'revisao_ia' },
+    { id: 'controle:curadoria_ia', nome: 'Ritmo e prompts', aba: 'controle', secao: 'curadoria_ia' },
+    { id: 'controle:olheiro', nome: 'Olheiro', aba: 'controle', secao: 'olheiro' },
+  ] },
+  { titulo: 'Comunidade', itens: [
+    { id: 'guilda', nome: 'Guilda e XP', aba: 'guilda' },
+    { id: 'controle:ranking', nome: 'Ranking', aba: 'controle', secao: 'ranking' },
+  ] },
+  { titulo: 'Sistema', itens: [
+    { id: 'controle:anilist', nome: 'AniList e saúde', aba: 'controle', secao: 'anilist' },
+    { id: 'controle:diagnostico', nome: 'Diagnóstico', aba: 'controle', secao: 'diagnostico' },
+  ] },
+]
+
 export default function PainelAdmin() {
   const { showToast } = useToast()
   const navigate = useNavigate()
@@ -126,6 +151,23 @@ export default function PainelAdmin() {
     abaParam === 'controle' || abaParam === 'trilhas' || abaParam === 'revisao_ia' || abaParam === 'guilda'
       ? abaParam
       : 'curadoria'
+
+  const secaoControle = searchParams.get('secao') || 'anilist'
+  const itemAtivo = abaAtiva === 'controle' ? `controle:${secaoControle}` : abaAtiva
+  const itemDoMenu = GRUPOS_ADMIN.flatMap(g => g.itens).find(i => i.id === itemAtivo)
+
+  const irParaItem = (id: string) => {
+    const item = GRUPOS_ADMIN.flatMap(g => g.itens).find(i => i.id === id)
+    if (!item) return
+    setSearchParams(prev => {
+      const next = new URLSearchParams(prev)
+      if (item.aba === 'curadoria') next.delete('aba')
+      else next.set('aba', item.aba)
+      if (item.secao && item.secao !== 'anilist') next.set('secao', item.secao)
+      else next.delete('secao')
+      return next
+    }, { replace: true })
+  }
 
   const setAbaAtiva = (novaAba: AbaAdmin) => {
     setSearchParams(prev => {
@@ -845,7 +887,7 @@ export default function PainelAdmin() {
             </span>
             <span className="font-mono text-[10px] font-bold text-gold bg-gold/10 border border-gold/40 px-2.5 py-1 rounded-full">⚙ ADMIN</span>
           </div>
-          <div className="flex gap-2 sm:gap-3 items-center">
+          <div className="flex gap-1.5 sm:gap-3 items-center">
             <div className="flex items-center gap-1.5 sm:gap-2 bg-panel-2 border border-line rounded-full px-2.5 sm:px-3 py-1.5 select-none">
               <span className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wider text-muted-2 border-r border-line pr-1.5 sm:pr-2" title="Saúde Passiva da API AniList">
                 <Activity size={12} />
@@ -877,47 +919,66 @@ export default function PainelAdmin() {
               type="button"
               onClick={() => setOlheiroAberto(true)}
               title="Sugestões do Agente Olheiro"
+              aria-label="Sugestões do Olheiro"
               className="flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-1.5 bg-panel-2 border border-line text-muted hover:text-text text-[11px] sm:text-xs font-bold rounded-full cursor-pointer transition-all shrink-0"
             >
-              🔭 Olheiro
+              <span aria-hidden="true">🔭</span> <span className="hidden sm:inline">Olheiro</span>
             </button>
             <button
               type="button"
               onClick={() => pedirConfirmacao(() => navigate('/'))}
-              className="text-xs sm:text-sm font-bold text-muted hover:text-text px-2.5 py-1.5 rounded-lg hover:bg-panel-2 transition-colors cursor-pointer"
+              aria-label="Voltar ao site"
+              className="text-xs sm:text-sm font-bold text-muted hover:text-text px-2 sm:px-2.5 py-1.5 rounded-lg hover:bg-panel-2 transition-colors cursor-pointer whitespace-nowrap"
             >
-              ← Voltar
+              ←<span className="hidden sm:inline"> Voltar</span>
             </button>
           </div>
         </div>
       </div>
 
       <div className="max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-8 py-6 relative z-10">
-        {/* A barra de abas fica fora do bloco que o formulário esconde: com o editor
-            aberto no mobile, sumir a navegação prenderia o usuário na Curadoria. */}
-        <div className="flex gap-1 border-b border-line mb-6 overflow-x-auto" role="tablist">
-          {([
-            { id: 'curadoria', nome: 'Curadoria' },
-            { id: 'controle', nome: 'Painel de Controle' },
-            { id: 'trilhas', nome: 'Trilhas' },
-            { id: 'revisao_ia', nome: 'Revisão da IA' },
-            { id: 'guilda', nome: 'Guilda' },
-          ] as const).map(aba => (
-            <button
-              key={aba.id}
-              type="button"
-              role="tab"
-              aria-selected={abaAtiva === aba.id}
-              onClick={() => setAbaAtiva(aba.id)}
-              className={`shrink-0 whitespace-nowrap px-4 py-2.5 text-sm font-bold border-b-2 cursor-pointer transition-colors ${abaAtiva === aba.id
-                ? 'text-text border-holo-1'
-                : 'text-muted border-transparent hover:text-text'
-                }`}
-            >
-              {aba.nome}
-            </button>
+        {/* O menu fica fora do bloco que o formulário esconde: com o editor aberto no
+            celular, sumir a navegação prenderia o usuário na Curadoria. */}
+        <div className="lg:grid lg:grid-cols-[210px_minmax(0,1fr)] lg:gap-8 lg:items-start">
+        <nav aria-label="Seções do painel" className="hidden lg:flex flex-col gap-5 sticky top-24">
+          {GRUPOS_ADMIN.map(grupo => (
+            <div key={grupo.titulo}>
+              <p className="font-mono text-[10px] text-muted-2 uppercase tracking-widest mb-1.5 px-3">{grupo.titulo}</p>
+              <div className="flex flex-col gap-0.5">
+                {grupo.itens.map(item => (
+                  <button
+                    key={item.id}
+                    type="button"
+                    onClick={() => irParaItem(item.id)}
+                    aria-current={itemAtivo === item.id ? 'page' : undefined}
+                    className={`text-left text-sm font-bold px-3 py-2 rounded-xl border cursor-pointer transition-colors ${itemAtivo === item.id
+                      ? 'bg-panel-2 border-line text-text'
+                      : 'border-transparent text-muted hover:bg-panel hover:text-text'
+                      }`}
+                  >
+                    {item.nome}
+                  </button>
+                ))}
+              </div>
+            </div>
           ))}
-        </div>
+        </nav>
+
+        <div className="min-w-0">
+        <label className="lg:hidden block mb-6">
+          <span className="sr-only">Seção do painel</span>
+          <select
+            value={itemAtivo}
+            onChange={e => irParaItem(e.target.value)}
+            className="w-full bg-panel border border-line rounded-xl px-4 py-3 text-sm font-bold text-text outline-none focus:border-holo-2"
+          >
+            {GRUPOS_ADMIN.map(grupo => (
+              <optgroup key={grupo.titulo} label={grupo.titulo}>
+                {grupo.itens.map(item => <option key={item.id} value={item.id}>{item.nome}</option>)}
+              </optgroup>
+            ))}
+          </select>
+        </label>
 
         {abaAtiva === 'curadoria' && (() => {
           const semEps = destaques.filter(d => totalEpisodiosCurado(d) === 0)
@@ -925,8 +986,8 @@ export default function PainelAdmin() {
             <div className={`mb-8 min-w-0 ${formularioAberto ? 'hidden lg:block' : 'block'}`}>
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                 <div>
-                  <h1 className="font-anton text-3xl uppercase">Painel de Curadoria</h1>
-                  <p className="text-muted text-sm mt-1">Gerencie os "Destaques AniDeck" e refine a exibição de capas e personagens.</p>
+                  <h1 className="font-anton text-3xl uppercase">Obras curadas</h1>
+                  <p className="text-muted text-sm mt-1">Sinopse, tags, episódios, capas e personagens de cada obra do catálogo. Marque como destaque para aparecer na vitrine.</p>
                 </div>
                 {semEps.length > 0 && (
                   <div className="flex items-center gap-3 bg-gold/10 border border-gold/40 text-gold px-4 py-2.5 rounded-xl text-xs font-bold">
@@ -948,7 +1009,7 @@ export default function PainelAdmin() {
         {abaAtiva === 'controle' && (
           <>
             <div className="mb-8 min-w-0">
-              <h1 className="font-anton text-3xl uppercase">Painel de Controle</h1>
+              <h1 className="font-anton text-3xl uppercase">{itemDoMenu?.nome ?? 'Painel de Controle'}</h1>
               <p className="text-muted text-sm mt-1">Ajuste como o sistema funciona e veja o que ele está fazendo agora.</p>
             </div>
             <AbaControle
@@ -1016,15 +1077,15 @@ export default function PainelAdmin() {
                   <div className="w-14 h-14 rounded-2xl bg-panel-2 border border-line flex items-center justify-center mb-4 text-muted">
                     <LayoutList size={22} />
                   </div>
-                  <h3 className="font-anton text-lg uppercase text-text mb-1">Nenhum destaque selecionado</h3>
+                  <h3 className="font-anton text-lg uppercase text-text mb-1">Nenhuma obra selecionada</h3>
                   <p className="text-sm text-muted max-w-xs mb-6">
-                    Escolha um item na lista ao lado para editar, ou comece um destaque novo.
+                    Escolha um item na lista ao lado para editar, ou comece a curar uma obra nova.
                   </p>
                   <button
                     onClick={abrirNovoDestaque}
                     className="bg-gradient-to-r from-holo-1 to-holo-2 text-void font-extrabold text-sm px-6 py-2.5 rounded-full hover:opacity-90 cursor-pointer transition-opacity"
                   >
-                    + Novo Destaque
+                    + Curar nova obra
                   </button>
                 </div>
               ) : (
@@ -1039,7 +1100,7 @@ export default function PainelAdmin() {
 
                   <div className="flex justify-between items-center mb-4">
                     <h3 className="font-extrabold text-sm flex items-center gap-2">
-                      {editId ? '✎ Editando Destaque' : '🔍 Novo Destaque'}
+                      {editId ? "✎ Editando obra" : "🔍 Nova obra"}
                       {isDirty && <span className="w-2 h-2 rounded-full bg-holo-3 animate-pulse" title="Alterações não salvas"></span>}
                     </h3>
                     <div className="flex items-center gap-3">
@@ -1320,6 +1381,8 @@ export default function PainelAdmin() {
               )}
             </div>
           </div>)}
+        </div>
+        </div>
       </div>
 
       <Sheet isOpen={itemParaExcluir !== null} onClose={() => !excluindo && setItemParaExcluir(null)} title="Remover destaque?">

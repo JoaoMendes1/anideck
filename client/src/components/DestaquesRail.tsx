@@ -57,7 +57,7 @@ export default function DestaquesRail({
     <div className="flex flex-col gap-4">
       <div className="flex items-center justify-between">
         <h2 className="font-anton text-xl flex items-center gap-2">
-          <span className="text-coral">📌</span> Destaques ativos{' '}
+          <span className="text-coral">📚</span> Obras curadas{' '}
           <span className="text-xs font-mono bg-panel-2 border border-line px-2 py-0.5 rounded-full text-muted">
             {destaques.length}
           </span>
@@ -72,7 +72,7 @@ export default function DestaquesRail({
             : 'bg-panel border-line text-muted hover:border-holo-2 hover:text-holo-2'
         }`}
       >
-        + Novo Destaque
+        + Curar nova obra
       </button>
 
       {/* Área de Filtros e Busca Local */}
@@ -81,7 +81,7 @@ export default function DestaquesRail({
           <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted" />
           <input
             type="text"
-            placeholder="Buscar nos destaques..."
+            placeholder="Buscar nas obras curadas..."
             value={busca}
             onChange={(e) => setBusca(e.target.value)}
             className="w-full bg-panel-2 border border-line rounded-lg pl-9 pr-4 py-2 text-sm outline-none focus:border-holo-2 text-text placeholder:text-muted/50"

@@ -300,31 +300,8 @@ export function AbaControle({
         </div>
       )}
 
-      <div className="grid gap-6 lg:grid-cols-[200px_1fr] items-start">
-        <nav
-          aria-label="Seções do painel"
-          className="flex lg:flex-col gap-1.5 overflow-x-auto lg:overflow-visible lg:sticky lg:top-24 pb-1 lg:pb-0"
-        >
-          {SECOES.map(s => (
-            <button
-              key={s.id}
-              type="button"
-              onClick={() => setSecao(s.id)}
-              aria-current={secao === s.id}
-              className={`shrink-0 flex items-center justify-between gap-2 text-left whitespace-nowrap text-sm font-bold px-4 py-2.5 rounded-xl border cursor-pointer transition-colors ${secao === s.id
-                ? 'bg-panel-2 border-line text-text'
-                : 'bg-transparent border-transparent text-muted hover:bg-panel hover:text-text'
-                }`}
-            >
-              {s.nome}
-              {s.id === 'diagnostico' && orfaos.length > 0 && (
-                <span className="font-mono text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-gold/15 text-gold">
-                  {orfaos.length}
-                </span>
-              )}
-            </button>
-          ))}
-        </nav>
+      {/* A navegação entre as seções fica no menu do Painel Admin (PainelAdmin.tsx). */}
+      <div>
 
         <div className="min-w-0">
           {/* ---------- AniList ---------- */}

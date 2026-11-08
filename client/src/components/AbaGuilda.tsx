@@ -315,7 +315,7 @@ export default function AbaGuilda() {
             {ranks.map((r, idx) => (
               <div
                 key={`${r.rank}-${idx}`}
-                className="grid grid-cols-[64px_1fr_96px_80px] gap-2.5 items-center bg-panel-2 border border-line rounded-xl p-2.5"
+                className="grid grid-cols-[48px_minmax(0,1fr)_76px_52px] sm:grid-cols-[64px_minmax(0,1fr)_96px_80px] gap-1.5 sm:gap-2.5 items-center bg-panel-2 border border-line rounded-xl p-2 sm:p-2.5"
               >
                 <input
                   type="text"
@@ -325,7 +325,7 @@ export default function AbaGuilda() {
                     const val = e.target.value.toUpperCase()
                     setRanks((prev) => prev.map((item, i) => (i === idx ? { ...item, rank: val } : item)))
                   }}
-                  className="px-2.5 py-1.5 rounded-lg bg-panel border border-line font-anton text-center text-sm text-text"
+                  className="min-w-0 w-full px-1 sm:px-2.5 py-1.5 rounded-lg bg-panel border border-line font-anton text-center text-sm text-text"
                 />
                 <input
                   type="text"
@@ -335,7 +335,7 @@ export default function AbaGuilda() {
                     const val = e.target.value
                     setRanks((prev) => prev.map((item, i) => (i === idx ? { ...item, titulo: val } : item)))
                   }}
-                  className="px-3 py-1.5 rounded-lg bg-panel border border-line text-xs font-bold text-text"
+                  className="min-w-0 w-full px-3 py-1.5 rounded-lg bg-panel border border-line text-xs font-bold text-text"
                 />
                 <div className="flex items-center gap-1 font-mono text-[11px] text-muted">
                   <span>Nv</span>
@@ -351,7 +351,7 @@ export default function AbaGuilda() {
                         prev.map((item, i) => (i === idx ? { ...item, nivel_minimo: val } : item)),
                       )
                     }}
-                    className="w-16 px-2 py-1.5 rounded-lg bg-panel border border-line font-mono text-xs text-text disabled:opacity-50"
+                    className="w-12 sm:w-16 px-1.5 sm:px-2 py-1.5 rounded-lg bg-panel border border-line font-mono text-xs text-text disabled:opacity-50"
                   />
                 </div>
                 <span className="font-mono text-[11px] text-right text-holo-3 pr-1">
@@ -424,7 +424,7 @@ export default function AbaGuilda() {
                         prev.map((item, i) => (i === idx ? { ...item, nome: val } : item)),
                       )
                     }}
-                    className="px-3 py-1.5 rounded-lg bg-panel border border-line text-xs font-bold text-text"
+                    className="min-w-0 w-full px-3 py-1.5 rounded-lg bg-panel border border-line text-xs font-bold text-text"
                     placeholder="Nome da carta"
                   />
                   <button
