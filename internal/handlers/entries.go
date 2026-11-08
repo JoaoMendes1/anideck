@@ -366,10 +366,15 @@ func (h *EntriesHandler) HandleMarkEpisode(w http.ResponseWriter, r *http.Reques
 		return
 	}
 
+	var curadoRef *models.CuratedAnime
 	if curados := CarregarCuradoria(dbClient); len(curados) > 0 {
-		if curado, existe := curados[malID]; existe && episodioCuradoNoFuturo(curado, episodeNumber) {
-			http.Error(w, "Este episódio ainda não foi lançado", http.StatusBadRequest)
-			return
+		if curado, existe := curados[malID]; existe {
+			if episodioCuradoNoFuturo(curado, episodeNumber) {
+				http.Error(w, "Este episódio ainda não foi lançado", http.StatusBadRequest)
+				return
+			}
+			copia := curado
+			curadoRef = &copia
 		}
 	}
 
@@ -379,7 +384,12 @@ func (h *EntriesHandler) HandleMarkEpisode(w http.ResponseWriter, r *http.Reques
 		if strings.Contains(err.Error(), "duplicate key value violates unique constraint") || strings.Contains(err.Error(), "23505") {
 			promoverQueroAssistirParaAssistindo(dbClient, userID, malID)
 			marcarNotificacaoDoEpisodioComoLida(dbClient, userID, malID, episodeNumber)
+			w.Header().Set("Content-Type", "application/json")
 			w.WriteHeader(http.StatusOK)
+			_ = json.NewEncoder(w).Encode(map[string]interface{}{
+				"xp_earned": 0,
+				"reason":    "episódio já marcado",
+			})
 			return
 		}
 		log.Printf("[ERRO DB] HandleMarkEpisode (user=%s, mal_id=%d, ep=%d): %v", userID, malID, episodeNumber, err)
@@ -389,7 +399,14 @@ func (h *EntriesHandler) HandleMarkEpisode(w http.ResponseWriter, r *http.Reques
 
 	promoverQueroAssistirParaAssistindo(dbClient, userID, malID)
 	marcarNotificacaoDoEpisodioComoLida(dbClient, userID, malID, episodeNumber)
+	xpGanho, motivoXP := RegistrarXPEpisodio(dbClient, userID, malID, episodeNumber, curadoRef)
+
+	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusCreated)
+	_ = json.NewEncoder(w).Encode(map[string]interface{}{
+		"xp_earned": xpGanho,
+		"reason":    motivoXP,
+	})
 }
 
 // episodioCuradoNoFuturo verifica se a curadoria indica que o episódio ainda não foi ao ar.
@@ -465,6 +482,13 @@ func (h *EntriesHandler) HandleUnmarkEpisode(w http.ResponseWriter, r *http.Requ
 		return
 	}
 
+	_, _, _ = dbClient.From("xp_ledger").
+		Delete("", "").
+		Eq("user_id", userID).
+		Eq("mal_id", malID).
+		Eq("episode_number", episodeNumber).
+		Execute()
+
 	w.WriteHeader(http.StatusNoContent)
 }
 
@@ -500,6 +524,12 @@ func (h *EntriesHandler) HandleClearEpisodes(w http.ResponseWriter, r *http.Requ
 		http.Error(w, "Erro ao zerar episódios", http.StatusInternalServerError)
 		return
 	}
+
+	_, _, _ = dbClient.From("xp_ledger").
+		Delete("", "").
+		Eq("user_id", userID).
+		Eq("mal_id", malID).
+		Execute()
 
 	w.WriteHeader(http.StatusNoContent)
 }

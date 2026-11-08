@@ -78,6 +78,7 @@ func main() {
 	taxonomiaHandler := &handlers.TaxonomiaHandler{}
 	trilhasHandler := &handlers.TrilhasHandler{}
 	filaIAHandler := &handlers.FilaIAHandler{}
+	guildaHandler := &handlers.GuildaHandler{}
 
 	r := chi.NewRouter()
 	r.Use(chimw.RequestID)
@@ -131,6 +132,9 @@ func main() {
 		protegido.Get("/api/stats/year", statsHandler.HandleGetYearAnimes)
 		protegido.Get("/api/stats/rating", statsHandler.HandleGetRatingAnimes)
 		protegido.Get("/api/stats/status", statsHandler.HandleGetStatusAnimes)
+
+		protegido.Get("/api/guilda/resumo", guildaHandler.HandleResumoGuilda)
+		protegido.Get("/api/guilda", guildaHandler.HandleGetGuilda)
 
 		protegido.Delete("/api/account", accountHandler.HandleDeleteAccount)
 	})

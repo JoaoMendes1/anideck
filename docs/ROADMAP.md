@@ -44,6 +44,7 @@ Staging sobe já na Fase 1, como projeto esqueleto — mesmo padrão do JVM Syst
 | 11 · Home e navegação | ✅ Concluída (31/10/2026) |
 | 12 · Meu Gosto e distribuição | ✅ Concluída (08/11/2026) |
 | 13 · Reformulação Visual, Automação de Curadoria e Inteligência de Gosto | ✅ Concluída (08/11/2026) |
+| 14 · Guilda & Gamificação | 🔄 Em andamento (08/11/2026) |
 
 ---
 
@@ -687,6 +688,14 @@ automatizar demandas repetitivas de curadoria no Admin e aprofundar a interativi
 ### Bloco 5 — Novo Início (Logado) + Nova Landing & Login Beta
 - [x] Reformulação da Home logada com Hero Banner, trilhos amplos e cards 16:9 de progresso (#141)
 - [x] Nova Landing Page com vitrine ao vivo + selo Beta em Desenvolvimento e aviso de acesso limitado (`anidecksuporte@gmail.com`) (#142)
+
+## ⚔️ Fase 14: Guilda & Gamificação
+
+Motivo: materializar a visão de progressão de longo prazo (`VISAO_GAMIFICACAO.md`) com duas moedas independentes (ritmo de episódios marcados no tempo em `xp_ledger` vs bagagem por gênero em `view_user_genre_affinity`), sem punir quem cadastra acervo antigo nem permitir farm de Rank em lote.
+
+- [x] Ledger imutável de XP (`sql/039`), motor de Nível/Rank (`F`→`SS`), Especialista de Gênero (`N1`→`N5`), Insígnias e rotas `/api/guilda` (#145)
+- [ ] Tela da Guilda (`/guilda`), pílula de Nível/Rank na Navbar, atalho no menu de Perfil e feedback `+XX XP` ao marcar episódio (#146)
+- [ ] Aba Guilda no Painel Admin: economia de XP, faixas `F`→`SS` com prévia de distribuição, insígnias, auditoria e Kill Switch (#147)
 
 ## 🔧 Manutenção pós-v1
 
