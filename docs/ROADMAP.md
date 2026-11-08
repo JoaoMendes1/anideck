@@ -926,6 +926,11 @@ senha rotacionada (26), e o painel do provedor desfaz a configuração com um cl
       e foram migradas automaticamente. Criado endpoint `POST /api/admin/curation/auto-import-episodes`
       e botão de ação em 1 clique ("⚡ Importar da AniList") no banner de Obras Curadas do Painel Admin,
       além de preenchimento automático no formulário ao curar novas obras. Ver #195.
+- [x] **Suporte a obras em breve e anunciadas sem episódios.**
+      Obras anunciadas (`NOT_YET_RELEASED`) sem episódios agora possuem opção dedicada no Status Manual
+      do Admin, exibem o selo `em breve` no trilho do catálogo em vez de falso alerta de erro, e a página
+      de detalhes exibe o banner acolhedor "✨ Obra Anunciada · Em Breve" em vez do aviso de emergência.
+      Ver #196.
 
 ---
 

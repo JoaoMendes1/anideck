@@ -13,7 +13,7 @@ import CuradoriaLinks from '../components/CuradoriaLinks'
 import DestaquesRail from '../components/DestaquesRail'
 import ReorderableTags from '../components/ReorderableTags'
 import imageCompression from 'browser-image-compression'
-import { totalEpisodiosCurado, type CuratedAnime, type CuratedCharacter, type CuratedEpisode, type CuratedExternalLink, type CurationStatus } from '../types/curation'
+import { totalEpisodiosCurado, ehObraEmBreve, type CuratedAnime, type CuratedCharacter, type CuratedEpisode, type CuratedExternalLink, type CurationStatus } from '../types/curation'
 import ConfigIAModal from '../components/ConfigIAModal'
 import { AbaOlheiro } from '../components/AbaOlheiro'
 import { AbaControle } from '../components/AbaControle'
@@ -1049,7 +1049,8 @@ export default function PainelAdmin() {
 
         <div className="min-w-0">
         {abaAtiva === 'curadoria' && (() => {
-          const semEps = destaques.filter(d => totalEpisodiosCurado(d) === 0)
+          const semEps = destaques.filter(d => totalEpisodiosCurado(d) === 0 && !ehObraEmBreve(d))
+          const emBreve = destaques.filter(d => ehObraEmBreve(d))
           return (
             <div className={`mb-6 min-w-0 ${formularioAberto ? 'hidden lg:block' : 'block'}`}>
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
@@ -1091,6 +1092,11 @@ export default function PainelAdmin() {
                     >
                       Editar 1º da fila
                     </button>
+                  </div>
+                )}
+                {semEps.length === 0 && emBreve.length > 0 && (
+                  <div className="flex items-center gap-2 bg-holo-3/10 border border-holo-3/30 text-holo-3 px-3.5 py-2 rounded-xl text-xs font-bold shrink-0">
+                    <span>✨ {emBreve.length} anime(s) anunciado(s) (em breve)</span>
                   </div>
                 )}
               </div>
@@ -1274,13 +1280,21 @@ export default function PainelAdmin() {
                             {[
                               { value: 'RELEASING', label: 'Lançamento' },
                               { value: 'FINISHED', label: 'Finalizado' },
+                              { value: 'NOT_YET_RELEASED', label: 'Em breve' },
                             ].map((opt) => (
                               <button
                                 key={opt.value}
                                 type="button"
                                 onClick={() => setStatus(opt.value)}
-                                className={`px-3 py-1.5 rounded-full text-xs font-bold border cursor-pointer transition-colors ${status === opt.value ? 'bg-coral/20 border-coral text-coral' : 'bg-panel-2 border-line text-muted'
-                                  }`}
+                                className={`px-3 py-1.5 rounded-full text-xs font-bold border cursor-pointer transition-colors ${
+                                  status === opt.value
+                                    ? opt.value === 'NOT_YET_RELEASED'
+                                      ? 'bg-holo-3/20 border-holo-3 text-holo-3'
+                                      : opt.value === 'FINISHED'
+                                        ? 'bg-green/20 border-green text-green'
+                                        : 'bg-coral/20 border-coral text-coral'
+                                    : 'bg-panel-2 border-line text-muted hover:border-muted-2'
+                                }`}
                               >
                                 {opt.label}
                               </button>

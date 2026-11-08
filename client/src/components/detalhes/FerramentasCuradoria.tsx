@@ -22,13 +22,14 @@ interface Props {
   curada: boolean
   statusCuradoria?: string
   semEpisodios: boolean
+  emBreve?: boolean
 }
 
-export default function FerramentasCuradoria({ malId, curada, statusCuradoria, semEpisodios }: Props) {
+export default function FerramentasCuradoria({ malId, curada, statusCuradoria, semEpisodios, emBreve }: Props) {
   const navigate = useNavigate()
   const { showToast } = useToast()
   // Obra sem episódio é emergência: abre sozinho, independente da preferência.
-  const [aberta, setAberta] = useState(() => semEpisodios || lerPreferencia())
+  const [aberta, setAberta] = useState(() => (semEpisodios && !emBreve) || lerPreferencia())
   const [forcarIA, setForcarIA] = useState(false)
   const [enviando, setEnviando] = useState(false)
 
@@ -66,16 +67,22 @@ export default function FerramentasCuradoria({ malId, curada, statusCuradoria, s
   }
 
   return (
-    <div className={`rounded-2xl border bg-panel/90 ${semEpisodios ? 'border-coral/60' : curada ? 'border-green/35' : 'border-gold/40'}`}>
+    <div className={`rounded-2xl border bg-panel/90 ${semEpisodios ? 'border-coral/60' : emBreve ? 'border-holo-3/40' : curada ? 'border-green/35' : 'border-gold/40'}`}>
       <button type="button" onClick={alternar} aria-expanded={aberta} className="w-full flex items-center gap-2 px-3.5 py-2.5 text-left cursor-pointer">
         <Wrench size={14} className="text-gold shrink-0" aria-hidden />
         <span className="text-[12px] font-bold text-gold">Curadoria</span>
         <span
           className={`px-2 py-0.5 rounded-full text-[10px] font-mono uppercase border ${
-            semEpisodios ? 'bg-coral/15 text-coral border-coral/50' : curada ? 'bg-green/12 text-green border-green/40' : 'bg-gold/12 text-gold border-gold/40'
+            semEpisodios
+              ? 'bg-coral/15 text-coral border-coral/50'
+              : emBreve
+                ? 'bg-holo-3/15 text-holo-3 border-holo-3/40'
+                : curada
+                  ? 'bg-green/12 text-green border-green/40'
+                  : 'bg-gold/12 text-gold border-gold/40'
           }`}
         >
-          {semEpisodios ? 'Sem episódios' : curada ? `Curado · ${rotuloStatus}` : 'Não curado'}
+          {semEpisodios ? 'Sem episódios' : emBreve ? (curada ? 'Curado · Em breve' : 'Em breve') : curada ? `Curado · ${rotuloStatus}` : 'Não curado'}
         </span>
         <span className="font-mono text-[10px] text-muted-2 ml-auto hidden sm:inline">MAL #{malId}</span>
         <ChevronDown size={15} className={`text-muted shrink-0 transition-transform ${aberta ? 'rotate-180' : ''} sm:ml-2 ml-auto`} aria-hidden />

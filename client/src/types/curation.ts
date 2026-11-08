@@ -62,3 +62,9 @@ export interface CuratedAnime {
 /** Retorna quantos episódios o anime realmente exibe na página de Detalhes (curadoria manual ou cache da AniList). */
 export const totalEpisodiosCurado = (d: CuratedAnime): number =>
   (d.custom_episodes?.length || 0) || (d.cached_episodes || 0)
+
+/** Identifica se a obra foi apenas anunciada e ainda não possui previsão ou episódios lançados. */
+export const ehObraEmBreve = (d: CuratedAnime): boolean => {
+  const st = (d.custom_status || '').toUpperCase()
+  return st === 'NOT_YET_RELEASED' || st === 'NOT YET AIRED' || st === 'EM BREVE' || st === 'ANUNCIADO'
+}

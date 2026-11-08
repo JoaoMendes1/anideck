@@ -1,6 +1,6 @@
 import { useState, useMemo } from 'react'
-import { Search, Trash2, ImageOff, CheckCircle2, AlertCircle, Film, Plus, X } from 'lucide-react'
-import { totalEpisodiosCurado, type CuratedAnime } from '../types/curation'
+import { Search, Trash2, ImageOff, CheckCircle2, AlertCircle, Film, Plus, X, Clock } from 'lucide-react'
+import { totalEpisodiosCurado, ehObraEmBreve, type CuratedAnime } from '../types/curation'
 
 interface DestaquesRailProps {
   destaques: CuratedAnime[]
@@ -11,7 +11,7 @@ interface DestaquesRailProps {
   novoAtivo: boolean
 }
 
-type FiltroTipo = 'ALL' | 'PARCIAL' | 'COMPLETO' | 'REVISAR' | 'NO_COVER' | 'NO_EPISODES'
+type FiltroTipo = 'ALL' | 'PARCIAL' | 'COMPLETO' | 'REVISAR' | 'NO_COVER' | 'NO_EPISODES' | 'EM_BREVE'
 
 // O estado de curadoria existe para responder "onde eu parei?" com 100+ animes cadastrados.
 // Sem aparecer aqui na lista, ele só era visível abrindo cada anime um por um — que é
@@ -39,15 +39,20 @@ export default function DestaquesRail({
     let revisar = 0
     let semCapa = 0
     let semEps = 0
+    let emBreve = 0
     for (const d of destaques) {
       const st = d.curation_status || 'parcial'
       if (st === 'parcial') parcial++
       else if (st === 'completo') completo++
       else if (st === 'revisar') revisar++
       if (!d.custom_cover_image) semCapa++
-      if (totalEpisodiosCurado(d) === 0) semEps++
+      if (ehObraEmBreve(d)) {
+        emBreve++
+      } else if (totalEpisodiosCurado(d) === 0) {
+        semEps++
+      }
     }
-    return { parcial, completo, revisar, semCapa, semEps }
+    return { parcial, completo, revisar, semCapa, semEps, emBreve }
   }, [destaques])
 
   const destaquesFiltrados = useMemo(() => {
@@ -64,7 +69,8 @@ export default function DestaquesRail({
       if (filtro === 'COMPLETO') return st === 'completo'
       if (filtro === 'REVISAR') return st === 'revisar'
       if (filtro === 'NO_COVER') return !d.custom_cover_image
-      if (filtro === 'NO_EPISODES') return totalEpisodiosCurado(d) === 0
+      if (filtro === 'NO_EPISODES') return totalEpisodiosCurado(d) === 0 && !ehObraEmBreve(d)
+      if (filtro === 'EM_BREVE') return ehObraEmBreve(d)
 
       return true
     })
@@ -125,12 +131,22 @@ export default function DestaquesRail({
           {contagens.semCapa > 0 && (
             <FilterChip active={filtro === 'NO_COVER'} onClick={() => setFiltro('NO_COVER')} label={`Sem Capa (${contagens.semCapa})`} icon={<ImageOff size={10} />} />
           )}
-          <FilterChip
-            active={filtro === 'NO_EPISODES'}
-            onClick={() => setFiltro('NO_EPISODES')}
-            label={`Sem Eps (${contagens.semEps})`}
-            icon={<Film size={10} />}
-          />
+          {contagens.semEps > 0 && (
+            <FilterChip
+              active={filtro === 'NO_EPISODES'}
+              onClick={() => setFiltro('NO_EPISODES')}
+              label={`Sem Eps (${contagens.semEps})`}
+              icon={<Film size={10} />}
+            />
+          )}
+          {contagens.emBreve > 0 && (
+            <FilterChip
+              active={filtro === 'EM_BREVE'}
+              onClick={() => setFiltro('EM_BREVE')}
+              label={`Em Breve (${contagens.emBreve})`}
+              icon={<Clock size={10} />}
+            />
+          )}
         </div>
       </div>
 
@@ -177,7 +193,15 @@ export default function DestaquesRail({
                       {anime.custom_characters?.length || 0} personagens
                       {totalEpisodiosCurado(anime) > 0 && ` · ${totalEpisodiosCurado(anime)} eps`}
                     </p>
-                    {totalEpisodiosCurado(anime) === 0 && (
+                    {totalEpisodiosCurado(anime) === 0 && ehObraEmBreve(anime) && (
+                      <span
+                        className="text-[9px] font-mono uppercase tracking-wider px-1.5 py-0.5 rounded border text-holo-3 border-holo-3/40 bg-holo-3/10"
+                        title="Obra anunciada / em breve (ainda sem episódios)"
+                      >
+                        ✨ em breve
+                      </span>
+                    )}
+                    {totalEpisodiosCurado(anime) === 0 && !ehObraEmBreve(anime) && (
                       <span
                         className="text-[9px] font-mono uppercase tracking-wider px-1.5 py-0.5 rounded border text-gold border-gold/40 bg-gold/10"
                         title="Nenhum episódio encontrado na curadoria nem no cache da AniList"

@@ -333,10 +333,10 @@ export default function Detalhes() {
     episodiosJaLancados,
     maxAssistido
   )
-  const naoLancado = anime.status === 'NOT_YET_RELEASED' || anime.status === 'Not yet aired'
+  const naoLancado = anime.status === 'NOT_YET_RELEASED' || anime.status === 'Not yet aired' || anime.status === 'Em breve' || anime.status === 'Ainda não lançado'
   const ultimoDisponivel = naoLancado ? 0 : ultimoEpisodioDisponivel(totalEpisodios, anime.nextAiringEpisode?.episode, episodiosAssistidos)
   const obraTerminou = anime.status === 'FINISHED' || anime.status === 'Finished Airing'
-  const semEpisodios = totalEpisodios <= 0
+  const semEpisodios = totalEpisodios <= 0 && !naoLancado
   const relacoes = (anime.relations ?? []).filter(r => RELACOES_MOSTRADAS.includes(r.relation) && r.entry[0])
   const sinopse = anime.synopsis?.replace(/&#34;/g, '"').replace(/&#39;/g, "'") ?? ''
   const sinopseLonga = sinopse.length > 420
@@ -479,7 +479,7 @@ export default function Detalhes() {
 
         {isAdmin && (
           <div className="mt-6">
-            <FerramentasCuradoria malId={anime.mal_id} curada={Boolean(anime.is_curated)} statusCuradoria={anime.curation_status} semEpisodios={semEpisodios} />
+            <FerramentasCuradoria malId={anime.mal_id} curada={Boolean(anime.is_curated)} statusCuradoria={anime.curation_status} semEpisodios={semEpisodios} emBreve={naoLancado} />
           </div>
         )}
 

@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
-import { Check, Play, Lock, ChevronDown, AlertTriangle } from 'lucide-react'
+import { Check, Play, Lock, ChevronDown, AlertTriangle, Clock } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import { useToast } from '../contexts/ToastContext'
 import { obterTextoDiaLancamento } from '../lib/deckHelpers'
@@ -187,7 +187,29 @@ export default function EpisodeGrid({ malId, totalEpisodes, streamingEpisodes = 
         </span>
       </div>
 
-      {episodesCount === 0 ? (
+      {episodesCount === 0 && (status === 'NOT_YET_RELEASED' || status === 'Not yet aired' || status === 'Em breve' || status === 'Ainda não lançado' || status === 'ANUNCIADO') ? (
+        <div className="p-6 rounded-2xl bg-holo-3/5 border border-holo-3/30 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 shadow-[0_0_24px_rgba(63,224,240,0.08)] select-none">
+          <div className="flex items-start gap-3.5">
+            <div className="w-10 h-10 rounded-xl bg-holo-3/15 border border-holo-3/30 text-holo-3 flex items-center justify-center shrink-0 mt-0.5">
+              <Clock size={20} />
+            </div>
+            <div>
+              <span className="inline-block font-mono text-[10px] font-bold uppercase tracking-widest text-holo-3 mb-1">
+                ✨ Obra Anunciada · Em Breve
+              </span>
+              <h3 className="font-bold text-sm text-text leading-snug">
+                Esta obra foi anunciada e ainda não possui episódios lançados.
+              </h3>
+              <p className="text-xs text-muted mt-1 leading-relaxed">
+                Você pode salvá-la em <b className="text-text">Quero Assistir</b> no seu Deck. Assim que os episódios forem ao ar ou a data for confirmada, o calendário e a grade serão liberados automaticamente.
+              </p>
+            </div>
+          </div>
+          <span className="shrink-0 px-3.5 py-1.5 rounded-full bg-holo-3/15 text-holo-3 font-mono font-bold text-xs border border-holo-3/30">
+            Em Breve
+          </span>
+        </div>
+      ) : episodesCount === 0 ? (
         <div className="p-5 rounded-2xl bg-coral/10 border border-coral/40 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 shadow-[0_0_24px_rgba(255,107,107,0.12)]">
           <div className="flex items-start gap-3.5">
             <div className="w-10 h-10 rounded-xl bg-coral/20 border border-coral/40 text-coral flex items-center justify-center shrink-0 mt-0.5">
@@ -218,7 +240,7 @@ export default function EpisodeGrid({ malId, totalEpisodes, streamingEpisodes = 
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2.5 sm:gap-4 md:gap-5">
         {displayEpisodes.map((ep) => {
           const isWatched = watched.includes(ep.number)
-          const obraNaoLancada = status === 'NOT_YET_RELEASED' || status === 'Ainda não lançado'
+          const obraNaoLancada = status === 'NOT_YET_RELEASED' || status === 'Not yet aired' || status === 'Ainda não lançado' || status === 'Em breve' || status === 'ANUNCIADO'
           // Trava tripla: status da obra, nextAiringEpisode da API/curadoria, OU data estimada/curada futura
           const dataDoEpisodio = calcularDataEstimadaDoEpisodio(ep.number, ep.airedAt)
           const dataEhFutura = dataDoEpisodio ? dataDoEpisodio.getTime() > agora : false
