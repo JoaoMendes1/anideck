@@ -4,11 +4,12 @@
 // por um instante. Tocar abre o painel com os números e o que faz cada barra mudar.
 import { useEffect, useRef, useState } from 'react'
 import { Link, useLocation } from 'react-router-dom'
-import { Flame, Sparkles, Users, X } from 'lucide-react'
+import { Flame, Sparkles, Users, X, Gem } from 'lucide-react'
 import { obterEstiloRank } from '../lib/guilda'
 import { avisosDaMudanca, type AvisoDoHud, type FotoDoJogador } from '../lib/hud'
 import { useResumoGuilda } from '../hooks/useResumoGuilda'
 import { useComunidade } from '../hooks/useComunidade'
+import { useCarteira } from '../hooks/useCarteira'
 import BarrasVitais from './comunidade/BarrasVitais'
 
 // Tempo que cada aviso fica na tela; a animação em index.css (.aviso-hud) dura o mesmo.
@@ -19,6 +20,7 @@ const ESTILO_DO_AVISO: Record<AvisoDoHud['tipo'], string> = {
   nivel: 'text-void bg-gradient-to-r from-holo-1 to-holo-2 border-transparent',
   hp: 'text-coral border-coral/50',
   mp: 'text-holo-3 border-holo-3/50',
+  cristal: 'text-holo-3 border-holo-3/50',
 }
 
 // O `largura` muda conforme o lugar: na coluna, flex-1 encolheria a altura a zero.
@@ -33,6 +35,7 @@ function MiniBarra({ pct, classe, largura = 'w-full' }: { pct: number; classe: s
 export default function PilulaGuilda() {
   const status = useResumoGuilda()
   const { estado } = useComunidade()
+  const { saldo } = useCarteira()
   const [aberto, setAberto] = useState(false)
   const [avisos, setAvisos] = useState<(AvisoDoHud & { id: number })[]>([])
   const raiz = useRef<HTMLDivElement>(null)
@@ -47,7 +50,7 @@ export default function PilulaGuilda() {
   // registra a foto: carregar a página não é ganho.
   useEffect(() => {
     if (!status) return
-    const foto: FotoDoJogador = { xp: status.xp_total, nivel: status.nivel, hp, mp }
+    const foto: FotoDoJogador = { xp: status.xp_total, nivel: status.nivel, hp, mp, cristais: saldo }
     const novos = avisosDaMudanca(anterior.current, foto)
     // Sem comunidade na leitura anterior, HP e MP entram agora como base, sem aviso.
     anterior.current = foto
@@ -56,7 +59,7 @@ export default function PilulaGuilda() {
     setAvisos(atuais => [...atuais, ...comId].slice(-4))
     const ids = new Set(comId.map(a => a.id))
     window.setTimeout(() => setAvisos(atuais => atuais.filter(a => !ids.has(a.id))), DURACAO_AVISO)
-  }, [status, hp, mp])
+  }, [status, hp, mp, saldo])
 
   // Fecha ao trocar de página, ao tocar fora e com Esc.
   useEffect(() => {
@@ -174,6 +177,15 @@ export default function PilulaGuilda() {
               {status.xp_hoje > 0 ? `+${status.xp_hoje} XP hoje` : 'Nenhum XP hoje ainda'}
               {status.teto_diario > 0 ? ` (o teto diário é ${status.teto_diario}).` : '.'} Cada episódio marcado vale XP.
             </p>
+          </div>
+
+          <div className="flex items-center justify-between p-2.5 rounded-xl bg-panel-2/60 border border-line/60 mb-4">
+            <span className="inline-flex items-center gap-1.5 font-mono text-[11px] text-muted uppercase tracking-wider">
+              <Gem size={13} className="text-holo-3" aria-hidden /> Cristais
+            </span>
+            <span className="font-mono text-xs font-bold text-holo-3">
+              {saldo.toLocaleString('pt-BR')} 💎
+            </span>
           </div>
 
           {estado ? (

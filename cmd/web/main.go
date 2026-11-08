@@ -80,6 +80,7 @@ func main() {
 	filaIAHandler := &handlers.FilaIAHandler{}
 	guildaHandler := &handlers.GuildaHandler{}
 	comunidadeHandler := &handlers.ComunidadeHandler{}
+	economiaHandler := &handlers.EconomiaHandler{}
 
 	r := chi.NewRouter()
 	r.Use(chimw.RequestID)
@@ -140,6 +141,7 @@ func main() {
 
 		protegido.Get("/api/guilda/resumo", guildaHandler.HandleResumoGuilda)
 		protegido.Get("/api/guilda", guildaHandler.HandleGetGuilda)
+		protegido.Get("/api/economia/carteira", economiaHandler.HandleGetCarteira)
 
 		// Comunidade: perfil público, Mana e Vitalidade, conversa por episódio.
 		// O escudo de spoiler é a RLS do sql/041; aqui tudo usa o token de quem pede.
@@ -226,6 +228,11 @@ func main() {
 		// Guilda & Gamificação: economia de XP, faixas F→SS, insígnias e auditoria
 		admin.Get("/api/admin/guilda", guildaHandler.HandleGetAdminGuilda)
 		admin.Put("/api/admin/guilda", guildaHandler.HandleSaveAdminGuilda)
+
+		// Economia de Cristais: carteira global, auditoria e ajuste manual
+		admin.Get("/api/admin/economia", economiaHandler.HandleGetAdminEconomia)
+		admin.Put("/api/admin/economia", economiaHandler.HandleSaveAdminEconomia)
+		admin.Post("/api/admin/economia/ajuste", economiaHandler.HandleAjusteManual)
 
 		// Agente Olheiro: scan sob demanda e revisão da fila de sugestões
 		admin.Get("/api/admin/olheiro/tags", olheiroHandler.HandleListarTagsDesejadas)

@@ -74,6 +74,7 @@ SELECT pg_get_viewdef('nome_da_view'::regclass, true);
 | `042_handle_reservado.sql` | Gatilho em `profiles`: @ reservado (admin, administrador, anideck...) só para quem está em `app_admins` | 08/11/2026 |
 | `043_mais_reacoes.sql` | `episode_reactions` passa de 6 para 16 reações (troca o `CHECK`). Aplicar antes de promover o código | 08/11/2026 |
 | `044_tarefas_periodicas.sql` | Fase 16 (16.0, #166): tabela `tarefas_periodicas` com `UNIQUE (nome, periodo)` e função atômica `reservar_tarefa_periodica` (só `service_role`). Aplicar **antes** de promover o código | — |
+| `045_cristais_economia.sql` | Fase 16 (16.1a, #167): tabela `crystal_ledger` (com RLS e UNIQUE para idempotência), RPCs `meu_saldo_cristais`, `creditar_cristais`, `debitar_cristais` com trava anti-saldo negativo e chave `economia_cristais` em `app_settings`. Aplicar **antes** de promover o código | — |
 
 Datas com `~` são a data do commit, não da aplicação no Supabase.
 

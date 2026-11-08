@@ -724,7 +724,7 @@ Motivo: um motivo diário para voltar (`VISAO_COMUNIDADE.md`: Economia, Cartas, 
 
 - [x] 16.0 Tarefas periódicas no worker: base da liga, da raridade das cartas e da Fase 17 (#166)
 - [ ] 16.1 Cristais, missões e bônus de Vitalidade
-  - [ ] 16.1a Cristais: carteira com extrato e painel de economia (#167)
+  - [x] 16.1a Cristais: carteira com extrato e painel de economia (#167)
   - [ ] 16.1b Missões diárias (#168)
   - [ ] 16.1c Bônus de XP por Vitalidade alta e Mana mais rápida (#169)
 - [ ] 16.2 Loja cosmética
@@ -769,6 +769,12 @@ mecânicas). **Pré-requisitos:** Fase 16 concluída e base com gente suficiente
 > Correção e ajuste feitos depois do escopo da v1 fechar. **Não são fases** — não seguem a
 > numeração e não abrem escopo novo. Ficam registrados aqui em ordem cronológica inversa para
 > não sumirem: fase concluída não deve ser reaberta só para receber um conserto.
+
+### 08/11/2026 — Cristais, carteira com extrato e painel de economia (#167)
+
+- [x] **Cristais (crystal_ledger, sql/045):** saldo derivado atomicamente por `SUM(quantidade)` (`meu_saldo_cristais`), débitos serializados com `pg_advisory_xact_lock` impedindo saldo negativo, idempotência via `UNIQUE (user_id, motivo, referencia)` e parâmetros em `app_settings.economia_cristais`.
+- [x] **Extrato na Guilda e HUD:** pílula e alertas HUD exibem avisos instantâneos de Cristais (+15 💎 / -40 💎); aba de livro-razão na Guilda permite alternar entre histórico de XP e extrato de Cristais.
+- [x] **Aba Economia no Painel Admin:** monitoramento de cristais em circulação e total de transações, edição ao vivo de regras e tetos, suporte a ajuste manual com motivo obrigatório e auditoria de transações recentes.
 
 ### 08/11/2026 — Link de streaming no banner, rolagem desktop e navegação do Admin (#193)
 

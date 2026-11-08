@@ -39,9 +39,10 @@ export interface FotoDoJogador {
   nivel: number
   hp: number | null
   mp: number | null
+  cristais?: number | null
 }
 
-export type TipoDeAviso = 'xp' | 'nivel' | 'hp' | 'mp'
+export type TipoDeAviso = 'xp' | 'nivel' | 'hp' | 'mp' | 'cristal'
 
 export interface AvisoDoHud {
   tipo: TipoDeAviso
@@ -51,7 +52,7 @@ export interface AvisoDoHud {
 /**
  * Os avisos que uma mudança merece. A primeira leitura não gera aviso (não houve ganho,
  * só carregou). A Mana só avisa quando cai, porque a recarga natural mostraria "+1 MP"
- * o tempo todo.
+ * o tempo todo. Cristais mostram qualquer ganho ou gasto.
  */
 export function avisosDaMudanca(antes: FotoDoJogador | null, depois: FotoDoJogador): AvisoDoHud[] {
   if (!antes) return []
@@ -65,6 +66,16 @@ export function avisosDaMudanca(antes: FotoDoJogador | null, depois: FotoDoJogad
   }
   if (antes.mp !== null && depois.mp !== null && depois.mp < antes.mp) {
     avisos.push({ tipo: 'mp', texto: `−${antes.mp - depois.mp} MP` })
+  }
+  if (
+    antes.cristais !== undefined &&
+    antes.cristais !== null &&
+    depois.cristais !== undefined &&
+    depois.cristais !== null &&
+    depois.cristais !== antes.cristais
+  ) {
+    const diff = depois.cristais - antes.cristais
+    avisos.push({ tipo: 'cristal', texto: `${diff > 0 ? '+' : '−'}${Math.abs(diff)} 💎` })
   }
   return avisos
 }

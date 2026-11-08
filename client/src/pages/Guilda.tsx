@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
-import { Shield, Sparkles, Lock, Flame, Award, ChevronRight } from 'lucide-react'
+import { Shield, Sparkles, Lock, Flame, Award, ChevronRight, Gem } from 'lucide-react'
 import { useSessao } from '../contexts/SessaoContext'
+import { useCarteira } from '../hooks/useCarteira'
 import CartaoVitais from '../components/comunidade/CartaoVitais'
 import { chaveDoUsuario, lerDaMemoria, guardarNaMemoria } from '../lib/cacheDeTela'
 import {
@@ -19,6 +20,8 @@ export default function Guilda() {
   const [dados, setDados] = useState<DadosDaGuilda | null>(emMemoria ?? null)
   const [carregando, setCarregando] = useState(!emMemoria)
   const [erro, setErro] = useState(false)
+  const [abaLivroRazao, setAbaLivroRazao] = useState<'xp' | 'cristais'>('xp')
+  const { saldo: saldoCristais, movimentos: movimentosCristais } = useCarteira()
 
   useEffect(() => {
     if (!session?.access_token || !chave) return
@@ -143,6 +146,9 @@ export default function Guilda() {
                       <Flame size={11} /> Streak {status.streak_atual}d
                     </span>
                   )}
+                  <span className="inline-flex items-center gap-1 font-mono text-[10px] font-bold px-2.5 py-0.5 rounded-full bg-holo-3/15 border border-holo-3/40 text-holo-3">
+                    <Gem size={11} /> {saldoCristais.toLocaleString('pt-BR')} 💎
+                  </span>
                   {!status.gamificacao_ativa && (
                     <span className="font-mono text-[10px] font-bold px-2.5 py-0.5 rounded-full bg-coral/15 border border-coral/40 text-coral">
                       XP em manutenção
@@ -185,67 +191,163 @@ export default function Guilda() {
             </div>
           </section>
 
-          {/* EXTRATO DO LEDGER DE XP */}
+          {/* LIVRO-RAZÃO: XP E CRISTAIS */}
           <section className="p-5 sm:p-6 rounded-2xl bg-panel border border-line">
-            <div className="flex flex-wrap items-center justify-between gap-2 mb-3">
+            <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
               <div>
                 <p className="font-mono text-[10px] text-muted-2 uppercase tracking-widest m-0">
-                  // livro-razão (xp_ledger)
+                  // livro-razão ({abaLivroRazao === 'xp' ? 'xp_ledger' : 'crystal_ledger'})
                 </p>
-                <h3 className="font-anton text-lg uppercase m-0 mt-0.5">Como você ganhou XP</h3>
+                <h3 className="font-anton text-lg uppercase m-0 mt-0.5">
+                  {abaLivroRazao === 'xp' ? 'Como você ganhou XP' : 'Extrato de Cristais'}
+                </h3>
               </div>
-              <span className="font-mono text-[10.5px] text-muted bg-panel-2 border border-line px-2.5 py-1 rounded-full">
-                Base +{economia.xp_base_episodio} XP · Cedo +{economia.bonus_cedo} XP
-              </span>
+              <div className="flex items-center gap-1.5 p-1 rounded-xl bg-panel-2 border border-line">
+                <button
+                  type="button"
+                  onClick={() => setAbaLivroRazao('xp')}
+                  className={`px-3 py-1 rounded-lg font-mono text-xs font-bold transition-colors cursor-pointer ${
+                    abaLivroRazao === 'xp'
+                      ? 'bg-holo-1 text-void'
+                      : 'text-muted hover:text-text'
+                  }`}
+                >
+                  XP
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setAbaLivroRazao('cristais')}
+                  className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-lg font-mono text-xs font-bold transition-colors cursor-pointer ${
+                    abaLivroRazao === 'cristais'
+                      ? 'bg-holo-3 text-void'
+                      : 'text-muted hover:text-text'
+                  }`}
+                >
+                  <Gem size={12} /> Cristais ({saldoCristais.toLocaleString('pt-BR')} 💎)
+                </button>
+              </div>
             </div>
 
-            {extrato.length === 0 ? (
-              <div className="p-5 rounded-xl bg-panel-2 border border-line text-center">
-                <p className="text-sm text-muted m-0">
-                  Nenhum episódio com XP registrado ainda. Marque episódios assistidos no seu Deck ou
-                  na página de uma obra para iniciar sua jornada!
-                </p>
-              </div>
-            ) : (
-              <div className="divide-y divide-line">
-                {extrato.map((item) => {
-                  const reduzido = ehMotivoReduzido(item.reason)
-                  return (
-                    <div
-                      key={`${item.mal_id}-${item.episode_number}`}
-                      className="py-2.5 flex items-center justify-between gap-3 text-xs sm:text-sm"
-                    >
-                      <div className="min-w-0">
-                        <Link
-                          to={`/anime/${item.mal_id}`}
-                          className="font-bold text-text hover:text-holo-3 transition-colors line-clamp-1"
-                        >
-                          {item.titulo_anime} · <span className="font-mono">ep {item.episode_number}</span>
-                        </Link>
-                        <div className="font-mono text-[10px] text-muted-2 mt-0.5 flex flex-wrap items-center gap-2">
-                          <span>{item.reason}</span>
-                          {item.de_hoje && (
-                            <span className="px-1.5 py-0.2 rounded bg-holo-3/15 text-holo-3">hoje</span>
-                          )}
-                        </div>
-                      </div>
-                      <span
-                        className={`font-mono font-bold text-xs sm:text-sm shrink-0 ${
-                          reduzido ? 'text-gold' : 'text-green'
-                        }`}
-                      >
-                        +{item.xp_earned} XP
-                      </span>
-                    </div>
-                  )
-                })}
-              </div>
-            )}
+            {abaLivroRazao === 'xp' ? (
+              <>
+                <div className="flex items-center justify-end mb-3">
+                  <span className="font-mono text-[10.5px] text-muted bg-panel-2 border border-line px-2.5 py-1 rounded-full">
+                    Base +{economia.xp_base_episodio} XP · Cedo +{economia.bonus_cedo} XP
+                  </span>
+                </div>
 
-            <p className="font-mono text-[10.5px] text-muted-2 mt-4 mb-0 leading-relaxed">
-              Cada linha guarda quanto valeu <b className="text-text">na hora</b>. Desmarcar um
-              episódio devolve exatamente isso, e listas importadas em lote não inflam seu Rank.
-            </p>
+                {extrato.length === 0 ? (
+                  <div className="p-5 rounded-xl bg-panel-2 border border-line text-center">
+                    <p className="text-sm text-muted m-0">
+                      Nenhum episódio com XP registrado ainda. Marque episódios assistidos no seu Deck ou
+                      na página de uma obra para iniciar sua jornada!
+                    </p>
+                  </div>
+                ) : (
+                  <div className="divide-y divide-line">
+                    {extrato.map((item) => {
+                      const reduzido = ehMotivoReduzido(item.reason)
+                      return (
+                        <div
+                          key={`${item.mal_id}-${item.episode_number}`}
+                          className="py-2.5 flex items-center justify-between gap-3 text-xs sm:text-sm"
+                        >
+                          <div className="min-w-0">
+                            <Link
+                              to={`/anime/${item.mal_id}`}
+                              className="font-bold text-text hover:text-holo-3 transition-colors line-clamp-1"
+                            >
+                              {item.titulo_anime} · <span className="font-mono">ep {item.episode_number}</span>
+                            </Link>
+                            <div className="font-mono text-[10px] text-muted-2 mt-0.5 flex flex-wrap items-center gap-2">
+                              <span>{item.reason}</span>
+                              {item.de_hoje && (
+                                <span className="px-1.5 py-0.2 rounded bg-holo-3/15 text-holo-3">hoje</span>
+                              )}
+                            </div>
+                          </div>
+                          <span
+                            className={`font-mono font-bold text-xs sm:text-sm shrink-0 ${
+                              reduzido ? 'text-gold' : 'text-green'
+                            }`}
+                          >
+                            +{item.xp_earned} XP
+                          </span>
+                        </div>
+                      )
+                    })}
+                  </div>
+                )}
+
+                <p className="font-mono text-[10.5px] text-muted-2 mt-4 mb-0 leading-relaxed">
+                  Cada linha guarda quanto valeu <b className="text-text">na hora</b>. Desmarcar um
+                  episódio devolve exatamente isso, e listas importadas em lote não inflam seu Rank.
+                </p>
+              </>
+            ) : (
+              <>
+                <div className="flex items-center justify-between p-3 rounded-xl bg-panel-2 border border-line/60 mb-3">
+                  <div className="flex items-center gap-2.5">
+                    <div className="w-8 h-8 rounded-lg bg-holo-3/15 grid place-items-center text-holo-3">
+                      <Gem size={18} />
+                    </div>
+                    <div>
+                      <span className="font-mono text-[10px] text-muted-2 uppercase tracking-wider block">Saldo da Carteira</span>
+                      <span className="font-anton text-xl text-holo-3">{saldoCristais.toLocaleString('pt-BR')} 💎</span>
+                    </div>
+                  </div>
+                  <span className="font-mono text-[10.5px] text-muted">
+                    {movimentosCristais.length} {movimentosCristais.length === 1 ? 'movimento' : 'movimentos'}
+                  </span>
+                </div>
+
+                {movimentosCristais.length === 0 ? (
+                  <div className="p-5 rounded-xl bg-panel-2 border border-line text-center">
+                    <p className="text-sm text-muted m-0">
+                      Nenhum movimento de Cristais registrado ainda. Cristais são ganhos em missões diárias,
+                      desafios de clã e eventos da comunidade!
+                    </p>
+                  </div>
+                ) : (
+                  <div className="divide-y divide-line">
+                    {movimentosCristais.map((m) => {
+                      const positivo = m.quantidade > 0
+                      const dataFormatada = new Date(m.criado_em).toLocaleString('pt-BR', {
+                        day: '2-digit',
+                        month: '2-digit',
+                        hour: '2-digit',
+                        minute: '2-digit',
+                      })
+                      return (
+                        <div key={m.id} className="py-2.5 flex items-center justify-between gap-3 text-xs sm:text-sm">
+                          <div className="min-w-0">
+                            <span className="font-bold text-text capitalize block truncate">
+                              {m.motivo.replace(/_/g, ' ')}
+                            </span>
+                            <div className="font-mono text-[10px] text-muted-2 mt-0.5 flex flex-wrap items-center gap-2">
+                              <span>{dataFormatada}</span>
+                              {m.referencia && <span className="text-muted truncate max-w-[200px]">ref: {m.referencia}</span>}
+                            </div>
+                          </div>
+                          <span
+                            className={`font-mono font-bold text-xs sm:text-sm shrink-0 ${
+                              positivo ? 'text-green' : 'text-coral'
+                            }`}
+                          >
+                            {positivo ? `+${m.quantidade}` : m.quantidade} 💎
+                          </span>
+                        </div>
+                      )
+                    })}
+                  </div>
+                )}
+
+                <p className="font-mono text-[10.5px] text-muted-2 mt-4 mb-0 leading-relaxed">
+                  O saldo é derivado diretamente pelo somatório do livro-razão (<b className="text-text">crystal_ledger</b>).
+                  Toda entrada e saída é imutável e com controle de concorrência.
+                </p>
+              </>
+            )}
           </section>
 
           {/* ESPECIALISTA DE GÊNERO */}
