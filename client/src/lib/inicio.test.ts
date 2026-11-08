@@ -48,13 +48,30 @@ describe('estreiasDeHoje', () => {
 describe('continuarAssistindo', () => {
   const animes = { 1: anime(1), 2: anime(2, { episodes: 3 }), 3: anime(3, { episodes: 0 }) }
 
-  it('sugere o episódio seguinte ao último marcado, na ordem do progresso', () => {
+  it('sugere o episódio seguinte ao último marcado, priorizando episódios liberados', () => {
+    const catalogo = { 1: anime(1), 3: anime(3, { episodes: 50 }) }
     const lista = continuarAssistindo(
       [{ mal_id: 3, ultimo_episodio: 40, marcados: 40 }, { mal_id: 1, ultimo_episodio: 4, marcados: 4 }],
       [{ mal_id: 1, status: 'Assistindo' }, { mal_id: 3, status: 'Em Dia' }],
-      animes,
+      catalogo,
     )
     expect(lista.map(c => [c.anime.mal_id, c.proximoEpisodio])).toEqual([[3, 41], [1, 5]])
+  })
+
+  it('prioriza animes com episódios liberados sobre animes bloqueados por lançamento', () => {
+    const catalogo = {
+      1: anime(1, { episodes: 12, nextAiringEpisode: { airingAt: 9999999999, episode: 6 } }), // ep 6 futuro, visto 5 -> bloqueado
+      2: anime(2, { episodes: 12, nextAiringEpisode: { airingAt: 9999999999, episode: 8 } }), // ep 8 futuro, visto 5 -> liberado ep 6
+    }
+    const lista = continuarAssistindo(
+      [{ mal_id: 1, ultimo_episodio: 5, marcados: 5 }, { mal_id: 2, ultimo_episodio: 5, marcados: 5 }],
+      [{ mal_id: 1, status: 'Assistindo' }, { mal_id: 2, status: 'Assistindo' }],
+      catalogo,
+    )
+    expect(lista[0].anime.mal_id).toBe(2)
+    expect(lista[0].bloqueadoPorLancamento).toBe(false)
+    expect(lista[1].anime.mal_id).toBe(1)
+    expect(lista[1].bloqueadoPorLancamento).toBe(true)
   })
 
   it('não sugere anime terminado nem fora do deck', () => {
@@ -87,12 +104,19 @@ describe('continuarAssistindo', () => {
       [{ mal_id: 10, status: 'Assistindo' }, { mal_id: 11, status: 'Assistindo' }, { mal_id: 12, status: 'Assistindo' }],
       catalogo,
     )
-    expect(lista[0].bloqueadoPorLancamento).toBe(true)
-    expect(lista[0].semEpisodios).toBe(false)
-    expect(lista[1].semEpisodios).toBe(true)
-    // O anime 12 tem episodes: 0, mas nextAiringEpisode.episode é 8 (já lançou até o 7), então semEpisodios é falso
-    expect(lista[2].semEpisodios).toBe(false)
-    expect(lista[2].proximoEpisodio).toBe(4)
+    const item10 = lista.find(c => c.anime.mal_id === 10)!
+    const item11 = lista.find(c => c.anime.mal_id === 11)!
+    const item12 = lista.find(c => c.anime.mal_id === 12)!
+
+    // O anime 12 tem episódios liberados (até o 7, próximo é o 4), então vem na frente
+    expect(lista[0].anime.mal_id).toBe(12)
+    expect(item12.bloqueadoPorLancamento).toBe(false)
+    expect(item12.semEpisodios).toBe(false)
+    expect(item12.proximoEpisodio).toBe(4)
+
+    expect(item10.bloqueadoPorLancamento).toBe(true)
+    expect(item10.semEpisodios).toBe(false)
+    expect(item11.semEpisodios).toBe(true)
   })
 })
 

@@ -1,19 +1,26 @@
 // client/src/components/inicio/HeroProximoEpisodio.tsx
 // O topo da Início para quem tem anime em andamento: responde "o que eu assisto agora" com o
-// próximo episódio liberado, resumo da obra, atalho para assistir na plataforma certa e botão
-// de marcar visto sem precisar navegar.
+// próximo episódio liberado, resumo da obra, atalho para assistir na plataforma certa, botão
+// de marcar visto sem precisar navegar e carrossel entre as obras disponíveis.
+import { useState } from 'react'
 import { Link } from 'react-router-dom'
-import { Check, Clock, Lock, Play, Plus, Tv } from 'lucide-react'
+import { Check, Clock, Lock, Play, Plus, Tv, ChevronLeft, ChevronRight } from 'lucide-react'
 import { artigoStreaming, escolherLinkStreaming, type ParaContinuar } from '../../lib/inicio'
 
 interface Props {
-  item: ParaContinuar
-  episodio: number
-  marcando: boolean
-  jaMarcado: boolean
-  /** O episódio da vez ainda não foi ao ar (acontece logo depois de marcar o último liberado). */
-  bloqueado: boolean
-  onMarcar: () => void
+  itens?: ParaContinuar[]
+  item?: ParaContinuar
+  indiceAtivo?: number
+  onMudarIndice?: (novoIndice: number) => void
+  recemMarcados?: Record<number, number>
+  marcandoEp?: Record<number, boolean>
+  onMarcarEpisodio?: (malId: number, episodio: number, titulo: string) => void
+
+  episodio?: number
+  marcando?: boolean
+  jaMarcado?: boolean
+  bloqueado?: boolean
+  onMarcar?: () => void
 }
 
 function tempoRestante(airingAt?: number): string | null {
@@ -28,21 +35,106 @@ function tempoRestante(airingAt?: number): string | null {
   return `em ${minutos}m`
 }
 
-export default function HeroProximoEpisodio({ item, episodio, marcando, jaMarcado, bloqueado, onMarcar }: Props) {
+export default function HeroProximoEpisodio({
+  itens,
+  item: itemProp,
+  indiceAtivo: indiceProp,
+  onMudarIndice,
+  recemMarcados = {},
+  marcandoEp = {},
+  onMarcarEpisodio,
+  episodio: epProp,
+  marcando: marcandoProp,
+  jaMarcado: jaMarcadoProp,
+  bloqueado: bloqueadoProp,
+  onMarcar: onMarcarProp,
+}: Props) {
+  const listaItens = itens && itens.length > 0 ? itens : itemProp ? [itemProp] : []
+  const [indiceInterno, setIndiceInterno] = useState(0)
+
+  const indice = indiceProp !== undefined ? indiceProp : indiceInterno
+  const mudarIndice = (novo: number) => {
+    if (onMudarIndice) onMudarIndice(novo)
+    else setIndiceInterno(novo)
+  }
+
+  const item = listaItens[indice] || listaItens[0]
+  if (!item) return null
+
   const { anime } = item
   const total = anime.episodes || 0
+  const episodio = epProp !== undefined && itemProp === item
+    ? epProp
+    : (recemMarcados[anime.mal_id] ?? item.proximoEpisodio - 1) + 1
   const vistos = Math.max(0, episodio - 1)
   const pct = total > 0 ? Math.min(100, Math.round((vistos / total) * 100)) : 0
   const fundo = anime.banner || anime.image_url
   const streaming = escolherLinkStreaming(anime.streaming)
   const epTitulo = anime.streamingEpisodes?.[episodio - 1]?.title
+  const bloqueado = bloqueadoProp !== undefined && itemProp === item
+    ? bloqueadoProp
+    : Boolean(anime.nextAiringEpisode?.episode && episodio >= anime.nextAiringEpisode.episode)
+  const marcando = marcandoProp !== undefined && itemProp === item
+    ? marcandoProp
+    : Boolean(marcandoEp[anime.mal_id])
+  const jaMarcado = jaMarcadoProp !== undefined && itemProp === item
+    ? jaMarcadoProp
+    : recemMarcados[anime.mal_id] !== undefined
   const previsao = bloqueado && anime.nextAiringEpisode?.airingAt ? tempoRestante(anime.nextAiringEpisode.airingAt) : null
+
+  const handleMarcar = () => {
+    if (onMarcarProp && itemProp === item) {
+      onMarcarProp()
+    } else if (onMarcarEpisodio) {
+      onMarcarEpisodio(anime.mal_id, episodio, anime.title)
+    }
+  }
 
   return (
     <section className="relative rounded-[24px] overflow-hidden border border-line bg-panel mb-10 min-h-[280px] sm:min-h-[320px] flex items-end shadow-2xl">
       {fundo && <img src={fundo} alt="" className="absolute inset-0 w-full h-full object-cover opacity-35 transition-transform duration-700 hover:scale-105" />}
       <div className="absolute inset-0 bg-gradient-to-r from-void via-void/90 to-void/40" />
       <div className="absolute inset-0 bg-gradient-to-t from-void via-void/50 to-transparent" />
+
+      {/* Controles do carrossel no topo direito */}
+      {listaItens.length > 1 && (
+        <div className="absolute top-4 right-4 sm:top-6 sm:right-6 z-20 flex items-center gap-2">
+          <button
+            type="button"
+            onClick={() => mudarIndice((indice - 1 + listaItens.length) % listaItens.length)}
+            className="w-8 h-8 rounded-full bg-void/80 hover:bg-void border border-line hover:border-holo-3 text-text hover:text-holo-3 flex items-center justify-center cursor-pointer transition-all shadow-lg active:scale-90"
+            title="Anime anterior"
+            aria-label="Anime anterior"
+          >
+            <ChevronLeft size={16} />
+          </button>
+          <div className="hidden sm:flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-void/80 border border-line">
+            {listaItens.map((_, i) => (
+              <button
+                key={i}
+                type="button"
+                onClick={() => mudarIndice(i)}
+                className={`transition-all rounded-full cursor-pointer ${
+                  i === indice ? 'w-4 h-1.5 bg-holo-3' : 'w-1.5 h-1.5 bg-white/30 hover:bg-white/60'
+                }`}
+                aria-label={`Ir para anime ${i + 1}`}
+              />
+            ))}
+          </div>
+          <span className="sm:hidden font-mono text-[11px] text-muted font-bold px-2 py-0.5 rounded-full bg-void/80 border border-line">
+            {indice + 1}/{listaItens.length}
+          </span>
+          <button
+            type="button"
+            onClick={() => mudarIndice((indice + 1) % listaItens.length)}
+            className="w-8 h-8 rounded-full bg-void/80 hover:bg-void border border-line hover:border-holo-3 text-text hover:text-holo-3 flex items-center justify-center cursor-pointer transition-all shadow-lg active:scale-90"
+            title="Próximo anime"
+            aria-label="Próximo anime"
+          >
+            <ChevronRight size={16} />
+          </button>
+        </div>
+      )}
 
       <div className="relative z-10 w-full p-5 sm:p-8 flex flex-col md:flex-row md:items-end gap-5 md:gap-7">
         <Link to={`/anime/${anime.mal_id}`} className="shrink-0 hidden sm:block group relative">
@@ -119,7 +211,7 @@ export default function HeroProximoEpisodio({ item, episodio, marcando, jaMarcad
               <button
                 type="button"
                 disabled={marcando}
-                onClick={onMarcar}
+                onClick={handleMarcar}
                 className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full bg-gradient-to-r from-holo-1 to-holo-2 text-void font-extrabold text-xs sm:text-sm uppercase tracking-wider shadow-lg hover:opacity-95 transition-opacity cursor-pointer disabled:opacity-60"
               >
                 {jaMarcado ? <Check size={15} /> : <Plus size={15} />} Marcar ep. {episodio} visto
@@ -149,3 +241,4 @@ export default function HeroProximoEpisodio({ item, episodio, marcando, jaMarcad
     </section>
   )
 }
+

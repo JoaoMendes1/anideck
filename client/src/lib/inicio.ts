@@ -65,8 +65,9 @@ export function estreiasDeHoje(
 }
 
 /**
- * Animes em andamento, do marcado mais recentemente para o mais antigo, com o próximo
- * episódio. Anime já terminado (último marcado = total) não entra.
+ * Animes em andamento, com prioridade para aqueles que já têm episódios prontos e liberados
+ * para assistir. Animes cujo próximo episódio ainda não foi ao ar (bloqueados por lançamento)
+ * ficam no fim da lista para não esconder as obras acionáveis.
  */
 export function continuarAssistindo(
   progresso: ProgressoDoAnime[],
@@ -75,7 +76,9 @@ export function continuarAssistindo(
   limite = 6,
 ): ParaContinuar[] {
   const statusPorAnime = new Map(entradas.map(e => [e.mal_id, e.status]))
-  const lista: ParaContinuar[] = []
+  const prontos: ParaContinuar[] = []
+  const bloqueados: ParaContinuar[] = []
+
   for (const p of progresso) {
     const status = statusPorAnime.get(p.mal_id)
     if (!status || !ACOMPANHANDO.has(status)) continue
@@ -90,10 +93,16 @@ export function continuarAssistindo(
       anime.nextAiringEpisode?.episode && proximoEpisodio >= anime.nextAiringEpisode.episode,
     )
     const semEpisodios = totalDisponivel <= 0
-    lista.push({ anime, proximoEpisodio, bloqueadoPorLancamento, semEpisodios })
-    if (lista.length >= limite) break
+    const item: ParaContinuar = { anime, proximoEpisodio, bloqueadoPorLancamento, semEpisodios }
+
+    if (!bloqueadoPorLancamento && !semEpisodios) {
+      prontos.push(item)
+    } else {
+      bloqueados.push(item)
+    }
   }
-  return lista
+
+  return [...prontos, ...bloqueados].slice(0, limite)
 }
 
 export interface DiaDaSemana {

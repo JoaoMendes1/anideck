@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from 'react'
 import { supabase } from '../lib/supabase'
 import { Navigate, useNavigate, useSearchParams } from 'react-router-dom'
 import { useToast } from '../contexts/ToastContext'
-import { Sparkles, X, LayoutList, ArrowLeft, Activity, PowerOff, Zap, Loader2 } from 'lucide-react'
+import { Sparkles, X, LayoutList, ArrowLeft, Activity, PowerOff, Zap, Loader2, Clock } from 'lucide-react'
 import { LogoMark } from '../components/Brand'
 import Sheet from '../components/Sheet'
 import BuscaAniList, { type AniListMedia } from '../components/BuscaAniList'
@@ -1094,9 +1094,26 @@ export default function PainelAdmin() {
                     </button>
                   </div>
                 )}
-                {semEps.length === 0 && emBreve.length > 0 && (
-                  <div className="flex items-center gap-2 bg-holo-3/10 border border-holo-3/30 text-holo-3 px-3.5 py-2 rounded-xl text-xs font-bold shrink-0">
-                    <span>✨ {emBreve.length} anime(s) anunciado(s) (em breve)</span>
+                {emBreve.length > 0 && (
+                  <div className="flex flex-wrap items-center gap-2 bg-holo-3/10 border border-holo-3/30 text-holo-3 px-3.5 py-2.5 rounded-xl text-xs font-medium">
+                    <span className="font-bold flex items-center gap-1.5 shrink-0">
+                      <Clock size={13} className="text-holo-3" />
+                      {emBreve.length} em breve (anunciados):
+                    </span>
+                    <div className="flex flex-wrap items-center gap-1.5">
+                      {emBreve.map(d => (
+                        <button
+                          key={d.mal_id}
+                          type="button"
+                          onClick={() => editarDestaque(d)}
+                          className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-lg bg-holo-3/15 hover:bg-holo-3/25 border border-holo-3/30 text-holo-3 font-semibold text-[11px] cursor-pointer transition-colors"
+                          title={`Editar curadoria de ${d.custom_title || d.mal_id}`}
+                        >
+                          <span className="truncate max-w-[200px]">{d.custom_title || `MAL ID ${d.mal_id}`}</span>
+                          <span className="opacity-70 text-[9px]">✎</span>
+                        </button>
+                      ))}
+                    </div>
                   </div>
                 )}
               </div>

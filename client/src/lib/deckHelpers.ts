@@ -123,3 +123,50 @@ export function obterTextoDiaLancamento(opcoes: {
 
     return null
 }
+
+/**
+ * Determina o status correto para um anime acompanhado no Deck:
+ * - Se está 'Em Dia', mas saiu um novo episódio (acabouDeLancar ou ultimoEpisodioAssistido < ultimoLancado),
+ *   a obra não está mais em dia -> retorna 'Assistindo'.
+ * - Se está 'Assistindo', o anime está em lançamento (RELEASING) e o usuário já assistiu até
+ *   o último episódio disponível até agora -> retorna 'Em Dia'.
+ * - Preserva qualquer outro status ('Completo', 'Quero Assistir', 'Dropado').
+ */
+export function reconciliarStatusDeck(
+    statusAtual: string,
+    opcoes: {
+        ultimoEpisodioAssistido?: number
+        totalDisponivel?: number
+        nextAiringEpisode?: AiringInfo
+        statusObra?: string
+    }
+): string {
+    const { ultimoEpisodioAssistido = 0, totalDisponivel, nextAiringEpisode, statusObra } = opcoes
+    const statusNorm = (statusObra || '').toUpperCase()
+    const emLancamento =
+        statusNorm === 'RELEASING' ||
+        statusNorm === 'CURRENTLY AIRING' ||
+        statusNorm === 'EM LANÇAMENTO' ||
+        Boolean(nextAiringEpisode?.airingAt)
+
+    const ultimoLancado = nextAiringEpisode?.episode
+        ? nextAiringEpisode.episode - 1
+        : (totalDisponivel ?? 0)
+
+    const { acabouDeLancar } = getAiringBadge(nextAiringEpisode)
+
+    if (statusAtual === 'Em Dia') {
+        // Se há episódio novo disponível (ou acabou de lançar) que o usuário ainda não assistiu
+        if (acabouDeLancar || (ultimoLancado > 0 && ultimoEpisodioAssistido < ultimoLancado)) {
+            return 'Assistindo'
+        }
+    } else if (statusAtual === 'Assistindo') {
+        // Se o anime está em lançamento e o usuário assistiu todos os episódios disponíveis
+        if (emLancamento && ultimoLancado > 0 && ultimoEpisodioAssistido >= ultimoLancado) {
+            return 'Em Dia'
+        }
+    }
+
+    return statusAtual
+}
+

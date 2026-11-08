@@ -209,6 +209,7 @@ export default function Inicio() {
   )
   const [modalGostoAberto, setModalGostoAberto] = useState(false)
   const [indiceHero, setIndiceHero] = useState(0)
+  const [indiceHeroProximo, setIndiceHeroProximo] = useState(0)
   const [marcandoEp, setMarcandoEp] = useState<Record<number, boolean>>({})
   const [recemMarcados, setRecemMarcados] = useState<Record<number, number>>({})
 
@@ -339,9 +340,11 @@ export default function Inicio() {
 
   const nome = (session?.user.user_metadata?.display_name as string | undefined) || ''
   const semana = semanaDoDeck(dados.entradas, dados.animes, agora)
-  const emAndamento = continuarAssistindo(dados.progresso, dados.entradas, dados.animes, 9)
-  const destaqueProximo = proximoEpisodioEmDestaque(emAndamento)
-  const continuar = emAndamento.filter(c => c !== destaqueProximo).slice(0, 8)
+  const emAndamento = continuarAssistindo(dados.progresso, dados.entradas, dados.animes, 12)
+  const itensHero = emAndamento.filter(c => !c.bloqueadoPorLancamento && !c.semEpisodios)
+  const destaqueProximo = itensHero[0] ?? proximoEpisodioEmDestaque(emAndamento)
+  const heroAtivo = itensHero.length > 0 ? itensHero[indiceHeroProximo % itensHero.length] : destaqueProximo
+  const continuar = emAndamento.filter(c => c.anime.mal_id !== heroAtivo?.anime.mal_id).slice(0, 8)
   const episodioDoDestaque = destaqueProximo
     ? (recemMarcados[destaqueProximo.anime.mal_id] ?? destaqueProximo.proximoEpisodio - 1) + 1
     : 0
@@ -388,6 +391,29 @@ export default function Inicio() {
             detail: { malId, episodeNumber: episodio, watched: true },
           }),
         )
+
+        // Se a obra está em lançamento e alcançou o último episódio lançado até o momento,
+        // promove para 'Em Dia'
+        const animeObj = dados.animes[malId]
+        const entradaObj = dados.entradas.find(e => e.mal_id === malId)
+        if (entradaObj && animeObj?.nextAiringEpisode?.episode && episodio >= animeObj.nextAiringEpisode.episode - 1) {
+          fetch(`/api/entries/${(entradaObj as unknown as { id: string }).id}`, {
+            method: 'PUT',
+            headers: {
+              'Content-Type': 'application/json',
+              Authorization: `Bearer ${session.access_token}`,
+            },
+            body: JSON.stringify({
+              mal_id: malId,
+              tipo: 'anime',
+              status: 'Em Dia',
+              nota: (entradaObj as unknown as { nota?: number | null }).nota ?? null,
+              anotacao: (entradaObj as unknown as { anotacao?: string }).anotacao ?? '',
+              is_favorite: (entradaObj as unknown as { is_favorite?: boolean }).is_favorite ?? false,
+            }),
+          }).catch(() => null)
+        }
+
         showToast(`Ep. ${episodio} de ${titulo} marcado como visto!${sufixoXP}`, 'success')
       } else {
         showToast('Não foi possível registrar o episódio.', 'error')
@@ -426,8 +452,17 @@ export default function Inicio() {
         </div>
       </header>
 
-      {/* Topo: o próximo episódio de quem tem anime em andamento; sem nenhum, os destaques da curadoria. */}
-      {destaqueProximo && (
+      {/* Topo: o próximo episódio de quem tem anime em andamento (com carrossel); sem nenhum, os destaques da curadoria. */}
+      {itensHero.length > 0 ? (
+        <HeroProximoEpisodio
+          itens={itensHero}
+          indiceAtivo={indiceHeroProximo % itensHero.length}
+          onMudarIndice={setIndiceHeroProximo}
+          recemMarcados={recemMarcados}
+          marcandoEp={marcandoEp}
+          onMarcarEpisodio={avancarEpisodioRapido}
+        />
+      ) : destaqueProximo ? (
         <HeroProximoEpisodio
           item={destaqueProximo}
           episodio={episodioDoDestaque}
@@ -436,9 +471,9 @@ export default function Inicio() {
           bloqueado={destaqueBloqueado}
           onMarcar={() => avancarEpisodioRapido(destaqueProximo.anime.mal_id, episodioDoDestaque, destaqueProximo.anime.title)}
         />
-      )}
+      ) : null}
 
-      {!destaqueProximo && heroAtual && (
+      {itensHero.length === 0 && !destaqueProximo && heroAtual && (
         <section className="relative rounded-[24px] overflow-hidden border border-line bg-panel mb-10 min-h-[280px] sm:min-h-[340px] flex items-end">
           {(heroAtual.custom_banner_image || heroAtual.custom_cover_image) && (
             <img
@@ -749,7 +784,7 @@ export default function Inicio() {
       )}
 
       {/* Com os destaques já no topo (sem anime em andamento), a vitrine repetiria os mesmos. */}
-      {destaqueProximo && <VitrineDestaques />}
+      {(itensHero.length > 0 || destaqueProximo) && <VitrineDestaques />}
 
       {dados.ranking.length > 0 && (
         <Secao

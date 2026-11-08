@@ -9,7 +9,7 @@ import DeckSkeleton from '../components/DeckSkeleton'
 import StatCard from '../components/StatCard'
 import { Play, CheckCircle2, Bookmark, MonitorPlay, Star, XCircle, AlertCircle, Clock } from 'lucide-react'
 import type { AiringInfo } from '../lib/deckHelpers'
-import { gradienteDoCard } from '../lib/deckHelpers'
+import { gradienteDoCard, reconciliarStatusDeck } from '../lib/deckHelpers'
 import { usePosicaoDeLista } from '../lib/posicaoDeLista'
 import { useCatalogoStatus } from '../contexts/CatalogoStatusContext'
 import { useSessao } from '../contexts/SessaoContext'
@@ -98,11 +98,30 @@ export default function MeuDeck() {
             setUserName(session.user.user_metadata?.display_name || 'Usuário')
 
             try {
-                const response = await fetch('/api/entries', {
-                    headers: { 'Authorization': `Bearer ${session.access_token}` },
-                })
+                const [response, resProgresso] = await Promise.all([
+                    fetch('/api/entries', {
+                        headers: { 'Authorization': `Bearer ${session.access_token}` },
+                    }),
+                    fetch('/api/entries/progresso', {
+                        headers: { 'Authorization': `Bearer ${session.access_token}` },
+                    }).catch(() => null),
+                ])
                 if (!response.ok) throw new Error('Não foi possível carregar seu deck.')
                 const dadosDeck: Entrada[] = await response.json()
+                const mapaProgresso: Record<number, number> = {}
+                if (resProgresso && resProgresso.ok) {
+                    try {
+                        const listaProg = (await resProgresso.json()) as { mal_id: number; ultimo_episodio: number }[]
+                        if (Array.isArray(listaProg)) {
+                            listaProg.forEach(p => {
+                                mapaProgresso[p.mal_id] = p.ultimo_episodio
+                            })
+                        }
+                    } catch {
+                        // Segue sem mapa se json falhar
+                    }
+                }
+
                 // As entradas só vão para a tela junto com os dados dos animes. Com o deck
                 // em memória, gravá-las antes faria um anime recém-adicionado aparecer por
                 // um instante sem capa nem título, até o /api/anime/bulk responder.
@@ -140,7 +159,38 @@ export default function MeuDeck() {
                                 streaming: m.streaming ?? undefined
                             }
                         })
-                        setEntradas(novasEntradas)
+
+                        // Reconciliação automática: animes 'Em Dia' que receberam novo episódio voltam para 'Assistindo'
+                        const reconciliadas = novasEntradas.map(e => {
+                            const animeLocal = mapaAnimes[e.mal_id]
+                            const ultimoEp = mapaProgresso[e.mal_id] ?? 0
+                            const statusReconciliado = reconciliarStatusDeck(e.status, {
+                                ultimoEpisodioAssistido: ultimoEp,
+                                nextAiringEpisode: animeLocal?.nextAiringEpisode,
+                            })
+                            if (statusReconciliado !== e.status) {
+                                // Sincroniza em background com o Supabase
+                                fetch(`/api/entries/${e.id}`, {
+                                    method: 'PUT',
+                                    headers: {
+                                        'Content-Type': 'application/json',
+                                        Authorization: `Bearer ${session.access_token}`,
+                                    },
+                                    body: JSON.stringify({
+                                        mal_id: e.mal_id,
+                                        tipo: e.tipo || 'anime',
+                                        status: statusReconciliado,
+                                        nota: e.nota ?? null,
+                                        anotacao: e.anotacao ?? '',
+                                        is_favorite: e.is_favorite ?? false,
+                                    }),
+                                }).catch(() => null)
+                                return { ...e, status: statusReconciliado }
+                            }
+                            return e
+                        })
+
+                        setEntradas(reconciliadas)
                         setAnimesData(mapaAnimes)
                     }
                 }

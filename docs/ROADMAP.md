@@ -931,6 +931,14 @@ senha rotacionada (26), e o painel do provedor desfaz a configuração com um cl
       do Admin, exibem o selo `em breve` no trilho do catálogo em vez de falso alerta de erro, e a página
       de detalhes exibe o banner acolhedor "✨ Obra Anunciada · Em Breve" em vez do aviso de emergência.
       Ver #196.
+- [x] **Reconciliação de Em Dia/Assistindo, carrossel no topo da Início e lista de Em Breve no Admin.**
+      Obras em lançamento com novo episódio disponível agora transicionam automaticamente de "Em Dia"
+      para "Assistindo", evitando a contradição com o selo "NOVO EP", e voltam para "Em Dia" ao atingir
+      o último episódio disponível. Em "Continue de onde parou", animes com episódios liberados são
+      priorizados na frente de obras bloqueadas por lançamento. O topo da Início (`HeroProximoEpisodio`)
+      ganha carrossel com controles para navegar entre todas as obras em andamento com episódios prontos,
+      e o banner do Painel Admin lista nominalmente cada obra anunciada em breve com link direto para edição.
+      Ver #197.
 
 ---
 
