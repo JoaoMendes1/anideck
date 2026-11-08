@@ -45,7 +45,7 @@ Staging sobe já na Fase 1, como projeto esqueleto — mesmo padrão do JVM Syst
 | 12 · Meu Gosto e distribuição | ✅ Concluída (08/11/2026) |
 | 13 · Reformulação Visual, Automação de Curadoria e Inteligência de Gosto | ✅ Concluída (08/11/2026) |
 | 14 · Guilda & Gamificação | ✅ Concluída (08/11/2026) |
-| 15 · Comunidade base | 🚧 Código pronto na `staging` (08/11/2026); falta aplicar o `sql/041` e abrir o beta |
+| 15 · Comunidade base | ✅ Concluída (08/11/2026, #154); falta abrir o beta |
 | 16 · Economia e cartas | 📋 Planejada |
 | 17 · Comunidade viva | 📋 Planejada |
 
@@ -700,9 +700,9 @@ Motivo: materializar a visão de progressão de longo prazo (`VISAO_GAMIFICACAO.
 - [x] Tela da Guilda (`/guilda`), pílula de Nível/Rank na Navbar, atalho no menu de Perfil e feedback `+XX XP` ao marcar episódio (#146)
 - [x] Aba Guilda no Painel Admin: economia de XP, faixas `F`→`SS` com prévia de distribuição, insígnias, auditoria e Kill Switch (#147)
 
-## 💬 Fase 15: Comunidade base — *código pronto, aguardando o `sql/041`*
+## 💬 Fase 15: Comunidade base — *concluída (#154)*
 
-Motivo: a direção de 08/11/2026 (`VISAO_COMUNIDADE.md`). Tudo aqui precisa funcionar com a base
+Motivo: a direção de 08/11/2026 (`VISAO_COMUNIDADE.md`, #153). Tudo aqui precisa funcionar com a base
 atual. **Pré-requisito:** abrir o beta (`beta_signup_limit`).
 
 - [x] 15.1 Perfil público com @usuário e vitrine (`/u/:handle`, seção "Perfil público" nas Configurações)
@@ -738,6 +738,20 @@ atual. **Pré-requisito:** abrir o beta (`beta_signup_limit`).
 > Correção e ajuste feitos depois do escopo da v1 fechar. **Não são fases** — não seguem a
 > numeração e não abrem escopo novo. Ficam registrados aqui em ordem cronológica inversa para
 > não sumirem: fase concluída não deve ser reaberta só para receber um conserto.
+
+### 08/11/2026 — Auditoria: push, streak, telas e Painel Admin (#148 a #152)
+
+- [x] **Push confiável (#148):** payload com `json.Marshal` (título com aspas sumia com a
+      notificação), validade de 24 h, capa, toque abrindo o anime, ícones PNG e remoção da
+      assinatura morta.
+- [x] **Streak no fuso de Brasília (#149):** `sql/040` e `CalculateStreak` com o mesmo dia do
+      "XP de hoje" da Guilda.
+- [x] **Telas no celular e no monitor (#150):** busca no topo, episódios compactos, Meu Deck no
+      topo dos Detalhes, Agenda em duas colunas.
+- [x] **Início redesenhada (#151):** próximo episódio no topo, semana do deck, ficha da Guilda e
+      trilhas em cartões.
+- [x] **Painel Admin por assunto (#152):** menu agrupado e nenhuma aba com rolagem lateral no
+      celular.
 
 ### 31/10/2026 — `Dockerfile` e `.dockerignore` no repositório (#129)
 

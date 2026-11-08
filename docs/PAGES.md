@@ -4,18 +4,18 @@
 | 2 | Login / Cadastro | `Auth.tsx` | ✅ Implementada · aviso de Beta fechado com solicitação de convite e atalhos sem login | Fase 2 / 13 (#142) |
 | 3 | Meu Deck (dashboard logado) | `MeuDeck.tsx` | ✅ Implementada · container 1440px, filtro clicável nos StatCards, dia da semana de lançamento e vitrine recolhível | Fase 2 / 3 / 13 (#135, #136) |
 | 4 | Busca / Descobrir catálogo | `Busca.tsx` | ✅ Implementada · container 1440px e filtro por ano livre | Fase 2 / 13 |
-| 5 | Detalhe do anime | `Detalhes.tsx` | ✅ Implementada · container 1440px, streaming antes da sinopse, episódios sem miniatura em lista compacta, tradução automática pt-BR, aviso de obra não curada e Conversa por episódio (reações e comentários com escudo de spoiler) | Fase 2 / 6.6 / 13 / 15 (#133, #134) |
+| 5 | Detalhe do anime | `Detalhes.tsx` | ✅ Implementada · container 1440px, streaming antes da sinopse, episódios sem miniatura em lista compacta, tradução automática pt-BR, aviso de obra não curada e Conversa por episódio (reações e comentários com escudo de spoiler) | Fase 2 / 6.6 / 13 / 15 (#133, #134, #150, #154) |
 | 6 | Calendário de lançamentos | `Calendario.tsx` | ✅ Implementada · container 1440px, capas em pôster 2:3, dia da semana e "Quero Assistir" incluso em Meu Deck | Fase 5 / 13 (#135, #136) |
 | 7 | Rankings (Navbar desktop e BottomNav mobile) | `Rankings.tsx` | ✅ Implementada · container 1440px, pôsteres maiores com destaque no Top 3 e filtro por ano livre | Fase 2 / 6.5 / 11 / 13 (#132, #136) |
 | 8 | Meu Gosto (ex-Estatísticas), em `/meu-gosto` | `Estatisticas.tsx` | ✅ Implementada · container 1440px, frase-veredito e drill-down completo em gêneros, tags, notas, status, quadrante e recordes | Fase 4 / 6.8 / 12 / 13 (#138) |
-| 9 | Painel Admin (curadoria) | `PainelAdmin.tsx` | ✅ Implementada · menu por assunto (Catálogo, IA, Comunidade, Sistema), com Moderação e regras de Mana e Vitalidade | Fase 2.5 / 4.5 / 13 / 15 |
-| 10 | Configurações & Ajuda | `Configuracoes.tsx` | ✅ Implementada · inclui Perfil público (#comunidade), Preferências de Gosto (#gosto) e Importador XML do MyAnimeList (#importar) | Fase 2 / 13 / 15 (#139, #140) |
-| 11 | Política de Privacidade | `Privacidade.tsx` | ✅ Implementada · cobre perfil público e conteúdo publicado (08/11/2026) | Fase 7 / 15 |
-| 12 | Início (home logada, em `/`) | `Inicio.tsx` | ✅ Implementada · Hero Banner rotativo, cards 16:9 com avanço rápido de episódio e Recomendados para Você | Fase 11 / 13 (#139, #141) |
+| 9 | Painel Admin (curadoria) | `PainelAdmin.tsx` | ✅ Implementada · menu por assunto (Catálogo, IA, Comunidade, Sistema), com Moderação e regras de Mana e Vitalidade | Fase 2.5 / 4.5 / 13 / 15 (#152, #154) |
+| 10 | Configurações & Ajuda | `Configuracoes.tsx` | ✅ Implementada · inclui Perfil público (#comunidade), Preferências de Gosto (#gosto) e Importador XML do MyAnimeList (#importar) | Fase 2 / 13 / 15 (#139, #140, #154) |
+| 11 | Política de Privacidade | `Privacidade.tsx` | ✅ Implementada · cobre perfil público e conteúdo publicado (08/11/2026) | Fase 7 / 15 (#154) |
+| 12 | Início (home logada, em `/`) | `Inicio.tsx` | ✅ Implementada · próximo episódio no topo (carrossel de destaques sem anime em andamento), Sua semana, ficha da Guilda com Vitalidade e Mana, trilhas em cartões e Recomendados para Você | Fase 11 / 13 / 15 (#139, #141, #151) |
 | 13 | Card de gosto compartilhável (no Meu Gosto) | `CompartilharGosto.tsx` | ✅ Implementada | Fase 12 (#126) |
-| 14 | Guilda (rank, XP, insígnias, especialista de gênero) | `Guilda.tsx` | ✅ Implementada · anel F→SS, extrato do ledger, especialista N1→N5, insígnias Foil, pílula na Navbar e Vitalidade & Mana | Fase 14 / 15 (#146) |
-| 15 | Ranking de membros (aba do Descobrir, em `/membros`) | `Membros.tsx` | ✅ Implementada · liga da semana e Hall da Fama, só perfis públicos | Fase 15 |
-| 16 | Perfil público de membro (`/u/:handle`) | `PerfilMembro.tsx` | ✅ Implementada · ficha da Guilda, vitrine de cinco cartas, contagem do deck sem títulos e bloqueio | Fase 15 |
+| 14 | Guilda (rank, XP, insígnias, especialista de gênero) | `Guilda.tsx` | ✅ Implementada · anel F→SS, extrato do ledger, especialista N1→N5, insígnias Foil, pílula na Navbar e Vitalidade & Mana | Fase 14 / 15 (#146, #154) |
+| 15 | Ranking de membros (aba do Descobrir, em `/membros`) | `Membros.tsx` | ✅ Implementada · liga da semana e Hall da Fama, só perfis públicos | Fase 15 (#154) |
+| 16 | Perfil público de membro (`/u/:handle`) | `PerfilMembro.tsx` | ✅ Implementada · ficha da Guilda, vitrine de cinco cartas, contagem do deck sem títulos e bloqueio | Fase 15 (#154) |
 
 **Total: 16 telas implementadas.**
 
