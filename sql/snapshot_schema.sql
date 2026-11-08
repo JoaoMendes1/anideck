@@ -1,7 +1,7 @@
 -- =============================================================================
 -- snapshot_schema.sql — RETRATO DO BANCO. NAO EXECUTE ESTE ARQUIVO.
 -- =============================================================================
--- Regenerado em 02/11/2026 21:20 a partir do banco de producao.
+-- Regenerado em 08/11/2026 03:48 a partir do banco de producao.
 --
 -- PARA QUE SERVE: consulta rapida do estado real do banco, sem precisar abrir
 -- o painel do Supabase nem confiar nos arquivos sql/ antigos (que podem ter
@@ -155,6 +155,15 @@
 --     mal_id                       bigint NOT NULL
 --     position                     integer NOT NULL
 
+-- xp_ledger
+--     id                           uuid NOT NULL
+--     user_id                      uuid NOT NULL
+--     mal_id                       integer NOT NULL
+--     episode_number               integer NOT NULL
+--     xp_earned                    integer NOT NULL
+--     reason                       text NOT NULL
+--     earned_at                    timestamp with time zone NOT NULL
+
 -- =============================================================================
 -- [2] RLS POR TABELA
 -- =============================================================================
@@ -178,6 +187,7 @@
 -- push_subscriptions        | RLS: t     | policies: 1
 -- ranking_current_cache     | RLS: t     | policies: 0
 -- ranking_snapshots         | RLS: t     | policies: 0
+-- xp_ledger                 | RLS: t     | policies: 2
 
 -- =============================================================================
 -- [3] VIEWS — definicao viva
@@ -573,6 +583,14 @@ CREATE OR REPLACE VIEW public.view_user_year_distribution WITH (security_invoker
 --     USING:  (( SELECT auth.uid() AS uid) = user_id)
 --     CHECK:  (( SELECT auth.uid() AS uid) = user_id)
 
+-- xp_ledger              | xp_ledger_user                                | ALL    | authenticated     
+--     USING:  (( SELECT auth.uid() AS uid) = user_id)
+--     CHECK:  (( SELECT auth.uid() AS uid) = user_id)
+
+-- xp_ledger              | xp_ledger_admin_select                        | SELECT | authenticated     
+--     USING:  ( SELECT is_admin() AS is_admin)
+--     CHECK:  -
+
 -- =============================================================================
 -- [5] POLICIES DO STORAGE (storage.objects)
 -- =============================================================================
@@ -619,6 +637,7 @@ CREATE OR REPLACE VIEW public.view_user_year_distribution WITH (security_invoker
 -- pegar_proximo_da_fila_ia       | definer: f     | anon: f     | auth: f     | service: t     | search_path=public, pg_temp
 -- process_cron_notification      | definer: t     | anon: f     | auth: f     | service: t     | search_path=public
 -- remover_tag_curadoria          | definer: t     | anon: f     | auth: t     | service: t     | search_path=public, pg_temp
+-- remover_xp_ao_desmarcar_episodio | definer: f     | anon: t     | auth: t     | service: t     | search_path=public, pg_temp
 -- renomear_tag_curadoria         | definer: t     | anon: f     | auth: t     | service: t     | search_path=public, pg_temp
 -- rls_auto_enable                | definer: t     | anon: t     | auth: t     | service: t     | search_path=pg_catalog
 -- uso_do_bucket_curadoria        | definer: f     | anon: f     | auth: t     | service: t     | search_path=public, storage, pg_temp
