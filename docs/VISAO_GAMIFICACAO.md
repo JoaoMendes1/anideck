@@ -288,6 +288,9 @@ gamificação que alimenta o ranking, não"*.
 
 ## 🛍️ Loja e personagem 3D
 
+> **08/11/2026:** a loja cosmética, os Cristais e o avatar montável passam a ter desenho no
+> `VISAO_COMUNIDADE.md` (Fases 16 e 17). O texto abaixo continua valendo para o personagem 3D.
+
 Adiado, sem descarte. É a parte mais cara e a de menor retorno no estágio atual: o Habitica tem
 equipe de arte, este projeto tem um desenvolvedor.
 
@@ -341,7 +344,9 @@ A coluna da esquerda é o caminho de entrada natural. A da direita não é bloqu
 - **Evento de XP dobrado com liga/desliga manual.** Depende de lembrar de desligar. Substituído
   por janela com data de início e fim.
 - **Comentário aberto a qualquer usuário.** Mesmo motivo do descarte de Fórum e Clubes no
-  `ROADMAP.md`: vira moderação permanente sobre um desenvolvedor só.
+  `ROADMAP.md`: vira moderação permanente sobre um desenvolvedor só. **Reaberto em 08/11/2026**
+  pelo `VISAO_COMUNIDADE.md`, com escudo de spoiler pelo progresso e moderação desde a primeira
+  versão.
 - **Acesso do usuário de topo ao Painel Admin.** A fila de sugestões entrega o mesmo valor sem
   conceder permissão elevada.
 

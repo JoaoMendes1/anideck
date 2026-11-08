@@ -8,6 +8,10 @@
 > protótipo navegável das 12 telas, responsivo para celular e desktop
 > (`docs/prototipos/anideck-app-prototipo-v1.html`).
 >
+> **Posicionamento revisto em 08/11/2026:** o produto passa a ter comunidade, economia própria e
+> receita (`VISAO_COMUNIDADE.md`). A seção "Posicionamento" abaixo fica como registro do que
+> valia até então; os princípios e o mapa de navegação continuam valendo.
+>
 > **Relação com os demais documentos:** o `VISAO_GAMIFICACAO.md` define a economia de XP e
 > permanece válido integralmente; este define a estrutura de produto onde ela se encaixa. O que
 > virar escopo entra no `ROADMAP.md`; o que virar decisão de arquitetura entra no `DECISIONS.md`.

@@ -45,6 +45,9 @@ Staging sobe já na Fase 1, como projeto esqueleto — mesmo padrão do JVM Syst
 | 12 · Meu Gosto e distribuição | ✅ Concluída (08/11/2026) |
 | 13 · Reformulação Visual, Automação de Curadoria e Inteligência de Gosto | ✅ Concluída (08/11/2026) |
 | 14 · Guilda & Gamificação | ✅ Concluída (08/11/2026) |
+| 15 · Comunidade base | 📋 Planejada (`VISAO_COMUNIDADE.md`) |
+| 16 · Economia e cartas | 📋 Planejada |
+| 17 · Comunidade viva | 📋 Planejada |
 
 ---
 
@@ -697,6 +700,36 @@ Motivo: materializar a visão de progressão de longo prazo (`VISAO_GAMIFICACAO.
 - [x] Tela da Guilda (`/guilda`), pílula de Nível/Rank na Navbar, atalho no menu de Perfil e feedback `+XX XP` ao marcar episódio (#146)
 - [x] Aba Guilda no Painel Admin: economia de XP, faixas `F`→`SS` com prévia de distribuição, insígnias, auditoria e Kill Switch (#147)
 
+## 💬 Fase 15: Comunidade base — *planejada*
+
+Motivo: a direção de 08/11/2026 (`VISAO_COMUNIDADE.md`). Tudo aqui precisa funcionar com a base
+atual. **Pré-requisito:** abrir o beta (`beta_signup_limit`).
+
+- [ ] 15.1 Perfil público com @usuário e vitrine
+- [ ] 15.2 Reação de um toque por episódio, com ranking de reações
+- [ ] 15.3 Comentário por episódio com escudo de spoiler pelo progresso e momento marcado
+- [ ] 15.4 Moderação: denunciar, ocultar, bloquear, fila no Painel Admin e limite de taxa
+- [ ] 15.5 HP e MP, com Modo Descanso e painel de regras
+- [ ] 15.6 Rankings de usuários: liga semanal e Hall da Fama
+- [ ] 15.7 Privacidade atualizada para conteúdo publicado e perfil público
+
+## 💎 Fase 16: Economia e cartas — *planejada*
+
+- [ ] 16.1 Cristais e missões diárias, com painel de economia
+- [ ] 16.2 Loja cosmética (moldura, tema, cor do nome, vitrine maior)
+- [ ] 16.3 Cartas por anime terminado, com raridade, e duelo de gosto
+- [ ] 16.4 Rankings de temporada e top por gênero
+- [ ] 16.5 Apoiador (link externo de apoio antes de pagamento integrado)
+
+## 🐉 Fase 17: Comunidade viva — *planejada*
+
+- [ ] 17.1 Guildas como clãs, desafio semanal e liga de guildas
+- [ ] 17.2 Sala de estreia (chat ao vivo por três horas a partir do lançamento)
+- [ ] 17.3 Chefão da Temporada
+- [ ] 17.4 Previsões, classes e títulos
+- [ ] 17.5 AniDeck Wrapped e convite com recompensa
+- [ ] 17.6 Avatar montável (depende de arte original)
+
 ## 🔧 Manutenção pós-v1
 
 > Correção e ajuste feitos depois do escopo da v1 fechar. **Não são fases** — não seguem a
@@ -818,7 +851,9 @@ senha rotacionada (26), e o painel do provedor desfaz a configuração com um cl
 
 ### Avaliado e descartado (documentado pra não reabrir sem contexto)
 
-- **Fórum, Clubes, Blogs:** equivalem a construir uma rede social inteira.
+- **Fórum, Clubes, Blogs:** equivalem a construir uma rede social inteira. *Comentários por
+  episódio e guildas como clãs foram reabertos em 08/11/2026 (`VISAO_COMUNIDADE.md`); fórum e
+  blogs continuam fora.*
 - **Mensageria direta (Inbox):** pressupõe comunidade ativa.
 - **News / Featured Articles / MALxJapan:** conteúdo editorial que o MAL produz com equipe própria.
 - **Mini-página de Pessoa/Estúdio** — ao clicar num dublador/estúdio na página de Detalhe, ver outros trabalhos dele.
