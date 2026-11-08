@@ -1,6 +1,6 @@
-import { useState, useEffect } from 'react'
-import { useParams, Link, useNavigate } from 'react-router-dom'
-import { PlayCircle, Star, AlertCircle, Bookmark, Trophy, X, ArrowLeft, Sparkles, Wrench } from 'lucide-react'
+import { useState, useEffect, useRef, type ReactNode } from 'react'
+import { useParams, Link, useNavigate, useSearchParams, useLocation } from 'react-router-dom'
+import { PlayCircle, Star, AlertCircle, Trophy, X, ArrowLeft, CalendarDays, Heart, ChevronDown } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import { useToast } from '../contexts/ToastContext'
 import { useCatalogoStatus } from '../contexts/CatalogoStatusContext'
@@ -8,13 +8,17 @@ import BotaoCopiar from '../components/BotaoCopiar'
 import ReactMarkdown from 'react-markdown'
 import EpisodeGrid from '../components/EpisodeGrid'
 import ConversaDoAnime from '../components/comunidade/ConversaDoAnime'
-import EditarEntradaModal from '../components/EditarEntradaModal'
+import PainelMinhaLista from '../components/detalhes/PainelMinhaLista'
+import FerramentasCuradoria from '../components/detalhes/FerramentasCuradoria'
+import NumerosDaObra, { type EstatisticasDaObra } from '../components/detalhes/NumerosDaObra'
 import { getCategoryTheme } from '../lib/filters'
 import { obterTextoDiaLancamento } from '../lib/deckHelpers'
 import { temHistoriaNoApp, veioDeListaRestauravel } from '../lib/posicaoDeLista'
-import { motion } from 'framer-motion'
 import ImagemAmpliada from '../components/ImagemAmpliada'
 import { lerDaMemoria, guardarNaMemoria, invalidarCachesDoDeck } from '../lib/cacheDeTela'
+import { abaDaUrl, type AbaDetalhes, type EntradaNoDeck } from '../lib/detalhes'
+import { ultimoEpisodioDisponivel } from '../lib/comunidade'
+import { useMidia } from '../hooks/useMidia'
 
 interface AnimeDetail {
   mal_id: number
@@ -45,25 +49,21 @@ interface AnimeDetail {
   nextAiringEpisode?: { airingAt: number; timeUntilAiring: number; episode: number }
 }
 
-interface AnimeStats {
-  scores: { score: number; votes: number; percentage: number }[]
-  statuses: { status: string; amount: number }[]
-}
-
-interface MinhaEntrada {
-  id: string
-  status: string
-  mal_id: number
-  tipo: string
-  nota?: number | null
-  anotacao?: string
-  is_favorite?: boolean
-}
-
 // O que a tela guarda em memória de cada anime aberto (ver cacheDeTela.ts).
 interface AnimeEmMemoria {
   anime: AnimeDetail
-  stats: AnimeStats | null
+  stats: EstatisticasDaObra | null
+}
+
+const RELACOES_MOSTRADAS = ['PREQUEL', 'SEQUEL', 'SPIN_OFF', 'ADAPTATION', 'SIDE_STORY', 'PARENT']
+
+function TituloDeBloco({ children, extra }: { children: ReactNode; extra?: ReactNode }) {
+  return (
+    <div className="flex items-center justify-between gap-2 mb-3 select-none">
+      <h2 className="font-anton text-[15px] uppercase tracking-wide m-0">{children}</h2>
+      {extra}
+    </div>
+  )
 }
 
 export default function Detalhes() {
@@ -85,6 +85,11 @@ export default function Detalhes() {
   const { id } = useParams<{ id: string }>()
   const { showToast } = useToast()
   const { reportarFalha, reportarSucesso } = useCatalogoStatus()
+  const [searchParams, setSearchParams] = useSearchParams()
+  const location = useLocation()
+  const aba = abaDaUrl(searchParams.get('aba'), location.hash)
+  const sentinelaAbas = useRef<HTMLDivElement>(null)
+  const ehMonitor = useMidia('(min-width: 1024px)')
 
   // Com este anime já aberto nesta aba, a página nasce pronta (ver cacheDeTela.ts) e a
   // versão nova chega por trás. Anime e estatísticas não são dado pessoal, então a chave
@@ -93,53 +98,26 @@ export default function Detalhes() {
   const [emMemoriaInicial] = useState(() => lerDaMemoria<AnimeEmMemoria>(chaveDoAnime))
 
   const [anime, setAnime] = useState<AnimeDetail | null>(emMemoriaInicial?.anime ?? null)
-  const [stats, setStats] = useState<AnimeStats | null>(emMemoriaInicial?.stats ?? null)
+  const [stats, setStats] = useState<EstatisticasDaObra | null>(emMemoriaInicial?.stats ?? null)
   const [loading, setLoading] = useState(!emMemoriaInicial)
   type TipoErro = 'fonte-externa' | 'nao-encontrado' | 'generico'
   const [erro, setErro] = useState<TipoErro | null>(null)
 
-  const [minhaEntrada, setMinhaEntrada] = useState<MinhaEntrada | null>(null)
+  const [minhaEntrada, setMinhaEntrada] = useState<EntradaNoDeck | null>(null)
+  const entradaAtual = useRef<EntradaNoDeck | null>(null)
   const [imagemAmpliada, setImagemAmpliada] = useState<string | null>(null)
   const [episodiosAssistidos, setEpisodiosAssistidos] = useState<number[]>([])
-
-  const [isModalOpen, setIsModalOpen] = useState(false)
-  const [salvandoStatus, setSalvandoStatus] = useState(false)
+  const [comentariosNaObra, setComentariosNaObra] = useState(0)
+  const [sinopseAberta, setSinopseAberta] = useState(false)
 
   const [isLoggedIn, setIsLoggedIn] = useState(false)
   const [isAdmin, setIsAdmin] = useState(false)
-  const [enviandoIA, setEnviandoIA] = useState(false)
-  const [forcarRecurarIA, setForcarRecurarIA] = useState(false)
-
-  const enviarAnimeParaFilaIA = async (tipo: 'sinopse_tags' | 'completo' = 'sinopse_tags') => {
-    if (!anime) return
-    setEnviandoIA(true)
-    try {
-      const { data: { session } } = await supabase.auth.getSession()
-      if (!session) return
-      const res = await fetch('/api/admin/ia/fila', {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${session.access_token}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ mal_ids: [anime.mal_id], tipo }),
-      })
-      if (!res.ok) throw new Error(await res.text())
-      const desc = tipo === 'sinopse_tags' ? 'sinopse e tags (rápido)' : 'sinopse, tags e episódios'
-      showToast(`Enviado para a fila da IA: ${desc}!`, 'success')
-      setForcarRecurarIA(false)
-    } catch (e) {
-      showToast(e instanceof Error ? e.message : 'Erro ao enviar para a fila da IA.', 'error')
-    } finally {
-      setEnviandoIA(false)
-    }
-  }
 
   useEffect(() => {
-    setForcarRecurarIA(false)
     // Lido de novo aqui, e não só no useState acima, porque ir de um Detalhes para outro
     // troca o id sem desmontar a página.
     const emMemoria = lerDaMemoria<AnimeEmMemoria>(chaveDoAnime)
+    setSinopseAberta(false)
 
     // A entrada do usuário e os episódios assistidos não dependem da resposta do anime.
     // Antes, só saíam depois dela, e a página esperava as quatro requisições em fila.
@@ -161,13 +139,19 @@ export default function Detalhes() {
         const entradas = await resEntries.json()
         // `?? null` limpa a entrada do anime anterior quando se vai de um Detalhes para
         // outro que não está no deck. Antes, ela ficava na tela.
-        setMinhaEntrada(entradas?.find((e: MinhaEntrada) => e.mal_id === Number(id)) ?? null)
+        setMinhaEntrada(entradas?.find((e: EntradaNoDeck) => e.mal_id === Number(id)) ?? null)
       }
       if (resEps?.ok) {
         const epsData = await resEps.json()
-        setEpisodiosAssistidos(epsData || [])
+        setEpisodiosAssistidos(Array.isArray(epsData) ? epsData : [])
       }
     }
+
+    // Só a contagem pública, para o número na aba Conversa.
+    fetch(`/api/anime/${id}/conversa`)
+      .then(r => (r.ok ? (r.json() as Promise<{ comentarios: number }[]>) : []))
+      .then(lista => setComentariosNaObra(lista.reduce((s, c) => s + (c.comentarios || 0), 0)))
+      .catch(() => setComentariosNaObra(0))
 
     const fetchData = async () => {
       if (emMemoria) {
@@ -185,8 +169,7 @@ export default function Detalhes() {
 
       try {
         // As estatísticas saem junto, mas a página NÃO espera por elas: são a parte
-        // secundária e a que mais depende da AniList. Antes, o Promise.all segurava
-        // o anime inteiro até as estatísticas chegarem.
+        // secundária e a que mais depende da AniList.
         const pedidoDeStats = fetch(`/api/anime/${id}/statistics`).catch(() => null)
         const resAnime = await fetch(`/api/anime/${id}`)
 
@@ -209,17 +192,15 @@ export default function Detalhes() {
         guardarNaMemoria<AnimeEmMemoria>(chaveDoAnime, { anime: animeNovo, stats: emMemoria?.stats ?? null })
         setLoading(false)
 
-        // Estatística é secundária: chega quando chegar, com a página já aberta.
         const resStats = await pedidoDeStats
         if (resStats?.ok) {
-          const statsNovas: AnimeStats = (await resStats.json()).data
+          const statsNovas: EstatisticasDaObra = (await resStats.json()).data
           setStats(statsNovas)
           guardarNaMemoria<AnimeEmMemoria>(chaveDoAnime, { anime: animeNovo, stats: statsNovas })
         }
       } catch {
         if (!emMemoria) setErro('generico')
       } finally {
-        // A página aparece assim que o anime chega; a entrada do usuário completa depois.
         setLoading(false)
       }
       await doUsuario
@@ -228,6 +209,31 @@ export default function Detalhes() {
     // reportarFalha/reportarSucesso vêm de useCallback(..., []) no CatalogoStatusContext:
     // a identidade nunca muda, então entram na lista sem alterar quando o efeito roda.
   }, [id, chaveDoAnime, reportarFalha, reportarSucesso])
+
+  // Marcar ou desmarcar episódio em qualquer lugar (grade, painel, notificação) atualiza a
+  // página inteira. O backend já promove "Quero Assistir" para "Assistindo"; aqui só a tela.
+  useEffect(() => {
+    entradaAtual.current = minhaEntrada
+  }, [minhaEntrada])
+
+  useEffect(() => {
+    const aoAtualizar = (ev: Event) => {
+      const d = (ev as CustomEvent<{ malId?: number; episodeNumber?: number; watched?: boolean }>).detail
+      if (d?.malId !== Number(id) || typeof d.episodeNumber !== 'number') return
+      const n = d.episodeNumber
+      setEpisodiosAssistidos(prev => (d.watched ? (prev.includes(n) ? prev : [...prev, n]) : prev.filter(x => x !== n)))
+      if (d.watched) {
+        const atual = entradaAtual.current
+        if (atual?.status === 'Quero Assistir') {
+          setMinhaEntrada({ ...atual, status: 'Assistindo' })
+          showToast('Movido para Assistindo!')
+        }
+        supabase.auth.getSession().then(({ data }) => invalidarCachesDoDeck(data.session?.user?.id))
+      }
+    }
+    window.addEventListener('anideck:episodio-atualizado', aoAtualizar)
+    return () => window.removeEventListener('anideck:episodio-atualizado', aoAtualizar)
+  }, [id, showToast])
 
   const recarregarEpisodios = async () => {
     const { data: { session } } = await supabase.auth.getSession()
@@ -238,80 +244,43 @@ export default function Detalhes() {
       })
       if (resEps.ok) {
         const epsData: number[] = await resEps.json()
-        if (Array.isArray(epsData) && epsData.length > 0) {
-          setEpisodiosAssistidos(epsData)
-        }
+        if (Array.isArray(epsData)) setEpisodiosAssistidos(epsData)
       }
     } catch (e) {
       console.error('Erro ao recarregar progresso:', e)
     }
   }
 
-  const handleAtualizarEntradaRapida = async (novoStatus: string) => {
-    setSalvandoStatus(true)
-    const { data: { session } } = await supabase.auth.getSession()
-    if (!session) {
-      showToast('Você precisa estar logado para salvar.', 'error')
-      setSalvandoStatus(false)
-      return
-    }
-
-    const payload = {
-      mal_id: Number(id),
-      tipo: 'anime',
-      status: novoStatus,
-      nota: minhaEntrada?.nota || null,
-      anotacao: minhaEntrada?.anotacao || '',
-      is_favorite: minhaEntrada?.is_favorite || false
-    }
-
-    try {
-      const url = minhaEntrada ? `/api/entries/${minhaEntrada.id}` : '/api/entries'
-      const method = minhaEntrada ? 'PUT' : 'POST'
-
-      const response = await fetch(url, {
-        method,
-        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${session.access_token}` },
-        body: JSON.stringify(payload),
-      })
-
-      if (!response.ok) throw new Error()
-      const atualizada = await response.json()
-      setMinhaEntrada(Array.isArray(atualizada) ? atualizada[0] : atualizada)
-
-      if (novoStatus === 'Completo') {
-        const totalEps = anime?.episodes || anime?.streamingEpisodes?.length || 0
-        if (totalEps > 0) {
-          setEpisodiosAssistidos(Array.from({ length: totalEps }, (_, i) => i + 1))
-        }
-        await recarregarEpisodios()
-      }
-
-      showToast('Parabéns! Movido para os Completos.', 'success')
-    } catch {
-      showToast('Erro ao atualizar. Tente novamente.', 'error')
-    } finally {
-      setSalvandoStatus(false)
-    }
+  // Troca a aba sem empilhar histórico (o voltar continua saindo da obra) e, se a barra já
+  // grudou no topo, sobe só até ela: o conteúdo novo começa à vista.
+  const trocarAba = (nova: AbaDetalhes) => {
+    setSearchParams(prev => {
+      const proximo = new URLSearchParams(prev)
+      if (nova === 'sobre') proximo.delete('aba')
+      else proximo.set('aba', nova)
+      return proximo
+    }, { replace: true })
+    const marca = sentinelaAbas.current
+    if (!marca) return
+    const alturaDoTopo = window.innerWidth >= 768 ? 73 : 63
+    const alvo = marca.getBoundingClientRect().top + window.scrollY - alturaDoTopo
+    if (window.scrollY > alvo + 1) window.scrollTo({ top: alvo })
   }
 
   const traduzirStatus = (statusOriginal: string) => {
     if (statusOriginal === 'FINISHED' || statusOriginal === 'Finished Airing') return 'Finalizado'
-    if (statusOriginal === 'RELEASING' || statusOriginal === 'Currently Airing') return 'Em Lançamento'
-    if (statusOriginal === 'NOT_YET_RELEASED' || statusOriginal === 'Not yet aired') return 'Em Breve'
+    if (statusOriginal === 'RELEASING' || statusOriginal === 'Currently Airing') return 'Em lançamento'
+    if (statusOriginal === 'NOT_YET_RELEASED' || statusOriginal === 'Not yet aired') return 'Em breve'
     return statusOriginal
   }
 
   const traduzirRelacao = (r: string) => {
     const map: Record<string, string> = {
       'PREQUEL': 'Prequela', 'SEQUEL': 'Sequência', 'SPIN_OFF': 'Spin-off',
-      'ADAPTATION': 'Adaptação', 'SIDE_STORY': 'História Paralela', 'PARENT': 'História Principal'
+      'ADAPTATION': 'Adaptação', 'SIDE_STORY': 'História paralela', 'PARENT': 'História principal'
     }
     return map[r] || r
   }
-
-  const notaDisplay = minhaEntrada?.nota !== null && minhaEntrada?.nota !== undefined ? minhaEntrada.nota : 'N/A'
-  const temNotaDisplay = notaDisplay !== 'N/A'
 
   if (loading) {
     return (
@@ -349,82 +318,69 @@ export default function Detalhes() {
     )
   }
 
-  const maxPercentage = stats?.scores ? Math.max(...stats.scores.map(s => s.percentage)) : 100
-  const totalStatus = stats?.statuses?.reduce((acc, curr) => acc + curr.amount, 0) || 1
-  const completedStatus = stats?.statuses?.find(s => s.status === 'COMPLETED')?.amount || 0
-  const droppedStatus = stats?.statuses?.find(s => s.status === 'DROPPED')?.amount || 0
-
-  const novaEntrada = {
-    mal_id: anime.mal_id,
-    tipo: 'anime',
-    status: 'Quero Assistir',
-  }
-
   const diaLancamentoSemanal = obterTextoDiaLancamento({
     status: anime.status,
     nextAiringEpisode: anime.nextAiringEpisode,
     firstAiredAt: anime.first_aired_at,
     startDate: anime.startDate,
   })
+  const totalEpisodios = anime.episodes || anime.streamingEpisodes?.length || 0
+  const naoLancado = anime.status === 'NOT_YET_RELEASED' || anime.status === 'Not yet aired'
+  const ultimoDisponivel = naoLancado ? 0 : ultimoEpisodioDisponivel(totalEpisodios, anime.nextAiringEpisode?.episode, episodiosAssistidos)
+  const obraTerminou = anime.status === 'FINISHED' || anime.status === 'Finished Airing'
+  const semEpisodios = (anime.episodes || 0) <= 0 && (anime.streamingEpisodes?.length ?? 0) === 0
+  const relacoes = (anime.relations ?? []).filter(r => RELACOES_MOSTRADAS.includes(r.relation) && r.entry[0])
+  const sinopse = anime.synopsis?.replace(/&#34;/g, '"').replace(/&#39;/g, "'") ?? ''
+  const sinopseLonga = sinopse.length > 420
+  const capa = anime.images?.jpg?.image_url
 
-  // No celular o bloco do Deck vai para o topo do conteúdo; no monitor fica na coluna da direita.
-  const blocoMeuDeck = (
-    <section>
-      <h2 className="font-anton text-base uppercase mb-4 flex items-center gap-2 select-none">
-        <span className="font-mono text-[11px] text-holo-3">MEU DECK</span>
-      </h2>
-      {minhaEntrada ? (
-        <div className="bg-gradient-to-br from-panel to-panel-2 border border-holo-3/30 rounded-2xl p-5 shadow-lg">
-          <div className="text-xs font-bold text-muted uppercase mb-1 select-none">Status Atual</div>
-          <div className="font-anton text-2xl text-text mb-4 tracking-wide flex items-center gap-2">
-            {minhaEntrada.status}
-          </div>
+  const abas: { id: AbaDetalhes; rotulo: string; contador?: string }[] = [
+    { id: 'sobre', rotulo: 'Sobre' },
+    { id: 'episodios', rotulo: 'Episódios', contador: totalEpisodios > 0 && isLoggedIn ? `${episodiosAssistidos.length}/${totalEpisodios}` : undefined },
+    { id: 'conversa', rotulo: 'Conversa', contador: comentariosNaObra > 0 ? String(comentariosNaObra) : undefined },
+    { id: 'numeros', rotulo: 'Números' },
+  ]
 
-          {minhaEntrada.anotacao && (
-            <div className="mb-4 p-3 bg-void/50 border border-line rounded-lg">
-              <p className="font-mono text-[9px] text-muted-2 uppercase mb-1">Sua Anotação:</p>
-              <p className="text-[13px] text-muted italic break-words leading-relaxed">"{minhaEntrada.anotacao}"</p>
-            </div>
-          )}
-
-          <button onClick={() => setIsModalOpen(true)} className="select-none block text-center w-full py-2.5 rounded-xl border border-line text-sm font-bold bg-panel-2 hover:bg-holo-3/20 hover:text-holo-3 hover:border-holo-3 transition-colors cursor-pointer">
-            Editar Avaliação
-          </button>
-        </div>
-      ) : (
-        <div className="bg-panel border border-dashed border-line rounded-2xl p-6 text-center">
-          <Bookmark size={24} className="mx-auto mb-3 text-muted-2" />
-          <p className="text-sm font-bold text-text mb-4">Ainda não está no seu Deck.</p>
-          <button onClick={() => setIsModalOpen(true)} className="select-none bg-gradient-to-r from-holo-1 to-holo-3 text-void w-full py-2.5 rounded-xl font-extrabold text-sm hover:opacity-90 transition-opacity cursor-pointer">
-            + Adicionar ao Deck
-          </button>
-        </div>
-      )}
-    </section>
+  const painel = (compacto: boolean) => (
+    <PainelMinhaLista
+      compacto={compacto}
+      malId={anime.mal_id}
+      entrada={minhaEntrada}
+      assistidos={episodiosAssistidos}
+      ultimoDisponivel={ultimoDisponivel}
+      obraTerminou={obraTerminou}
+      onEpisodiosZerados={() => setEpisodiosAssistidos([])}
+      onEntradaMudou={async (nova, anterior) => {
+        setMinhaEntrada(nova)
+        // Completo marca todos os episódios no backend; a grade espelha na hora.
+        if (nova?.status === 'Completo' && anterior?.status !== 'Completo') {
+          if (totalEpisodios > 0) setEpisodiosAssistidos(Array.from({ length: totalEpisodios }, (_, i) => i + 1))
+          await recarregarEpisodios()
+        }
+      }}
+    />
   )
 
   return (
-    <div className="-mt-24 pb-20">
-
-      <div className="relative h-[300px] md:h-[450px] w-full overflow-hidden bg-panel-2">
+    <div className="-mt-24 pb-24">
+      {/* TOPO: banner, capa grande e a ficha da obra */}
+      <div className="relative h-[230px] md:h-[400px] w-full overflow-hidden bg-panel-2">
         {anime.bannerImage ? (
           <div
             onClick={() => setImagemAmpliada(anime.bannerImage!)}
             className="absolute inset-0 bg-cover bg-center bg-no-repeat opacity-90 cursor-zoom-in"
             style={{ backgroundImage: `url(${anime.bannerImage})` }}
           />
+        ) : capa ? (
+          <div className="absolute inset-0 bg-cover bg-center blur-2xl scale-110 opacity-60" style={{ backgroundImage: `url(${capa})` }} />
         ) : (
-          <div className="absolute inset-0 bg-gradient-to-br from-[#3a1a4a] to-[#0A0714]" />
+          <div className="absolute inset-0 bg-gradient-to-br from-holo-2/30 to-void" />
         )}
         <div className="absolute top-0 left-0 right-0 h-36 bg-gradient-to-b from-void/95 via-void/60 to-transparent z-10" />
-        <div className="absolute inset-0 bg-gradient-to-t from-void via-void/40 to-transparent z-10" />
+        <div className="absolute inset-0 bg-gradient-to-t from-void via-void/50 to-transparent z-10" />
 
-        {/*
-          Saída no canto da capa, como em app de streaming. A forma promete o que
-          o destino cumpre: X é "fechar e voltar ao que eu fazia", e só aparece
-          quando a posição de origem vai mesmo ser devolvida. Nos outros casos a
-          seta é honesta — ela só desfaz um passo da navegação.
-        */}
+        {/* Saída no canto, como em app de streaming: X quando a posição da lista de origem
+            vai ser devolvida, seta quando só desfaz um passo da navegação. */}
         <button
           type="button"
           onClick={aoVoltar}
@@ -436,460 +392,287 @@ export default function Detalhes() {
         </button>
       </div>
 
-      <div className="max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-10 -mt-[120px] md:-mt-[160px] relative z-20 pb-2">
-
-        <div className="flex flex-col sm:flex-row gap-5 sm:items-end mb-8 text-center sm:text-left items-center">
-          <div className="relative">
+      <div className="max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-10 -mt-[150px] md:-mt-[210px] relative z-20">
+        <header className="flex flex-col md:flex-row items-center md:items-end gap-4 md:gap-8 text-center md:text-left">
+          <button
+            type="button"
+            onClick={() => capa && setImagemAmpliada(capa)}
+            aria-label="Ampliar a capa"
+            className={`relative shrink-0 w-[176px] md:w-[240px] aspect-[2/3] rounded-2xl overflow-hidden bg-panel-2 border-[3px] shadow-[0_24px_50px_-14px_rgba(0,0,0,0.85)] cursor-zoom-in ${
+              minhaEntrada?.is_favorite ? 'border-holo-1/80' : 'border-panel'
+            }`}
+          >
+            {capa && <img src={capa} alt={`Capa de ${anime.title}`} className="w-full h-full object-cover" />}
             {minhaEntrada?.is_favorite && (
-              <div className="absolute -top-4 -right-4 w-10 h-10 bg-void/80 border border-gold/50 rounded-full flex items-center justify-center text-xl shadow-[0_0_15px_rgba(255,197,66,0.4)] z-30">👑</div>
+              <span className="absolute top-2 right-2 w-8 h-8 rounded-full bg-void/80 border border-holo-1/60 grid place-items-center text-holo-1" title="Favorito">
+                <Heart size={15} fill="currentColor" aria-hidden />
+              </span>
             )}
-            <img
-              src={anime.images?.jpg?.image_url}
-              alt={`Poster de ${anime.title}`}
-              onClick={() => anime.images?.jpg?.image_url && setImagemAmpliada(anime.images.jpg.image_url)}
-              className={`w-[140px] md:w-[170px] h-[198px] md:h-[240px] rounded-xl shadow-[0_15px_30px_-10px_rgba(0,0,0,0.8)] border-[3px] shrink-0 object-cover bg-panel-2 transition-colors ${minhaEntrada?.is_favorite ? 'border-gold' : 'border-panel'}cursor-zoom-in`}
-            />
-          </div>
+          </button>
 
-          <div className="flex-1 min-w-0 pb-1">
-            {anime.ranking && (
-              <div className="inline-flex items-center gap-1.5 mb-2 font-anton text-[11px] px-2 py-0.5 rounded-md border bg-gold/20 text-gold border-gold/40 shadow-[0_0_8px_rgba(255,197,66,0.2)]">
-                <Trophy size={12} /> #{anime.ranking} GLOBAL
-              </div>
-            )}
-
-            <div className="flex items-center justify-center sm:justify-start gap-3 mb-2 group">
-              <h1 className="font-anton text-[clamp(1.4rem,3.5vw,2.4rem)] uppercase leading-[1.05] tracking-wide drop-shadow-md break-words">
+          <div className="min-w-0 flex-1 md:pb-2 w-full">
+            <div className="flex items-start justify-center md:justify-start gap-2 group">
+              <h1 className="font-anton text-[clamp(1.55rem,4.6vw,2.9rem)] uppercase leading-[1.04] tracking-wide drop-shadow-md break-words m-0">
                 {anime.title}
               </h1>
-              <BotaoCopiar texto={anime.title} className="opacity-70 md:opacity-0 group-hover:opacity-100 focus:opacity-100 transition-opacity shrink-0" />
+              <BotaoCopiar texto={anime.title} className="mt-1 opacity-70 md:opacity-0 group-hover:opacity-100 focus:opacity-100 transition-opacity shrink-0" />
             </div>
 
-            <div className="flex flex-wrap gap-2 items-center justify-center sm:justify-start font-mono text-[11px] text-muted mb-3">
-              <span className="text-holo-3">{traduzirStatus(anime.status)}</span>
-              {diaLancamentoSemanal && (
+            <div className="flex flex-wrap items-center justify-center md:justify-start gap-x-2 gap-y-1 mt-2.5 font-mono text-[11.5px] text-muted">
+              <span className="text-holo-3 font-bold">{traduzirStatus(anime.status)}</span>
+              <span className="text-muted-2">·</span>
+              <span>{anime.episodes || '?'} episódios</span>
+              {anime.studios?.length > 0 && (
                 <>
-                  <span className="text-muted-2">•</span>
-                  <span className="px-2 py-0.5 rounded-full bg-holo-3/15 border border-holo-3/35 text-holo-3 font-bold">
-                    📅 {diaLancamentoSemanal}
-                  </span>
+                  <span className="text-muted-2">·</span>
+                  <span>{anime.studios[0].name}</span>
                 </>
               )}
-              <span className="text-muted-2">•</span>
-              <span>{anime.episodes || '?'} EP</span>
-              {anime.studios?.length > 0 && (
-                <><span className="text-muted-2">•</span><span>{anime.studios[0].name}</span></>
+              {anime.startDate?.year && (
+                <>
+                  <span className="text-muted-2">·</span>
+                  <span>{anime.startDate.year}</span>
+                </>
               )}
             </div>
 
-            <div className="flex flex-wrap gap-2 justify-center sm:justify-start mb-4">
-              {anime.genres?.map(g => (
-                <span key={g.name} className={`text-[10px] font-bold px-1.5 py-0.5 sm:px-3 sm:py-1 rounded-full border select-none ${getCategoryTheme(g.name)}`}>
-                  {g.name}
+            <div className="flex flex-wrap items-center justify-center md:justify-start gap-2 mt-3">
+              {anime.score > 0 && (
+                <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-panel/90 border border-gold/40 text-[12.5px] font-bold">
+                  <Star size={14} className="text-gold fill-gold" aria-hidden />
+                  <span className="text-gold">{anime.score.toFixed(1)}</span>
+                  <span className="text-muted-2 font-mono text-[10px] uppercase">AniList</span>
                 </span>
-              ))}
+              )}
+              {anime.ranking ? (
+                <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-panel/90 border border-line text-[12.5px] font-bold text-text">
+                  <Trophy size={13} className="text-gold" aria-hidden /> #{anime.ranking}
+                </span>
+              ) : null}
+              {diaLancamentoSemanal && (
+                <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-holo-3/10 border border-holo-3/35 text-[12px] font-bold text-holo-3">
+                  <CalendarDays size={13} aria-hidden /> {diaLancamentoSemanal}
+                </span>
+              )}
             </div>
 
-            <div className="bg-panel border border-line rounded-xl px-5 py-3 inline-flex items-center gap-5 shrink-0 shadow-lg mt-1 select-none">
-              <div className="flex items-center gap-3">
-                <Star className="text-gold fill-gold w-6 h-6" />
-                <div className="text-left">
-                  <div className="font-anton text-[22px] text-gold leading-none">{anime.score ? anime.score.toFixed(1) : 'N/A'}</div>
-                  <div className="text-[10px] font-bold text-muted-2 mt-1 uppercase tracking-wide">Nota Geral</div>
-                </div>
+            {anime.genres?.length > 0 && (
+              <div className="flex flex-wrap justify-center md:justify-start gap-1.5 mt-3">
+                {anime.genres.slice(0, 5).map(g => (
+                  <span key={g.name} className={`text-[10.5px] font-bold px-2.5 py-0.5 rounded-full border select-none ${getCategoryTheme(g.name)}`}>
+                    {g.name}
+                  </span>
+                ))}
               </div>
-
-              <div className="w-[1px] h-8 bg-line"></div>
-
-              <div className="flex items-center gap-3 cursor-pointer group" onClick={() => setIsModalOpen(true)}>
-                <Star className={`w-6 h-6 transition-colors ${temNotaDisplay ? 'text-holo-3 fill-holo-3' : 'text-muted-2 group-hover:text-text'}`} />
-                <div className="text-left">
-                  <div className={`font-anton text-[22px] leading-none transition-colors ${temNotaDisplay ? 'text-holo-3' : 'text-muted-2 group-hover:text-text'}`}>
-                    {notaDisplay}
-                  </div>
-                  <div className="text-[10px] font-bold text-muted-2 mt-1 uppercase tracking-wide">Sua Nota</div>
-                </div>
-              </div>
-            </div>
+            )}
           </div>
-        </div>
+        </header>
 
-        {isAdmin && (() => {
-          const jaCurado = Boolean(anime.is_curated)
-          const semEpisodios = (anime.episodes || 0) <= 0 && (anime.streamingEpisodes?.length ?? 0) === 0
-          const iaBloqueada = jaCurado && !forcarRecurarIA && !semEpisodios
-          const rotuloStatusCuradoria =
-            anime.curation_status === 'completo'
-              ? 'Completo'
-              : anime.curation_status === 'revisar'
-                ? 'Revisar'
-                : 'Parcial'
-
-          return (
-            <div className={`mb-6 p-3.5 rounded-2xl bg-panel/90 border flex flex-col gap-3 shadow-[0_0_20px_rgba(255,197,66,0.08)] ${semEpisodios ? 'border-coral/60 bg-coral/[0.04]' : jaCurado ? 'border-green/40' : 'border-gold/40'}`}>
-              <div className="flex flex-wrap items-center justify-between gap-2">
-                <div className="flex flex-wrap items-center gap-2 text-xs font-bold text-gold">
-                  <Wrench size={14} className="shrink-0" />
-                  <span>Ferramentas de Curadoria (Admin) · MAL ID #{anime.mal_id}</span>
-                  {jaCurado ? (
-                    <span className="px-2.5 py-0.5 rounded-full text-[10px] font-mono uppercase bg-green/15 text-green border border-green/40">
-                      ✓ Já curado · {rotuloStatusCuradoria}
-                    </span>
-                  ) : (
-                    <span className="px-2.5 py-0.5 rounded-full text-[10px] font-mono uppercase bg-gold/15 text-gold border border-gold/40">
-                      ⚠ Ainda não curado
-                    </span>
-                  )}
-                  {semEpisodios && (
-                    <span className="px-2.5 py-0.5 rounded-full text-[10px] font-mono uppercase bg-coral/20 text-coral border border-coral/50 font-extrabold">
-                      🚨 Emergência: Sem episódios (0 EP) — realize a curadoria
-                    </span>
-                  )}
-                </div>
-
-                {jaCurado && (
-                  <label className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-mono bg-void/60 border border-line text-muted hover:text-text cursor-pointer select-none">
-                    <input
-                      type="checkbox"
-                      checked={forcarRecurarIA}
-                      onChange={e => setForcarRecurarIA(e.target.checked)}
-                      className="accent-gold cursor-pointer"
-                    />
-                    <span>Curar mesmo assim com IA</span>
-                  </label>
-                )}
-              </div>
-
-              <div className="flex flex-wrap items-center gap-2">
-                <button
-                  type="button"
-                  onClick={() => navigate(`/admin?aba=curadoria&mal_id=${anime.mal_id}`)}
-                  className="px-3.5 py-1.5 rounded-full text-xs font-bold bg-panel-2 border border-line text-text hover:border-gold hover:text-gold cursor-pointer transition-colors"
-                >
-                  {jaCurado ? '✏️ Editar Curadoria' : '✏️ Curar Manualmente'}
-                </button>
-                <button
-                  type="button"
-                  onClick={() => enviarAnimeParaFilaIA('sinopse_tags')}
-                  disabled={enviandoIA || iaBloqueada}
-                  title={iaBloqueada ? 'Obra já curada. Marque "Curar mesmo assim com IA" acima para liberar.' : 'Enfileirar geração rápida de sinopse e tags'}
-                  className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-bold bg-holo-1/15 border border-holo-1/40 text-holo-1 hover:bg-holo-1 hover:text-void cursor-pointer transition-colors disabled:opacity-40 disabled:pointer-events-none"
-                >
-                  <Sparkles size={12} />
-                  {enviandoIA ? 'Enviando...' : 'IA: Sinopse + Tags'}
-                </button>
-                <button
-                  type="button"
-                  onClick={() => enviarAnimeParaFilaIA('completo')}
-                  disabled={enviandoIA || iaBloqueada}
-                  title={iaBloqueada ? 'Obra já curada. Marque "Curar mesmo assim com IA" acima para liberar.' : 'Enfileirar sinopse, tags e pesquisa de episódios'}
-                  className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-bold bg-panel-2 border border-line text-muted hover:text-text hover:border-holo-2 cursor-pointer transition-colors disabled:opacity-40 disabled:pointer-events-none"
-                >
-                  🔎 IA: Tudo (+ Eps)
-                </button>
-                <button
-                  type="button"
-                  onClick={() => navigate('/admin?aba=revisao_ia')}
-                  className="px-3 py-1.5 rounded-full text-xs font-bold text-muted hover:text-text cursor-pointer transition-colors ml-auto"
-                >
-                  Ver Fila →
-                </button>
-              </div>
-            </div>
-          )
-        })()}
-
-        <div className="sticky top-[63px] md:top-[73px] z-40 bg-void/95 backdrop-blur-sm border-b border-line overflow-x-auto whitespace-nowrap py-3 mb-8 scrollbar-hide">
-          <div className="flex gap-2.5">
-            <a href="#visao-geral" className="select-none text-[13px] font-bold text-muted hover:text-text hover:border-holo-3 px-3.5 py-1.5 rounded-full border border-line transition-colors">Visão Geral</a>
-            {anime.streaming?.length > 0 && <a href="#onde-assistir" className="select-none text-[13px] font-bold text-muted hover:text-text hover:border-holo-3 px-3.5 py-1.5 rounded-full border border-line transition-colors">Onde Assistir</a>}
-            {anime.characters && anime.characters.length > 0 && <a href="#personagens" className="select-none text-[13px] font-bold text-muted hover:text-text hover:border-holo-3 px-3.5 py-1.5 rounded-full border border-line transition-colors">Personagens</a>}
-            <a href="#estatisticas" className="select-none text-[13px] font-bold text-muted hover:text-text hover:border-holo-3 px-3.5 py-1.5 rounded-full border border-line transition-colors">Estatísticas</a>
-            {(anime.episodes > 0 || (anime.nextAiringEpisode?.episode ?? 0) > 1) && <a href="#conversa" className="select-none text-[13px] font-bold text-muted hover:text-text hover:border-holo-3 px-3.5 py-1.5 rounded-full border border-line transition-colors">Conversa</a>}
-            {anime.relations?.length > 0 && <a href="#relacionados" className="select-none text-[13px] font-bold text-muted hover:text-text hover:border-holo-3 px-3.5 py-1.5 rounded-full border border-line transition-colors">Relacionados</a>}
-          </div>
-        </div>
-
-        {minhaEntrada?.status === 'Em Dia' && (anime.status === 'Finished Airing' || anime.status === 'FINISHED') && (
-          <div className="bg-gradient-to-r from-holo-1/20 to-holo-2/20 border border-holo-2/40 p-5 rounded-2xl flex flex-col md:flex-row justify-between items-center gap-4 shadow-lg mb-8 backdrop-blur-md">
-            <div className="text-center md:text-left">
-              <h3 className="font-anton uppercase text-holo-1 text-xl mb-1">Anime Finalizado!</h3>
-              <p className="font-bold text-sm text-text">O AniDeck detectou que já finalizou essa obra. Deseja mover da sua lista de "Em Dia" para "Completo"?</p>
-            </div>
-            <button
-              onClick={() => handleAtualizarEntradaRapida('Completo')}
-              disabled={salvandoStatus}
-              className="select-none bg-gradient-to-r from-holo-1 to-holo-2 text-void px-6 py-3 rounded-full font-extrabold text-sm shrink-0 transition-transform cursor-pointer hover:opacity-90 disabled:opacity-50"
-            >
-              {salvandoStatus ? 'Atualizando...' : 'Marcar como Completo ✓'}
-            </button>
+        {isAdmin && (
+          <div className="mt-6">
+            <FerramentasCuradoria malId={anime.mal_id} curada={Boolean(anime.is_curated)} statusCuradoria={anime.curation_status} semEpisodios={semEpisodios} />
           </div>
         )}
 
-        <div className="grid grid-cols-1 lg:grid-cols-[1fr_320px] gap-10" id="visao-geral">
-          <div className="space-y-10 min-w-0">
+        <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_350px] gap-x-10 mt-6">
+          <div className="min-w-0">
+            {/* No celular o painel vem antes das abas; no monitor ele fica na coluna da direita. */}
+            {!ehMonitor && <div className="mb-5">{painel(true)}</div>}
 
-            <div className="lg:hidden">{blocoMeuDeck}</div>
-
-            <section>
-              <div className="flex flex-wrap items-center justify-between gap-2 mb-4 select-none">
-                <h2 className="font-anton text-base uppercase flex items-center gap-2 m-0">
-                  <span className="font-mono text-[11px] text-holo-3">01</span> Sinopse
-                </h2>
-                {!anime.is_curated && (
-                  <span className="font-mono text-[10px] uppercase tracking-wider text-muted-2">
-                    Tradução automática
-                  </span>
-                )}
+            <div ref={sentinelaAbas} aria-hidden />
+            <nav
+              role="tablist"
+              aria-label="Seções do anime"
+              className="sticky top-[63px] md:top-[73px] z-30 -mx-4 px-4 sm:mx-0 sm:px-0 mb-6 bg-void/95 backdrop-blur-md border-b border-line"
+            >
+              <div className="flex">
+                {abas.map(a => {
+                  const ativa = a.id === aba
+                  return (
+                    <button
+                      key={a.id}
+                      type="button"
+                      role="tab"
+                      id={`aba-${a.id}`}
+                      aria-selected={ativa}
+                      aria-controls={`painel-${a.id}`}
+                      onClick={() => trocarAba(a.id)}
+                      className={`relative flex-1 sm:flex-none sm:px-6 py-3.5 text-[13px] font-bold transition-colors cursor-pointer select-none ${ativa ? 'text-text' : 'text-muted hover:text-text'}`}
+                    >
+                      {a.rotulo}
+                      {a.contador && (
+                        <span className={`ml-1.5 font-mono text-[10px] ${a.id === 'episodios' ? 'hidden sm:inline' : ''} ${ativa ? 'text-holo-3' : 'text-muted-2'}`}>
+                          {a.contador}
+                        </span>
+                      )}
+                      {ativa && <span className="absolute left-3 right-3 sm:left-4 sm:right-4 bottom-0 h-[3px] rounded-full bg-gradient-to-r from-holo-1 to-holo-3" />}
+                    </button>
+                  )
+                })}
               </div>
-              <div className="text-muted text-[14.5px] leading-[1.7] bg-panel border border-line rounded-2xl p-6">
-                {anime.synopsis ? (
-                  <ReactMarkdown
-                    components={{
-                      /* eslint-disable @typescript-eslint/no-unused-vars -- `node` é
-                         destruturado justamente para NÃO entrar no ...props: sem isso ele
-                         seria espalhado no elemento e vazaria como atributo inválido no DOM. */
-                      p: ({ node, ...props }) => <p className="mb-4 last:mb-0" {...props} />,
-                      strong: ({ node, ...props }) => <strong className="font-extrabold text-text" {...props} />,
-                      em: ({ node, ...props }) => <em className="italic text-holo-3" {...props} />
-                      /* eslint-enable @typescript-eslint/no-unused-vars */
-                    }}
-                  >
-                    {anime.synopsis.replace(/&#34;/g, '"').replace(/&#39;/g, "'")}
-                  </ReactMarkdown>
-                ) : ('Sinopse não disponível nesta base de dados.')}
-              </div>
-            </section>
+            </nav>
 
-            {anime.streaming?.length > 0 && (
-              <section id="onde-assistir">
-                <h2 className="font-anton text-base uppercase mb-4 flex items-center gap-2 select-none">
-                  <span className="font-mono text-[11px] text-holo-3">02</span> Onde Assistir Oficial
-                </h2>
-                <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5 md:gap-3">
-                  {anime.streaming.map(st => (
-                    <a key={`${st.name}-${st.url}`} href={st.url} target="_blank" rel="noreferrer" className="select-none min-h-12 flex items-center gap-2 bg-panel border border-line rounded-xl px-3 md:px-4 py-3 text-[12px] md:text-[13px] font-bold hover:border-holo-1 hover:text-holo-1 transition-colors">
-                      <PlayCircle size={16} className="shrink-0" />
-                      <span className="truncate">{st.name}</span>
-                    </a>
-                  ))}
-                </div>
-              </section>
-            )}
-
-            {anime.characters && anime.characters.length > 0 && (
-              <section id="personagens">
-                <h2 className="font-anton text-base uppercase mb-4 flex items-center gap-2 select-none">
-                  <span className="font-mono text-[11px] text-holo-3">03</span> Personagens
-                </h2>
-                <div className="flex gap-4 overflow-x-auto pb-4 custom-scrollbar snap-x">
-                  {/* A chave cai para o nome quando o id é 0.
-                      Personagem vindo da AniList tem id próprio, mas o elenco curado no
-                      Painel é gravado como {name, image, role} — sem id — e o Go desserializa
-                      isso em Character{ID: 0}. Resultado: TODO o elenco curado chegava aqui
-                      com key={0}, e o React reaproveitava o componente errado ao atualizar. */}
-                  {anime.characters.map(char => (
-                    <div key={char.id || char.name} className="flex-none w-[110px] sm:w-[130px] snap-start group">
-                      <div className="aspect-[3/4] rounded-xl overflow-hidden mb-2 bg-panel-2 border border-line">
-                        <img src={char.image} alt={char.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
-                      </div>
-                      <div className="font-bold text-[12px] md:text-[13px] leading-tight truncate text-text group-hover:text-holo-3 transition-colors">{char.name}</div>
-                      <div className="font-mono text-[9px] text-muted uppercase tracking-wider truncate mt-0.5">{char.role}</div>
-                    </div>
-                  ))}
-                </div>
-              </section>
-            )}
-
-            <EpisodeGrid
-              malId={anime.mal_id}
-              totalEpisodes={anime.episodes}
-              streamingEpisodes={anime.streamingEpisodes}
-              initialWatched={episodiosAssistidos}
-              isLoggedIn={isLoggedIn}
-              isAdmin={isAdmin}
-              status={anime.status}
-              nextAiringEpisode={anime.nextAiringEpisode}
-              startDate={anime.startDate}
-              firstAiredAt={anime.first_aired_at}
-              onEpisodeMarkedWatched={async (epNum) => {
-                setEpisodiosAssistidos(prev => prev.includes(epNum) ? prev : [...prev, epNum])
-                const { data: { session } } = await supabase.auth.getSession()
-                invalidarCachesDoDeck(session?.user?.id)
-                if (minhaEntrada && minhaEntrada.status === 'Quero Assistir' && session) {
-                  const entradaAtualizada = { ...minhaEntrada, status: 'Assistindo' }
-                  setMinhaEntrada(entradaAtualizada)
-                  try {
-                    await fetch(`/api/entries/${minhaEntrada.id}`, {
-                      method: 'PUT',
-                      headers: {
-                        'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${session.access_token}`,
-                      },
-                      body: JSON.stringify({
-                        mal_id: minhaEntrada.mal_id,
-                        tipo: minhaEntrada.tipo || 'anime',
-                        status: 'Assistindo',
-                        nota: minhaEntrada.nota ?? null,
-                        anotacao: minhaEntrada.anotacao || '',
-                        is_favorite: minhaEntrada.is_favorite || false,
-                      }),
-                    })
-                    showToast('Movido automaticamente para Assistindo!', 'success')
-                  } catch {
-                    // A atualização de status por episódio marcado também ocorre no backend
-                  }
-                }
-              }}
-            />
-
-            <ConversaDoAnime
-              malId={anime.mal_id}
-              totalEpisodes={anime.episodes}
-              proximoAoAr={anime.nextAiringEpisode?.episode}
-              assistidosIniciais={episodiosAssistidos}
-            />
-
-            {anime.relations?.length > 0 && (
-              <section id="relacionados">
-                <h2 className="font-anton text-base uppercase mb-4 flex items-center gap-2 select-none">
-                  <span className="font-mono text-[11px] text-holo-3">04</span> Títulos Relacionados
-                </h2>
-                <div className="flex gap-4 overflow-x-auto pb-4 scrollbar-hide snap-x">
-                  {anime.relations
-                    .filter(rel => ['PREQUEL', 'SEQUEL', 'SPIN_OFF', 'ADAPTATION', 'SIDE_STORY', 'PARENT'].includes(rel.relation))
-                    .map((rel, i) => {
-                      const relationAnime = rel.entry[0]
-                      if (!relationAnime) return null
-
-                      // Sem mal_id não existe página de destino: o card sai igual, só não vira
-                      // link. A informação "existe uma continuação" continua verdadeira e útil,
-                      // e mandar para /anime/0 mostrava um erro de catálogo ao usuário.
-                      const classeCartao = 'flex-none w-[160px] md:w-[180px] group snap-start'
-
-                      const conteudo = (
-                        <>
-                          <div className="relative aspect-[2/3] rounded-xl overflow-hidden mb-2 bg-panel-2 border border-line">
-                            {relationAnime.image ? (
-                              <img src={relationAnime.image} alt={relationAnime.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300 opacity-90 group-hover:opacity-100" />
-                            ) : (
-                              <div className="w-full h-full flex items-center justify-center text-muted-2 text-xs">Sem foto</div>
-                            )}
-                            <div className="absolute top-2 left-2 bg-void/80 backdrop-blur-sm border border-line/50 font-mono text-[9px] text-holo-3 uppercase px-2 py-0.5 rounded shadow-lg">
-                              {traduzirRelacao(rel.relation)}
-                            </div>
-                            <div className="absolute inset-0 bg-gradient-to-t from-void/90 via-transparent to-transparent opacity-60"></div>
-                          </div>
-
-                          <div className="font-bold text-[13px] md:text-[14px] leading-tight text-text group-hover:text-holo-3 transition-colors line-clamp-2">
-                            {relationAnime.name}
-                          </div>
-                        </>
-                      )
-
-                      return relationAnime.mal_id != null ? (
-                        <Link key={i} to={`/anime/${relationAnime.mal_id}`} className={`${classeCartao} cursor-pointer`}>
-                          {conteudo}
-                        </Link>
-                      ) : (
-                        <div key={i} className={classeCartao}>
-                          {conteudo}
-                        </div>
-                      )
-                    })}
-                </div>
-              </section>
-            )}
-          </div>
-
-          <div className="space-y-10 min-w-0" id="estatisticas">
-
-            <div className="hidden lg:block">{blocoMeuDeck}</div>
-
-            {stats && stats.scores && (
-              <section>
-                <h2 className="font-anton text-base uppercase mb-4 flex items-center gap-2 select-none">
-                  <span className="font-mono text-[11px] text-holo-3">ESTATÍSTICAS</span> Comunidade
-                </h2>
-
-                <div className="grid grid-cols-2 gap-3 mb-4">
-                  <div className="bg-panel border border-line rounded-xl p-4">
-                    <div className="font-mono text-[9px] text-green mb-1 font-bold">COMPLETARAM</div>
-                    <div className="font-anton text-xl">{(completedStatus / totalStatus * 100).toFixed(1)}%</div>
-                  </div>
-                  <div className="bg-panel border border-line rounded-xl p-4">
-                    <div className="font-mono text-[9px] text-coral mb-1 font-bold">DROPARAM</div>
-                    <div className="font-anton text-xl">{(droppedStatus / totalStatus * 100).toFixed(1)}%</div>
-                  </div>
-                </div>
-
-                <div className="bg-panel border border-line rounded-2xl p-5">
-                  <div className="flex items-end gap-1.5 h-[120px] mb-2">
-                    {stats.scores.slice().reverse().map(s => {
-                      const heightPct = maxPercentage > 0 ? (s.percentage / maxPercentage) * 100 : 0
-                      const isUserScore = notaDisplay !== 'N/A' && Math.round(Number(notaDisplay)) === s.score
-
-                      return (
-                        <div key={s.score} className="flex-1 flex flex-col justify-end h-full group relative">
-                          <motion.div
-                            initial={{ height: 0 }}
-                            whileInView={{ height: `${heightPct}%` }}
-                            viewport={{ once: true, margin: "-50px" }}
-                            transition={{ duration: 0.6, ease: "easeOut" }}
-                            className={`rounded-t-sm w-full transition-colors relative ${isUserScore ? 'bg-holo-3 border border-holo-3/50' : 'bg-gradient-to-t from-holo-2/50 to-holo-2 opacity-80 group-hover:opacity-100'}`}
+            <div role="tabpanel" id={`painel-${aba}`} aria-labelledby={`aba-${aba}`} className="min-h-[50vh]">
+              {aba === 'sobre' && (
+                <div className="space-y-9">
+                  <section>
+                    <TituloDeBloco extra={!anime.is_curated && <span className="font-mono text-[10px] uppercase tracking-wider text-muted-2">Tradução automática</span>}>
+                      Sinopse
+                    </TituloDeBloco>
+                    <div className="relative">
+                      <div
+                        className={`text-muted text-[14.5px] leading-[1.75] ${sinopseLonga && !sinopseAberta ? 'max-h-[11.5rem] overflow-hidden md:max-h-none md:overflow-visible' : ''}`}
+                      >
+                        {sinopse ? (
+                          <ReactMarkdown
+                            components={{
+                              /* eslint-disable @typescript-eslint/no-unused-vars -- `node` é
+                                 destruturado justamente para NÃO entrar no ...props: sem isso ele
+                                 seria espalhado no elemento e vazaria como atributo inválido no DOM. */
+                              p: ({ node, ...props }) => <p className="mb-4 last:mb-0" {...props} />,
+                              strong: ({ node, ...props }) => <strong className="font-extrabold text-text" {...props} />,
+                              em: ({ node, ...props }) => <em className="italic text-holo-3" {...props} />
+                              /* eslint-enable @typescript-eslint/no-unused-vars */
+                            }}
                           >
-                            {isUserScore && (
-                              <div className="absolute -top-6 left-1/2 -translate-x-1/2 bg-holo-3 text-void text-[8px] font-black px-1 rounded">VOCÊ</div>
-                            )}
-                          </motion.div>
-                        </div>
-                      )
-                    })}
-                  </div>
-                  <div className="flex justify-between font-mono text-[10px] text-muted-2 px-1 select-none">
-                    <span>10</span><span>9</span><span>8</span><span>7</span><span>6</span><span>5</span><span>4</span><span>3</span><span>2</span><span>1</span>
-                  </div>
+                            {sinopse}
+                          </ReactMarkdown>
+                        ) : (
+                          'Sinopse não disponível nesta base de dados.'
+                        )}
+                      </div>
+                      {sinopseLonga && !sinopseAberta && (
+                        <div className="md:hidden absolute inset-x-0 bottom-0 h-20 bg-gradient-to-t from-void to-transparent pointer-events-none" />
+                      )}
+                    </div>
+                    {sinopseLonga && (
+                      <button
+                        type="button"
+                        onClick={() => setSinopseAberta(a => !a)}
+                        aria-expanded={sinopseAberta}
+                        className="md:hidden mt-2 inline-flex items-center gap-1 text-[13px] font-bold text-holo-3 cursor-pointer"
+                      >
+                        {sinopseAberta ? 'Mostrar menos' : 'Ler tudo'}
+                        <ChevronDown size={15} className={`transition-transform ${sinopseAberta ? 'rotate-180' : ''}`} aria-hidden />
+                      </button>
+                    )}
+                  </section>
 
-                  <div className="mt-6 pt-5 border-t border-line">
-                    <b className="font-anton text-lg text-text block leading-none mb-1 select-none">
-                      {stats.scores.reduce((acc, curr) => acc + curr.votes, 0).toLocaleString()}
-                    </b>
-                    <span className="font-mono text-[10.5px] text-muted tracking-wider select-none">AVALIAÇÕES</span>
-                  </div>
+                  {anime.streaming?.length > 0 && (
+                    <section>
+                      <TituloDeBloco>Onde assistir</TituloDeBloco>
+                      <div className="flex flex-wrap gap-2">
+                        {anime.streaming.map(st => (
+                          <a
+                            key={`${st.name}-${st.url}`}
+                            href={st.url}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="inline-flex items-center gap-2 bg-panel border border-line rounded-full pl-3 pr-4 py-2 text-[13px] font-bold hover:border-holo-1 hover:text-holo-1 transition-colors"
+                          >
+                            <PlayCircle size={16} className="shrink-0" aria-hidden />
+                            {st.name}
+                          </a>
+                        ))}
+                      </div>
+                    </section>
+                  )}
+
+                  {anime.characters && anime.characters.length > 0 && (
+                    <section>
+                      <TituloDeBloco>Personagens</TituloDeBloco>
+                      <div className="flex gap-3 overflow-x-auto pb-2 -mx-4 px-4 scroll-px-4 sm:mx-0 sm:px-0 sm:scroll-px-0 scrollbar-hide snap-x">
+                        {/* A chave cai para o nome quando o id falta: o elenco curado no Painel é
+                            gravado sem id e chegaria com chaves repetidas. */}
+                        {anime.characters.map(char => (
+                          <div key={char.id || char.name} className="flex-none w-[100px] sm:w-[120px] snap-start">
+                            <div className="aspect-[3/4] rounded-xl overflow-hidden mb-1.5 bg-panel-2 border border-line">
+                              <img src={char.image} alt={char.name} loading="lazy" className="w-full h-full object-cover" />
+                            </div>
+                            <div className="font-bold text-[12px] leading-tight line-clamp-2 text-text">{char.name}</div>
+                            <div className="font-mono text-[9px] text-muted uppercase tracking-wider truncate mt-0.5">{char.role === 'MAIN' ? 'Principal' : char.role === 'SUPPORTING' ? 'Coadjuvante' : char.role}</div>
+                          </div>
+                        ))}
+                      </div>
+                    </section>
+                  )}
+
+                  {relacoes.length > 0 && (
+                    <section>
+                      <TituloDeBloco>Da mesma história</TituloDeBloco>
+                      <div className="flex gap-3 overflow-x-auto pb-2 -mx-4 px-4 scroll-px-4 sm:mx-0 sm:px-0 sm:scroll-px-0 scrollbar-hide snap-x">
+                        {relacoes.map((rel, i) => {
+                          const relacionado = rel.entry[0]
+                          // Sem mal_id não existe página de destino: o card sai igual, só não vira link.
+                          const conteudo = (
+                            <>
+                              <div className="relative aspect-[2/3] rounded-xl overflow-hidden mb-1.5 bg-panel-2 border border-line">
+                                {relacionado.image ? (
+                                  <img src={relacionado.image} alt="" loading="lazy" className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
+                                ) : (
+                                  <div className="w-full h-full flex items-center justify-center text-muted-2 text-xs">Sem capa</div>
+                                )}
+                                <span className="absolute top-2 left-2 bg-void/85 border border-line/50 font-mono text-[9px] text-holo-3 uppercase px-1.5 py-0.5 rounded">
+                                  {traduzirRelacao(rel.relation)}
+                                </span>
+                              </div>
+                              <div className="font-bold text-[12.5px] leading-tight text-text group-hover:text-holo-3 transition-colors line-clamp-2">{relacionado.name}</div>
+                            </>
+                          )
+                          return relacionado.mal_id != null ? (
+                            <Link key={i} to={`/anime/${relacionado.mal_id}`} className="flex-none w-[130px] sm:w-[150px] group snap-start">
+                              {conteudo}
+                            </Link>
+                          ) : (
+                            <div key={i} className="flex-none w-[130px] sm:w-[150px] snap-start">
+                              {conteudo}
+                            </div>
+                          )
+                        })}
+                      </div>
+                    </section>
+                  )}
                 </div>
-              </section>
-            )}
+              )}
+
+              {aba === 'episodios' && (
+                <EpisodeGrid
+                  malId={anime.mal_id}
+                  totalEpisodes={anime.episodes}
+                  streamingEpisodes={anime.streamingEpisodes}
+                  initialWatched={episodiosAssistidos}
+                  isLoggedIn={isLoggedIn}
+                  isAdmin={isAdmin}
+                  status={anime.status}
+                  nextAiringEpisode={anime.nextAiringEpisode}
+                  startDate={anime.startDate}
+                  firstAiredAt={anime.first_aired_at}
+                />
+              )}
+
+              {aba === 'conversa' && (
+                <ConversaDoAnime
+                  malId={anime.mal_id}
+                  totalEpisodes={naoLancado ? 0 : totalEpisodios}
+                  proximoAoAr={naoLancado ? undefined : anime.nextAiringEpisode?.episode}
+                  assistidosIniciais={episodiosAssistidos}
+                  aoIrParaEpisodios={() => trocarAba('episodios')}
+                />
+              )}
+
+              {aba === 'numeros' && <NumerosDaObra nota={anime.score} ranking={anime.ranking} stats={stats} minhaNota={minhaEntrada?.nota ?? null} />}
+            </div>
           </div>
+
+          {ehMonitor && (
+            <aside>
+              <div className="sticky top-[96px]">{painel(false)}</div>
+            </aside>
+          )}
         </div>
       </div>
 
-     <EditarEntradaModal
-        entrada={isModalOpen ? (minhaEntrada || novaEntrada) : null}
-        totalEpisodiosAssistidos={episodiosAssistidos.length}
-        onFechar={() => setIsModalOpen(false)}
-        onEpisodiosLimpos={() => setEpisodiosAssistidos([])}
-        onSalvar={async (atualizada) => {
-          setMinhaEntrada(atualizada)
-          setIsModalOpen(false)
-          const { data: { session } } = await supabase.auth.getSession()
-          invalidarCachesDoDeck(session?.user?.id)
-          if (atualizada?.status === 'Completo') {
-            const totalEps = anime?.episodes || anime?.streamingEpisodes?.length || 0
-            if (totalEps > 0) {
-              setEpisodiosAssistidos(Array.from({ length: totalEps }, (_, i) => i + 1))
-            }
-            await recarregarEpisodios()
-          }
-        }}
-        onExcluir={async () => {
-          setMinhaEntrada(null)
-          const { data: { session } } = await supabase.auth.getSession()
-          invalidarCachesDoDeck(session?.user?.id)
-          showToast('Removido do Deck.', 'success')
-          setIsModalOpen(false)
-        }}
-      />
-       <ImagemAmpliada
+      <ImagemAmpliada
         src={imagemAmpliada}
         alt={anime.title || 'Imagem do anime'}
         aoFechar={() => setImagemAmpliada(null)}

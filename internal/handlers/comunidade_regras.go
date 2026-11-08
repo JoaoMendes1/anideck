@@ -3,6 +3,7 @@ package handlers
 import (
 	"encoding/json"
 	"fmt"
+	"os"
 	"regexp"
 	"strings"
 	"sync"
@@ -86,23 +87,41 @@ func lerRegrasComunidade(client *supabase.Client) RegrasComunidade {
 
 var formatoHandle = regexp.MustCompile(`^[a-z0-9_]{3,20}$`)
 
-// handlesReservados não podem ser escolhidos: confundem o usuário com a equipe ou
-// colidem com rotas.
+// handlesReservados só a equipe escolhe: confundem o usuário com a equipe ou colidem com
+// rotas. O banco repete a lista (sql/042) para valer também fora deste servidor.
 var handlesReservados = map[string]bool{
 	"admin": true, "administrador": true, "anideck": true, "moderacao": true, "moderador": true,
 	"suporte": true, "sistema": true, "curadoria": true, "ranking": true, "eu": true,
 }
 
-// normalizarHandle aceita "@Nome_1" e devolve "nome_1", ou a mensagem de recusa.
-func normalizarHandle(bruto string) (string, string) {
+// formatoDeHandle aceita "@Nome_1" e devolve "nome_1", conferindo só o formato. Serve
+// para achar um @ que já existe, inclusive os reservados da equipe.
+func formatoDeHandle(bruto string) (string, string) {
 	h := strings.ToLower(strings.TrimSpace(strings.TrimPrefix(strings.TrimSpace(bruto), "@")))
 	if !formatoHandle.MatchString(h) {
 		return "", "O @ usa de 3 a 20 caracteres: letras minúsculas, números e _."
 	}
-	if handlesReservados[h] {
+	return h, ""
+}
+
+// normalizarHandle valida um @ que vai ser gravado: além do formato, recusa nome
+// reservado para quem não é da equipe.
+func normalizarHandle(bruto string, daEquipe bool) (string, string) {
+	h, problema := formatoDeHandle(bruto)
+	if problema != "" {
+		return "", problema
+	}
+	if handlesReservados[h] && !daEquipe {
 		return "", "Esse @ é reservado. Escolha outro."
 	}
 	return h, ""
+}
+
+// ehDaEquipe usa a mesma regra do RequireAdmin: o user_id do token igual ao
+// ADMIN_USER_ID do servidor.
+func ehDaEquipe(userID string) bool {
+	admin := os.Getenv("ADMIN_USER_ID")
+	return admin != "" && userID == admin
 }
 
 // Reações aceitas pelo banco (CHECK do sql/041), na ordem em que a tela mostra.
@@ -220,6 +239,8 @@ func erroDoBanco(err error) (int, string) {
 		return 422, "Crie seu perfil público (um @) para participar da conversa."
 	case strings.Contains(texto, "descanso_recente"):
 		return 422, "O Modo Descanso pode ser usado uma vez a cada 30 dias."
+	case strings.Contains(texto, "handle_reservado"):
+		return 400, "Esse @ é reservado. Escolha outro."
 	case strings.Contains(texto, "descanso_fora_do_limite"):
 		return 400, "Escolha uma quantidade de dias dentro do limite."
 	case strings.Contains(texto, "(42501)") || strings.Contains(texto, "row-level security"):

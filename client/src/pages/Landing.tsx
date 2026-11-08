@@ -166,7 +166,7 @@ export default function Landing() {
             </Link>
           </div>
 
-          <div className="flex gap-4 overflow-x-auto scrollbar-hide snap-x snap-mandatory -mx-5 px-5 sm:mx-0 sm:px-0 pb-2">
+          <div className="flex gap-4 overflow-x-auto scrollbar-hide snap-x snap-mandatory -mx-5 px-5 scroll-px-5 sm:mx-0 sm:px-0 sm:scroll-px-0 pb-2">
             {destaques.map((anime, index) => (
               <Link
                 key={anime.id || anime.mal_id}

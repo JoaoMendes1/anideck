@@ -26,7 +26,7 @@ function dataCurta(iso: string) {
 }
 
 export default function PerfilPublicoConfig({ nomeSugerido }: { nomeSugerido: string }) {
-  const { session } = useSessao()
+  const { session, isAdmin } = useSessao()
   const token = session?.access_token
   const { estado, indisponivel } = useComunidade()
 
@@ -39,10 +39,10 @@ export default function PerfilPublicoConfig({ nomeSugerido }: { nomeSugerido: st
       <div className="h-64 rounded-2xl bg-panel border border-line animate-pulse" />
     )
   }
-  return <Formulario key={estado.perfil.existe ? estado.perfil.handle : `novo-${nomeSugerido}`} estado={estado} token={token ?? ''} nomeSugerido={nomeSugerido} />
+  return <Formulario key={estado.perfil.existe ? estado.perfil.handle : `novo-${nomeSugerido}`} estado={estado} token={token ?? ''} nomeSugerido={nomeSugerido} daEquipe={isAdmin} />
 }
 
-function Formulario({ estado, token, nomeSugerido }: { estado: EstadoComunidade; token: string; nomeSugerido: string }) {
+function Formulario({ estado, token, nomeSugerido, daEquipe }: { estado: EstadoComunidade; token: string; nomeSugerido: string; daEquipe: boolean }) {
   const { showToast } = useToast()
   const { perfil, regras } = estado
   const [handle, setHandle] = useState(perfil.existe ? perfil.handle : sugerirHandle(nomeSugerido))
@@ -59,7 +59,7 @@ function Formulario({ estado, token, nomeSugerido }: { estado: EstadoComunidade;
   const [diasDescanso, setDiasDescanso] = useState(Math.min(7, regras.descanso_max_dias))
   const [ativandoDescanso, setAtivandoDescanso] = useState(false)
 
-  const checagem = validarHandle(handle)
+  const checagem = validarHandle(handle, daEquipe)
   const nomeValido = nome.trim().length >= 1 && nome.trim().length <= 40
   const mudou =
     !perfil.existe ||
@@ -198,7 +198,11 @@ function Formulario({ estado, token, nomeSugerido }: { estado: EstadoComunidade;
               />
             </div>
             <p className={`text-[11px] mt-1 mb-0 ${checagem.erro && handle.length > 0 ? 'text-coral' : 'text-muted-2'}`}>
-              {checagem.erro && handle.length > 0 ? checagem.erro : 'Letras minúsculas, números e _. Dá para trocar depois.'}
+              {checagem.erro && handle.length > 0
+                ? checagem.erro
+                : daEquipe
+                  ? 'Como equipe, você pode usar um @ reservado (admin, administrador, anideck...).'
+                  : 'Letras minúsculas, números e _. Dá para trocar depois.'}
             </p>
           </div>
           <div>

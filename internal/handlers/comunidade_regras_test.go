@@ -10,14 +10,41 @@ import (
 func TestNormalizarHandle(t *testing.T) {
 	casos := map[string]string{"@Joao_Dev": "joao_dev", "  maria99 ": "maria99"}
 	for entrada, esperado := range casos {
-		if h, msg := normalizarHandle(entrada); h != esperado || msg != "" {
+		if h, msg := normalizarHandle(entrada, false); h != esperado || msg != "" {
 			t.Errorf("%q: esperado %q, recebido %q (%s)", entrada, esperado, h, msg)
 		}
 	}
 	for _, ruim := range []string{"ab", "nome com espaço", "çedilha", strings.Repeat("a", 21), "admin", "@anideck"} {
-		if h, msg := normalizarHandle(ruim); msg == "" {
+		if h, msg := normalizarHandle(ruim, false); msg == "" {
 			t.Errorf("%q deveria ser recusado, virou %q", ruim, h)
 		}
+	}
+}
+
+func TestHandleReservadoSoParaEquipe(t *testing.T) {
+	if _, msg := normalizarHandle("@Administrador", false); msg == "" {
+		t.Error("membro comum não pode gravar @ reservado")
+	}
+	if h, msg := normalizarHandle("@Administrador", true); h != "administrador" || msg != "" {
+		t.Errorf("a equipe grava @ reservado: recebido %q (%s)", h, msg)
+	}
+	if _, msg := normalizarHandle("ab", true); msg == "" {
+		t.Error("a equipe também respeita o formato")
+	}
+	// Achar um @ que já existe não passa pela reserva: o perfil da equipe abre e pode ser bloqueado.
+	if h, msg := formatoDeHandle("administrador"); h != "administrador" || msg != "" {
+		t.Errorf("busca por @ reservado: recebido %q (%s)", h, msg)
+	}
+}
+
+func TestEhDaEquipe(t *testing.T) {
+	t.Setenv("ADMIN_USER_ID", "u-admin")
+	if !ehDaEquipe("u-admin") || ehDaEquipe("u-outro") {
+		t.Error("só o ADMIN_USER_ID é da equipe")
+	}
+	t.Setenv("ADMIN_USER_ID", "")
+	if ehDaEquipe("") {
+		t.Error("sem ADMIN_USER_ID ninguém é da equipe, nem o id vazio")
 	}
 }
 
@@ -121,7 +148,8 @@ func TestErroDoBanco(t *testing.T) {
 		"(P0001) perfil_necessario": 422,
 		"(42501) new row violates row-level security policy for table \"episode_comments\"": 403,
 		"(23505) duplicate key value violates unique constraint \"profiles_handle_key\"":    409,
-		"(XX000) algo inesperado": 500,
+		"(P0001) handle_reservado": 400,
+		"(XX000) algo inesperado":  500,
 	}
 	for texto, esperado := range casos {
 		if status, _ := erroDoBanco(errors.New(texto)); status != esperado {

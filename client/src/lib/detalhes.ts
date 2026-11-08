@@ -1,0 +1,59 @@
+// client/src/lib/detalhes.ts
+// Regras puras da página de um anime: abas, nota e próximo episódio.
+
+export const ABAS_DETALHES = ['sobre', 'episodios', 'conversa', 'numeros'] as const
+export type AbaDetalhes = (typeof ABAS_DETALHES)[number]
+
+/** Aba pedida na URL; links antigos com âncora (#conversa, #episodios) continuam valendo. */
+export function abaDaUrl(param: string | null, hash: string): AbaDetalhes {
+  const pedida = (param || hash.replace(/^#/, '')).toLowerCase()
+  if (pedida === 'estatisticas') return 'numeros'
+  return (ABAS_DETALHES as readonly string[]).includes(pedida) ? (pedida as AbaDetalhes) : 'sobre'
+}
+
+export const STATUS_DO_DECK = ['Assistindo', 'Em Dia', 'Completo', 'Quero Assistir', 'Dropado'] as const
+
+/** Palavra que acompanha a nota na régua. */
+export function rotuloDaNota(nota: number | null | undefined): string {
+  if (nota === null || nota === undefined) return 'Sem nota'
+  if (nota >= 10) return 'Obra-prima'
+  if (nota >= 9) return 'Excelente'
+  if (nota >= 8) return 'Ótimo'
+  if (nota >= 7) return 'Bom'
+  if (nota >= 6) return 'Ok'
+  if (nota >= 5) return 'Mediano'
+  if (nota >= 3) return 'Fraco'
+  return 'Ruim'
+}
+
+/** 8.5 → "8,5"; 8 → "8". */
+export function formatarNota(nota: number): string {
+  return Number.isInteger(nota) ? String(nota) : nota.toFixed(1).replace('.', ',')
+}
+
+/** Arredonda para meio ponto e prende entre 0 e 10, como a régua grava. */
+export function ajustarNota(valor: number): number {
+  if (!Number.isFinite(valor)) return 0
+  return Math.min(10, Math.max(0, Math.round(valor * 2) / 2))
+}
+
+/**
+ * O episódio que continua a maratona: o seguinte ao maior já marcado, se já saiu.
+ * Sem nada marcado, o primeiro. Devolve null quando não há o que marcar.
+ */
+export function proximoEpisodio(assistidos: number[], ultimoDisponivel: number): number | null {
+  const validos = assistidos.filter(n => Number.isInteger(n) && n > 0)
+  const proximo = validos.length > 0 ? Math.max(...validos) + 1 : 1
+  return proximo <= ultimoDisponivel ? proximo : null
+}
+
+/** A linha do deck como a API devolve (`/api/entries`). */
+export interface EntradaNoDeck {
+  id: string
+  status: string
+  mal_id: number
+  tipo: string
+  nota?: number | null
+  anotacao?: string
+  is_favorite?: boolean
+}

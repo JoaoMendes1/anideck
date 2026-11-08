@@ -4,7 +4,7 @@
 | 2 | Login / Cadastro | `Auth.tsx` | ✅ Implementada · aviso de Beta fechado com solicitação de convite e atalhos sem login | Fase 2 / 13 (#142) |
 | 3 | Meu Deck (dashboard logado) | `MeuDeck.tsx` | ✅ Implementada · container 1440px, filtro clicável nos StatCards, dia da semana de lançamento e vitrine recolhível | Fase 2 / 3 / 13 (#135, #136) |
 | 4 | Busca / Descobrir catálogo | `Busca.tsx` | ✅ Implementada · container 1440px e filtro por ano livre | Fase 2 / 13 |
-| 5 | Detalhe do anime | `Detalhes.tsx` | ✅ Implementada · container 1440px, streaming antes da sinopse, episódios sem miniatura em lista compacta, tradução automática pt-BR, aviso de obra não curada e Conversa por episódio (reações e comentários com escudo de spoiler) | Fase 2 / 6.6 / 13 / 15 (#133, #134, #150, #154) |
+| 5 | Detalhe do anime | `Detalhes.tsx` | ✅ Implementada · abas que trocam o conteúdo (Sobre, Episódios, Conversa, Números), capa maior, painel Na sua lista com status de um toque e régua de nota (compacto no celular), Conversa com termômetro de reações e curadoria do admin recolhível | Fase 2 / 6.6 / 13 / 15 (#133, #134, #150, #154, #155) |
 | 6 | Calendário de lançamentos | `Calendario.tsx` | ✅ Implementada · container 1440px, capas em pôster 2:3, dia da semana e "Quero Assistir" incluso em Meu Deck | Fase 5 / 13 (#135, #136) |
 | 7 | Rankings (Navbar desktop e BottomNav mobile) | `Rankings.tsx` | ✅ Implementada · container 1440px, pôsteres maiores com destaque no Top 3 e filtro por ano livre | Fase 2 / 6.5 / 11 / 13 (#132, #136) |
 | 8 | Meu Gosto (ex-Estatísticas), em `/meu-gosto` | `Estatisticas.tsx` | ✅ Implementada · container 1440px, frase-veredito e drill-down completo em gêneros, tags, notas, status, quadrante e recordes | Fase 4 / 6.8 / 12 / 13 (#138) |

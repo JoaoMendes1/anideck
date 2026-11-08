@@ -4,13 +4,15 @@
 // nem sai do banco (RLS do sql/041), então esconder aqui é só a forma, não a proteção.
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { Lock, MessageCircle, Heart, Flag, Trash2, Ban, ChevronLeft, ChevronRight, Clock, Droplet, Send } from 'lucide-react'
+import { Lock, MessageCircle, Heart, Flag, Trash2, Ban, ChevronLeft, ChevronRight, Clock, Droplet, Send, Check } from 'lucide-react'
 import { useSessao } from '../../contexts/SessaoContext'
 import { useToast } from '../../contexts/ToastContext'
 import { useComunidade, avisarComunidadeAtualizada } from '../../hooks/useComunidade'
+import SeloEquipe from './SeloEquipe'
 import {
   REACOES,
   MOTIVOS_DENUNCIA,
+  climaDoEpisodio,
   MAX_TEXTO_COMENTARIO,
   episodioInicial,
   formatarMomento,
@@ -28,6 +30,28 @@ interface Props {
   totalEpisodes: number
   proximoAoAr?: number
   assistidosIniciais: number[]
+  /** Leva para a aba de episódios (a página da obra decide como). */
+  aoIrParaEpisodios?: () => void
+}
+
+// Cor de cada reação no termômetro: classes inteiras, porque o Tailwind não gera classe montada.
+const COR_DA_REACAO: Record<string, string> = {
+  chorei: 'bg-holo-3',
+  plot_twist: 'bg-holo-1',
+  animacao: 'bg-gold',
+  engracado: 'bg-green',
+  tenso: 'bg-coral',
+  enrolacao: 'bg-muted-2',
+}
+
+// O veredito do termômetro, pela reação que lidera.
+const VEREDITO: Record<string, string> = {
+  chorei: 'fez a comunidade chorar',
+  plot_twist: 'virou a história de cabeça para baixo',
+  animacao: 'brilhou na animação',
+  engracado: 'arrancou risadas',
+  tenso: 'deixou todo mundo tenso',
+  enrolacao: 'foi considerado enrolação',
 }
 
 const CHIPS_MAXIMOS = 60
@@ -52,7 +76,7 @@ function Avatar({ nome }: { nome: string }) {
   )
 }
 
-export default function ConversaDoAnime({ malId, totalEpisodes, proximoAoAr, assistidosIniciais }: Props) {
+export default function ConversaDoAnime({ malId, totalEpisodes, proximoAoAr, assistidosIniciais, aoIrParaEpisodios }: Props) {
   const { session } = useSessao()
   const token = session?.access_token
   const { showToast } = useToast()
@@ -65,6 +89,7 @@ export default function ConversaDoAnime({ malId, totalEpisodes, proximoAoAr, ass
   const [conversa, setConversa] = useState<ConversaDoEpisodio | null>(null)
   const [carregandoConversa, setCarregandoConversa] = useState(false)
   const [ordem, setOrdem] = useState<'recentes' | 'populares'>('recentes')
+  const [marcando, setMarcando] = useState(false)
   const [agora] = useState(() => Date.now())
   const trilhoRef = useRef<HTMLDivElement>(null)
 
@@ -137,7 +162,15 @@ export default function ConversaDoAnime({ malId, totalEpisodes, proximoAoAr, ass
     if (chip) trilho.scrollLeft = chip.offsetLeft - trilho.clientWidth / 2 + chip.clientWidth / 2
   }, [episodioAtual, contagensProntas])
 
-  if (ultimo < 1) return null
+  if (ultimo < 1) {
+    return (
+      <section id="conversa" className="text-center py-10 px-4 rounded-2xl bg-panel border border-line">
+        <MessageCircle size={22} className="mx-auto text-muted-2 mb-3" aria-hidden />
+        <p className="font-bold text-text m-0">A conversa abre com o primeiro episódio</p>
+        <p className="text-[13px] text-muted mt-1.5 mb-0">Cada episódio ganha a própria conversa assim que é lançado.</p>
+      </section>
+    )
+  }
 
   const totalComentarios = contagens.reduce((s, c) => s + c.comentarios, 0)
   const maisComentados = [...contagens].filter(c => c.comentarios > 0).sort((a, b) => b.comentarios - a.comentarios).slice(0, 8)
@@ -160,6 +193,21 @@ export default function ConversaDoAnime({ malId, totalEpisodes, proximoAoAr, ass
       showToast(res ? await lerErro(res, 'Não foi possível registrar a reação.') : 'Sem conexão.', 'error')
       carregarConversa()
       carregarContagens()
+    }
+  }
+
+  // "Já assisti": marca o episódio pela mesma rota da grade e avisa o resto da página.
+  const marcarEpisodio = async (n: number) => {
+    if (!token) return
+    setMarcando(true)
+    try {
+      const res = await fetch(`/api/entries/${malId}/episodes/${n}`, { method: 'POST', headers: autorizacao })
+      if (!res.ok) throw new Error()
+      window.dispatchEvent(new CustomEvent('anideck:episodio-atualizado', { detail: { malId, episodeNumber: n, watched: true } }))
+    } catch {
+      showToast('Não foi possível marcar o episódio.', 'error')
+    } finally {
+      setMarcando(false)
     }
   }
 
@@ -195,18 +243,12 @@ export default function ConversaDoAnime({ malId, totalEpisodes, proximoAoAr, ass
 
   return (
     <section id="conversa" className="scroll-mt-32">
-      <div className="flex flex-wrap items-end justify-between gap-2 mb-2 select-none">
-        <h2 className="font-anton text-base uppercase flex items-center gap-2 m-0">
-          <MessageCircle size={15} className="text-holo-3" aria-hidden /> Conversa
-        </h2>
-        {totalComentarios > 0 && (
-          <span className="font-mono text-[10.5px] text-muted-2">
-            {totalComentarios} {totalComentarios === 1 ? 'comentário' : 'comentários'} na obra
-          </span>
-        )}
-      </div>
-      <p className="text-[12.5px] text-muted-2 mb-4">
-        Cada episódio tem a própria conversa, aberta só para quem já marcou o episódio como visto. Sem spoiler de quem está à frente.
+      <p className="flex items-start gap-2 text-[12.5px] text-muted-2 mb-3">
+        <Lock size={13} className="shrink-0 mt-0.5 text-holo-3" aria-hidden />
+        <span>
+          Sem spoiler: cada episódio abre só para quem já marcou.
+          {totalComentarios > 0 && ` ${totalComentarios} ${totalComentarios === 1 ? 'comentário' : 'comentários'} na obra.`}
+        </span>
       </p>
 
       {/* Seletor de episódio */}
@@ -284,31 +326,23 @@ export default function ConversaDoAnime({ malId, totalEpisodes, proximoAoAr, ass
         {episodioAtual === null ? (
           <div className="h-24 rounded-xl bg-panel-2 animate-pulse" />
         ) : !token || !assistiu ? (
-          <EscudoDeSpoiler episodio={episodioAtual} contagem={contagemAtual} logado={!!token} />
+          <EscudoDeSpoiler
+            episodio={episodioAtual}
+            contagem={contagemAtual}
+            logado={!!token}
+            marcando={marcando}
+            onMarcar={() => marcarEpisodio(episodioAtual)}
+            aoIrParaEpisodios={aoIrParaEpisodios}
+          />
         ) : (
           <>
-            <div className="flex flex-wrap gap-2 mb-5" aria-label="Reações ao episódio">
-              {REACOES.map(r => {
-                const ligada = conversa?.minhas_reacoes.includes(r.id) ?? false
-                const n = contagemAtual?.reacoes?.[r.id] ?? 0
-                return (
-                  <button
-                    key={r.id}
-                    type="button"
-                    aria-pressed={ligada}
-                    disabled={!conversa}
-                    onClick={() => alternarReacao(r.id)}
-                    className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full border text-[12px] font-bold transition-colors cursor-pointer disabled:opacity-50 ${
-                      ligada ? 'border-holo-1 bg-holo-1/12 text-text' : 'border-line bg-panel-2 text-muted hover:text-text hover:border-holo-1/50'
-                    }`}
-                  >
-                    <span aria-hidden>{r.emoji}</span>
-                    {r.rotulo}
-                    {n > 0 && <span className="font-mono text-[10.5px] text-muted-2">{n}</span>}
-                  </button>
-                )
-              })}
-            </div>
+            <TermometroDoEpisodio
+              episodio={episodioAtual}
+              reacoes={contagemAtual?.reacoes}
+              minhas={conversa?.minhas_reacoes ?? []}
+              habilitado={!!conversa}
+              onAlternar={alternarReacao}
+            />
 
             {estado && !estado.perfil.existe ? (
               <div className="rounded-xl border border-dashed border-holo-3/40 bg-holo-3/5 p-4 mb-5 text-[13px]">
@@ -383,7 +417,14 @@ export default function ConversaDoAnime({ malId, totalEpisodes, proximoAoAr, ass
   )
 }
 
-function EscudoDeSpoiler({ episodio, contagem, logado }: { episodio: number; contagem?: ContagemEpisodio; logado: boolean }) {
+function EscudoDeSpoiler({ episodio, contagem, logado, marcando, onMarcar, aoIrParaEpisodios }: {
+  episodio: number
+  contagem?: ContagemEpisodio
+  logado: boolean
+  marcando: boolean
+  onMarcar: () => void
+  aoIrParaEpisodios?: () => void
+}) {
   const comentarios = contagem?.comentarios ?? 0
   const reacoes = totalDeReacoes(contagem)
   return (
@@ -398,14 +439,91 @@ function EscudoDeSpoiler({ episodio, contagem, logado }: { episodio: number; con
       </p>
       <p className="text-[12.5px] text-muted mt-1.5 mb-0 max-w-sm mx-auto">
         {logado
-          ? 'Marque o episódio como visto na lista acima para abrir a conversa. O que foi dito fica escondido até lá.'
+          ? 'Fica escondida até você marcar o episódio como visto. Assim ninguém leva spoiler.'
           : 'Entre na sua conta e marque o episódio como visto para participar.'}
       </p>
-      {!logado && (
+      {logado ? (
+        <div className="flex flex-wrap justify-center gap-2 mt-4">
+          <button
+            type="button"
+            onClick={onMarcar}
+            disabled={marcando}
+            className="inline-flex items-center gap-1.5 px-5 py-2 rounded-full text-xs font-extrabold text-void bg-gradient-to-r from-holo-1 to-holo-2 cursor-pointer disabled:opacity-60"
+          >
+            <Check size={14} aria-hidden /> {marcando ? 'Marcando…' : `Já vi o ep. ${episodio}`}
+          </button>
+          {aoIrParaEpisodios && (
+            <button type="button" onClick={aoIrParaEpisodios} className="px-4 py-2 rounded-full text-xs font-bold border border-line text-muted hover:text-text cursor-pointer">
+              Ver episódios
+            </button>
+          )}
+        </div>
+      ) : (
         <Link to="/login" className="inline-block mt-4 px-5 py-2 rounded-full text-xs font-extrabold text-void bg-gradient-to-r from-holo-1 to-holo-2">
           Entrar
         </Link>
       )}
+    </div>
+  )
+}
+
+// Reação de um toque, numa linha só, e o termômetro: a mistura das reações da comunidade
+// numa barra, com o veredito de quem lidera. Mostra como o episódio foi sentido, não só
+// quantos botões foram apertados.
+function TermometroDoEpisodio({ episodio, reacoes, minhas, habilitado, onAlternar }: {
+  episodio: number
+  reacoes?: Record<string, number>
+  minhas: string[]
+  habilitado: boolean
+  onAlternar: (id: string) => void
+}) {
+  const { total, fatias } = climaDoEpisodio(reacoes)
+  const lider = fatias[0]
+  return (
+    <div className="mb-5">
+      <div className="flex items-baseline justify-between gap-2 mb-2">
+        <span className="text-[13px] font-bold text-text">Como foi o ep. {episodio}?</span>
+        {total > 0 && <span className="font-mono text-[10.5px] text-muted-2">{total} {total === 1 ? 'reação' : 'reações'}</span>}
+      </div>
+      {total > 0 && (
+        <div className="flex h-2 rounded-full overflow-hidden bg-void/50 border border-line/60 mb-1.5" role="img" aria-label={fatias.map(f => `${f.rotulo} ${f.pct}%`).join(', ')}>
+          {fatias.map(f => (
+            <span key={f.id} className={`h-full ${COR_DA_REACAO[f.id]}`} style={{ width: `${f.pct}%` }} />
+          ))}
+        </div>
+      )}
+      {lider && (
+        <p className="text-[11.5px] text-muted mt-0 mb-2.5">
+          {lider.emoji} Para quem viu, este episódio {VEREDITO[lider.id]} ({lider.pct}%).
+        </p>
+      )}
+      {/* Celular: seis botões numa linha, só emoji e contagem. Monitor: com o nome ao lado. */}
+      <div className="grid grid-cols-6 gap-1.5 sm:flex sm:flex-wrap sm:gap-2" role="group" aria-label="Reagir ao episódio">
+        {REACOES.map(r => {
+          const ligada = minhas.includes(r.id)
+          const n = reacoes?.[r.id] ?? 0
+          return (
+            <button
+              key={r.id}
+              type="button"
+              aria-pressed={ligada}
+              aria-label={`${r.rotulo}${n > 0 ? `, ${n}` : ''}`}
+              title={r.rotulo}
+              disabled={!habilitado}
+              onClick={() => onAlternar(r.id)}
+              className={`h-12 sm:h-10 sm:px-3.5 rounded-xl sm:rounded-full border flex flex-col sm:flex-row items-center justify-center gap-0.5 sm:gap-2 transition-all cursor-pointer disabled:opacity-50 active:scale-95 ${
+                ligada ? 'border-holo-1 bg-holo-1/12 shadow-[0_0_12px_rgba(255,79,216,0.18)]' : 'border-line bg-panel-2 hover:border-holo-1/50'
+              }`}
+            >
+              <span className={`text-[19px] sm:text-[16px] leading-none ${ligada ? '' : 'grayscale-[35%]'}`} aria-hidden>
+                {r.emoji}
+              </span>
+              <span className={`hidden sm:inline text-[12.5px] font-bold ${ligada ? 'text-text' : 'text-muted'}`}>{r.rotulo}</span>
+              <span className={`block h-[10px] sm:h-auto font-mono text-[9.5px] sm:text-[11px] leading-[10px] sm:leading-none ${ligada ? 'text-holo-1' : 'text-muted-2'}`}>{n > 0 ? n : ''}</span>
+            </button>
+          )
+        })}
+      </div>
     </div>
   )
 }
@@ -572,6 +690,7 @@ function ItemComentario({ comentario: c, agora, token, onRemover, onBloquear, on
             ) : (
               <span className="font-bold text-[13.5px] text-text">{nome}</span>
             )}
+            <SeloEquipe handle={c.autor.handle} />
             {c.autor.handle && <span className="font-mono text-[10.5px] text-muted-2">@{c.autor.handle}</span>}
             <span className="font-mono text-[10.5px] text-muted-2">· {tempoRelativo(c.created_at, agora)}</span>
             {c.momento_seg !== null && (

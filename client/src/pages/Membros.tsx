@@ -8,6 +8,7 @@ import AbasDescobrir from '../components/AbasDescobrir'
 import { useSessao } from '../contexts/SessaoContext'
 import { useComunidade } from '../hooks/useComunidade'
 import { obterEstiloRank } from '../lib/guilda'
+import SeloEquipe from '../components/comunidade/SeloEquipe'
 import type { MembroNoRanking } from '../lib/comunidade'
 
 type Periodo = 'semana' | 'geral'
@@ -136,6 +137,7 @@ export default function Membros() {
                     <span className="min-w-0 flex-1">
                       <span className="flex items-center gap-2 min-w-0">
                         <span className="font-bold text-[14px] text-text truncate">{m.nome}</span>
+                        <SeloEquipe handle={m.handle} />
                         {eu && <span className="font-mono text-[9.5px] uppercase px-1.5 py-0.5 rounded bg-holo-2/20 text-holo-2 shrink-0">você</span>}
                       </span>
                       <span className="block font-mono text-[10.5px] text-muted-2 truncate">

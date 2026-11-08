@@ -87,15 +87,17 @@ function Secao({
 }) {
   return (
     <section className="mb-11">
-      <div className="flex items-end justify-between gap-3 mb-4 select-none">
-        <div>
+      {/* No celular, título e subtítulo usam a largura toda e as ações descem para a linha
+          de baixo: lado a lado, as ações (que não encolhem) espremiam o título. */}
+      <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between sm:gap-4 mb-4 select-none">
+        <div className="min-w-0">
           <h2 className="font-anton text-[18px] sm:text-[20px] uppercase m-0 flex items-center gap-2 tracking-wide">
-            {icone}
-            {titulo}
+            <span className="shrink-0">{icone}</span>
+            <span className="min-w-0">{titulo}</span>
           </h2>
-          {subtitulo && <p className="text-xs text-muted mt-0.5">{subtitulo}</p>}
+          {subtitulo && <p className="text-xs text-muted mt-1 mb-0 leading-relaxed">{subtitulo}</p>}
         </div>
-        <div className="flex items-center gap-3 shrink-0">
+        <div className="flex flex-wrap items-center gap-x-4 gap-y-1 sm:shrink-0">
           {acaoExtra}
           {link && (
             <Link
@@ -114,7 +116,7 @@ function Secao({
 
 function Trilho({ cartazes }: { cartazes: Cartaz[] }) {
   return (
-    <div className="flex gap-4 sm:gap-5 overflow-x-auto scrollbar-hide snap-x snap-mandatory -mx-4 px-4 sm:mx-0 sm:px-0 pb-2">
+    <div className="flex gap-4 sm:gap-5 overflow-x-auto scrollbar-hide snap-x snap-mandatory -mx-4 px-4 scroll-px-4 sm:mx-0 sm:px-0 sm:scroll-px-0 pb-2">
       {cartazes.map((c, i) => (
         <Link
           key={c.mal_id}
@@ -528,7 +530,7 @@ export default function Inicio() {
           icone={<Play size={17} className="text-holo-1" />}
           link={{ para: '/deck', texto: 'Meu deck' }}
         >
-          <div className="flex gap-4 sm:gap-5 overflow-x-auto scrollbar-hide snap-x snap-mandatory -mx-4 px-4 sm:mx-0 sm:px-0 pb-2">
+          <div className="flex gap-4 sm:gap-5 overflow-x-auto scrollbar-hide snap-x snap-mandatory -mx-4 px-4 scroll-px-4 sm:mx-0 sm:px-0 sm:scroll-px-0 pb-2">
             {continuar.map((c, idx) => {
               const epAlvo = recemMarcados[c.anime.mal_id]
                 ? recemMarcados[c.anime.mal_id] + 1

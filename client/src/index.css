@@ -353,3 +353,19 @@ html[data-tema='estudio'] {
   scrollbar-width: thin;
   scrollbar-color: var(--color-line) transparent;
 }
+/* Régua da nota na página do anime (PainelMinhaLista): trilho transparente sobre a barra
+   desenhada no componente, com um polegar grande o bastante para o dedo. */
+.regua-nota { height: 2rem; }
+.regua-nota::-webkit-slider-runnable-track { height: 2rem; background: transparent; }
+.regua-nota::-webkit-slider-thumb {
+  -webkit-appearance: none; appearance: none; width: 24px; height: 24px; margin-top: 4px;
+  border-radius: 9999px; background: var(--color-text); border: 3px solid var(--color-holo-3);
+  box-shadow: 0 0 14px color-mix(in srgb, var(--color-holo-3) 45%, transparent);
+}
+.regua-nota::-moz-range-track { height: 2rem; background: transparent; }
+.regua-nota::-moz-range-thumb {
+  width: 18px; height: 18px; border-radius: 9999px; background: var(--color-text);
+  border: 3px solid var(--color-holo-3);
+}
+.regua-nota:focus { outline: none; }
+.regua-nota:focus-visible::-webkit-slider-thumb { outline: 2px solid var(--color-holo-1); outline-offset: 2px; }

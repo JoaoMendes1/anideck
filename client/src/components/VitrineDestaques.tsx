@@ -121,7 +121,7 @@ export default function VitrineDestaques() {
         // Mesmo padrão de rolagem do resto do Meu Deck: sangra até a borda no mobile
         // (-mx-5/px-5) e vira faixa normal no md+).
         <div
-        ref={trilho} className="flex gap-4 overflow-x-auto scrollbar-hide snap-x snap-mandatory -mx-4 px-4 sm:mx-0 sm:px-0 pb-1">
+        ref={trilho} className="flex gap-4 overflow-x-auto scrollbar-hide snap-x snap-mandatory -mx-4 px-4 scroll-px-4 sm:mx-0 sm:px-0 sm:scroll-px-0 pb-1">
         {destaques.map((anime, index) => (
           <Link
             key={anime.id || anime.mal_id}

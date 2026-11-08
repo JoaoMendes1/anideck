@@ -8,6 +8,7 @@ import { useSessao } from '../contexts/SessaoContext'
 import { useToast } from '../contexts/ToastContext'
 import { useComunidade } from '../hooks/useComunidade'
 import { obterEstiloRank } from '../lib/guilda'
+import SeloEquipe from '../components/comunidade/SeloEquipe'
 import { faixaDoHP, type PerfilPublico } from '../lib/comunidade'
 
 interface CartaDaVitrine {
@@ -157,6 +158,7 @@ export default function PerfilMembro() {
               <span className={`font-mono text-[10px] font-bold uppercase tracking-wider px-2.5 py-0.5 rounded-full border ${estilo.bordaPilula} ${estilo.fundoPilula} ${estilo.seloTexto}`}>
                 Rank {perfil.rank} · Nível {perfil.nivel}
               </span>
+              <SeloEquipe handle={perfil.handle} grande />
               <span className="font-mono text-[10px] text-muted-2 inline-flex items-center gap-1">
                 <CalendarDays size={11} aria-hidden /> membro desde {desde.toLocaleDateString('pt-BR', { month: 'short', year: 'numeric' })}
               </span>

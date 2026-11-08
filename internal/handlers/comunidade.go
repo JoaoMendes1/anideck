@@ -206,7 +206,7 @@ func (h *ComunidadeHandler) HandleSalvarEu(w http.ResponseWriter, r *http.Reques
 		return
 	}
 
-	handle, problema := normalizarHandle(req.Handle)
+	handle, problema := normalizarHandle(req.Handle, ehDaEquipe(userID))
 	if problema != "" {
 		http.Error(w, problema, http.StatusBadRequest)
 		return
@@ -694,7 +694,7 @@ func (h *ComunidadeHandler) HandleBloquear(w http.ResponseWriter, r *http.Reques
 	if !ok {
 		return
 	}
-	handle, problema := normalizarHandle(chi.URLParam(r, "handle"))
+	handle, problema := formatoDeHandle(chi.URLParam(r, "handle"))
 	if problema != "" {
 		http.Error(w, "Membro não encontrado.", http.StatusNotFound)
 		return
@@ -850,7 +850,7 @@ type perfilPublico struct {
 
 // HandlePerfilPublico é público: o perfil de um @ com perfil aberto.
 func (h *ComunidadeHandler) HandlePerfilPublico(w http.ResponseWriter, r *http.Request) {
-	handle, problema := normalizarHandle(chi.URLParam(r, "handle"))
+	handle, problema := formatoDeHandle(chi.URLParam(r, "handle"))
 	if problema != "" || database.Client == nil {
 		http.Error(w, "Membro não encontrado.", http.StatusNotFound)
 		return

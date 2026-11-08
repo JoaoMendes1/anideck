@@ -739,6 +739,17 @@ atual. **Pré-requisito:** abrir o beta (`beta_signup_limit`).
 > numeração e não abrem escopo novo. Ficam registrados aqui em ordem cronológica inversa para
 > não sumirem: fase concluída não deve ser reaberta só para receber um conserto.
 
+### 08/11/2026 — Página do anime, Início no celular e @ da equipe (#155 a #157)
+
+- [x] **Página do anime redesenhada (#155):** abas que trocam o conteúdo, capa maior, status e
+      nota direto na página (régua de 0 a 10, salva sozinha), Conversa numa aba com termômetro
+      de reações e curadoria do admin recolhível.
+- [x] **Cabeçalhos da Início no celular (#156):** título e ações em linhas separadas, e os
+      carrosséis deixam de colar na borda (o encaixe ignorava o recuo lateral).
+- [x] **@ reservado só para a equipe (#157):** o admin grava `@administrador`, com selo de
+      Equipe; a reserva passa a valer no banco (`sql/042`) e a busca por @ não recusa mais os
+      reservados.
+
 ### 08/11/2026 — Auditoria: push, streak, telas e Painel Admin (#148 a #152)
 
 - [x] **Push confiável (#148):** payload com `json.Marshal` (título com aspas sumia com a

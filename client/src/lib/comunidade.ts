@@ -103,19 +103,28 @@ export const MOTIVOS_DENUNCIA = [
 export const MAX_TEXTO_COMENTARIO = 1000
 export const MAX_BIO = 160
 
+// Só a equipe grava estes @ (Go e sql/042 repetem a lista), por isso eles valem como selo.
 const RESERVADOS = new Set([
   'admin', 'administrador', 'anideck', 'moderacao', 'moderador',
   'suporte', 'sistema', 'curadoria', 'ranking', 'eu',
 ])
 
-/** Mesmo critério do Go (normalizarHandle): devolve o @ limpo ou a mensagem de recusa. */
-export function validarHandle(bruto: string): { handle: string; erro: string | null } {
+/**
+ * Mesmo critério do Go (normalizarHandle): devolve o @ limpo ou a mensagem de recusa.
+ * Nome reservado só passa para a equipe; o servidor confere de novo pelo token.
+ */
+export function validarHandle(bruto: string, daEquipe = false): { handle: string; erro: string | null } {
   const handle = bruto.trim().replace(/^@/, '').trim().toLowerCase()
   if (!/^[a-z0-9_]{3,20}$/.test(handle)) {
     return { handle, erro: 'O @ usa de 3 a 20 caracteres: letras minúsculas, números e _.' }
   }
-  if (RESERVADOS.has(handle)) return { handle, erro: 'Esse @ é reservado. Escolha outro.' }
+  if (RESERVADOS.has(handle) && !daEquipe) return { handle, erro: 'Esse @ é reservado. Escolha outro.' }
   return { handle, erro: null }
+}
+
+/** @ reservado é da equipe: o banco não deixa outra conta gravá-lo. */
+export function ehDaEquipe(handle: string | null | undefined): boolean {
+  return !!handle && RESERVADOS.has(handle.toLowerCase())
 }
 
 /** Sugestão de @ a partir do nome de exibição: sem acento, minúsculo, só [a-z0-9_]. */
@@ -203,4 +212,24 @@ export function faixaDoHP(hp: number): 'cheio' | 'bom' | 'baixo' {
   if (hp >= 90) return 'cheio'
   if (hp >= 50) return 'bom'
   return 'baixo'
+}
+
+export interface FatiaDoClima {
+  id: string
+  emoji: string
+  rotulo: string
+  n: number
+  pct: number
+}
+
+/**
+ * Como a comunidade sentiu o episódio: as reações com voto, da mais escolhida para a
+ * menos, com a porcentagem de cada uma. Alimenta a barra do termômetro.
+ */
+export function climaDoEpisodio(reacoes: Record<string, number> | undefined): { total: number; fatias: FatiaDoClima[] } {
+  const fatias = REACOES.map(r => ({ id: r.id, emoji: r.emoji, rotulo: r.rotulo, n: Math.max(0, reacoes?.[r.id] ?? 0), pct: 0 })).filter(f => f.n > 0)
+  const total = fatias.reduce((s, f) => s + f.n, 0)
+  for (const f of fatias) f.pct = total > 0 ? Math.round((f.n / total) * 100) : 0
+  fatias.sort((a, b) => b.n - a.n)
+  return { total, fatias }
 }

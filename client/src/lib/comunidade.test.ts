@@ -1,5 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import {
+  climaDoEpisodio,
+  ehDaEquipe,
   episodioInicial,
   faixaDoHP,
   formatarMomento,
@@ -15,6 +17,15 @@ import {
 describe('validarHandle', () => {
   it('limpa @, espaço e maiúscula', () => {
     expect(validarHandle('  @Joao_Dev ')).toEqual({ handle: 'joao_dev', erro: null })
+  })
+  it('libera nome reservado só para a equipe', () => {
+    expect(validarHandle('administrador', true)).toEqual({ handle: 'administrador', erro: null })
+    expect(validarHandle('ab', true).erro).not.toBeNull()
+  })
+  it('reconhece o @ da equipe', () => {
+    expect(ehDaEquipe('Administrador')).toBe(true)
+    expect(ehDaEquipe('ana_s')).toBe(false)
+    expect(ehDaEquipe(undefined)).toBe(false)
   })
   it('recusa formato inválido e nome reservado', () => {
     expect(validarHandle('ab').erro).not.toBeNull()
@@ -100,5 +111,17 @@ describe('totalDeReacoes e faixaDoHP', () => {
     expect(faixaDoHP(100)).toBe('cheio')
     expect(faixaDoHP(60)).toBe('bom')
     expect(faixaDoHP(20)).toBe('baixo')
+  })
+})
+
+describe('climaDoEpisodio', () => {
+  it('ordena as reações e calcula a fatia de cada uma', () => {
+    const { total, fatias } = climaDoEpisodio({ chorei: 6, tenso: 2, plot_twist: 0 })
+    expect(total).toBe(8)
+    expect(fatias.map(f => f.id)).toEqual(['chorei', 'tenso'])
+    expect(fatias[0].pct).toBe(75)
+  })
+  it('sem reação, termômetro vazio', () => {
+    expect(climaDoEpisodio(undefined)).toEqual({ total: 0, fatias: [] })
   })
 })

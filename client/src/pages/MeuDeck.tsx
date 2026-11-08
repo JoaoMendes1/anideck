@@ -265,7 +265,7 @@ export default function MeuDeck() {
                     </Link>
                 </div>
 
-                <div className="flex md:grid md:grid-cols-6 gap-3.5 mb-10 select-none overflow-x-auto md:overflow-visible scrollbar-hide snap-x snap-mandatory -mx-5 px-5 md:mx-0 md:px-0">
+                <div className="flex md:grid md:grid-cols-6 gap-3.5 mb-10 select-none overflow-x-auto md:overflow-visible scrollbar-hide snap-x snap-mandatory -mx-5 px-5 scroll-px-5 md:mx-0 md:px-0 md:scroll-px-0">
                     <StatCard icon={<MonitorPlay size={14} />} value={stats.assistindo} label="Assistindo" accentColor="holo-3" active={filtroAtivo === 'Assistindo'} onClick={() => alternarFiltroPorCard('Assistindo')} />
                     <StatCard icon={<Bookmark size={14} />} value={stats.emDia} label="Em Dia" accentColor="green" active={filtroAtivo === 'Em Dia'} onClick={() => alternarFiltroPorCard('Em Dia')} />
                     <StatCard icon={<Clock size={14} />} value={stats.queroAssistir} label="Quero Assistir" accentColor="holo-1" active={filtroAtivo === 'Quero Assistir'} onClick={() => alternarFiltroPorCard('Quero Assistir')} />
