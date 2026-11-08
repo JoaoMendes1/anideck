@@ -150,3 +150,47 @@ func TestGuildaHandlers_SemAutenticacao(t *testing.T) {
 		t.Fatalf("HandleGetGuilda sem auth: esperava 401, recebeu %d", w2.Code)
 	}
 }
+
+func TestValidacoesAdminGuilda(t *testing.T) {
+	ec := EconomiaPadrao()
+	if _, msg := ValidarEconomiaGuilda(ec); msg != "" {
+		t.Fatalf("EconomiaPadrao deveria ser válida, recebeu erro: %s", msg)
+	}
+
+	ecInvalida := ec
+	ecInvalida.TetoDiario = 10 // menor que XPBaseEpisodio (25)
+	if _, msg := ValidarEconomiaGuilda(ecInvalida); msg == "" {
+		t.Fatal("esperava erro quando teto diário é menor que XP base")
+	}
+
+	ecEventoInvalido := ec
+	ecEventoInvalido.EventoInicio = "2026-11-10T00:00:00Z"
+	ecEventoInvalido.EventoFim = "2026-11-01T00:00:00Z"
+	if _, msg := ValidarEconomiaGuilda(ecEventoInvalido); msg == "" {
+		t.Fatal("esperava erro quando fim do evento é anterior ao início")
+	}
+
+	if _, msg := ValidarRanksGuilda(RanksPadrao()); msg != "" {
+		t.Fatalf("RanksPadrao deveria ser válido, recebeu erro: %s", msg)
+	}
+
+	ranksSemNivel1 := []FaixaRank{
+		{Rank: "F", Titulo: "Novato", NivelMinimo: 2},
+		{Rank: "C", Titulo: "Prata", NivelMinimo: 10},
+		{Rank: "S", Titulo: "Mestre", NivelMinimo: 30},
+	}
+	if _, msg := ValidarRanksGuilda(ranksSemNivel1); msg == "" {
+		t.Fatal("esperava erro quando a primeira faixa não começa no nível 1")
+	}
+
+	if _, msg := ValidarInsigniasGuilda(InsigniasPadrao()); msg != "" {
+		t.Fatalf("InsigniasPadrao deveria ser válido, recebeu erro: %s", msg)
+	}
+
+	insRegraDesconhecida := InsigniasPadrao()
+	insRegraDesconhecida[0].Regra = "regra_inexistente"
+	if _, msg := ValidarInsigniasGuilda(insRegraDesconhecida); msg == "" {
+		t.Fatal("esperava erro para regra de insígnia desconhecida")
+	}
+}
+

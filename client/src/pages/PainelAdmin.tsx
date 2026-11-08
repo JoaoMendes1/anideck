@@ -19,6 +19,7 @@ import { AbaOlheiro } from '../components/AbaOlheiro'
 import { AbaControle } from '../components/AbaControle'
 import AbaTrilhas from '../components/AbaTrilhas'
 import AbaRevisaoIA from '../components/AbaRevisaoIA'
+import AbaGuilda from '../components/AbaGuilda'
 import type { SugestaoPendente } from '../hooks/useOlheiro'
 
 // Uma query serve os dois caminhos: busca por nome (search) e importação
@@ -118,11 +119,11 @@ export default function PainelAdmin() {
   const [configModalAberto, setConfigModalAberto] = useState(false)
   const [olheiroAberto, setOlheiroAberto] = useState(false)
 
-  type AbaAdmin = 'curadoria' | 'controle' | 'trilhas' | 'revisao_ia'
+  type AbaAdmin = 'curadoria' | 'controle' | 'trilhas' | 'revisao_ia' | 'guilda'
   const [searchParams, setSearchParams] = useSearchParams()
   const abaParam = searchParams.get('aba')
   const abaAtiva: AbaAdmin =
-    abaParam === 'controle' || abaParam === 'trilhas' || abaParam === 'revisao_ia'
+    abaParam === 'controle' || abaParam === 'trilhas' || abaParam === 'revisao_ia' || abaParam === 'guilda'
       ? abaParam
       : 'curadoria'
 
@@ -900,6 +901,7 @@ export default function PainelAdmin() {
             { id: 'controle', nome: 'Painel de Controle' },
             { id: 'trilhas', nome: 'Trilhas' },
             { id: 'revisao_ia', nome: 'Revisão da IA' },
+            { id: 'guilda', nome: 'Guilda' },
           ] as const).map(aba => (
             <button
               key={aba.id}
@@ -977,6 +979,16 @@ export default function PainelAdmin() {
               <p className="text-muted text-sm mt-1">Agrupamentos com nome e nota do curador, exibidos na Início na ordem desta lista.</p>
             </div>
             <AbaTrilhas />
+          </>
+        )}
+
+        {abaAtiva === 'guilda' && (
+          <>
+            <div className="mb-8 min-w-0">
+              <h1 className="font-anton text-3xl uppercase">Guilda & Economia de XP</h1>
+              <p className="text-muted text-sm mt-1">Calibre pesos de XP, faixas F→SS, insígnias, eventos e auditoria de atividade sem exigir deploy.</p>
+            </div>
+            <AbaGuilda />
           </>
         )}
 

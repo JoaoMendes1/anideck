@@ -198,6 +198,10 @@ func main() {
 		admin.Get("/api/admin/trilhas", trilhasHandler.HandleListarAdmin)
 		admin.Put("/api/admin/trilhas", trilhasHandler.HandleSalvar)
 
+		// Guilda & Gamificação: economia de XP, faixas F→SS, insígnias e auditoria
+		admin.Get("/api/admin/guilda", guildaHandler.HandleGetAdminGuilda)
+		admin.Put("/api/admin/guilda", guildaHandler.HandleSaveAdminGuilda)
+
 		// Agente Olheiro: scan sob demanda e revisão da fila de sugestões
 		admin.Get("/api/admin/olheiro/tags", olheiroHandler.HandleListarTagsDesejadas)
 		admin.Put("/api/admin/olheiro/tags", olheiroHandler.HandleSalvarTagDesejada)

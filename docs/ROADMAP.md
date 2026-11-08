@@ -44,7 +44,7 @@ Staging sobe já na Fase 1, como projeto esqueleto — mesmo padrão do JVM Syst
 | 11 · Home e navegação | ✅ Concluída (31/10/2026) |
 | 12 · Meu Gosto e distribuição | ✅ Concluída (08/11/2026) |
 | 13 · Reformulação Visual, Automação de Curadoria e Inteligência de Gosto | ✅ Concluída (08/11/2026) |
-| 14 · Guilda & Gamificação | 🔄 Em andamento (08/11/2026) |
+| 14 · Guilda & Gamificação | ✅ Concluída (08/11/2026) |
 
 ---
 
@@ -695,7 +695,7 @@ Motivo: materializar a visão de progressão de longo prazo (`VISAO_GAMIFICACAO.
 
 - [x] Ledger imutável de XP (`sql/039`), motor de Nível/Rank (`F`→`SS`), Especialista de Gênero (`N1`→`N5`), Insígnias e rotas `/api/guilda` (#145)
 - [x] Tela da Guilda (`/guilda`), pílula de Nível/Rank na Navbar, atalho no menu de Perfil e feedback `+XX XP` ao marcar episódio (#146)
-- [ ] Aba Guilda no Painel Admin: economia de XP, faixas `F`→`SS` com prévia de distribuição, insígnias, auditoria e Kill Switch (#147)
+- [x] Aba Guilda no Painel Admin: economia de XP, faixas `F`→`SS` com prévia de distribuição, insígnias, auditoria e Kill Switch (#147)
 
 ## 🔧 Manutenção pós-v1
 
