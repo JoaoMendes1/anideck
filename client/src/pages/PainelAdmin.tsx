@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from 'react'
 import { supabase } from '../lib/supabase'
 import { Navigate, useNavigate, useSearchParams } from 'react-router-dom'
 import { useToast } from '../contexts/ToastContext'
-import { Sparkles, X, LayoutList, ArrowLeft, Activity, PowerOff } from 'lucide-react'
+import { Sparkles, X, LayoutList, ArrowLeft, Activity, PowerOff, Zap, Loader2 } from 'lucide-react'
 import { LogoMark } from '../components/Brand'
 import Sheet from '../components/Sheet'
 import BuscaAniList, { type AniListMedia } from '../components/BuscaAniList'
@@ -328,6 +328,30 @@ export default function PainelAdmin() {
     }
   }
 
+  const [importandoLote, setImportandoLote] = useState(false)
+
+  const importarTodosSemEpisodios = async () => {
+    setImportandoLote(true)
+    try {
+      const { data: { session } } = await supabase.auth.getSession()
+      const res = await fetch('/api/admin/curation/auto-import-episodes', {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${session?.access_token}` },
+      })
+      if (!res.ok) throw new Error()
+      const data = await res.json()
+      showToast(
+        `Importação concluída: ${data.importados} animes com episódios cadastrados (${data.sem_episodios} sem episódios na AniList).`,
+        'success'
+      )
+      await carregarDestaques()
+    } catch {
+      showToast('Erro ao importar episódios em lote da AniList.', 'error')
+    } finally {
+      setImportandoLote(false)
+    }
+  }
+
   //	Verifica admin, carrega destaques e status da API, além de permitir alternar kill switch
   const toggleKillSwitch = async () => {
     const novoStatus = !forceOffline
@@ -390,7 +414,19 @@ export default function PainelAdmin() {
     const capa = existente?.custom_cover_image || anime.coverImage?.large || ''
     const banner = existente?.custom_banner_image || anime.bannerImage || ''
     const ordemAnime = existente?.order_index ?? 0
-    const epsAnime = existente?.custom_episodes || []
+    const comTitulo = anime.streamingEpisodes || []
+    const lancadosAteAgora = anime.nextAiringEpisode?.episode ? Math.max(0, anime.nextAiringEpisode.episode - 1) : 0
+    const totalEps = anime.episodes || comTitulo.length || lancadosAteAgora
+    const epsAnime = existente?.custom_episodes?.length
+      ? existente.custom_episodes
+      : (totalEps > 0
+          ? Array.from({ length: totalEps }, (_, i) => ({
+              number: i + 1,
+              title: comTitulo[i]?.title || '',
+              image: comTitulo[i]?.thumbnail || '',
+              aired_at: '',
+            }))
+          : [])
     const linksAnime = existente?.custom_external_links || []
     const estreiaAnime = estreiaParaInput(existente?.custom_first_aired_at)
     const duracaoAnime = existente?.custom_duration_minutes ? String(existente.custom_duration_minutes) : ''
@@ -1027,8 +1063,27 @@ export default function PainelAdmin() {
                   <p className="text-muted text-sm mt-1">Sinopse, tags, episódios, capas e personagens de cada obra do catálogo. Marque como destaque para aparecer na vitrine.</p>
                 </div>
                 {semEps.length > 0 && (
-                  <div className="flex items-center gap-3 bg-gold/10 border border-gold/40 text-gold px-4 py-2.5 rounded-xl text-xs font-bold">
-                    <span>⚠ {semEps.length} anime(s) curado(s) sem episódios cadastrados</span>
+                  <div className="flex flex-wrap items-center gap-2.5 bg-gold/10 border border-gold/40 text-gold px-4 py-2.5 rounded-xl text-xs font-bold">
+                    <span>⚠ {semEps.length} anime(s) curado(s) sem episódios</span>
+                    <button
+                      type="button"
+                      onClick={importarTodosSemEpisodios}
+                      disabled={importandoLote}
+                      className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-holo-2 text-void font-extrabold hover:opacity-90 cursor-pointer transition-opacity shrink-0 disabled:opacity-50"
+                      title="Importa episódios da AniList para todas as obras da lista"
+                    >
+                      {importandoLote ? (
+                        <>
+                          <Loader2 size={12} className="animate-spin" />
+                          Importando...
+                        </>
+                      ) : (
+                        <>
+                          <Zap size={12} />
+                          Importar da AniList ({semEps.length})
+                        </>
+                      )}
+                    </button>
                     <button
                       type="button"
                       onClick={() => editarDestaque(semEps[0])}

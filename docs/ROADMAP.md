@@ -919,6 +919,14 @@ senha rotacionada (26), e o painel do provedor desfaz a configuração com um cl
       conferidos contra `SELECT custom_tags FROM curated_animes`. Ver #NN, `DECISIONS.md` e o
       item 19 do `PITFALLS.md`.
 
+### 08/11/2026 — Importação automática de episódios da AniList para curadoria
+
+- [x] **Importação em lote e preenchimento automático de episódios para obras curadas.**
+      Das 40 obras que apareciam no alerta "Sem episódios", 39 já tinham episódios na AniList
+      e foram migradas automaticamente. Criado endpoint `POST /api/admin/curation/auto-import-episodes`
+      e botão de ação em 1 clique ("⚡ Importar da AniList") no banner de Obras Curadas do Painel Admin,
+      além de preenchimento automático no formulário ao curar novas obras. Ver #195.
+
 ---
 
 ## 📋 Pendências Operacionais

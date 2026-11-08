@@ -68,7 +68,7 @@ func main() {
 
 	statsHandler := &handlers.StatsHandler{}
 	rankingHandler := &handlers.RankingHandler{AniListClient: anilistService}
-	curationHandler := &handlers.CurationHandler{}
+	curationHandler := &handlers.CurationHandler{AniListClient: anilistService}
 	systemHandler := &handlers.SystemHandler{}
 	accountHandler := &handlers.AccountHandler{}
 	notificationsHandler := &handlers.NotificationsHandler{AniListClient: anilistService}
@@ -176,6 +176,7 @@ func main() {
 		admin.Post("/api/curation", curationHandler.HandleCreate)
 		admin.Put("/api/curation/{id}", curationHandler.HandleUpdate)
 		admin.Delete("/api/curation/{id}", curationHandler.HandleDelete)
+		admin.Post("/api/admin/curation/auto-import-episodes", curationHandler.HandleAutoImportEpisodes)
 
 		// Reprocessa o cache de metadados do deck inteiro (tags, ano de estreia, etc)
 		admin.Post("/api/admin/metadata/resync", metadataHandler.HandleResyncMetadata)

@@ -9,6 +9,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/JoaoMendes1/anideck/internal/anilist"
 	"github.com/JoaoMendes1/anideck/internal/database"
 	"github.com/JoaoMendes1/anideck/internal/middleware"
 	"github.com/JoaoMendes1/anideck/internal/models"
@@ -21,7 +22,9 @@ import (
 // Inicia o higienizador para evitar ataques XSS nos textos de curadoria
 var sanitizer = bluemonday.StrictPolicy()
 
-type CurationHandler struct{}
+type CurationHandler struct {
+	AniListClient anilist.Service
+}
 
 // destaqueVitrine é o recorte de curated_animes que a vitrine do Meu Deck exibe.
 // Struct própria em vez de CuratedAnime com menos colunas: decodificar colunas
