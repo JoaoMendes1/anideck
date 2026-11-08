@@ -137,6 +137,38 @@ func (h *NotificationsHandler) HandleGetNotifications(w http.ResponseWriter, r *
 		return
 	}
 
+	// Cruza as notificações com episode_progress para que o sino já saiba quais
+	// episódios o usuário marcou como vistos na página da obra ou na Início.
+	var notificacoes []map[string]interface{}
+	if errUnmarshal := json.Unmarshal(data, &notificacoes); errUnmarshal == nil && len(notificacoes) > 0 {
+		vistos := make(map[string]bool)
+		if epData, _, errEp := dbClient.From("episode_progress").
+			Select("mal_id,episode_number", "exact", false).
+			Eq("user_id", userID).
+			Execute(); errEp == nil {
+			var progresso []struct {
+				MalID         int `json:"mal_id"`
+				EpisodeNumber int `json:"episode_number"`
+			}
+			if json.Unmarshal(epData, &progresso) == nil {
+				for _, p := range progresso {
+					vistos[fmt.Sprintf("%d:%d", p.MalID, p.EpisodeNumber)] = true
+				}
+			}
+		}
+
+		for i := range notificacoes {
+			malID, _ := notificacoes[i]["mal_id"].(float64)
+			epNum, _ := notificacoes[i]["episode_number"].(float64)
+			chave := fmt.Sprintf("%d:%d", int(malID), int(epNum))
+			notificacoes[i]["episode_watched"] = vistos[chave]
+		}
+
+		if enriquecido, errMarshal := json.Marshal(notificacoes); errMarshal == nil {
+			data = enriquecido
+		}
+	}
+
 	w.Header().Set("Content-Type", "application/json")
 	w.Write(data)
 }
@@ -205,6 +237,86 @@ func (h *NotificationsHandler) HandleReadAllNotifications(w http.ResponseWriter,
 
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
+	_, _ = w.Write([]byte(`{"ok":true}`))
+}
+
+var registrarSolicitacaoConviteBeta = func(nome, email string) error {
+	svcClient, err := database.ServiceRoleClient()
+	if err != nil {
+		return err
+	}
+
+	admins := make(map[string]bool)
+	if envAdmin := strings.TrimSpace(os.Getenv("ADMIN_USER_ID")); envAdmin != "" {
+		admins[envAdmin] = true
+	}
+
+	if data, _, errAdmins := svcClient.From("app_admins").Select("user_id", "", false).Execute(); errAdmins == nil {
+		var linhas []struct {
+			UserID string `json:"user_id"`
+		}
+		if json.Unmarshal(data, &linhas) == nil {
+			for _, l := range linhas {
+				if uid := strings.TrimSpace(l.UserID); uid != "" {
+					admins[uid] = true
+				}
+			}
+		}
+	}
+
+	if len(admins) == 0 {
+		return fmt.Errorf("nenhum administrador configurado para receber convites")
+	}
+
+	for adminID := range admins {
+		nova := map[string]interface{}{
+			"user_id":        adminID,
+			"mal_id":         0,
+			"episode_number": 0,
+			"anime_title":    fmt.Sprintf("%s <%s>", nome, email),
+			"anime_image":    "beta_invite",
+		}
+		if _, _, errIns := svcClient.From("notifications").Insert(nova, false, "exact", "", "").Execute(); errIns != nil {
+			return errIns
+		}
+	}
+	return nil
+}
+
+// HandleRequestBetaInvite recebe nome e e-mail de um visitante e cria uma notificação
+// interna no sino do administrador informando que essa pessoa solicitou acesso Beta.
+func (h *NotificationsHandler) HandleRequestBetaInvite(w http.ResponseWriter, r *http.Request) {
+	var payload struct {
+		Nome  string `json:"nome"`
+		Email string `json:"email"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
+		http.Error(w, "Dados inválidos", http.StatusBadRequest)
+		return
+	}
+
+	nome := strings.TrimSpace(payload.Nome)
+	email := strings.ToLower(strings.TrimSpace(payload.Email))
+
+	if len([]rune(nome)) < 2 || len([]rune(nome)) > 80 {
+		http.Error(w, "Informe seu nome (entre 2 e 80 caracteres).", http.StatusBadRequest)
+		return
+	}
+
+	partesEmail := strings.Split(email, "@")
+	if len(email) < 5 || len(email) > 120 || len(partesEmail) != 2 || partesEmail[0] == "" || !strings.Contains(partesEmail[1], ".") {
+		http.Error(w, "Informe um endereço de e-mail válido.", http.StatusBadRequest)
+		return
+	}
+
+	if err := registrarSolicitacaoConviteBeta(nome, email); err != nil {
+		log.Printf("[ERRO BETA INVITE] Falha ao registrar pedido de %s (%s): %v", nome, email, err)
+		http.Error(w, "Não foi possível enviar sua solicitação agora.", http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusCreated)
 	_, _ = w.Write([]byte(`{"ok":true}`))
 }
 

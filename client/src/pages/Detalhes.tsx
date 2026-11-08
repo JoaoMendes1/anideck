@@ -479,7 +479,8 @@ export default function Detalhes() {
 
         {isAdmin && (() => {
           const jaCurado = Boolean(anime.is_curated)
-          const iaBloqueada = jaCurado && !forcarRecurarIA
+          const semEpisodios = (anime.episodes || 0) <= 0 && (anime.streamingEpisodes?.length ?? 0) === 0
+          const iaBloqueada = jaCurado && !forcarRecurarIA && !semEpisodios
           const rotuloStatusCuradoria =
             anime.curation_status === 'completo'
               ? 'Completo'
@@ -488,7 +489,7 @@ export default function Detalhes() {
                 : 'Parcial'
 
           return (
-            <div className={`mb-6 p-3.5 rounded-2xl bg-panel/90 border flex flex-col gap-3 shadow-[0_0_20px_rgba(255,197,66,0.08)] ${jaCurado ? 'border-green/40' : 'border-gold/40'}`}>
+            <div className={`mb-6 p-3.5 rounded-2xl bg-panel/90 border flex flex-col gap-3 shadow-[0_0_20px_rgba(255,197,66,0.08)] ${semEpisodios ? 'border-coral/60 bg-coral/[0.04]' : jaCurado ? 'border-green/40' : 'border-gold/40'}`}>
               <div className="flex flex-wrap items-center justify-between gap-2">
                 <div className="flex flex-wrap items-center gap-2 text-xs font-bold text-gold">
                   <Wrench size={14} className="shrink-0" />
@@ -500,6 +501,11 @@ export default function Detalhes() {
                   ) : (
                     <span className="px-2.5 py-0.5 rounded-full text-[10px] font-mono uppercase bg-gold/15 text-gold border border-gold/40">
                       ⚠ Ainda não curado
+                    </span>
+                  )}
+                  {semEpisodios && (
+                    <span className="px-2.5 py-0.5 rounded-full text-[10px] font-mono uppercase bg-coral/20 text-coral border border-coral/50 font-extrabold">
+                      🚨 Emergência: Sem episódios (0 EP) — realize a curadoria
                     </span>
                   )}
                 </div>
@@ -655,48 +661,47 @@ export default function Detalhes() {
               </section>
             )}
 
-            {(anime.episodes > 0 || (anime.streamingEpisodes?.length ?? 0) > 0) && (
-              <EpisodeGrid
-                malId={anime.mal_id}
-                totalEpisodes={anime.episodes}
-                streamingEpisodes={anime.streamingEpisodes}
-                initialWatched={episodiosAssistidos}
-                isLoggedIn={isLoggedIn}
-                status={anime.status}
-                nextAiringEpisode={anime.nextAiringEpisode}
-                startDate={anime.startDate}
-                firstAiredAt={anime.first_aired_at}
-                onEpisodeMarkedWatched={async (epNum) => {
-                  setEpisodiosAssistidos(prev => prev.includes(epNum) ? prev : [...prev, epNum])
-                  const { data: { session } } = await supabase.auth.getSession()
-                  invalidarCachesDoDeck(session?.user?.id)
-                  if (minhaEntrada && minhaEntrada.status === 'Quero Assistir' && session) {
-                    const entradaAtualizada = { ...minhaEntrada, status: 'Assistindo' }
-                    setMinhaEntrada(entradaAtualizada)
-                    try {
-                      await fetch(`/api/entries/${minhaEntrada.id}`, {
-                        method: 'PUT',
-                        headers: {
-                          'Content-Type': 'application/json',
-                          'Authorization': `Bearer ${session.access_token}`,
-                        },
-                        body: JSON.stringify({
-                          mal_id: minhaEntrada.mal_id,
-                          tipo: minhaEntrada.tipo || 'anime',
-                          status: 'Assistindo',
-                          nota: minhaEntrada.nota ?? null,
-                          anotacao: minhaEntrada.anotacao || '',
-                          is_favorite: minhaEntrada.is_favorite || false,
-                        }),
-                      })
-                      showToast('Movido automaticamente para Assistindo!', 'success')
-                    } catch {
-                      // A atualização de status por episódio marcado também ocorre no backend
-                    }
+            <EpisodeGrid
+              malId={anime.mal_id}
+              totalEpisodes={anime.episodes}
+              streamingEpisodes={anime.streamingEpisodes}
+              initialWatched={episodiosAssistidos}
+              isLoggedIn={isLoggedIn}
+              isAdmin={isAdmin}
+              status={anime.status}
+              nextAiringEpisode={anime.nextAiringEpisode}
+              startDate={anime.startDate}
+              firstAiredAt={anime.first_aired_at}
+              onEpisodeMarkedWatched={async (epNum) => {
+                setEpisodiosAssistidos(prev => prev.includes(epNum) ? prev : [...prev, epNum])
+                const { data: { session } } = await supabase.auth.getSession()
+                invalidarCachesDoDeck(session?.user?.id)
+                if (minhaEntrada && minhaEntrada.status === 'Quero Assistir' && session) {
+                  const entradaAtualizada = { ...minhaEntrada, status: 'Assistindo' }
+                  setMinhaEntrada(entradaAtualizada)
+                  try {
+                    await fetch(`/api/entries/${minhaEntrada.id}`, {
+                      method: 'PUT',
+                      headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${session.access_token}`,
+                      },
+                      body: JSON.stringify({
+                        mal_id: minhaEntrada.mal_id,
+                        tipo: minhaEntrada.tipo || 'anime',
+                        status: 'Assistindo',
+                        nota: minhaEntrada.nota ?? null,
+                        anotacao: minhaEntrada.anotacao || '',
+                        is_favorite: minhaEntrada.is_favorite || false,
+                      }),
+                    })
+                    showToast('Movido automaticamente para Assistindo!', 'success')
+                  } catch {
+                    // A atualização de status por episódio marcado também ocorre no backend
                   }
-                }}
-              />
-            )}
+                }
+              }}
+            />
 
             {anime.relations?.length > 0 && (
               <section id="relacionados">

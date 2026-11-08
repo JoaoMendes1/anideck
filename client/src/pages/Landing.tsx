@@ -5,16 +5,16 @@ import {
   BarChart3, ShieldAlert, Mail,
 } from 'lucide-react'
 import { FullLogo } from '../components/Brand'
+import SolicitarConviteBetaModal from '../components/SolicitarConviteBetaModal'
 import { useRevealOnScroll } from '../hooks/useRevealOnScroll'
 import { miniatura } from '../lib/miniatura'
 import { gradienteDoCard } from '../lib/deckHelpers'
 import type { CuratedAnime } from '../types/curation'
 
-const EMAIL_BETA = 'anidecksuporte@gmail.com'
-
 export default function Landing() {
   const addToRefs = useRevealOnScroll()
   const [destaques, setDestaques] = useState<CuratedAnime[]>([])
+  const [modalConviteAberto, setModalConviteAberto] = useState(false)
 
   useEffect(() => {
     let ativo = true
@@ -46,12 +46,13 @@ export default function Landing() {
               <strong className="text-text">Projeto em versão Beta com acesso limitado.</strong> Catálogo, Busca, Detalhes e Rankings são abertos sem login — para criar um Deck pessoal no Beta, solicite um convite.
             </p>
           </div>
-          <a
-            href={`mailto:${EMAIL_BETA}?subject=${encodeURIComponent('Solicitação de Acesso Beta - AniDeck')}`}
-            className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-panel-2 border border-gold/40 text-gold hover:bg-gold/15 text-xs font-bold shrink-0 transition-colors"
+          <button
+            type="button"
+            onClick={() => setModalConviteAberto(true)}
+            className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-panel-2 border border-gold/40 text-gold hover:bg-gold/15 text-xs font-bold shrink-0 transition-colors cursor-pointer"
           >
-            <Mail size={13} /> Solicitar acesso
-          </a>
+            <Mail size={13} /> Solicitar convite Beta
+          </button>
         </div>
       </div>
 
@@ -267,12 +268,13 @@ export default function Landing() {
           >
             <MonitorPlay size={16} /> Navegar sem login
           </Link>
-          <a
-            href={`mailto:${EMAIL_BETA}?subject=${encodeURIComponent('Solicitação de Acesso Beta - AniDeck')}`}
-            className="font-bold text-[14px] px-6 py-3.5 rounded-full border border-gold/40 text-gold hover:bg-gold/10 inline-flex items-center gap-2 transition-colors"
+          <button
+            type="button"
+            onClick={() => setModalConviteAberto(true)}
+            className="font-bold text-[14px] px-6 py-3.5 rounded-full border border-gold/40 text-gold hover:bg-gold/10 inline-flex items-center gap-2 transition-colors cursor-pointer"
           >
             <ShieldAlert size={15} /> Solicitar convite Beta
-          </a>
+          </button>
         </div>
 
         <div className="mt-14 pt-6 border-t border-line flex flex-col md:flex-row justify-between items-center gap-4 text-[12px] text-muted-2">
@@ -285,6 +287,11 @@ export default function Landing() {
           </div>
         </div>
       </footer>
+
+      <SolicitarConviteBetaModal
+        isOpen={modalConviteAberto}
+        onClose={() => setModalConviteAberto(false)}
+      />
 
     </div>
   )

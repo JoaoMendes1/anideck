@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { Bell, Check, CheckCheck, BellOff, Plus } from 'lucide-react';
+import { Bell, Check, CheckCheck, BellOff, Plus, UserPlus, Copy } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { invalidarCachesDoDeck } from '../lib/cacheDeTela';
 import { useToast } from '../contexts/ToastContext';
@@ -14,6 +14,16 @@ interface AppNotification {
   episode_number: number;
   read_at: string | null;
   created_at: string;
+  episode_watched?: boolean;
+}
+
+function extrairDadosConviteBeta(texto: string | null): { nome: string; email: string } {
+  const bruto = (texto || '').trim();
+  const match = /^(.+?)\s*<([^>]+)>$/.exec(bruto);
+  if (match) {
+    return { nome: match[1].trim(), email: match[2].trim() };
+  }
+  return { nome: bruto || 'Visitante', email: '' };
 }
 
 function urlBase64ToUint8Array(base64String: string) {
@@ -111,6 +121,13 @@ export default function NotificationBell() {
           console.error('Service Worker registration failed:', err);
         });
     }
+    const aoAtualizarEpisodio = () => {
+      fetchNotifications();
+    };
+    window.addEventListener('anideck:episodio-atualizado', aoAtualizarEpisodio);
+    return () => {
+      window.removeEventListener('anideck:episodio-atualizado', aoAtualizarEpisodio);
+    };
   }, []);
 
   const markAsRead = async (id: string) => {
@@ -153,7 +170,7 @@ export default function NotificationBell() {
   };
 
   const marcarEpisodioVistoRapido = async (n: AppNotification) => {
-    if (marcandoEp[n.id] || episodiosMarcados[n.id]) return;
+    if (marcandoEp[n.id] || episodiosMarcados[n.id] || n.episode_watched) return;
     setMarcandoEp(prev => ({ ...prev, [n.id]: true }));
     try {
       const { data: { session } } = await supabase.auth.getSession();
@@ -165,11 +182,24 @@ export default function NotificationBell() {
       });
 
       if (res.ok) {
+        const agora = new Date().toISOString();
         setEpisodiosMarcados(prev => ({ ...prev, [n.id]: true }));
+        setNotifications(prev =>
+          prev.map(item =>
+            item.mal_id === n.mal_id && item.episode_number === n.episode_number
+              ? { ...item, episode_watched: true, read_at: item.read_at || agora }
+              : item
+          )
+        );
         invalidarCachesDoDeck(session.user.id);
         if (!n.read_at) {
           await markAsRead(n.id);
         }
+        window.dispatchEvent(
+          new CustomEvent('anideck:episodio-atualizado', {
+            detail: { malId: n.mal_id, episodeNumber: n.episode_number, watched: true },
+          })
+        );
         showToast(`Ep. ${n.episode_number} de ${n.anime_title || 'Anime'} marcado como visto!`, 'success');
       } else {
         showToast('Não foi possível marcar o episódio.', 'error');
@@ -333,86 +363,161 @@ export default function NotificationBell() {
                 <p className="px-6 pt-4 pb-2 text-[11px] font-bold uppercase tracking-wider text-muted-2">
                   {grupo}
                 </p>
-                {itens.map(n => (
-                  <div
-                    key={n.id}
-                    className={`px-6 py-3.5 flex items-start gap-3.5 border-b border-line last:border-b-0 transition-colors hover:bg-panel-2 ${
-                      n.read_at ? 'opacity-65' : 'bg-holo-3/[0.03]'
-                    }`}
-                  >
-                    <Link
-                      to={`/anime/${n.mal_id}`}
-                      onClick={() => {
-                        if (!n.read_at) markAsRead(n.id);
-                        setIsOpen(false);
-                      }}
-                      className="relative flex-shrink-0"
-                    >
-                      {n.anime_image ? (
-                        <img src={n.anime_image} alt="" className="w-14 h-20 object-cover rounded-lg border border-line shadow-sm" />
-                      ) : (
-                        <div className="w-14 h-20 rounded-lg bg-panel-2 border border-line" />
-                      )}
-                      {!n.read_at && (
-                        <span className="absolute -top-1 -right-1 w-2.5 h-2.5 rounded-full bg-holo-3 border-2 border-panel" />
-                      )}
-                    </Link>
+                {itens.map(n => {
+                  const ehConviteBeta = n.mal_id === 0 || n.anime_image === 'beta_invite';
+                  const epJaVisto = Boolean(n.episode_watched || episodiosMarcados[n.id]);
 
-                    <div className="flex-1 min-w-0">
+                  if (ehConviteBeta) {
+                    const { nome, email } = extrairDadosConviteBeta(n.anime_title);
+                    return (
+                      <div
+                        key={n.id}
+                        className={`px-6 py-3.5 flex items-start gap-3.5 border-b border-line last:border-b-0 transition-colors hover:bg-panel-2 ${
+                          n.read_at ? 'opacity-65' : 'bg-gold/[0.04]'
+                        }`}
+                      >
+                        <div className="relative flex-shrink-0 w-12 h-12 rounded-xl bg-gold/15 border border-gold/40 text-gold flex items-center justify-center">
+                          <UserPlus size={20} />
+                          {!n.read_at && (
+                            <span className="absolute -top-1 -right-1 w-2.5 h-2.5 rounded-full bg-gold border-2 border-panel" />
+                          )}
+                        </div>
+
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-1.5 mb-1 flex-wrap">
+                            <span className="px-2 py-0.5 rounded-full bg-gold/15 border border-gold/40 text-gold text-[10px] font-bold tracking-wider uppercase">
+                              Convite Beta
+                            </span>
+                            <span className="text-[11px] text-muted-2 font-mono">
+                              • {tempoRelativo(n.created_at)}
+                            </span>
+                          </div>
+                          <p className="text-[13px] font-bold text-text leading-snug">
+                            {nome} solicitou acesso ao AniDeck
+                          </p>
+                          {email && (
+                            <p className="text-[11.5px] text-holo-3 font-mono truncate mt-0.5">
+                              {email}
+                            </p>
+                          )}
+
+                          {email && (
+                            <div className="mt-2 flex items-center gap-2">
+                              <button
+                                type="button"
+                                onClick={async () => {
+                                  try {
+                                    await navigator.clipboard.writeText(email);
+                                    showToast(`E-mail ${email} copiado!`, 'success');
+                                    if (!n.read_at) markAsRead(n.id);
+                                  } catch {
+                                    showToast('Não foi possível copiar o e-mail.', 'error');
+                                  }
+                                }}
+                                className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-panel-2 hover:bg-gold/15 border border-line hover:border-gold/40 text-text hover:text-gold text-[11px] font-bold transition-colors cursor-pointer"
+                              >
+                                <Copy size={11} /> Copiar e-mail
+                              </button>
+                            </div>
+                          )}
+                        </div>
+
+                        {!n.read_at && (
+                          <button
+                            onClick={() => markAsRead(n.id)}
+                            className="text-muted hover:text-green transition-colors p-1.5 cursor-pointer flex-shrink-0"
+                            title="Marcar como lido"
+                          >
+                            <Check size={16} />
+                          </button>
+                        )}
+                      </div>
+                    );
+                  }
+
+                  return (
+                    <div
+                      key={n.id}
+                      className={`px-6 py-3.5 flex items-start gap-3.5 border-b border-line last:border-b-0 transition-colors hover:bg-panel-2 ${
+                        n.read_at ? 'opacity-65' : 'bg-holo-3/[0.03]'
+                      }`}
+                    >
                       <Link
                         to={`/anime/${n.mal_id}`}
                         onClick={() => {
                           if (!n.read_at) markAsRead(n.id);
                           setIsOpen(false);
                         }}
-                        className="block group"
+                        className="relative flex-shrink-0"
                       >
-                        <div className="flex items-center gap-1.5 mb-1 flex-wrap">
-                          <span className="px-2 py-0.5 rounded-full bg-holo-3/15 border border-holo-3/30 text-holo-3 text-[10px] font-bold tracking-wider uppercase">
-                            EP. {n.episode_number}
-                          </span>
-                          <span className="text-[11px] text-muted-2 font-mono">
-                            • {tempoRelativo(n.created_at)}
-                          </span>
-                        </div>
-                        <p className="text-[13px] font-bold text-text leading-snug line-clamp-2 group-hover:text-holo-3 transition-colors">
-                          {n.anime_title || 'Anime'}
-                        </p>
-                        <p className="text-[11px] text-muted mt-0.5">
-                          Episódio {n.episode_number} já está disponível.
-                        </p>
+                        {n.anime_image ? (
+                          <img src={n.anime_image} alt="" className="w-14 h-20 object-cover rounded-lg border border-line shadow-sm" />
+                        ) : (
+                          <div className="w-14 h-20 rounded-lg bg-panel-2 border border-line" />
+                        )}
+                        {!n.read_at && (
+                          <span className="absolute -top-1 -right-1 w-2.5 h-2.5 rounded-full bg-holo-3 border-2 border-panel" />
+                        )}
                       </Link>
 
-                      <div className="mt-2 flex items-center gap-2">
-                        {episodiosMarcados[n.id] ? (
-                          <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-green/15 border border-green/30 text-green text-[11px] font-bold">
-                            <Check size={12} /> Ep. {n.episode_number} visto
-                          </span>
-                        ) : (
-                          <button
-                            type="button"
-                            disabled={marcandoEp[n.id]}
-                            onClick={() => marcarEpisodioVistoRapido(n)}
-                            className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-panel-2 hover:bg-holo-1/15 border border-line hover:border-holo-1/40 text-text hover:text-holo-1 text-[11px] font-bold transition-colors cursor-pointer disabled:opacity-50"
-                          >
-                            <Plus size={12} />
-                            {marcandoEp[n.id] ? 'Marcando...' : `Marcar Ep. ${n.episode_number} visto`}
-                          </button>
-                        )}
-                      </div>
-                    </div>
+                      <div className="flex-1 min-w-0">
+                        <Link
+                          to={`/anime/${n.mal_id}`}
+                          onClick={() => {
+                            if (!n.read_at) markAsRead(n.id);
+                            setIsOpen(false);
+                          }}
+                          className="block group"
+                        >
+                          <div className="flex items-center gap-1.5 mb-1 flex-wrap">
+                            <span className="px-2 py-0.5 rounded-full bg-holo-3/15 border border-holo-3/30 text-holo-3 text-[10px] font-bold tracking-wider uppercase">
+                              EP. {n.episode_number}
+                            </span>
+                            <span className="text-[11px] text-muted-2 font-mono">
+                              • {tempoRelativo(n.created_at)}
+                            </span>
+                          </div>
+                          <p className="text-[13px] font-bold text-text leading-snug line-clamp-2 group-hover:text-holo-3 transition-colors">
+                            {n.anime_title || 'Anime'}
+                          </p>
+                          <p className="text-[11px] text-muted mt-0.5">
+                            {epJaVisto
+                              ? `Você já assistiu ao episódio ${n.episode_number}.`
+                              : `Episódio ${n.episode_number} já está disponível.`}
+                          </p>
+                        </Link>
 
-                    {!n.read_at && (
-                      <button
-                        onClick={() => markAsRead(n.id)}
-                        className="text-muted hover:text-green transition-colors p-1.5 cursor-pointer flex-shrink-0"
-                        title="Marcar como lido"
-                      >
-                        <Check size={16} />
-                      </button>
-                    )}
-                  </div>
-                ))}
+                        <div className="mt-2 flex items-center gap-2">
+                          {epJaVisto ? (
+                            <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-green/15 border border-green/30 text-green text-[11px] font-bold">
+                              <Check size={12} /> Ep. {n.episode_number} visto
+                            </span>
+                          ) : (
+                            <button
+                              type="button"
+                              disabled={marcandoEp[n.id]}
+                              onClick={() => marcarEpisodioVistoRapido(n)}
+                              className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-panel-2 hover:bg-holo-1/15 border border-line hover:border-holo-1/40 text-text hover:text-holo-1 text-[11px] font-bold transition-colors cursor-pointer disabled:opacity-50"
+                            >
+                              <Plus size={12} />
+                              {marcandoEp[n.id] ? 'Marcando...' : `Marcar Ep. ${n.episode_number} visto`}
+                            </button>
+                          )}
+                        </div>
+                      </div>
+
+                      {!n.read_at && (
+                        <button
+                          onClick={() => markAsRead(n.id)}
+                          className="text-muted hover:text-green transition-colors p-1.5 cursor-pointer flex-shrink-0"
+                          title="Marcar como lido"
+                        >
+                          <Check size={16} />
+                        </button>
+                      )}
+                    </div>
+                  );
+                })}
               </div>
             ))}
           </div>

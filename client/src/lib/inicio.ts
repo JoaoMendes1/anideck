@@ -32,6 +32,8 @@ export interface EstreiaDeHoje {
 export interface ParaContinuar {
   anime: AnimeResumido
   proximoEpisodio: number
+  bloqueadoPorLancamento?: boolean
+  semEpisodios?: boolean
 }
 
 // Status de quem ainda acompanha a obra. Completo e Dropado não têm o que estrear nem continuar.
@@ -78,7 +80,11 @@ export function continuarAssistindo(
     if (!anime) continue
     const proximoEpisodio = p.ultimo_episodio + 1
     if (anime.episodes > 0 && proximoEpisodio > anime.episodes) continue
-    lista.push({ anime, proximoEpisodio })
+    const bloqueadoPorLancamento = Boolean(
+      anime.nextAiringEpisode?.episode && proximoEpisodio >= anime.nextAiringEpisode.episode,
+    )
+    const semEpisodios = anime.episodes <= 0
+    lista.push({ anime, proximoEpisodio, bloqueadoPorLancamento, semEpisodios })
     if (lista.length >= limite) break
   }
   return lista

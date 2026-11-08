@@ -4,7 +4,7 @@ import { useEffect, useState, type ReactNode } from 'react'
 import { Link } from 'react-router-dom'
 import {
   CalendarDays, Compass, Play, Sparkles, Trophy, Plus, Check,
-  SlidersHorizontal, ChevronLeft, ChevronRight, Upload,
+  SlidersHorizontal, ChevronLeft, ChevronRight, Upload, Lock, AlertTriangle,
 } from 'lucide-react'
 import { getCategoryTheme } from '../lib/filters'
 import VitrineDestaques from '../components/VitrineDestaques'
@@ -160,7 +160,7 @@ function Trilho({ cartazes }: { cartazes: Cartaz[] }) {
 }
 
 export default function Inicio() {
-  const { session } = useSessao()
+  const { session, isAdmin } = useSessao()
   const { showToast } = useToast()
   const userId = session?.user.id || ''
   const chave = chaveDoUsuario(userId, 'inicio')
@@ -221,7 +221,7 @@ export default function Inicio() {
               mal_id: m.mal_id,
               title: m.title || 'Título indisponível',
               image_url: m.images?.jpg?.image_url || '',
-              episodes: m.episodes || 0,
+              episodes: m.episodes || m.streamingEpisodes?.length || 0,
               genres: m.genres?.slice(0, 3).map(g => g.name),
               streaming: m.streaming ?? undefined,
               nextAiringEpisode: m.nextAiringEpisode,
@@ -327,6 +327,11 @@ export default function Inicio() {
       if (res.ok) {
         setRecemMarcados(prev => ({ ...prev, [malId]: episodio }))
         invalidarCachesDoDeck(session.user.id)
+        window.dispatchEvent(
+          new CustomEvent('anideck:episodio-atualizado', {
+            detail: { malId, episodeNumber: episodio, watched: true },
+          }),
+        )
         showToast(`Ep. ${episodio} de ${titulo} marcado como visto!`, 'success')
       } else {
         showToast('Não foi possível registrar o episódio.', 'error')
@@ -367,25 +372,25 @@ export default function Inicio() {
 
       {/* HERO BANNER (#141) */}
       {heroAtual && (
-        <section className="relative rounded-[24px] overflow-hidden border border-line bg-panel mb-10 min-h-[260px] sm:min-h-[320px] flex items-end">
+        <section className="relative rounded-[24px] overflow-hidden border border-line bg-panel mb-10 min-h-[280px] sm:min-h-[340px] flex items-end">
           {(heroAtual.custom_banner_image || heroAtual.custom_cover_image) && (
             <img
               src={heroAtual.custom_banner_image || heroAtual.custom_cover_image}
               alt=""
-              className="absolute inset-0 w-full h-full object-cover opacity-35 scale-105 blur-[1px] transition-all duration-700"
+              className="absolute inset-0 w-full h-full object-cover opacity-50 transition-all duration-700"
             />
           )}
-          <div className="absolute inset-0 bg-gradient-to-r from-void via-void/85 to-void/30" />
-          <div className="absolute inset-0 bg-gradient-to-t from-void via-void/40 to-transparent" />
+          <div className="absolute inset-0 bg-gradient-to-r from-void via-void/80 to-void/25" />
+          <div className="absolute inset-0 bg-gradient-to-t from-void via-void/35 to-transparent" />
 
           <div className="relative z-10 w-full p-5 sm:p-8 flex flex-col md:flex-row items-start md:items-end justify-between gap-6">
-            <div className="flex items-end gap-5 max-w-2xl">
+            <div className="flex items-end gap-5 sm:gap-6 max-w-3xl">
               {heroAtual.custom_cover_image && (
-                <Link to={`/anime/${heroAtual.mal_id}`} className="hidden sm:block shrink-0">
+                <Link to={`/anime/${heroAtual.mal_id}`} className="shrink-0">
                   <img
-                    src={miniatura(heroAtual.custom_cover_image)}
+                    src={heroAtual.custom_cover_image}
                     alt={heroAtual.custom_title}
-                    className="w-28 sm:w-32 aspect-[2/3] object-cover rounded-2xl border border-white/15 shadow-2xl"
+                    className="w-28 sm:w-40 md:w-44 aspect-[2/3] object-cover rounded-2xl border-2 border-white/15 shadow-2xl"
                   />
                 </Link>
               )}
@@ -487,7 +492,7 @@ export default function Inicio() {
         </section>
       )}
 
-      {/* CONTINUE DE ONDE PAROU — Cards largos 16:9 com barra de progresso e +1 episódio (#141) */}
+      {/* CONTINUE DE ONDE PAROU — Pôsteres grandes 2:3 nítidos com trava de lançamento e alerta de curadoria (#141) */}
       {continuar.length > 0 && (
         <Secao
           titulo="Continue de onde parou"
@@ -495,78 +500,105 @@ export default function Inicio() {
           icone={<Play size={17} className="text-holo-1" />}
           link={{ para: '/deck', texto: 'Meu deck' }}
         >
-          <div className="flex gap-4 overflow-x-auto scrollbar-hide snap-x snap-mandatory -mx-4 px-4 sm:mx-0 sm:px-0 pb-2">
-            {continuar.map(c => {
+          <div className="flex gap-4 sm:gap-5 overflow-x-auto scrollbar-hide snap-x snap-mandatory -mx-4 px-4 sm:mx-0 sm:px-0 pb-2">
+            {continuar.map((c, idx) => {
               const epAlvo = recemMarcados[c.anime.mal_id]
                 ? recemMarcados[c.anime.mal_id] + 1
                 : c.proximoEpisodio
               const vistos = epAlvo - 1
               const total = c.anime.episodes || 0
-              const pct = total > 0 ? Math.min(100, Math.round((vistos / total) * 100)) : 35
+              const pct = total > 0 ? Math.min(100, Math.round((vistos / total) * 100)) : 0
               const diaSemana = obterTextoDiaLancamento({
                 status: 'RELEASING',
                 nextAiringEpisode: c.anime.nextAiringEpisode,
               })
+              const bloqueadoPorLancamento =
+                Boolean(c.bloqueadoPorLancamento) ||
+                Boolean(c.anime.nextAiringEpisode?.episode && epAlvo >= c.anime.nextAiringEpisode.episode)
+              const semEpisodios = Boolean(c.semEpisodios) || total <= 0
 
               return (
                 <div
                   key={c.anime.mal_id}
-                  className="shrink-0 w-[285px] sm:w-[325px] snap-start rounded-2xl border border-line bg-panel overflow-hidden hover:border-holo-1/50 transition-all group flex flex-col justify-between"
+                  className="shrink-0 w-[195px] sm:w-[218px] lg:w-[232px] snap-start rounded-2xl border border-line bg-panel overflow-hidden hover:border-holo-1/50 transition-all group flex flex-col"
                 >
-                  <div className="relative aspect-[16/9] bg-panel-2 overflow-hidden">
+                  <Link
+                    to={`/anime/${c.anime.mal_id}`}
+                    className={`relative aspect-[2/3] w-full overflow-hidden bg-panel-2 ${gradienteDoCard(idx)} block`}
+                  >
                     {c.anime.image_url && (
-                      <>
-                        <img
-                          src={miniatura(c.anime.image_url)}
-                          alt=""
-                          className="absolute inset-0 w-full h-full object-cover scale-110 blur-md opacity-40"
-                        />
-                        <div className="absolute inset-0 bg-gradient-to-t from-panel via-panel/40 to-transparent" />
-                      </>
+                      <img
+                        src={c.anime.image_url}
+                        alt={c.anime.title}
+                        loading="lazy"
+                        className="absolute inset-0 w-full h-full object-cover group-hover:scale-[1.03] transition-transform duration-300"
+                      />
                     )}
-                    <div className="relative z-10 h-full p-3.5 flex items-end gap-3.5">
-                      {c.anime.image_url && (
-                        <Link to={`/anime/${c.anime.mal_id}`} className="shrink-0">
-                          <img
-                            src={miniatura(c.anime.image_url)}
-                            alt={c.anime.title}
-                            className="w-16 h-24 rounded-xl object-cover border border-white/15 shadow-md"
-                          />
-                        </Link>
-                      )}
-                      <div className="min-w-0 flex-1">
-                        {diaSemana && (
-                          <span className="inline-block font-mono text-[9.5px] font-bold uppercase tracking-wider text-holo-3 mb-1">
-                            📅 {diaSemana}
-                          </span>
-                        )}
-                        <Link
-                          to={`/anime/${c.anime.mal_id}`}
-                          className="block font-bold text-sm text-text leading-snug line-clamp-2 group-hover:text-holo-1 transition-colors"
-                        >
-                          {c.anime.title}
-                        </Link>
-                        <p className="font-mono text-[11px] text-muted mt-1 tabular-nums">
-                          Visto: <strong className="text-text">{vistos}</strong>
+                    <div className="absolute inset-0 bg-gradient-to-t from-void via-void/25 to-transparent" />
+
+                    {semEpisodios ? (
+                      <span className="absolute top-2.5 left-2.5 right-2.5 inline-flex items-center gap-1 px-2 py-1 rounded-lg bg-coral/90 backdrop-blur-md text-void font-mono text-[9.5px] font-extrabold uppercase tracking-wider shadow-md">
+                        <AlertTriangle size={11} className="shrink-0" /> Sem episódios (Curar)
+                      </span>
+                    ) : diaSemana ? (
+                      <span className="absolute top-2.5 left-2.5 px-2.5 py-1 rounded-lg bg-void/85 backdrop-blur-md border border-holo-3/40 font-mono text-[9.5px] font-bold uppercase tracking-wider text-holo-3 shadow-md">
+                        📅 {diaSemana}
+                      </span>
+                    ) : null}
+
+                    <div className="absolute bottom-0 inset-x-0 p-3">
+                      <div className="flex items-center justify-between gap-2 font-mono text-[11px] text-white/90 mb-1.5 tabular-nums drop-shadow">
+                        <span>
+                          Visto: <strong className="text-white">{vistos}</strong>
                           {total > 0 ? ` / ${total} eps` : ' eps'}
-                        </p>
+                        </span>
+                        {total > 0 && <span className="text-[10px] text-holo-3 font-bold">{pct}%</span>}
+                      </div>
+                      <div className="h-1.5 w-full rounded-full bg-void/70 overflow-hidden border border-white/10">
+                        <div
+                          className={`h-full rounded-full transition-all duration-300 ${
+                            semEpisodios
+                              ? 'bg-coral w-full'
+                              : 'bg-gradient-to-r from-holo-1 to-holo-3'
+                          }`}
+                          style={{ width: semEpisodios ? '100%' : `${pct}%` }}
+                        />
                       </div>
                     </div>
-                  </div>
+                  </Link>
 
-                  <div className="px-3.5 pb-3.5 pt-2">
-                    <div className="h-1.5 w-full rounded-full bg-panel-2 overflow-hidden mb-3">
-                      <div
-                        className="h-full rounded-full bg-gradient-to-r from-holo-1 to-holo-3 transition-all duration-300"
-                        style={{ width: `${pct}%` }}
-                      />
-                    </div>
-                    <div className="flex items-center justify-between gap-2">
+                  <div className="p-3 flex-1 flex flex-col justify-between gap-2.5">
+                    <Link
+                      to={`/anime/${c.anime.mal_id}`}
+                      title={c.anime.title}
+                      className="font-bold text-[13px] text-text leading-snug line-clamp-2 min-h-[2.6em] group-hover:text-holo-1 transition-colors"
+                    >
+                      {c.anime.title}
+                    </Link>
+
+                    {semEpisodios ? (
+                      <Link
+                        to={isAdmin ? `/admin?aba=curadoria&mal_id=${c.anime.mal_id}` : `/anime/${c.anime.mal_id}`}
+                        className="w-full inline-flex items-center justify-center gap-1.5 py-2 px-2.5 rounded-xl bg-coral/15 hover:bg-coral/25 border border-coral/45 text-coral text-[11px] font-extrabold transition-colors text-center"
+                      >
+                        <AlertTriangle size={12} className="shrink-0" />
+                        {isAdmin ? 'Curar episódios' : 'Sem episódios'}
+                      </Link>
+                    ) : bloqueadoPorLancamento ? (
+                      <button
+                        type="button"
+                        disabled
+                        title="Este episódio ainda não foi ao ar"
+                        className="w-full inline-flex items-center justify-center gap-1.5 py-2 px-2.5 rounded-xl bg-panel-2 border border-line text-muted-2 text-[11px] font-bold cursor-not-allowed opacity-75"
+                      >
+                        <Lock size={12} className="shrink-0" /> Ep. {epAlvo} não lançado
+                      </button>
+                    ) : (
                       <button
                         type="button"
                         disabled={marcandoEp[c.anime.mal_id]}
                         onClick={() => avancarEpisodioRapido(c.anime.mal_id, epAlvo, c.anime.title)}
-                        className="flex-1 inline-flex items-center justify-center gap-1.5 py-2 px-3 rounded-xl bg-holo-1/15 hover:bg-holo-1/25 border border-holo-1/35 text-holo-1 text-xs font-extrabold transition-colors cursor-pointer disabled:opacity-50"
+                        className="w-full inline-flex items-center justify-center gap-1.5 py-2 px-2.5 rounded-xl bg-holo-1/15 hover:bg-holo-1/25 border border-holo-1/35 text-holo-1 text-[11.5px] font-extrabold transition-colors cursor-pointer disabled:opacity-50"
                       >
                         {recemMarcados[c.anime.mal_id] === c.proximoEpisodio ? (
                           <>
@@ -578,13 +610,7 @@ export default function Inicio() {
                           </>
                         )}
                       </button>
-                      <Link
-                        to={`/anime/${c.anime.mal_id}`}
-                        className="px-3 py-2 rounded-xl bg-panel-2 border border-line hover:border-holo-3 text-xs font-bold text-muted hover:text-text transition-colors"
-                      >
-                        Detalhes
-                      </Link>
-                    </div>
+                    )}
                   </div>
                 </div>
               )

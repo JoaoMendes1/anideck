@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import { useToast } from '../contexts/ToastContext'
+import SolicitarConviteBetaModal from '../components/SolicitarConviteBetaModal'
 
 export default function Auth() {
   const { showToast } = useToast()
@@ -10,6 +11,7 @@ export default function Auth() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [name, setName] = useState('')
+  const [modalConviteAberto, setModalConviteAberto] = useState(false)
 
   // Estados para controle de UI (carregamento e exibição de erros)
   const [loading, setLoading] = useState(false)
@@ -124,29 +126,28 @@ export default function Auth() {
             {isLogin ? 'Entre pra ver seu Deck.' : 'Leva menos de 1 minuto.'}
           </p>
 
-          <div className="mb-5 p-3 rounded-xl bg-gold/10 border border-gold/30 text-left">
-            <div className="flex items-center justify-between gap-2 mb-1">
-              <span className="font-mono text-[10px] font-bold uppercase tracking-wider text-gold">
-                ⚠ Versão Beta · Acesso Limitado
-              </span>
-              <a
-                href="mailto:anidecksuporte@gmail.com?subject=Solicita%C3%A7%C3%A3o%20de%20Acesso%20Beta%20-%20AniDeck"
-                className="text-[11px] font-bold text-holo-3 hover:underline"
-              >
-                Pedir convite →
-              </a>
+          <div className="mb-5 p-3.5 rounded-2xl bg-gold/[0.08] border border-gold/30 text-left space-y-2">
+            <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-gold/15 border border-gold/35 font-mono text-[10px] font-bold uppercase tracking-wider text-gold">
+              ⚠ Versão Beta · Acesso Limitado
             </div>
-            <p className="text-[11.5px] text-muted leading-snug">
-              O cadastro está restrito durante os testes. Você também pode explorar{' '}
+            <p className="text-xs text-muted leading-relaxed">
+              O cadastro está restrito durante os testes. Você pode explorar livremente o{' '}
               <Link to="/descobrir" className="text-text font-bold hover:text-holo-3 underline">
                 Catálogo
               </Link>{' '}
-              e{' '}
+              e os{' '}
               <Link to="/rankings" className="text-text font-bold hover:text-holo-3 underline">
                 Rankings
               </Link>{' '}
-              sem conta.
+              sem conta, ou pedir seu acesso abaixo.
             </p>
+            <button
+              type="button"
+              onClick={() => setModalConviteAberto(true)}
+              className="w-full py-2 px-3 rounded-xl bg-panel-2 border border-gold/40 hover:border-gold text-gold text-xs font-extrabold transition-colors cursor-pointer flex items-center justify-center gap-1.5"
+            >
+              Solicitar convite Beta →
+            </button>
           </div>
 
           {error && (
@@ -234,7 +235,7 @@ export default function Auth() {
               {isLogin ? 'Criar conta' : 'Entrar'}
             </button>
           </div>
-                    <p className="text-center text-[11px] text-muted-2 mt-4 leading-relaxed">
+          <p className="text-center text-[11px] text-muted-2 mt-4 leading-relaxed">
             Ao criar uma conta, por e-mail ou com o Google, você concorda com a{' '}
             <Link to="/privacidade" className="text-holo-3 hover:underline">
               Política de Privacidade
@@ -243,6 +244,13 @@ export default function Auth() {
           </p>
         </div>
       </div>
+
+      <SolicitarConviteBetaModal
+        isOpen={modalConviteAberto}
+        onClose={() => setModalConviteAberto(false)}
+        emailInicial={email}
+        nomeInicial={name}
+      />
     </div>
   )
 }

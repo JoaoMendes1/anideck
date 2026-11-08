@@ -14,6 +14,7 @@ import (
 	"github.com/JoaoMendes1/anideck/internal/database"
 	"github.com/JoaoMendes1/anideck/internal/entries"
 	"github.com/JoaoMendes1/anideck/internal/middleware"
+	"github.com/JoaoMendes1/anideck/internal/models"
 	"github.com/go-chi/chi/v5"
 	"github.com/google/uuid"
 	"github.com/supabase-community/supabase-go"
@@ -348,6 +349,10 @@ func (h *EntriesHandler) HandleMarkEpisode(w http.ResponseWriter, r *http.Reques
 
 	malID, _ := strconv.Atoi(chi.URLParam(r, "mal_id"))
 	episodeNumber, _ := strconv.Atoi(chi.URLParam(r, "number"))
+	if malID <= 0 || episodeNumber <= 0 {
+		http.Error(w, "Episódio ou obra inválidos", http.StatusBadRequest)
+		return
+	}
 
 	progresso := entries.EpisodeProgress{
 		UserID:        userID,
@@ -361,11 +366,19 @@ func (h *EntriesHandler) HandleMarkEpisode(w http.ResponseWriter, r *http.Reques
 		return
 	}
 
+	if curados := CarregarCuradoria(dbClient); len(curados) > 0 {
+		if curado, existe := curados[malID]; existe && episodioCuradoNoFuturo(curado, episodeNumber) {
+			http.Error(w, "Este episódio ainda não foi lançado", http.StatusBadRequest)
+			return
+		}
+	}
+
 	_, _, err := dbClient.From("episode_progress").Insert(progresso, false, "exact", "", "").Execute()
 
 	if err != nil {
 		if strings.Contains(err.Error(), "duplicate key value violates unique constraint") || strings.Contains(err.Error(), "23505") {
 			promoverQueroAssistirParaAssistindo(dbClient, userID, malID)
+			marcarNotificacaoDoEpisodioComoLida(dbClient, userID, malID, episodeNumber)
 			w.WriteHeader(http.StatusOK)
 			return
 		}
@@ -375,7 +388,36 @@ func (h *EntriesHandler) HandleMarkEpisode(w http.ResponseWriter, r *http.Reques
 	}
 
 	promoverQueroAssistirParaAssistindo(dbClient, userID, malID)
+	marcarNotificacaoDoEpisodioComoLida(dbClient, userID, malID, episodeNumber)
 	w.WriteHeader(http.StatusCreated)
+}
+
+// episodioCuradoNoFuturo verifica se a curadoria indica que o episódio ainda não foi ao ar.
+func episodioCuradoNoFuturo(curado models.CuratedAnime, episodeNumber int) bool {
+	if curado.CustomStatus == "NOT_YET_RELEASED" || curado.CustomStatus == "Ainda não lançado" {
+		return true
+	}
+	if proximo := CalcularProximoEpisodioCurado(curado.CustomEpisodes, curado.CustomFirstAiredAt); proximo != nil {
+		if episodeNumber >= proximo.Episode {
+			return true
+		}
+	}
+	return false
+}
+
+// marcarNotificacaoDoEpisodioComoLida sincroniza o sino de notificações quando o usuário
+// marca o episódio diretamente na página do anime ou na tela Início.
+func marcarNotificacaoDoEpisodioComoLida(dbClient *supabase.Client, userID string, malID, episodeNumber int) {
+	if dbClient == nil || userID == "" || malID <= 0 || episodeNumber <= 0 {
+		return
+	}
+	_, _, _ = dbClient.From("notifications").
+		Update(map[string]interface{}{"read_at": time.Now().UTC().Format(time.RFC3339)}, "", "").
+		Eq("user_id", userID).
+		Eq("mal_id", strconv.Itoa(malID)).
+		Eq("episode_number", strconv.Itoa(episodeNumber)).
+		Is("read_at", "null").
+		Execute()
 }
 
 // promoverQueroAssistirParaAssistindo atualiza a entrada do usuário para "Assistindo"

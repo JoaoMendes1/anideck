@@ -62,6 +62,21 @@ describe('continuarAssistindo', () => {
     const entradas = [1, 2, 3].map(id => ({ mal_id: id, status: 'Assistindo' }))
     expect(continuarAssistindo(progresso, entradas, animes, 2)).toHaveLength(2)
   })
+
+  it('sinaliza bloqueadoPorLancamento para episódio futuro e semEpisodios quando episodes <= 0', () => {
+    const catalogo = {
+      10: anime(10, { episodes: 26, nextAiringEpisode: { airingAt: 9999999999, episode: 20 } }),
+      11: anime(11, { episodes: 0 }),
+    }
+    const lista = continuarAssistindo(
+      [{ mal_id: 10, ultimo_episodio: 19, marcados: 19 }, { mal_id: 11, ultimo_episodio: 6, marcados: 6 }],
+      [{ mal_id: 10, status: 'Assistindo' }, { mal_id: 11, status: 'Assistindo' }],
+      catalogo,
+    )
+    expect(lista[0].bloqueadoPorLancamento).toBe(true)
+    expect(lista[0].semEpisodios).toBe(false)
+    expect(lista[1].semEpisodios).toBe(true)
+  })
 })
 
 describe('encontrarLacuna', () => {

@@ -102,6 +102,7 @@ func main() {
 	r.Get("/api/ranking", rankingHandler.HandleGetTopAnime)
 	r.Get("/api/curation", curationHandler.HandleList)
 	r.Post("/api/anime/bulk", animeHandler.HandleGetAnimesByIDs)
+	r.Post("/api/beta/request-invite", notificationsHandler.HandleRequestBetaInvite)
 	r.Post("/api/internal/check-new-episodes", notificationsHandler.HandleCheckNewEpisodes)
 
 	r.Group(func(protegido chi.Router) {

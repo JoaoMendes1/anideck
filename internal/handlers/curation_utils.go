@@ -59,6 +59,9 @@ func AplicarCuradoria(anime *anilist.Anime, curado models.CuratedAnime) {
 	// Campos do Bloco 2. A regra de cada um mora em curation_conversao.go, que trata o JSON
 	// cru e decide o que fazer quando ele está ausente ou malformado.
 	anime.StreamingEpisodes = ConverterEpisodios(curado.CustomEpisodes, anime.StreamingEpisodes)
+	if !jsonAusente(curado.CustomEpisodes) && len(anime.StreamingEpisodes) > anime.Episodes {
+		anime.Episodes = len(anime.StreamingEpisodes)
+	}
 	anime.Streaming = ConverterLinks(curado.CustomExternalLinks, anime.Streaming)
 	anime.StartDate, anime.FirstAiredAt = ConverterEstreia(curado.CustomFirstAiredAt, anime.StartDate)
 	// Se a curadoria possui cronograma futuro de episódios, ela tem precedência sobre a AniList

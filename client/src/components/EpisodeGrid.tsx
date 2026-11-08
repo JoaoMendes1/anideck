@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
-import { Check, Play, Lock, ChevronDown } from 'lucide-react'
+import { Link } from 'react-router-dom'
+import { Check, Play, Lock, ChevronDown, AlertTriangle } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import { useToast } from '../contexts/ToastContext'
 import { obterTextoDiaLancamento } from '../lib/deckHelpers'
@@ -18,6 +19,7 @@ interface EpisodeGridProps {
   streamingEpisodes?: StreamingEpisode[]
   initialWatched: number[]
   isLoggedIn: boolean
+  isAdmin?: boolean
   status?: string
   nextAiringEpisode?: { airingAt: number; timeUntilAiring: number; episode: number }
   startDate?: { year: number; month: number; day: number }
@@ -25,7 +27,7 @@ interface EpisodeGridProps {
   onEpisodeMarkedWatched?: (episodeNumber: number) => void
 }
 
-export default function EpisodeGrid({ malId, totalEpisodes, streamingEpisodes = [], initialWatched, isLoggedIn, status, nextAiringEpisode, startDate, firstAiredAt, onEpisodeMarkedWatched }: EpisodeGridProps) {
+export default function EpisodeGrid({ malId, totalEpisodes, streamingEpisodes = [], initialWatched, isLoggedIn, isAdmin = false, status, nextAiringEpisode, startDate, firstAiredAt, onEpisodeMarkedWatched }: EpisodeGridProps) {
   const { showToast } = useToast()
   const [watched, setWatched] = useState<number[]>(initialWatched)
   const [visibleCount, setVisibleCount] = useState(24)
@@ -36,9 +38,23 @@ export default function EpisodeGrid({ malId, totalEpisodes, streamingEpisodes = 
     setWatched(initialWatched)
   }, [initialWatched])
 
+  useEffect(() => {
+    const aoAtualizar = (ev: Event) => {
+      const custom = ev as CustomEvent<{ malId?: number; episodeNumber?: number; watched?: boolean }>
+      if (custom.detail?.malId === malId && typeof custom.detail.episodeNumber === 'number') {
+        const epNum = custom.detail.episodeNumber
+        if (custom.detail.watched) {
+          setWatched(prev => (prev.includes(epNum) ? prev : [...prev, epNum]))
+        }
+      }
+    }
+    window.addEventListener('anideck:episodio-atualizado', aoAtualizar)
+    return () => window.removeEventListener('anideck:episodio-atualizado', aoAtualizar)
+  }, [malId])
+
   const episodesCount = totalEpisodes > 0 ? totalEpisodes : streamingEpisodes.length
-  
-  const allEpisodes = Array.from({ length: episodesCount || 12 }, (_, i) => {
+
+  const allEpisodes = Array.from({ length: episodesCount }, (_, i) => {
     const epNum = i + 1
     const data = streamingEpisodes[i]
     return {
@@ -52,13 +68,20 @@ export default function EpisodeGrid({ malId, totalEpisodes, streamingEpisodes = 
 
   const displayEpisodes = allEpisodes.slice(0, visibleCount)
 
-  const toggleEpisode = async (episodeNumber: number) => {
+  const toggleEpisode = async (episodeNumber: number, isUnreleased = false) => {
     if (!isLoggedIn) {
       showToast('Faça login para salvar seu progresso.', 'error')
       return
     }
 
     const isWatched = watched.includes(episodeNumber)
+    // Trava dura: episódio ainda não lançado jamais pode ser marcado como visto.
+    // Só permitimos o clique se ele já estava marcado acidentalmente antes, para desmarcar.
+    if (isUnreleased && !isWatched) {
+      showToast('🔒 Este episódio ainda não foi lançado. Marcação bloqueada para proteger suas estatísticas.', 'error')
+      return
+    }
+
     setWatched(prev => isWatched ? prev.filter(num => num !== episodeNumber) : [...prev, episodeNumber])
 
     try {
@@ -72,6 +95,11 @@ export default function EpisodeGrid({ malId, totalEpisodes, streamingEpisodes = 
       })
 
       if (!response.ok) throw new Error()
+      window.dispatchEvent(
+        new CustomEvent('anideck:episodio-atualizado', {
+          detail: { malId, episodeNumber, watched: !isWatched },
+        })
+      )
       if (!isWatched) {
         onEpisodeMarkedWatched?.(episodeNumber)
       }
@@ -93,22 +121,28 @@ export default function EpisodeGrid({ malId, totalEpisodes, streamingEpisodes = 
     return new Date(airedAt)
   }
 
-  const getEpisodeDate = (epNumber: number, airedAt?: string | null) => {
+  const calcularDataEstimadaDoEpisodio = (epNumber: number, airedAt?: string | null): Date | null => {
     if (airedAt) {
       const dataCurada = lerDataDoEpisodio(airedAt)
-      if (!isNaN(dataCurada.getTime())) return formatarData(dataCurada)
+      if (!isNaN(dataCurada.getTime())) return dataCurada
     }
 
     const base = firstAiredAt ? new Date(firstAiredAt) : null
     if (base && !isNaN(base.getTime())) {
-      base.setDate(base.getDate() + (epNumber - 1) * 7)
-      return formatarData(base)
+      const d = new Date(base.getFullYear(), base.getMonth(), base.getDate(), 23, 59, 59)
+      d.setDate(d.getDate() + (epNumber - 1) * 7)
+      return d
     }
 
     if (!startDate?.year || !startDate?.month || !startDate?.day) return null
-    const baseDate = new Date(startDate.year, startDate.month - 1, startDate.day)
+    const baseDate = new Date(startDate.year, startDate.month - 1, startDate.day, 23, 59, 59)
     baseDate.setDate(baseDate.getDate() + (epNumber - 1) * 7)
-    return formatarData(baseDate)
+    return baseDate
+  }
+
+  const getEpisodeDate = (epNumber: number, airedAt?: string | null) => {
+    const d = calcularDataEstimadaDoEpisodio(epNumber, airedAt)
+    return d ? formatarData(d) : null
   }
 
   const diaLancamentoSemanal = obterTextoDiaLancamento({
@@ -136,25 +170,57 @@ export default function EpisodeGrid({ malId, totalEpisodes, streamingEpisodes = 
         </span>
       </div>
 
+      {episodesCount === 0 ? (
+        <div className="p-5 rounded-2xl bg-coral/10 border border-coral/40 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 shadow-[0_0_24px_rgba(255,107,107,0.12)]">
+          <div className="flex items-start gap-3.5">
+            <div className="w-10 h-10 rounded-xl bg-coral/20 border border-coral/40 text-coral flex items-center justify-center shrink-0 mt-0.5">
+              <AlertTriangle size={20} />
+            </div>
+            <div>
+              <span className="inline-block font-mono text-[10px] font-bold uppercase tracking-widest text-coral mb-1">
+                🚨 Aviso de Emergência · Obra sem Episódios
+              </span>
+              <h3 className="font-bold text-sm text-text leading-snug">
+                Esta obra está sem episódios cadastrados na base de dados (0 EP).
+              </h3>
+              <p className="text-xs text-muted mt-1 leading-relaxed">
+                O registro de episódios está travado para evitar dados fantasmas nas suas estatísticas. Realize a curadoria de episódios para liberar o acompanhamento.
+              </p>
+            </div>
+          </div>
+          {isAdmin && (
+            <Link
+              to={`/admin?aba=curadoria&mal_id=${malId}`}
+              className="shrink-0 inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-coral text-void font-extrabold text-xs uppercase tracking-wider hover:opacity-90 transition-opacity"
+            >
+              ✏️ Realizar Curadoria
+            </Link>
+          )}
+        </div>
+      ) : (
       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-5">
         {displayEpisodes.map((ep) => {
           const isWatched = watched.includes(ep.number)
-          
-          // Trava dupla: checa o nó de agendamento OU se a data curada é futura em relação a agora
-          const dataDoEpisodio = ep.airedAt ? lerDataDoEpisodio(ep.airedAt) : null
+          const obraNaoLancada = status === 'NOT_YET_RELEASED' || status === 'Ainda não lançado'
+          // Trava tripla: status da obra, nextAiringEpisode da API/curadoria, OU data estimada/curada futura
+          const dataDoEpisodio = calcularDataEstimadaDoEpisodio(ep.number, ep.airedAt)
           const dataEhFutura = dataDoEpisodio ? dataDoEpisodio.getTime() > agora : false
-          const isUnreleased = (nextAiringEpisode ? ep.number >= nextAiringEpisode.episode : false) || dataEhFutura
+          const isUnreleased = obraNaoLancada || (nextAiringEpisode ? ep.number >= nextAiringEpisode.episode : false) || dataEhFutura
           const isCompact = !ep.thumbnail && !isUnreleased
 
           return (
             <div 
               key={ep.number} 
               className={`relative ${isCompact ? 'flex items-center gap-3 rounded-lg px-3 py-2.5' : 'flex flex-col rounded-xl overflow-hidden'} group border transition-all select-none ${
-                isUnreleased ? 'bg-panel/50 border-line/50 opacity-60' : 
-                isWatched ? 'bg-panel-2 border-green/40 shadow-[0_0_15px_rgba(160,255,120,0.1)] cursor-pointer' : 
-                'bg-panel border-line hover:border-holo-3/50 cursor-pointer'
+                isUnreleased && isWatched
+                  ? 'bg-coral/10 border-coral/50 cursor-pointer'
+                  : isUnreleased
+                    ? 'bg-panel/40 border-line/50 opacity-60 cursor-not-allowed'
+                    : isWatched
+                      ? 'bg-panel-2 border-green/40 shadow-[0_0_15px_rgba(160,255,120,0.1)] cursor-pointer'
+                      : 'bg-panel border-line hover:border-holo-3/50 cursor-pointer'
               }`}
-              onClick={() => !isUnreleased && toggleEpisode(ep.number)}
+              onClick={() => toggleEpisode(ep.number, isUnreleased)}
             >
               {!isCompact && <div className="aspect-video bg-void relative overflow-hidden flex items-center justify-center">
                 {ep.thumbnail ? (
@@ -177,9 +243,11 @@ export default function EpisodeGrid({ malId, totalEpisodes, streamingEpisodes = 
                 )}
 
                 {isUnreleased && (
-                  <div className="absolute inset-0 flex flex-col items-center justify-center bg-void/80 backdrop-blur-[2px]">
-                    <Lock size={20} className="text-muted-2 mb-1" />
-                    <span className="font-anton text-[11px] text-muted-2 uppercase tracking-widest">Em Breve</span>
+                  <div className="absolute inset-0 flex flex-col items-center justify-center bg-void/85 backdrop-blur-[2px] px-3 text-center">
+                    <Lock size={20} className={isWatched ? 'text-coral mb-1' : 'text-muted-2 mb-1'} />
+                    <span className={`font-anton text-[11px] uppercase tracking-widest ${isWatched ? 'text-coral' : 'text-muted-2'}`}>
+                      {isWatched ? 'Marcado por engano (clique p/ remover)' : 'Bloqueado · Não Lançado'}
+                    </span>
                   </div>
                 )}
               </div>}
@@ -207,13 +275,14 @@ export default function EpisodeGrid({ malId, totalEpisodes, streamingEpisodes = 
                   )}
                 </div>
                 <div className={`text-[12px] font-bold mt-1.5 ${isCompact ? 'truncate' : 'line-clamp-2'} leading-tight ${isWatched ? 'text-muted-2' : 'text-text'}`}>
-                  {isUnreleased ? 'Título não revelado' : ep.title}
+                  {isUnreleased ? 'Episódio ainda não lançado' : ep.title}
                 </div>
               </div>
             </div>
           )
         })}
       </div>
+      )}
 
       {visibleCount < allEpisodes.length && (
         <button
