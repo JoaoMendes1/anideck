@@ -42,7 +42,8 @@ Staging sobe já na Fase 1, como projeto esqueleto — mesmo padrão do JVM Syst
 | 9 · Independência da AniList na curadoria | ✅ Concluída (31/10/2026); falta medir o resultado no catálogo real |
 | 10 · RAG e busca semântica | 💭 A planejar, depois da Fase 9 |
 | 11 · Home e navegação | ✅ Concluída (31/10/2026) |
-| 12 · Meu Gosto e distribuição | ✅ Concluída (31/10/2026); a importação de lista segue em avaliação |
+| 12 · Meu Gosto e distribuição | ✅ Concluída (08/11/2026) |
+| 13 · Reformulação Visual, Automação de Curadoria e Inteligência de Gosto | ✅ Concluída (08/11/2026) |
 
 ---
 
@@ -654,12 +655,12 @@ de base instalada.
 - [x] Estatísticas vira Meu Gosto, abrindo com a frase de abertura (#121)
 - [x] Bloco "lacuna de gosto" (#124)
 - [x] Card de gosto compartilhável em PNG (#126)
-- [ ] Importar lista do MyAnimeList sem sujar Streak/Horas (#140, movida para a Fase 13)
+- [x] Importar lista do MyAnimeList sem sujar Streak/Horas (#140, movida para a Fase 13)
 
 A gamificação (rank F→SS, XP, insígnias) **não entra aqui**. Continua no
 `VISAO_GAMIFICACAO.md` até haver decisão explícita de fazer.
 
-## 🚀 Fase 13: Reformulação Visual, Automação de Curadoria e Inteligência de Gosto
+## 🚀 Fase 13: Reformulação Visual, Automação de Curadoria e Inteligência de Gosto (Concluída — 08/11/2026)
 
 Motivo: aproveitar telas maiores (`1440px`), dar presença visual aos cards em todas as páginas,
 automatizar demandas repetitivas de curadoria no Admin e aprofundar a interatividade do Meu Gosto.
@@ -669,23 +670,23 @@ automatizar demandas repetitivas de curadoria no Admin e aprofundar a interativi
 - [x] "Curar todos com IA" no Olheiro, alerta de 0 episódios, barra rápida de Admin em Detalhes e Resync inteligente (#131)
 
 ### Bloco 2 — Espaço Global, Navegação, Detalhes & Tradução Automática
-- [x] Container `1440px`, cards maiores, Rankings/Meu Gosto na Navbar desktop, botão flutuante de busca no mobile e filtro por ano livre (#132)
+- [x] Container `1440px`, cards maiores, Rankings/Meu Gosto na Navbar desktop e BottomNav mobile, botão flutuante de busca no mobile e filtro por ano livre (#132)
 - [x] "Onde assistir" acima da sinopse e lista compacta para episódios sem foto (#133)
-- [ ] Tradução automática pt-BR (sinopse e gêneros) para obras não curadas + aviso de "Obra ainda não curada" (#134)
+- [x] Tradução automática pt-BR (sinopse e gêneros) para obras não curadas + aviso de "Obra ainda não curada" (#134)
 
 ### Bloco 3 — Agenda, Ranking, Meu Deck e Notificações
-- [ ] "Quero Assistir" visível em Meu Deck na Agenda, transição automática ao marcar episódio e filtro clicável no Deck (#135)
+- [x] "Quero Assistir" visível em Meu Deck na Agenda, transição automática ao marcar episódio e filtro clicável no Deck (#135)
 - [x] Cards verticais maiores na Agenda e no Ranking + "Seleção da Casa" recolhível no Meu Deck (#136)
-- [ ] Central de Notificações com leitura ao clicar, "Ler todas", aba "Não lidas" e ação rápida de marcar episódio (#137)
+- [x] Central de Notificações com leitura ao clicar, "Ler todas", aba "Não lidas" e ação rápida de marcar episódio (#137)
 
 ### Bloco 4 — Meu Gosto Interativo, Preferências & Importação do MAL
-- [ ] Drill-down interativo em tags, barras de notas, status, quadrante e capas nos Recordes Pessoais (#138)
-- [ ] Onboarding de gêneros favoritos, edição em Configurações e recomendações "Inspirados no seu gosto" (#139)
-- [ ] Importação de lista XML do MyAnimeList (`watched_at = NULL`) preservando Streak e Horas (#140)
+- [x] Drill-down interativo em tags, barras de notas, status, quadrante e capas nos Recordes Pessoais (#138)
+- [x] Onboarding de gêneros favoritos, edição em Configurações e recomendações "Recomendados para Você" (#139)
+- [x] Importação de lista XML do MyAnimeList (`watched_at = NULL`) preservando Streak e Horas (#140)
 
 ### Bloco 5 — Novo Início (Logado) + Nova Landing & Login Beta
-- [ ] Reformulação da Home logada com Hero Banner, trilhos amplos e cards 16:9 de progresso (#141)
-- [ ] Nova Landing Page com vitrine ao vivo + selo Beta em Desenvolvimento e aviso de acesso limitado (`anidecksuporte@gmail.com`) (#142)
+- [x] Reformulação da Home logada com Hero Banner, trilhos amplos e cards 16:9 de progresso (#141)
+- [x] Nova Landing Page com vitrine ao vivo + selo Beta em Desenvolvimento e aviso de acesso limitado (`anidecksuporte@gmail.com`) (#142)
 
 ## 🔧 Manutenção pós-v1
 

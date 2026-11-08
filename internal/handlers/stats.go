@@ -6,11 +6,13 @@ import (
 	"log"
 	"net/http"
 	"strconv"
+	"strings"
 	"sync"
 	"time"
 
 	"github.com/JoaoMendes1/anideck/internal/database"
 	"github.com/JoaoMendes1/anideck/internal/middleware"
+	supabase "github.com/supabase-community/supabase-go"
 )
 
 type StatsHandler struct{}
@@ -141,6 +143,8 @@ func (h *StatsHandler) HandleGetUserStats(w http.ResponseWriter, r *http.Request
 		forgotten = forgottenData[0]
 	}
 
+	enriquecerRecordes(dbClient, userID, longestAnime, topRated, fastestBinge, forgotten)
+
 	var taxaConclusao float64
 	var taxaValida bool
 	if len(statsData) > 0 {
@@ -226,6 +230,247 @@ func (h *StatsHandler) HandleGetYearAnimes(w http.ResponseWriter, r *http.Reques
 
 	w.Header().Set("Content-Type", "application/json")
 	w.Write(data)
+}
+
+var statusPermitidosDrilldown = map[string]bool{
+	"Assistindo":     true,
+	"Em Dia":         true,
+	"Completo":       true,
+	"Dropado":        true,
+	"Quero Assistir": true,
+}
+
+var buscarAnimesPorNota = func(token, userID string, nota float64) ([]map[string]interface{}, error) {
+	dbClient, errClient := database.ClientWithToken(token)
+	if errClient != nil {
+		return nil, errClient
+	}
+	notaStr := strconv.FormatFloat(nota, 'f', -1, 64)
+	data, _, err := dbClient.From("media_entries").
+		Select("mal_id, status, nota", "", false).
+		Eq("user_id", userID).
+		Eq("nota", notaStr).
+		Execute()
+	if err != nil {
+		return nil, err
+	}
+	return hidratarEntradasDoDrilldown(dbClient, data)
+}
+
+var buscarAnimesPorStatus = func(token, userID, status string) ([]map[string]interface{}, error) {
+	dbClient, errClient := database.ClientWithToken(token)
+	if errClient != nil {
+		return nil, errClient
+	}
+	data, _, err := dbClient.From("media_entries").
+		Select("mal_id, status, nota", "", false).
+		Eq("user_id", userID).
+		Eq("status", status).
+		Execute()
+	if err != nil {
+		return nil, err
+	}
+	return hidratarEntradasDoDrilldown(dbClient, data)
+}
+
+func hidratarEntradasDoDrilldown(dbClient *supabase.Client, entriesJSON []byte) ([]map[string]interface{}, error) {
+	var entries []struct {
+		MalID  int      `json:"mal_id"`
+		Status string   `json:"status"`
+		Nota   *float64 `json:"nota"`
+	}
+	if err := json.Unmarshal(entriesJSON, &entries); err != nil {
+		return nil, err
+	}
+	if len(entries) == 0 {
+		return []map[string]interface{}{}, nil
+	}
+
+	malIDStrs := make([]string, 0, len(entries))
+	for _, e := range entries {
+		if e.MalID > 0 {
+			malIDStrs = append(malIDStrs, strconv.Itoa(e.MalID))
+		}
+	}
+
+	titulos := make(map[int]string, len(entries))
+	capas := make(map[int]string, len(entries))
+
+	if len(malIDStrs) > 0 {
+		if cacheBytes, _, err := dbClient.From("anime_metadata_cache").
+			Select("mal_id, title", "", false).
+			In("mal_id", malIDStrs).
+			Execute(); err == nil {
+			var cacheRows []struct {
+				MalID int    `json:"mal_id"`
+				Title string `json:"title"`
+			}
+			if json.Unmarshal(cacheBytes, &cacheRows) == nil {
+				for _, r := range cacheRows {
+					if strings.TrimSpace(r.Title) != "" {
+						titulos[r.MalID] = r.Title
+					}
+				}
+			}
+		}
+
+		if curBytes, _, err := dbClient.From("curated_animes").
+			Select("mal_id, custom_title, custom_cover_image", "", false).
+			In("mal_id", malIDStrs).
+			Execute(); err == nil {
+			var curRows []struct {
+				MalID       int    `json:"mal_id"`
+				CustomTitle string `json:"custom_title"`
+				CustomCover string `json:"custom_cover_image"`
+			}
+			if json.Unmarshal(curBytes, &curRows) == nil {
+				for _, r := range curRows {
+					if strings.TrimSpace(r.CustomTitle) != "" {
+						titulos[r.MalID] = r.CustomTitle
+					}
+					if strings.TrimSpace(r.CustomCover) != "" {
+						capas[r.MalID] = r.CustomCover
+					}
+				}
+			}
+		}
+	}
+
+	resultado := make([]map[string]interface{}, 0, len(entries))
+	for _, e := range entries {
+		item := map[string]interface{}{
+			"mal_id": e.MalID,
+			"title":  titulos[e.MalID],
+			"nota":   e.Nota,
+			"status": e.Status,
+		}
+		if capa := capas[e.MalID]; capa != "" {
+			item["image_url"] = capa
+		}
+		resultado = append(resultado, item)
+	}
+	return resultado, nil
+}
+
+// enriquecerRecordes preenche mal_id e image_url nos cards de Recordes Pessoais sem depender
+// de alteração nas views do banco (Armadilha 11).
+func enriquecerRecordes(dbClient *supabase.Client, userID string, records ...map[string]interface{}) {
+	precisa := false
+	for _, rec := range records {
+		if rec != nil {
+			precisa = true
+			break
+		}
+	}
+	if !precisa {
+		return
+	}
+
+	entriesBytes, _, err := dbClient.From("media_entries").
+		Select("mal_id, status, nota", "", false).
+		Eq("user_id", userID).
+		Execute()
+	if err != nil {
+		return
+	}
+	hidratados, err := hidratarEntradasDoDrilldown(dbClient, entriesBytes)
+	if err != nil || len(hidratados) == 0 {
+		return
+	}
+
+	porTitulo := make(map[string]map[string]interface{}, len(hidratados))
+	porMalID := make(map[int]map[string]interface{}, len(hidratados))
+	for _, item := range hidratados {
+		if t, ok := item["title"].(string); ok && strings.TrimSpace(t) != "" {
+			porTitulo[strings.ToLower(strings.TrimSpace(t))] = item
+		}
+		if id, ok := item["mal_id"].(int); ok && id > 0 {
+			porMalID[id] = item
+		}
+	}
+
+	for _, rec := range records {
+		if rec == nil {
+			continue
+		}
+		if rawID, ok := rec["mal_id"]; ok && rawID != nil {
+			id := int(numero(rawID))
+			if id > 0 {
+				if info, achou := porMalID[id]; achou {
+					if capa, okCapa := info["image_url"].(string); okCapa && capa != "" {
+						rec["image_url"] = capa
+					}
+				}
+				continue
+			}
+		}
+		titulo, _ := rec["title"].(string)
+		chave := strings.ToLower(strings.TrimSpace(titulo))
+		if chave == "" {
+			continue
+		}
+		if info, achou := porTitulo[chave]; achou {
+			rec["mal_id"] = info["mal_id"]
+			if capa, okCapa := info["image_url"].(string); okCapa && capa != "" {
+				rec["image_url"] = capa
+			}
+		}
+	}
+}
+
+// HandleGetRatingAnimes devolve os animes avaliados pelo usuário com determinada nota.
+func (h *StatsHandler) HandleGetRatingAnimes(w http.ResponseWriter, r *http.Request) {
+	userID, ok := r.Context().Value(middleware.UserIDKey).(string)
+	token, tokenOk := r.Context().Value(middleware.TokenKey).(string)
+
+	if !ok || !tokenOk || userID == "" {
+		http.Error(w, "Não autenticado", http.StatusUnauthorized)
+		return
+	}
+
+	notaStr := strings.TrimSpace(r.URL.Query().Get("nota"))
+	nota, err := strconv.ParseFloat(notaStr, 64)
+	if err != nil || nota < 0 || nota > 10 {
+		http.Error(w, "Nota inválida", http.StatusBadRequest)
+		return
+	}
+
+	animes, err := buscarAnimesPorNota(token, userID, nota)
+	if err != nil {
+		log.Printf("[ERRO DB] HandleGetRatingAnimes (user=%s, nota=%v): %v", userID, nota, err)
+		http.Error(w, "Erro ao buscar animes por nota", http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	_ = json.NewEncoder(w).Encode(animes)
+}
+
+// HandleGetStatusAnimes devolve os animes do usuário que estão em determinado status.
+func (h *StatsHandler) HandleGetStatusAnimes(w http.ResponseWriter, r *http.Request) {
+	userID, ok := r.Context().Value(middleware.UserIDKey).(string)
+	token, tokenOk := r.Context().Value(middleware.TokenKey).(string)
+
+	if !ok || !tokenOk || userID == "" {
+		http.Error(w, "Não autenticado", http.StatusUnauthorized)
+		return
+	}
+
+	status := strings.TrimSpace(r.URL.Query().Get("status"))
+	if !statusPermitidosDrilldown[status] {
+		http.Error(w, "Status inválido", http.StatusBadRequest)
+		return
+	}
+
+	animes, err := buscarAnimesPorStatus(token, userID, status)
+	if err != nil {
+		log.Printf("[ERRO DB] HandleGetStatusAnimes (user=%s, status=%s): %v", userID, status, err)
+		http.Error(w, "Erro ao buscar animes por status", http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	_ = json.NewEncoder(w).Encode(animes)
 }
 
 // HandleGetGenreAnimes alimenta o drill-down: quais animes estão por trás daquela barra.

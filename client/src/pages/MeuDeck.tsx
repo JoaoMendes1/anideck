@@ -8,7 +8,7 @@ import VitrineDestaques from '../components/VitrineDestaques'
 import type { AnimeDaApi } from '../types/anime'
 import DeckSkeleton from '../components/DeckSkeleton'
 import StatCard from '../components/StatCard'
-import { Play, CheckCircle2, Bookmark, MonitorPlay, Star, XCircle, AlertCircle } from 'lucide-react'
+import { Play, CheckCircle2, Bookmark, MonitorPlay, Star, XCircle, AlertCircle, Clock } from 'lucide-react'
 import type { AiringInfo } from '../lib/deckHelpers'
 import { gradienteDoCard } from '../lib/deckHelpers'
 import { usePosicaoDeLista } from '../lib/posicaoDeLista'
@@ -164,11 +164,12 @@ export default function MeuDeck() {
     }, [loading, chaveDoDeck, entradas, animesData, userName])
 
     const stats = useMemo(() => {
-        let assistindo = 0, emDia = 0, concluidos = 0, dropados = 0, somaNotas = 0, qtdNotas = 0;
+        let assistindo = 0, emDia = 0, queroAssistir = 0, concluidos = 0, dropados = 0, somaNotas = 0, qtdNotas = 0;
 
         entradas.forEach(e => {
             if (e.status === 'Assistindo') assistindo++;
             if (e.status === 'Em Dia') emDia++;
+            if (e.status === 'Quero Assistir') queroAssistir++;
             if (e.status === 'Completo' || e.status === 'Finalizado') concluidos++;
             if (e.status === 'Dropado') dropados++;
             if (e.nota !== null && e.nota !== undefined) {
@@ -180,11 +181,16 @@ export default function MeuDeck() {
         return {
             assistindo,
             emDia,
+            queroAssistir,
             concluidos,
             dropados,
             notaMedia: qtdNotas > 0 ? (somaNotas / qtdNotas).toFixed(1) : 'N/A'
         }
     }, [entradas])
+
+    const alternarFiltroPorCard = (status: string) => {
+        setFiltroAtivo(prev => prev === status ? 'Todos' : status)
+    }
 
     // Mapa de contadores para exibir os totais dentro de cada aba
     const contadoresPorAba = useMemo(() => {
@@ -265,11 +271,12 @@ export default function MeuDeck() {
                     </Link>
                 </div>
 
-                <div className="flex md:grid md:grid-cols-5 gap-3.5 mb-10 select-none overflow-x-auto md:overflow-visible scrollbar-hide snap-x snap-mandatory -mx-5 px-5 md:mx-0 md:px-0">
-                    <StatCard icon={<MonitorPlay size={14} />} value={stats.assistindo} label="Assistindo" accentColor="holo-3" />
-                    <StatCard icon={<Bookmark size={14} />} value={stats.emDia} label="Em Dia" accentColor="green" />
-                    <StatCard icon={<CheckCircle2 size={14} />} value={stats.concluidos} label="Completos" accentColor="gold" />
-                    <StatCard icon={<XCircle size={14} />} value={stats.dropados} label="Dropados" accentColor="coral" />
+                <div className="flex md:grid md:grid-cols-6 gap-3.5 mb-10 select-none overflow-x-auto md:overflow-visible scrollbar-hide snap-x snap-mandatory -mx-5 px-5 md:mx-0 md:px-0">
+                    <StatCard icon={<MonitorPlay size={14} />} value={stats.assistindo} label="Assistindo" accentColor="holo-3" active={filtroAtivo === 'Assistindo'} onClick={() => alternarFiltroPorCard('Assistindo')} />
+                    <StatCard icon={<Bookmark size={14} />} value={stats.emDia} label="Em Dia" accentColor="green" active={filtroAtivo === 'Em Dia'} onClick={() => alternarFiltroPorCard('Em Dia')} />
+                    <StatCard icon={<Clock size={14} />} value={stats.queroAssistir} label="Quero Assistir" accentColor="holo-1" active={filtroAtivo === 'Quero Assistir'} onClick={() => alternarFiltroPorCard('Quero Assistir')} />
+                    <StatCard icon={<CheckCircle2 size={14} />} value={stats.concluidos} label="Completos" accentColor="gold" active={filtroAtivo === 'Completo'} onClick={() => alternarFiltroPorCard('Completo')} />
+                    <StatCard icon={<XCircle size={14} />} value={stats.dropados} label="Dropados" accentColor="coral" active={filtroAtivo === 'Dropado'} onClick={() => alternarFiltroPorCard('Dropado')} />
                     <StatCard icon={<Star size={14} />} value={stats.notaMedia} label="Sua Nota Média" accentColor="holo-1" />
                 </div>
 

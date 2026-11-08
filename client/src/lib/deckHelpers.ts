@@ -66,3 +66,60 @@ export function getAiringBadge(nextAiringEpisode?: AiringInfo) {
         lancaAmanha: diffDays === 1,
     }
 }
+
+const DIAS_SEMANA_RECORRENTES = [
+    'Todo domingo',
+    'Toda segunda-feira',
+    'Toda terça-feira',
+    'Toda quarta-feira',
+    'Toda quinta-feira',
+    'Toda sexta-feira',
+    'Todo sábado',
+] as const
+
+/**
+ * Retorna a recorrência semanal no fuso local do navegador ("Toda quarta-feira", "Todo sábado"...)
+ * apenas enquanto o anime estiver em lançamento. Quando finalizado, retorna null.
+ */
+export function obterTextoDiaLancamento(opcoes: {
+    status?: string
+    nextAiringEpisode?: { airingAt: number }
+    firstAiredAt?: string
+    startDate?: { year: number; month: number; day: number }
+}): string | null {
+    const statusNorm = (opcoes.status || '').toUpperCase()
+    const finalizado =
+        statusNorm === 'FINISHED' ||
+        statusNorm === 'FINISHED AIRING' ||
+        statusNorm === 'FINALIZADO' ||
+        statusNorm === 'NOT_YET_RELEASED' ||
+        statusNorm === 'NOT YET AIRED' ||
+        statusNorm === 'EM BREVE'
+
+    if (finalizado) return null
+
+    const emLancamento =
+        statusNorm === 'RELEASING' ||
+        statusNorm === 'CURRENTLY AIRING' ||
+        statusNorm === 'EM LANÇAMENTO' ||
+        Boolean(opcoes.nextAiringEpisode?.airingAt)
+
+    if (!emLancamento) return null
+
+    if (opcoes.nextAiringEpisode?.airingAt) {
+        const d = new Date(opcoes.nextAiringEpisode.airingAt * 1000)
+        if (!isNaN(d.getTime())) return DIAS_SEMANA_RECORRENTES[d.getDay()]
+    }
+
+    if (opcoes.firstAiredAt) {
+        const d = new Date(opcoes.firstAiredAt)
+        if (!isNaN(d.getTime())) return DIAS_SEMANA_RECORRENTES[d.getDay()]
+    }
+
+    if (opcoes.startDate?.year && opcoes.startDate?.month && opcoes.startDate?.day) {
+        const d = new Date(opcoes.startDate.year, opcoes.startDate.month - 1, opcoes.startDate.day)
+        if (!isNaN(d.getTime())) return DIAS_SEMANA_RECORRENTES[d.getDay()]
+    }
+
+    return null
+}

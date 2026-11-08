@@ -16,6 +16,7 @@ import (
 	"github.com/JoaoMendes1/anideck/internal/middleware"
 	"github.com/go-chi/chi/v5"
 	"github.com/google/uuid"
+	"github.com/supabase-community/supabase-go"
 )
 
 type EntriesHandler struct{}
@@ -364,6 +365,7 @@ func (h *EntriesHandler) HandleMarkEpisode(w http.ResponseWriter, r *http.Reques
 
 	if err != nil {
 		if strings.Contains(err.Error(), "duplicate key value violates unique constraint") || strings.Contains(err.Error(), "23505") {
+			promoverQueroAssistirParaAssistindo(dbClient, userID, malID)
 			w.WriteHeader(http.StatusOK)
 			return
 		}
@@ -372,7 +374,22 @@ func (h *EntriesHandler) HandleMarkEpisode(w http.ResponseWriter, r *http.Reques
 		return
 	}
 
+	promoverQueroAssistirParaAssistindo(dbClient, userID, malID)
 	w.WriteHeader(http.StatusCreated)
+}
+
+// promoverQueroAssistirParaAssistindo atualiza a entrada do usuário para "Assistindo"
+// caso estivesse em "Quero Assistir" quando um episódio é marcado como assistido.
+func promoverQueroAssistirParaAssistindo(dbClient *supabase.Client, userID string, malID int) {
+	if dbClient == nil || userID == "" || malID <= 0 {
+		return
+	}
+	_, _, _ = dbClient.From("media_entries").
+		Update(map[string]string{"status": "Assistindo"}, "", "").
+		Eq("user_id", userID).
+		Eq("mal_id", strconv.Itoa(malID)).
+		Eq("status", "Quero Assistir").
+		Execute()
 }
 
 func (h *EntriesHandler) HandleUnmarkEpisode(w http.ResponseWriter, r *http.Request) {

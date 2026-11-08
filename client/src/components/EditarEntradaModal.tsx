@@ -3,6 +3,7 @@ import { createPortal } from 'react-dom'
 import { supabase } from '../lib/supabase'
 import { useToast } from '../contexts/ToastContext'
 import Sheet from './Sheet'
+import { invalidarCachesDoDeck } from '../lib/cacheDeTela'
 
 interface Entrada {
     id?: string
@@ -124,6 +125,7 @@ export default function EditarEntradaModal({ entrada, onFechar, onSalvar, onExcl
             if (!response.ok) throw new Error('Falha ao salvar')
 
             const atualizada = await response.json()
+            invalidarCachesDoDeck(session.user.id)
             onSalvar(Array.isArray(atualizada) ? atualizada[0] : atualizada)
             showToast(isNova ? 'Adicionado ao seu Deck!' : 'Alterações salvas com sucesso!')
             setConfirmandoZerarEpisodios(false)
@@ -156,6 +158,7 @@ export default function EditarEntradaModal({ entrada, onFechar, onSalvar, onExcl
             })
             if (!response.ok) throw new Error('Falha ao excluir')
 
+            invalidarCachesDoDeck(session.user.id)
             onExcluir(id)
             showToast('Anime removido do seu Deck.')
             onFechar()

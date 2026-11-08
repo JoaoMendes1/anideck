@@ -13,6 +13,7 @@ import FilterSheet from '../components/FilterSheet'
 import FilterChipGroup from '../components/FilterChipGroup'
 import AbasDescobrir from '../components/AbasDescobrir'
 import { gradienteDoCard } from '../lib/deckHelpers'
+import { invalidarCachesDoDeck } from '../lib/cacheDeTela'
 
 interface Anime {
     mal_id: number
@@ -265,6 +266,7 @@ export default function Busca() {
                 })
                 if (!res.ok) throw new Error()
                 setSavedEntries(prev => prev.filter(e => e.mal_id !== malId))
+                invalidarCachesDoDeck(session.user.id)
                 showToast('Removido do Deck', 'success')
             } else {
                 const res = await fetch('/api/entries', {
@@ -275,6 +277,7 @@ export default function Busca() {
                 if (!res.ok) throw new Error()
                 const novaEntrada = await res.json()
                 setSavedEntries(prev => [...prev, { mal_id: malId, id: novaEntrada.id || novaEntrada[0]?.id, is_favorite: false }])
+                invalidarCachesDoDeck(session.user.id)
                 showToast('Anime salvo no seu Deck!', 'success')
             }
         } catch {

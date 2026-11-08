@@ -1,16 +1,16 @@
 import { Link, useLocation } from 'react-router-dom'
-import { Home, Compass, LayoutDashboard, User, CalendarDays } from 'lucide-react'
+import { Home, LayoutDashboard, User, CalendarDays, Trophy, BarChart2 } from 'lucide-react'
 import { useState } from 'react'
 import { useSessao } from '../contexts/SessaoContext'
 import Sheet from './Sheet'
 import ItensPerfil from './ItensPerfil'
 
-// Rotas que acendem cada item. Rankings é uma aba do Descobrir, então acende o Descobrir.
 const ATIVO_EM: Record<string, string[]> = {
     '/': ['/'],
-    '/descobrir': ['/descobrir', '/rankings'],
+    '/rankings': ['/rankings'],
     '/deck': ['/deck'],
     '/calendario': ['/calendario'],
+    '/meu-gosto': ['/meu-gosto', '/estatisticas'],
 }
 
 export default function BottomNav() {
@@ -23,8 +23,8 @@ export default function BottomNav() {
             ATIVO_EM[item]?.includes(location.pathname) ? 'text-holo-3' : 'text-muted'
         }`
 
-    // Cinco itens é o teto para o alvo do polegar. Rankings e Meu Gosto entram pela
-    // Início e pelo Perfil; deslogado, só aparece o que não exige conta.
+    // No celular, a busca tem o botão flutuante dedicado (BotaoBusca em Layout.tsx),
+    // liberando espaço na barra inferior para Rankings e Meu Gosto ficarem sempre à mão.
     return (
         <div className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-void/90 backdrop-blur-md border-t border-line pb-safe">
             <div className="flex items-center justify-around h-16 px-1">
@@ -33,9 +33,9 @@ export default function BottomNav() {
                     <span className="text-[9px] font-bold">Início</span>
                 </Link>
 
-                <Link to="/descobrir" className={itemClasse('/descobrir')}>
-                    <Compass size={18} />
-                    <span className="text-[9px] font-bold">Descobrir</span>
+                <Link to="/rankings" className={itemClasse('/rankings')}>
+                    <Trophy size={18} />
+                    <span className="text-[9px] font-bold">Rankings</span>
                 </Link>
 
                 {session ? (
@@ -48,6 +48,11 @@ export default function BottomNav() {
                         <Link to="/calendario" className={itemClasse('/calendario')}>
                             <CalendarDays size={18} />
                             <span className="text-[9px] font-bold">Agenda</span>
+                        </Link>
+
+                        <Link to="/meu-gosto" className={itemClasse('/meu-gosto')}>
+                            <BarChart2 size={18} />
+                            <span className="text-[9px] font-bold">Meu Gosto</span>
                         </Link>
 
                         {/* Admin e Sair ficam no Sheet de Perfil: Sair é irreversível e

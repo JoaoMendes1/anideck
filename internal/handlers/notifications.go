@@ -174,6 +174,40 @@ func (h *NotificationsHandler) HandleReadNotification(w http.ResponseWriter, r *
 	w.WriteHeader(http.StatusOK)
 }
 
+var marcarTodasNotificacoesNoBanco = func(token, userID string) error {
+	dbClient, errClient := database.ClientWithToken(token)
+	if errClient != nil {
+		return errClient
+	}
+	update := map[string]interface{}{"read_at": time.Now().UTC().Format(time.RFC3339)}
+	_, _, err := dbClient.From("notifications").
+		Update(update, "", "exact").
+		Eq("user_id", userID).
+		Is("read_at", "null").
+		Execute()
+	return err
+}
+
+func (h *NotificationsHandler) HandleReadAllNotifications(w http.ResponseWriter, r *http.Request) {
+	token, tokenOk := r.Context().Value(middleware.TokenKey).(string)
+	userID, userOk := r.Context().Value(middleware.UserIDKey).(string)
+
+	if !tokenOk || !userOk || strings.TrimSpace(token) == "" || strings.TrimSpace(userID) == "" {
+		http.Error(w, "Não autenticado", http.StatusUnauthorized)
+		return
+	}
+
+	if err := marcarTodasNotificacoesNoBanco(token, userID); err != nil {
+		log.Printf("[ERRO DB] HandleReadAllNotifications (user=%s): %v", userID, err)
+		http.Error(w, "Erro DB", http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	_, _ = w.Write([]byte(`{"ok":true}`))
+}
+
 func (h *NotificationsHandler) HandleCheckNewEpisodes(w http.ResponseWriter, r *http.Request) {
 		if r.Header.Get("X-Cron-Secret") != os.Getenv("CRON_SECRET") {
     http.Error(w, "não autorizado", http.StatusUnauthorized)

@@ -63,7 +63,9 @@ interface WatchHour {
 }
 
 interface RecordeAnime {
+  mal_id?: number
   title: string
+  image_url?: string
   episodes?: number
   nota?: number
   episodios_marcados?: number
@@ -150,10 +152,11 @@ export default function Estatisticas() {
   const [agora] = useState(() => Date.now())
 
   // Drill-down: qual recorte está aberto no Sheet. Guardar o tipo junto do valor deixa o
-  // mesmo fluxo servir a gênero e a ano sem duplicar estado nem componente.
-  const [recorte, setRecorte] = useState<{ tipo: 'genero' | 'ano'; valor: string } | null>(null)
+  // mesmo fluxo servir a gênero, ano, nota e status sem duplicar estado nem componente.
+  const [recorte, setRecorte] = useState<{ tipo: 'genero' | 'ano' | 'nota' | 'status'; valor: string } | null>(null)
   const [animesDoRecorte, setAnimesDoRecorte] = useState<AnimeDoGenero[]>([])
   const [carregandoRecorte, setCarregandoRecorte] = useState(false)
+  const [capasDosRecordes, setCapasDosRecordes] = useState<Record<number, string>>({})
 
   // Dispara o crescimento das barras. Elas nascem com tamanho 0 e só recebem o valor real
   // depois que os dados chegaram — é a transição do CSS que faz o resto.
@@ -198,7 +201,38 @@ export default function Estatisticas() {
     fetchStats()
   }, [chaveDasStats, emMemoria])
 
-  // Busca os animes do gênero clicado. Roda só quando o Sheet abre — não faz sentido
+  useEffect(() => {
+    const ids = [
+      records.longest_anime?.mal_id,
+      records.top_rated?.mal_id,
+      records.fastest_binge?.mal_id,
+      records.forgotten?.mal_id,
+    ].filter((id): id is number => Boolean(id && id > 0))
+    if (ids.length === 0) return
+
+    let cancelado = false
+    fetch('/api/anime/bulk', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ ids: Array.from(new Set(ids)) }),
+    })
+      .then(res => res.ok ? res.json() : null)
+      .then(json => {
+        if (!json || cancelado) return
+        const mapa: Record<number, string> = {}
+        for (const m of json.data || []) {
+          if (m.mal_id && m.images?.jpg?.image_url) {
+            mapa[m.mal_id] = m.images.jpg.image_url
+          }
+        }
+        setCapasDosRecordes(mapa)
+      })
+      .catch(() => {})
+
+    return () => { cancelado = true }
+  }, [records])
+
+  // Busca os animes do recorte clicado. Roda só quando o Sheet abre — não faz sentido
   // carregar a lista de todos os gêneros de antemão se o usuário talvez não clique em nenhum.
   useEffect(() => {
     if (!recorte) return
@@ -212,7 +246,11 @@ export default function Estatisticas() {
 
         const url = recorte.tipo === 'genero'
           ? `/api/stats/genre?nome=${encodeURIComponent(recorte.valor)}`
-          : `/api/stats/year?ano=${encodeURIComponent(recorte.valor)}`
+          : recorte.tipo === 'ano'
+          ? `/api/stats/year?ano=${encodeURIComponent(recorte.valor)}`
+          : recorte.tipo === 'nota'
+          ? `/api/stats/rating?nota=${encodeURIComponent(recorte.valor)}`
+          : `/api/stats/status?status=${encodeURIComponent(recorte.valor)}`
 
         const res = await fetch(url, {
           headers: { 'Authorization': `Bearer ${session.access_token}` }
@@ -234,7 +272,7 @@ export default function Estatisticas() {
           for (const m of json.data || []) {
             mapa[m.mal_id] = m.images?.jpg?.image_url || ''
           }
-          comCapas = comCapas.map(a => ({ ...a, image_url: mapa[a.mal_id] }))
+          comCapas = comCapas.map(a => ({ ...a, image_url: a.image_url || mapa[a.mal_id] }))
         }
 
         // Ignora a resposta se o usuário já fechou o Sheet ou clicou noutro recorte.
@@ -459,10 +497,16 @@ export default function Estatisticas() {
             <div className="font-mono text-[8.5px] sm:text-[10.5px] text-muted-2 tracking-wider sm:tracking-widest mb-1.5 sm:mb-2 uppercase leading-tight">Tempo Assistido</div>
             <div className="font-anton text-lg sm:text-3xl tabular-nums">{formatTime(Math.round(tempoAnimado))}</div>
           </div>
-          <div className="bg-panel border border-line rounded-2xl p-3.5 sm:p-6">
+          <button
+            type="button"
+            onClick={() => favorito && setRecorte({ tipo: 'genero', valor: favorito.genre })}
+            disabled={!favorito}
+            className="bg-panel border border-line rounded-2xl p-3.5 sm:p-6 text-left transition-colors hover:border-holo-2 cursor-pointer disabled:cursor-default"
+            title={favorito ? `Ver seus animes de ${traduzirGenero(generoFavorito)}` : undefined}
+          >
             <div className="font-mono text-[8.5px] sm:text-[10.5px] text-muted-2 tracking-wider sm:tracking-widest mb-1.5 sm:mb-2 uppercase leading-tight">Gênero Favorito</div>
-            <div className="font-anton text-lg sm:text-3xl text-holo-2 truncate" title={traduzirGenero(generoFavorito)}>{traduzirGenero(generoFavorito)}</div>
-          </div>
+            <div className="font-anton text-lg sm:text-3xl text-holo-2 truncate">{traduzirGenero(generoFavorito)}</div>
+          </button>
           <div className="bg-panel border border-line rounded-2xl p-3.5 sm:p-6">
             <div className="font-mono text-[8.5px] sm:text-[10.5px] text-muted-2 tracking-wider sm:tracking-widest mb-1.5 sm:mb-2 uppercase leading-tight">Sua Nota Média</div>
             <div className="font-anton text-lg sm:text-3xl text-gold tabular-nums">
@@ -543,14 +587,30 @@ export default function Estatisticas() {
                 {pctDropado > 0 && <circle className="anim-donut" cx="21" cy="21" r="15.9" fill="transparent" stroke="#6B5F94" strokeWidth="6" strokeDasharray={arco(pctDropado)} strokeDashoffset={offDropado} />}
                 {pctQuero > 0 && <circle className="anim-donut" cx="21" cy="21" r="15.9" fill="transparent" stroke="#FF4FD8" strokeWidth="6" strokeDasharray={arco(pctQuero)} strokeDashoffset={offQuero} />}
               </svg>
-              <div className="flex flex-col gap-2 flex-1 min-w-[140px]">
-                <div className="flex items-center gap-2 text-[12.5px]"><span className="w-2.5 h-2.5 rounded-sm bg-holo-3"></span>Assistindo <b className="ml-auto font-mono tabular-nums">{pctAssistindo.toFixed(0)}%</b></div>
-                <div className="flex items-center gap-2 text-[12.5px]"><span className="w-2.5 h-2.5 rounded-sm bg-green"></span>Em Dia <b className="ml-auto font-mono tabular-nums">{pctEmDia.toFixed(0)}%</b></div>
-                <div className="flex items-center gap-2 text-[12.5px]"><span className="w-2.5 h-2.5 rounded-sm bg-gold"></span>Completo <b className="ml-auto font-mono tabular-nums">{pctCompleto.toFixed(0)}%</b></div>
-                <div className="flex items-center gap-2 text-[12.5px]"><span className="w-2.5 h-2.5 rounded-sm bg-muted-2"></span>Dropado <b className="ml-auto font-mono tabular-nums">{pctDropado.toFixed(0)}%</b></div>
-                <div className="flex items-center gap-2 text-[12.5px]"><span className="w-2.5 h-2.5 rounded-sm bg-holo-1"></span>Quero Assistir <b className="ml-auto font-mono tabular-nums">{pctQuero.toFixed(0)}%</b></div>
+              <div className="flex flex-col gap-1.5 flex-1 min-w-[140px]">
+                {([
+                  { status: 'Assistindo', cor: 'bg-holo-3', pct: pctAssistindo, total: overview?.assistindo || 0 },
+                  { status: 'Em Dia', cor: 'bg-green', pct: pctEmDia, total: overview?.em_dia || 0 },
+                  { status: 'Completo', cor: 'bg-gold', pct: pctCompleto, total: overview?.completos || 0 },
+                  { status: 'Dropado', cor: 'bg-muted-2', pct: pctDropado, total: overview?.dropados || 0 },
+                  { status: 'Quero Assistir', cor: 'bg-holo-1', pct: pctQuero, total: overview?.quero_assistir || 0 },
+                ] as const).map(item => (
+                  <button
+                    key={item.status}
+                    type="button"
+                    onClick={() => setRecorte({ tipo: 'status', valor: item.status })}
+                    className="flex items-center gap-2 text-[12.5px] rounded-md -mx-1.5 px-1.5 py-1 transition-colors hover:bg-panel-2/70 cursor-pointer text-left"
+                    title={`Ver seus ${item.total} animes em "${item.status}"`}
+                  >
+                    <span className={`w-2.5 h-2.5 rounded-sm ${item.cor}`}></span>
+                    <span>{item.status}</span>
+                    <span className="ml-auto font-mono text-[11px] text-muted-2 tabular-nums">{item.total}</span>
+                    <b className="font-mono tabular-nums min-w-[36px] text-right">{item.pct.toFixed(0)}%</b>
+                  </button>
+                ))}
               </div>
             </div>
+            <p className="text-[10px] text-muted-2 mt-4 font-mono">Toque num status pra ver os animes</p>
           </div>
 
           <div ref={registrar} className="reveal bg-panel border border-line rounded-2xl p-6" style={{ transitionDelay: '.08s' }}>
@@ -625,17 +685,19 @@ export default function Estatisticas() {
         {tagsTematicas.length > 0 && (
           <div ref={registrar} className="reveal bg-panel border border-line rounded-2xl p-6 mb-5">
             <h2 className="font-anton uppercase text-[15px] mb-1">Tags Temáticas</h2>
-            <p className="text-[11px] text-muted-2 mb-5">Elementos que mais aparecem nos seus animes</p>
+            <p className="text-[11px] text-muted-2 mb-5">Elementos que mais aparecem nos seus animes — toque numa tag pra ver quais</p>
             <div className="flex flex-wrap gap-2">
               {tagsTematicas.slice(0, 14).map(t => (
-                <span
+                <button
                   key={t.genre}
-                  className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-panel-2 border border-line text-[11.5px] font-bold transition-all duration-200 hover:border-holo-2 hover:-translate-y-0.5 cursor-default"
-                  title={`${t.total_watched} ${t.total_watched === 1 ? 'anime' : 'animes'}`}
+                  type="button"
+                  onClick={() => setRecorte({ tipo: 'genero', valor: t.genre })}
+                  className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-panel-2 border border-line text-[11.5px] font-bold transition-all duration-200 hover:border-holo-2 hover:text-holo-2 hover:-translate-y-0.5 cursor-pointer"
+                  title={`Ver seus ${t.total_watched} ${t.total_watched === 1 ? 'anime' : 'animes'} com ${traduzirGenero(t.genre)}`}
                 >
                   {traduzirGenero(t.genre)}
                   <b className="font-mono text-[10px] text-muted-2 tabular-nums">{t.total_watched}</b>
-                </span>
+                </button>
               ))}
             </div>
           </div>
@@ -645,10 +707,11 @@ export default function Estatisticas() {
             sido cruzados. Responde "que gênero eu assisto muito mas não curto tanto?". */}
         <div ref={registrar} className="reveal bg-panel border border-line rounded-2xl p-6 mb-5">
           <h2 className="font-anton uppercase text-[15px] mb-1">Volume × Satisfação</h2>
-          <p className="text-[11px] text-muted-2 mb-6">Quanto você assiste de cada categoria, cruzado com a nota que costuma dar</p>
+          <p className="text-[11px] text-muted-2 mb-6">Quanto você assiste de cada categoria, cruzado com a nota que costuma dar — toque num ponto pra ver os animes</p>
           <QuadranteAfinidade
             generos={[...demografias, ...generosNarrativos]}
             notaMedia={overview?.nota_media || 0}
+            onSelectCategoria={(genre) => setRecorte({ tipo: 'genero', valor: genre })}
           />
         </div>
 
@@ -701,26 +764,29 @@ export default function Estatisticas() {
           {/* Distribuição de Notas */}
           <div ref={registrar} className="reveal bg-panel border border-line rounded-2xl p-6" style={{ transitionDelay: '.08s' }}>
             <h2 className="font-anton uppercase text-[15px] mb-1">Distribuição de Notas</h2>
-            <p className="text-[11px] text-muted-2 mb-6">Quantos animes você avaliou com cada nota</p>
+            <p className="text-[11px] text-muted-2 mb-6">Quantos animes você avaliou com cada nota — toque numa barra pra ver quais</p>
             {ratings.length === 0 ? (
               <p className="text-[12.5px] text-muted-2">Avalie alguns animes pra ver o histograma aqui.</p>
             ) : (
               <>
-                {/* Rótulo é só o número: "4 animes" repetido seis vezes é largo demais pra
-                    caber no celular, e a palavra é a mesma em todas as barras — ela vira
-                    legenda embaixo do eixo, e o texto completo fica no title. */}
                 <div className="flex items-end justify-center gap-2 h-[140px]">
                   {ratings.map((r, i) => {
                     const heightPct = (r.total / maxRatingTotal) * 100
                     return (
-                      <div key={r.nota} className="flex-1 max-w-[64px] flex flex-col items-center gap-2 h-full justify-end" title={`${r.total} ${r.total === 1 ? 'anime' : 'animes'} com nota ${r.nota}`}>
+                      <button
+                        key={r.nota}
+                        type="button"
+                        onClick={() => setRecorte({ tipo: 'nota', valor: String(r.nota) })}
+                        className="flex-1 max-w-[64px] flex flex-col items-center gap-2 h-full justify-end cursor-pointer rounded-md transition-colors hover:bg-panel-2/60 focus-visible:outline-2 focus-visible:outline-holo-3"
+                        title={`Ver os ${r.total} ${r.total === 1 ? 'anime' : 'animes'} com nota ${r.nota}`}
+                      >
                         <span className="font-mono text-[10px] text-muted-2 tabular-nums">{r.total}</span>
                         <div
                           className="anim-crescer barra-hover w-full bg-gold rounded-t-md min-h-[4px]"
                           style={{ height: desenhado ? `${heightPct}%` : '0%', ...atrasoBarra(i) }}
                         ></div>
                         <span className="font-mono text-[9.5px] text-muted-2 tabular-nums">{r.nota}</span>
-                      </div>
+                      </button>
                     )
                   })}
                 </div>
@@ -836,51 +902,90 @@ export default function Estatisticas() {
 
         {/* Recordes Pessoais */}
         <div ref={registrar} className="reveal grid grid-cols-1 sm:grid-cols-3 gap-4 mt-5">
-          <div className="bg-panel border border-line rounded-2xl p-5 transition-colors duration-200 hover:border-muted-2">
-            <div className="font-mono text-[10.5px] text-muted-2 tracking-widest mb-2 uppercase">Maior Maratona</div>
-            {records.longest_anime ? (
+          {([
+            {
+              rotulo: 'Maior Maratona',
+              dados: records.longest_anime,
+              detalhe: records.longest_anime ? `${records.longest_anime.episodes} episódios` : '',
+              corDetalhe: 'text-muted',
+              vazio: 'Complete um anime pra desbloquear',
+            },
+            {
+              rotulo: 'Nota Mais Alta',
+              dados: records.top_rated,
+              detalhe: records.top_rated ? `Nota ${records.top_rated.nota}` : '',
+              corDetalhe: 'text-gold',
+              vazio: 'Avalie um anime pra desbloquear',
+            },
+            {
+              rotulo: 'Maratona Mais Rápida',
+              dados: records.fastest_binge,
+              detalhe: records.fastest_binge
+                ? `${records.fastest_binge.episodios_marcados} eps em ${formatHoras(records.fastest_binge.horas_gastas)}`
+                : '',
+              corDetalhe: 'text-holo-3',
+              vazio: 'Marque 2+ episódios do mesmo anime pra desbloquear',
+            },
+          ] as const).map(card => {
+            const capa = card.dados?.image_url || (card.dados?.mal_id ? capasDosRecordes[card.dados.mal_id] : undefined)
+            const conteudo = (
               <>
-                {/* line-clamp-2 em vez de truncate: título de anime cortado no meio da
-                    primeira palavra não identifica a obra. */}
-                <div className="font-anton text-lg leading-tight line-clamp-2" title={records.longest_anime.title}>{records.longest_anime.title}</div>
-                <div className="text-[12px] text-muted mt-1 tabular-nums">{records.longest_anime.episodes} episódios</div>
+                <div className="font-mono text-[10.5px] text-muted-2 tracking-widest mb-2.5 uppercase">{card.rotulo}</div>
+                {card.dados ? (
+                  <div className="flex items-center gap-3.5">
+                    {capa && (
+                      <img
+                        src={capa}
+                        alt=""
+                        className="w-12 h-16 rounded-lg object-cover border border-line shrink-0"
+                        loading="lazy"
+                      />
+                    )}
+                    <div className="min-w-0 flex-1">
+                      <div className="font-anton text-lg leading-tight line-clamp-2 group-hover:text-holo-2 transition-colors" title={card.dados.title}>
+                        {card.dados.title}
+                      </div>
+                      <div className={`text-[12px] ${card.corDetalhe} mt-1 tabular-nums font-bold`}>
+                        {card.detalhe}
+                      </div>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="text-[12px] text-muted-2">{card.vazio}</div>
+                )}
               </>
-            ) : (
-              <div className="text-[12px] text-muted-2">Complete um anime pra desbloquear</div>
-            )}
-          </div>
+            )
 
-          <div className="bg-panel border border-line rounded-2xl p-5 transition-colors duration-200 hover:border-muted-2">
-            <div className="font-mono text-[10.5px] text-muted-2 tracking-widest mb-2 uppercase">Nota Mais Alta</div>
-            {records.top_rated ? (
-              <>
-                <div className="font-anton text-lg leading-tight line-clamp-2" title={records.top_rated.title}>{records.top_rated.title}</div>
-                <div className="text-[12px] text-gold mt-1 tabular-nums">Nota {records.top_rated.nota}</div>
-              </>
+            return card.dados?.mal_id ? (
+              <Link
+                key={card.rotulo}
+                to={`/anime/${card.dados.mal_id}`}
+                className="group bg-panel border border-line rounded-2xl p-5 transition-all duration-200 hover:border-holo-2 hover:-translate-y-0.5 block"
+              >
+                {conteudo}
+              </Link>
             ) : (
-              <div className="text-[12px] text-muted-2">Avalie um anime pra desbloquear</div>
-            )}
-          </div>
-
-          <div className="bg-panel border border-line rounded-2xl p-5 transition-colors duration-200 hover:border-muted-2">
-            <div className="font-mono text-[10.5px] text-muted-2 tracking-widest mb-2 uppercase">Maratona Mais Rápida</div>
-            {records.fastest_binge ? (
-              <>
-                <div className="font-anton text-lg leading-tight line-clamp-2" title={records.fastest_binge.title}>{records.fastest_binge.title}</div>
-                <div className="text-[12px] text-holo-3 mt-1 tabular-nums">
-                  {records.fastest_binge.episodios_marcados} eps em {formatHoras(records.fastest_binge.horas_gastas)}
-                </div>
-              </>
-            ) : (
-              <div className="text-[12px] text-muted-2">Marque 2+ episódios do mesmo anime pra desbloquear</div>
-            )}
-          </div>
+              <div key={card.rotulo} className="bg-panel border border-line rounded-2xl p-5">
+                {conteudo}
+              </div>
+            )
+          })}
         </div>
 
       </div>
 
       <SheetDeAnimes
-        titulo={recorte && `Seus animes de ${recorte.valor}`}
+        titulo={
+          recorte
+            ? recorte.tipo === 'genero'
+              ? `Seus animes de ${traduzirGenero(recorte.valor)}`
+              : recorte.tipo === 'ano'
+              ? `Seus animes de ${recorte.valor}`
+              : recorte.tipo === 'nota'
+              ? `Seus animes com nota ${recorte.valor}`
+              : `Seus animes em "${recorte.valor}"`
+            : null
+        }
         animes={animesDoRecorte}
         carregando={carregandoRecorte}
         onClose={() => { setRecorte(null); setAnimesDoRecorte([]) }}

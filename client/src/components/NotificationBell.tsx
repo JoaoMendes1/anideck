@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { Bell, Check, BellOff } from 'lucide-react';
+import { Bell, Check, CheckCheck, BellOff, Plus } from 'lucide-react';
 import { supabase } from '../lib/supabase';
+import { invalidarCachesDoDeck } from '../lib/cacheDeTela';
 import { useToast } from '../contexts/ToastContext';
 import Sheet from './Sheet';
 
@@ -69,6 +70,9 @@ export default function NotificationBell() {
   // sem nenhuma inscrição real ter sido criada, escondendo o botão "Ativar Nativo"
   // pra sempre. Agora começamos assumindo false e confirmamos de verdade no mount.
   const [pushEnabled, setPushEnabled] = useState(false);
+  const [filtroAba, setFiltroAba] = useState<'todas' | 'nao_lidas'>('todas');
+  const [marcandoEp, setMarcandoEp] = useState<Record<string, boolean>>({});
+  const [episodiosMarcados, setEpisodiosMarcados] = useState<Record<string, boolean>>({});
 
   const naoLidas = notifications.filter(n => !n.read_at).length;
 
@@ -125,6 +129,56 @@ export default function NotificationBell() {
       });
     } catch (e) {
       console.error('Erro ao ler notificação', e);
+    }
+  };
+
+  const markAllAsRead = async () => {
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) return;
+
+      const agora = new Date().toISOString();
+      setNotifications(prev => prev.map(n => (n.read_at ? n : { ...n, read_at: agora })));
+
+      const res = await fetch('/api/notifications/read-all', {
+        method: 'PUT',
+        headers: { 'Authorization': `Bearer ${session.access_token}` }
+      });
+      if (res.ok) {
+        showToast('Todas as notificações foram marcadas como lidas.', 'success');
+      }
+    } catch (e) {
+      console.error('Erro ao marcar todas como lidas', e);
+    }
+  };
+
+  const marcarEpisodioVistoRapido = async (n: AppNotification) => {
+    if (marcandoEp[n.id] || episodiosMarcados[n.id]) return;
+    setMarcandoEp(prev => ({ ...prev, [n.id]: true }));
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) return;
+
+      const res = await fetch(`/api/entries/${n.mal_id}/episodes/${n.episode_number}`, {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${session.access_token}` }
+      });
+
+      if (res.ok) {
+        setEpisodiosMarcados(prev => ({ ...prev, [n.id]: true }));
+        invalidarCachesDoDeck(session.user.id);
+        if (!n.read_at) {
+          await markAsRead(n.id);
+        }
+        showToast(`Ep. ${n.episode_number} de ${n.anime_title || 'Anime'} marcado como visto!`, 'success');
+      } else {
+        showToast('Não foi possível marcar o episódio.', 'error');
+      }
+    } catch (e) {
+      console.error('Erro ao marcar episódio rapidamente:', e);
+      showToast('Erro de conexão ao marcar episódio.', 'error');
+    } finally {
+      setMarcandoEp(prev => ({ ...prev, [n.id]: false }));
     }
   };
 
@@ -185,8 +239,12 @@ export default function NotificationBell() {
     fetchNotifications();
   };
 
+  const visiveis = filtroAba === 'nao_lidas'
+    ? notifications.filter(n => !n.read_at)
+    : notifications;
+
   const agrupadas = ORDEM_GRUPOS
-    .map(grupo => ({ grupo, itens: notifications.filter(n => grupoDe(n.created_at) === grupo) }))
+    .map(grupo => ({ grupo, itens: visiveis.filter(n => grupoDe(n.created_at) === grupo) }))
     .filter(g => g.itens.length > 0);
 
   return (
@@ -214,12 +272,56 @@ export default function NotificationBell() {
           </button>
         )}
 
-        {notifications.length === 0 ? (
+        {notifications.length > 0 && (
+          <div className="flex items-center justify-between gap-2 mb-3 pb-3 border-b border-line">
+            <div className="flex items-center gap-1.5">
+              <button
+                type="button"
+                onClick={() => setFiltroAba('todas')}
+                className={`px-3 py-1 rounded-full text-xs font-bold transition-colors cursor-pointer ${
+                  filtroAba === 'todas'
+                    ? 'bg-holo-3/20 text-holo-3 border border-holo-3/40'
+                    : 'bg-panel-2 text-muted border border-line hover:text-text'
+                }`}
+              >
+                Todas ({notifications.length})
+              </button>
+              <button
+                type="button"
+                onClick={() => setFiltroAba('nao_lidas')}
+                className={`px-3 py-1 rounded-full text-xs font-bold transition-colors cursor-pointer ${
+                  filtroAba === 'nao_lidas'
+                    ? 'bg-holo-3/20 text-holo-3 border border-holo-3/40'
+                    : 'bg-panel-2 text-muted border border-line hover:text-text'
+                }`}
+              >
+                Não lidas ({naoLidas})
+              </button>
+            </div>
+
+            {naoLidas > 0 && (
+              <button
+                type="button"
+                onClick={markAllAsRead}
+                className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[11px] font-bold text-holo-1 bg-holo-1/10 border border-holo-1/30 hover:bg-holo-1/20 transition-colors cursor-pointer"
+                title="Marcar todas como lidas"
+              >
+                <CheckCheck size={13} /> Ler todas
+              </button>
+            )}
+          </div>
+        )}
+
+        {visiveis.length === 0 ? (
           <div className="py-12 text-center">
             <Bell size={28} className="mx-auto text-muted-2 mb-3" />
-            <p className="text-sm font-bold text-text">Tudo em dia</p>
+            <p className="text-sm font-bold text-text">
+              {filtroAba === 'nao_lidas' ? 'Nenhuma notificação não lida' : 'Tudo em dia'}
+            </p>
             <p className="text-xs text-muted mt-1">
-              Avisamos aqui quando sair episódio novo do que você está assistindo.
+              {filtroAba === 'nao_lidas'
+                ? 'Você já conferiu todos os avisos recentes.'
+                : 'Avisamos aqui quando sair episódio novo do que você está assistindo.'}
             </p>
           </div>
         ) : (
@@ -234,37 +336,72 @@ export default function NotificationBell() {
                 {itens.map(n => (
                   <div
                     key={n.id}
-                    className={`px-6 py-3 flex items-center gap-3 border-b border-line last:border-b-0 transition-colors hover:bg-panel-2 ${
-                      n.read_at ? 'opacity-55' : ''
+                    className={`px-6 py-3.5 flex items-start gap-3.5 border-b border-line last:border-b-0 transition-colors hover:bg-panel-2 ${
+                      n.read_at ? 'opacity-65' : 'bg-holo-3/[0.03]'
                     }`}
                   >
-                    <div className="relative flex-shrink-0">
+                    <Link
+                      to={`/anime/${n.mal_id}`}
+                      onClick={() => {
+                        if (!n.read_at) markAsRead(n.id);
+                        setIsOpen(false);
+                      }}
+                      className="relative flex-shrink-0"
+                    >
                       {n.anime_image ? (
-                        <img src={n.anime_image} alt="" className="w-12 h-16 object-cover rounded-lg" />
+                        <img src={n.anime_image} alt="" className="w-14 h-20 object-cover rounded-lg border border-line shadow-sm" />
                       ) : (
-                        <div className="w-12 h-16 rounded-lg bg-panel-2 border border-line" />
+                        <div className="w-14 h-20 rounded-lg bg-panel-2 border border-line" />
                       )}
                       {!n.read_at && (
                         <span className="absolute -top-1 -right-1 w-2.5 h-2.5 rounded-full bg-holo-3 border-2 border-panel" />
                       )}
-                    </div>
-
-                    <Link
-                      to={`/anime/${n.mal_id}`}
-                      onClick={() => setIsOpen(false)}
-                      className="flex-1 min-w-0"
-                    >
-                      <p className="text-[13px] text-text leading-snug line-clamp-2">
-                        <b className="font-bold">{n.anime_title || 'Anime'}</b>
-                        {' — '}
-                        Episódio {n.episode_number} já está disponível.
-                      </p>
-                      <p className="text-[11px] text-muted-2 mt-1">{tempoRelativo(n.created_at)}</p>
                     </Link>
 
-                    {/* BUG CORRIGIDO: antes ficava escondido atrás de opacity-0
-                        group-hover:opacity-100, que nunca aparece em tela de toque
-                        (não existe :hover no celular). Agora fica sempre visível. */}
+                    <div className="flex-1 min-w-0">
+                      <Link
+                        to={`/anime/${n.mal_id}`}
+                        onClick={() => {
+                          if (!n.read_at) markAsRead(n.id);
+                          setIsOpen(false);
+                        }}
+                        className="block group"
+                      >
+                        <div className="flex items-center gap-1.5 mb-1 flex-wrap">
+                          <span className="px-2 py-0.5 rounded-full bg-holo-3/15 border border-holo-3/30 text-holo-3 text-[10px] font-bold tracking-wider uppercase">
+                            EP. {n.episode_number}
+                          </span>
+                          <span className="text-[11px] text-muted-2 font-mono">
+                            • {tempoRelativo(n.created_at)}
+                          </span>
+                        </div>
+                        <p className="text-[13px] font-bold text-text leading-snug line-clamp-2 group-hover:text-holo-3 transition-colors">
+                          {n.anime_title || 'Anime'}
+                        </p>
+                        <p className="text-[11px] text-muted mt-0.5">
+                          Episódio {n.episode_number} já está disponível.
+                        </p>
+                      </Link>
+
+                      <div className="mt-2 flex items-center gap-2">
+                        {episodiosMarcados[n.id] ? (
+                          <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-green/15 border border-green/30 text-green text-[11px] font-bold">
+                            <Check size={12} /> Ep. {n.episode_number} visto
+                          </span>
+                        ) : (
+                          <button
+                            type="button"
+                            disabled={marcandoEp[n.id]}
+                            onClick={() => marcarEpisodioVistoRapido(n)}
+                            className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-panel-2 hover:bg-holo-1/15 border border-line hover:border-holo-1/40 text-text hover:text-holo-1 text-[11px] font-bold transition-colors cursor-pointer disabled:opacity-50"
+                          >
+                            <Plus size={12} />
+                            {marcandoEp[n.id] ? 'Marcando...' : `Marcar Ep. ${n.episode_number} visto`}
+                          </button>
+                        )}
+                      </div>
+                    </div>
+
                     {!n.read_at && (
                       <button
                         onClick={() => markAsRead(n.id)}

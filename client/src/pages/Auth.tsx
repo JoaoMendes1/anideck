@@ -120,9 +120,34 @@ export default function Auth() {
           <h1 className="font-anton text-2xl uppercase text-center mb-1">
             {isLogin ? 'Bem-vindo de volta' : 'Criar sua conta'}
           </h1>
-          <p className="text-muted text-sm text-center mb-6">
+          <p className="text-muted text-sm text-center mb-4">
             {isLogin ? 'Entre pra ver seu Deck.' : 'Leva menos de 1 minuto.'}
           </p>
+
+          <div className="mb-5 p-3 rounded-xl bg-gold/10 border border-gold/30 text-left">
+            <div className="flex items-center justify-between gap-2 mb-1">
+              <span className="font-mono text-[10px] font-bold uppercase tracking-wider text-gold">
+                ⚠ Versão Beta · Acesso Limitado
+              </span>
+              <a
+                href="mailto:anidecksuporte@gmail.com?subject=Solicita%C3%A7%C3%A3o%20de%20Acesso%20Beta%20-%20AniDeck"
+                className="text-[11px] font-bold text-holo-3 hover:underline"
+              >
+                Pedir convite →
+              </a>
+            </div>
+            <p className="text-[11.5px] text-muted leading-snug">
+              O cadastro está restrito durante os testes. Você também pode explorar{' '}
+              <Link to="/descobrir" className="text-text font-bold hover:text-holo-3 underline">
+                Catálogo
+              </Link>{' '}
+              e{' '}
+              <Link to="/rankings" className="text-text font-bold hover:text-holo-3 underline">
+                Rankings
+              </Link>{' '}
+              sem conta.
+            </p>
+          </div>
 
           {error && (
             <div className="bg-coral/10 border border-coral/30 text-coral p-3 rounded-lg text-sm mb-4 text-center">

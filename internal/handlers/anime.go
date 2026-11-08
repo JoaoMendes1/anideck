@@ -199,6 +199,11 @@ func (h *AnimeHandler) HandleGetAnime(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
+	if !resultados.Data.IsCurated {
+		TraduzirGenerosNaoCurados(&resultados.Data)
+		GarantirSinopseEmPortugues(r.Context(), &resultados.Data)
+	}
+
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(resultados)
 }

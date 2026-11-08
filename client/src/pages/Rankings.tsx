@@ -14,6 +14,7 @@ import FilterChipGroup from '../components/FilterChipGroup'
 import RankingCard from '../components/RankingCard'
 import RankingSkeleton from '../components/RankingSkeleton'
 import FilterSheet from '../components/FilterSheet'
+import { invalidarCachesDoDeck } from '../lib/cacheDeTela'
 
 interface Anime {
     mal_id: number
@@ -227,6 +228,7 @@ export default function Rankings() {
                 })
                 if (!res.ok) throw new Error()
                 setSavedEntries(prev => prev.filter(e => e.mal_id !== malId))
+                invalidarCachesDoDeck(session.user.id)
                 showToast('Removido do Deck', 'success')
             } else {
                 const res = await fetch('/api/entries', {
@@ -238,6 +240,7 @@ export default function Rankings() {
                 const novaEntrada = await res.json()
 
                 setSavedEntries(prev => [...prev, { mal_id: malId, id: novaEntrada.id || novaEntrada[0]?.id, is_favorite: false }])
+                invalidarCachesDoDeck(session.user.id)
                 showToast('Adicionado ao Deck', 'success')
             }
         } catch {

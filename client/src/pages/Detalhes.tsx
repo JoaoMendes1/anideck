@@ -9,10 +9,11 @@ import ReactMarkdown from 'react-markdown'
 import EpisodeGrid from '../components/EpisodeGrid'
 import EditarEntradaModal from '../components/EditarEntradaModal'
 import { getCategoryTheme } from '../lib/filters'
+import { obterTextoDiaLancamento } from '../lib/deckHelpers'
 import { temHistoriaNoApp, veioDeListaRestauravel } from '../lib/posicaoDeLista'
 import { motion } from 'framer-motion'
 import ImagemAmpliada from '../components/ImagemAmpliada'
-import { lerDaMemoria, guardarNaMemoria } from '../lib/cacheDeTela'
+import { lerDaMemoria, guardarNaMemoria, invalidarCachesDoDeck } from '../lib/cacheDeTela'
 
 interface AnimeDetail {
   mal_id: number
@@ -358,6 +359,13 @@ export default function Detalhes() {
     status: 'Quero Assistir',
   }
 
+  const diaLancamentoSemanal = obterTextoDiaLancamento({
+    status: anime.status,
+    nextAiringEpisode: anime.nextAiringEpisode,
+    firstAiredAt: anime.first_aired_at,
+    startDate: anime.startDate,
+  })
+
   return (
     <div className="-mt-24 pb-20">
 
@@ -422,6 +430,14 @@ export default function Detalhes() {
 
             <div className="flex flex-wrap gap-2 items-center justify-center sm:justify-start font-mono text-[11px] text-muted mb-3">
               <span className="text-holo-3">{traduzirStatus(anime.status)}</span>
+              {diaLancamentoSemanal && (
+                <>
+                  <span className="text-muted-2">•</span>
+                  <span className="px-2 py-0.5 rounded-full bg-holo-3/15 border border-holo-3/35 text-holo-3 font-bold">
+                    📅 {diaLancamentoSemanal}
+                  </span>
+                </>
+              )}
               <span className="text-muted-2">•</span>
               <span>{anime.episodes || '?'} EP</span>
               {anime.studios?.length > 0 && (
@@ -570,9 +586,16 @@ export default function Detalhes() {
           <div className="space-y-10 min-w-0">
 
             <section>
-              <h2 className="font-anton text-base uppercase mb-4 flex items-center gap-2 select-none">
-                <span className="font-mono text-[11px] text-holo-3">01</span> Sinopse
-              </h2>
+              <div className="flex flex-wrap items-center justify-between gap-2 mb-4 select-none">
+                <h2 className="font-anton text-base uppercase flex items-center gap-2 m-0">
+                  <span className="font-mono text-[11px] text-holo-3">01</span> Sinopse
+                </h2>
+                {!anime.is_curated && (
+                  <span className="inline-flex items-center gap-1.5 font-mono text-[10px] font-bold uppercase tracking-wider px-2.5 py-1 rounded-full bg-gold/15 border border-gold/40 text-gold">
+                    ⚠ Obra ainda não curada (tradução automática)
+                  </span>
+                )}
+              </div>
               <div className="text-muted text-[14.5px] leading-[1.7] bg-panel border border-line rounded-2xl p-6">
                 {anime.synopsis ? (
                   <ReactMarkdown
@@ -639,9 +662,39 @@ export default function Detalhes() {
                 streamingEpisodes={anime.streamingEpisodes}
                 initialWatched={episodiosAssistidos}
                 isLoggedIn={isLoggedIn}
+                status={anime.status}
                 nextAiringEpisode={anime.nextAiringEpisode}
                 startDate={anime.startDate}
                 firstAiredAt={anime.first_aired_at}
+                onEpisodeMarkedWatched={async (epNum) => {
+                  setEpisodiosAssistidos(prev => prev.includes(epNum) ? prev : [...prev, epNum])
+                  const { data: { session } } = await supabase.auth.getSession()
+                  invalidarCachesDoDeck(session?.user?.id)
+                  if (minhaEntrada && minhaEntrada.status === 'Quero Assistir' && session) {
+                    const entradaAtualizada = { ...minhaEntrada, status: 'Assistindo' }
+                    setMinhaEntrada(entradaAtualizada)
+                    try {
+                      await fetch(`/api/entries/${minhaEntrada.id}`, {
+                        method: 'PUT',
+                        headers: {
+                          'Content-Type': 'application/json',
+                          'Authorization': `Bearer ${session.access_token}`,
+                        },
+                        body: JSON.stringify({
+                          mal_id: minhaEntrada.mal_id,
+                          tipo: minhaEntrada.tipo || 'anime',
+                          status: 'Assistindo',
+                          nota: minhaEntrada.nota ?? null,
+                          anotacao: minhaEntrada.anotacao || '',
+                          is_favorite: minhaEntrada.is_favorite || false,
+                        }),
+                      })
+                      showToast('Movido automaticamente para Assistindo!', 'success')
+                    } catch {
+                      // A atualização de status por episódio marcado também ocorre no backend
+                    }
+                  }
+                }}
               />
             )}
 
@@ -797,6 +850,8 @@ export default function Detalhes() {
         onSalvar={async (atualizada) => {
           setMinhaEntrada(atualizada)
           setIsModalOpen(false)
+          const { data: { session } } = await supabase.auth.getSession()
+          invalidarCachesDoDeck(session?.user?.id)
           if (atualizada?.status === 'Completo') {
             const totalEps = anime?.episodes || anime?.streamingEpisodes?.length || 0
             if (totalEps > 0) {
@@ -805,8 +860,10 @@ export default function Detalhes() {
             await recarregarEpisodios()
           }
         }}
-        onExcluir={() => {
+        onExcluir={async () => {
           setMinhaEntrada(null)
+          const { data: { session } } = await supabase.auth.getSession()
+          invalidarCachesDoDeck(session?.user?.id)
           showToast('Removido do Deck.', 'success')
           setIsModalOpen(false)
         }}

@@ -147,11 +147,16 @@ func carregarCuradoriaDoBanco(client *supabase.Client) (map[int]models.CuratedAn
 	return curadosMap, true
 }
 
-// AplicarCuradoriaEmLista percorre uma lista de animes aplicando a curadoria de cada um.
+// AplicarCuradoriaEmLista percorre uma lista de animes aplicando a curadoria de cada um
+// e traduzindo para português os gêneros de animes que ainda não foram curados.
 func AplicarCuradoriaEmLista(animes []anilist.Anime, curados map[int]models.CuratedAnime) {
+	tax := taxonomiaAtual()
 	for i := range animes {
 		if curado, ok := curados[animes[i].MalID]; ok {
 			AplicarCuradoria(&animes[i], curado)
+		}
+		if !animes[i].IsCurated && len(animes[i].Genres) > 0 {
+			animes[i].Genres = TraduzirGenerosComIndice(animes[i].Genres, tax.indice)
 		}
 	}
 }

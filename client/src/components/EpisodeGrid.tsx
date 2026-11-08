@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { Check, Play, Lock, ChevronDown } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import { useToast } from '../contexts/ToastContext'
+import { obterTextoDiaLancamento } from '../lib/deckHelpers'
 
 interface StreamingEpisode {
   title: string
@@ -17,12 +18,14 @@ interface EpisodeGridProps {
   streamingEpisodes?: StreamingEpisode[]
   initialWatched: number[]
   isLoggedIn: boolean
+  status?: string
   nextAiringEpisode?: { airingAt: number; timeUntilAiring: number; episode: number }
   startDate?: { year: number; month: number; day: number }
   firstAiredAt?: string
+  onEpisodeMarkedWatched?: (episodeNumber: number) => void
 }
 
-export default function EpisodeGrid({ malId, totalEpisodes, streamingEpisodes = [], initialWatched, isLoggedIn, nextAiringEpisode, startDate, firstAiredAt }: EpisodeGridProps) {
+export default function EpisodeGrid({ malId, totalEpisodes, streamingEpisodes = [], initialWatched, isLoggedIn, status, nextAiringEpisode, startDate, firstAiredAt, onEpisodeMarkedWatched }: EpisodeGridProps) {
   const { showToast } = useToast()
   const [watched, setWatched] = useState<number[]>(initialWatched)
   const [visibleCount, setVisibleCount] = useState(24)
@@ -69,6 +72,9 @@ export default function EpisodeGrid({ malId, totalEpisodes, streamingEpisodes = 
       })
 
       if (!response.ok) throw new Error()
+      if (!isWatched) {
+        onEpisodeMarkedWatched?.(episodeNumber)
+      }
     } catch {
       setWatched(prev => isWatched ? [...prev, episodeNumber] : prev.filter(num => num !== episodeNumber))
       showToast('Erro ao sincronizar episódio. Verifique sua conexão.', 'error')
@@ -105,12 +111,26 @@ export default function EpisodeGrid({ malId, totalEpisodes, streamingEpisodes = 
     return formatarData(baseDate)
   }
 
+  const diaLancamentoSemanal = obterTextoDiaLancamento({
+    status,
+    nextAiringEpisode,
+    firstAiredAt,
+    startDate,
+  })
+
   return (
     <section id="episodios" className="mb-10">
-      <div className="flex items-center justify-between mb-4">
-        <h2 className="font-anton text-base uppercase flex items-center gap-2 select-none">
-          <span className="font-mono text-[11px] text-holo-3">EP</span> Progresso
-        </h2>
+      <div className="flex flex-wrap items-center justify-between gap-2 mb-4">
+        <div className="flex flex-wrap items-center gap-2.5 select-none">
+          <h2 className="font-anton text-base uppercase flex items-center gap-2 m-0">
+            <span className="font-mono text-[11px] text-holo-3">EP</span> Progresso
+          </h2>
+          {diaLancamentoSemanal && (
+            <span className="font-mono text-[10px] font-bold px-2.5 py-0.5 rounded-full bg-holo-3/15 border border-holo-3/35 text-holo-3">
+              📅 {diaLancamentoSemanal}
+            </span>
+          )}
+        </div>
         <span className="font-mono text-[11px] text-muted-2 font-bold bg-panel border border-line px-2 py-1 rounded-md">
           {watched.length} / {allEpisodes.length}
         </span>

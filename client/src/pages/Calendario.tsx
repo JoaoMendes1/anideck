@@ -8,7 +8,7 @@ import { supabase } from '../lib/supabase'
 import { Play, Calendar as CalendarIcon } from 'lucide-react'
 import { getCategoryTheme } from '../lib/filters'
 import type { AnimeDaApi } from '../types/anime'
-import { gradienteDoCard } from '../lib/deckHelpers'
+import { gradienteDoCard, getStatusTheme, obterTextoDiaLancamento } from '../lib/deckHelpers'
 
 interface Entrada {
     mal_id: number
@@ -22,6 +22,7 @@ interface HydratedAnime {
     image_url: string
     genre?: string
     genres?: string[]
+    status?: string
     is_favorite?: boolean
     nextAiringEpisode?: {
         airingAt: number
@@ -106,7 +107,9 @@ export default function Calendario() {
                 if (abaAtiva === 'meus') {
                     // Aqui a ordem é obrigatória: os ids do bulk saem das entradas.
                     userEntries = await buscarEntradas()
-                    const ativos = userEntries.filter(e => e.status === 'Assistindo' || e.status === 'Em Dia')
+                    const ativos = userEntries.filter(
+                        e => e.status === 'Assistindo' || e.status === 'Em Dia' || e.status === 'Quero Assistir'
+                    )
                     if (ativos.length === 0) {
                         setAnimes([])
                         guardarNaMemoria(chave, [])
@@ -153,6 +156,7 @@ export default function Calendario() {
                             image_url: m.images?.jpg?.image_url || '',
                             genre: m.genres && m.genres.length > 0 ? m.genres[0].name : undefined,
                             genres: m.genres && m.genres.length > 0 ? m.genres.slice(0, 3).map(g => g.name) : undefined,
+                            status: entry?.status,
                             nextAiringEpisode: m.nextAiringEpisode,
                             streaming: m.streaming ?? undefined,
                             is_favorite: entry?.is_favorite
@@ -307,6 +311,8 @@ export default function Calendario() {
                                         const streamUrl = anime.streaming ? anime.streaming.find(s => s.name.toLowerCase().includes('crunchyroll'))?.url || anime.streaming.find(s => s.name.toLowerCase().includes('netflix'))?.url || anime.streaming[0]?.url : null
                                         const remainingText = formatTimeRemaining(anime.nextAiringEpisode!.airingAt)
                                         const isLancado = remainingText === 'Lançado!'
+                                        const diaSemanal = obterTextoDiaLancamento({ nextAiringEpisode: anime.nextAiringEpisode })
+                                        const temaStatus = anime.status ? getStatusTheme(anime.status) : null
                                         const listaGeneros = anime.genres && anime.genres.length > 0 
                                             ? anime.genres 
                                             : anime.genre 
@@ -342,10 +348,17 @@ export default function Calendario() {
 
                                                 <div className="min-w-0 flex-1 flex flex-col justify-between p-3.5 sm:p-4">
                                                     <div>
-                                                        <div className="flex items-center justify-between gap-2 mb-1.5 select-none">
-                                                            <span className="font-mono text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-md bg-void/70 border border-line text-holo-3">
-                                                                EPISÓDIO {anime.nextAiringEpisode!.episode}
-                                                            </span>
+                                                        <div className="flex flex-wrap items-center justify-between gap-1.5 mb-1.5 select-none">
+                                                            <div className="flex flex-wrap items-center gap-1.5">
+                                                                <span className="font-mono text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-md bg-void/70 border border-line text-holo-3">
+                                                                    EPISÓDIO {anime.nextAiringEpisode!.episode}
+                                                                </span>
+                                                                {anime.status && temaStatus && (
+                                                                    <span className={`font-extrabold text-[9px] uppercase tracking-wider px-2 py-0.5 rounded-md border ${temaStatus.bg} ${temaStatus.text} ${temaStatus.border}`}>
+                                                                        {anime.status}
+                                                                    </span>
+                                                                )}
+                                                            </div>
                                                             {anime.is_favorite && (
                                                                 <span className="text-gold text-xs leading-none drop-shadow-md" title="Favorito">👑</span>
                                                             )}
@@ -357,6 +370,12 @@ export default function Calendario() {
                                                         >
                                                             {anime.title}
                                                         </Link>
+
+                                                        {diaSemanal && (
+                                                            <div className="font-mono text-[10px] text-holo-3/90 font-semibold mt-1 select-none">
+                                                                📅 {diaSemanal}
+                                                            </div>
+                                                        )}
 
                                                         {listaGeneros.length > 0 && (
                                                             <div className="flex flex-wrap items-center gap-1.5 mt-2 select-none">

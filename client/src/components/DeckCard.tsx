@@ -34,7 +34,7 @@ interface DeckCardProps {
 export default function DeckCard({ entrada, animeLocal, gradientClass, onEdit }: DeckCardProps) {
     const temaStatus = getStatusTheme(entrada.status)
     const { acabouDeLancar, lancaHoje, lancaAmanha } = getAiringBadge(animeLocal?.nextAiringEpisode)
-    const mostraSelosDeAr = entrada.status === 'Assistindo' || entrada.status === 'Em Dia'
+    const mostraSelosDeAr = entrada.status === 'Assistindo' || entrada.status === 'Em Dia' || entrada.status === 'Quero Assistir'
 
     return (
         <AnimeCard

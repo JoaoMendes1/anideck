@@ -24,3 +24,15 @@ export function lerDaMemoria<T>(chave: string | null): T | undefined {
 export function guardarNaMemoria<T>(chave: string | null, dados: T): void {
   if (chave) memoria.set(chave, dados)
 }
+
+export function removerDaMemoria(chave: string | null): void {
+  if (chave) memoria.delete(chave)
+}
+
+export function invalidarCachesDoDeck(userId: string | undefined): void {
+  if (!userId) return
+  memoria.delete(`${userId}:deck`)
+  memoria.delete(`${userId}:calendario:meus`)
+  memoria.delete(`${userId}:calendario:todos`)
+  memoria.delete(`${userId}:inicio`)
+}

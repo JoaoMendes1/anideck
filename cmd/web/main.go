@@ -110,6 +110,7 @@ func main() {
 		protegido.Get("/api/entries", entriesHandler.HandleList)
 		protegido.Get("/api/entries/progresso", entriesHandler.HandleResumoProgresso)
 		protegido.Post("/api/entries", entriesHandler.HandleCreate)
+		protegido.Post("/api/entries/import/mal", entriesHandler.HandleImportMAL)
 		protegido.Put("/api/entries/{id}", entriesHandler.HandleUpdate)
 		protegido.Delete("/api/entries/{id}", entriesHandler.HandleDelete)
 
@@ -120,12 +121,15 @@ func main() {
 
 		protegido.Post("/api/push/subscribe", notificationsHandler.HandleSubscribePush)
 		protegido.Get("/api/notifications", notificationsHandler.HandleGetNotifications)
+		protegido.Put("/api/notifications/read-all", notificationsHandler.HandleReadAllNotifications)
 		protegido.Put("/api/notifications/{id}/read", notificationsHandler.HandleReadNotification)
 
 		protegido.Get("/api/stats/user", statsHandler.HandleGetUserStats)
-		// Drill-down: os animes por trás de uma barra do gráfico de afinidade
+		// Drill-down: os animes por trás de uma barra do gráfico de afinidade, ano, nota ou status
 		protegido.Get("/api/stats/genre", statsHandler.HandleGetGenreAnimes)
 		protegido.Get("/api/stats/year", statsHandler.HandleGetYearAnimes)
+		protegido.Get("/api/stats/rating", statsHandler.HandleGetRatingAnimes)
+		protegido.Get("/api/stats/status", statsHandler.HandleGetStatusAnimes)
 
 		protegido.Delete("/api/account", accountHandler.HandleDeleteAccount)
 	})

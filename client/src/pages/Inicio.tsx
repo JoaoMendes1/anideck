@@ -1,28 +1,39 @@
 // client/src/pages/Inicio.tsx
 // A home de quem está logado: responde "o que eu faço agora" antes de mostrar a coleção.
-// Tudo sai de rotas que o app já usa (deck, progresso, trilhas, estatísticas, ranking em
-// cache); a única busca é só na curadoria, sem chamada à AniList.
 import { useEffect, useState, type ReactNode } from 'react'
 import { Link } from 'react-router-dom'
-import { CalendarDays, Compass, Play, Sparkles, Trophy } from 'lucide-react'
+import {
+  CalendarDays, Compass, Play, Sparkles, Trophy, Plus, Check,
+  SlidersHorizontal, ChevronLeft, ChevronRight, Upload,
+} from 'lucide-react'
 import { getCategoryTheme } from '../lib/filters'
 import VitrineDestaques from '../components/VitrineDestaques'
+import OnboardingGostoModal from '../components/OnboardingGostoModal'
 import { useSessao } from '../contexts/SessaoContext'
-import { chaveDoUsuario, guardarNaMemoria, lerDaMemoria } from '../lib/cacheDeTela'
-import { gradienteDoCard } from '../lib/deckHelpers'
+import { useToast } from '../contexts/ToastContext'
+import { chaveDoUsuario, guardarNaMemoria, lerDaMemoria, invalidarCachesDoDeck } from '../lib/cacheDeTela'
+import { gradienteDoCard, obterTextoDiaLancamento } from '../lib/deckHelpers'
 import { miniatura } from '../lib/miniatura'
 import {
   continuarAssistindo, estreiasDeHoje,
   type AnimeResumido, type EntradaDoDeck, type ProgressoDoAnime,
 } from '../lib/inicio'
 import { encontrarLacuna, type AfinidadeComNota } from '../lib/lacuna'
+import {
+  lerPreferenciasDeGosto,
+  selecionarGenerosRecomendados,
+  filtrarRecomendacoesPorGosto,
+  type PreferenciasDeGosto,
+} from '../lib/preferenciasGosto'
 import type { AnimeDaApi } from '../types/anime'
+import type { CuratedAnime } from '../types/curation'
 
 interface Cartaz {
   mal_id: number
   titulo: string
   imagem: string
   legenda?: string
+  nota?: number | null
 }
 
 interface TrilhaDaHome {
@@ -44,25 +55,62 @@ interface DadosDaInicio {
   progresso: ProgressoDoAnime[]
   trilhas: TrilhaDaHome[]
   ranking: Cartaz[]
+  destaquesHero: CuratedAnime[]
+  recomendados: { generos: string[]; itens: Cartaz[] }
   lacuna: { rotulo: string; nota: number; vistos: number; mediaPessoal: number; sugestoes: Cartaz[] } | null
 }
 
-const VAZIO: DadosDaInicio = { entradas: [], animes: {}, progresso: [], trilhas: [], ranking: [], lacuna: null }
+const VAZIO: DadosDaInicio = {
+  entradas: [],
+  animes: {},
+  progresso: [],
+  trilhas: [],
+  ranking: [],
+  destaquesHero: [],
+  recomendados: { generos: [], itens: [] },
+  lacuna: null,
+}
 
 const lerJson = async <T,>(res: Response, padrao: T): Promise<T> => (res.ok ? ((await res.json()) as T) : padrao)
 
 const horaLocal = (ms: number) => new Date(ms).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })
 
-function Secao({ titulo, icone, link, children }: { titulo: string; icone: ReactNode; link?: { para: string; texto: string }; children: ReactNode }) {
+function Secao({
+  titulo,
+  subtitulo,
+  icone,
+  link,
+  acaoExtra,
+  children,
+}: {
+  titulo: string
+  subtitulo?: string
+  icone: ReactNode
+  link?: { para: string; texto: string }
+  acaoExtra?: ReactNode
+  children: ReactNode
+}) {
   return (
-    <section className="mb-10">
-      <div className="flex items-center justify-between mb-4 select-none">
-        <h2 className="font-anton text-[17px] uppercase m-0 flex items-center gap-2">{icone}{titulo}</h2>
-        {link && (
-          <Link to={link.para} className="font-mono text-[10px] text-muted-2 uppercase tracking-widest hover:text-holo-3 transition-colors">
-            {link.texto}
-          </Link>
-        )}
+    <section className="mb-11">
+      <div className="flex items-end justify-between gap-3 mb-4 select-none">
+        <div>
+          <h2 className="font-anton text-[18px] sm:text-[20px] uppercase m-0 flex items-center gap-2 tracking-wide">
+            {icone}
+            {titulo}
+          </h2>
+          {subtitulo && <p className="text-xs text-muted mt-0.5">{subtitulo}</p>}
+        </div>
+        <div className="flex items-center gap-3 shrink-0">
+          {acaoExtra}
+          {link && (
+            <Link
+              to={link.para}
+              className="font-mono text-[10.5px] text-muted-2 uppercase tracking-widest hover:text-holo-3 transition-colors"
+            >
+              {link.texto} →
+            </Link>
+          )}
+        </div>
       </div>
       {children}
     </section>
@@ -71,22 +119,40 @@ function Secao({ titulo, icone, link, children }: { titulo: string; icone: React
 
 function Trilho({ cartazes }: { cartazes: Cartaz[] }) {
   return (
-    <div className="flex gap-4 overflow-x-auto scrollbar-hide snap-x snap-mandatory -mx-4 px-4 sm:mx-0 sm:px-0 pb-1">
+    <div className="flex gap-4 sm:gap-5 overflow-x-auto scrollbar-hide snap-x snap-mandatory -mx-4 px-4 sm:mx-0 sm:px-0 pb-2">
       {cartazes.map((c, i) => (
-        <Link key={c.mal_id} to={`/anime/${c.mal_id}`} className="group shrink-0 w-[144px] sm:w-[164px] lg:w-[184px] snap-start">
-          <div className={`relative aspect-[2/3] rounded-[14px] overflow-hidden border border-line bg-panel ${gradienteDoCard(i)} transition-transform group-hover:-translate-y-1`}>
+        <Link
+          key={c.mal_id}
+          to={`/anime/${c.mal_id}`}
+          className="group shrink-0 w-[160px] sm:w-[186px] lg:w-[206px] snap-start"
+        >
+          <div
+            className={`relative aspect-[2/3] rounded-[16px] overflow-hidden border border-line bg-panel ${gradienteDoCard(i)} transition-all duration-200 group-hover:-translate-y-1.5 group-hover:border-holo-3/50 shadow-sm`}
+          >
             {c.imagem && (
               <img
                 src={miniatura(c.imagem)}
                 alt={c.titulo}
                 loading="lazy"
                 onError={(e) => { e.currentTarget.style.visibility = 'hidden' }}
-                className="absolute inset-0 w-full h-full object-cover opacity-90 group-hover:opacity-100 transition-opacity"
+                className="absolute inset-0 w-full h-full object-cover opacity-90 group-hover:opacity-100 group-hover:scale-[1.03] transition-all duration-300"
               />
             )}
+            <div className="absolute inset-0 bg-gradient-to-t from-void/80 via-transparent to-transparent opacity-60 group-hover:opacity-40 transition-opacity" />
+            {c.legenda && (
+              <span className="absolute top-2.5 left-2.5 px-2 py-0.5 rounded-md bg-void/85 backdrop-blur-md border border-white/10 font-mono text-[10px] font-bold text-holo-3 uppercase tracking-wider">
+                {c.legenda}
+              </span>
+            )}
+            {c.nota && c.nota > 0 ? (
+              <span className="absolute top-2.5 right-2.5 px-2 py-0.5 rounded-md bg-void/85 backdrop-blur-md border border-gold/30 font-mono text-[10px] font-bold text-gold">
+                ★ {c.nota.toFixed(1)}
+              </span>
+            ) : null}
           </div>
-          <h3 className="mt-2.5 text-[12.5px] font-bold leading-tight line-clamp-2 text-text group-hover:text-holo-3 transition-colors">{c.titulo}</h3>
-          {c.legenda && <p className="mt-1 font-mono text-[9px] uppercase tracking-widest text-muted-2">{c.legenda}</p>}
+          <h3 className="mt-2.5 text-[13px] font-bold leading-snug line-clamp-2 text-text group-hover:text-holo-3 transition-colors">
+            {c.titulo}
+          </h3>
         </Link>
       ))}
     </div>
@@ -95,25 +161,46 @@ function Trilho({ cartazes }: { cartazes: Cartaz[] }) {
 
 export default function Inicio() {
   const { session } = useSessao()
-  const chave = chaveDoUsuario(session?.user.id, 'inicio')
+  const { showToast } = useToast()
+  const userId = session?.user.id || ''
+  const chave = chaveDoUsuario(userId, 'inicio')
   const [emMemoria] = useState(() => lerDaMemoria<DadosDaInicio>(chave))
   const [dados, setDados] = useState<DadosDaInicio>(emMemoria ?? VAZIO)
   const [carregando, setCarregando] = useState(!emMemoria)
   const [agora] = useState(() => new Date())
+
+  const [prefsGosto, setPrefsGosto] = useState<PreferenciasDeGosto>(() =>
+    lerPreferenciasDeGosto(userId, session?.user.user_metadata),
+  )
+  const [modalGostoAberto, setModalGostoAberto] = useState(false)
+  const [indiceHero, setIndiceHero] = useState(0)
+  const [marcandoEp, setMarcandoEp] = useState<Record<number, boolean>>({})
+  const [recemMarcados, setRecemMarcados] = useState<Record<number, number>>({})
+
+  useEffect(() => {
+    if (session?.user) {
+      setPrefsGosto(lerPreferenciasDeGosto(session.user.id, session.user.user_metadata))
+    }
+  }, [session])
+
+  const assinaturaFavoritos = prefsGosto.favoritos.join(',')
+  const assinaturaBloqueados = prefsGosto.bloqueados.join(',')
 
   useEffect(() => {
     if (!session) return
     let ativo = true
     const auth = { headers: { Authorization: `Bearer ${session.access_token}` } }
     const chaveStats = chaveDoUsuario(session.user.id, 'estatisticas')
+    const prefsAtuais = lerPreferenciasDeGosto(session.user.id, session.user.user_metadata)
 
     const carregar = async () => {
       try {
-        const [entradas, progresso, trilhas, rankingResp, stats] = await Promise.all([
+        const [entradas, progresso, trilhas, rankingResp, destaquesResp, stats] = await Promise.all([
           fetch('/api/entries', auth).then(r => lerJson<EntradaDoDeck[]>(r, [])),
           fetch('/api/entries/progresso', auth).then(r => lerJson<ProgressoDoAnime[]>(r, [])),
           fetch('/api/trilhas').then(r => lerJson<TrilhaDaHome[]>(r, [])).catch(() => []),
-          fetch('/api/ranking?page=1&perPage=6').then(r => lerJson<{ data?: AnimeDaApi[] }>(r, {})).catch(() => ({ data: [] })),
+          fetch('/api/ranking?page=1&perPage=10').then(r => lerJson<{ data?: AnimeDaApi[] }>(r, {})).catch(() => ({ data: [] })),
+          fetch('/api/curation?destaques=true').then(r => lerJson<CuratedAnime[]>(r, [])).catch(() => []),
           (async (): Promise<StatsParaInicio> => {
             const guardadas = lerDaMemoria<StatsParaInicio>(chaveStats)
             if (guardadas) return guardadas
@@ -142,16 +229,39 @@ export default function Inicio() {
           }
         }
 
+        const noDeck = new Set(entradas.map(e => e.mal_id))
+
+        // Recomendações personalizadas (#139)
+        const generosAlvo = selecionarGenerosRecomendados(stats.genres ?? [], prefsAtuais, 3)
+        let itensRecomendados: Cartaz[] = []
+        if (generosAlvo.length > 0) {
+          const buscas = await Promise.all(
+            generosAlvo.map(rotulo => {
+              const params = new URLSearchParams({ rotulo, so_curadoria: '1', perPage: '18' })
+              return fetch(`/api/search?${params}`)
+                .then(r => lerJson<{ data?: AnimeDaApi[] }>(r, {}))
+                .catch(() => ({ data: [] }))
+            }),
+          )
+          const todosCandidatos = buscas.flatMap(b => b.data ?? [])
+          const filtrados = filtrarRecomendacoesPorGosto(todosCandidatos, noDeck, prefsAtuais.bloqueados)
+          itensRecomendados = filtrados.slice(0, 12).map(a => ({
+            mal_id: a.mal_id,
+            titulo: a.title,
+            imagem: a.images?.jpg?.image_url || '',
+            nota: a.score,
+            legenda: a.genres?.[0]?.name,
+          }))
+        }
+
         let lacuna: DadosDaInicio['lacuna'] = null
         const achada = encontrarLacuna(stats.genres ?? [], stats.overview?.[0]?.nota_media ?? 0)
         if (achada) {
-          const noDeck = new Set(entradas.map(e => e.mal_id))
           const params = new URLSearchParams({ rotulo: achada.rotulo, so_curadoria: '1', perPage: '30' })
           const busca = await fetch(`/api/search?${params}`).then(r => lerJson<{ data?: AnimeDaApi[] }>(r, {})).catch(() => ({ data: [] }))
-          const sugestoes = (busca.data ?? [])
-            .filter(a => !noDeck.has(a.mal_id))
-            .slice(0, 8)
-            .map(a => ({ mal_id: a.mal_id, titulo: a.title, imagem: a.images?.jpg?.image_url || '' }))
+          const sugestoes = filtrarRecomendacoesPorGosto(busca.data ?? [], noDeck, prefsAtuais.bloqueados)
+            .slice(0, 10)
+            .map(a => ({ mal_id: a.mal_id, titulo: a.title, imagem: a.images?.jpg?.image_url || '', nota: a.score }))
           if (sugestoes.length > 0) lacuna = { ...achada, sugestoes }
         }
 
@@ -160,11 +270,26 @@ export default function Inicio() {
           titulo: a.title,
           imagem: a.images?.jpg?.image_url || '',
           legenda: `#${a.current_rank || i + 1}`,
+          nota: a.score,
         }))
 
-        const novos = { entradas, animes, progresso, trilhas, ranking, lacuna }
+        const novos: DadosDaInicio = {
+          entradas,
+          animes,
+          progresso,
+          trilhas,
+          ranking,
+          destaquesHero: (destaquesResp || []).slice(0, 6),
+          recomendados: { generos: generosAlvo, itens: itensRecomendados },
+          lacuna,
+        }
         guardarNaMemoria(chave, novos)
-        if (ativo) setDados(novos)
+        if (ativo) {
+          setDados(novos)
+          if (entradas.length < 3 && !prefsAtuais.tutorialConcluido) {
+            setModalGostoAberto(true)
+          }
+        }
       } finally {
         if (ativo) setCarregando(false)
       }
@@ -172,100 +297,415 @@ export default function Inicio() {
 
     carregar()
     return () => { ativo = false }
-  }, [session, chave])
+  }, [session, chave, assinaturaFavoritos, assinaturaBloqueados])
 
   const nome = (session?.user.user_metadata?.display_name as string | undefined) || ''
   const hoje = estreiasDeHoje(dados.entradas, dados.animes, agora)
-  const continuar = continuarAssistindo(dados.progresso, dados.entradas, dados.animes)
+  const continuar = continuarAssistindo(dados.progresso, dados.entradas, dados.animes, 8)
   const deckVazio = !carregando && dados.entradas.length === 0
   const dataDeHoje = agora.toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long' })
 
+  const slidesHero = dados.destaquesHero
+  const heroAtual = slidesHero.length > 0 ? slidesHero[indiceHero % slidesHero.length] : null
+
+  useEffect(() => {
+    if (slidesHero.length <= 1) return
+    const timer = window.setInterval(() => {
+      setIndiceHero(i => (i + 1) % slidesHero.length)
+    }, 7000)
+    return () => window.clearInterval(timer)
+  }, [slidesHero.length])
+
+  const avancarEpisodioRapido = async (malId: number, episodio: number, titulo: string) => {
+    if (!session || marcandoEp[malId]) return
+    setMarcandoEp(prev => ({ ...prev, [malId]: true }))
+    try {
+      const res = await fetch(`/api/entries/${malId}/episodes/${episodio}`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${session.access_token}` },
+      })
+      if (res.ok) {
+        setRecemMarcados(prev => ({ ...prev, [malId]: episodio }))
+        invalidarCachesDoDeck(session.user.id)
+        showToast(`Ep. ${episodio} de ${titulo} marcado como visto!`, 'success')
+      } else {
+        showToast('Não foi possível registrar o episódio.', 'error')
+      }
+    } catch {
+      showToast('Erro de conexão ao registrar episódio.', 'error')
+    } finally {
+      setMarcandoEp(prev => ({ ...prev, [malId]: false }))
+    }
+  }
+
   return (
-    <div className="w-full min-w-0 max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-10 pt-8 pb-24">
-      <header className="mb-8 select-none">
-        <p className="font-mono text-[10px] text-muted-2 uppercase tracking-widest mb-1">{dataDeHoje}</p>
-        <h1 className="font-anton text-[clamp(1.6rem,3.6vw,2.2rem)] uppercase m-0">{nome ? `Olá, ${nome}` : 'Olá'}</h1>
-        <Link to="/meu-gosto" className="inline-block mt-2 text-sm font-bold text-holo-2 hover:text-holo-3 transition-colors">
-          Ver o meu gosto →
-        </Link>
+    <div className="w-full min-w-0 max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-10 pt-6 pb-24">
+      {/* Cabeçalho compacto com ações rápidas */}
+      <header className="flex flex-wrap items-end justify-between gap-4 mb-6 select-none">
+        <div>
+          <p className="font-mono text-[10px] text-muted-2 uppercase tracking-widest mb-1">{dataDeHoje}</p>
+          <h1 className="font-anton text-[clamp(1.6rem,3.4vw,2.2rem)] uppercase m-0 leading-none">
+            {nome ? `Olá, ${nome}` : 'Sua Central'}
+          </h1>
+        </div>
+        <div className="flex items-center gap-2.5 flex-wrap">
+          <button
+            type="button"
+            onClick={() => setModalGostoAberto(true)}
+            className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-full bg-panel border border-line hover:border-holo-2 text-xs font-bold text-text transition-colors cursor-pointer"
+          >
+            <SlidersHorizontal size={13} className="text-holo-2" /> Ajustar meu gosto
+          </button>
+          <Link
+            to="/meu-gosto"
+            className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-full bg-holo-2/15 border border-holo-2/30 text-xs font-bold text-holo-2 hover:bg-holo-2/25 transition-colors"
+          >
+            <Sparkles size={13} /> Meu Gosto →
+          </Link>
+        </div>
       </header>
+
+      {/* HERO BANNER (#141) */}
+      {heroAtual && (
+        <section className="relative rounded-[24px] overflow-hidden border border-line bg-panel mb-10 min-h-[260px] sm:min-h-[320px] flex items-end">
+          {(heroAtual.custom_banner_image || heroAtual.custom_cover_image) && (
+            <img
+              src={heroAtual.custom_banner_image || heroAtual.custom_cover_image}
+              alt=""
+              className="absolute inset-0 w-full h-full object-cover opacity-35 scale-105 blur-[1px] transition-all duration-700"
+            />
+          )}
+          <div className="absolute inset-0 bg-gradient-to-r from-void via-void/85 to-void/30" />
+          <div className="absolute inset-0 bg-gradient-to-t from-void via-void/40 to-transparent" />
+
+          <div className="relative z-10 w-full p-5 sm:p-8 flex flex-col md:flex-row items-start md:items-end justify-between gap-6">
+            <div className="flex items-end gap-5 max-w-2xl">
+              {heroAtual.custom_cover_image && (
+                <Link to={`/anime/${heroAtual.mal_id}`} className="hidden sm:block shrink-0">
+                  <img
+                    src={miniatura(heroAtual.custom_cover_image)}
+                    alt={heroAtual.custom_title}
+                    className="w-28 sm:w-32 aspect-[2/3] object-cover rounded-2xl border border-white/15 shadow-2xl"
+                  />
+                </Link>
+              )}
+              <div>
+                <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-holo-1/15 border border-holo-1/35 text-holo-1 font-mono text-[10px] font-bold uppercase tracking-widest mb-2.5">
+                  <Sparkles size={11} /> Destaque da Curadoria
+                </div>
+                <Link to={`/anime/${heroAtual.mal_id}`}>
+                  <h2 className="font-anton text-2xl sm:text-4xl uppercase leading-tight text-text hover:text-holo-3 transition-colors line-clamp-2">
+                    {heroAtual.custom_title}
+                  </h2>
+                </Link>
+                {heroAtual.custom_tags && heroAtual.custom_tags.length > 0 && (
+                  <div className="flex flex-wrap gap-1.5 mt-2">
+                    {heroAtual.custom_tags.slice(0, 4).map(tag => (
+                      <span
+                        key={tag}
+                        className={`px-2 py-0.5 rounded-full border font-mono text-[9.5px] font-bold uppercase ${getCategoryTheme(tag)}`}
+                      >
+                        {tag}
+                      </span>
+                    ))}
+                  </div>
+                )}
+                {heroAtual.custom_synopsis && (
+                  <p className="text-xs sm:text-sm text-muted mt-2.5 line-clamp-2 max-w-xl leading-relaxed">
+                    {heroAtual.custom_synopsis.replace(/\*\*/g, '').replace(/\*/g, '')}
+                  </p>
+                )}
+              </div>
+            </div>
+
+            <div className="flex items-center gap-3 w-full md:w-auto justify-between md:justify-end">
+              <Link
+                to={`/anime/${heroAtual.mal_id}`}
+                className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full bg-gradient-to-r from-holo-1 to-holo-2 text-void font-extrabold text-xs sm:text-sm uppercase tracking-wider shadow-lg hover:opacity-95 transition-opacity"
+              >
+                <Play size={14} fill="currentColor" /> Ver obra
+              </Link>
+
+              {slidesHero.length > 1 && (
+                <div className="flex items-center gap-1.5">
+                  <button
+                    type="button"
+                    onClick={() => setIndiceHero(i => (i - 1 + slidesHero.length) % slidesHero.length)}
+                    className="w-8 h-8 rounded-full bg-void/70 border border-line hover:border-holo-3 text-text flex items-center justify-center cursor-pointer"
+                    aria-label="Destaque anterior"
+                  >
+                    <ChevronLeft size={15} />
+                  </button>
+                  <span className="font-mono text-[10px] text-muted-2 px-1 tabular-nums">
+                    {(indiceHero % slidesHero.length) + 1}/{slidesHero.length}
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => setIndiceHero(i => (i + 1) % slidesHero.length)}
+                    className="w-8 h-8 rounded-full bg-void/70 border border-line hover:border-holo-3 text-text flex items-center justify-center cursor-pointer"
+                    aria-label="Próximo destaque"
+                  >
+                    <ChevronRight size={15} />
+                  </button>
+                </div>
+              )}
+            </div>
+          </div>
+        </section>
+      )}
 
       {carregando && (
         <div className="flex gap-4 overflow-hidden mb-10">
           {Array.from({ length: 6 }).map((_, i) => (
-            <div key={i} className="shrink-0 w-[144px] sm:w-[164px] lg:w-[184px] aspect-[2/3] rounded-[14px] shimmer" />
+            <div key={i} className="shrink-0 w-[160px] sm:w-[186px] lg:w-[206px] aspect-[2/3] rounded-[16px] shimmer" />
           ))}
         </div>
       )}
 
       {deckVazio && (
-        <section className="mb-10 bg-gradient-to-br from-holo-1/10 to-holo-3/10 border border-holo-3/30 rounded-2xl p-6">
-          <h2 className="font-anton text-xl uppercase mb-2">Seu deck está vazio</h2>
-          <p className="text-muted text-sm mb-4">Adicione os animes que você assiste para ver aqui o que estreia hoje e onde você parou.</p>
-          <Link to="/descobrir" className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full bg-gradient-to-r from-holo-1 to-holo-2 text-void font-bold text-sm">
-            <Compass size={16} /> Descobrir animes
-          </Link>
+        <section className="mb-10 bg-gradient-to-br from-holo-1/10 to-holo-3/10 border border-holo-3/30 rounded-2xl p-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+          <div>
+            <h2 className="font-anton text-xl uppercase mb-1.5">Seu deck está vazio</h2>
+            <p className="text-muted text-sm">
+              Adicione animes ao seu Deck, personalize seus gêneros favoritos ou importe sua lista do MyAnimeList.
+            </p>
+          </div>
+          <div className="flex flex-wrap gap-2.5 shrink-0">
+            <Link
+              to="/descobrir"
+              className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full bg-gradient-to-r from-holo-1 to-holo-2 text-void font-bold text-xs uppercase tracking-wider"
+            >
+              <Compass size={15} /> Descobrir animes
+            </Link>
+            <Link
+              to="/configuracoes#importar"
+              className="inline-flex items-center gap-2 px-4 py-2.5 rounded-full bg-panel border border-line hover:border-holo-3 text-text font-bold text-xs uppercase tracking-wider"
+            >
+              <Upload size={14} /> Importar do MAL
+            </Link>
+          </div>
         </section>
       )}
 
-      {!carregando && !deckVazio && (
-        <Secao titulo="Hoje no seu deck" icone={<CalendarDays size={16} className="text-holo-3" />} link={{ para: '/calendario', texto: 'Agenda' }}>
-          {hoje.length === 0 ? (
-            <p className="text-muted text-sm">Nada do seu deck vai ao ar hoje.</p>
-          ) : (
-            <ul className="flex flex-col gap-2.5">
-              {hoje.map(e => (
-                <li key={e.anime.mal_id}>
-                  <div className="flex items-center gap-3 bg-panel border border-line rounded-xl p-3 hover:border-holo-3 transition-colors">
-                    {e.anime.image_url
-                      ? <img src={miniatura(e.anime.image_url)} alt="" className="w-16 h-20 rounded-lg object-cover shrink-0" />
-                      : <div className="w-16 h-20 rounded-lg bg-panel-2 shrink-0" />}
-                    <div className="min-w-0 flex-1">
-                      <Link to={`/anime/${e.anime.mal_id}`} className="font-bold text-sm line-clamp-2 hover:text-holo-3 transition-colors">{e.anime.title}</Link>
-                      <div className="flex flex-wrap gap-1 mt-1.5">
-                        {e.anime.genres?.map(g => (
-                          <span key={g} className={`px-1.5 py-0.5 rounded border font-mono text-[8px] uppercase ${getCategoryTheme(g)}`}>{g}</span>
-                        ))}
-                      </div>
-                      <p className="font-mono text-[11px] text-muted-2 uppercase tracking-wider mt-1">Episódio {e.episodio}</p>
-                    </div>
-                    <span className="font-anton text-lg text-holo-3 tabular-nums">{horaLocal(e.quando)}</span>
-                    {e.anime.streaming?.[0] && (
-                      <a href={e.anime.streaming[0].url} target="_blank" rel="noreferrer" aria-label={`Assistir ${e.anime.title}`} className="shrink-0 w-8 h-8 rounded-full bg-panel-2 border border-line text-muted hover:text-holo-3 hover:border-holo-3 flex items-center justify-center transition-colors">
-                        <Play size={13} fill="currentColor" className="ml-0.5" />
-                      </a>
+      {/* CONTINUE DE ONDE PAROU — Cards largos 16:9 com barra de progresso e +1 episódio (#141) */}
+      {continuar.length > 0 && (
+        <Secao
+          titulo="Continue de onde parou"
+          subtitulo="Avance para o próximo episódio com um toque"
+          icone={<Play size={17} className="text-holo-1" />}
+          link={{ para: '/deck', texto: 'Meu deck' }}
+        >
+          <div className="flex gap-4 overflow-x-auto scrollbar-hide snap-x snap-mandatory -mx-4 px-4 sm:mx-0 sm:px-0 pb-2">
+            {continuar.map(c => {
+              const epAlvo = recemMarcados[c.anime.mal_id]
+                ? recemMarcados[c.anime.mal_id] + 1
+                : c.proximoEpisodio
+              const vistos = epAlvo - 1
+              const total = c.anime.episodes || 0
+              const pct = total > 0 ? Math.min(100, Math.round((vistos / total) * 100)) : 35
+              const diaSemana = obterTextoDiaLancamento({
+                status: 'RELEASING',
+                nextAiringEpisode: c.anime.nextAiringEpisode,
+              })
+
+              return (
+                <div
+                  key={c.anime.mal_id}
+                  className="shrink-0 w-[285px] sm:w-[325px] snap-start rounded-2xl border border-line bg-panel overflow-hidden hover:border-holo-1/50 transition-all group flex flex-col justify-between"
+                >
+                  <div className="relative aspect-[16/9] bg-panel-2 overflow-hidden">
+                    {c.anime.image_url && (
+                      <>
+                        <img
+                          src={miniatura(c.anime.image_url)}
+                          alt=""
+                          className="absolute inset-0 w-full h-full object-cover scale-110 blur-md opacity-40"
+                        />
+                        <div className="absolute inset-0 bg-gradient-to-t from-panel via-panel/40 to-transparent" />
+                      </>
                     )}
+                    <div className="relative z-10 h-full p-3.5 flex items-end gap-3.5">
+                      {c.anime.image_url && (
+                        <Link to={`/anime/${c.anime.mal_id}`} className="shrink-0">
+                          <img
+                            src={miniatura(c.anime.image_url)}
+                            alt={c.anime.title}
+                            className="w-16 h-24 rounded-xl object-cover border border-white/15 shadow-md"
+                          />
+                        </Link>
+                      )}
+                      <div className="min-w-0 flex-1">
+                        {diaSemana && (
+                          <span className="inline-block font-mono text-[9.5px] font-bold uppercase tracking-wider text-holo-3 mb-1">
+                            📅 {diaSemana}
+                          </span>
+                        )}
+                        <Link
+                          to={`/anime/${c.anime.mal_id}`}
+                          className="block font-bold text-sm text-text leading-snug line-clamp-2 group-hover:text-holo-1 transition-colors"
+                        >
+                          {c.anime.title}
+                        </Link>
+                        <p className="font-mono text-[11px] text-muted mt-1 tabular-nums">
+                          Visto: <strong className="text-text">{vistos}</strong>
+                          {total > 0 ? ` / ${total} eps` : ' eps'}
+                        </p>
+                      </div>
+                    </div>
                   </div>
-                </li>
+
+                  <div className="px-3.5 pb-3.5 pt-2">
+                    <div className="h-1.5 w-full rounded-full bg-panel-2 overflow-hidden mb-3">
+                      <div
+                        className="h-full rounded-full bg-gradient-to-r from-holo-1 to-holo-3 transition-all duration-300"
+                        style={{ width: `${pct}%` }}
+                      />
+                    </div>
+                    <div className="flex items-center justify-between gap-2">
+                      <button
+                        type="button"
+                        disabled={marcandoEp[c.anime.mal_id]}
+                        onClick={() => avancarEpisodioRapido(c.anime.mal_id, epAlvo, c.anime.title)}
+                        className="flex-1 inline-flex items-center justify-center gap-1.5 py-2 px-3 rounded-xl bg-holo-1/15 hover:bg-holo-1/25 border border-holo-1/35 text-holo-1 text-xs font-extrabold transition-colors cursor-pointer disabled:opacity-50"
+                      >
+                        {recemMarcados[c.anime.mal_id] === c.proximoEpisodio ? (
+                          <>
+                            <Check size={13} /> Marcar Ep. {epAlvo}
+                          </>
+                        ) : (
+                          <>
+                            <Plus size={13} /> Marcar Ep. {epAlvo} visto
+                          </>
+                        )}
+                      </button>
+                      <Link
+                        to={`/anime/${c.anime.mal_id}`}
+                        className="px-3 py-2 rounded-xl bg-panel-2 border border-line hover:border-holo-3 text-xs font-bold text-muted hover:text-text transition-colors"
+                      >
+                        Detalhes
+                      </Link>
+                    </div>
+                  </div>
+                </div>
+              )
+            })}
+          </div>
+        </Secao>
+      )}
+
+      {/* HOJE NO SEU DECK (#141) */}
+      {!carregando && !deckVazio && (
+        <Secao
+          titulo="Hoje no seu deck"
+          subtitulo="Lançamentos programados para hoje no seu fuso local"
+          icone={<CalendarDays size={17} className="text-holo-3" />}
+          link={{ para: '/calendario', texto: 'Agenda completa' }}
+        >
+          {hoje.length === 0 ? (
+            <div className="bg-panel border border-line rounded-2xl p-4 flex items-center justify-between gap-4">
+              <p className="text-muted text-sm">Nenhum anime do seu Deck tem episódio estreando hoje.</p>
+              <Link to="/calendario" className="text-xs font-bold text-holo-3 hover:underline shrink-0">
+                Ver semana →
+              </Link>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3.5">
+              {hoje.map(e => (
+                <div
+                  key={e.anime.mal_id}
+                  className="flex items-center gap-3.5 bg-panel border border-line rounded-2xl p-3.5 hover:border-holo-3 transition-colors"
+                >
+                  <Link to={`/anime/${e.anime.mal_id}`} className="shrink-0">
+                    {e.anime.image_url ? (
+                      <img src={miniatura(e.anime.image_url)} alt="" className="w-16 h-22 rounded-xl object-cover border border-line" />
+                    ) : (
+                      <div className="w-16 h-22 rounded-xl bg-panel-2" />
+                    )}
+                  </Link>
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-center gap-2 mb-1">
+                      <span className="px-2 py-0.5 rounded-full bg-holo-3/15 border border-holo-3/35 text-holo-3 font-mono text-[10px] font-bold uppercase">
+                        EP. {e.episodio}
+                      </span>
+                      <span className="font-anton text-base text-holo-3 tabular-nums">
+                        {horaLocal(e.quando)}
+                      </span>
+                    </div>
+                    <Link
+                      to={`/anime/${e.anime.mal_id}`}
+                      className="font-bold text-sm line-clamp-2 hover:text-holo-3 transition-colors"
+                    >
+                      {e.anime.title}
+                    </Link>
+                    <div className="flex flex-wrap gap-1 mt-1.5">
+                      {e.anime.genres?.map(g => (
+                        <span key={g} className={`px-1.5 py-0.5 rounded border font-mono text-[8px] uppercase ${getCategoryTheme(g)}`}>
+                          {g}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                  {e.anime.streaming?.[0] && (
+                    <a
+                      href={e.anime.streaming[0].url}
+                      target="_blank"
+                      rel="noreferrer"
+                      aria-label={`Assistir ${e.anime.title}`}
+                      className="shrink-0 w-9 h-9 rounded-full bg-holo-3/15 border border-holo-3/40 text-holo-3 hover:bg-holo-3 hover:text-void flex items-center justify-center transition-colors"
+                    >
+                      <Play size={14} fill="currentColor" className="ml-0.5" />
+                    </a>
+                  )}
+                </div>
               ))}
-            </ul>
+            </div>
           )}
         </Secao>
       )}
 
-      {continuar.length > 0 && (
-        <Secao titulo="Continue de onde parou" icone={<Play size={16} className="text-holo-1" />} link={{ para: '/deck', texto: 'Meu deck' }}>
-          <Trilho cartazes={continuar.map(c => ({
-            mal_id: c.anime.mal_id, titulo: c.anime.title, imagem: c.anime.image_url, legenda: `Episódio ${c.proximoEpisodio}`,
-          }))} />
+      {/* RECOMENDADOS PARA VOCÊ (#139 + #141) */}
+      {dados.recomendados.itens.length > 0 && (
+        <Secao
+          titulo="Recomendados para Você"
+          subtitulo={`Com base na sua afinidade e gêneros favoritos: ${dados.recomendados.generos.join(' • ')}`}
+          icone={<Sparkles size={17} className="text-holo-2" />}
+          acaoExtra={
+            <button
+              type="button"
+              onClick={() => setModalGostoAberto(true)}
+              className="font-mono text-[10.5px] text-holo-2 uppercase tracking-widest hover:underline cursor-pointer"
+            >
+              Personalizar
+            </button>
+          }
+          link={{ para: '/descobrir', texto: 'Explorar catálogo' }}
+        >
+          <Trilho cartazes={dados.recomendados.itens} />
         </Secao>
       )}
 
       {dados.lacuna && (
-        <Secao titulo="O buraco no seu gosto" icone={<Sparkles size={16} className="text-gold" />} link={{ para: `/descobrir?rotulo=${encodeURIComponent(dados.lacuna.rotulo)}`, texto: 'Ver tudo' }}>
-          <p className="text-sm text-muted mb-4 max-w-[600px]">
+        <Secao
+          titulo="O buraco no seu gosto"
+          icone={<Sparkles size={17} className="text-gold" />}
+          link={{ para: `/descobrir?rotulo=${encodeURIComponent(dados.lacuna.rotulo)}`, texto: 'Ver tudo' }}
+        >
+          <p className="text-sm text-muted mb-4 max-w-[640px]">
             Você dá em média <strong className="text-text">{dados.lacuna.nota.toFixed(1)}</strong> para{' '}
             <strong className="text-text">{dados.lacuna.rotulo}</strong>, acima da sua média de {dados.lacuna.mediaPessoal.toFixed(1)}, e só viu{' '}
-            {dados.lacuna.vistos}. Alguns do catálogo que ainda não estão no seu deck:
+            {dados.lacuna.vistos}. Obras curadas que ainda não estão no seu Deck:
           </p>
           <Trilho cartazes={dados.lacuna.sugestoes} />
         </Secao>
       )}
 
       {dados.trilhas.map(t => (
-        <Secao key={t.id} titulo={t.nome} icone={<Compass size={16} className="text-holo-2" />}>
-          {t.subtitulo && <p className="text-sm text-muted -mt-2 mb-2">{t.subtitulo}</p>}
-          {t.nota && <p className="text-[13px] text-text/80 italic border-l-2 border-holo-2/50 pl-3 mb-4 max-w-[600px]">{t.nota}</p>}
+        <Secao key={t.id} titulo={t.nome} subtitulo={t.subtitulo} icone={<Compass size={17} className="text-holo-2" />}>
+          {t.nota && (
+            <p className="text-[13px] text-text/80 italic border-l-2 border-holo-2/50 pl-3 mb-4 max-w-[600px]">
+              {t.nota}
+            </p>
+          )}
           <Trilho cartazes={t.animes.map(a => ({ mal_id: a.mal_id, titulo: a.titulo, imagem: a.image_url }))} />
         </Secao>
       ))}
@@ -273,10 +713,23 @@ export default function Inicio() {
       <VitrineDestaques />
 
       {dados.ranking.length > 0 && (
-        <Secao titulo="Topo do ranking" icone={<Trophy size={16} className="text-gold" />} link={{ para: '/rankings', texto: 'Ranking completo' }}>
+        <Secao
+          titulo="Topo do ranking"
+          subtitulo="As obras mais bem avaliadas no ranking bayesiano do AniDeck"
+          icone={<Trophy size={17} className="text-gold" />}
+          link={{ para: '/rankings', texto: 'Ranking completo' }}
+        >
           <Trilho cartazes={dados.ranking} />
         </Secao>
       )}
+
+      <OnboardingGostoModal
+        isOpen={modalGostoAberto}
+        userId={userId}
+        preferenciasAtuais={prefsGosto}
+        onClose={() => setModalGostoAberto(false)}
+        onSaved={novas => setPrefsGosto(novas)}
+      />
     </div>
   )
 }

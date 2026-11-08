@@ -18,6 +18,7 @@ export interface PontoAfinidade {
 interface QuadranteAfinidadeProps {
     generos: PontoAfinidade[]
     notaMedia: number
+    onSelectCategoria?: (genre: string) => void
 }
 
 // Coordenadas do desenho. Ficam aqui em cima porque quase todo ajuste visual do gráfico
@@ -31,7 +32,7 @@ const MARGEM = { topo: 14, direita: 14, base: 30, esquerda: 38 }
 // foi o que aconteceu com "Mecha" (nota 10) e "Fantasia" (o mais assistido).
 const FOLGA = 16
 
-export default function QuadranteAfinidade({ generos, notaMedia }: QuadranteAfinidadeProps) {
+export default function QuadranteAfinidade({ generos, notaMedia, onSelectCategoria }: QuadranteAfinidadeProps) {
     // Sem nota não há eixo Y: um gênero que você nunca avaliou não tem posição vertical.
     const pontos = generos
         .filter(g => g.media_nota_genero !== null && g.media_nota_genero !== undefined)
@@ -223,8 +224,12 @@ export default function QuadranteAfinidade({ generos, notaMedia }: QuadranteAfin
                 {rotulos.map(r => {
                     const dados = pontos.find(p => p.genre === r.genre)
                     return (
-                        <g key={r.genre}>
-                            <title>{`${r.genre}: ${dados?.total_watched} animes, nota média ${dados?.media_nota_genero}`}</title>
+                        <g
+                            key={r.genre}
+                            onClick={() => onSelectCategoria?.(r.genre)}
+                            className={onSelectCategoria ? 'cursor-pointer group' : undefined}
+                        >
+                            <title>{`${r.genre}: ${dados?.total_watched} animes, nota média ${dados?.media_nota_genero} (clique para ver os animes)`}</title>
                             {/* Fio ligando o ponto ao rótulo, para quando o rótulo tiver
                                 sido empurrado pra baixo e deixar de estar na mesma linha. */}
                             {Math.abs(r.alturaRotulo - (r.y + 3)) > 2 && (
@@ -234,8 +239,9 @@ export default function QuadranteAfinidade({ generos, notaMedia }: QuadranteAfin
                                     stroke="#6B5F94" strokeWidth="0.75" opacity="0.6"
                                 />
                             )}
-                            <circle cx={r.x} cy={r.y} r="7" fill="#F1EEFA" opacity="0.1" />
-                            <circle cx={r.x} cy={r.y} r="3.5" fill="#F1EEFA" />
+                            <circle cx={r.x} cy={r.y} r="11" fill="transparent" />
+                            <circle cx={r.x} cy={r.y} r="7" fill="#F1EEFA" opacity="0.1" className="group-hover:opacity-30 transition-opacity" />
+                            <circle cx={r.x} cy={r.y} r="3.5" fill="#F1EEFA" className="group-hover:fill-[#3FE0F0] transition-colors" />
                             <text
                                 x={r.paraEsquerda ? r.x - 8 : r.x + 8}
                                 y={r.alturaRotulo}
@@ -243,6 +249,7 @@ export default function QuadranteAfinidade({ generos, notaMedia }: QuadranteAfin
                                 fill="#F1EEFA"
                                 fontSize="9"
                                 fontWeight="700"
+                                className="group-hover:fill-[#3FE0F0] transition-colors"
                             >
                                 {r.genre}
                             </text>
