@@ -121,7 +121,7 @@ func (h *NotificationsHandler) HandleGetNotifications(w http.ResponseWriter, r *
 		return
 	}
 
-		// Devolve lidas e não lidas: o sino virou histórico, não caixa de entrada.
+	// Devolve lidas e não lidas: o sino virou histórico, não caixa de entrada.
 	// Sem as lidas, marcar como lido apagava a notificação para sempre e não
 	// havia como reencontrar o episódio depois. O cliente separa pelo read_at.
 	data, _, err := dbClient.From("notifications").
@@ -321,11 +321,11 @@ func (h *NotificationsHandler) HandleRequestBetaInvite(w http.ResponseWriter, r 
 }
 
 func (h *NotificationsHandler) HandleCheckNewEpisodes(w http.ResponseWriter, r *http.Request) {
-		if r.Header.Get("X-Cron-Secret") != os.Getenv("CRON_SECRET") {
-    http.Error(w, "não autorizado", http.StatusUnauthorized)
-    return
-}
-		if os.Getenv("SUPABASE_SERVICE_ROLE_KEY") == "" {
+	if r.Header.Get("X-Cron-Secret") != os.Getenv("CRON_SECRET") {
+		http.Error(w, "não autorizado", http.StatusUnauthorized)
+		return
+	}
+	if os.Getenv("SUPABASE_SERVICE_ROLE_KEY") == "" {
 		log.Printf("[ERRO CRON] SUPABASE_SERVICE_ROLE_KEY ausente")
 		http.Error(w, "Erro de configuração", http.StatusInternalServerError)
 		return
@@ -410,7 +410,7 @@ func (h *NotificationsHandler) HandleCheckNewEpisodes(w http.ResponseWriter, r *
 				if errRpc == nil && string(subData) != "null" && string(subData) != "[]" && string(subData) != "" {
 					var subs []map[string]string
 					if errJson := json.Unmarshal(subData, &subs); errJson == nil {
-						go h.sendWebPush(subs, anime.Title, anime.MalID, episodeAired)
+						go h.sendWebPush(subs, anime.Title, anime.MalID, episodeAired, anime.Images.JPG.ImageURL)
 					}
 				}
 			}
@@ -420,8 +420,29 @@ func (h *NotificationsHandler) HandleCheckNewEpisodes(w http.ResponseWriter, r *
 	w.WriteHeader(http.StatusOK)
 }
 
-func (h *NotificationsHandler) sendWebPush(subs []map[string]string, animeTitle string, malID int, episode int) {
-	message := fmt.Appendf(nil, `{"title": "Novo Episódio!", "body": "%s — Episódio %d acabou de lançar!", "url": "/anime/%d"}`, animeTitle, episode, malID)
+// montarPayloadPush serializa com json.Marshal porque o título do anime pode conter aspas
+// ou barras, e texto montado à mão gera JSON inválido que o navegador descarta sem aviso.
+// A tag agrupa reenvios do mesmo episódio numa notificação só.
+func montarPayloadPush(titulo string, malID, episodio int, imagem string) ([]byte, error) {
+	return json.Marshal(map[string]any{
+		"title": titulo,
+		"body":  fmt.Sprintf("Episódio %d já está disponível. Toque para abrir.", episodio),
+		"url":   fmt.Sprintf("/anime/%d", malID),
+		"tag":   fmt.Sprintf("ep-%d-%d", malID, episodio),
+		"image": imagem,
+	})
+}
+
+// validadePush é quanto o serviço de push guarda a mensagem com o aparelho desligado.
+// Com poucos segundos, celular em repouso perdia a notificação.
+const validadePush = 24 * 60 * 60
+
+func (h *NotificationsHandler) sendWebPush(subs []map[string]string, animeTitle string, malID int, episode int, imagem string) {
+	message, err := montarPayloadPush(animeTitle, malID, episode, imagem)
+	if err != nil {
+		log.Printf("[WEB PUSH] Payload inválido para mal_id=%d: %v", malID, err)
+		return
+	}
 
 	for _, s := range subs {
 		sub := &webpush.Subscription{
@@ -432,15 +453,32 @@ func (h *NotificationsHandler) sendWebPush(subs []map[string]string, animeTitle 
 			},
 		}
 
-		_, err := webpush.SendNotification(message, sub, &webpush.Options{
+		resp, err := webpush.SendNotification(message, sub, &webpush.Options{
 			Subscriber:      "mailto:admin@anideck.com.br",
 			VAPIDPublicKey:  os.Getenv("VAPID_PUBLIC_KEY"),
 			VAPIDPrivateKey: os.Getenv("VAPID_PRIVATE_KEY"),
-			TTL:             30,
+			TTL:             validadePush,
 		})
-
 		if err != nil {
 			log.Printf("[WEB PUSH] Erro ao disparar notificação: %v", err)
+			continue
 		}
+		resp.Body.Close()
+
+		// 404 e 410: o navegador cancelou a assinatura; mantê-la só gera falha a cada hora.
+		if resp.StatusCode == http.StatusNotFound || resp.StatusCode == http.StatusGone {
+			removerAssinaturaPush(s["endpoint"])
+		}
+	}
+}
+
+func removerAssinaturaPush(endpoint string) {
+	client, err := database.ServiceRoleClient()
+	if err != nil {
+		log.Printf("[WEB PUSH] Sem cliente para remover assinatura expirada: %v", err)
+		return
+	}
+	if _, _, err := client.From("push_subscriptions").Delete("", "").Eq("endpoint", endpoint).Execute(); err != nil {
+		log.Printf("[WEB PUSH] Falha ao remover assinatura expirada: %v", err)
 	}
 }

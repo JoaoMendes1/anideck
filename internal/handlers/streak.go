@@ -6,7 +6,8 @@ import (
 )
 
 // CalculateStreak recebe uma lista de datas (formato "2006-01-02", já sem duplicatas)
-// e a data de "hoje" (injetada como parâmetro para facilitar testes), e retorna:
+// e o instante de "hoje" já no fuso em que as datas foram agrupadas (Brasília, ver sql/040),
+// e retorna:
 //   - currentStreak: sequência de dias consecutivos assistindo, contando pra trás a partir de hoje.
 //     Só é considerada "ativa" se o usuário assistiu algo hoje ou ontem; caso contrário, é 0.
 //   - longestStreak: a maior sequência de dias consecutivos já registrada, independente de estar ativa.

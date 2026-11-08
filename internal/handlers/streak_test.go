@@ -70,3 +70,16 @@ func TestCalculateStreak(t *testing.T) {
 		})
 	}
 }
+
+func TestCalculateStreak_HojeNoFusoDeBrasilia(t *testing.T) {
+	// 02h UTC do dia 9 ainda é 23h do dia 8 em Brasília: o streak de 6 e 7 continua vivo.
+	instante := time.Date(2026, 11, 9, 2, 0, 0, 0, time.UTC)
+	datas := []string{"2026-11-06", "2026-11-07"}
+
+	if atual, _ := CalculateStreak(datas, instante.In(fusoGuilda)); atual != 2 {
+		t.Errorf("no fuso de Brasília o streak deveria ser 2, recebido %d", atual)
+	}
+	if atual, _ := CalculateStreak(datas, instante); atual != 0 {
+		t.Errorf("em UTC o dia já virou e o streak zera (comportamento antigo), recebido %d", atual)
+	}
+}

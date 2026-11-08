@@ -98,7 +98,7 @@ func (h *StatsHandler) HandleGetUserStats(w http.ResponseWriter, r *http.Request
 			dates = append(dates, dia)
 		}
 	}
-	currentStreak, longestStreak := CalculateStreak(dates, time.Now())
+	currentStreak, longestStreak := CalculateStreak(dates, time.Now().In(fusoGuilda))
 
 	// Sessões: as marcações cruas viram blocos de atividade, e só o instante de início de
 	// cada bloco vai para o frontend. A conversão para hora local acontece lá, porque o

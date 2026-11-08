@@ -69,6 +69,7 @@ SELECT pg_get_viewdef('nome_da_view'::regclass, true);
 | `037_olheiro_demanda.sql` | RPC da aba Demanda: anime em deck e fora do catálogo | 19/09/2026 |
 | `038_fila_curadoria_ia.sql` | Fila da curadoria por IA (`ai_curation_queue`, só admin), RPC `pegar_proximo_da_fila_ia` (só service role) e chaves `ai_fila_*` e `ai_prompt_*_episodios` em `app_settings` | ~31/10/2026 |
 | `039_guilda_xp_ledger.sql` | Tabela `xp_ledger` (com RLS e trigger de devolução em `episode_progress`), seed retroativo do histórico com `watched_at` real e chaves `guilda_*` em `app_settings` | ~08/11/2026 |
+| `040_streak_no_fuso_de_brasilia.sql` | `view_user_watch_dates` agrupa os dias no fuso de Brasília, igual ao "XP de hoje" da Guilda | ~08/11/2026 |
 
 Datas com `~` são a data do commit, não da aplicação no Supabase.
 

@@ -644,7 +644,7 @@ func (h *GuildaHandler) HandleResumoGuilda(w http.ResponseWriter, r *http.Reques
 			datas = append(datas, d.Dia)
 		}
 	}
-	streakAtual, maiorStreak := CalculateStreak(datas, agora)
+	streakAtual, maiorStreak := CalculateStreak(datas, agora.In(fusoGuilda))
 
 	status := CalcularNivelERank(xpTotal, ranks)
 	status.XPHoje = xpHoje
@@ -724,7 +724,7 @@ func (h *GuildaHandler) HandleGetGuilda(w http.ResponseWriter, r *http.Request) 
 		}
 	}
 
-	streakAtual, maiorStreak := CalculateStreak(datas, agora)
+	streakAtual, maiorStreak := CalculateStreak(datas, agora.In(fusoGuilda))
 	especialistas := CalcularEspecialistasGenero(afinidades)
 
 	pesoMaximo := 1.0
