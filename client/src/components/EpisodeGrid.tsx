@@ -95,6 +95,16 @@ export default function EpisodeGrid({ malId, totalEpisodes, streamingEpisodes = 
       })
 
       if (!response.ok) throw new Error()
+      if (!isWatched) {
+        try {
+          const payload = (await response.json()) as { xp_earned?: number; reason?: string }
+          if (typeof payload.xp_earned === 'number' && payload.xp_earned > 0) {
+            showToast(`+${payload.xp_earned} XP na Guilda (${payload.reason || 'episódio assistido'})`, 'success')
+          }
+        } catch {
+          // Resposta sem corpo JSON continua válida.
+        }
+      }
       window.dispatchEvent(
         new CustomEvent('anideck:episodio-atualizado', {
           detail: { malId, episodeNumber, watched: !isWatched },
@@ -291,6 +301,12 @@ export default function EpisodeGrid({ malId, totalEpisodes, streamingEpisodes = 
         >
           <ChevronDown size={16} /> Mostrar próximos episódios
         </button>
+      )}
+
+      {isLoggedIn && episodesCount > 0 && (
+        <p className="font-mono text-[10.5px] text-muted-2 mt-3 mb-0">
+          Marcar episódio rende <b className="text-text">+25 XP</b> na Guilda (+10 XP no lançamento); a partir do 3º do dia aplica retorno decrescente.
+        </p>
       )}
     </section>
   )

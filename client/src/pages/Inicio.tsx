@@ -325,6 +325,15 @@ export default function Inicio() {
         headers: { Authorization: `Bearer ${session.access_token}` },
       })
       if (res.ok) {
+        let sufixoXP = ''
+        try {
+          const payload = (await res.json()) as { xp_earned?: number }
+          if (typeof payload.xp_earned === 'number' && payload.xp_earned > 0) {
+            sufixoXP = ` (+${payload.xp_earned} XP)`
+          }
+        } catch {
+          // Segue sem sufixo se a resposta vier vazia.
+        }
         setRecemMarcados(prev => ({ ...prev, [malId]: episodio }))
         invalidarCachesDoDeck(session.user.id)
         window.dispatchEvent(
@@ -332,7 +341,7 @@ export default function Inicio() {
             detail: { malId, episodeNumber: episodio, watched: true },
           }),
         )
-        showToast(`Ep. ${episodio} de ${titulo} marcado como visto!`, 'success')
+        showToast(`Ep. ${episodio} de ${titulo} marcado como visto!${sufixoXP}`, 'success')
       } else {
         showToast('Não foi possível registrar o episódio.', 'error')
       }

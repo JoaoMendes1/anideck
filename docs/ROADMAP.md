@@ -694,7 +694,7 @@ automatizar demandas repetitivas de curadoria no Admin e aprofundar a interativi
 Motivo: materializar a visão de progressão de longo prazo (`VISAO_GAMIFICACAO.md`) com duas moedas independentes (ritmo de episódios marcados no tempo em `xp_ledger` vs bagagem por gênero em `view_user_genre_affinity`), sem punir quem cadastra acervo antigo nem permitir farm de Rank em lote.
 
 - [x] Ledger imutável de XP (`sql/039`), motor de Nível/Rank (`F`→`SS`), Especialista de Gênero (`N1`→`N5`), Insígnias e rotas `/api/guilda` (#145)
-- [ ] Tela da Guilda (`/guilda`), pílula de Nível/Rank na Navbar, atalho no menu de Perfil e feedback `+XX XP` ao marcar episódio (#146)
+- [x] Tela da Guilda (`/guilda`), pílula de Nível/Rank na Navbar, atalho no menu de Perfil e feedback `+XX XP` ao marcar episódio (#146)
 - [ ] Aba Guilda no Painel Admin: economia de XP, faixas `F`→`SS` com prévia de distribuição, insígnias, auditoria e Kill Switch (#147)
 
 ## 🔧 Manutenção pós-v1

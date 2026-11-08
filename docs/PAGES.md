@@ -13,13 +13,9 @@
 | 11 | Política de Privacidade | `Privacidade.tsx` | ✅ Implementada | Fase 7 |
 | 12 | Início (home logada, em `/`) | `Inicio.tsx` | ✅ Implementada · Hero Banner rotativo, cards 16:9 com avanço rápido de episódio e Recomendados para Você | Fase 11 / 13 (#139, #141) |
 | 13 | Card de gosto compartilhável (no Meu Gosto) | `CompartilharGosto.tsx` | ✅ Implementada | Fase 12 (#126) |
-| 14 | Guilda (rank, XP, insígnias) | — | 💭 Só visão | `VISAO_GAMIFICACAO.md` |
+| 14 | Guilda (rank, XP, insígnias, especialista de gênero) | `Guilda.tsx` | ✅ Implementada · anel F→SS, extrato do ledger, especialista N1→N5, insígnias Foil e pílula na Navbar | Fase 14 (#146) |
 
-> As telas 12 a 14 existem como protótipo navegável em
-> `prototipos/anideck-app-prototipo-v1.html`, com marcação do que é ajuste no que já existe e do
-> que é ideia nova. A 14 não tem fase: só vira roadmap com decisão explícita. Após implementação o protótipo será removido do repositório. 
-
-**Total: 11 páginas implementadas.**
+**Total: 12 páginas implementadas.**
 
 > Configurações tem cinco seções, todas funcionando: Perfil, Aparência, Notificações,
 > Conta e Ajuda. Dois blocos dentro delas usam o componente `EmBreve`, e cada um diz no

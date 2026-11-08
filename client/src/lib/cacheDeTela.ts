@@ -35,4 +35,6 @@ export function invalidarCachesDoDeck(userId: string | undefined): void {
   memoria.delete(`${userId}:calendario:meus`)
   memoria.delete(`${userId}:calendario:todos`)
   memoria.delete(`${userId}:inicio`)
+  memoria.delete(`${userId}:guilda`)
+  memoria.delete(`${userId}:guilda:resumo`)
 }

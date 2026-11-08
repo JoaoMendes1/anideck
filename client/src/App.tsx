@@ -28,6 +28,7 @@ const Estatisticas = lazy(() => import('./pages/Estatisticas'))
 const Configuracoes = lazy(() => import('./pages/Configuracoes'))
 const Privacidade = lazy(() => import('./pages/Privacidade'))
 const Inicio = lazy(() => import('./pages/Inicio'))
+const Guilda = lazy(() => import('./pages/Guilda'))
 
 // "/" é a Landing para o visitante e a Início para quem está logado.
 function RaizDoSite() {
@@ -53,6 +54,7 @@ function App() {
               <Route path="/rankings" element={<Rankings />} />
               <Route path="/privacidade" element={<Privacidade />} />
               <Route path="/meu-gosto" element={<RotaProtegida><Estatisticas /></RotaProtegida>} />
+              <Route path="/guilda" element={<RotaProtegida><Guilda /></RotaProtegida>} />
               {/* Endereço antigo da tela, mantido para link salvo e histórico do navegador. */}
               <Route path="/estatisticas" element={<Navigate to="/meu-gosto" replace />} />
               <Route path="/configuracoes" element={<RotaProtegida><Configuracoes /></RotaProtegida>} />

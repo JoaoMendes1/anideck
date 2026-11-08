@@ -2,6 +2,7 @@ import { useState, useEffect, useSyncExternalStore } from 'react'
 import { Link, useLocation } from 'react-router-dom'
 import { Search } from 'lucide-react'
 import NotificationBell from './NotificationBell'
+import PilulaGuilda from './PilulaGuilda'
 import MenuPerfil from './MenuPerfil'
 import { useSessao } from '../contexts/SessaoContext'
 import { LogoMark } from './Brand'
@@ -63,7 +64,8 @@ export default function Navbar() {
             </div>
           </Link>
           {session && !ehDesktop && (
-            <div className="flex md:hidden items-center">
+            <div className="flex md:hidden items-center gap-2">
+              <PilulaGuilda />
               <NotificationBell />
             </div>
           )}
@@ -85,11 +87,12 @@ export default function Navbar() {
           </div>
 
           {/* Ações (Busca, Auth/User) */}
-          <div className="hidden md:flex items-center gap-3.5">
+          <div className="hidden md:flex items-center gap-3">
             <Link to="/descobrir" className="w-9 h-9 rounded-full border border-line bg-panel text-muted flex items-center justify-center transition-all hover:border-holo-3 hover:text-holo-3" title="Buscar">
               <Search size={16} />
             </Link>
 
+            {session && ehDesktop && <PilulaGuilda />}
             {session && ehDesktop && <NotificationBell />}
 
             {session ? (
