@@ -44,8 +44,8 @@ describe('avisosDaMudanca', () => {
     expect(avisosDaMudanca(base, { ...base, hp: 52 }).map(a => a.texto)).toEqual(['−8 HP'])
     expect(avisosDaMudanca({ ...base, hp: null, mp: null }, { ...base, hp: 70, mp: 10 })).toEqual([])
   })
-  it('ganho ou gasto de Cristais avisa com emoji de diamante', () => {
-    expect(avisosDaMudanca({ ...base, cristais: 100 }, { ...base, cristais: 115 }).map(a => a.texto)).toEqual(['+15 💎'])
-    expect(avisosDaMudanca({ ...base, cristais: 100 }, { ...base, cristais: 60 }).map(a => a.texto)).toEqual(['−40 💎'])
+  it('ganho ou gasto de AniCoins avisa com símbolo ₳', () => {
+    expect(avisosDaMudanca({ ...base, cristais: 100 }, { ...base, cristais: 115 }).map(a => a.texto)).toEqual(['+15 ₳'])
+    expect(avisosDaMudanca({ ...base, cristais: 100 }, { ...base, cristais: 60 }).map(a => a.texto)).toEqual(['−40 ₳'])
   })
 })

@@ -96,14 +96,16 @@ recebida), não por volume.
 
 ---
 
-## 💎 Economia: Cristais, missões e loja
+## 🪙 Economia: AniCoins (₳), missões e loja
 
-- **Cristais** são a moeda gastável, separada do XP. Vêm de missões, ligas e conquistas.
-  **Não se compram com dinheiro**: assim continuam sendo mérito.
+- **AniCoins (₳)** são a moeda oficial gastável do ecossistema, separada do XP de ritmo.
+  - Vêm de mérito (missões diárias, desafios de clã, ligas e conquistas) e de transferências entre amigos.
+  - **Sustentabilidade e Monetização Real:** Pacotes de AniCoins e assinaturas VIP/Apoiador podem ser adquiridos para custear servidores e IA, com uma regra estrita: **dinheiro só compra cosméticos e cartas estéticas**, nunca compra Rank (F→SS), nunca compra XP e nunca altera a nota dos animes no ranking comunitário.
+- **Transferência P2P:** Usuários podem enviar AniCoins para amigos buscando por `@handle`, com segurança contra saldo negativo e controle de abuso.
 - **Missões diárias:** três por dia ("assista um lançamento", "reaja a dois episódios").
 - **Loja cosmética:** moldura do card, tema do perfil, cor do nome, espaço extra na vitrine,
   emblema nos comentários. Nada que altere peso de voto ou visibilidade.
-- **Inflação** é o risco principal, como no XP: começar com preços altos e ganhos baixos.
+- **Inflação** é o risco principal, como no XP: começar com preços altos e ganhos baixos, com monitoramento no Painel Admin.
 
 ---
 

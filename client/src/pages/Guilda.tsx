@@ -1,9 +1,11 @@
 import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
-import { Shield, Sparkles, Lock, Flame, Award, ChevronRight, Gem } from 'lucide-react'
+import { Shield, Sparkles, Lock, Flame, Award, ChevronRight, Send } from 'lucide-react'
 import { useSessao } from '../contexts/SessaoContext'
 import { useCarteira } from '../hooks/useCarteira'
 import CartaoVitais from '../components/comunidade/CartaoVitais'
+import IconeAniCoin from '../components/IconeAniCoin'
+import ModalTransferirAniCoins from '../components/ModalTransferirAniCoins'
 import { chaveDoUsuario, lerDaMemoria, guardarNaMemoria } from '../lib/cacheDeTela'
 import {
   obterEstiloRank,
@@ -21,7 +23,8 @@ export default function Guilda() {
   const [carregando, setCarregando] = useState(!emMemoria)
   const [erro, setErro] = useState(false)
   const [abaLivroRazao, setAbaLivroRazao] = useState<'xp' | 'cristais'>('xp')
-  const { saldo: saldoCristais, movimentos: movimentosCristais } = useCarteira()
+  const [modalTransferirAberto, setModalTransferirAberto] = useState(false)
+  const { saldo: saldoCristais, movimentos: movimentosCristais, recarregar: recarregarCarteira } = useCarteira()
 
   useEffect(() => {
     if (!session?.access_token || !chave) return
@@ -146,8 +149,8 @@ export default function Guilda() {
                       <Flame size={11} /> Streak {status.streak_atual}d
                     </span>
                   )}
-                  <span className="inline-flex items-center gap-1 font-mono text-[10px] font-bold px-2.5 py-0.5 rounded-full bg-holo-3/15 border border-holo-3/40 text-holo-3">
-                    <Gem size={11} /> {saldoCristais.toLocaleString('pt-BR')} 💎
+                  <span className="inline-flex items-center gap-1.5 font-mono text-[10px] font-bold px-2.5 py-0.5 rounded-full bg-holo-3/15 border border-holo-3/40 text-holo-3">
+                    <IconeAniCoin size={12} /> {saldoCristais.toLocaleString('pt-BR')} ₳
                   </span>
                   {!status.gamificacao_ativa && (
                     <span className="font-mono text-[10px] font-bold px-2.5 py-0.5 rounded-full bg-coral/15 border border-coral/40 text-coral">
@@ -199,7 +202,7 @@ export default function Guilda() {
                   // livro-razão ({abaLivroRazao === 'xp' ? 'xp_ledger' : 'crystal_ledger'})
                 </p>
                 <h3 className="font-anton text-lg uppercase m-0 mt-0.5">
-                  {abaLivroRazao === 'xp' ? 'Como você ganhou XP' : 'Extrato de Cristais'}
+                  {abaLivroRazao === 'xp' ? 'Como você ganhou XP' : 'Extrato de AniCoins'}
                 </h3>
               </div>
               <div className="flex items-center gap-1.5 p-1 rounded-xl bg-panel-2 border border-line">
@@ -223,7 +226,7 @@ export default function Guilda() {
                       : 'text-muted hover:text-text'
                   }`}
                 >
-                  <Gem size={12} /> Cristais ({saldoCristais.toLocaleString('pt-BR')} 💎)
+                  <IconeAniCoin size={14} /> AniCoins ({saldoCristais.toLocaleString('pt-BR')} ₳)
                 </button>
               </div>
             </div>
@@ -286,25 +289,32 @@ export default function Guilda() {
               </>
             ) : (
               <>
-                <div className="flex items-center justify-between p-3 rounded-xl bg-panel-2 border border-line/60 mb-3">
-                  <div className="flex items-center gap-2.5">
-                    <div className="w-8 h-8 rounded-lg bg-holo-3/15 grid place-items-center text-holo-3">
-                      <Gem size={18} />
-                    </div>
+                <div className="flex flex-wrap items-center justify-between p-3.5 rounded-xl bg-panel-2 border border-line/60 mb-3 gap-3">
+                  <div className="flex items-center gap-3">
+                    <IconeAniCoin size={26} animar />
                     <div>
                       <span className="font-mono text-[10px] text-muted-2 uppercase tracking-wider block">Saldo da Carteira</span>
-                      <span className="font-anton text-xl text-holo-3">{saldoCristais.toLocaleString('pt-BR')} 💎</span>
+                      <span className="font-anton text-2xl text-holo-3">{saldoCristais.toLocaleString('pt-BR')} ₳</span>
                     </div>
                   </div>
-                  <span className="font-mono text-[10.5px] text-muted">
-                    {movimentosCristais.length} {movimentosCristais.length === 1 ? 'movimento' : 'movimentos'}
-                  </span>
+                  <div className="flex items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setModalTransferirAberto(true)}
+                      className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full border border-holo-3/40 bg-holo-3/15 text-holo-3 hover:bg-holo-3/25 text-xs font-bold transition-colors cursor-pointer"
+                    >
+                      <Send size={12} /> Transferir AniCoins
+                    </button>
+                    <span className="font-mono text-[10.5px] text-muted hidden sm:inline">
+                      {movimentosCristais.length} {movimentosCristais.length === 1 ? 'movimento' : 'movimentos'}
+                    </span>
+                  </div>
                 </div>
 
                 {movimentosCristais.length === 0 ? (
                   <div className="p-5 rounded-xl bg-panel-2 border border-line text-center">
                     <p className="text-sm text-muted m-0">
-                      Nenhum movimento de Cristais registrado ainda. Cristais são ganhos em missões diárias,
+                      Nenhum movimento de AniCoins registrado ainda. AniCoins são ganhas em missões diárias,
                       desafios de clã e eventos da comunidade!
                     </p>
                   </div>
@@ -330,11 +340,11 @@ export default function Guilda() {
                             </div>
                           </div>
                           <span
-                            className={`font-mono font-bold text-xs sm:text-sm shrink-0 ${
+                            className={`font-mono font-bold text-xs sm:text-sm shrink-0 flex items-center gap-1 ${
                               positivo ? 'text-green' : 'text-coral'
                             }`}
                           >
-                            {positivo ? `+${m.quantidade}` : m.quantidade} 💎
+                            {positivo ? `+${m.quantidade}` : m.quantidade} <IconeAniCoin size={12} />
                           </span>
                         </div>
                       )
@@ -521,6 +531,13 @@ export default function Guilda() {
           </section>
         </aside>
       </div>
+
+      <ModalTransferirAniCoins
+        isOpen={modalTransferirAberto}
+        onClose={() => setModalTransferirAberto(false)}
+        saldoAtual={saldoCristais}
+        onTransferenciaConcluida={recarregarCarteira}
+      />
     </div>
   )
 }

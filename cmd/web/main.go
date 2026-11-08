@@ -142,6 +142,8 @@ func main() {
 		protegido.Get("/api/guilda/resumo", guildaHandler.HandleResumoGuilda)
 		protegido.Get("/api/guilda", guildaHandler.HandleGetGuilda)
 		protegido.Get("/api/economia/carteira", economiaHandler.HandleGetCarteira)
+		protegido.Post("/api/economia/transferir", economiaHandler.HandleTransferirAniCoins)
+		protegido.Get("/api/economia/buscar-destinatario", economiaHandler.HandleBuscarDestinatario)
 
 		// Comunidade: perfil público, Mana e Vitalidade, conversa por episódio.
 		// O escudo de spoiler é a RLS do sql/041; aqui tudo usa o token de quem pede.

@@ -116,3 +116,81 @@ func TestEconomiaAjusteManual_Validacoes(t *testing.T) {
 		}
 	})
 }
+
+func TestEconomiaTransferir_Validacoes(t *testing.T) {
+	handler := &EconomiaHandler{}
+
+	t.Run("rejeita sem autenticacao", func(t *testing.T) {
+		req := httptest.NewRequest(http.MethodPost, "/api/economia/transferir", nil)
+		rec := httptest.NewRecorder()
+		handler.HandleTransferirAniCoins(rec, req)
+		if rec.Code != http.StatusUnauthorized {
+			t.Fatalf("Esperado 401 para usuario sem sessao, recebido %d", rec.Code)
+		}
+	})
+
+	t.Run("rejeita handle vazio", func(t *testing.T) {
+		corpo, _ := json.Marshal(TransferirPayload{
+			DestinatarioHandle: "",
+			Quantidade:         10,
+		})
+		req := httptest.NewRequest(http.MethodPost, "/api/economia/transferir", bytes.NewReader(corpo))
+		ctx := context.WithValue(req.Context(), middleware.UserIDKey, "user-remetente")
+		req = req.WithContext(ctx)
+		rec := httptest.NewRecorder()
+
+		handler.HandleTransferirAniCoins(rec, req)
+		if rec.Code != http.StatusBadRequest {
+			t.Fatalf("Esperado 400 para handle vazio, recebido %d", rec.Code)
+		}
+	})
+
+	t.Run("rejeita quantidade zero ou negativa", func(t *testing.T) {
+		corpo, _ := json.Marshal(TransferirPayload{
+			DestinatarioHandle: "joao",
+			Quantidade:         -5,
+		})
+		req := httptest.NewRequest(http.MethodPost, "/api/economia/transferir", bytes.NewReader(corpo))
+		ctx := context.WithValue(req.Context(), middleware.UserIDKey, "user-remetente")
+		req = req.WithContext(ctx)
+		rec := httptest.NewRecorder()
+
+		handler.HandleTransferirAniCoins(rec, req)
+		if rec.Code != http.StatusBadRequest {
+			t.Fatalf("Esperado 400 para quantidade negativa, recebido %d", rec.Code)
+		}
+	})
+
+	t.Run("rejeita quantidade acima do teto maximo", func(t *testing.T) {
+		corpo, _ := json.Marshal(TransferirPayload{
+			DestinatarioHandle: "joao",
+			Quantidade:         100000,
+		})
+		req := httptest.NewRequest(http.MethodPost, "/api/economia/transferir", bytes.NewReader(corpo))
+		ctx := context.WithValue(req.Context(), middleware.UserIDKey, "user-remetente")
+		req = req.WithContext(ctx)
+		rec := httptest.NewRecorder()
+
+		handler.HandleTransferirAniCoins(rec, req)
+		if rec.Code != http.StatusBadRequest {
+			t.Fatalf("Esperado 400 para quantidade acima de 50.000, recebido %d", rec.Code)
+		}
+	})
+}
+
+func TestEconomiaBuscarDestinatario_TermoCurto(t *testing.T) {
+	handler := &EconomiaHandler{}
+	req := httptest.NewRequest(http.MethodGet, "/api/economia/buscar-destinatario?q=a", nil)
+	rec := httptest.NewRecorder()
+
+	handler.HandleBuscarDestinatario(rec, req)
+	if rec.Code != http.StatusOK {
+		t.Fatalf("Esperado 200, recebido %d", rec.Code)
+	}
+
+	var resultado []DestinatarioSugestao
+	json.NewDecoder(rec.Body).Decode(&resultado)
+	if len(resultado) != 0 {
+		t.Fatalf("Esperado array vazio para termo menor que 2 caracteres, recebido %d itens", len(resultado))
+	}
+}

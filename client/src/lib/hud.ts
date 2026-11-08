@@ -75,7 +75,7 @@ export function avisosDaMudanca(antes: FotoDoJogador | null, depois: FotoDoJogad
     depois.cristais !== antes.cristais
   ) {
     const diff = depois.cristais - antes.cristais
-    avisos.push({ tipo: 'cristal', texto: `${diff > 0 ? '+' : '−'}${Math.abs(diff)} 💎` })
+    avisos.push({ tipo: 'cristal', texto: `${diff > 0 ? '+' : '−'}${Math.abs(diff)} ₳` })
   }
   return avisos
 }

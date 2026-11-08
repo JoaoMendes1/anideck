@@ -1,9 +1,10 @@
 // client/src/components/AbaEconomia.tsx
-// Aba de controle da economia de Cristais no Painel Admin (Fase 16, #167).
+// Aba de controle da economia de AniCoins no Painel Admin (Fase 16).
 import { useState, useEffect, useCallback } from 'react'
-import { Gem, Save, ShieldCheck, Activity, RefreshCw } from 'lucide-react'
+import { Save, ShieldCheck, Activity, RefreshCw } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import { useToast } from '../contexts/ToastContext'
+import IconeAniCoin from './IconeAniCoin'
 
 interface RegrasEconomia {
   ativo: boolean
@@ -162,11 +163,11 @@ export default function AbaEconomia() {
         <div className="p-5 rounded-2xl bg-panel border border-line flex items-center justify-between">
           <div>
             <p className="font-mono text-[10px] text-muted-2 uppercase tracking-widest m-0">Em circulação</p>
-            <p className="font-anton text-2xl text-holo-3 mt-1 m-0">{totalCirculacao.toLocaleString('pt-BR')} 💎</p>
-            <p className="text-[11px] text-muted-2 mt-1 m-0">Soma de todos os saldos de usuários</p>
+            <p className="font-anton text-2xl text-holo-3 mt-1 m-0">{totalCirculacao.toLocaleString('pt-BR')} ₳</p>
+            <p className="text-[11px] text-muted-2 mt-1 m-0">Soma de todas as AniCoins em carteiras</p>
           </div>
           <div className="w-12 h-12 rounded-xl bg-holo-3/15 text-holo-3 grid place-items-center shrink-0">
-            <Gem size={24} />
+            <IconeAniCoin size={26} animar />
           </div>
         </div>
 
@@ -174,7 +175,7 @@ export default function AbaEconomia() {
           <div>
             <p className="font-mono text-[10px] text-muted-2 uppercase tracking-widest m-0">Transações no ledger</p>
             <p className="font-anton text-2xl text-text mt-1 m-0">{totalTransacoes.toLocaleString('pt-BR')}</p>
-            <p className="text-[11px] text-muted-2 mt-1 m-0">Entradas e saídas imutáveis registradas</p>
+            <p className="text-[11px] text-muted-2 mt-1 m-0">Entradas, saídas e transferências registradas</p>
           </div>
           <div className="w-12 h-12 rounded-xl bg-green/15 text-green grid place-items-center shrink-0">
             <Activity size={24} />
@@ -188,7 +189,7 @@ export default function AbaEconomia() {
               {regras.ativo ? 'ATIVA' : 'PAUSADA'}
             </p>
             <p className="text-[11px] text-muted-2 mt-1 m-0">
-              {regras.ativo ? 'Distribuição e gastos habilitados' : 'Operações de créditos bloqueadas'}
+              {regras.ativo ? 'Distribuição, transferências e gastos habilitados' : 'Operações bloqueadas'}
             </p>
           </div>
           <div className={`w-12 h-12 rounded-xl grid place-items-center shrink-0 ${regras.ativo ? 'bg-green/15 text-green' : 'bg-coral/15 text-coral'}`}>
@@ -203,7 +204,7 @@ export default function AbaEconomia() {
           <div className="flex items-center justify-between mb-4">
             <div>
               <p className="font-mono text-[10px] text-muted-2 uppercase tracking-widest m-0">// parâmetros</p>
-              <h2 className="font-anton text-xl uppercase m-0 mt-0.5">Regras dos Cristais</h2>
+              <h2 className="font-anton text-xl uppercase m-0 mt-0.5">Regras de AniCoins</h2>
             </div>
             <span className="font-mono text-xs px-2.5 py-0.5 rounded-full border border-line bg-panel-2 text-muted">
               app_settings
@@ -221,7 +222,7 @@ export default function AbaEconomia() {
               <div>
                 <span className="text-sm font-bold text-text block">Economia ativa</span>
                 <span className="text-xs text-muted-2 block">
-                  Permite ganho de Cristais por missões e transações na loja
+                  Permite ganho de AniCoins por missões, transferências e transações na loja
                 </span>
               </div>
             </label>
@@ -229,7 +230,7 @@ export default function AbaEconomia() {
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
                 <label className="block font-mono text-[11px] text-muted uppercase mb-1">
-                  Missão diária (💎)
+                  Missão diária (₳)
                 </label>
                 <input
                   type="number"
@@ -243,7 +244,7 @@ export default function AbaEconomia() {
 
               <div>
                 <label className="block font-mono text-[11px] text-muted uppercase mb-1">
-                  Teto diário (💎)
+                  Teto diário (₳)
                 </label>
                 <input
                   type="number"
@@ -257,7 +258,7 @@ export default function AbaEconomia() {
 
               <div>
                 <label className="block font-mono text-[11px] text-muted uppercase mb-1">
-                  Custo base de Carta (💎)
+                  Custo base de Carta (₳)
                 </label>
                 <input
                   type="number"
@@ -271,7 +272,7 @@ export default function AbaEconomia() {
 
               <div>
                 <label className="block font-mono text-[11px] text-muted uppercase mb-1">
-                  Custo base de Cosmético (💎)
+                  Custo base de Cosmético (₳)
                 </label>
                 <input
                   type="number"
@@ -289,7 +290,7 @@ export default function AbaEconomia() {
               disabled={salvando}
               className="mt-2 inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-full font-bold text-xs text-void bg-gradient-to-r from-holo-1 to-holo-3 hover:opacity-90 disabled:opacity-50 cursor-pointer transition-opacity"
             >
-              <Save size={14} /> {salvando ? 'Salvando...' : 'Salvar Regras da Economia'}
+              <Save size={14} /> {salvando ? 'Salvando...' : 'Salvar Regras de AniCoins'}
             </button>
           </form>
         </section>
@@ -307,7 +308,7 @@ export default function AbaEconomia() {
           </div>
 
           <p className="text-xs text-muted mb-4 leading-relaxed">
-            Permite bonificar ou debitar cristais de uma conta específica. Toda ação gera uma linha rastreável
+            Permite bonificar ou debitar AniCoins de uma conta específica. Toda ação gera uma linha rastreável
             no livro-razão com o motivo informado.
           </p>
 
@@ -359,7 +360,7 @@ export default function AbaEconomia() {
               disabled={executandoAjuste}
               className="mt-2 inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-full font-bold text-xs text-void bg-gradient-to-r from-gold to-green hover:opacity-90 disabled:opacity-50 cursor-pointer transition-opacity"
             >
-              <Gem size={14} /> {executandoAjuste ? 'Processando...' : 'Aplicar Ajuste Manual'}
+              <IconeAniCoin size={14} /> {executandoAjuste ? 'Processando...' : 'Aplicar Ajuste Manual'}
             </button>
           </form>
         </section>
@@ -428,7 +429,7 @@ export default function AbaEconomia() {
                         {m.referencia || '—'}
                       </td>
                       <td className={`py-2.5 px-3 text-right font-mono font-bold whitespace-nowrap ${positivo ? 'text-green' : 'text-coral'}`}>
-                        {positivo ? `+${m.quantidade}` : m.quantidade} 💎
+                        {positivo ? `+${m.quantidade}` : m.quantidade} ₳
                       </td>
                     </tr>
                   )

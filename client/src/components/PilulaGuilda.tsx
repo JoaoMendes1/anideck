@@ -4,7 +4,8 @@
 // por um instante. Tocar abre o painel com os números e o que faz cada barra mudar.
 import { useEffect, useRef, useState } from 'react'
 import { Link, useLocation } from 'react-router-dom'
-import { Flame, Sparkles, Users, X, Gem } from 'lucide-react'
+import { Flame, Sparkles, Users, X } from 'lucide-react'
+import IconeAniCoin from './IconeAniCoin'
 import { obterEstiloRank } from '../lib/guilda'
 import { avisosDaMudanca, type AvisoDoHud, type FotoDoJogador } from '../lib/hud'
 import { useResumoGuilda } from '../hooks/useResumoGuilda'
@@ -181,10 +182,10 @@ export default function PilulaGuilda() {
 
           <div className="flex items-center justify-between p-2.5 rounded-xl bg-panel-2/60 border border-line/60 mb-4">
             <span className="inline-flex items-center gap-1.5 font-mono text-[11px] text-muted uppercase tracking-wider">
-              <Gem size={13} className="text-holo-3" aria-hidden /> Cristais
+              <IconeAniCoin size={15} /> AniCoins
             </span>
-            <span className="font-mono text-xs font-bold text-holo-3">
-              {saldo.toLocaleString('pt-BR')} 💎
+            <span className="font-mono text-xs font-bold text-holo-3 flex items-center gap-1">
+              {saldo.toLocaleString('pt-BR')} ₳
             </span>
           </div>
 

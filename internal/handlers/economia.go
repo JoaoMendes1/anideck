@@ -263,9 +263,9 @@ func (h *EconomiaHandler) HandleSaveAdminEconomia(w http.ResponseWriter, r *http
 	}
 
 	linha := map[string]interface{}{
-		"key":         ChaveEconomiaCristais,
-		"value":       string(jsonBytes),
-		"description": "Configurações da economia de Cristais (Fase 16, #167): teto diário e ganhos por atividade",
+		"key":        ChaveEconomiaCristais,
+		"value":      string(jsonBytes),
+		"updated_at": time.Now().Format(time.RFC3339),
 	}
 
 	_, _, err = dbClient.From("app_settings").Upsert(linha, "key", "minimal", "").Execute()
@@ -349,4 +349,149 @@ func (h *EconomiaHandler) HandleAjusteManual(w http.ResponseWriter, r *http.Requ
 		"novo_saldo": novoSaldo,
 		"mensagem":   fmt.Sprintf("Ajuste de %d Cristais realizado com sucesso.", body.Quantidade),
 	})
+}
+
+type TransferirPayload struct {
+	DestinatarioHandle string `json:"destinatario_handle"`
+	Quantidade         int    `json:"quantidade"`
+}
+
+// HandleTransferirAniCoins transfere AniCoins do usuário logado para outro usuário via handle.
+func (h *EconomiaHandler) HandleTransferirAniCoins(w http.ResponseWriter, r *http.Request) {
+	remetenteID, ok := r.Context().Value(middleware.UserIDKey).(string)
+	if !ok || remetenteID == "" {
+		http.Error(w, "Não autorizado", http.StatusUnauthorized)
+		return
+	}
+
+	var body TransferirPayload
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		http.Error(w, "Corpo inválido", http.StatusBadRequest)
+		return
+	}
+
+	handle := strings.ToLower(strings.TrimPrefix(strings.TrimSpace(body.DestinatarioHandle), "@"))
+	if handle == "" {
+		http.Error(w, "Informe o @handle do usuário que vai receber as AniCoins.", http.StatusBadRequest)
+		return
+	}
+
+	if body.Quantidade <= 0 {
+		http.Error(w, "A quantidade de AniCoins a transferir deve ser maior que zero.", http.StatusBadRequest)
+		return
+	}
+
+	if body.Quantidade > 50000 {
+		http.Error(w, "O limite máximo por transferência é de 50.000 AniCoins.", http.StatusBadRequest)
+		return
+	}
+
+	if database.Client == nil {
+		http.Error(w, "Serviço de banco indisponível", http.StatusServiceUnavailable)
+		return
+	}
+
+	// Busca o destinatário pelo handle em profiles usando service role
+	data, _, err := database.Client.From("profiles").
+		Select("user_id,handle,nome,publico", "", false).
+		Eq("handle", handle).
+		Execute()
+
+	if err != nil {
+		log.Printf("[ECONOMIA] Erro ao buscar perfil de destino (@%s): %v", handle, err)
+		http.Error(w, "Erro ao buscar usuário de destino", http.StatusInternalServerError)
+		return
+	}
+
+	var perfis []struct {
+		UserID  string `json:"user_id"`
+		Handle  string `json:"handle"`
+		Nome    string `json:"nome"`
+		Publico bool   `json:"publico"`
+	}
+	if err := json.Unmarshal(data, &perfis); err != nil || len(perfis) == 0 {
+		http.Error(w, fmt.Sprintf("Usuário @%s não foi encontrado.", handle), http.StatusNotFound)
+		return
+	}
+
+	destinatario := perfis[0]
+	if destinatario.UserID == remetenteID {
+		http.Error(w, "Você não pode transferir AniCoins para você mesmo.", http.StatusBadRequest)
+		return
+	}
+
+	// Executa a RPC atômica transferir_cristais no Postgres com service role
+	res := database.Client.Rpc("transferir_cristais", "", map[string]interface{}{
+		"p_remetente_id":    remetenteID,
+		"p_destinatario_id": destinatario.UserID,
+		"p_quantidade":      body.Quantidade,
+	})
+
+	resTrim := strings.TrimSpace(res)
+	if strings.Contains(resTrim, "Saldo insuficiente") || strings.Contains(resTrim, "P0002") {
+		http.Error(w, "Saldo insuficiente de AniCoins para realizar a transferência.", http.StatusBadRequest)
+		return
+	}
+	if strings.Contains(resTrim, "error") || strings.Contains(resTrim, "Exception") {
+		log.Printf("[ECONOMIA] Erro na RPC transferir_cristais: %s", resTrim)
+		http.Error(w, "Não foi possível concluir a transferência de AniCoins.", http.StatusBadRequest)
+		return
+	}
+
+	var resultadoRPC map[string]interface{}
+	json.Unmarshal([]byte(resTrim), &resultadoRPC)
+
+	log.Printf("[ECONOMIA] Transferência de AniCoins concluída: remetente=%s -> destinatario=%s (@%s), qtd=%d",
+		remetenteID, destinatario.UserID, destinatario.Handle, body.Quantidade)
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(map[string]interface{}{
+		"sucesso":             true,
+		"destinatario_handle": destinatario.Handle,
+		"destinatario_nome":   destinatario.Nome,
+		"quantidade":          body.Quantidade,
+		"resultado":           resultadoRPC,
+	})
+}
+
+type DestinatarioSugestao struct {
+	UserID string `json:"user_id"`
+	Handle string `json:"handle"`
+	Nome   string `json:"nome"`
+}
+
+// HandleBuscarDestinatario busca usuários por prefixo de handle para facilitar a transferência.
+func (h *EconomiaHandler) HandleBuscarDestinatario(w http.ResponseWriter, r *http.Request) {
+	termo := strings.ToLower(strings.TrimPrefix(strings.TrimSpace(r.URL.Query().Get("q")), "@"))
+	if len(termo) < 2 {
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode([]DestinatarioSugestao{})
+		return
+	}
+
+	if database.Client == nil {
+		http.Error(w, "Serviço indisponível", http.StatusServiceUnavailable)
+		return
+	}
+
+	data, _, err := database.Client.From("profiles").
+		Select("user_id,handle,nome", "", false).
+		Ilike("handle", termo+"%").
+		Eq("publico", "true").
+		Limit(5, "").
+		Execute()
+
+	if err != nil {
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode([]DestinatarioSugestao{})
+		return
+	}
+
+	var lista []DestinatarioSugestao
+	if err := json.Unmarshal(data, &lista); err != nil {
+		lista = []DestinatarioSugestao{}
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(lista)
 }
