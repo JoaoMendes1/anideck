@@ -15,9 +15,13 @@ import { chaveDoUsuario, guardarNaMemoria, lerDaMemoria, invalidarCachesDoDeck }
 import { gradienteDoCard, obterTextoDiaLancamento } from '../lib/deckHelpers'
 import { miniatura } from '../lib/miniatura'
 import {
-  continuarAssistindo, estreiasDeHoje,
+  continuarAssistindo, proximoEpisodioEmDestaque, semanaDoDeck,
   type AnimeResumido, type EntradaDoDeck, type ProgressoDoAnime,
 } from '../lib/inicio'
+import SuaSemana from '../components/inicio/SuaSemana'
+import ResumoGuildaCard from '../components/inicio/ResumoGuildaCard'
+import HeroProximoEpisodio from '../components/inicio/HeroProximoEpisodio'
+import TrilhasDaCuradoria, { type TrilhaDaHome } from '../components/inicio/TrilhasDaCuradoria'
 import { encontrarLacuna, type AfinidadeComNota } from '../lib/lacuna'
 import {
   lerPreferenciasDeGosto,
@@ -34,14 +38,6 @@ interface Cartaz {
   imagem: string
   legenda?: string
   nota?: number | null
-}
-
-interface TrilhaDaHome {
-  id: string
-  nome: string
-  subtitulo: string
-  nota: string
-  animes: { mal_id: number; titulo: string; image_url: string }[]
 }
 
 interface StatsParaInicio {
@@ -73,7 +69,6 @@ const VAZIO: DadosDaInicio = {
 
 const lerJson = async <T,>(res: Response, padrao: T): Promise<T> => (res.ok ? ((await res.json()) as T) : padrao)
 
-const horaLocal = (ms: number) => new Date(ms).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })
 
 function Secao({
   titulo,
@@ -225,6 +220,7 @@ export default function Inicio() {
               genres: m.genres?.slice(0, 3).map(g => g.name),
               streaming: m.streaming ?? undefined,
               nextAiringEpisode: m.nextAiringEpisode,
+              banner: m.bannerImage,
             }
           }
         }
@@ -300,8 +296,17 @@ export default function Inicio() {
   }, [session, chave, assinaturaFavoritos, assinaturaBloqueados])
 
   const nome = (session?.user.user_metadata?.display_name as string | undefined) || ''
-  const hoje = estreiasDeHoje(dados.entradas, dados.animes, agora)
-  const continuar = continuarAssistindo(dados.progresso, dados.entradas, dados.animes, 8)
+  const semana = semanaDoDeck(dados.entradas, dados.animes, agora)
+  const emAndamento = continuarAssistindo(dados.progresso, dados.entradas, dados.animes, 9)
+  const destaqueProximo = proximoEpisodioEmDestaque(emAndamento)
+  const continuar = emAndamento.filter(c => c !== destaqueProximo).slice(0, 8)
+  const episodioDoDestaque = destaqueProximo
+    ? (recemMarcados[destaqueProximo.anime.mal_id] ?? destaqueProximo.proximoEpisodio - 1) + 1
+    : 0
+  const destaqueBloqueado = Boolean(
+    destaqueProximo?.anime.nextAiringEpisode?.episode &&
+      episodioDoDestaque >= destaqueProximo.anime.nextAiringEpisode.episode,
+  )
   const deckVazio = !carregando && dados.entradas.length === 0
   const dataDeHoje = agora.toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long' })
 
@@ -379,8 +384,19 @@ export default function Inicio() {
         </div>
       </header>
 
-      {/* HERO BANNER (#141) */}
-      {heroAtual && (
+      {/* Topo: o próximo episódio de quem tem anime em andamento; sem nenhum, os destaques da curadoria. */}
+      {destaqueProximo && (
+        <HeroProximoEpisodio
+          item={destaqueProximo}
+          episodio={episodioDoDestaque}
+          marcando={Boolean(marcandoEp[destaqueProximo.anime.mal_id])}
+          jaMarcado={recemMarcados[destaqueProximo.anime.mal_id] !== undefined}
+          bloqueado={destaqueBloqueado}
+          onMarcar={() => avancarEpisodioRapido(destaqueProximo.anime.mal_id, episodioDoDestaque, destaqueProximo.anime.title)}
+        />
+      )}
+
+      {!destaqueProximo && heroAtual && (
         <section className="relative rounded-[24px] overflow-hidden border border-line bg-panel mb-10 min-h-[280px] sm:min-h-[340px] flex items-end">
           {(heroAtual.custom_banner_image || heroAtual.custom_cover_image) && (
             <img
@@ -468,6 +484,9 @@ export default function Inicio() {
         </section>
       )}
 
+      {/* No monitor largo, o conteúdo ganha uma coluna lateral com a Guilda e a semana. */}
+      <div className="xl:grid xl:grid-cols-[minmax(0,1fr)_340px] xl:gap-10 xl:items-start">
+      <div className="min-w-0">
       {carregando && (
         <div className="flex gap-4 overflow-hidden mb-10">
           {Array.from({ length: 6 }).map((_, i) => (
@@ -628,74 +647,17 @@ export default function Inicio() {
         </Secao>
       )}
 
-      {/* HOJE NO SEU DECK (#141) */}
       {!carregando && !deckVazio && (
-        <Secao
-          titulo="Hoje no seu deck"
-          subtitulo="Lançamentos programados para hoje no seu fuso local"
-          icone={<CalendarDays size={17} className="text-holo-3" />}
-          link={{ para: '/calendario', texto: 'Agenda completa' }}
-        >
-          {hoje.length === 0 ? (
-            <div className="bg-panel border border-line rounded-2xl p-4 flex items-center justify-between gap-4">
-              <p className="text-muted text-sm">Nenhum anime do seu Deck tem episódio estreando hoje.</p>
-              <Link to="/calendario" className="text-xs font-bold text-holo-3 hover:underline shrink-0">
-                Ver semana →
-              </Link>
-            </div>
-          ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3.5">
-              {hoje.map(e => (
-                <div
-                  key={e.anime.mal_id}
-                  className="flex items-center gap-3.5 bg-panel border border-line rounded-2xl p-3.5 hover:border-holo-3 transition-colors"
-                >
-                  <Link to={`/anime/${e.anime.mal_id}`} className="shrink-0">
-                    {e.anime.image_url ? (
-                      <img src={miniatura(e.anime.image_url)} alt="" className="w-16 h-22 rounded-xl object-cover border border-line" />
-                    ) : (
-                      <div className="w-16 h-22 rounded-xl bg-panel-2" />
-                    )}
-                  </Link>
-                  <div className="min-w-0 flex-1">
-                    <div className="flex items-center gap-2 mb-1">
-                      <span className="px-2 py-0.5 rounded-full bg-holo-3/15 border border-holo-3/35 text-holo-3 font-mono text-[10px] font-bold uppercase">
-                        EP. {e.episodio}
-                      </span>
-                      <span className="font-anton text-base text-holo-3 tabular-nums">
-                        {horaLocal(e.quando)}
-                      </span>
-                    </div>
-                    <Link
-                      to={`/anime/${e.anime.mal_id}`}
-                      className="font-bold text-sm line-clamp-2 hover:text-holo-3 transition-colors"
-                    >
-                      {e.anime.title}
-                    </Link>
-                    <div className="flex flex-wrap gap-1 mt-1.5">
-                      {e.anime.genres?.map(g => (
-                        <span key={g} className={`px-1.5 py-0.5 rounded border font-mono text-[8px] uppercase ${getCategoryTheme(g)}`}>
-                          {g}
-                        </span>
-                      ))}
-                    </div>
-                  </div>
-                  {e.anime.streaming?.[0] && (
-                    <a
-                      href={e.anime.streaming[0].url}
-                      target="_blank"
-                      rel="noreferrer"
-                      aria-label={`Assistir ${e.anime.title}`}
-                      className="shrink-0 w-9 h-9 rounded-full bg-holo-3/15 border border-holo-3/40 text-holo-3 hover:bg-holo-3 hover:text-void flex items-center justify-center transition-colors"
-                    >
-                      <Play size={14} fill="currentColor" className="ml-0.5" />
-                    </a>
-                  )}
-                </div>
-              ))}
-            </div>
-          )}
-        </Secao>
+        <div className="xl:hidden">
+          <Secao
+            titulo="Sua semana"
+            subtitulo="O que sai do seu deck nos próximos 7 dias, no seu horário"
+            icone={<CalendarDays size={17} className="text-holo-3" />}
+            link={{ para: '/calendario', texto: 'Agenda' }}
+          >
+            <SuaSemana semana={semana} />
+          </Secao>
+        </div>
       )}
 
       {/* RECOMENDADOS PARA VOCÊ (#139 + #141) */}
@@ -734,18 +696,18 @@ export default function Inicio() {
         </Secao>
       )}
 
-      {dados.trilhas.map(t => (
-        <Secao key={t.id} titulo={t.nome} subtitulo={t.subtitulo} icone={<Compass size={17} className="text-holo-2" />}>
-          {t.nota && (
-            <p className="text-[13px] text-text/80 italic border-l-2 border-holo-2/50 pl-3 mb-4 max-w-[600px]">
-              {t.nota}
-            </p>
-          )}
-          <Trilho cartazes={t.animes.map(a => ({ mal_id: a.mal_id, titulo: a.titulo, imagem: a.image_url }))} />
+      {dados.trilhas.length > 0 && (
+        <Secao
+          titulo="Trilhas da curadoria"
+          subtitulo="Listas temáticas montadas a dedo, para maratonar em sequência"
+          icone={<Compass size={17} className="text-holo-2" />}
+        >
+          <TrilhasDaCuradoria trilhas={dados.trilhas} />
         </Secao>
-      ))}
+      )}
 
-      <VitrineDestaques />
+      {/* Com os destaques já no topo (sem anime em andamento), a vitrine repetiria os mesmos. */}
+      {destaqueProximo && <VitrineDestaques />}
 
       {dados.ranking.length > 0 && (
         <Secao
@@ -757,6 +719,28 @@ export default function Inicio() {
           <Trilho cartazes={dados.ranking} />
         </Secao>
       )}
+
+      </div>
+
+      {!deckVazio && (
+        <aside className="hidden xl:flex flex-col gap-6 sticky top-24">
+          <ResumoGuildaCard />
+          {!carregando && (
+            <div>
+              <div className="flex items-center justify-between mb-3 select-none">
+                <h2 className="font-anton text-[16px] uppercase m-0 flex items-center gap-2 tracking-wide">
+                  <CalendarDays size={15} className="text-holo-3" /> Sua semana
+                </h2>
+                <Link to="/calendario" className="font-mono text-[10px] text-muted-2 uppercase tracking-widest hover:text-holo-3">
+                  Agenda →
+                </Link>
+              </div>
+              <SuaSemana semana={semana} compacta />
+            </div>
+          )}
+        </aside>
+      )}
+      </div>
 
       <OnboardingGostoModal
         isOpen={modalGostoAberto}

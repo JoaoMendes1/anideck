@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { continuarAssistindo, estreiasDeHoje, type AnimeResumido } from './inicio'
+import { continuarAssistindo, estreiasDeHoje, proximoEpisodioEmDestaque, semanaDoDeck, type AnimeResumido } from './inicio'
 import { encontrarLacuna } from './lacuna'
 
 const agora = new Date(2026, 9, 31, 12, 0, 0) // 31/10/2026, meio-dia local
@@ -103,5 +103,40 @@ describe('encontrarLacuna', () => {
 
   it('sem rótulo acima da média, não há buraco', () => {
     expect(encontrarLacuna(afinidade, 9.8)).toBeNull()
+  })
+})
+
+describe('semanaDoDeck', () => {
+  const animes = {
+    1: anime(1, { nextAiringEpisode: { airingAt: emSegundos(new Date(2026, 9, 31, 22, 0)), episode: 5 } }),
+    2: anime(2, { nextAiringEpisode: { airingAt: emSegundos(new Date(2026, 10, 2, 9, 0)), episode: 3 } }),
+    3: anime(3, { nextAiringEpisode: { airingAt: emSegundos(new Date(2026, 10, 9, 9, 0)), episode: 8 } }),
+  }
+  const entradas = [1, 2, 3].map(mal_id => ({ mal_id, status: 'Assistindo' }))
+
+  it('monta 7 dias a partir de hoje, com cada estreia no seu dia', () => {
+    const semana = semanaDoDeck(entradas, animes, agora)
+    expect(semana).toHaveLength(7)
+    expect(semana[0].rotulo).toBe('Hoje')
+    expect(semana[1].rotulo).toBe('Amanhã')
+    expect(semana[0].estreias.map(e => e.anime.mal_id)).toEqual([1])
+    expect(semana[2].estreias.map(e => e.anime.mal_id)).toEqual([2])
+  })
+
+  it('o que passa da semana fica de fora', () => {
+    const todas = semanaDoDeck(entradas, animes, agora).flatMap(d => d.estreias.map(e => e.anime.mal_id))
+    expect(todas).not.toContain(3)
+  })
+})
+
+describe('proximoEpisodioEmDestaque', () => {
+  it('pula o bloqueado por lançamento e o sem episódios', () => {
+    const lista = [
+      { anime: anime(1), proximoEpisodio: 5, bloqueadoPorLancamento: true },
+      { anime: anime(2), proximoEpisodio: 2, semEpisodios: true },
+      { anime: anime(3), proximoEpisodio: 7 },
+    ]
+    expect(proximoEpisodioEmDestaque(lista)?.anime.mal_id).toBe(3)
+    expect(proximoEpisodioEmDestaque([])).toBeNull()
   })
 })

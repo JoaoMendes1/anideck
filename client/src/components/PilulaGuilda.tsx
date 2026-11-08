@@ -1,47 +1,12 @@
-import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import { Flame } from 'lucide-react'
-import { useSessao } from '../contexts/SessaoContext'
-import { chaveDoUsuario, lerDaMemoria, guardarNaMemoria } from '../lib/cacheDeTela'
-import { obterEstiloRank, type StatusNivelGuilda } from '../lib/guilda'
+import { obterEstiloRank } from '../lib/guilda'
+import { useResumoGuilda } from '../hooks/useResumoGuilda'
 
 export default function PilulaGuilda() {
-  const { session } = useSessao()
-  const userId = session?.user.id
-  const token = session?.access_token
-  const chave = chaveDoUsuario(userId, 'guilda:resumo')
-  const [status, setStatus] = useState<StatusNivelGuilda | null>(() => lerDaMemoria<StatusNivelGuilda>(chave) ?? null)
+  const status = useResumoGuilda()
 
-  useEffect(() => {
-    if (!token || !chave) return
-    let ativo = true
-
-    const buscarResumo = async () => {
-      try {
-        const res = await fetch('/api/guilda/resumo', {
-          headers: { Authorization: `Bearer ${token}` },
-        })
-        if (!res.ok) return
-        const dados = (await res.json()) as StatusNivelGuilda
-        guardarNaMemoria(chave, dados)
-        if (ativo) setStatus(dados)
-      } catch {
-        // Falha de rede silenciosa: mantém o último estado em memória.
-      }
-    }
-
-    buscarResumo()
-    const aoAtualizarEpisodio = () => {
-      buscarResumo()
-    }
-    window.addEventListener('anideck:episodio-atualizado', aoAtualizarEpisodio)
-    return () => {
-      ativo = false
-      window.removeEventListener('anideck:episodio-atualizado', aoAtualizarEpisodio)
-    }
-  }, [token, chave])
-
-  if (!session || !status) return null
+  if (!status) return null
 
   const estilo = obterEstiloRank(status.rank)
 

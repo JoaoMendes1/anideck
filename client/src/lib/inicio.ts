@@ -13,6 +13,7 @@ export interface AnimeResumido {
   genres?: string[]
   streaming?: { name: string; url: string }[]
   nextAiringEpisode?: { airingAt: number; episode: number }
+  banner?: string
 }
 
 export interface ProgressoDoAnime {
@@ -88,4 +89,40 @@ export function continuarAssistindo(
     if (lista.length >= limite) break
   }
   return lista
+}
+
+export interface DiaDaSemana {
+  /** Meia-noite local do dia. */
+  data: Date
+  /** "Hoje", "Amanhã" ou o dia da semana abreviado ("sex."). */
+  rotulo: string
+  estreias: EstreiaDeHoje[]
+}
+
+/**
+ * Os próximos `dias` dias a partir de hoje, cada um com os episódios do deck que vão ao ar
+ * nele. A AniList só informa o próximo episódio de cada obra, então cada anime aparece no
+ * máximo uma vez na semana.
+ */
+export function semanaDoDeck(
+  entradas: EntradaDoDeck[],
+  animes: Record<number, AnimeResumido>,
+  agora: Date,
+  dias = 7,
+): DiaDaSemana[] {
+  const semana: DiaDaSemana[] = []
+  for (let i = 0; i < dias; i++) {
+    const data = new Date(agora.getFullYear(), agora.getMonth(), agora.getDate() + i)
+    const rotulo = i === 0 ? 'Hoje' : i === 1 ? 'Amanhã' : data.toLocaleDateString('pt-BR', { weekday: 'short' })
+    semana.push({ data, rotulo, estreias: estreiasDeHoje(entradas, animes, data) })
+  }
+  return semana
+}
+
+/**
+ * O destaque do topo da Início: o primeiro anime em andamento que já tem o próximo episódio
+ * liberado. Sem nenhum, a tela volta para o carrossel de destaques da curadoria.
+ */
+export function proximoEpisodioEmDestaque(lista: ParaContinuar[]): ParaContinuar | null {
+  return lista.find(c => !c.bloqueadoPorLancamento && !c.semEpisodios) ?? null
 }
