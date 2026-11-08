@@ -6,7 +6,7 @@
 >
 > Registrado em 18/09/2026, a partir de análise comparativa de plataformas equivalentes e de um
 > protótipo navegável das 12 telas, responsivo para celular e desktop
-> (`prototipos/anideck-app-prototipo-v1.html`).
+> (`docs/prototipos/anideck-app-prototipo-v1.html`).
 >
 > **Relação com os demais documentos:** o `VISAO_GAMIFICACAO.md` define a economia de XP e
 > permanece válido integralmente; este define a estrutura de produto onde ela se encaixa. O que

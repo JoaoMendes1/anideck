@@ -431,7 +431,7 @@ reordenáveis, sinopse com reescrita por IA, título, formato e status.
 > futuros localmente a partir de `custom_episodes`. Detalhes em `DECISIONS.md`.
 
 - [x] **Página de Configurações e Ajuda.** É a única das dez do `PAGES.md` que nunca
-      saiu do protótipo (`prototipos/config-ajuda-prototipo.html`). Precisa conter
+      saiu do protótipo (`docs/prototipos/config-ajuda-prototipo.html`). Precisa conter
       exclusão de conta e redefinição de senha.
 - [x] **Cadastro fechado para evitar bot** — resolvido por limite automático em vez do
       toggle global. O `before-user-created` hook (`sql/022`) recusa o cadastro quando
@@ -644,7 +644,7 @@ atrás de um item de menu que não comunica o próprio conteúdo.
 - [x] Nova barra inferior: Início · Descobrir · Deck · Agenda · Perfil (#125)
 - [x] Rankings vira aba dentro de Descobrir (#125)
 
-Referência visual: `prototipos/anideck-app-prototipo-v1.html`.
+Referência visual: `docs/prototipos/anideck-app-prototipo-v1.html`.
 Dependência: a #125 depende da #122 — um item só sai da barra quando existir destino alternativo.
 
 ## 🪞 Fase 12: Meu Gosto e distribuição

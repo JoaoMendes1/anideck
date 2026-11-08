@@ -13,8 +13,8 @@ estatísticas, com curadoria própria. Está no ar em beta fechado.
   Supabase, por `postgrest-go` (HTTP, não SQL direto), com RLS em todas as tabelas · React 19,
   TypeScript, Vite e Tailwind 4 em `client/`, servido pelo Go · AniList (GraphQL), Gemini e
   Web Push.
-- **Documentação em `docs/`.** Na raiz fica só este `AGENTS.md`, que as ferramentas de IA
-  procuram ali.
+- **Documentação em `docs/`.** Na raiz ficam o `README.md` (apresentação do projeto) e este
+  `AGENTS.md`, que as ferramentas de IA procuram ali.
 - **Repositório público.** Nada de IP, nome de usuário do servidor, conteúdo de `.env`, regra
   de firewall ou porta aberta para a internet entra aqui, nem em documentação, nem em
   comentário. A porta interna do container (8080) pode aparecer: só existe na rede do compose.
