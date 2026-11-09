@@ -142,7 +142,7 @@ BEGIN
    WHERE user_id = v_user_id;
 
   IF v_saldo < v_item.preco THEN
-    RAISE EXCEPTION 'Saldo insuficiente de AniCoins (saldo: %, necessário: %).'
+    RAISE EXCEPTION 'Saldo insuficiente de AniCoins (saldo: %, necessário: %)',
       v_saldo, v_item.preco
       USING ERRCODE = 'P0004';
   END IF;
