@@ -32,6 +32,13 @@ interface MembroSugestao {
   avatar_url?: string
 }
 
+interface ApoiadorConfig {
+  ativo: boolean
+  link: string
+  chave_pix: string
+  mensagem: string
+}
+
 interface RespostaAdminEconomia {
   regras: RegrasEconomia
   total_circulacao: number
@@ -46,6 +53,14 @@ export default function AbaEconomia() {
   const [salvando, setSalvando] = useState(false)
   const [executandoAjuste, setExecutandoAjuste] = useState(false)
   const [atualizando, setAtualizando] = useState(false)
+  const [salvandoApoiador, setSalvandoApoiador] = useState(false)
+
+  const [apoiadorConfig, setApoiadorConfig] = useState<ApoiadorConfig>({
+    ativo: true,
+    link: 'https://apoia.se/anideck',
+    chave_pix: '',
+    mensagem: 'Ajude a manter os servidores e a IA do AniDeck funcionando com curadoria própria e sem anúncios invasivos.',
+  })
 
   const [regras, setRegras] = useState<RegrasEconomia>({
     ativo: true,
@@ -104,7 +119,38 @@ export default function AbaEconomia() {
 
   useEffect(() => {
     carregar()
+    fetch('/api/apoiador')
+      .then(r => (r.ok ? r.json() : null))
+      .then(d => {
+        if (d) setApoiadorConfig(d)
+      })
+      .catch(() => undefined)
   }, [carregar])
+
+  const handleSalvarApoiador = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setSalvandoApoiador(true)
+    try {
+      const { data: { session } } = await supabase.auth.getSession()
+      if (!session?.access_token) return
+
+      const res = await fetch('/api/admin/apoiador', {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${session.access_token}`,
+        },
+        body: JSON.stringify(apoiadorConfig),
+      })
+
+      if (!res.ok) throw new Error('Falha ao salvar configurações de apoio')
+      showToast('Configurações de apoiador salvas com sucesso!', 'success')
+    } catch {
+      showToast('Erro ao salvar configurações de apoiador', 'error')
+    } finally {
+      setSalvandoApoiador(false)
+    }
+  }
 
   // Busca debounced de usuários pelo @handle ou nome
   useEffect(() => {
@@ -507,6 +553,81 @@ export default function AbaEconomia() {
           </form>
         </section>
       </div>
+
+      {/* APOIO COMUNITÁRIO (FASE 16.5 · ISSUE #178) */}
+      <section className="p-6 rounded-2xl bg-panel border border-line">
+        <div className="flex items-center justify-between mb-4">
+          <div>
+            <p className="font-mono text-[10px] text-muted-2 uppercase tracking-widest m-0">// sustentabilidade</p>
+            <h2 className="font-anton text-xl uppercase m-0 mt-0.5">Configuração de Apoiadores</h2>
+          </div>
+          <span className="font-mono text-xs px-2.5 py-0.5 rounded-full border border-line bg-panel-2 text-muted">
+            app_settings (apoiador_config)
+          </span>
+        </div>
+
+        <form onSubmit={handleSalvarApoiador} className="flex flex-col gap-4">
+          <label className="flex items-center gap-3 p-3 rounded-xl bg-panel-2 border border-line cursor-pointer select-none">
+            <input
+              type="checkbox"
+              checked={apoiadorConfig.ativo}
+              onChange={(e) => setApoiadorConfig((prev) => ({ ...prev, ativo: e.target.checked }))}
+              className="accent-holo-2 w-4 h-4 cursor-pointer"
+            />
+            <span className="text-xs text-text font-bold">
+              Divulgação de apoio ativa no app (Loja e Perfil)
+            </span>
+          </label>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label className="block font-mono text-[10.5px] uppercase text-muted-2 mb-1.5">
+                Link de Apoio Externo (Apoia.se, Catarse, Livepix etc.)
+              </label>
+              <input
+                type="url"
+                value={apoiadorConfig.link}
+                onChange={(e) => setApoiadorConfig((prev) => ({ ...prev, link: e.target.value }))}
+                placeholder="https://apoia.se/anideck"
+                className="w-full px-3.5 py-2.5 rounded-xl bg-panel-2 border border-line text-text font-mono text-xs focus:outline-none focus:border-holo-3"
+              />
+            </div>
+
+            <div>
+              <label className="block font-mono text-[10.5px] uppercase text-muted-2 mb-1.5">
+                Chave Pix de Apoio (opcional)
+              </label>
+              <input
+                type="text"
+                value={apoiadorConfig.chave_pix}
+                onChange={(e) => setApoiadorConfig((prev) => ({ ...prev, chave_pix: e.target.value }))}
+                placeholder="ex.: pix@joaomendes.dev.br"
+                className="w-full px-3.5 py-2.5 rounded-xl bg-panel-2 border border-line text-text font-mono text-xs focus:outline-none focus:border-holo-3"
+              />
+            </div>
+          </div>
+
+          <div>
+            <label className="block font-mono text-[10.5px] uppercase text-muted-2 mb-1.5">
+              Mensagem de Chamada para Apoio
+            </label>
+            <textarea
+              rows={2}
+              value={apoiadorConfig.mensagem}
+              onChange={(e) => setApoiadorConfig((prev) => ({ ...prev, mensagem: e.target.value }))}
+              className="w-full px-3.5 py-2 rounded-xl bg-panel-2 border border-line text-text text-xs focus:outline-none focus:border-holo-3 resize-none"
+            />
+          </div>
+
+          <button
+            type="submit"
+            disabled={salvandoApoiador}
+            className="self-start inline-flex items-center gap-2 px-5 py-2.5 rounded-full font-bold text-xs text-void bg-gradient-to-r from-holo-1 to-holo-2 hover:opacity-90 disabled:opacity-50 cursor-pointer transition-opacity"
+          >
+            <Save size={14} /> {salvandoApoiador ? 'Salvando...' : 'Salvar Configuração de Apoio'}
+          </button>
+        </form>
+      </section>
 
       {/* AUDITORIA DE MOVIMENTOS RECENTES */}
       <section className="p-6 rounded-2xl bg-panel border border-line">

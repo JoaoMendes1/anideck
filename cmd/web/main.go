@@ -113,6 +113,7 @@ func main() {
 	r.Get("/api/ranking", rankingHandler.HandleGetTopAnime)
 	r.Get("/api/curation", curationHandler.HandleList)
 	r.Get("/api/loja", lojaHandler.HandleListarLoja)
+	r.Get("/api/apoiador", economiaHandler.HandleGetApoiador)
 	r.Get("/api/membros/{handle}/cartas", cartasHandler.HandleCartasDoMembro)
 	r.Get("/api/membros/{handle}/personagens", cartasHandler.HandlePersonagensDoMembro)
 	r.Get("/api/membros/{a}/duelo/{b}", cartasHandler.HandleDueloDeGosto)
@@ -261,6 +262,7 @@ func main() {
 		admin.Post("/api/admin/economia/ajuste", economiaHandler.HandleAjusteManual)
 		admin.Post("/api/admin/economia/transferir", economiaHandler.HandleTransferirAniCoins)
 		admin.Get("/api/admin/economia/buscar-destinatario", economiaHandler.HandleBuscarDestinatario)
+		admin.Put("/api/admin/apoiador", economiaHandler.HandleSalvarApoiador)
 		admin.Post("/api/admin/loja/salvar", lojaHandler.HandleAdminSalvarItem)
 
 		// Agente Olheiro: scan sob demanda e revisão da fila de sugestões

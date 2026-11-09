@@ -46,7 +46,7 @@ Staging sobe já na Fase 1, como projeto esqueleto — mesmo padrão do JVM Syst
 | 13 · Reformulação Visual, Automação de Curadoria e Inteligência de Gosto | ✅ Concluída (08/11/2026) |
 | 14 · Guilda & Gamificação | ✅ Concluída (08/11/2026) |
 | 15 · Comunidade base | ✅ Concluída (08/11/2026, #154); falta abrir o beta |
-| 16 · Economia e cartas | 🚧 Em andamento (16.0 a 16.4 concluídos); falta abrir o beta |
+| 16 · Economia e cartas | ✅ Concluída (09/11/2026, #165); falta abrir o beta |
 | 17 · Comunidade viva | 📋 Planejada, com issues (#179) |
 
 ---
@@ -716,7 +716,7 @@ atual. **Pré-requisito:** abrir o beta (`beta_signup_limit`).
       *Divisões de 20 que sobem e descem esperam base suficiente.*
 - [x] 15.7 Privacidade atualizada para conteúdo publicado e perfil público
 
-## 💎 Fase 16: Economia e cartas — *planejada (épico #165)*
+## 💎 Fase 16: Economia e cartas — *concluída (épico #165)*
 
 Motivo: um motivo diário para voltar (`VISAO_COMUNIDADE.md`: Economia, Cartas, Rankings e Receita).
 **Pré-requisitos:** Fase 15 publicada e o beta aberto. As convenções de implementação estão no
@@ -738,7 +738,7 @@ Motivo: um motivo diário para voltar (`VISAO_COMUNIDADE.md`: Economia, Cartas, 
   - [x] 16.4a Ranking da temporada e top por gênero (#175)
   - [x] 16.4b Liga semanal com divisões, ativada pelo tamanho da base (#176)
   - [x] 16.4c Clima da temporada: ranking de reações (#177)
-- [ ] 16.5 Apoiador por link externo, sem pagamento integrado (#178)
+- [x] 16.5 Apoiador por link externo, sem pagamento integrado (#178)
 
 ## 🐉 Fase 17: Comunidade viva — *planejada (épico #179)*
 

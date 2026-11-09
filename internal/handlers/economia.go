@@ -642,3 +642,111 @@ func (h *EconomiaHandler) HandleBuscarDestinatario(w http.ResponseWriter, r *htt
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(lista)
 }
+
+// ApoiadorConfig define as opções de apoio comunitário externo (Fase 16 · Issue #178).
+type ApoiadorConfig struct {
+	Ativo    bool   `json:"ativo"`
+	Link     string `json:"link"`
+	ChavePIX string `json:"chave_pix"`
+	Mensagem string `json:"mensagem"`
+}
+
+const ChaveApoiadorConfig = "apoiador_config"
+
+// ApoiadorConfigPadrao devolve a configuração padrão de apoio externo.
+func ApoiadorConfigPadrao() ApoiadorConfig {
+	return ApoiadorConfig{
+		Ativo:    true,
+		Link:     "https://apoia.se/anideck",
+		ChavePIX: "",
+		Mensagem: "Ajude a manter os servidores e a IA do AniDeck funcionando com curadoria própria e sem anúncios invasivos.",
+	}
+}
+
+// HandleGetApoiador é uma rota pública que devolve o link e dados de apoio configurados.
+func (h *EconomiaHandler) HandleGetApoiador(w http.ResponseWriter, r *http.Request) {
+	padrao := ApoiadorConfigPadrao()
+	if database.Client == nil {
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(padrao)
+		return
+	}
+
+	data, _, err := database.Client.From("app_settings").
+		Select("value", "", false).
+		Eq("key", ChaveApoiadorConfig).
+		Execute()
+
+	if err != nil {
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(padrao)
+		return
+	}
+
+	var rows []struct {
+		Value json.RawMessage `json:"value"`
+	}
+	if err := json.Unmarshal(data, &rows); err != nil || len(rows) == 0 {
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(padrao)
+		return
+	}
+
+	var config ApoiadorConfig
+	if err := json.Unmarshal(rows[0].Value, &config); err != nil {
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(padrao)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(config)
+}
+
+// HandleSalvarApoiador atualiza a configuração de apoio comunitário (apenas admin).
+func (h *EconomiaHandler) HandleSalvarApoiador(w http.ResponseWriter, r *http.Request) {
+	token, _ := r.Context().Value(middleware.TokenKey).(string)
+	client := database.Client
+	if token != "" {
+		if c, err := database.ClientWithToken(token); err == nil {
+			client = c
+		}
+	}
+
+	if client == nil {
+		responderErroJSON(w, http.StatusServiceUnavailable, "Banco indisponível")
+		return
+	}
+
+	var config ApoiadorConfig
+	if err := json.NewDecoder(r.Body).Decode(&config); err != nil {
+		responderErroJSON(w, http.StatusBadRequest, "Corpo inválido")
+		return
+	}
+
+	config.Link = strings.TrimSpace(config.Link)
+	config.ChavePIX = strings.TrimSpace(config.ChavePIX)
+	config.Mensagem = strings.TrimSpace(config.Mensagem)
+
+	payload := map[string]interface{}{
+		"key":   ChaveApoiadorConfig,
+		"value": config,
+	}
+
+	_, _, err := client.From("app_settings").
+		Upsert(payload, "", "key", "").
+		Execute()
+
+	if err != nil {
+		log.Printf("[APOIADOR] Erro ao salvar apoiador_config: %v", err)
+		responderErroJSON(w, http.StatusInternalServerError, "Não foi possível salvar as configurações de apoio.")
+		return
+	}
+
+	log.Printf("[APOIADOR] Configurações de apoiador atualizadas com sucesso: link=%s, pix=%s", config.Link, config.ChavePIX)
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(map[string]interface{}{
+		"sucesso": true,
+		"config":  config,
+	})
+}

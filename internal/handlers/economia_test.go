@@ -211,3 +211,30 @@ func TestEconomiaBuscarDestinatario_TermoCurto(t *testing.T) {
 		t.Fatalf("Esperado array vazio para termo menor que 2 caracteres, recebido %d itens", len(resultado))
 	}
 }
+
+func TestApoiadorConfig(t *testing.T) {
+	padrao := ApoiadorConfigPadrao()
+	if !padrao.Ativo {
+		t.Fatal("ApoiadorConfigPadrao deveria ser ativo")
+	}
+	if padrao.Link == "" {
+		t.Fatal("ApoiadorConfigPadrao deveria ter link definido")
+	}
+
+	handler := &EconomiaHandler{}
+	req := httptest.NewRequest(http.MethodGet, "/api/apoiador", nil)
+	rec := httptest.NewRecorder()
+
+	handler.HandleGetApoiador(rec, req)
+	if rec.Code != http.StatusOK {
+		t.Fatalf("Esperado status 200 em /api/apoiador mesmo sem banco, obteve %d", rec.Code)
+	}
+
+	var obtido ApoiadorConfig
+	if err := json.NewDecoder(rec.Body).Decode(&obtido); err != nil {
+		t.Fatalf("Falha ao decodificar JSON retornado: %v", err)
+	}
+	if obtido.Link != padrao.Link {
+		t.Errorf("Esperado link %s, obteve %s", padrao.Link, obtido.Link)
+	}
+}

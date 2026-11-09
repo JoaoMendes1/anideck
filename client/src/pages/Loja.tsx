@@ -3,9 +3,10 @@
 import { useState, useMemo } from 'react'
 import { Link } from 'react-router-dom'
 import {
-  Sparkles, Crown, Flame, Zap, Award, Check, Shield, ArrowRight, User,
+  Sparkles, Crown, Flame, Zap, Award, Check, Shield, ArrowRight, User, Heart,
 } from 'lucide-react'
 import IconeAniCoin from '../components/IconeAniCoin'
+import ModalApoiador from '../components/comunidade/ModalApoiador'
 import { useSessao } from '../contexts/SessaoContext'
 import { useLoja } from '../hooks/useLoja'
 import { useCarteira } from '../hooks/useCarteira'
@@ -43,6 +44,7 @@ export default function Loja() {
   const { estado } = useComunidade()
 
   const [filtroTipo, setFiltroTipo] = useState<string>('todos')
+  const [modalApoiadorAberto, setModalApoiadorAberto] = useState(false)
 
   const meuNome = estado?.perfil.nome || estado?.perfil.handle || session?.user.user_metadata?.display_name || 'Viajante'
   const meuAvatar = (session?.user.user_metadata?.avatar_url as string | undefined) || null
@@ -139,6 +141,15 @@ export default function Loja() {
             </button>
           )
         })}
+
+        <button
+          type="button"
+          onClick={() => setModalApoiadorAberto(true)}
+          className="ml-auto shrink-0 px-4 py-2 rounded-full font-mono text-xs font-bold bg-holo-1/15 text-holo-1 border border-holo-1/30 hover:bg-holo-1/25 transition-all flex items-center gap-1.5 cursor-pointer"
+        >
+          <Heart size={14} className="fill-holo-1/30" />
+          <span>Seja um Apoiador</span>
+        </button>
       </div>
 
       {/* CATÁLOGO DE ITENS */}
@@ -300,6 +311,8 @@ export default function Loja() {
           })}
         </div>
       )}
+
+      <ModalApoiador aberto={modalApoiadorAberto} onFechar={() => setModalApoiadorAberto(false)} />
     </div>
   )
 }

@@ -2,7 +2,7 @@
 // Mapeamento fechado de estilos cosméticos da Loja (Fase 16, #170 e #171).
 // PITFALLS item 17: nenhuma classe de Tailwind montada por interpolação; nomes por extenso.
 import { createElement, type ReactNode } from 'react'
-import { Crown, Flame } from 'lucide-react'
+import { Crown, Flame, Heart } from 'lucide-react'
 
 export interface ItemCosmeticoLoja {
   id: string
@@ -23,16 +23,19 @@ export const ESTILOS_MOLDURA: Record<string, string> = {
   'moldura-cyber-holo': 'ring-2 ring-holo-3 ring-offset-2 ring-offset-void shadow-[0_0_12px_rgba(34,211,238,0.7)]',
   'moldura-ouro-shogun': 'ring-2 ring-amber-400 ring-offset-2 ring-offset-void shadow-[0_0_14px_rgba(251,191,36,0.8)]',
   'moldura-chama-dragao': 'ring-2 ring-rose-500 ring-offset-2 ring-offset-void shadow-[0_0_16px_rgba(244,63,94,0.85)]',
+  apoiador: 'ring-2 ring-holo-1 ring-offset-2 ring-offset-void shadow-[0_0_16px_rgba(255,92,108,0.7)]',
 }
 
 export const ESTILOS_COR_NOME: Record<string, string> = {
   'cor-dourada-vip': 'text-amber-400 font-extrabold drop-shadow-[0_0_8px_rgba(251,191,36,0.7)]',
   'cor-ciano-holo': 'text-holo-3 font-extrabold drop-shadow-[0_0_8px_rgba(34,211,238,0.7)]',
+  apoiador: 'text-holo-1 font-extrabold drop-shadow-[0_0_8px_rgba(255,92,108,0.7)]',
 }
 
 export const ESTILOS_TEMA_PERFIL: Record<string, string> = {
   'tema-neon-matrix': 'bg-gradient-to-b from-emerald-950/70 via-void to-void border-emerald-500/30',
   'tema-sakura-noir': 'bg-gradient-to-b from-purple-950/70 via-void to-void border-pink-500/30',
+  vip: 'bg-gradient-to-b from-rose-950/70 via-void to-void border-rose-500/30',
 }
 
 export const CORES_RARIDADE: Record<string, { badge: string; texto: string; border: string }> = {
@@ -87,6 +90,12 @@ export function renderizarEmblema(estilo?: string | null, size: number | 'sm' | 
       return createElement(Flame, {
         size: numSize,
         className: 'text-rose-500 fill-rose-500/30 inline-block shrink-0 align-middle ml-1 drop-shadow-[0_0_6px_rgba(244,63,94,0.6)]',
+        'aria-hidden': true,
+      })
+    case 'apoiador':
+      return createElement(Heart, {
+        size: numSize,
+        className: 'text-holo-1 fill-holo-1/40 inline-block shrink-0 align-middle ml-1 drop-shadow-[0_0_6px_rgba(255,92,108,0.7)]',
         'aria-hidden': true,
       })
     default:
