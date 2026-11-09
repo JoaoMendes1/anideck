@@ -184,6 +184,20 @@ var tarefasPeriodicasPadrao = []TarefaPeriodica{
 		Frequencia: FrequenciaDiaria(4, 30),
 		Executar:   executarRecalculoRaridadeCartas,
 	},
+	{
+		Nome:       "atualizar_ranking_genero",
+		Titulo:     "Recalcular ranking por gênero",
+		Descricao:  "Agrega os 50 membros com maior XP em cada gênero da taxonomia do catálogo.",
+		Frequencia: FrequenciaDiaria(5, 0),
+		Executar:   executarAtualizarRankingGenero,
+	},
+	{
+		Nome:       "fechar_semana_liga",
+		Titulo:     "Fechamento semanal da Liga",
+		Descricao:  "Consolida as posições da liga da semana anterior, premia os vencedores com AniCoins e abre a nova semana.",
+		Frequencia: FrequenciaSemanal(0, 5),
+		Executar:   executarFecharSemanaLiga,
+	},
 }
 
 // TarefasPeriodicasRegistradas devolve uma cópia das tarefas ativas no worker.
@@ -246,6 +260,39 @@ func executarRecalculoRaridadeCartas(ctx context.Context) (string, error) {
 	}
 	_ = client.Rpc("recalcular_raridade_cartas", "", nil)
 	return "Raridade das cartas recalculada com sucesso", nil
+}
+
+// executarAtualizarRankingGenero agrega o top 50 membros em cada gênero (Issue #176).
+func executarAtualizarRankingGenero(ctx context.Context) (string, error) {
+	if err := ctx.Err(); err != nil {
+		return "", err
+	}
+	client, err := database.ServiceRoleClient()
+	if err != nil || client == nil {
+		return "", fmt.Errorf("service role indisponível: %w", err)
+	}
+	_ = client.Rpc("atualizar_ranking_genero", "", nil)
+	return "Ranking por gênero atualizado com sucesso", nil
+}
+
+// executarFecharSemanaLiga consolida e premia a semana da liga fechada (Issue #177).
+func executarFecharSemanaLiga(ctx context.Context) (string, error) {
+	if err := ctx.Err(); err != nil {
+		return "", err
+	}
+	client, err := database.ServiceRoleClient()
+	if err != nil || client == nil {
+		return "", fmt.Errorf("service role indisponível: %w", err)
+	}
+	agora := time.Now().In(fusoGuilda)
+	semanaPassada := CodigoSemanaAtualBrasilia(agora.AddDate(0, 0, -1))
+	semanaAtual := CodigoSemanaAtualBrasilia(agora)
+
+	bruto := client.Rpc("fechar_semana_liga", "", map[string]interface{}{
+		"p_semana_fechada": semanaPassada,
+		"p_nova_semana":    semanaAtual,
+	})
+	return fmt.Sprintf("Semana %s fechada para %s: %s", semanaPassada, semanaAtual, bruto), nil
 }
 
 // diasHistoricoTarefas é por quanto tempo uma execução concluída fica visível no Painel.

@@ -84,6 +84,7 @@ func main() {
 	missoesHandler := &handlers.MissoesHandler{}
 	lojaHandler := &handlers.LojaHandler{}
 	cartasHandler := &handlers.CartasHandler{}
+	rankingsComunidadeHandler := &handlers.RankingsComunidadeHandler{}
 
 	r := chi.NewRouter()
 	r.Use(chimw.RequestID)
@@ -115,6 +116,8 @@ func main() {
 	r.Get("/api/membros/{handle}/cartas", cartasHandler.HandleCartasDoMembro)
 	r.Get("/api/membros/{handle}/personagens", cartasHandler.HandlePersonagensDoMembro)
 	r.Get("/api/membros/{a}/duelo/{b}", cartasHandler.HandleDueloDeGosto)
+	r.Get("/api/membros/ranking/genero", rankingsComunidadeHandler.HandleRankingGenero)
+	r.With(middleware.OptionalAuth).Get("/api/rankings/clima", rankingsComunidadeHandler.HandleClimaTemporada)
 	r.Post("/api/anime/bulk", animeHandler.HandleGetAnimesByIDs)
 	r.Post("/api/beta/request-invite", notificationsHandler.HandleRequestBetaInvite)
 	r.Post("/api/internal/check-new-episodes", notificationsHandler.HandleCheckNewEpisodes)
@@ -181,6 +184,7 @@ func main() {
 		protegido.Post("/api/comunidade/comentarios/{cid}/curtida", comunidadeHandler.HandleCurtir)
 		protegido.Delete("/api/comunidade/comentarios/{cid}/curtida", comunidadeHandler.HandleCurtir)
 		protegido.Post("/api/comunidade/comentarios/{cid}/denuncia", comunidadeHandler.HandleDenunciar)
+		protegido.Get("/api/membros/liga", rankingsComunidadeHandler.HandleLigaSemanal)
 
 		protegido.Delete("/api/account", accountHandler.HandleDeleteAccount)
 	})

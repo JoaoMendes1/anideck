@@ -14,6 +14,7 @@ import FilterChipGroup from '../components/FilterChipGroup'
 import RankingCard from '../components/RankingCard'
 import RankingSkeleton from '../components/RankingSkeleton'
 import FilterSheet from '../components/FilterSheet'
+import SecaoClimaTemporada from '../components/rankings/SecaoClimaTemporada'
 import { invalidarCachesDoDeck } from '../lib/cacheDeTela'
 
 interface Anime {
@@ -314,6 +315,8 @@ export default function Rankings() {
                     </div>
                 </div>
                 {/* ---------------------------------------------------------------- */}
+
+                <SecaoClimaTemporada />
 
                 <div className="flex gap-2 flex-wrap mb-6 select-none border-b border-line pb-4">
                     <button

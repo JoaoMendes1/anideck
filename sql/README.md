@@ -80,6 +80,7 @@ SELECT pg_get_viewdef('nome_da_view'::regclass, true);
 | `048_vitalidade_sql_bonus.sql` | Fase 16 (16.1c, #169): funções `vitalidade_atual(uuid)` e `minha_vitalidade()`; atualização de `mana_atual(uuid)` com taxa de recarga acelerada por Vitalidade alta. Aplicar **antes** de promover o código | — |
 | `049_loja_cosmeticos.sql` | Fase 16 (16.2a e 16.2b, #170 e #171): tabelas `store_items`, `user_items` e `user_equipped`; RPCs `comprar_item` e `equipar_item`, trigger de vitrine 7 slots e seed de cosméticos. Aplicar **antes** de promover o código | — |
 | `050_cartas_colecao.sql` | Fase 16 (16.3a, 16.3b e 16.3c, #172, #173 e #174): tabelas `user_cards` e `favorite_characters`, gatilhos de criação automática de cartas, bônus de AniCoins para término real, recálculo diário de raridade e RPC `duelo_de_gosto`. Aplicar **antes** de promover o código | — |
+| `051_rankings_temporada_genero_liga.sql` | Fase 16 (16.4a, 16.4b e 16.4c, #175, #176 e #177): ranking da temporada em `ranking_membros`, tabela de cache `ranking_genero`, liga com divisões `liga_participacoes` e clima da temporada em `top_reacoes_temporada`. Aplicar **antes** de promover o código | — |
 
 Datas com `~` são a data do commit, não da aplicação no Supabase.
 

@@ -46,7 +46,7 @@ Staging sobe já na Fase 1, como projeto esqueleto — mesmo padrão do JVM Syst
 | 13 · Reformulação Visual, Automação de Curadoria e Inteligência de Gosto | ✅ Concluída (08/11/2026) |
 | 14 · Guilda & Gamificação | ✅ Concluída (08/11/2026) |
 | 15 · Comunidade base | ✅ Concluída (08/11/2026, #154); falta abrir o beta |
-| 16 · Economia e cartas | 🚧 Em andamento (16.0 e 16.1 concluídos); falta abrir o beta |
+| 16 · Economia e cartas | 🚧 Em andamento (16.0 a 16.4 concluídos); falta abrir o beta |
 | 17 · Comunidade viva | 📋 Planejada, com issues (#179) |
 
 ---
@@ -734,10 +734,10 @@ Motivo: um motivo diário para voltar (`VISAO_COMUNIDADE.md`: Economia, Cartas, 
   - [x] 16.3a Carta por anime terminado, com raridade (#172)
   - [x] 16.3b Duelo de gosto entre perfis públicos (#173)
   - [x] 16.3c Cartas de personagem a partir dos favoritos (#174)
-- [ ] 16.4 Rankings
-  - [ ] 16.4a Ranking da temporada e top por gênero (#175)
-  - [ ] 16.4b Liga semanal com divisões, ativada pelo tamanho da base (#176)
-  - [ ] 16.4c Clima da temporada: ranking de reações (#177)
+- [x] 16.4 Rankings
+  - [x] 16.4a Ranking da temporada e top por gênero (#175)
+  - [x] 16.4b Liga semanal com divisões, ativada pelo tamanho da base (#176)
+  - [x] 16.4c Clima da temporada: ranking de reações (#177)
 - [ ] 16.5 Apoiador por link externo, sem pagamento integrado (#178)
 
 ## 🐉 Fase 17: Comunidade viva — *planejada (épico #179)*

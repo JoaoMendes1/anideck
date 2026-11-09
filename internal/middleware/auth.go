@@ -68,6 +68,32 @@ func RequireAuth(next http.Handler) http.Handler {
 	})
 }
 
+// OptionalAuth extrai o usuário do Bearer token se presente e válido, sem barrar anônimos.
+func OptionalAuth(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		authHeader := r.Header.Get("Authorization")
+		if authHeader != "" && strings.HasPrefix(authHeader, "Bearer ") {
+			tokenString := strings.TrimPrefix(authHeader, "Bearer ")
+			if jwks != nil {
+				if token, err := jwt.Parse(tokenString, jwks.Keyfunc); err == nil && token.Valid {
+					if claims, ok := token.Claims.(jwt.MapClaims); ok {
+						if userID, ok := claims["sub"].(string); ok && userID != "" {
+							ctx := context.WithValue(r.Context(), UserIDKey, userID)
+							ctx = context.WithValue(ctx, TokenKey, tokenString)
+							if quando, ok := amrMaisRecente(claims); ok {
+								ctx = context.WithValue(ctx, AuthTimeKey, quando)
+							}
+							next.ServeHTTP(w, r.WithContext(ctx))
+							return
+						}
+					}
+				}
+			}
+		}
+		next.ServeHTTP(w, r)
+	})
+}
+
 func RequireAdmin(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		userID, ok := r.Context().Value(UserIDKey).(string)

@@ -833,8 +833,9 @@ func (h *ComunidadeHandler) HandleRankingMembros(w http.ResponseWriter, r *http.
 		return
 	}
 	periodo := "geral"
-	if r.URL.Query().Get("periodo") == "semana" {
-		periodo = "semana"
+	p := r.URL.Query().Get("periodo")
+	if p == "semana" || p == "temporada" {
+		periodo = p
 	}
 	bruto := strings.TrimSpace(database.Client.Rpc("ranking_membros", "", map[string]interface{}{"p_periodo": periodo, "p_limite": 50}))
 	var linhas []struct {
@@ -852,7 +853,7 @@ func (h *ComunidadeHandler) HandleRankingMembros(w http.ResponseWriter, r *http.
 	// Nível e rank sempre pelo XP de todos os tempos: na liga semanal o número da
 	// semana ordena, mas a classe mostrada é a da pessoa.
 	xpTotal := map[string]int{}
-	if periodo == "semana" && len(linhas) > 0 {
+	if (periodo == "semana" || periodo == "temporada") && len(linhas) > 0 {
 		brutoGeral := strings.TrimSpace(database.Client.Rpc("ranking_membros", "", map[string]interface{}{"p_periodo": "geral", "p_limite": 100}))
 		var geral []struct {
 			Handle string `json:"handle"`
@@ -868,7 +869,7 @@ func (h *ComunidadeHandler) HandleRankingMembros(w http.ResponseWriter, r *http.
 	lista := make([]membroNoRanking, 0, len(linhas))
 	for _, l := range linhas {
 		base := l.XP
-		if periodo == "semana" {
+		if periodo == "semana" || periodo == "temporada" {
 			if total, ok := xpTotal[l.Handle]; ok {
 				base = total
 			}
