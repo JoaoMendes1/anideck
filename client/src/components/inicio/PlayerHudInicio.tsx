@@ -209,8 +209,11 @@ export default function PlayerHudInicio({ nome, dataHoje, aoAbrirGosto }: Props)
               <IconeAniCoin size={13} animar />
               <span>AniCoins</span>
             </span>
-            <span className="font-bold text-holo-3">
-              {saldo.toLocaleString('pt-BR')} ₳
+            <span className="font-bold text-holo-3 group-hover:text-gold flex items-center gap-1.5">
+              <span>{saldo.toLocaleString('pt-BR')} ₳</span>
+              <span className="text-[9px] px-1.5 py-0.5 rounded bg-gold/15 text-gold border border-gold/30 font-bold">
+                Loja →
+              </span>
             </span>
           </div>
           <div className="h-1.5 w-full rounded-full bg-void/80 overflow-hidden border border-line/40">

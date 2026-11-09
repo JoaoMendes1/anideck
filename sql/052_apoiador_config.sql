@@ -20,44 +20,56 @@ VALUES (
 )
 ON CONFLICT (key) DO NOTHING;
 
--- 2. Cosméticos exclusivos de Apoiador em store_items
-INSERT INTO public.store_items (slug, nome, descricao, tipo, slot, icone, raridade, preco, estilo, ativo)
+-- 2. Permite itens com preco = 0 (itens concedidos a apoiadores ou promocionais)
+ALTER TABLE public.store_items DROP CONSTRAINT IF EXISTS store_items_preco_check;
+ALTER TABLE public.store_items ADD CONSTRAINT store_items_preco_check CHECK (preco >= 0);
+
+-- 3. Cosméticos exclusivos de Apoiador em store_items
+INSERT INTO public.store_items (id, tipo, nome, descricao, preco, raridade, estilo, icone, ativo, ordem)
 VALUES
   (
-    'emblema-coracao-apoiador',
+    'emblema_coracao_apoiador',
+    'emblema',
     'Coração de Apoiador',
     'Selo especial de agradecimento a quem mantém os servidores e IA do AniDeck no ar.',
-    'emblema',
-    'emblema',
-    'Heart',
-    'lendario',
     0,
+    'lendario',
     'apoiador',
-    true
+    'Heart',
+    true,
+    50
   ),
   (
-    'moldura-aura-apoiador',
+    'moldura_aura_apoiador',
+    'moldura',
     'Aura de Apoiador',
     'Moldura com aura cósmica dourada e rosa exclusiva para quem apoia o projeto.',
-    'moldura',
-    'moldura',
-    'Sparkles',
-    'lendario',
     0,
+    'lendario',
     'apoiador',
-    true
+    'Sparkles',
+    true,
+    51
   ),
   (
-    'tema-nebulosa-vip',
+    'tema_nebulosa_vip',
+    'tema_perfil',
     'Nebulosa VIP',
     'Tema de perfil estelar exclusivo com gradiente cósmico e brilho neon.',
-    'tema_perfil',
-    'tema_perfil',
-    'Crown',
-    'lendario',
     0,
+    'lendario',
     'vip',
-    true
+    'Crown',
+    true,
+    52
   )
-ON CONFLICT (slug) DO UPDATE
-SET ativo = true;
+ON CONFLICT (id) DO UPDATE
+SET
+  nome = EXCLUDED.nome,
+  descricao = EXCLUDED.descricao,
+  preco = EXCLUDED.preco,
+  raridade = EXCLUDED.raridade,
+  estilo = EXCLUDED.estilo,
+  icone = EXCLUDED.icone,
+  ativo = true,
+  ordem = EXCLUDED.ordem;
