@@ -9,6 +9,7 @@ import { useSessao } from '../contexts/SessaoContext'
 import { useComunidade } from '../hooks/useComunidade'
 import { obterEstiloRank } from '../lib/guilda'
 import SeloEquipe from '../components/comunidade/SeloEquipe'
+import { obterClasseMoldura, obterClasseCorNome, renderizarEmblema } from '../lib/cosmeticos'
 import type { MembroNoRanking } from '../lib/comunidade'
 
 type Periodo = 'semana' | 'geral'
@@ -131,12 +132,13 @@ export default function Membros() {
                     <span className={`w-8 text-center font-anton text-lg shrink-0 ${podio ? MEDALHAS[m.posicao - 1] : 'text-muted-2'}`}>
                       {m.posicao === 1 ? <Crown size={20} className="mx-auto" aria-label="1º" /> : m.posicao}
                     </span>
-                    <span className="w-10 h-10 rounded-full shrink-0 grid place-items-center font-anton text-base text-void bg-gradient-to-br from-holo-2 to-holo-3" aria-hidden>
+                    <span className={`w-10 h-10 rounded-full shrink-0 grid place-items-center font-anton text-base text-void bg-gradient-to-br from-holo-2 to-holo-3 ${obterClasseMoldura(m.moldura)}`} aria-hidden>
                       {m.nome.charAt(0).toUpperCase()}
                     </span>
                     <span className="min-w-0 flex-1">
                       <span className="flex items-center gap-2 min-w-0">
-                        <span className="font-bold text-[14px] text-text truncate">{m.nome}</span>
+                        <span className={`font-bold text-[14px] truncate ${obterClasseCorNome(m.cor_nome)}`}>{m.nome}</span>
+                        {renderizarEmblema(m.emblema, 'sm')}
                         <SeloEquipe handle={m.handle} />
                         {eu && <span className="font-mono text-[9.5px] uppercase px-1.5 py-0.5 rounded bg-holo-2/20 text-holo-2 shrink-0">você</span>}
                       </span>

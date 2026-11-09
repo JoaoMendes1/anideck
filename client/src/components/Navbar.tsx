@@ -90,6 +90,7 @@ export default function Navbar() {
               <>
                 <Link to="/deck" className={linkClasse('/deck')}>Meu Deck</Link>
                 <Link to="/calendario" className={linkClasse('/calendario')}>Agenda</Link>
+                <Link to="/loja" className={linkClasse('/loja')}>Loja</Link>
                 <Link to="/meu-gosto" className={linkClasse('/meu-gosto')}>Meu Gosto</Link>
               </>
             )}

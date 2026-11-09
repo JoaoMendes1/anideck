@@ -354,8 +354,11 @@ func (h *ComunidadeHandler) HandleContagemConversa(w http.ResponseWriter, r *htt
 }
 
 type autorComentario struct {
-	Handle string `json:"handle"`
-	Nome   string `json:"nome"`
+	Handle  string `json:"handle"`
+	Nome    string `json:"nome"`
+	Moldura string `json:"moldura,omitempty"`
+	CorNome string `json:"cor_nome,omitempty"`
+	Emblema string `json:"emblema,omitempty"`
 }
 
 type comentarioDaConversa struct {
@@ -498,6 +501,36 @@ func (h *ComunidadeHandler) HandleConversaDoEpisodio(w http.ResponseWriter, r *h
 		_ = json.Unmarshal(dataA, &perfis)
 		for _, p := range perfis {
 			autores[p.UserID] = autorComentario{Handle: p.Handle, Nome: p.Nome}
+		}
+
+		if len(listaAutores) > 0 {
+			var eqLinhas []struct {
+				UserID       string `json:"user_id"`
+				Slot         string `json:"slot"`
+				StoreItemRef struct {
+					Estilo string `json:"estilo"`
+				} `json:"store_items"`
+			}
+			if dataEq, _, errEq := client.From("user_equipped").
+				Select("user_id,slot,store_items(estilo)", "", false).
+				In("user_id", listaAutores).
+				Execute(); errEq == nil {
+				if json.Unmarshal(dataEq, &eqLinhas) == nil {
+					for _, item := range eqLinhas {
+						if a, ok := autores[item.UserID]; ok {
+							switch item.Slot {
+							case "moldura":
+								a.Moldura = item.StoreItemRef.Estilo
+							case "cor_nome":
+								a.CorNome = item.StoreItemRef.Estilo
+							case "emblema":
+								a.Emblema = item.StoreItemRef.Estilo
+							}
+							autores[item.UserID] = a
+						}
+					}
+				}
+			}
 		}
 	}
 
@@ -787,6 +820,9 @@ type membroNoRanking struct {
 	Nivel      int    `json:"nivel"`
 	Rank       string `json:"rank"`
 	TituloRank string `json:"titulo_rank"`
+	Moldura    string `json:"moldura,omitempty"`
+	CorNome    string `json:"cor_nome,omitempty"`
+	Emblema    string `json:"emblema,omitempty"`
 }
 
 // HandleRankingMembros é público. periodo=semana conta o XP desde segunda-feira
@@ -843,6 +879,57 @@ func (h *ComunidadeHandler) HandleRankingMembros(w http.ResponseWriter, r *http.
 			Nivel: status.Nivel, Rank: status.Rank, TituloRank: status.TituloRank,
 		})
 	}
+
+	if len(lista) > 0 {
+		handles := make([]string, len(lista))
+		for i, item := range lista {
+			handles[i] = item.Handle
+		}
+		var profs []struct {
+			UserID string `json:"user_id"`
+			Handle string `json:"handle"`
+		}
+		if dataP, _, errP := database.Client.From("profiles").Select("user_id,handle", "", false).In("handle", handles).Execute(); errP == nil {
+			if json.Unmarshal(dataP, &profs) == nil && len(profs) > 0 {
+				uids := make([]string, len(profs))
+				u2h := make(map[string]string, len(profs))
+				for i, pr := range profs {
+					uids[i] = pr.UserID
+					u2h[pr.UserID] = pr.Handle
+				}
+				var eqLinhas []struct {
+					UserID       string `json:"user_id"`
+					Slot         string `json:"slot"`
+					StoreItemRef struct {
+						Estilo string `json:"estilo"`
+					} `json:"store_items"`
+				}
+				if dataEq, _, errEq := database.Client.From("user_equipped").
+					Select("user_id,slot,store_items(estilo)", "", false).
+					In("user_id", uids).
+					Execute(); errEq == nil {
+					if json.Unmarshal(dataEq, &eqLinhas) == nil {
+						cosmMap := make(map[string]map[string]string)
+						for _, it := range eqLinhas {
+							h := u2h[it.UserID]
+							if cosmMap[h] == nil {
+								cosmMap[h] = make(map[string]string)
+							}
+							cosmMap[h][it.Slot] = it.StoreItemRef.Estilo
+						}
+						for i := range lista {
+							if cm, ok := cosmMap[lista[i].Handle]; ok {
+								lista[i].Moldura = cm["moldura"]
+								lista[i].CorNome = cm["cor_nome"]
+								lista[i].Emblema = cm["emblema"]
+							}
+						}
+					}
+				}
+			}
+		}
+	}
+
 	responderJSON(w, http.StatusOK, lista)
 }
 
@@ -860,6 +947,10 @@ type perfilPublico struct {
 	Rank            string         `json:"rank"`
 	TituloRank      string         `json:"titulo_rank"`
 	HP              int            `json:"hp"`
+	Moldura         string         `json:"moldura,omitempty"`
+	TemaPerfil      string         `json:"tema_perfil,omitempty"`
+	CorNome         string         `json:"cor_nome,omitempty"`
+	Emblema         string         `json:"emblema,omitempty"`
 }
 
 // HandlePerfilPublico é público: o perfil de um @ com perfil aberto.
@@ -903,5 +994,39 @@ func (h *ComunidadeHandler) HandlePerfilPublico(w http.ResponseWriter, r *http.R
 	if p.Status == nil {
 		p.Status = map[string]int{}
 	}
+
+	var profs []struct {
+		UserID string `json:"user_id"`
+	}
+	if dataP, _, errP := database.Client.From("profiles").Select("user_id", "", false).Eq("handle", handle).Execute(); errP == nil {
+		if json.Unmarshal(dataP, &profs) == nil && len(profs) > 0 {
+			var eqLinhas []struct {
+				Slot         string `json:"slot"`
+				StoreItemRef struct {
+					Estilo string `json:"estilo"`
+				} `json:"store_items"`
+			}
+			if dataEq, _, errEq := database.Client.From("user_equipped").
+				Select("slot,store_items(estilo)", "", false).
+				Eq("user_id", profs[0].UserID).
+				Execute(); errEq == nil {
+				if json.Unmarshal(dataEq, &eqLinhas) == nil {
+					for _, item := range eqLinhas {
+						switch item.Slot {
+						case "moldura":
+							p.Moldura = item.StoreItemRef.Estilo
+						case "tema_perfil":
+							p.TemaPerfil = item.StoreItemRef.Estilo
+						case "cor_nome":
+							p.CorNome = item.StoreItemRef.Estilo
+						case "emblema":
+							p.Emblema = item.StoreItemRef.Estilo
+						}
+					}
+				}
+			}
+		}
+	}
+
 	responderJSON(w, http.StatusOK, p)
 }

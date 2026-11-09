@@ -200,7 +200,8 @@ export default function PlayerHudInicio({ nome, dataHoje, aoAbrirGosto }: Props)
 
         {/* 4. ANICOINS */}
         <Link
-          to="/guilda"
+          to="/loja"
+          title="Ver catálogo da Loja Cosmética"
           className="p-2.5 sm:p-3 rounded-xl bg-panel-2/60 border border-line/70 hover:border-gold/50 transition-all group flex flex-col justify-between"
         >
           <div className="flex items-center justify-between gap-1 mb-1.5 font-mono text-[10.5px]">

@@ -1,0 +1,305 @@
+// client/src/pages/Loja.tsx
+// Loja de Cosméticos do AniDeck: compra e personalização com AniCoins (Fase 16, #170 e #171).
+import { useState, useMemo } from 'react'
+import { Link } from 'react-router-dom'
+import {
+  Sparkles, Crown, Flame, Zap, Award, Check, Shield, ArrowRight, User,
+} from 'lucide-react'
+import IconeAniCoin from '../components/IconeAniCoin'
+import { useSessao } from '../contexts/SessaoContext'
+import { useLoja } from '../hooks/useLoja'
+import { useCarteira } from '../hooks/useCarteira'
+import { useComunidade } from '../hooks/useComunidade'
+import {
+  CORES_RARIDADE,
+  obterClasseMoldura,
+  obterClasseCorNome,
+  obterClasseTemaPerfil,
+  renderizarEmblema,
+  type ItemCosmeticoLoja,
+} from '../lib/cosmeticos'
+
+function renderIconeItem(icone: string, raridade: string) {
+  const cor = CORES_RARIDADE[raridade]?.texto || 'text-holo-3'
+  switch (icone) {
+    case 'Crown':
+      return <Crown size={20} className={cor} />
+    case 'Flame':
+      return <Flame size={20} className={cor} />
+    case 'Zap':
+      return <Zap size={20} className={cor} />
+    case 'Award':
+      return <Award size={20} className={cor} />
+    case 'Sparkles':
+    default:
+      return <Sparkles size={20} className={cor} />
+  }
+}
+
+export default function Loja() {
+  const { session } = useSessao()
+  const { itens, carregando, comprandoId, equipandoId, comprar, equipar } = useLoja()
+  const { saldo } = useCarteira()
+  const { estado } = useComunidade()
+
+  const [filtroTipo, setFiltroTipo] = useState<string>('todos')
+
+  const meuNome = estado?.perfil.nome || estado?.perfil.handle || session?.user.user_metadata?.display_name || 'Viajante'
+  const meuAvatar = (session?.user.user_metadata?.avatar_url as string | undefined) || null
+
+  const itensFiltrados = useMemo(() => {
+    if (filtroTipo === 'todos') return itens
+    return itens.filter((i) => i.tipo === filtroTipo)
+  }, [itens, filtroTipo])
+
+  const contadores = useMemo(() => {
+    const counts: Record<string, number> = { todos: itens.length }
+    itens.forEach((i) => {
+      counts[i.tipo] = (counts[i.tipo] || 0) + 1
+    })
+    return counts
+  }, [itens])
+
+  return (
+    <div className="w-full min-w-0 max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-10 pt-6 pb-24">
+      {/* CABEÇALHO DA LOJA */}
+      <header className="mb-8 rounded-3xl border border-line bg-gradient-to-br from-panel via-panel to-panel-2 p-6 sm:p-8 relative overflow-hidden shadow-2xl">
+        <div className="absolute -right-10 -bottom-10 w-64 h-64 bg-holo-3/10 rounded-full blur-3xl pointer-events-none" />
+        <div className="absolute -left-10 -top-10 w-64 h-64 bg-gold/10 rounded-full blur-3xl pointer-events-none" />
+
+        <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
+          <div className="max-w-2xl">
+            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-holo-3/15 border border-holo-3/30 text-holo-3 font-mono text-[10.5px] font-bold uppercase tracking-widest mb-3">
+              <Sparkles size={12} /> Bazar Comunitário
+            </div>
+            <h1 className="font-anton text-3xl sm:text-4xl lg:text-5xl uppercase tracking-wide m-0 text-text leading-tight">
+              Loja Cosmética
+            </h1>
+            <p className="text-sm text-muted mt-2 mb-0 leading-relaxed">
+              Destaque seu perfil, personalize molduras e ostente títulos exclusivos na comunidade com suas AniCoins.
+              <span className="block text-muted-2 text-xs mt-1">
+                Cosméticos são puramente visuais e nunca alteram XP, Rank nem notas do ranking.
+              </span>
+            </p>
+          </div>
+
+          {/* CARD DE SALDO & MISSÕES */}
+          <div className="shrink-0 p-4 sm:p-5 rounded-2xl bg-panel-2/90 border border-line flex flex-col gap-3 min-w-[240px]">
+            <div className="flex items-center justify-between">
+              <span className="font-mono text-[10px] text-muted-2 uppercase tracking-widest flex items-center gap-1.5">
+                <IconeAniCoin size={14} /> Sua Carteira
+              </span>
+              <Link
+                to="/#missoes-diarias-card"
+                className="font-mono text-[10.5px] text-holo-2 hover:underline flex items-center gap-1 font-bold"
+              >
+                + AniCoins <ArrowRight size={11} />
+              </Link>
+            </div>
+            <div className="flex items-baseline gap-2">
+              <span className="font-anton text-3xl sm:text-4xl text-holo-3 tracking-wide">
+                {saldo.toLocaleString('pt-BR')}
+              </span>
+              <span className="font-mono text-sm font-bold text-muted">₳ AniCoins</span>
+            </div>
+            <p className="text-[11px] text-muted-2 m-0 border-t border-line/60 pt-2">
+              Ganhe mais moedas completando as 3 missões do dia na Início.
+            </p>
+          </div>
+        </div>
+      </header>
+
+      {/* FILTROS DE CATEGORIA */}
+      <div className="flex items-center gap-2 overflow-x-auto pb-3 mb-6 scrollbar-none select-none">
+        {[
+          { id: 'todos', rotulo: 'Todos os Itens' },
+          { id: 'moldura', rotulo: 'Molduras de Avatar' },
+          { id: 'tema_perfil', rotulo: 'Temas de Perfil' },
+          { id: 'cor_nome', rotulo: 'Cores de Nome' },
+          { id: 'emblema', rotulo: 'Emblemas' },
+          { id: 'expansao', rotulo: 'Melhorias' },
+        ].map((f) => {
+          const ativo = filtroTipo === f.id
+          const qtd = contadores[f.id] || 0
+          return (
+            <button
+              key={f.id}
+              type="button"
+              onClick={() => setFiltroTipo(f.id)}
+              className={`px-4 py-2 rounded-full font-mono text-xs font-bold whitespace-nowrap transition-all cursor-pointer flex items-center gap-2 ${
+                ativo
+                  ? 'bg-holo-1 text-void shadow-md scale-102'
+                  : 'bg-panel border border-line text-muted hover:text-text hover:border-holo-2'
+              }`}
+            >
+              <span>{f.rotulo}</span>
+              <span className={`text-[10px] px-1.5 py-0.2 rounded-full ${ativo ? 'bg-void/25 text-void' : 'bg-panel-2 text-muted-2'}`}>
+                {qtd}
+              </span>
+            </button>
+          )
+        })}
+      </div>
+
+      {/* CATÁLOGO DE ITENS */}
+      {carregando ? (
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+          {Array.from({ length: 6 }).map((_, i) => (
+            <div key={i} className="h-64 rounded-2xl bg-panel border border-line shimmer" />
+          ))}
+        </div>
+      ) : itensFiltrados.length === 0 ? (
+        <div className="p-12 text-center rounded-2xl bg-panel border border-line">
+          <p className="text-muted text-sm font-mono m-0">Nenhum cosmético encontrado nesta categoria.</p>
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+          {itensFiltrados.map((item: ItemCosmeticoLoja) => {
+            const corRaridade = CORES_RARIDADE[item.raridade] || CORES_RARIDADE.comum
+            const podeComprar = saldo >= item.preco
+            const faltaAniCoins = Math.max(0, item.preco - saldo)
+            const emProcesso = comprandoId === item.id || equipandoId === item.id
+
+            return (
+              <div
+                key={item.id}
+                className={`p-5 rounded-2xl bg-panel border transition-all flex flex-col justify-between gap-4 hover:shadow-xl ${corRaridade.border} ${
+                  item.equipado ? 'ring-2 ring-holo-3/60 bg-panel-2/40' : ''
+                }`}
+              >
+                <div>
+                  {/* Topo do Card: Tipo & Raridade */}
+                  <div className="flex items-center justify-between gap-2 mb-3">
+                    <span className="font-mono text-[10px] text-muted-2 uppercase tracking-widest">
+                      // {item.tipo.replace('_', ' ')}
+                    </span>
+                    <span className={`px-2 py-0.5 rounded-full font-mono text-[10px] font-bold uppercase border ${corRaridade.badge}`}>
+                      {item.raridade}
+                    </span>
+                  </div>
+
+                  {/* Nome e Ícone */}
+                  <div className="flex items-start gap-3 mb-2">
+                    <div className="w-10 h-10 rounded-xl bg-panel-2 border border-line grid place-items-center shrink-0">
+                      {renderIconeItem(item.icone, item.raridade)}
+                    </div>
+                    <div className="min-w-0">
+                      <h3 className="font-anton text-lg uppercase tracking-wide m-0 text-text truncate">
+                        {item.nome}
+                      </h3>
+                      <p className="text-xs text-muted mt-1 m-0 leading-relaxed line-clamp-2">
+                        {item.descricao}
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* PRÉVIA VISUAL AO VIVO DO ITEM */}
+                  <div className="my-3.5 p-3 rounded-xl bg-panel-2/70 border border-line/60 flex items-center justify-center min-h-[72px]">
+                    {item.tipo === 'moldura' && (
+                      <div className="flex items-center gap-3">
+                        <div className={`w-12 h-12 rounded-full overflow-hidden transition-all ${obterClasseMoldura(item.estilo)}`}>
+                          {meuAvatar ? (
+                            <img src={meuAvatar} alt="" className="w-full h-full object-cover" />
+                          ) : (
+                            <div className="w-full h-full bg-panel flex items-center justify-center text-muted">
+                              <User size={20} />
+                            </div>
+                          )}
+                        </div>
+                        <span className="font-mono text-xs text-muted-2">Prévia no avatar</span>
+                      </div>
+                    )}
+
+                    {item.tipo === 'cor_nome' && (
+                      <div className="text-center font-mono">
+                        <span className={`text-base block ${obterClasseCorNome(item.estilo)}`}>
+                          @{estado?.perfil.handle || 'usuario'}
+                        </span>
+                        <span className="text-[10px] text-muted-2">Prévia nos comentários</span>
+                      </div>
+                    )}
+
+                    {item.tipo === 'tema_perfil' && (
+                      <div className={`w-full py-2.5 px-3 rounded-lg border text-center ${obterClasseTemaPerfil(item.estilo)}`}>
+                        <span className="font-anton text-xs uppercase tracking-wider text-text">
+                          Atmosfera do Perfil
+                        </span>
+                      </div>
+                    )}
+
+                    {item.tipo === 'emblema' && (
+                      <div className="flex items-center gap-1.5 font-mono text-sm text-text font-bold">
+                        <span>{meuNome}</span>
+                        {renderizarEmblema(item.estilo, 18)}
+                      </div>
+                    )}
+
+                    {item.tipo === 'expansao' && (
+                      <div className="flex items-center gap-2 font-mono text-xs text-holo-3 font-bold">
+                        <Shield size={16} />
+                        <span>7 Obras na Vitrine (Máximo)</span>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* RODAPÉ DO CARD: PREÇO E AÇÃO */}
+                <div className="pt-3 border-t border-line/60 flex items-center justify-between gap-3">
+                  <div>
+                    <span className="font-mono text-[10px] text-muted-2 block">Preço</span>
+                    <span className="font-anton text-xl text-holo-3 flex items-center gap-1">
+                      <IconeAniCoin size={16} animar />
+                      {item.preco.toLocaleString('pt-BR')} ₳
+                    </span>
+                  </div>
+
+                  {item.ja_possui ? (
+                    item.tipo === 'expansao' ? (
+                      <div className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-full bg-green/15 text-green border border-green/30 font-mono text-xs font-bold select-none">
+                        <Check size={14} /> Ativo no perfil
+                      </div>
+                    ) : item.equipado ? (
+                      <button
+                        type="button"
+                        disabled={emProcesso}
+                        onClick={() => equipar(item.tipo, null)}
+                        className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-full bg-green/20 border border-green/40 text-green font-mono text-xs font-bold hover:bg-coral/20 hover:text-coral hover:border-coral/40 transition-colors cursor-pointer"
+                        title="Clique para desequipar"
+                      >
+                        <Check size={14} /> Equipado
+                      </button>
+                    ) : (
+                      <button
+                        type="button"
+                        disabled={emProcesso}
+                        onClick={() => equipar(item.tipo, item.id)}
+                        className="inline-flex items-center gap-1.5 px-4 py-2 rounded-full bg-holo-1 text-void font-extrabold text-xs uppercase tracking-wider hover:opacity-95 transition-opacity cursor-pointer shadow-md"
+                      >
+                        Equipar
+                      </button>
+                    )
+                  ) : (
+                    <button
+                      type="button"
+                      disabled={emProcesso || !podeComprar}
+                      onClick={() => comprar(item.id)}
+                      className={`inline-flex items-center gap-2 px-4 py-2 rounded-full font-extrabold text-xs uppercase tracking-wider transition-all cursor-pointer ${
+                        podeComprar
+                          ? 'bg-gradient-to-r from-gold via-amber-500 to-yellow-400 text-void hover:opacity-95 shadow-[0_0_12px_rgba(245,158,11,0.35)] active:scale-95'
+                          : 'bg-panel-2 border border-line text-muted-2 cursor-not-allowed'
+                      }`}
+                      title={!podeComprar ? `Faltam ${faltaAniCoins} ₳ para comprar` : 'Adquirir cosmético'}
+                    >
+                      <Sparkles size={13} fill="currentColor" />
+                      {emProcesso ? 'Comprando...' : podeComprar ? 'Comprar' : `Faltam ${faltaAniCoins} ₳`}
+                    </button>
+                  )}
+                </div>
+              </div>
+            )
+          })}
+        </div>
+      )}
+    </div>
+  )
+}

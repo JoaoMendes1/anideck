@@ -15,9 +15,10 @@
 | 13 | Card de gosto compartilhável (no Meu Gosto) | `CompartilharGosto.tsx` | ✅ Implementada | Fase 12 (#126) |
 | 14 | Guilda (rank, XP, insígnias, especialista de gênero) | `Guilda.tsx` | ✅ Implementada · anel F→SS, extrato do ledger (abas XP e Cristais 💎), especialista N1→N5, insígnias Foil, pílula na Navbar (HUD com XP, Cristais, Vitalidade e Mana em todas as páginas, painel de status e avisos de ganho) e Vitalidade & Mana | Fase 14 / 15 / 16 (#146, #154, #164, #167) |
 | 15 | Ranking de membros (aba do Descobrir, em `/membros`) | `Membros.tsx` | ✅ Implementada · liga da semana e Hall da Fama, só perfis públicos | Fase 15 (#154) |
-| 16 | Perfil público de membro (`/u/:handle`) | `PerfilMembro.tsx` | ✅ Implementada · ficha da Guilda, vitrine de cinco cartas, contagem do deck sem títulos e bloqueio | Fase 15 (#154) |
+| 16 | Perfil público de membro (`/u/:handle`) | `PerfilMembro.tsx` | ✅ Implementada · ficha da Guilda, vitrine de cinco a sete cartas, tema de perfil, moldura e emblema cosmético, contagem do deck sem títulos e bloqueio | Fase 15 / 16 (#154, #171) |
+| 17 | Loja Cosmética (`/loja`) | `Loja.tsx` | ✅ Implementada · catálogo por categorias com preview em tempo real (molduras, temas de perfil, cores de nome e emblemas), compra com AniCoins e equipamento por slot | Fase 16 (#170, #171) |
 
-**Total: 16 telas implementadas.**
+**Total: 17 telas implementadas.**
 
 > Configurações tem oito seções, todas funcionando: Perfil, Perfil público, Preferências de
 > Gosto, Importar Lista, Aparência, Notificações, Conta e Ajuda. Dois blocos dentro delas usam o componente `EmBreve`, e cada um diz no

@@ -38,9 +38,18 @@ export interface ContagemEpisodio {
   reacoes: Record<string, number>
 }
 
+export interface AutorDoComentario {
+  handle: string
+  nome: string
+  moldura?: string
+  cor_nome?: string
+  tema_perfil?: string
+  emblema?: string
+}
+
 export interface ComentarioDaConversa {
   id: string
-  autor: { handle: string; nome: string }
+  autor: AutorDoComentario
   texto: string
   momento_seg: number | null
   created_at: string
@@ -65,6 +74,10 @@ export interface MembroNoRanking {
   nivel: number
   rank: string
   titulo_rank: string
+  moldura?: string
+  cor_nome?: string
+  tema_perfil?: string
+  emblema?: string
 }
 
 export interface PerfilPublico {
@@ -81,6 +94,10 @@ export interface PerfilPublico {
   rank: string
   titulo_rank: string
   hp: number
+  moldura?: string
+  cor_nome?: string
+  tema_perfil?: string
+  emblema?: string
 }
 
 /**

@@ -9,6 +9,7 @@ import { useToast } from '../contexts/ToastContext'
 import { useComunidade } from '../hooks/useComunidade'
 import { obterEstiloRank } from '../lib/guilda'
 import SeloEquipe from '../components/comunidade/SeloEquipe'
+import { obterClasseMoldura, obterClasseCorNome, obterClasseTemaPerfil, renderizarEmblema } from '../lib/cosmeticos'
 import { faixaDoHP, type PerfilPublico } from '../lib/comunidade'
 
 interface CartaDaVitrine {
@@ -147,10 +148,10 @@ export default function PerfilMembro() {
 
   return (
     <div className="w-full max-w-[1100px] mx-auto px-4 sm:px-6 pt-6 pb-24">
-      <section className="relative overflow-hidden rounded-2xl bg-panel border border-line p-5 sm:p-7 mb-6">
+      <section className={`relative overflow-hidden rounded-2xl border border-line p-5 sm:p-7 mb-6 ${obterClasseTemaPerfil(perfil.tema_perfil)}`}>
         <div className="absolute -top-24 -right-24 w-72 h-72 rounded-full bg-holo-2/15 blur-3xl pointer-events-none" aria-hidden />
         <div className="relative flex flex-col sm:flex-row sm:items-center gap-5">
-          <span className="w-20 h-20 sm:w-24 sm:h-24 rounded-2xl shrink-0 grid place-items-center font-anton text-4xl text-void bg-gradient-to-br from-holo-1 via-holo-2 to-holo-3 shadow-[0_0_40px_rgba(123,92,255,0.25)]" aria-hidden>
+          <span className={`w-20 h-20 sm:w-24 sm:h-24 rounded-2xl shrink-0 grid place-items-center font-anton text-4xl text-void bg-gradient-to-br from-holo-1 via-holo-2 to-holo-3 shadow-[0_0_40px_rgba(123,92,255,0.25)] ${obterClasseMoldura(perfil.moldura)}`} aria-hidden>
             {perfil.nome.charAt(0).toUpperCase()}
           </span>
           <div className="min-w-0 flex-1">
@@ -163,7 +164,12 @@ export default function PerfilMembro() {
                 <CalendarDays size={11} aria-hidden /> membro desde {desde.toLocaleDateString('pt-BR', { month: 'short', year: 'numeric' })}
               </span>
             </div>
-            <h1 className="font-anton text-[clamp(1.6rem,4vw,2.4rem)] uppercase leading-none m-0 break-words">{perfil.nome}</h1>
+            <div className="flex items-center gap-2 flex-wrap">
+              <h1 className={`font-anton text-[clamp(1.6rem,4vw,2.4rem)] uppercase leading-none m-0 break-words ${obterClasseCorNome(perfil.cor_nome)}`}>
+                {perfil.nome}
+              </h1>
+              {renderizarEmblema(perfil.emblema, 'md')}
+            </div>
             <p className="font-mono text-[12px] text-muted mt-1 mb-0">
               @{perfil.handle} · <span className="text-text">{perfil.titulo_rank}</span>
             </p>
@@ -211,7 +217,7 @@ export default function PerfilMembro() {
         <section className="rounded-2xl bg-panel border border-line p-5">
           <h2 className="font-anton text-base uppercase m-0 mb-4">A mão de @{perfil.handle}</h2>
           {vitrine.length > 0 ? (
-            <div className="grid grid-cols-3 sm:grid-cols-5 gap-3">
+            <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-7 gap-3">
               {vitrine.map((a, i) => (
                 <Link key={a.mal_id} to={`/anime/${a.mal_id}`} className="group" style={{ transform: `rotate(${(i - (vitrine.length - 1) / 2) * 1.5}deg)` }}>
                   <div className="aspect-[2/3] rounded-xl overflow-hidden border border-line group-hover:border-holo-3 transition-colors shadow-lg">

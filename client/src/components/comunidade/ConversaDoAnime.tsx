@@ -9,6 +9,7 @@ import { useSessao } from '../../contexts/SessaoContext'
 import { useToast } from '../../contexts/ToastContext'
 import { useComunidade, avisarComunidadeAtualizada } from '../../hooks/useComunidade'
 import SeloEquipe from './SeloEquipe'
+import { obterClasseMoldura, obterClasseCorNome, renderizarEmblema } from '../../lib/cosmeticos'
 import {
   REACOES,
   MOTIVOS_DENUNCIA,
@@ -45,11 +46,12 @@ async function lerErro(res: Response, padrao: string): Promise<string> {
   }
 }
 
-function Avatar({ nome }: { nome: string }) {
+function Avatar({ nome, moldura }: { nome: string; moldura?: string }) {
+  const classeMoldura = obterClasseMoldura(moldura)
   return (
     <span
       aria-hidden
-      className="w-9 h-9 rounded-full shrink-0 grid place-items-center font-anton text-sm text-void bg-gradient-to-br from-holo-2 to-holo-3"
+      className={`w-9 h-9 rounded-full shrink-0 grid place-items-center font-anton text-sm text-void bg-gradient-to-br from-holo-2 to-holo-3 ${classeMoldura}`}
     >
       {(nome || '?').charAt(0).toUpperCase()}
     </span>
@@ -661,16 +663,17 @@ function ItemComentario({ comentario: c, agora, token, onRemover, onBloquear, on
   return (
     <li className="py-4 first:pt-1 last:pb-1">
       <div className="flex gap-3">
-        <Avatar nome={nome} />
+        <Avatar nome={nome} moldura={c.autor.moldura} />
         <div className="min-w-0 flex-1">
           <div className="flex flex-wrap items-baseline gap-x-2 gap-y-0.5">
             {c.autor.handle ? (
-              <Link to={`/u/${c.autor.handle}`} className="font-bold text-[13.5px] text-text hover:text-holo-3 transition-colors">
+              <Link to={`/u/${c.autor.handle}`} className={`font-bold text-[13.5px] transition-colors ${obterClasseCorNome(c.autor.cor_nome)}`}>
                 {nome}
               </Link>
             ) : (
-              <span className="font-bold text-[13.5px] text-text">{nome}</span>
+              <span className={`font-bold text-[13.5px] ${obterClasseCorNome(c.autor.cor_nome)}`}>{nome}</span>
             )}
+            {renderizarEmblema(c.autor.emblema, 'sm')}
             <SeloEquipe handle={c.autor.handle} />
             {c.autor.handle && <span className="font-mono text-[10.5px] text-muted-2">@{c.autor.handle}</span>}
             <span className="font-mono text-[10.5px] text-muted-2">· {tempoRelativo(c.created_at, agora)}</span>

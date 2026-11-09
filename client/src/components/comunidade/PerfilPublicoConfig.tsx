@@ -8,6 +8,7 @@ import { useSessao } from '../../contexts/SessaoContext'
 import { useToast } from '../../contexts/ToastContext'
 import { useComunidade, avisarComunidadeAtualizada } from '../../hooks/useComunidade'
 import { MAX_BIO, sugerirHandle, validarHandle, type EstadoComunidade } from '../../lib/comunidade'
+import { useLoja } from '../../hooks/useLoja'
 import BarrasVitais from './BarrasVitais'
 
 interface AnimeDaVitrine {
@@ -44,6 +45,10 @@ export default function PerfilPublicoConfig({ nomeSugerido }: { nomeSugerido: st
 
 function Formulario({ estado, token, nomeSugerido, daEquipe }: { estado: EstadoComunidade; token: string; nomeSugerido: string; daEquipe: boolean }) {
   const { showToast } = useToast()
+  const { temItem } = useLoja()
+  const temExpansaoVitrine = temItem('vitrine_plus_2')
+  const limiteVitrine = temExpansaoVitrine ? 7 : 5
+
   const { perfil, regras } = estado
   const [handle, setHandle] = useState(perfil.existe ? perfil.handle : sugerirHandle(nomeSugerido))
   const [nome, setNome] = useState(perfil.existe ? perfil.nome : nomeSugerido)
@@ -110,7 +115,7 @@ function Formulario({ estado, token, nomeSugerido, daEquipe }: { estado: EstadoC
   }, [])
 
   const alternarNaVitrine = (id: number) => {
-    setVitrine(v => (v.includes(id) ? v.filter(x => x !== id) : v.length >= 5 ? v : [...v, id]))
+    setVitrine(v => (v.includes(id) ? v.filter(x => x !== id) : v.length >= limiteVitrine ? v : [...v, id]))
   }
 
   const salvar = async () => {
@@ -225,7 +230,16 @@ function Formulario({ estado, token, nomeSugerido, daEquipe }: { estado: EstadoC
 
         <div className="mt-3">
           <div className="flex items-center justify-between gap-2 mb-2">
-            <span className={rotulo + ' mb-0'}>Sua mão · até 5 animes</span>
+            <div className="flex items-center gap-2">
+              <span className={rotulo + ' mb-0'}>
+                Sua mão · {vitrine.length}/{limiteVitrine} cartas
+              </span>
+              {temExpansaoVitrine && (
+                <span className="font-mono text-[9px] uppercase px-1.5 py-0.5 rounded bg-holo-3/20 border border-holo-3/40 text-holo-3 font-bold">
+                  +2 Loja
+                </span>
+              )}
+            </div>
             <button
               type="button"
               onClick={() => {
@@ -264,7 +278,7 @@ function Formulario({ estado, token, nomeSugerido, daEquipe }: { estado: EstadoC
                       onClick={() => alternarNaVitrine(a.mal_id)}
                       aria-pressed={marcado}
                       title={a.title}
-                      disabled={!marcado && vitrine.length >= 5}
+                      disabled={!marcado && vitrine.length >= limiteVitrine}
                       className={`relative aspect-[2/3] rounded-lg overflow-hidden border cursor-pointer disabled:opacity-35 disabled:cursor-not-allowed ${marcado ? 'border-holo-3 ring-2 ring-holo-3/40' : 'border-line'}`}
                     >
                       <img src={a.image_url} alt={a.title} loading="lazy" className="w-full h-full object-cover" />

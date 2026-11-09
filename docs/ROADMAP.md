@@ -727,9 +727,9 @@ Motivo: um motivo diário para voltar (`VISAO_COMUNIDADE.md`: Economia, Cartas, 
   - [x] 16.1a Cristais: carteira com extrato e painel de economia (#167)
   - [x] 16.1b Missões diárias (#168)
   - [x] 16.1c Bônus de XP por Vitalidade alta e Mana mais rápida (#169)
-- [ ] 16.2 Loja cosmética
-  - [ ] 16.2a Catálogo e compra com Cristais (#170)
-  - [ ] 16.2b Aplicar cosméticos: moldura, tema, cor do nome, emblema e vitrine maior (#171)
+- [x] 16.2 Loja cosmética
+  - [x] 16.2a Catálogo e compra com Cristais (#170)
+  - [x] 16.2b Aplicar cosméticos: moldura, tema, cor do nome, emblema e vitrine maior (#171)
 - [ ] 16.3 Cartas
   - [ ] 16.3a Carta por anime terminado, com raridade (#172)
   - [ ] 16.3b Duelo de gosto entre perfis públicos (#173)

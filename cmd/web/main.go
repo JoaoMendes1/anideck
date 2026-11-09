@@ -82,6 +82,7 @@ func main() {
 	comunidadeHandler := &handlers.ComunidadeHandler{}
 	economiaHandler := &handlers.EconomiaHandler{}
 	missoesHandler := &handlers.MissoesHandler{}
+	lojaHandler := &handlers.LojaHandler{}
 
 	r := chi.NewRouter()
 	r.Use(chimw.RequestID)
@@ -109,6 +110,7 @@ func main() {
 	r.Get("/api/membros/{handle}", comunidadeHandler.HandlePerfilPublico)
 	r.Get("/api/ranking", rankingHandler.HandleGetTopAnime)
 	r.Get("/api/curation", curationHandler.HandleList)
+	r.Get("/api/loja", lojaHandler.HandleListarLoja)
 	r.Post("/api/anime/bulk", animeHandler.HandleGetAnimesByIDs)
 	r.Post("/api/beta/request-invite", notificationsHandler.HandleRequestBetaInvite)
 	r.Post("/api/internal/check-new-episodes", notificationsHandler.HandleCheckNewEpisodes)
@@ -147,6 +149,11 @@ func main() {
 		// Missões Diárias (Fase 16, #168): sorteio determinístico e resgate de AniCoins
 		protegido.Get("/api/missoes/hoje", missoesHandler.HandleGetMissoesHoje)
 		protegido.Post("/api/missoes/{id}/resgatar", missoesHandler.HandleResgatarMissao)
+
+		// Loja Cosmética (Fase 16, #170 e #171): compra, equipar e catálogo do usuário
+		protegido.Post("/api/loja/{id}/comprar", lojaHandler.HandleComprarItem)
+		protegido.Put("/api/loja/equipar", lojaHandler.HandleEquiparItem)
+		protegido.Get("/api/loja/meus-itens", lojaHandler.HandleMeusItens)
 
 		// Comunidade: perfil público, Mana e Vitalidade, conversa por episódio.
 		// O escudo de spoiler é a RLS do sql/041; aqui tudo usa o token de quem pede.
@@ -240,6 +247,7 @@ func main() {
 		admin.Post("/api/admin/economia/ajuste", economiaHandler.HandleAjusteManual)
 		admin.Post("/api/admin/economia/transferir", economiaHandler.HandleTransferirAniCoins)
 		admin.Get("/api/admin/economia/buscar-destinatario", economiaHandler.HandleBuscarDestinatario)
+		admin.Post("/api/admin/loja/salvar", lojaHandler.HandleAdminSalvarItem)
 
 		// Agente Olheiro: scan sob demanda e revisão da fila de sugestões
 		admin.Get("/api/admin/olheiro/tags", olheiroHandler.HandleListarTagsDesejadas)

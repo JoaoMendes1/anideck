@@ -78,6 +78,7 @@ SELECT pg_get_viewdef('nome_da_view'::regclass, true);
 | `046_anicoins_transferencia.sql` | Fase 16: RPC `transferir_cristais` (só `service_role`) para transferência atômica de AniCoins entre usuários com advisory lock anti-saldo negativo e referências cruzadas únicas. Aplicar **antes** de promover o código | — |
 | `047_missoes_diarias.sql` | Fase 16 (16.1b, #168): catálogo inicial de missões diárias em `app_settings` (chave `missoes_catalogo`). Aplicar **antes** de promover o código | — |
 | `048_vitalidade_sql_bonus.sql` | Fase 16 (16.1c, #169): funções `vitalidade_atual(uuid)` e `minha_vitalidade()`; atualização de `mana_atual(uuid)` com taxa de recarga acelerada por Vitalidade alta. Aplicar **antes** de promover o código | — |
+| `049_loja_cosmeticos.sql` | Fase 16 (16.2a e 16.2b, #170 e #171): tabelas `store_items`, `user_items` e `user_equipped`; RPCs `comprar_item` e `equipar_item`, trigger de vitrine 7 slots e seed de cosméticos. Aplicar **antes** de promover o código | — |
 
 Datas com `~` são a data do commit, não da aplicação no Supabase.
 

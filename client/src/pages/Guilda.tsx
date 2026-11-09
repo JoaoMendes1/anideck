@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
-import { Shield, Sparkles, Lock, Flame, Award, ChevronRight, Send } from 'lucide-react'
+import { Shield, Sparkles, Lock, Flame, Award, ChevronRight, Send, ShoppingBag } from 'lucide-react'
 import { useSessao } from '../contexts/SessaoContext'
 import { useCarteira } from '../hooks/useCarteira'
 import CartaoVitais from '../components/comunidade/CartaoVitais'
@@ -107,12 +107,20 @@ export default function Guilda() {
               Rank mede sua constância presente; Especialista de Gênero reconhece sua bagagem acumulada.
             </p>
           </div>
-          <Link
-            to="/meu-gosto"
-            className="inline-flex items-center gap-1.5 px-4 py-2 rounded-full bg-panel border border-line hover:border-holo-3 text-xs font-bold text-text transition-colors"
-          >
-            <Sparkles size={13} className="text-holo-3" /> Ver Meu Gosto →
-          </Link>
+          <div className="flex items-center gap-2">
+            <Link
+              to="/loja"
+              className="inline-flex items-center gap-1.5 px-4 py-2 rounded-full bg-holo-3/15 border border-holo-3/40 hover:bg-holo-3/25 text-xs font-bold text-holo-3 transition-colors"
+            >
+              <ShoppingBag size={13} /> Loja Cosmética →
+            </Link>
+            <Link
+              to="/meu-gosto"
+              className="inline-flex items-center gap-1.5 px-4 py-2 rounded-full bg-panel border border-line hover:border-holo-3 text-xs font-bold text-text transition-colors"
+            >
+              <Sparkles size={13} className="text-holo-3" /> Ver Meu Gosto →
+            </Link>
+          </div>
         </div>
       </header>
 
@@ -305,11 +313,17 @@ export default function Guilda() {
                     </div>
                   </div>
                   <div className="flex items-center gap-2">
+                    <Link
+                      to="/loja"
+                      className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full border border-holo-3/40 bg-holo-3/15 text-holo-3 hover:bg-holo-3/25 text-xs font-bold transition-colors cursor-pointer"
+                    >
+                      <ShoppingBag size={12} /> Ir para a Loja
+                    </Link>
                     {isAdmin && (
                       <button
                         type="button"
                         onClick={() => setModalTransferirAberto(true)}
-                        className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full border border-holo-3/40 bg-holo-3/15 text-holo-3 hover:bg-holo-3/25 text-xs font-bold transition-colors cursor-pointer"
+                        className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full border border-line bg-panel-2 text-text hover:border-holo-3 text-xs font-bold transition-colors cursor-pointer"
                       >
                         <Send size={12} /> Transferir AniCoins
                       </button>
