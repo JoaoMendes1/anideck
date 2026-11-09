@@ -45,6 +45,9 @@ export interface AutorDoComentario {
   cor_nome?: string
   tema_perfil?: string
   emblema?: string
+  cla_tag?: string
+  cla_nome?: string
+  cla_papel?: string
 }
 
 export interface ComentarioDaConversa {
@@ -78,6 +81,9 @@ export interface MembroNoRanking {
   cor_nome?: string
   tema_perfil?: string
   emblema?: string
+  cla_tag?: string
+  cla_nome?: string
+  cla_papel?: string
 }
 
 export interface PerfilPublico {
@@ -98,6 +104,9 @@ export interface PerfilPublico {
   cor_nome?: string
   tema_perfil?: string
   emblema?: string
+  cla_tag?: string
+  cla_nome?: string
+  cla_papel?: string
 }
 
 /**

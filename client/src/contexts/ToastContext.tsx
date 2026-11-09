@@ -1,10 +1,15 @@
-import { createContext, useContext, useState, useRef, type ReactNode } from 'react'
+import { createContext, useContext, useState, useRef, useMemo, type ReactNode } from 'react'
 import { CheckCircle2, AlertCircle, Info, X } from 'lucide-react'
 
 export type ToastTipo = 'success' | 'error' | 'info'
 
 interface ToastContextType {
   showToast: (message: string, type?: ToastTipo) => void
+  toast: {
+    success: (message: string) => void
+    error: (message: string) => void
+    info: (message: string) => void
+  }
 }
 
 const ToastContext = createContext<ToastContextType | undefined>(undefined)
@@ -39,8 +44,17 @@ export function ToastProvider({ children }: { children: ReactNode }) {
     setToast((prev) => ({ ...prev, visible: false }))
   }
 
+  const toastObj = useMemo(
+    () => ({
+      success: (msg: string) => showToast(msg, 'success'),
+      error: (msg: string) => showToast(msg, 'error'),
+      info: (msg: string) => showToast(msg, 'info'),
+    }),
+    [],
+  )
+
   return (
-    <ToastContext.Provider value={{ showToast }}>
+    <ToastContext.Provider value={{ showToast, toast: toastObj }}>
       {children}
 
       {/* Componente visual do Toast moderno, retangular com cantos suaves (rounded-2xl) */}

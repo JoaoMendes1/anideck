@@ -100,6 +100,7 @@ export default function Navbar() {
             <Link to="/" className={linkClasse('/')}>Início</Link>
             <Link to="/descobrir" className={linkClasse('/descobrir')}>Descobrir</Link>
             <Link to="/rankings" className={linkClasse('/rankings', '/membros')}>Rankings</Link>
+            <Link to="/clas" className={linkClasse('/clas')}>Clãs</Link>
             {session && (
               <>
                 <Link to="/deck" className={linkClasse('/deck')}>Meu Deck</Link>

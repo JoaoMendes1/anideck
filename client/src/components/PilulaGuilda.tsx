@@ -205,15 +205,18 @@ export default function PilulaGuilda() {
             </Link>
           )}
 
-          <div className="grid grid-cols-3 gap-2 mt-4">
-            <Link to="/guilda" className="px-2 py-2 rounded-xl border border-line text-center text-[12px] font-bold text-text hover:border-holo-3">
+          <div className="grid grid-cols-4 gap-1.5 mt-4">
+            <Link to="/guilda" className="px-1.5 py-2 rounded-xl border border-line text-center text-[11px] font-bold text-text hover:border-holo-3">
               Guilda
             </Link>
-            <Link to="/loja" className="inline-flex items-center justify-center gap-1 px-2 py-2 rounded-xl border border-gold/40 bg-gold/10 text-center text-[12px] font-bold text-gold hover:bg-gold/20">
+            <Link to="/clas" className="inline-flex items-center justify-center gap-1 px-1.5 py-2 rounded-xl border border-holo-3/40 bg-holo-3/10 text-center text-[11px] font-bold text-holo-3 hover:bg-holo-3/20">
+              <Users size={12} /> Clãs
+            </Link>
+            <Link to="/loja" className="inline-flex items-center justify-center gap-1 px-1.5 py-2 rounded-xl border border-gold/40 bg-gold/10 text-center text-[11px] font-bold text-gold hover:bg-gold/20">
               <ShoppingBag size={12} /> Loja
             </Link>
-            <Link to="/membros" className="inline-flex items-center justify-center gap-1 px-2 py-2 rounded-xl border border-line text-[12px] font-bold text-text hover:border-holo-3">
-              <Users size={12} aria-hidden /> Ranking
+            <Link to="/membros" className="inline-flex items-center justify-center gap-1 px-1.5 py-2 rounded-xl border border-line text-[11px] font-bold text-text hover:border-holo-3">
+              Ranking
             </Link>
           </div>
         </div>

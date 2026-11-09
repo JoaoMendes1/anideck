@@ -32,6 +32,19 @@ interface Resumo {
   denuncias_pendentes: number
 }
 
+interface DenunciaCla {
+  id: string
+  cla_id: string
+  cla_nome: string
+  cla_tag: string
+  denunciante_user_id: string
+  denunciante_nome?: string
+  denunciante_handle?: string
+  motivo: string
+  status: string
+  criado_em: string
+}
+
 type Acao = 'ocultar' | 'reexibir' | 'apagar' | 'dispensar'
 
 const ROTULO_MOTIVO: Record<string, string> = Object.fromEntries(MOTIVOS_DENUNCIA.map(m => [m.id, m.rotulo]))
@@ -54,6 +67,7 @@ async function cabecalho(): Promise<Record<string, string>> {
 export default function AbaModeracao() {
   const { showToast } = useToast()
   const [fila, setFila] = useState<ItemModeracao[] | null>(null)
+  const [denunciasClas, setDenunciasClas] = useState<DenunciaCla[]>([])
   const [resumo, setResumo] = useState<Resumo | null>(null)
   const [erro, setErro] = useState<string | null>(null)
   const [ocupado, setOcupado] = useState<string | null>(null)
@@ -64,20 +78,60 @@ export default function AbaModeracao() {
   const carregar = useCallback(async () => {
     try {
       const auth = await cabecalho()
-      const [resFila, resRegras] = await Promise.all([
+      const [resFila, resRegras, resClas] = await Promise.all([
         fetch('/api/admin/moderacao', { headers: auth }),
         fetch('/api/admin/comunidade/regras', { headers: auth }),
+        fetch('/api/admin/clas/denuncias', { headers: auth }),
       ])
       if (!resFila.ok) throw new Error((await resFila.text()).trim() || 'Falha ao carregar a fila.')
       const dados = (await resFila.json()) as { fila: ItemModeracao[]; resumo: Resumo }
       setFila(dados.fila)
       setResumo(dados.resumo)
       if (resRegras.ok) setRegras((await resRegras.json()) as RegrasComunidade)
+      if (resClas.ok) setDenunciasClas(await resClas.json())
       setErro(null)
     } catch (e) {
       setErro(e instanceof Error ? e.message : 'Falha ao carregar a fila.')
     }
   }, [])
+
+  const dissolverCla = async (claId: string, motivo: string) => {
+    if (!confirm('Deseja realmente dissolver este clã? Todos os membros serão removidos e o clã será desativado.')) return
+    try {
+      const auth = await cabecalho()
+      const res = await fetch(`/api/admin/clas/${claId}/dissolver`, {
+        method: 'POST',
+        headers: { ...auth, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ motivo }),
+      })
+      if (!res.ok) throw new Error('Falha ao dissolver clã')
+      showToast('Clã dissolvido com sucesso.')
+      setDenunciasClas(d => d.filter(item => item.cla_id !== claId))
+    } catch (e: unknown) {
+      showToast(e instanceof Error ? e.message : 'Erro ao dissolver clã.', 'error')
+    }
+  }
+
+  const renomearCla = async (claId: string) => {
+    const novoNome = prompt('Digite o novo nome para o clã:')
+    if (!novoNome) return
+    const novaTag = prompt('Digite a nova tag (2 a 4 letras):')
+    if (!novaTag) return
+
+    try {
+      const auth = await cabecalho()
+      const res = await fetch(`/api/admin/clas/${claId}/renomear`, {
+        method: 'POST',
+        headers: { ...auth, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ novo_nome: novoNome.trim(), nova_tag: novaTag.trim().toUpperCase() }),
+      })
+      if (!res.ok) throw new Error('Falha ao renomear clã')
+      showToast('Clã renomeado com sucesso.')
+      setDenunciasClas(d => d.filter(item => item.cla_id !== claId))
+    } catch (e: unknown) {
+      showToast(e instanceof Error ? e.message : 'Erro ao renomear clã.', 'error')
+    }
+  }
 
   useEffect(() => {
     carregar()
@@ -249,6 +303,60 @@ export default function AbaModeracao() {
               <Save size={14} aria-hidden /> {salvandoRegras ? 'Salvando…' : 'Salvar regras'}
             </button>
           </>
+        )}
+      </section>
+
+      {/* MODERAÇÃO DE CLÃS (FASE 17, #180) */}
+      <section className="p-5 rounded-2xl bg-panel border border-line min-w-0">
+        <div className="flex items-center justify-between mb-2">
+          <h2 className="font-anton text-lg uppercase m-0">Denúncias de Clãs</h2>
+          <span className="text-xs px-2.5 py-0.5 rounded-full bg-panel-2 border border-line font-mono font-bold text-muted">
+            {denunciasClas.length} pendente(s)
+          </span>
+        </div>
+        <p className="text-[12.5px] text-muted mt-0 mb-4">
+          Clãs denunciados por nome impróprio, tag inadequada ou manifestos abusivos. Renomeie o clã ou dissolva o grupo.
+        </p>
+
+        {denunciasClas.length === 0 ? (
+          <div className="p-8 text-center rounded-xl bg-panel-2/50 border border-line text-sm text-muted">
+            Nenhuma denúncia de clã pendente no momento.
+          </div>
+        ) : (
+          <div className="space-y-3">
+            {denunciasClas.map((d) => (
+              <div key={d.id} className="p-4 rounded-xl bg-panel-2 border border-line flex flex-col md:flex-row md:items-center justify-between gap-4">
+                <div>
+                  <div className="flex items-center gap-2">
+                    <span className="font-mono text-xs font-black text-holo-3">[{d.cla_tag}]</span>
+                    <strong className="text-sm">{d.cla_nome}</strong>
+                    <span className="text-xs text-muted">
+                      · denunciado por {d.denunciante_nome ? `${d.denunciante_nome} (@${d.denunciante_handle})` : d.denunciante_user_id}
+                    </span>
+                  </div>
+                  <p className="text-xs text-text/80 mt-1.5 p-2 rounded-lg bg-void border border-line/60">
+                    <strong>Motivo:</strong> {d.motivo}
+                  </p>
+                </div>
+                <div className="flex items-center gap-2 shrink-0">
+                  <button
+                    type="button"
+                    onClick={() => renomearCla(d.cla_id)}
+                    className="px-3 py-1.5 rounded-lg bg-panel border border-line hover:border-holo-3 text-xs font-bold transition-colors cursor-pointer"
+                  >
+                    Renomear
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => dissolverCla(d.cla_id, d.motivo)}
+                    className="px-3 py-1.5 rounded-lg bg-rose-500/15 border border-rose-500/30 text-rose-400 hover:bg-rose-500 hover:text-void text-xs font-bold transition-colors cursor-pointer"
+                  >
+                    Dissolver Clã
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
         )}
       </section>
     </div>

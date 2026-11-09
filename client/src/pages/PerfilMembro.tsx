@@ -11,6 +11,7 @@ import { obterEstiloRank } from '../lib/guilda'
 import SeloEquipe from '../components/comunidade/SeloEquipe'
 import ModalDueloGosto from '../components/comunidade/ModalDueloGosto'
 import SecaoColecaoCartas from '../components/comunidade/SecaoColecaoCartas'
+import TagCla from '../components/TagCla'
 import { obterClasseMoldura, obterClasseCorNome, obterClasseTemaPerfil, renderizarEmblema } from '../lib/cosmeticos'
 import { faixaDoHP, type PerfilPublico } from '../lib/comunidade'
 import type { CartaColecao, PersonagemFavorito } from '../lib/cartas'
@@ -184,6 +185,7 @@ export default function PerfilMembro() {
               <h1 className={`font-anton text-[clamp(1.6rem,4vw,2.4rem)] uppercase leading-none m-0 break-words ${obterClasseCorNome(perfil.cor_nome)}`}>
                 {perfil.nome}
               </h1>
+              {perfil.cla_tag && <TagCla tag={perfil.cla_tag} />}
               {renderizarEmblema(perfil.emblema, 'md')}
             </div>
             <p className="font-mono text-[12px] text-muted mt-1 mb-0">

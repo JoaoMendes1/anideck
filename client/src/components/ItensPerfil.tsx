@@ -3,7 +3,7 @@
 // um dropdown ancorado, no mobile é um Sheet. Duplicar estes três itens nas duas
 // molduras garantiria que um dia eles divergissem.
 import { Link } from 'react-router-dom'
-import { Settings, Shield, LogOut, BarChart2, Trophy, Compass, Swords, ShoppingBag } from 'lucide-react'
+import { Settings, Shield, LogOut, BarChart2, Trophy, Compass, Swords, ShoppingBag, Users } from 'lucide-react'
 import { useSessao } from '../contexts/SessaoContext'
 import { TEMAS, aplicarTema, useTema } from '../lib/temas'
 
@@ -33,6 +33,11 @@ export default function ItensPerfil({ onNavegar }: { onNavegar: () => void }) {
             <Link to="/loja" onClick={onNavegar} className={`${base} text-text hover:bg-panel-2`}>
                 <ShoppingBag size={16} className="text-holo-3" />
                 Loja Cosmética
+            </Link>
+
+            <Link to="/clas" onClick={onNavegar} className={`${base} text-text hover:bg-panel-2`}>
+                <Users size={16} className="text-holo-1" />
+                Clãs
             </Link>
 
             <Link to="/rankings" onClick={onNavegar} className={`${base} text-text hover:bg-panel-2`}>

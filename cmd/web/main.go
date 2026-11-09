@@ -85,6 +85,7 @@ func main() {
 	lojaHandler := &handlers.LojaHandler{}
 	cartasHandler := &handlers.CartasHandler{}
 	rankingsComunidadeHandler := &handlers.RankingsComunidadeHandler{}
+	clasHandler := &handlers.ClasHandler{}
 
 	r := chi.NewRouter()
 	r.Use(chimw.RequestID)
@@ -119,6 +120,9 @@ func main() {
 	r.Get("/api/membros/{a}/duelo/{b}", cartasHandler.HandleDueloDeGosto)
 	r.Get("/api/membros/ranking/genero", rankingsComunidadeHandler.HandleRankingGenero)
 	r.With(middleware.OptionalAuth).Get("/api/rankings/clima", rankingsComunidadeHandler.HandleClimaTemporada)
+	// Clãs (Fase 17, #180): listagem e detalhes públicos
+	r.Get("/api/clas", clasHandler.HandleListarClas)
+	r.Get("/api/clas/{tag}", clasHandler.HandleObterClaPorTag)
 	r.Post("/api/anime/bulk", animeHandler.HandleGetAnimesByIDs)
 	r.Post("/api/beta/request-invite", notificationsHandler.HandleRequestBetaInvite)
 	r.Post("/api/internal/check-new-episodes", notificationsHandler.HandleCheckNewEpisodes)
@@ -187,6 +191,18 @@ func main() {
 		protegido.Delete("/api/comunidade/comentarios/{cid}/curtida", comunidadeHandler.HandleCurtir)
 		protegido.Post("/api/comunidade/comentarios/{cid}/denuncia", comunidadeHandler.HandleDenunciar)
 		protegido.Get("/api/membros/liga", rankingsComunidadeHandler.HandleLigaSemanal)
+
+		// Clãs (Fase 17, #180): criação, gestão, membros e convites
+		protegido.Get("/api/me/cla", clasHandler.HandleObterMeuCla)
+		protegido.Post("/api/clas", clasHandler.HandleCriarCla)
+		protegido.Post("/api/clas/{id}/entrar", clasHandler.HandleEntrarCla)
+		protegido.Post("/api/clas/sair", clasHandler.HandleSairCla)
+		protegido.Post("/api/clas/{id}/membros/{userId}/expulsar", clasHandler.HandleExpulsarMembro)
+		protegido.Post("/api/clas/{id}/transferir", clasHandler.HandleTransferirLideranca)
+		protegido.Post("/api/clas/{id}/membros/{userId}/papel", clasHandler.HandleAlterarPapel)
+		protegido.Post("/api/clas/{id}/convites", clasHandler.HandleConvidarMembro)
+		protegido.Post("/api/clas/convites/{id}/responder", clasHandler.HandleResponderConvite)
+		protegido.Post("/api/clas/{id}/denunciar", clasHandler.HandleDenunciarCla)
 
 		protegido.Delete("/api/account", accountHandler.HandleDeleteAccount)
 	})
@@ -285,6 +301,11 @@ func main() {
 		admin.Post("/api/admin/moderacao/{cid}", comunidadeHandler.HandleModerar)
 		admin.Get("/api/admin/comunidade/regras", comunidadeHandler.HandleGetRegrasComunidade)
 		admin.Put("/api/admin/comunidade/regras", comunidadeHandler.HandleSalvarRegrasComunidade)
+
+		// Moderação de Clãs (Fase 17, #180)
+		admin.Get("/api/admin/clas/denuncias", clasHandler.HandleAdminListarDenuncias)
+		admin.Post("/api/admin/clas/{id}/dissolver", clasHandler.HandleAdminDissolverCla)
+		admin.Post("/api/admin/clas/{id}/renomear", clasHandler.HandleAdminRenomearCla)
 	})
 
 	workDir, _ := os.Getwd()

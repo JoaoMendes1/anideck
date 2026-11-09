@@ -359,6 +359,7 @@ type autorComentario struct {
 	Moldura string `json:"moldura,omitempty"`
 	CorNome string `json:"cor_nome,omitempty"`
 	Emblema string `json:"emblema,omitempty"`
+	ClaTag  string `json:"cla_tag,omitempty"`
 }
 
 type comentarioDaConversa struct {
@@ -526,6 +527,27 @@ func (h *ComunidadeHandler) HandleConversaDoEpisodio(w http.ResponseWriter, r *h
 							case "emblema":
 								a.Emblema = item.StoreItemRef.Estilo
 							}
+							autores[item.UserID] = a
+						}
+					}
+				}
+			}
+
+			// Carrega tags de clãs dos autores
+			var claLinhas []struct {
+				UserID string `json:"user_id"`
+				ClaRef struct {
+					Tag string `json:"tag"`
+				} `json:"clas"`
+			}
+			if dataCl, _, errCl := client.From("cla_membros").
+				Select("user_id,clas(tag)", "", false).
+				In("user_id", listaAutores).
+				Execute(); errCl == nil {
+				if json.Unmarshal(dataCl, &claLinhas) == nil {
+					for _, item := range claLinhas {
+						if a, ok := autores[item.UserID]; ok && item.ClaRef.Tag != "" {
+							a.ClaTag = item.ClaRef.Tag
 							autores[item.UserID] = a
 						}
 					}
@@ -952,6 +974,9 @@ type perfilPublico struct {
 	TemaPerfil      string         `json:"tema_perfil,omitempty"`
 	CorNome         string         `json:"cor_nome,omitempty"`
 	Emblema         string         `json:"emblema,omitempty"`
+	ClaTag          string         `json:"cla_tag,omitempty"`
+	ClaNome         string         `json:"cla_nome,omitempty"`
+	ClaPapel        string         `json:"cla_papel,omitempty"`
 }
 
 // HandlePerfilPublico é público: o perfil de um @ com perfil aberto.
@@ -1024,6 +1049,25 @@ func (h *ComunidadeHandler) HandlePerfilPublico(w http.ResponseWriter, r *http.R
 							p.Emblema = item.StoreItemRef.Estilo
 						}
 					}
+				}
+			}
+
+			// Carrega clã do perfil
+			var claMembros []struct {
+				Papel  string `json:"papel"`
+				ClaRef struct {
+					Nome string `json:"nome"`
+					Tag  string `json:"tag"`
+				} `json:"clas"`
+			}
+			if dataC, _, errC := database.Client.From("cla_membros").
+				Select("papel,clas(nome,tag)", "", false).
+				Eq("user_id", profs[0].UserID).
+				Execute(); errC == nil {
+				if json.Unmarshal(dataC, &claMembros) == nil && len(claMembros) > 0 {
+					p.ClaTag = claMembros[0].ClaRef.Tag
+					p.ClaNome = claMembros[0].ClaRef.Nome
+					p.ClaPapel = claMembros[0].Papel
 				}
 			}
 		}

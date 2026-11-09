@@ -83,6 +83,7 @@ SELECT pg_get_viewdef('nome_da_view'::regclass, true);
 | `051_rankings_temporada_genero_liga.sql` | Fase 16 (16.4a, 16.4b e 16.4c, #175, #176 e #177): ranking da temporada em `ranking_membros`, tabela de cache `ranking_genero`, liga com divisões `liga_participacoes` e clima da temporada em `top_reacoes_temporada`. Aplicar **antes** de promover o código | — |
 | `052_apoiador_config.sql` | Fase 16 (16.5, #178): configuração de apoio comunitário em `app_settings` (`apoiador_config`) e cosméticos exclusivos de Apoiador em `store_items`. Aplicar **antes** de promover o código | — |
 | `053_caixa_loja_devolucao_avatar.sql` | Fase 16 (#198): Caixa/Cofre da plataforma no `crystal_ledger`, RPC `sacar_caixa_loja`, RPC `devolver_item` com taxa retida, cosméticos da Temporada 1, `apoiador` e `avatar_url` em `profiles`. Aplicar **antes** de promover o código | — |
+| `054_clas_sistema.sql` | Fase 17 (17.1a, #180): Clãs temáticos — tabelas `clas`, `cla_membros`, `cla_historico_saida`, `cla_convites`, `cla_denuncias`, RPCs seguras de criação, entrada, saída, transferência, moderação e consulta com XP semanal. Aplicar **antes** de promover o código | — |
 
 Datas com `~` são a data do commit, não da aplicação no Supabase.
 

@@ -17,8 +17,10 @@
 | 15 | Ranking de membros (aba do Descobrir, em `/membros`) | `Membros.tsx` | ✅ Implementada · Liga semanal com divisões (Bronze a Diamante) e grupos de 20, ranking por temporada (trimestre no fuso de Brasília), Hall da Fama e ranking por gênero com seletor | Fase 15 / 16 (#154, #175, #176, #177) |
 | 16 | Perfil público de membro (`/u/:handle`) | `PerfilMembro.tsx` | ✅ Implementada · ficha da Guilda, vitrine de cinco a sete cartas, tema de perfil, moldura e emblema cosmético, contagem do deck sem títulos, bloqueio, Duelo de Gosto, personagens favoritos e coleção de cartas públicas | Fase 15 / 16 (#154, #171, #172, #173, #174) |
 | 17 | Loja Cosmética (`/loja`) | `Loja.tsx` | ✅ Implementada · catálogo por categorias com preview em tempo real (molduras, temas de perfil, cores de nome e emblemas), compra com AniCoins, cosméticos exclusivos da Temporada 1, sistema de devolução de itens com taxa de retenção configurável para o cofre da plataforma, equipamento por slot e modal de Apoiador por link externo com cosméticos exclusivos | Fase 16 (#170, #171, #178, #198) |
+| 18 | Clãs & Alianças (`/clas`) | `Clas.tsx` | ✅ Implementada · lista de clãs ativos, busca por nome e tag `[TAG]`, card do próprio clã no topo, convites pendentes e modal de fundação de novo clã com emblemas e tipo | Fase 17 (#180) |
+| 19 | Detalhes do Clã (`/clas/:tag`) | `ClaDetalhe.tsx` | ✅ Implementada · painel do clã com emblema temático, estatísticas coletivas (membros e XP semanal acumulado), roster com papéis (Líder, Vice, Membros), ações de gestão (promover, rebaixar, expulsar, transferir liderança, convidar, sair e denunciar) | Fase 17 (#180) |
 
-**Total: 17 telas implementadas.**
+**Total: 19 telas implementadas.**
 
 > Configurações tem oito seções, todas funcionando: Perfil (com foto de perfil otimizada e upload/URL), Perfil público, Preferências de
 > Gosto, Importar Lista, Aparência, Notificações, Conta e Ajuda. Um bloco dentro delas usa o componente `EmBreve`, dizendo no

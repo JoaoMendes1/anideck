@@ -9,6 +9,7 @@ import { useSessao } from '../../contexts/SessaoContext'
 import { useToast } from '../../contexts/ToastContext'
 import { useComunidade, avisarComunidadeAtualizada } from '../../hooks/useComunidade'
 import SeloEquipe from './SeloEquipe'
+import TagCla from '../TagCla'
 import { obterClasseMoldura, obterClasseCorNome, renderizarEmblema } from '../../lib/cosmeticos'
 import {
   REACOES,
@@ -673,6 +674,7 @@ function ItemComentario({ comentario: c, agora, token, onRemover, onBloquear, on
             ) : (
               <span className={`font-bold text-[13.5px] ${obterClasseCorNome(c.autor.cor_nome)}`}>{nome}</span>
             )}
+            {c.autor.cla_tag && <TagCla tag={c.autor.cla_tag} />}
             {renderizarEmblema(c.autor.emblema, 'sm')}
             <SeloEquipe handle={c.autor.handle} />
             {c.autor.handle && <span className="font-mono text-[10.5px] text-muted-2">@{c.autor.handle}</span>}
