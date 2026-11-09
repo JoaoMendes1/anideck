@@ -7,6 +7,8 @@ import CartaoVitais from '../components/comunidade/CartaoVitais'
 import IconeAniCoin from '../components/IconeAniCoin'
 import ModalTransferirAniCoins from '../components/ModalTransferirAniCoins'
 import CardMissoesDiarias from '../components/inicio/CardMissoesDiarias'
+import SecaoColecaoCartas from '../components/comunidade/SecaoColecaoCartas'
+import { useCartas } from '../hooks/useCartas'
 import { chaveDoUsuario, lerDaMemoria, guardarNaMemoria } from '../lib/cacheDeTela'
 import {
   obterEstiloRank,
@@ -26,6 +28,7 @@ export default function Guilda() {
   const [abaLivroRazao, setAbaLivroRazao] = useState<'xp' | 'cristais'>('xp')
   const [modalTransferirAberto, setModalTransferirAberto] = useState(false)
   const { saldo: saldoCristais, movimentos: movimentosCristais, recarregar: recarregarCarteira } = useCarteira()
+  const { cartas } = useCartas()
 
   useEffect(() => {
     if (!session?.access_token || !chave) return
@@ -205,6 +208,9 @@ export default function Guilda() {
 
           {/* MISSÕES DIÁRIAS (Fase 16, #168) */}
           <CardMissoesDiarias />
+
+          {/* COLEÇÃO DE CARTAS (Fase 16, #172) */}
+          <SecaoColecaoCartas cartas={cartas} />
 
           {/* LIVRO-RAZÃO: XP E CRISTAIS */}
           <section className="p-5 sm:p-6 rounded-2xl bg-panel border border-line">

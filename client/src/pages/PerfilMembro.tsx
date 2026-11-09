@@ -3,14 +3,17 @@
 // Só existe para perfil marcado como público; o resto do deck continua privado.
 import { useEffect, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
-import { Ban, CalendarDays, Heart, MessageCircle, PlayCircle, Sparkles, UserX } from 'lucide-react'
+import { Ban, CalendarDays, Heart, MessageCircle, PlayCircle, Sparkles, UserX, Swords } from 'lucide-react'
 import { useSessao } from '../contexts/SessaoContext'
 import { useToast } from '../contexts/ToastContext'
 import { useComunidade } from '../hooks/useComunidade'
 import { obterEstiloRank } from '../lib/guilda'
 import SeloEquipe from '../components/comunidade/SeloEquipe'
+import ModalDueloGosto from '../components/comunidade/ModalDueloGosto'
+import SecaoColecaoCartas from '../components/comunidade/SecaoColecaoCartas'
 import { obterClasseMoldura, obterClasseCorNome, obterClasseTemaPerfil, renderizarEmblema } from '../lib/cosmeticos'
 import { faixaDoHP, type PerfilPublico } from '../lib/comunidade'
+import type { CartaColecao, PersonagemFavorito } from '../lib/cartas'
 
 interface CartaDaVitrine {
   mal_id: number
@@ -31,6 +34,9 @@ export default function PerfilMembro() {
   const [vitrine, setVitrine] = useState<CartaDaVitrine[]>([])
   const [bloqueado, setBloqueado] = useState<boolean | null>(null)
   const [ocupado, setOcupado] = useState(false)
+  const [cartasMembro, setCartasMembro] = useState<CartaColecao[]>([])
+  const [personagensMembro, setPersonagensMembro] = useState<PersonagemFavorito[]>([])
+  const [modalDueloAberto, setModalDueloAberto] = useState(false)
 
   const souEu = !!estado?.perfil.existe && estado.perfil.handle === handle.toLowerCase()
 
@@ -68,6 +74,16 @@ export default function PerfilMembro() {
             )
           }
         }
+
+        fetch(`/api/membros/${encodeURIComponent(handle)}/cartas`)
+          .then(r => r.ok ? r.json() : null)
+          .then(d => { if (ativo && d) setCartasMembro(d.cartas || []) })
+          .catch(() => undefined)
+
+        fetch(`/api/membros/${encodeURIComponent(handle)}/personagens`)
+          .then(r => r.ok ? r.json() : null)
+          .then(d => { if (ativo && d) setPersonagensMembro(d.personagens || []) })
+          .catch(() => undefined)
       } catch {
         if (ativo) setEstadoTela('erro')
       }
@@ -181,12 +197,23 @@ export default function PerfilMembro() {
                 Editar perfil
               </Link>
             ) : (
-              token &&
-              bloqueado !== null && (
-                <button type="button" onClick={alternarBloqueio} disabled={ocupado} className="inline-flex items-center gap-1.5 px-4 py-2 rounded-full text-xs font-bold border border-line text-muted hover:text-text cursor-pointer disabled:opacity-50">
-                  <Ban size={13} aria-hidden /> {bloqueado ? 'Desbloquear' : 'Bloquear'}
-                </button>
-              )
+              <>
+                {token && estado?.perfil.existe && (
+                  <button
+                    type="button"
+                    onClick={() => setModalDueloAberto(true)}
+                    className="inline-flex items-center gap-1.5 px-4 py-2 rounded-full text-xs font-bold bg-gradient-to-r from-holo-1 to-holo-3 text-void hover:opacity-90 transition-opacity cursor-pointer shadow-md"
+                  >
+                    <Swords size={13} /> Duelar comigo
+                  </button>
+                )}
+                {token &&
+                  bloqueado !== null && (
+                    <button type="button" onClick={alternarBloqueio} disabled={ocupado} className="inline-flex items-center gap-1.5 px-4 py-2 rounded-full text-xs font-bold border border-line text-muted hover:text-text cursor-pointer disabled:opacity-50">
+                      <Ban size={13} aria-hidden /> {bloqueado ? 'Desbloquear' : 'Bloquear'}
+                    </button>
+                  )}
+              </>
             )}
           </div>
         </div>
@@ -254,6 +281,50 @@ export default function PerfilMembro() {
           )}
         </aside>
       </div>
+
+      {/* PERSONAGENS FAVORITOS (Fase 16, #174) */}
+      {personagensMembro.length > 0 && (
+        <section className="mt-6 rounded-2xl bg-panel border border-line p-5">
+          <span className="font-mono text-[10px] text-muted-2 uppercase tracking-widest block mb-1">
+            // favoritos de @{perfil.handle}
+          </span>
+          <h2 className="font-anton text-base uppercase m-0 mb-4">Personagens Favoritos</h2>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            {personagensMembro.slice(0, 3).map((p) => (
+              <div key={p.character_id} className="flex items-center gap-3 p-3 rounded-xl bg-panel-2 border border-line">
+                <div className="w-12 h-12 rounded-full overflow-hidden bg-void shrink-0 border border-holo-3/30">
+                  <img src={p.imagem_url} alt={p.nome} className="w-full h-full object-cover" />
+                </div>
+                <div className="min-w-0 flex-1">
+                  <span className="font-bold text-xs text-text block truncate">{p.nome}</span>
+                  <span className="font-mono text-[10px] text-holo-3 block mt-0.5">{p.papel || 'Favorito'}</span>
+                </div>
+              </div>
+            ))}
+          </div>
+        </section>
+      )}
+
+      {/* COLEÇÃO DE CARTAS DE ANIME (Fase 16, #172) */}
+      {cartasMembro.length > 0 && (
+        <div className="mt-6">
+          <SecaoColecaoCartas
+            cartas={cartasMembro}
+            titulo={`Coleção de @${perfil.handle}`}
+            descricao="Cartas colecionadas ao completar animes no AniDeck."
+          />
+        </div>
+      )}
+
+      {modalDueloAberto && estado?.perfil.handle && (
+        <ModalDueloGosto
+          aberto={modalDueloAberto}
+          onClose={() => setModalDueloAberto(false)}
+          meuHandle={estado.perfil.handle}
+          alvoHandle={perfil.handle}
+          alvoNome={perfil.nome}
+        />
+      )}
     </div>
   )
 }

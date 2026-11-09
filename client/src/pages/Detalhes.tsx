@@ -1,8 +1,10 @@
 import { useState, useEffect, useRef, type ReactNode } from 'react'
 import { useParams, Link, useNavigate, useSearchParams, useLocation } from 'react-router-dom'
-import { PlayCircle, Star, AlertCircle, Trophy, X, ArrowLeft, CalendarDays, ChevronDown } from 'lucide-react'
+import { PlayCircle, Star, AlertCircle, Trophy, X, ArrowLeft, CalendarDays, ChevronDown, Heart } from 'lucide-react'
 import { supabase } from '../lib/supabase'
+import { useSessao } from '../contexts/SessaoContext'
 import { useToast } from '../contexts/ToastContext'
+import { useCartas } from '../hooks/useCartas'
 import { useCatalogoStatus } from '../contexts/CatalogoStatusContext'
 import BotaoCopiar from '../components/BotaoCopiar'
 import ReactMarkdown from 'react-markdown'
@@ -84,6 +86,8 @@ export default function Detalhes() {
     else navigate(-1)
   }
   const { id } = useParams<{ id: string }>()
+  const { session } = useSessao()
+  const { alternarFavorito, ehFavorito } = useCartas()
   const { showToast } = useToast()
   const { reportarFalha, reportarSucesso } = useCatalogoStatus()
   const [searchParams, setSearchParams] = useSearchParams()
@@ -597,15 +601,41 @@ export default function Detalhes() {
                       <div className="flex gap-3 overflow-x-auto pb-2.5 -mx-4 px-4 scroll-px-4 sm:mx-0 sm:px-0 sm:scroll-px-0 custom-scrollbar snap-x">
                         {/* A chave cai para o nome quando o id falta: o elenco curado no Painel é
                             gravado sem id e chegaria com chaves repetidas. */}
-                        {anime.characters.map(char => (
-                          <div key={char.id || char.name} className="flex-none w-[100px] sm:w-[120px] snap-start">
-                            <div className="aspect-[3/4] rounded-xl overflow-hidden mb-1.5 bg-panel-2 border border-line">
-                              <img src={char.image} alt={char.name} loading="lazy" className="w-full h-full object-cover" />
+                        {anime.characters.map(char => {
+                          const favorito = char.id ? ehFavorito(char.id) : false
+                          return (
+                            <div key={char.id || char.name} className="flex-none w-[100px] sm:w-[120px] snap-start group relative">
+                              <div className="relative aspect-[3/4] rounded-xl overflow-hidden mb-1.5 bg-panel-2 border border-line">
+                                <img src={char.image} alt={char.name} loading="lazy" className="w-full h-full object-cover" />
+                                {session && char.id && (
+                                  <button
+                                    type="button"
+                                    onClick={() =>
+                                      alternarFavorito({
+                                        character_id: char.id!,
+                                        mal_id: Number(id),
+                                        nome: char.name,
+                                        imagem_url: char.image,
+                                        papel: char.role,
+                                      })
+                                    }
+                                    title={favorito ? 'Remover dos favoritos' : 'Favoritar personagem'}
+                                    aria-label={favorito ? 'Remover dos favoritos' : 'Favoritar personagem'}
+                                    className={`absolute top-1.5 right-1.5 w-6 h-6 rounded-full flex items-center justify-center backdrop-blur-md transition-all cursor-pointer ${
+                                      favorito
+                                        ? 'bg-rose-500 text-void shadow-md scale-100'
+                                        : 'bg-void/70 text-muted hover:text-rose-400 opacity-80 sm:opacity-0 group-hover:opacity-100 hover:scale-110'
+                                    }`}
+                                  >
+                                    <Heart size={12} className={favorito ? 'fill-void' : ''} />
+                                  </button>
+                                )}
+                              </div>
+                              <div className="font-bold text-[12px] leading-tight line-clamp-2 text-text">{char.name}</div>
+                              <div className="font-mono text-[9px] text-muted uppercase tracking-wider truncate mt-0.5">{char.role === 'MAIN' ? 'Principal' : char.role === 'SUPPORTING' ? 'Coadjuvante' : char.role}</div>
                             </div>
-                            <div className="font-bold text-[12px] leading-tight line-clamp-2 text-text">{char.name}</div>
-                            <div className="font-mono text-[9px] text-muted uppercase tracking-wider truncate mt-0.5">{char.role === 'MAIN' ? 'Principal' : char.role === 'SUPPORTING' ? 'Coadjuvante' : char.role}</div>
-                          </div>
-                        ))}
+                          )
+                        })}
                       </div>
                     </section>
                   )}

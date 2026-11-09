@@ -177,6 +177,13 @@ var tarefasPeriodicasPadrao = []TarefaPeriodica{
 		Frequencia: FrequenciaDiaria(4, 0),
 		Executar:   executarManutencaoDiaria,
 	},
+	{
+		Nome:       "recalcular_raridade_cartas",
+		Titulo:     "Recálculo de raridade das cartas",
+		Descricao:  "Calcula o percentual de conclusões de cada anime na base e marca como raríssima obras terminadas por menos de 10% dos membros.",
+		Frequencia: FrequenciaDiaria(4, 30),
+		Executar:   executarRecalculoRaridadeCartas,
+	},
 }
 
 // TarefasPeriodicasRegistradas devolve uma cópia das tarefas ativas no worker.
@@ -226,6 +233,19 @@ func executarManutencaoDiaria(ctx context.Context) (string, error) {
 	resumo := fmt.Sprintf("Worker vivo · %d registro(s) de tarefa com mais de %d dias removido(s)", len(removidas), diasHistoricoTarefas)
 	log.Printf("[WORKER][TAREFA manutencao_diaria] %s", resumo)
 	return resumo, nil
+}
+
+// executarRecalculoRaridadeCartas aciona a RPC de atualização de raridade das cartas (Issue #172).
+func executarRecalculoRaridadeCartas(ctx context.Context) (string, error) {
+	if err := ctx.Err(); err != nil {
+		return "", err
+	}
+	client, err := database.ServiceRoleClient()
+	if err != nil || client == nil {
+		return "", fmt.Errorf("service role indisponível: %w", err)
+	}
+	_ = client.Rpc("recalcular_raridade_cartas", "", nil)
+	return "Raridade das cartas recalculada com sucesso", nil
 }
 
 // diasHistoricoTarefas é por quanto tempo uma execução concluída fica visível no Painel.

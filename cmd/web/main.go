@@ -83,6 +83,7 @@ func main() {
 	economiaHandler := &handlers.EconomiaHandler{}
 	missoesHandler := &handlers.MissoesHandler{}
 	lojaHandler := &handlers.LojaHandler{}
+	cartasHandler := &handlers.CartasHandler{}
 
 	r := chi.NewRouter()
 	r.Use(chimw.RequestID)
@@ -111,6 +112,9 @@ func main() {
 	r.Get("/api/ranking", rankingHandler.HandleGetTopAnime)
 	r.Get("/api/curation", curationHandler.HandleList)
 	r.Get("/api/loja", lojaHandler.HandleListarLoja)
+	r.Get("/api/membros/{handle}/cartas", cartasHandler.HandleCartasDoMembro)
+	r.Get("/api/membros/{handle}/personagens", cartasHandler.HandlePersonagensDoMembro)
+	r.Get("/api/membros/{a}/duelo/{b}", cartasHandler.HandleDueloDeGosto)
 	r.Post("/api/anime/bulk", animeHandler.HandleGetAnimesByIDs)
 	r.Post("/api/beta/request-invite", notificationsHandler.HandleRequestBetaInvite)
 	r.Post("/api/internal/check-new-episodes", notificationsHandler.HandleCheckNewEpisodes)
@@ -154,6 +158,12 @@ func main() {
 		protegido.Post("/api/loja/{id}/comprar", lojaHandler.HandleComprarItem)
 		protegido.Put("/api/loja/equipar", lojaHandler.HandleEquiparItem)
 		protegido.Get("/api/loja/meus-itens", lojaHandler.HandleMeusItens)
+
+		// Cartas Colecionáveis e Personagens Favoritos (Fase 16, #172, #173, #174)
+		protegido.Get("/api/cartas", cartasHandler.HandleMinhasCartas)
+		protegido.Get("/api/personagens-favoritos", cartasHandler.HandleGetPersonagensFavoritos)
+		protegido.Post("/api/personagens-favoritos", cartasHandler.HandleFavoritarPersonagem)
+		protegido.Delete("/api/personagens-favoritos/{id}", cartasHandler.HandleDesfavoritarPersonagem)
 
 		// Comunidade: perfil público, Mana e Vitalidade, conversa por episódio.
 		// O escudo de spoiler é a RLS do sql/041; aqui tudo usa o token de quem pede.
