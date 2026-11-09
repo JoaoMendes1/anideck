@@ -152,11 +152,17 @@ export default function PlayerHudInicio({ nome, dataHoje, aoAbrirGosto }: Props)
         <Link
           to="/guilda"
           className="p-2.5 sm:p-3 rounded-xl bg-panel-2/60 border border-line/70 hover:border-coral/50 transition-all group flex flex-col justify-between"
+          title={hp >= 80 ? 'Vitalidade alta: bônus de até +10% de XP por episódio ativo!' : 'Mantenha sua Vitalidade para ganhar bônus de XP'}
         >
           <div className="flex items-center justify-between gap-1 mb-1.5 font-mono text-[10.5px]">
             <span className="font-bold text-muted group-hover:text-text uppercase tracking-wider flex items-center gap-1">
               <Heart size={12} className="text-coral fill-coral/20" />
               <span>Vit</span>
+              {hp >= 80 && (
+                <span className="text-[9px] px-1 py-0.2 rounded bg-green/15 text-green font-bold">
+                  +10% XP
+                </span>
+              )}
             </span>
             <span className="font-bold text-coral">
               {hp}<span className="text-muted-2 text-[9.5px]">/100</span>

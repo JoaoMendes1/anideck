@@ -66,6 +66,35 @@ func TestCalcularXPEpisodio_TetoDiarioEEvento(t *testing.T) {
 	}
 }
 
+func TestCalcularXPEpisodio_BonusVitalidade(t *testing.T) {
+	cfg := EconomiaPadrao()
+	agora := time.Date(2026, 11, 8, 15, 0, 0, 0, time.UTC)
+
+	// 1. HP abaixo do limiar (70%): sem bônus (25 XP)
+	xp70, mot70 := CalcularXPEpisodioComVitalidade(1, 0, false, 70, cfg, agora)
+	if xp70 != 25 || strings.Contains(mot70, "bônus Vitalidade") {
+		t.Fatalf("HP 70: esperava 25 sem bônus, recebeu %d (%q)", xp70, mot70)
+	}
+
+	// 2. HP no limiar (80%): sem bônus (25 XP)
+	xp80, mot80 := CalcularXPEpisodioComVitalidade(1, 0, false, 80, cfg, agora)
+	if xp80 != 25 || strings.Contains(mot80, "bônus Vitalidade") {
+		t.Fatalf("HP 80: esperava 25 sem bônus, recebeu %d (%q)", xp80, mot80)
+	}
+
+	// 3. HP cheio (100%): bônus de +10% (25 * 1.10 = 27.5 -> 28 XP)
+	xp100, mot100 := CalcularXPEpisodioComVitalidade(1, 0, false, 100, cfg, agora)
+	if xp100 != 28 || !strings.Contains(mot100, "bônus Vitalidade +10%") {
+		t.Fatalf("HP 100: esperava 28 XP com 'bônus Vitalidade +10%%', recebeu %d (%q)", xp100, mot100)
+	}
+
+	// 4. Teto diário continua valendo depois do bônus
+	xpTeto, motTeto := CalcularXPEpisodioComVitalidade(1, 175, false, 100, cfg, agora)
+	if xpTeto != 5 || motTeto != "teto diário atingido" {
+		t.Fatalf("teto após bônus: esperava 5 ('teto diário atingido'), recebeu %d (%q)", xpTeto, motTeto)
+	}
+}
+
 func TestCalcularNivelERank(t *testing.T) {
 	ranks := RanksPadrao()
 

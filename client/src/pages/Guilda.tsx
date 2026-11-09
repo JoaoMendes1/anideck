@@ -268,6 +268,9 @@ export default function Guilda() {
                             </Link>
                             <div className="font-mono text-[10px] text-muted-2 mt-0.5 flex flex-wrap items-center gap-2">
                               <span>{item.reason}</span>
+                              {item.reason.toLowerCase().includes('vitalidade') && (
+                                <span className="px-1.5 py-0.2 rounded bg-green/15 text-green font-bold">bônus vitalidade</span>
+                              )}
                               {item.de_hoje && (
                                 <span className="px-1.5 py-0.2 rounded bg-holo-3/15 text-holo-3">hoje</span>
                               )}

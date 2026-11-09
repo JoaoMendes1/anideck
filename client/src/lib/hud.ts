@@ -5,9 +5,15 @@
 
 const MS_POR_DIA = 24 * 60 * 60 * 1000
 
+export function taxaRegenEfetiva(baseRegen: number, hp: number, limiar = 80, bonusMax = 0.25): number {
+  if (hp <= limiar || limiar >= 100) return baseRegen
+  const fracao = Math.min(1, Math.max(0, (hp - limiar) / (100 - limiar)))
+  return baseRegen * (1 + bonusMax * fracao)
+}
+
 /**
  * Mana mostrada agora, a partir da lida no servidor: soma a recarga desde a busca, na
- * mesma regra do banco (mana_atual, sql/041: contínua, `regenDia` por dia, até o máximo).
+ * mesma regra do banco (mana_atual, sql/041 e sql/048: contínua, acelerada por HP alto, até o máximo).
  * Devolve número fracionário; a tela mostra a parte inteira.
  */
 export function manaNaTela(mana: number, maximo: number, regenDia: number, buscadoEm: number, agora: number): number {

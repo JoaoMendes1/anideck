@@ -156,6 +156,18 @@ func lerMinhaMana(client *supabase.Client, regras RegrasComunidade) float64 {
 	return math.Floor(valor*100) / 100
 }
 
+func lerMinhaVitalidade(client *supabase.Client, perfil perfilProprio, hoje time.Time, regras RegrasComunidade) int {
+	if client != nil {
+		bruto := strings.TrimSpace(client.Rpc("minha_vitalidade", "", map[string]interface{}{}))
+		if bruto != "" && bruto != "null" && !strings.Contains(bruto, "error") {
+			if v, err := strconv.Atoi(bruto); err == nil && v >= regras.HPPiso && v <= 100 {
+				return v
+			}
+		}
+	}
+	return CalcularHP(lerDiasAtivos(client), perfil.DescansoInicio, perfil.DescansoFim, hoje, regras)
+}
+
 func (h *ComunidadeHandler) montarEstado(client *supabase.Client, userID string) (estadoComunidade, error) {
 	regras := lerRegrasComunidade(client)
 	perfil, err := lerPerfilProprio(client, userID)
@@ -167,7 +179,7 @@ func (h *ComunidadeHandler) montarEstado(client *supabase.Client, userID string)
 	return estadoComunidade{
 		Perfil:  perfil,
 		Mana:    lerMinhaMana(client, regras),
-		HP:      CalcularHP(lerDiasAtivos(client), perfil.DescansoInicio, perfil.DescansoFim, hoje, regras),
+		HP:      lerMinhaVitalidade(client, perfil, hoje, regras),
 		Regras:  regras,
 		EmPausa: perfil.DescansoFim != "" && perfil.DescansoInicio <= hojeTexto && hojeTexto <= perfil.DescansoFim,
 	}, nil

@@ -38,15 +38,17 @@ func carregarFusoBrasilia() *time.Location {
 
 // EconomiaGuilda reúne os pesos editáveis na aba Guilda do Painel Admin.
 type EconomiaGuilda struct {
-	Ativo               bool    `json:"ativo"`
-	XPBaseEpisodio      int     `json:"xp_base_episodio"`
-	BonusCedo           int     `json:"bonus_cedo"`
-	Fator3a5            float64 `json:"fator_3_a_5"`
-	Fator6Mais          float64 `json:"fator_6_mais"`
-	TetoDiario          int     `json:"teto_diario"`
-	EventoInicio        string  `json:"evento_inicio"`
-	EventoFim           string  `json:"evento_fim"`
-	EventoMultiplicador float64 `json:"evento_multiplicador"`
+	Ativo                 bool    `json:"ativo"`
+	XPBaseEpisodio        int     `json:"xp_base_episodio"`
+	BonusCedo             int     `json:"bonus_cedo"`
+	Fator3a5              float64 `json:"fator_3_a_5"`
+	Fator6Mais            float64 `json:"fator_6_mais"`
+	TetoDiario            int     `json:"teto_diario"`
+	EventoInicio          string  `json:"evento_inicio"`
+	EventoFim             string  `json:"evento_fim"`
+	EventoMultiplicador   float64 `json:"evento_multiplicador"`
+	BonusVitalidadeMax    float64 `json:"bonus_vitalidade_max"`
+	BonusVitalidadeLimiar int     `json:"bonus_vitalidade_limiar"`
 }
 
 // FaixaRank define o nível mínimo e o título de cada classe F → SS.
@@ -143,15 +145,17 @@ type ItemLedgerGuilda struct {
 // EconomiaPadrao devolve os valores de referência quando a chave não existe no banco.
 func EconomiaPadrao() EconomiaGuilda {
 	return EconomiaGuilda{
-		Ativo:               true,
-		XPBaseEpisodio:      25,
-		BonusCedo:           10,
-		Fator3a5:            0.75,
-		Fator6Mais:          0.50,
-		TetoDiario:          180,
-		EventoInicio:        "",
-		EventoFim:           "",
-		EventoMultiplicador: 2.0,
+		Ativo:                 true,
+		XPBaseEpisodio:        25,
+		BonusCedo:             10,
+		Fator3a5:              0.75,
+		Fator6Mais:            0.50,
+		TetoDiario:            180,
+		EventoInicio:          "",
+		EventoFim:             "",
+		EventoMultiplicador:   2.0,
+		BonusVitalidadeMax:    0.10,
+		BonusVitalidadeLimiar: 80,
 	}
 }
 
@@ -197,6 +201,11 @@ func EventoAtivo(cfg EconomiaGuilda, agora time.Time) bool {
 // CalcularXPEpisodio aplica retorno decrescente, bônus de lançamento, evento e teto diário.
 // Recebe ordemNoDia começando em 1 (1 = primeiro episódio marcado pelo usuário hoje).
 func CalcularXPEpisodio(ordemNoDia int, xpAcumuladoHoje int, ehLancamentoRecente bool, cfg EconomiaGuilda, agora time.Time) (int, string) {
+	return CalcularXPEpisodioComVitalidade(ordemNoDia, xpAcumuladoHoje, ehLancamentoRecente, 0, cfg, agora)
+}
+
+// CalcularXPEpisodioComVitalidade inclui o bônus de constância recente (Vitalidade alta) antes do teto diário (Fase 16, #169).
+func CalcularXPEpisodioComVitalidade(ordemNoDia int, xpAcumuladoHoje int, ehLancamentoRecente bool, hp int, cfg EconomiaGuilda, agora time.Time) (int, string) {
 	if !cfg.Ativo {
 		return 0, "gamificação pausada"
 	}
@@ -226,6 +235,32 @@ func CalcularXPEpisodio(ordemNoDia int, xpAcumuladoHoje int, ehLancamentoRecente
 	if ehLancamentoRecente && EventoAtivo(cfg, agora) {
 		xp = int(math.Round(float64(xp) * cfg.EventoMultiplicador))
 		motivo += " · evento XP"
+	}
+
+	// Bônus de Vitalidade alta (Fase 16, #169): até +10% de XP
+	limiar := cfg.BonusVitalidadeLimiar
+	if limiar <= 0 {
+		limiar = 80
+	}
+	bonusMax := cfg.BonusVitalidadeMax
+	if bonusMax <= 0 {
+		bonusMax = 0.10
+	}
+
+	if hp > limiar && limiar < 100 {
+		fracao := float64(hp-limiar) / float64(100-limiar)
+		if fracao > 1.0 {
+			fracao = 1.0
+		}
+		pctBonus := int(math.Round(fracao * bonusMax * 100))
+		if pctBonus > 0 {
+			bonusXP := int(math.Round(float64(xp) * (float64(pctBonus) / 100.0)))
+			if bonusXP < 1 && xp > 0 {
+				bonusXP = 1
+			}
+			xp += bonusXP
+			motivo += fmt.Sprintf(" · bônus Vitalidade +%d%%", pctBonus)
+		}
 	}
 
 	if xp < 0 {
@@ -556,7 +591,12 @@ func RegistrarXPEpisodio(dbClient *supabase.Client, userID string, malID, episod
 	ordemNoDia := len(linhasHoje) + 1
 	ehCedo := episodioEhLancamentoRecente(curado, episodeNumber, agora)
 
-	xpGanho, motivo := CalcularXPEpisodio(ordemNoDia, xpHoje, ehCedo, economia, agora)
+	hp := 0
+	if resHP := strings.TrimSpace(dbClient.Rpc("vitalidade_atual", "", map[string]interface{}{"p_user": userID})); resHP != "" && !strings.Contains(resHP, "error") {
+		hp, _ = strconv.Atoi(resHP)
+	}
+
+	xpGanho, motivo := CalcularXPEpisodioComVitalidade(ordemNoDia, xpHoje, ehCedo, hp, economia, agora)
 
 	novaLinha := map[string]interface{}{
 		"user_id":        userID,

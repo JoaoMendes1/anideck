@@ -10,7 +10,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useSessao } from '../contexts/SessaoContext'
 import { chaveDoUsuario, guardarNaMemoria, lerDaMemoria } from '../lib/cacheDeTela'
 import { buscarUmaVez } from '../lib/buscaCompartilhada'
-import { manaNaTela } from '../lib/hud'
+import { manaNaTela, taxaRegenEfetiva } from '../lib/hud'
 import type { EstadoComunidade } from '../lib/comunidade'
 
 export const EVENTO_COMUNIDADE = 'anideck:comunidade-atualizada'
@@ -93,7 +93,8 @@ export function useComunidade() {
   const estado = useMemo<EstadoComunidade | null>(() => {
     if (!guardado) return null
     const { estado: e, em } = guardado
-    return { ...e, mana: manaNaTela(e.mana, e.regras.mp_max, e.regras.mp_regen_dia, em, agora) }
+    const taxa = taxaRegenEfetiva(e.regras.mp_regen_dia, e.hp)
+    return { ...e, mana: manaNaTela(e.mana, e.regras.mp_max, taxa, em, agora) }
   }, [guardado, agora])
 
   return { estado: session ? estado : null, indisponivel, recarregar }
