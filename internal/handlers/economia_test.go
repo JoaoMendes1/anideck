@@ -238,3 +238,31 @@ func TestApoiadorConfig(t *testing.T) {
 		t.Errorf("Esperado link %s, obteve %s", padrao.Link, obtido.Link)
 	}
 }
+
+func TestSacarCaixaLoja_Validacoes(t *testing.T) {
+	handler := &EconomiaHandler{}
+
+	t.Run("rejeita sem autenticacao", func(t *testing.T) {
+		req := httptest.NewRequest(http.MethodPost, "/api/admin/economia/caixa/sacar", nil)
+		rec := httptest.NewRecorder()
+		handler.HandleSacarCaixaLoja(rec, req)
+		if rec.Code != http.StatusUnauthorized {
+			t.Fatalf("Esperado 401 para admin sem sessao, obteve %d", rec.Code)
+		}
+	})
+
+	t.Run("rejeita quantidade menor ou igual a zero", func(t *testing.T) {
+		corpo, _ := json.Marshal(SacarCaixaPayload{
+			Quantidade: 0,
+		})
+		req := httptest.NewRequest(http.MethodPost, "/api/admin/economia/caixa/sacar", bytes.NewReader(corpo))
+		ctx := context.WithValue(req.Context(), middleware.UserIDKey, "admin-user-id")
+		req = req.WithContext(ctx)
+		rec := httptest.NewRecorder()
+
+		handler.HandleSacarCaixaLoja(rec, req)
+		if rec.Code != http.StatusBadRequest {
+			t.Fatalf("Esperado 400 para quantidade <= 0, obteve %d", rec.Code)
+		}
+	})
+}

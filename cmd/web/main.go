@@ -158,8 +158,9 @@ func main() {
 		protegido.Get("/api/missoes/hoje", missoesHandler.HandleGetMissoesHoje)
 		protegido.Post("/api/missoes/{id}/resgatar", missoesHandler.HandleResgatarMissao)
 
-		// Loja Cosmética (Fase 16, #170 e #171): compra, equipar e catálogo do usuário
+		// Loja Cosmética (Fase 16, #170 e #171): compra, devolução, equipar e catálogo do usuário
 		protegido.Post("/api/loja/{id}/comprar", lojaHandler.HandleComprarItem)
+		protegido.Post("/api/loja/{id}/devolver", lojaHandler.HandleDevolverItem)
 		protegido.Put("/api/loja/equipar", lojaHandler.HandleEquiparItem)
 		protegido.Get("/api/loja/meus-itens", lojaHandler.HandleMeusItens)
 
@@ -260,9 +261,11 @@ func main() {
 		admin.Get("/api/admin/economia", economiaHandler.HandleGetAdminEconomia)
 		admin.Put("/api/admin/economia", economiaHandler.HandleSaveAdminEconomia)
 		admin.Post("/api/admin/economia/ajuste", economiaHandler.HandleAjusteManual)
+		admin.Post("/api/admin/economia/caixa/sacar", economiaHandler.HandleSacarCaixaLoja)
 		admin.Post("/api/admin/economia/transferir", economiaHandler.HandleTransferirAniCoins)
 		admin.Get("/api/admin/economia/buscar-destinatario", economiaHandler.HandleBuscarDestinatario)
 		admin.Put("/api/admin/apoiador", economiaHandler.HandleSalvarApoiador)
+		admin.Post("/api/admin/membros/{id}/apoiador", economiaHandler.HandleSetApoiador)
 		admin.Post("/api/admin/loja/salvar", lojaHandler.HandleAdminSalvarItem)
 
 		// Agente Olheiro: scan sob demanda e revisão da fila de sugestões

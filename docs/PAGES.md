@@ -16,15 +16,14 @@
 | 14 | Guilda (rank, XP, insígnias, especialista de gênero) | `Guilda.tsx` | ✅ Implementada · anel F→SS, extrato do ledger (abas XP e Cristais 💎), especialista N1→N5, insígnias Foil, Coleção de Cartas com acabamento Foil e raridade, pílula na Navbar (HUD com XP, Cristais, Vitalidade e Mana em todas as páginas, painel de status e avisos de ganho) e Vitalidade & Mana | Fase 14 / 15 / 16 (#146, #154, #164, #167, #172) |
 | 15 | Ranking de membros (aba do Descobrir, em `/membros`) | `Membros.tsx` | ✅ Implementada · Liga semanal com divisões (Bronze a Diamante) e grupos de 20, ranking por temporada (trimestre no fuso de Brasília), Hall da Fama e ranking por gênero com seletor | Fase 15 / 16 (#154, #175, #176, #177) |
 | 16 | Perfil público de membro (`/u/:handle`) | `PerfilMembro.tsx` | ✅ Implementada · ficha da Guilda, vitrine de cinco a sete cartas, tema de perfil, moldura e emblema cosmético, contagem do deck sem títulos, bloqueio, Duelo de Gosto, personagens favoritos e coleção de cartas públicas | Fase 15 / 16 (#154, #171, #172, #173, #174) |
-| 17 | Loja Cosmética (`/loja`) | `Loja.tsx` | ✅ Implementada · catálogo por categorias com preview em tempo real (molduras, temas de perfil, cores de nome e emblemas), compra com AniCoins, equipamento por slot e modal de Apoiador por link externo com cosméticos exclusivos | Fase 16 (#170, #171, #178) |
+| 17 | Loja Cosmética (`/loja`) | `Loja.tsx` | ✅ Implementada · catálogo por categorias com preview em tempo real (molduras, temas de perfil, cores de nome e emblemas), compra com AniCoins, cosméticos exclusivos da Temporada 1, sistema de devolução de itens com taxa de retenção configurável para o cofre da plataforma, equipamento por slot e modal de Apoiador por link externo com cosméticos exclusivos | Fase 16 (#170, #171, #178, #198) |
 
 **Total: 17 telas implementadas.**
 
-> Configurações tem oito seções, todas funcionando: Perfil, Perfil público, Preferências de
-> Gosto, Importar Lista, Aparência, Notificações, Conta e Ajuda. Dois blocos dentro delas usam o componente `EmBreve`, e cada um diz no
+> Configurações tem oito seções, todas funcionando: Perfil (com foto de perfil otimizada e upload/URL), Perfil público, Preferências de
+> Gosto, Importar Lista, Aparência, Notificações, Conta e Ajuda. Um bloco dentro delas usa o componente `EmBreve`, dizendo no
 > `nota` o que falta para sair do papel:
 >
-> - foto de perfil — precisa de armazenamento de imagens;
 > - notificações — precisa de preferências salvas por usuário.
 >
 > São ideias que surgiram depois da página pronta e dependem de infraestrutura que ainda

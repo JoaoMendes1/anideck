@@ -12,6 +12,7 @@ import (
 
 	"github.com/JoaoMendes1/anideck/internal/database"
 	"github.com/JoaoMendes1/anideck/internal/middleware"
+	"github.com/go-chi/chi/v5"
 	postgrest "github.com/supabase-community/postgrest-go"
 	"github.com/supabase-community/supabase-go"
 )
@@ -27,16 +28,18 @@ func responderErroJSON(w http.ResponseWriter, status int, msg string) {
 // RegrasEconomia são os números editáveis no Painel Admin, guardados em
 // app_settings.economia_cristais (Fase 16, #167).
 type RegrasEconomia struct {
-	Ativo                   bool `json:"ativo"`
-	TetoDiarioCristais      int  `json:"teto_diario_cristais"`
-	GanhoMissaoDiaria       int  `json:"ganho_missao_diaria"`
-	CristaisPorMissaoDiaria int  `json:"cristais_por_missao_diaria,omitempty"`
-	GanhoDesafioSemanal     int  `json:"ganho_desafio_semanal"`
-	GanhoVitoriaLiga        int  `json:"ganho_vitoria_liga"`
-	GanhoSubidaDivisao      int  `json:"ganho_subida_divisao"`
-	GanhoPrimeiraCartaDia   int  `json:"ganho_primeira_carta_dia"`
-	CustoPadraoCarta        int  `json:"custo_padrao_carta"`
-	CustoPadraoCosmetico    int  `json:"custo_padrao_cosmetico"`
+	Ativo                    bool `json:"ativo"`
+	TetoDiarioCristais       int  `json:"teto_diario_cristais"`
+	GanhoMissaoDiaria        int  `json:"ganho_missao_diaria"`
+	CristaisPorMissaoDiaria  int  `json:"cristais_por_missao_diaria,omitempty"`
+	GanhoDesafioSemanal      int  `json:"ganho_desafio_semanal"`
+	GanhoVitoriaLiga         int  `json:"ganho_vitoria_liga"`
+	GanhoSubidaDivisao       int  `json:"ganho_subida_divisao"`
+	GanhoPrimeiraCartaDia    int  `json:"ganho_primeira_carta_dia"`
+	CustoPadraoCarta         int  `json:"custo_padrao_carta"`
+	CustoPadraoCosmetico     int  `json:"custo_padrao_cosmetico"`
+	DevolucaoAtiva           bool `json:"devolucao_ativa"`
+	TaxaRetencaoDevolucaoPct int  `json:"taxa_retencao_devolucao_pct"`
 }
 
 const ChaveEconomiaCristais = "economia_cristais"
@@ -44,15 +47,17 @@ const ChaveEconomiaCristais = "economia_cristais"
 // RegrasEconomiaPadrao espelha os valores iniciais da economia de Cristais/AniCoins.
 func RegrasEconomiaPadrao() RegrasEconomia {
 	return RegrasEconomia{
-		Ativo:                 true,
-		TetoDiarioCristais:    100,
-		GanhoMissaoDiaria:     15,
-		GanhoDesafioSemanal:   50,
-		GanhoVitoriaLiga:      100,
-		GanhoSubidaDivisao:    40,
-		GanhoPrimeiraCartaDia: 10,
-		CustoPadraoCarta:      100,
-		CustoPadraoCosmetico:  500,
+		Ativo:                    true,
+		TetoDiarioCristais:       100,
+		GanhoMissaoDiaria:        15,
+		GanhoDesafioSemanal:      50,
+		GanhoVitoriaLiga:         100,
+		GanhoSubidaDivisao:       40,
+		GanhoPrimeiraCartaDia:    10,
+		CustoPadraoCarta:         100,
+		CustoPadraoCosmetico:     500,
+		DevolucaoAtiva:           true,
+		TaxaRetencaoDevolucaoPct: 30,
 	}
 }
 
@@ -75,6 +80,8 @@ func ValidarRegrasEconomia(r RegrasEconomia) string {
 		return "O custo padrão de carta deve ficar entre 1 e 50.000."
 	case r.CustoPadraoCosmetico < 1 || r.CustoPadraoCosmetico > 50000:
 		return "O custo padrão de cosmético deve ficar entre 1 e 50.000."
+	case r.TaxaRetencaoDevolucaoPct < 0 || r.TaxaRetencaoDevolucaoPct > 90:
+		return "A taxa de retenção da devolução deve ficar entre 0% e 90%."
 	}
 	return ""
 }
@@ -114,6 +121,9 @@ func LerRegrasEconomia(client *supabase.Client) RegrasEconomia {
 	}
 	if lidas.CustoPadraoCosmetico == 0 {
 		lidas.CustoPadraoCosmetico = 500
+	}
+	if lidas.TaxaRetencaoDevolucaoPct == 0 {
+		lidas.TaxaRetencaoDevolucaoPct = 30
 	}
 	return lidas
 }
@@ -217,6 +227,7 @@ func (h *EconomiaHandler) HandleGetCarteira(w http.ResponseWriter, r *http.Reque
 type AdminEconomiaResponse struct {
 	Regras              RegrasEconomia     `json:"regras"`
 	TotalCirculacao     int                `json:"total_circulacao"`
+	SaldoCaixaLoja      int                `json:"saldo_caixa_loja"`
 	TotalTransacoes     int                `json:"total_transacoes"`
 	UltimosMovimentos   []MovimentoCristal `json:"ultimos_movimentos"`
 	MovimentosAuditoria []MovimentoCristal `json:"movimentos_auditoria"`
@@ -239,11 +250,18 @@ func (h *EconomiaHandler) HandleGetAdminEconomia(w http.ResponseWriter, r *http.
 	regras := LerRegrasEconomia(database.Client)
 
 	totalCirculacao := 0
+	saldoCaixa := 0
 	if database.Client != nil {
 		resTot := strings.TrimSpace(database.Client.Rpc("total_cristais_em_circulacao", "", nil))
 		if resTot != "" {
 			if tot, err := strconv.Atoi(resTot); err == nil {
 				totalCirculacao = tot
+			}
+		}
+		resCaixa := strings.TrimSpace(database.Client.Rpc("saldo_caixa_loja", "", nil))
+		if resCaixa != "" {
+			if sc, err := strconv.Atoi(resCaixa); err == nil {
+				saldoCaixa = sc
 			}
 		}
 	}
@@ -301,6 +319,7 @@ func (h *EconomiaHandler) HandleGetAdminEconomia(w http.ResponseWriter, r *http.
 	json.NewEncoder(w).Encode(AdminEconomiaResponse{
 		Regras:              regras,
 		TotalCirculacao:     totalCirculacao,
+		SaldoCaixaLoja:      saldoCaixa,
 		TotalTransacoes:     int(count),
 		UltimosMovimentos:   movimentos,
 		MovimentosAuditoria: movimentos,
@@ -316,12 +335,14 @@ func (h *EconomiaHandler) HandleSaveAdminEconomia(w http.ResponseWriter, r *http
 	}
 
 	var payload struct {
-		Ativo                   bool `json:"ativo"`
-		TetoDiarioCristais      int  `json:"teto_diario_cristais"`
-		GanhoMissaoDiaria       int  `json:"ganho_missao_diaria"`
-		CristaisPorMissaoDiaria int  `json:"cristais_por_missao_diaria"`
-		CustoPadraoCarta        int  `json:"custo_padrao_carta"`
-		CustoPadraoCosmetico    int  `json:"custo_padrao_cosmetico"`
+		Ativo                    bool `json:"ativo"`
+		TetoDiarioCristais       int  `json:"teto_diario_cristais"`
+		GanhoMissaoDiaria        int  `json:"ganho_missao_diaria"`
+		CristaisPorMissaoDiaria  int  `json:"cristais_por_missao_diaria"`
+		CustoPadraoCarta         int  `json:"custo_padrao_carta"`
+		CustoPadraoCosmetico     int  `json:"custo_padrao_cosmetico"`
+		DevolucaoAtiva           bool `json:"devolucao_ativa"`
+		TaxaRetencaoDevolucaoPct int  `json:"taxa_retencao_devolucao_pct"`
 	}
 	if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
 		responderErroJSON(w, http.StatusBadRequest, "Corpo inválido")
@@ -330,6 +351,10 @@ func (h *EconomiaHandler) HandleSaveAdminEconomia(w http.ResponseWriter, r *http
 
 	existentes := LerRegrasEconomia(database.Client)
 	existentes.Ativo = payload.Ativo
+	existentes.DevolucaoAtiva = payload.DevolucaoAtiva
+	if payload.TaxaRetencaoDevolucaoPct >= 0 && payload.TaxaRetencaoDevolucaoPct <= 90 {
+		existentes.TaxaRetencaoDevolucaoPct = payload.TaxaRetencaoDevolucaoPct
+	}
 	if payload.TetoDiarioCristais > 0 {
 		existentes.TetoDiarioCristais = payload.TetoDiarioCristais
 	}
@@ -641,6 +666,140 @@ func (h *EconomiaHandler) HandleBuscarDestinatario(w http.ResponseWriter, r *htt
 
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(lista)
+}
+
+type SacarCaixaPayload struct {
+	Destinatario string `json:"destinatario"` // @handle, UUID ou vazio para o próprio admin
+	Quantidade   int    `json:"quantidade"`
+	Motivo       string `json:"motivo"`
+}
+
+// HandleSacarCaixaLoja transfere AniCoins do cofre/caixa da plataforma para qualquer usuário.
+func (h *EconomiaHandler) HandleSacarCaixaLoja(w http.ResponseWriter, r *http.Request) {
+	adminID, ok := r.Context().Value(middleware.UserIDKey).(string)
+	if !ok || adminID == "" {
+		responderErroJSON(w, http.StatusUnauthorized, "Não autorizado")
+		return
+	}
+
+	var body SacarCaixaPayload
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		responderErroJSON(w, http.StatusBadRequest, "Corpo inválido")
+		return
+	}
+
+	if body.Quantidade <= 0 {
+		responderErroJSON(w, http.StatusBadRequest, "A quantidade de AniCoins a transferir do Caixa deve ser maior que zero.")
+		return
+	}
+
+	motivo := strings.TrimSpace(body.Motivo)
+	if motivo == "" {
+		motivo = "Saque do Caixa da Loja pela administração"
+	}
+
+	if database.Client == nil {
+		responderErroJSON(w, http.StatusServiceUnavailable, "Serviço de banco indisponível")
+		return
+	}
+
+	finalUserID := adminID
+	dest := strings.TrimSpace(body.Destinatario)
+	if dest != "" && strings.ToLower(dest) != "eu" && strings.ToLower(dest) != "admin" {
+		if uuidRegex.MatchString(dest) {
+			finalUserID = dest
+		} else {
+			handleLimpo := strings.ToLower(strings.TrimPrefix(dest, "@"))
+			data, _, err := database.Client.From("profiles").
+				Select("user_id,handle", "", false).
+				Eq("handle", handleLimpo).
+				Execute()
+			if err != nil {
+				responderErroJSON(w, http.StatusInternalServerError, "Erro ao buscar destinatário")
+				return
+			}
+			var profs []struct {
+				UserID string `json:"user_id"`
+				Handle string `json:"handle"`
+			}
+			if json.Unmarshal(data, &profs) != nil || len(profs) == 0 {
+				responderErroJSON(w, http.StatusNotFound, fmt.Sprintf("Destinatário '@%s' não encontrado.", handleLimpo))
+				return
+			}
+			finalUserID = profs[0].UserID
+		}
+	}
+
+	resRaw := strings.TrimSpace(database.Client.Rpc("sacar_caixa_loja", "", map[string]interface{}{
+		"p_destinatario_id": finalUserID,
+		"p_quantidade":      body.Quantidade,
+		"p_motivo":          motivo,
+	}))
+
+	if strings.Contains(resRaw, "error") || strings.Contains(resRaw, "code") || strings.Contains(resRaw, "Exception") || strings.Contains(resRaw, "P000") {
+		log.Printf("[ECONOMIA] Erro na RPC sacar_caixa_loja: %s", resRaw)
+		if strings.Contains(resRaw, "P0002") || strings.Contains(resRaw, "Saldo insuficiente") {
+			responderErroJSON(w, http.StatusUnprocessableEntity, "Saldo insuficiente no Caixa da Loja para este saque.")
+			return
+		}
+		responderErroJSON(w, http.StatusBadRequest, "Falha ao registrar saque do Caixa da Loja.")
+		return
+	}
+
+	var resultado map[string]interface{}
+	json.Unmarshal([]byte(resRaw), &resultado)
+	if resultado == nil {
+		resultado = map[string]interface{}{
+			"sucesso":    true,
+			"mensagem":   fmt.Sprintf("%d AniCoins transferidas do Caixa com sucesso!", body.Quantidade),
+			"quantidade": body.Quantidade,
+		}
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(resultado)
+}
+
+// HandleSetApoiador permite ao administrador conceder ou revogar o status de Apoiador de um usuário.
+func (h *EconomiaHandler) HandleSetApoiador(w http.ResponseWriter, r *http.Request) {
+	alvoID := strings.TrimSpace(chi.URLParam(r, "id"))
+	if alvoID == "" {
+		responderErroJSON(w, http.StatusBadRequest, "ID do usuário obrigatório")
+		return
+	}
+
+	var body struct {
+		Apoiador bool `json:"apoiador"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		responderErroJSON(w, http.StatusBadRequest, "Corpo inválido")
+		return
+	}
+
+	if database.Client == nil {
+		responderErroJSON(w, http.StatusServiceUnavailable, "Serviço de banco indisponível")
+		return
+	}
+
+	_, _, err := database.Client.From("profiles").
+		Update(map[string]interface{}{
+			"apoiador": body.Apoiador,
+		}, "", "").
+		Eq("user_id", alvoID).
+		Execute()
+
+	if err != nil {
+		log.Printf("[ECONOMIA] Erro ao atualizar status de apoiador (user=%s): %v", alvoID, err)
+		responderErroJSON(w, http.StatusInternalServerError, "Erro ao atualizar status de apoiador")
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(map[string]interface{}{
+		"ok":       true,
+		"user_id":  alvoID,
+		"apoiador": body.Apoiador,
+	})
 }
 
 // ApoiadorConfig define as opções de apoio comunitário externo (Fase 16 · Issue #178).

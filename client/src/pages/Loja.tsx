@@ -3,7 +3,7 @@
 import { useState, useMemo } from 'react'
 import { Link } from 'react-router-dom'
 import {
-  Sparkles, Crown, Flame, Zap, Award, Check, Shield, ArrowRight, User, Heart,
+  Sparkles, Crown, Flame, Zap, Award, Check, Shield, ArrowRight, User, Heart, RotateCcw,
 } from 'lucide-react'
 import IconeAniCoin from '../components/IconeAniCoin'
 import ModalApoiador from '../components/comunidade/ModalApoiador'
@@ -39,25 +39,28 @@ function renderIconeItem(icone: string, raridade: string) {
 
 export default function Loja() {
   const { session } = useSessao()
-  const { itens, carregando, comprandoId, equipandoId, comprar, equipar } = useLoja()
+  const { itens, carregando, comprandoId, devolvendoId, equipandoId, comprar, devolver, equipar } = useLoja()
   const { saldo } = useCarteira()
   const { estado } = useComunidade()
 
   const [filtroTipo, setFiltroTipo] = useState<string>('todos')
   const [modalApoiadorAberto, setModalApoiadorAberto] = useState(false)
+  const [itemDevolvendo, setItemDevolvendo] = useState<ItemCosmeticoLoja | null>(null)
 
   const meuNome = estado?.perfil.nome || estado?.perfil.handle || session?.user.user_metadata?.display_name || 'Viajante'
   const meuAvatar = (session?.user.user_metadata?.avatar_url as string | undefined) || null
 
   const itensFiltrados = useMemo(() => {
     if (filtroTipo === 'todos') return itens
+    if (filtroTipo === 'temporada') return itens.filter((i) => Boolean(i.temporada))
     return itens.filter((i) => i.tipo === filtroTipo)
   }, [itens, filtroTipo])
 
   const contadores = useMemo(() => {
-    const counts: Record<string, number> = { todos: itens.length }
+    const counts: Record<string, number> = { todos: itens.length, temporada: 0 }
     itens.forEach((i) => {
       counts[i.tipo] = (counts[i.tipo] || 0) + 1
+      if (i.temporada) counts.temporada = (counts.temporada || 0) + 1
     })
     return counts
   }, [itens])
@@ -115,8 +118,9 @@ export default function Loja() {
       <div className="flex items-center gap-2 overflow-x-auto pb-3 mb-6 scrollbar-none select-none">
         {[
           { id: 'todos', rotulo: 'Todos os Itens' },
-          { id: 'moldura', rotulo: 'Molduras de Avatar' },
-          { id: 'tema_perfil', rotulo: 'Temas de Perfil' },
+          { id: 'temporada', rotulo: '⚡ Temporada 1' },
+          { id: 'moldura', rotulo: 'Molduras' },
+          { id: 'tema_perfil', rotulo: 'Temas' },
           { id: 'cor_nome', rotulo: 'Cores de Nome' },
           { id: 'emblema', rotulo: 'Emblemas' },
           { id: 'expansao', rotulo: 'Melhorias' },
@@ -180,10 +184,17 @@ export default function Loja() {
               >
                 <div>
                   {/* Topo do Card: Tipo & Raridade */}
-                  <div className="flex items-center justify-between gap-2 mb-3">
-                    <span className="font-mono text-[10px] text-muted-2 uppercase tracking-widest">
-                      // {item.tipo.replace('_', ' ')}
-                    </span>
+                  <div className="flex items-center justify-between gap-2 mb-2">
+                    <div className="flex items-center gap-1.5 flex-wrap">
+                      <span className="font-mono text-[10px] text-muted-2 uppercase tracking-widest">
+                        // {item.tipo.replace('_', ' ')}
+                      </span>
+                      {item.temporada && (
+                        <span className="px-2 py-0.5 rounded-full font-mono text-[9px] font-bold uppercase bg-gradient-to-r from-red-600 to-amber-600 text-void flex items-center gap-1 shadow-sm">
+                          <Zap size={10} fill="currentColor" /> S{item.temporada}
+                        </span>
+                      )}
+                    </div>
                     <span className={`px-2 py-0.5 rounded-full font-mono text-[10px] font-bold uppercase border ${corRaridade.badge}`}>
                       {item.raridade}
                     </span>
@@ -269,26 +280,53 @@ export default function Loja() {
                       <div className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-full bg-green/15 text-green border border-green/30 font-mono text-xs font-bold select-none">
                         <Check size={14} /> Ativo no perfil
                       </div>
-                    ) : item.equipado ? (
-                      <button
-                        type="button"
-                        disabled={emProcesso}
-                        onClick={() => equipar(item.tipo, null)}
-                        className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-full bg-green/20 border border-green/40 text-green font-mono text-xs font-bold hover:bg-coral/20 hover:text-coral hover:border-coral/40 transition-colors cursor-pointer"
-                        title="Clique para desequipar"
-                      >
-                        <Check size={14} /> Equipado
-                      </button>
                     ) : (
-                      <button
-                        type="button"
-                        disabled={emProcesso}
-                        onClick={() => equipar(item.tipo, item.id)}
-                        className="inline-flex items-center gap-1.5 px-4 py-2 rounded-full bg-holo-1 text-void font-extrabold text-xs uppercase tracking-wider hover:opacity-95 transition-opacity cursor-pointer shadow-md"
-                      >
-                        Equipar
-                      </button>
+                      <div className="flex items-center gap-2">
+                        {item.preco > 0 && (
+                          <button
+                            type="button"
+                            disabled={emProcesso || devolvendoId === item.id}
+                            onClick={() => setItemDevolvendo(item)}
+                            className="p-2 rounded-full border border-line text-muted hover:text-coral hover:border-coral/50 transition-colors cursor-pointer"
+                            title="Devolver item para o cofre da loja com reembolso parcial"
+                            aria-label="Devolver item"
+                          >
+                            <RotateCcw size={14} />
+                          </button>
+                        )}
+                        {item.equipado ? (
+                          <button
+                            type="button"
+                            disabled={emProcesso}
+                            onClick={() => equipar(item.tipo, null)}
+                            className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-full bg-green/20 border border-green/40 text-green font-mono text-xs font-bold hover:bg-coral/20 hover:text-coral hover:border-coral/40 transition-colors cursor-pointer"
+                            title="Clique para desequipar"
+                          >
+                            <Check size={14} /> Equipado
+                          </button>
+                        ) : (
+                          <button
+                            type="button"
+                            disabled={emProcesso}
+                            onClick={() => equipar(item.tipo, item.id)}
+                            className="inline-flex items-center gap-1.5 px-4 py-2 rounded-full bg-holo-1 text-void font-extrabold text-xs uppercase tracking-wider hover:opacity-95 transition-opacity cursor-pointer shadow-md"
+                          >
+                            Equipar
+                          </button>
+                        )}
+                      </div>
                     )
+                  ) : item.preco === 0 ? (
+                    <button
+                      type="button"
+                      disabled={emProcesso}
+                      onClick={() => comprar(item.id)}
+                      className="inline-flex items-center gap-2 px-4 py-2 rounded-full font-extrabold text-xs uppercase tracking-wider bg-gradient-to-r from-holo-1 to-holo-2 text-void hover:opacity-95 shadow-[0_0_14px_rgba(255,92,108,0.35)] transition-all cursor-pointer active:scale-95"
+                      title="Resgatar item de Apoiador"
+                    >
+                      <Heart size={13} className="fill-void" />
+                      {emProcesso ? 'Resgatando...' : 'Resgatar (Apoiador)'}
+                    </button>
                   ) : (
                     <button
                       type="button"
@@ -309,6 +347,49 @@ export default function Loja() {
               </div>
             )
           })}
+        </div>
+      )}
+
+      {/* MODAL DE DEVOLUÇÃO COM REEMBOLSO */}
+      {itemDevolvendo && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-void/80 backdrop-blur-md animate-in fade-in">
+          <div className="w-full max-w-sm rounded-2xl bg-panel border border-line shadow-2xl p-6 text-text relative">
+            <div className="w-10 h-10 rounded-xl bg-coral/15 text-coral grid place-items-center mb-3 border border-coral/30">
+              <RotateCcw size={18} />
+            </div>
+            <h3 className="font-anton text-xl uppercase tracking-wide m-0 mb-1">
+              Devolver Cosmético?
+            </h3>
+            <p className="text-xs text-muted leading-relaxed mb-4">
+              Você devolverá <strong className="text-text">{itemDevolvendo.nome}</strong>. O item será desequipado e removido do seu inventário.
+            </p>
+            <div className="p-3 rounded-xl bg-panel-2 border border-line flex items-center justify-between font-mono text-xs mb-5">
+              <span className="text-muted-2">Reembolso estimado:</span>
+              <span className="text-green font-bold flex items-center gap-1">
+                +{Math.floor(itemDevolvendo.preco * 0.7)} ₳ (70%)
+              </span>
+            </div>
+            <div className="flex items-center justify-end gap-2">
+              <button
+                type="button"
+                onClick={() => setItemDevolvendo(null)}
+                className="px-4 py-2 rounded-xl border border-line text-xs font-bold text-muted hover:text-text cursor-pointer"
+              >
+                Cancelar
+              </button>
+              <button
+                type="button"
+                disabled={devolvendoId === itemDevolvendo.id}
+                onClick={async () => {
+                  const ok = await devolver(itemDevolvendo.id)
+                  if (ok) setItemDevolvendo(null)
+                }}
+                className="px-4 py-2 rounded-xl bg-coral text-void text-xs font-bold hover:opacity-90 disabled:opacity-50 cursor-pointer shadow-md"
+              >
+                {devolvendoId === itemDevolvendo.id ? 'Devolvendo...' : 'Confirmar Devolução'}
+              </button>
+            </div>
+          </div>
         </div>
       )}
 

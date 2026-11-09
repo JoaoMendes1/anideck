@@ -85,6 +85,10 @@ export default function Configuracoes() {
     const [email, setEmail] = useState('')
     const [nome, setNome] = useState('')
     const [nomeOriginal, setNomeOriginal] = useState('')
+    const [avatarUrl, setAvatarUrl] = useState('')
+    const [salvandoFoto, setSalvandoFoto] = useState(false)
+    const [modoUrlFoto, setModoUrlFoto] = useState(false)
+    const [urlFotoInput, setUrlFotoInput] = useState('')
     const [salvando, setSalvando] = useState(false)
     const [erro, setErro] = useState<string | null>(null)
     const [faqAberta, setFaqAberta] = useState<number | null>(0)
@@ -212,6 +216,7 @@ export default function Configuracoes() {
             setEmail(session?.user.email || '')
             setNome(nomeAtual)
             setNomeOriginal(nomeAtual)
+            setAvatarUrl(session?.user.user_metadata?.avatar_url || '')
             setTemGoogle(session?.user.app_metadata?.providers?.includes('google') ?? false)
             setTemSenha(session?.user.app_metadata?.providers?.includes('email') ?? true)
             const prefs = lerPreferenciasDeGosto(uid, session?.user.user_metadata)
@@ -369,6 +374,88 @@ export default function Configuracoes() {
         }
     }
 
+    const salvarFoto = async (novaUrl: string | null) => {
+        setSalvandoFoto(true)
+        try {
+            const { error } = await supabase.auth.updateUser({
+                data: { avatar_url: novaUrl },
+            })
+            if (error) throw error
+
+            if (userId) {
+                await supabase.from('profiles').update({ avatar_url: novaUrl }).eq('user_id', userId)
+            }
+
+            setAvatarUrl(novaUrl || '')
+            showToast(novaUrl ? 'Foto de perfil atualizada com sucesso!' : 'Foto removida.', 'success')
+            window.dispatchEvent(new CustomEvent('anideck:comunidade-atualizada'))
+        } catch {
+            showToast('Não foi possível salvar a foto. Tente de novo.', 'error')
+        } finally {
+            setSalvandoFoto(false)
+            setModoUrlFoto(false)
+            setUrlFotoInput('')
+        }
+    }
+
+    const handleUploadArquivoFoto = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0]
+        if (!file) return
+        if (!file.type.startsWith('image/')) {
+            showToast('Selecione um arquivo de imagem válido (JPG, PNG ou WebP).', 'error')
+            return
+        }
+        if (file.size > 5 * 1024 * 1024) {
+            showToast('A imagem original não pode passar de 5MB.', 'error')
+            return
+        }
+
+        setSalvandoFoto(true)
+        try {
+            const dataUrl = await new Promise<string>((resolve, reject) => {
+                const reader = new FileReader()
+                reader.onload = (event) => {
+                    const img = new Image()
+                    img.onload = () => {
+                        const canvas = document.createElement('canvas')
+                        const maxDim = 256
+                        let w = img.width
+                        let h = img.height
+                        if (w > h) {
+                            if (w > maxDim) {
+                                h = Math.round((h * maxDim) / w)
+                                w = maxDim
+                            }
+                        } else {
+                            if (h > maxDim) {
+                                w = Math.round((w * maxDim) / h)
+                                h = maxDim
+                            }
+                        }
+                        canvas.width = w
+                        canvas.height = h
+                        const ctx = canvas.getContext('2d')
+                        if (!ctx) {
+                            resolve(event.target?.result as string)
+                            return
+                        }
+                        ctx.drawImage(img, 0, 0, w, h)
+                        resolve(canvas.toDataURL('image/jpeg', 0.85))
+                    }
+                    img.onerror = () => reject(new Error('Erro ao processar imagem'))
+                    img.src = event.target?.result as string
+                }
+                reader.onerror = () => reject(new Error('Erro ao ler arquivo'))
+                reader.readAsDataURL(file)
+            })
+
+            await salvarFoto(dataUrl)
+        } catch {
+            showToast('Erro ao processar o arquivo de imagem.', 'error')
+            setSalvandoFoto(false)
+        }
+    }
+
     const nomeMudou = nome.trim() !== nomeOriginal
     const nomeValido = nome.trim().length >= 2
 
@@ -446,16 +533,80 @@ export default function Configuracoes() {
             {/* PERFIL */}
             <Secao id="perfil" titulo="Perfil">
                 <Card>
-                    <EmBreve nota="Precisa de armazenamento de imagens">
-                        <div className="flex items-center gap-4 pb-5 mb-5 border-b border-line">
-                            <div className="w-16 h-16 rounded-full bg-gradient-to-br from-holo-2 to-holo-3 flex items-center justify-center text-void font-anton text-2xl">
-                                {inicial}
-                            </div>
-                            <button type="button" className="px-4 py-2 rounded-xl border border-line text-[13px] font-bold text-muted">
-                                Trocar foto
-                            </button>
+                    <div className="flex flex-col sm:flex-row sm:items-center gap-4 pb-5 mb-5 border-b border-line">
+                        <div className="relative w-16 h-16 rounded-full overflow-hidden shrink-0 border-2 border-line bg-gradient-to-br from-holo-2 to-holo-3 flex items-center justify-center text-void font-anton text-2xl shadow-inner">
+                            {avatarUrl ? (
+                                <img src={avatarUrl} alt="Avatar" className="w-full h-full object-cover" />
+                            ) : (
+                                inicial
+                            )}
+                            {salvandoFoto && (
+                                <div className="absolute inset-0 bg-void/60 flex items-center justify-center">
+                                    <div className="w-5 h-5 border-2 border-holo-1 border-t-transparent rounded-full animate-spin" />
+                                </div>
+                            )}
                         </div>
-                    </EmBreve>
+
+                        <div className="flex-1">
+                            <div className="flex flex-wrap items-center gap-2">
+                                <label className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-panel-2 border border-line text-[12.5px] font-bold text-text hover:border-holo-3 transition-colors cursor-pointer">
+                                    <Upload size={14} />
+                                    <span>{salvandoFoto ? 'Salvando...' : 'Carregar foto'}</span>
+                                    <input
+                                        type="file"
+                                        accept="image/*"
+                                        disabled={salvandoFoto}
+                                        onChange={handleUploadArquivoFoto}
+                                        className="hidden"
+                                    />
+                                </label>
+
+                                <button
+                                    type="button"
+                                    onClick={() => setModoUrlFoto(!modoUrlFoto)}
+                                    className="px-3 py-2 rounded-xl border border-line text-[12.5px] font-bold text-muted hover:text-text hover:border-line/80 transition-colors cursor-pointer"
+                                >
+                                    Colar link
+                                </button>
+
+                                {avatarUrl && (
+                                    <button
+                                        type="button"
+                                        disabled={salvandoFoto}
+                                        onClick={() => salvarFoto(null)}
+                                        className="px-3 py-2 rounded-xl border border-coral/30 bg-coral/10 text-coral text-[12.5px] font-bold hover:bg-coral/20 transition-colors cursor-pointer"
+                                        title="Remover foto e voltar à inicial"
+                                    >
+                                        Remover
+                                    </button>
+                                )}
+                            </div>
+
+                            {modoUrlFoto && (
+                                <div className="mt-3 flex items-center gap-2 max-w-md">
+                                    <input
+                                        type="url"
+                                        value={urlFotoInput}
+                                        onChange={(e) => setUrlFotoInput(e.target.value)}
+                                        placeholder="https://exemplo.com/foto.jpg"
+                                        className="flex-1 bg-panel-2 border border-line rounded-xl px-3 py-1.5 text-xs text-text outline-none focus:border-holo-3 font-mono"
+                                    />
+                                    <button
+                                        type="button"
+                                        disabled={!urlFotoInput.trim() || salvandoFoto}
+                                        onClick={() => salvarFoto(urlFotoInput.trim())}
+                                        className="px-3.5 py-1.5 rounded-xl bg-holo-1 text-void text-xs font-bold disabled:opacity-50 cursor-pointer"
+                                    >
+                                        Salvar
+                                    </button>
+                                </div>
+                            )}
+
+                            <p className="text-[11px] text-muted-2 mt-2 mb-0">
+                                JPG, PNG ou WebP. A foto é salva de forma leve e exibida no seu perfil, comentários e rankings.
+                            </p>
+                        </div>
+                    </div>
 
                     <label htmlFor="nome" className="block text-[11px] font-bold text-muted mb-2 uppercase tracking-wide select-none">
                         Nome de exibição

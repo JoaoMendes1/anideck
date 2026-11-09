@@ -149,14 +149,23 @@ func (h *LojaHandler) HandleComprarItem(w http.ResponseWriter, r *http.Request) 
 	if strings.Contains(resRaw, "error") || strings.Contains(resRaw, "code") || strings.Contains(resRaw, "Exception") || strings.Contains(resRaw, "P000") {
 		log.Printf("[LOJA] Erro ao comprar item (%s): %s", itemID, resRaw)
 		switch {
+		case strings.Contains(resRaw, "P0005") || strings.Contains(resRaw, "Apoiadores"):
+			responderErroJSON(w, http.StatusForbidden, "Este item é exclusivo para Apoiadores ativos do AniDeck. Conheça as opções no menu Seja um Apoiador para desbloquear!")
 		case strings.Contains(resRaw, "saldo_insuficiente") || strings.Contains(resRaw, "P0004") || strings.Contains(resRaw, "Saldo insuficiente"):
 			responderErroJSON(w, http.StatusUnprocessableEntity, "Saldo insuficiente de AniCoins.")
 		case strings.Contains(resRaw, "ja_possui") || strings.Contains(resRaw, "P0003") || strings.Contains(resRaw, "já possui"):
-			responderErroJSON(w, http.StatusConflict, "Você já possui este item cosmético.")
+			responderErroJSON(w, http.StatusConflict, "Você já possui este item cosmético no seu inventário.")
 		case strings.Contains(resRaw, "P0002") || strings.Contains(resRaw, "inexistente"):
 			responderErroJSON(w, http.StatusNotFound, "Item não encontrado ou indisponível na loja.")
 		default:
-			responderErroJSON(w, http.StatusBadRequest, "Falha ao processar a compra do item.")
+			msg := "Falha ao processar a compra do item."
+			if idx := strings.Index(resRaw, "message\":\""); idx != -1 {
+				fim := strings.Index(resRaw[idx+10:], "\"")
+				if fim != -1 {
+					msg = resRaw[idx+10 : idx+10+fim]
+				}
+			}
+			responderErroJSON(w, http.StatusBadRequest, msg)
 		}
 		return
 	}
@@ -168,6 +177,67 @@ func (h *LojaHandler) HandleComprarItem(w http.ResponseWriter, r *http.Request) 
 			"sucesso":  true,
 			"item_id":  itemID,
 			"mensagem": "Item adquirido com sucesso!",
+		}
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(resultado)
+}
+
+// HandleDevolverItem processa a devolução de um cosmético com reembolso parcial.
+func (h *LojaHandler) HandleDevolverItem(w http.ResponseWriter, r *http.Request) {
+	token, ok := r.Context().Value(middleware.TokenKey).(string)
+	if !ok || token == "" {
+		responderErroJSON(w, http.StatusUnauthorized, "Não autorizado")
+		return
+	}
+
+	itemID := strings.TrimSpace(chi.URLParam(r, "id"))
+	if itemID == "" {
+		responderErroJSON(w, http.StatusBadRequest, "ID do item cosmético não fornecido")
+		return
+	}
+
+	client, err := database.ClientWithToken(token)
+	if err != nil {
+		responderErroJSON(w, http.StatusInternalServerError, "Erro interno de conexão")
+		return
+	}
+
+	resRaw := strings.TrimSpace(client.Rpc("devolver_item", "", map[string]interface{}{
+		"p_item_id": itemID,
+	}))
+
+	if strings.Contains(resRaw, "error") || strings.Contains(resRaw, "code") || strings.Contains(resRaw, "Exception") || strings.Contains(resRaw, "P000") {
+		log.Printf("[LOJA] Erro ao devolver item (%s): %s", itemID, resRaw)
+		switch {
+		case strings.Contains(resRaw, "P0006") || strings.Contains(resRaw, "desativada"):
+			responderErroJSON(w, http.StatusForbidden, "A devolução de cosméticos está temporariamente desativada pela administração.")
+		case strings.Contains(resRaw, "P0007") || strings.Contains(resRaw, "não possui"):
+			responderErroJSON(w, http.StatusNotFound, "Você não possui este item cosmético no seu inventário.")
+		case strings.Contains(resRaw, "P0008") || strings.Contains(resRaw, "gratuitos"):
+			responderErroJSON(w, http.StatusBadRequest, "Itens promocionais ou de apoiador não geram reembolso em AniCoins.")
+		case strings.Contains(resRaw, "P0002"):
+			responderErroJSON(w, http.StatusNotFound, "Item cosmético não encontrado.")
+		default:
+			msg := "Não foi possível processar a devolução deste item."
+			if idx := strings.Index(resRaw, "message\":\""); idx != -1 {
+				fim := strings.Index(resRaw[idx+10:], "\"")
+				if fim != -1 {
+					msg = resRaw[idx+10 : idx+10+fim]
+				}
+			}
+			responderErroJSON(w, http.StatusBadRequest, msg)
+		}
+		return
+	}
+
+	var resultado map[string]interface{}
+	if err := json.Unmarshal([]byte(resRaw), &resultado); err != nil {
+		resultado = map[string]interface{}{
+			"sucesso":  true,
+			"item_id":  itemID,
+			"mensagem": "Item devolvido com sucesso!",
 		}
 	}
 

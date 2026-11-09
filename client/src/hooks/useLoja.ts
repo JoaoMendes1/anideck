@@ -13,6 +13,7 @@ export function useLoja() {
   const [itens, setItens] = useState<ItemCosmeticoLoja[]>([])
   const [carregando, setCarregando] = useState(true)
   const [comprandoId, setComprandoId] = useState<string | null>(null)
+  const [devolvendoId, setDevolvendoId] = useState<string | null>(null)
   const [equipandoId, setEquipandoId] = useState<string | null>(null)
 
   const carregar = useCallback(async () => {
@@ -106,14 +107,50 @@ export function useLoja() {
     [token, showToast, carregar]
   )
 
+  const devolver = useCallback(
+    async (id: string) => {
+      if (!token) return false
+      if (devolvendoId) return false
+
+      setDevolvendoId(id)
+      try {
+        const res = await fetch(`/api/loja/${id}/devolver`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${token}`,
+          },
+        })
+        const dados = await res.json().catch(() => ({}))
+        if (!res.ok) {
+          throw new Error(dados.error || 'Falha ao devolver cosmético')
+        }
+
+        showToast(dados.mensagem || 'Cosmético devolvido com sucesso!', 'success')
+        window.dispatchEvent(new CustomEvent('anideck:cristais-atualizados'))
+        window.dispatchEvent(new CustomEvent('anideck:comunidade-atualizada'))
+        await carregar()
+        return true
+      } catch (err: unknown) {
+        showToast(err instanceof Error ? err.message : 'Falha na devolução', 'error')
+        return false
+      } finally {
+        setDevolvendoId(null)
+      }
+    },
+    [token, devolvendoId, showToast, carregar]
+  )
+
   return {
     itens,
     carregando,
     comprandoId,
+    devolvendoId,
     equipandoId,
-    temItem: (id: string) => itens.some(i => i.id === id && i.ja_possui),
     comprar,
+    devolver,
     equipar,
     recarregar: carregar,
+    temItem: (id: string) => itens.some(i => i.id === id && i.ja_possui),
   }
 }

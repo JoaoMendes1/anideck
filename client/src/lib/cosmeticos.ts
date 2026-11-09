@@ -15,6 +15,7 @@ export interface ItemCosmeticoLoja {
   icone: string
   ativo: boolean
   ordem: number
+  temporada?: number
   ja_possui?: boolean
   equipado?: boolean
 }
@@ -24,18 +25,21 @@ export const ESTILOS_MOLDURA: Record<string, string> = {
   'moldura-ouro-shogun': 'ring-2 ring-amber-400 ring-offset-2 ring-offset-void shadow-[0_0_14px_rgba(251,191,36,0.8)]',
   'moldura-chama-dragao': 'ring-2 ring-rose-500 ring-offset-2 ring-offset-void shadow-[0_0_16px_rgba(244,63,94,0.85)]',
   apoiador: 'ring-2 ring-holo-1 ring-offset-2 ring-offset-void shadow-[0_0_16px_rgba(255,92,108,0.7)]',
+  temporada_s1: 'ring-2 ring-red-500 ring-offset-2 ring-offset-void shadow-[0_0_18px_rgba(239,68,68,0.9)] animate-pulse',
 }
 
 export const ESTILOS_COR_NOME: Record<string, string> = {
   'cor-dourada-vip': 'text-amber-400 font-extrabold drop-shadow-[0_0_8px_rgba(251,191,36,0.7)]',
   'cor-ciano-holo': 'text-holo-3 font-extrabold drop-shadow-[0_0_8px_rgba(34,211,238,0.7)]',
   apoiador: 'text-holo-1 font-extrabold drop-shadow-[0_0_8px_rgba(255,92,108,0.7)]',
+  temporada_s1: 'text-red-500 font-extrabold drop-shadow-[0_0_10px_rgba(239,68,68,0.85)]',
 }
 
 export const ESTILOS_TEMA_PERFIL: Record<string, string> = {
   'tema-neon-matrix': 'bg-gradient-to-b from-emerald-950/70 via-void to-void border-emerald-500/30',
   'tema-sakura-noir': 'bg-gradient-to-b from-purple-950/70 via-void to-void border-pink-500/30',
   vip: 'bg-gradient-to-b from-rose-950/70 via-void to-void border-rose-500/30',
+  temporada_s1: 'bg-gradient-to-b from-red-950/80 via-void to-void border-red-500/40',
 }
 
 export const CORES_RARIDADE: Record<string, { badge: string; texto: string; border: string }> = {

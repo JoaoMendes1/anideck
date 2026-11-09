@@ -1,7 +1,7 @@
 // client/src/components/AbaEconomia.tsx
 // Aba de controle da economia de AniCoins no Painel Admin (Fase 16).
 import { useState, useEffect, useCallback, useRef } from 'react'
-import { Save, ShieldCheck, Activity, RefreshCw, X, User } from 'lucide-react'
+import { Save, ShieldCheck, Activity, RefreshCw, X, User, Coins } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import { useToast } from '../contexts/ToastContext'
 import IconeAniCoin from './IconeAniCoin'
@@ -13,6 +13,8 @@ interface RegrasEconomia {
   teto_diario_cristais: number
   custo_padrao_carta: number
   custo_padrao_cosmetico: number
+  devolucao_ativa?: boolean
+  taxa_retencao_devolucao_pct?: number
 }
 
 interface MovimentoAuditoria {
@@ -42,6 +44,7 @@ interface ApoiadorConfig {
 interface RespostaAdminEconomia {
   regras: RegrasEconomia
   total_circulacao: number
+  saldo_caixa_loja?: number
   total_transacoes: number
   ultimos_movimentos?: MovimentoAuditoria[]
   movimentos_auditoria?: MovimentoAuditoria[]
@@ -69,10 +72,20 @@ export default function AbaEconomia() {
     teto_diario_cristais: 100,
     custo_padrao_carta: 100,
     custo_padrao_cosmetico: 500,
+    devolucao_ativa: true,
+    taxa_retencao_devolucao_pct: 30,
   })
   const [totalCirculacao, setTotalCirculacao] = useState(0)
+  const [saldoCaixaLoja, setSaldoCaixaLoja] = useState(0)
   const [totalTransacoes, setTotalTransacoes] = useState(0)
   const [movimentos, setMovimentos] = useState<MovimentoAuditoria[]>([])
+
+  // Modal de saque do caixa da loja
+  const [modalSaqueAberto, setModalSaqueAberto] = useState(false)
+  const [saqueDestinatario, setSaqueDestinatario] = useState('')
+  const [saqueQuantidade, setSaqueQuantidade] = useState<number | ''>('')
+  const [saqueMotivo, setSaqueMotivo] = useState('')
+  const [executandoSaque, setExecutandoSaque] = useState(false)
 
   // Formulário de ajuste manual com busca debounced de membros
   const [ajusteBusca, setAjusteBusca] = useState('')
@@ -102,8 +115,11 @@ export default function AbaEconomia() {
         cristais_por_missao_diaria: json.regras.ganho_missao_diaria || json.regras.cristais_por_missao_diaria || 15,
         custo_padrao_carta: json.regras.custo_padrao_carta || 100,
         custo_padrao_cosmetico: json.regras.custo_padrao_cosmetico || 500,
+        devolucao_ativa: json.regras.devolucao_ativa ?? true,
+        taxa_retencao_devolucao_pct: json.regras.taxa_retencao_devolucao_pct ?? 30,
       })
       setTotalCirculacao(json.total_circulacao ?? 0)
+      setSaldoCaixaLoja(json.saldo_caixa_loja ?? 0)
       setTotalTransacoes(json.total_transacoes ?? 0)
       setMovimentos(json.ultimos_movimentos || json.movimentos_auditoria || [])
       if (comFeedback) {
@@ -218,6 +234,8 @@ export default function AbaEconomia() {
           ganho_missao_diaria: Number(regras.ganho_missao_diaria || regras.cristais_por_missao_diaria || 15),
           custo_padrao_carta: Number(regras.custo_padrao_carta || 100),
           custo_padrao_cosmetico: Number(regras.custo_padrao_cosmetico || 500),
+          devolucao_ativa: regras.devolucao_ativa ?? true,
+          taxa_retencao_devolucao_pct: Number(regras.taxa_retencao_devolucao_pct ?? 30),
         }),
       })
       if (!res.ok) {
@@ -230,6 +248,51 @@ export default function AbaEconomia() {
       showToast(err instanceof Error ? err.message : 'Erro ao salvar regras', 'error')
     } finally {
       setSalvando(false)
+    }
+  }
+
+  const handleSacarCaixa = async (e: React.FormEvent) => {
+    e.preventDefault()
+    const qtd = Number(saqueQuantidade)
+    if (!qtd || qtd <= 0) {
+      showToast('Informe uma quantidade válida de AniCoins.', 'error')
+      return
+    }
+
+    setExecutandoSaque(true)
+    try {
+      const { data: { session } } = await supabase.auth.getSession()
+      if (!session?.access_token) return
+
+      const res = await fetch('/api/admin/economia/caixa/sacar', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${session.access_token}`,
+        },
+        body: JSON.stringify({
+          destinatario: saqueDestinatario.trim(),
+          quantidade: qtd,
+          motivo: saqueMotivo.trim() || 'Saque do Caixa da Loja pela administração',
+        }),
+      })
+
+      const dados = await res.json().catch(() => ({}))
+      if (!res.ok) {
+        throw new Error(dados.error || 'Falha ao processar saque do caixa')
+      }
+
+      showToast(dados.mensagem || `Saque de ${qtd} ₳ concluído com sucesso!`, 'success')
+      setModalSaqueAberto(false)
+      setSaqueDestinatario('')
+      setSaqueQuantidade('')
+      setSaqueMotivo('')
+      carregar(false)
+      window.dispatchEvent(new CustomEvent('anideck:cristais-atualizados'))
+    } catch (err: unknown) {
+      showToast(err instanceof Error ? err.message : 'Falha ao processar saque', 'error')
+    } finally {
+      setExecutandoSaque(false)
     }
   }
 
@@ -290,15 +353,35 @@ export default function AbaEconomia() {
   return (
     <div className="flex flex-col gap-8">
       {/* MÉTRICAS PRINCIPAIS */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <div className="p-5 rounded-2xl bg-panel border border-line flex items-center justify-between">
           <div>
             <p className="font-mono text-[10px] text-muted-2 uppercase tracking-widest m-0">Em circulação</p>
             <p className="font-anton text-2xl text-holo-3 mt-1 m-0">{totalCirculacao.toLocaleString('pt-BR')} ₳</p>
-            <p className="text-[11px] text-muted-2 mt-1 m-0">Soma de todas as AniCoins em carteiras</p>
+            <p className="text-[11px] text-muted-2 mt-1 m-0">Soma de todas as carteiras</p>
           </div>
           <div className="w-12 h-12 rounded-xl bg-holo-3/15 text-holo-3 grid place-items-center shrink-0">
             <IconeAniCoin size={26} animar />
+          </div>
+        </div>
+
+        <div className="p-5 rounded-2xl bg-panel border border-gold/40 shadow-[0_0_20px_rgba(245,158,11,0.08)] flex items-center justify-between">
+          <div>
+            <p className="font-mono text-[10px] text-gold uppercase tracking-widest m-0 font-bold">// caixa da loja</p>
+            <p className="font-anton text-2xl text-gold mt-1 m-0">{saldoCaixaLoja.toLocaleString('pt-BR')} ₳</p>
+            <div className="flex items-center gap-2 mt-1">
+              <span className="text-[11px] text-muted-2">Cofre de vendas</span>
+              <button
+                type="button"
+                onClick={() => setModalSaqueAberto(true)}
+                className="text-[10.5px] font-mono font-bold text-gold hover:underline cursor-pointer"
+              >
+                Sacar / Transferir →
+              </button>
+            </div>
+          </div>
+          <div className="w-12 h-12 rounded-xl bg-gold/15 text-gold grid place-items-center shrink-0 border border-gold/30">
+            <Coins size={24} />
           </div>
         </div>
 
@@ -306,7 +389,7 @@ export default function AbaEconomia() {
           <div>
             <p className="font-mono text-[10px] text-muted-2 uppercase tracking-widest m-0">Transações no ledger</p>
             <p className="font-anton text-2xl text-text mt-1 m-0">{totalTransacoes.toLocaleString('pt-BR')}</p>
-            <p className="text-[11px] text-muted-2 mt-1 m-0">Entradas, saídas e transferências registradas</p>
+            <p className="text-[11px] text-muted-2 mt-1 m-0">Entradas e saídas registradas</p>
           </div>
           <div className="w-12 h-12 rounded-xl bg-green/15 text-green grid place-items-center shrink-0">
             <Activity size={24} />
@@ -320,7 +403,7 @@ export default function AbaEconomia() {
               {regras.ativo ? 'ATIVA' : 'PAUSADA'}
             </p>
             <p className="text-[11px] text-muted-2 mt-1 m-0">
-              {regras.ativo ? 'Distribuição, transferências e gastos habilitados' : 'Operações bloqueadas'}
+              {regras.ativo ? 'Operações habilitadas' : 'Operações bloqueadas'}
             </p>
           </div>
           <div className={`w-12 h-12 rounded-xl grid place-items-center shrink-0 ${regras.ativo ? 'bg-green/15 text-green' : 'bg-coral/15 text-coral'}`}>
@@ -416,6 +499,41 @@ export default function AbaEconomia() {
                   className="w-full bg-panel-2 border border-line rounded-xl px-3 py-2 text-sm text-text outline-none focus:border-holo-3 font-mono"
                   required
                 />
+              </div>
+            </div>
+
+            <div className="pt-3 border-t border-line/60 flex flex-col gap-3">
+              <label className="flex items-center gap-3 cursor-pointer select-none">
+                <input
+                  type="checkbox"
+                  checked={regras.devolucao_ativa ?? true}
+                  onChange={(e) => setRegras({ ...regras, devolucao_ativa: e.target.checked })}
+                  className="w-4 h-4 rounded text-holo-3 focus:ring-holo-3"
+                />
+                <div>
+                  <span className="text-xs font-bold text-text block">Permitir Devolução de Cosméticos</span>
+                  <span className="text-[11px] text-muted-2 block">
+                    Permite que membros revendam itens cosméticos à loja com reembolso parcial
+                  </span>
+                </div>
+              </label>
+
+              <div>
+                <label className="block font-mono text-[11px] text-muted uppercase mb-1">
+                  Taxa de Retenção do Caixa ({regras.taxa_retencao_devolucao_pct ?? 30}%)
+                </label>
+                <input
+                  type="number"
+                  min="0"
+                  max="90"
+                  value={regras.taxa_retencao_devolucao_pct ?? 30}
+                  onChange={(e) => setRegras({ ...regras, taxa_retencao_devolucao_pct: Number(e.target.value) })}
+                  className="w-full bg-panel-2 border border-line rounded-xl px-3 py-2 text-sm text-text outline-none focus:border-holo-3 font-mono"
+                  required
+                />
+                <p className="text-[10.5px] text-muted-2 mt-1 m-0">
+                  Lucro retido pelo cofre (ex: 30% retido = o usuário recebe 70% do preço de volta).
+                </p>
               </div>
             </div>
 
@@ -706,6 +824,93 @@ export default function AbaEconomia() {
           </div>
         )}
       </section>
+
+      {/* MODAL DE SAQUE / TRANSFERÊNCIA DO CAIXA DA LOJA */}
+      {modalSaqueAberto && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-void/80 backdrop-blur-md animate-in fade-in">
+          <div className="w-full max-w-md rounded-2xl bg-panel border border-line shadow-2xl p-6 text-text relative">
+            <div className="flex items-center justify-between mb-3">
+              <div>
+                <span className="font-mono text-[10px] text-gold uppercase tracking-widest font-bold">// cofre da plataforma</span>
+                <h3 className="font-anton text-xl uppercase tracking-wide m-0">Sacar / Transferir do Caixa</h3>
+              </div>
+              <button
+                type="button"
+                onClick={() => setModalSaqueAberto(false)}
+                className="p-1 rounded-lg text-muted hover:text-text cursor-pointer"
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            <p className="text-xs text-muted mb-4 leading-relaxed">
+              Transfira AniCoins acumuladas nas vendas da Loja para sua própria carteira ou bonifique qualquer membro da comunidade.
+            </p>
+
+            <form onSubmit={handleSacarCaixa} className="flex flex-col gap-3.5">
+              <div>
+                <label className="block font-mono text-[11px] text-muted uppercase mb-1">
+                  Destinatário (@handle, UUID ou deixe em branco para você)
+                </label>
+                <input
+                  type="text"
+                  value={saqueDestinatario}
+                  onChange={(e) => setSaqueDestinatario(e.target.value)}
+                  placeholder="Deixe em branco para transferir para sua conta"
+                  className="w-full bg-panel-2 border border-line rounded-xl px-3 py-2 text-xs text-text outline-none focus:border-gold font-mono"
+                />
+              </div>
+
+              <div>
+                <label className="block font-mono text-[11px] text-muted uppercase mb-1">
+                  Quantidade (Disponível no Caixa: {saldoCaixaLoja.toLocaleString('pt-BR')} ₳)
+                </label>
+                <input
+                  type="number"
+                  min="1"
+                  max={saldoCaixaLoja}
+                  value={saqueQuantidade}
+                  onChange={(e) => setSaqueQuantidade(e.target.value === '' ? '' : Number(e.target.value))}
+                  placeholder="Ex: 100"
+                  className="w-full bg-panel-2 border border-line rounded-xl px-3 py-2 text-xs text-text outline-none focus:border-gold font-mono"
+                  required
+                />
+              </div>
+
+              <div>
+                <label className="block font-mono text-[11px] text-muted uppercase mb-1">
+                  Motivo do Saque
+                </label>
+                <input
+                  type="text"
+                  value={saqueMotivo}
+                  onChange={(e) => setSaqueMotivo(e.target.value)}
+                  placeholder="Ex: Retirada de receita da loja"
+                  className="w-full bg-panel-2 border border-line rounded-xl px-3 py-2 text-xs text-text outline-none focus:border-gold"
+                  required
+                />
+              </div>
+
+              <div className="flex items-center justify-end gap-2 mt-2">
+                <button
+                  type="button"
+                  onClick={() => setModalSaqueAberto(false)}
+                  className="px-4 py-2 rounded-xl border border-line text-xs font-bold text-muted hover:text-text cursor-pointer"
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="submit"
+                  disabled={executandoSaque || !saqueQuantidade || Number(saqueQuantidade) <= 0 || Number(saqueQuantidade) > saldoCaixaLoja}
+                  className="px-5 py-2 rounded-xl bg-gradient-to-r from-gold to-amber-500 text-void text-xs font-bold hover:opacity-90 disabled:opacity-50 cursor-pointer shadow-md"
+                >
+                  {executandoSaque ? 'Transferindo...' : 'Transferir AniCoins'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

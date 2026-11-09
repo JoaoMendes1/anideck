@@ -46,4 +46,12 @@ func TestLojaHandler_Validacoes(t *testing.T) {
 	if wSalvar.Code != http.StatusUnauthorized {
 		t.Fatalf("salvar sem auth: esperava 401, recebeu %d", wSalvar.Code)
 	}
+
+	// 5. Devolver sem autenticação retorna 401
+	reqDevolver := httptest.NewRequest("POST", "/api/loja/moldura_cyber_holo/devolver", nil)
+	wDevolver := httptest.NewRecorder()
+	h.HandleDevolverItem(wDevolver, reqDevolver)
+	if wDevolver.Code != http.StatusUnauthorized {
+		t.Fatalf("devolver sem auth: esperava 401, recebeu %d", wDevolver.Code)
+	}
 }

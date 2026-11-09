@@ -739,6 +739,7 @@ Motivo: um motivo diário para voltar (`VISAO_COMUNIDADE.md`: Economia, Cartas, 
   - [x] 16.4b Liga semanal com divisões, ativada pelo tamanho da base (#176)
   - [x] 16.4c Clima da temporada: ranking de reações (#177)
 - [x] 16.5 Apoiador por link externo, sem pagamento integrado (#178)
+- [x] 16.6 Caixa da plataforma/cofre, devolução de itens com taxa, cosméticos de temporada e upload de avatar (#198)
 
 ## 🐉 Fase 17: Comunidade viva — *planejada (épico #179)*
 
