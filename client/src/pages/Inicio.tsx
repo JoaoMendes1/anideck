@@ -23,6 +23,7 @@ import ResumoGuildaCard from '../components/inicio/ResumoGuildaCard'
 import HeroProximoEpisodio from '../components/inicio/HeroProximoEpisodio'
 import PlayerHudInicio from '../components/inicio/PlayerHudInicio'
 import CardMissoesDiarias from '../components/inicio/CardMissoesDiarias'
+import CardDesafioClaInicio from '../components/inicio/CardDesafioClaInicio'
 import TrilhasDaCuradoria, { type TrilhaDaHome } from '../components/inicio/TrilhasDaCuradoria'
 import { encontrarLacuna, type AfinidadeComNota } from '../lib/lacuna'
 import {
@@ -548,6 +549,7 @@ export default function Inicio() {
       {/* No monitor largo, o conteúdo ganha uma coluna lateral com a Guilda e a semana. */}
       <div className="xl:grid xl:grid-cols-[minmax(0,1fr)_340px] xl:gap-10 xl:items-start">
       <div className="min-w-0">
+      <CardDesafioClaInicio />
       <CardMissoesDiarias />
       {carregando && (
         <div className="flex gap-4 overflow-hidden mb-10">

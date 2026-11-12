@@ -285,3 +285,82 @@ export async function denunciarCla(claId: string, motivo: string): Promise<void>
   const json = await res.json()
   if (!res.ok) throw new Error(json.erro || json.message || 'Falha ao enviar denúncia')
 }
+
+// -----------------------------------------------------------------------------
+// DESAFIO SEMANAL DO CLÃ (Fase 17 · 17.1b, #181)
+// -----------------------------------------------------------------------------
+
+export interface MembroContribuicaoDesafio {
+  user_id: string
+  handle: string
+  nome: string
+  avatar_url?: string | null
+  papel: 'lider' | 'vice' | 'membro'
+  contribuicao: number
+  elegivel: boolean
+  entrou_em: string
+}
+
+export interface DesafioCla {
+  id: string
+  cla_id: string
+  semana: string
+  tipo: 'episodios' | 'reacoes' | 'animes_terminados' | 'comentarios'
+  titulo: string
+  descricao: string
+  unidade: string
+  icone: string
+  meta: number
+  progresso_total: number
+  progresso_pct: number
+  recompensa_anicoins: number
+  concluido: boolean
+  concluido_em: string | null
+  fechado: boolean
+  pago: boolean
+  inicio_semana: string
+  fim_semana: string
+  contribuicoes: MembroContribuicaoDesafio[]
+}
+
+export interface MeuDesafioClaResumo {
+  tem_cla: boolean
+  cla_id?: string
+  cla_nome?: string
+  cla_tag?: string
+  cla_emblema?: string
+  desafio_id?: string
+  semana?: string
+  tipo?: 'episodios' | 'reacoes' | 'animes_terminados' | 'comentarios'
+  titulo?: string
+  descricao?: string
+  unidade?: string
+  icone?: string
+  meta?: number
+  progresso_total?: number
+  progresso_pct?: number
+  recompensa_anicoins?: number
+  concluido?: boolean
+  fechado?: boolean
+  minha_contribuicao?: number
+  minha_elegivel?: boolean
+}
+
+export async function obterDesafioCla(tag: string, semana?: string): Promise<DesafioCla> {
+  const query = semana ? `?semana=${encodeURIComponent(semana)}` : ''
+  const res = await fetch(`/api/clas/${encodeURIComponent(tag)}/desafio${query}`)
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}))
+    throw new Error(err.erro || err.message || 'Falha ao carregar desafio do clã')
+  }
+  return res.json()
+}
+
+export async function obterMeuDesafioClaResumo(): Promise<MeuDesafioClaResumo> {
+  const headers = await authHeaders()
+  const res = await fetch('/api/me/cla/desafio', { headers })
+  if (!res.ok) {
+    return { tem_cla: false }
+  }
+  return res.json()
+}

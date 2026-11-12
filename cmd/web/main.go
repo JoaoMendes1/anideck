@@ -120,9 +120,10 @@ func main() {
 	r.Get("/api/membros/{a}/duelo/{b}", cartasHandler.HandleDueloDeGosto)
 	r.Get("/api/membros/ranking/genero", rankingsComunidadeHandler.HandleRankingGenero)
 	r.With(middleware.OptionalAuth).Get("/api/rankings/clima", rankingsComunidadeHandler.HandleClimaTemporada)
-	// Clãs (Fase 17, #180): listagem e detalhes públicos
+	// Clãs (Fase 17, #180, #181): listagem, detalhes e desafio semanal
 	r.Get("/api/clas", clasHandler.HandleListarClas)
 	r.Get("/api/clas/{tag}", clasHandler.HandleObterClaPorTag)
+	r.Get("/api/clas/{tag}/desafio", clasHandler.HandleObterDesafioCla)
 	r.Post("/api/anime/bulk", animeHandler.HandleGetAnimesByIDs)
 	r.Post("/api/beta/request-invite", notificationsHandler.HandleRequestBetaInvite)
 	r.Post("/api/internal/check-new-episodes", notificationsHandler.HandleCheckNewEpisodes)
@@ -192,8 +193,9 @@ func main() {
 		protegido.Post("/api/comunidade/comentarios/{cid}/denuncia", comunidadeHandler.HandleDenunciar)
 		protegido.Get("/api/membros/liga", rankingsComunidadeHandler.HandleLigaSemanal)
 
-		// Clãs (Fase 17, #180): criação, gestão, membros e convites
+		// Clãs (Fase 17, #180, #181): criação, gestão, membros, convites e desafio
 		protegido.Get("/api/me/cla", clasHandler.HandleObterMeuCla)
+		protegido.Get("/api/me/cla/desafio", clasHandler.HandleMeuDesafioClaResumo)
 		protegido.Post("/api/clas", clasHandler.HandleCriarCla)
 		protegido.Post("/api/clas/{id}/entrar", clasHandler.HandleEntrarCla)
 		protegido.Post("/api/clas/sair", clasHandler.HandleSairCla)
@@ -302,10 +304,11 @@ func main() {
 		admin.Get("/api/admin/comunidade/regras", comunidadeHandler.HandleGetRegrasComunidade)
 		admin.Put("/api/admin/comunidade/regras", comunidadeHandler.HandleSalvarRegrasComunidade)
 
-		// Moderação de Clãs (Fase 17, #180)
+		// Moderação de Clãs e Desafios (Fase 17, #180, #181)
 		admin.Get("/api/admin/clas/denuncias", clasHandler.HandleAdminListarDenuncias)
 		admin.Post("/api/admin/clas/{id}/dissolver", clasHandler.HandleAdminDissolverCla)
 		admin.Post("/api/admin/clas/{id}/renomear", clasHandler.HandleAdminRenomearCla)
+		admin.Post("/api/admin/clas/desafios/fechar-semana", clasHandler.HandleAdminFecharSemanaDesafios)
 	})
 
 	workDir, _ := os.Getwd()

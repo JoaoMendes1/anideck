@@ -741,3 +741,166 @@ func extrairMensagemErroBanco(raw, fallback string) string {
 
 	return fallback
 }
+
+// -----------------------------------------------------------------------------
+// REGRAS PURAS E HANDLERS: DESAFIO SEMANAL DO CLÃ (Fase 17 · 17.1b, #181)
+// -----------------------------------------------------------------------------
+
+// CalcularMetaDesafioCla calcula a meta proporcional ao tamanho do clã.
+func CalcularMetaDesafioCla(qtdMembros, metaPorMembro, metaMinima int) int {
+	if qtdMembros < 1 {
+		qtdMembros = 1
+	}
+	proporcional := qtdMembros * metaPorMembro
+	if proporcional < metaMinima {
+		return metaMinima
+	}
+	return proporcional
+}
+
+// EventoContaParaDesafio define se uma atividade conta para o desafio:
+// precisa ocorrer dentro do intervalo da semana E após o membro ter ingressado no clã.
+func EventoContaParaDesafio(eventoEm, entrouEm, inicioSemana, fimSemana time.Time) bool {
+	if eventoEm.Before(inicioSemana) || !eventoEm.Before(fimSemana) {
+		return false
+	}
+	corte := inicioSemana
+	if entrouEm.After(inicioSemana) {
+		corte = entrouEm
+	}
+	return !eventoEm.Before(corte)
+}
+
+// ChaveReferenciaDesafioCla gera a chave única de auditoria para o crystal_ledger.
+func ChaveReferenciaDesafioCla(claID, semana, userID string) string {
+	return "desafio:" + strings.TrimSpace(claID) + ":" + strings.TrimSpace(semana) + ":" + strings.TrimSpace(userID)
+}
+
+// HandleObterDesafioCla devolve o desafio semanal de um clã por tag.
+func (h *ClasHandler) HandleObterDesafioCla(w http.ResponseWriter, r *http.Request) {
+	tag := strings.ToUpper(strings.TrimSpace(chi.URLParam(r, "tag")))
+	if tag == "" {
+		responderErroJSON(w, http.StatusBadRequest, "Tag do clã não informada")
+		return
+	}
+	if database.Client == nil {
+		responderErroJSON(w, http.StatusServiceUnavailable, "Banco de dados indisponível")
+		return
+	}
+
+	// Busca o ID do clã pela tag
+	var clas []struct {
+		ID string `json:"id"`
+	}
+	res, _, err := database.Client.From("clas").
+		Select("id", "", false).
+		Eq("tag", tag).
+		Eq("ativo", "true").
+		Limit(1, "").
+		Execute()
+	if err != nil {
+		responderErroJSON(w, http.StatusInternalServerError, "Falha ao buscar clã")
+		return
+	}
+	if err := json.Unmarshal(res, &clas); err != nil || len(clas) == 0 {
+		responderErroJSON(w, http.StatusNotFound, "Clã não encontrado")
+		return
+	}
+
+	params := map[string]interface{}{
+		"p_cla_id": clas[0].ID,
+	}
+	if semana := strings.TrimSpace(r.URL.Query().Get("semana")); semana != "" {
+		params["p_semana"] = semana
+	}
+
+	raw := strings.TrimSpace(database.Client.Rpc("obter_desafio_semanal_cla", "", params))
+	if raw == "" || raw == "null" {
+		responderErroJSON(w, http.StatusNotFound, "Desafio não encontrado para esta semana")
+		return
+	}
+	if strings.Contains(raw, "\"error\"") || strings.Contains(raw, "\"code\"") {
+		msg := extrairMensagemErroBanco(raw, "Falha ao consultar desafio semanal")
+		responderErroJSON(w, http.StatusBadRequest, msg)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	w.Write([]byte(raw))
+}
+
+// HandleMeuDesafioClaResumo retorna o desafio do clã do usuário logado.
+func (h *ClasHandler) HandleMeuDesafioClaResumo(w http.ResponseWriter, r *http.Request) {
+	token, ok := r.Context().Value(middleware.TokenKey).(string)
+	if !ok || token == "" {
+		responderErroJSON(w, http.StatusUnauthorized, "Token de autenticação não fornecido")
+		return
+	}
+
+	client, err := database.ClientWithToken(token)
+	if err != nil {
+		responderErroJSON(w, http.StatusInternalServerError, "Erro interno de conexão")
+		return
+	}
+
+	var params map[string]interface{}
+	if semana := strings.TrimSpace(r.URL.Query().Get("semana")); semana != "" {
+		params = map[string]interface{}{"p_semana": semana}
+	}
+
+	raw := strings.TrimSpace(client.Rpc("meu_desafio_cla_resumo", "", params))
+	if raw == "" || raw == "null" {
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(map[string]interface{}{"tem_cla": false})
+		return
+	}
+	if strings.Contains(raw, "\"error\"") || strings.Contains(raw, "\"code\"") {
+		msg := extrairMensagemErroBanco(raw, "Falha ao consultar desafio do clã")
+		responderErroJSON(w, http.StatusBadRequest, msg)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	w.Write([]byte(raw))
+}
+
+// HandleAdminFecharSemanaDesafios consolida os desafios da semana e distribui as recompensas.
+func (h *ClasHandler) HandleAdminFecharSemanaDesafios(w http.ResponseWriter, r *http.Request) {
+	client, err := database.ServiceRoleClient()
+	if err != nil || client == nil {
+		responderErroJSON(w, http.StatusServiceUnavailable, "Service role indisponível")
+		return
+	}
+
+	agora := time.Now()
+	semanaPassada := CodigoSemanaAtualBrasilia(agora.AddDate(0, 0, -1))
+	semanaAtual := CodigoSemanaAtualBrasilia(agora)
+
+	var body struct {
+		SemanaFechada string `json:"semana_fechada"`
+		NovaSemana    string `json:"nova_semana"`
+	}
+	_ = json.NewDecoder(r.Body).Decode(&body)
+	if body.SemanaFechada != "" {
+		semanaPassada = body.SemanaFechada
+	}
+	if body.NovaSemana != "" {
+		semanaAtual = body.NovaSemana
+	}
+
+	raw := strings.TrimSpace(client.Rpc("fechar_semana_desafios_cla", "", map[string]interface{}{
+		"p_semana_fechada": semanaPassada,
+		"p_nova_semana":    semanaAtual,
+	}))
+	if strings.Contains(raw, "\"error\"") || strings.Contains(raw, "\"code\"") {
+		msg := extrairMensagemErroBanco(raw, "Falha ao fechar semana dos desafios")
+		responderErroJSON(w, http.StatusBadRequest, msg)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	w.Write([]byte(raw))
+}

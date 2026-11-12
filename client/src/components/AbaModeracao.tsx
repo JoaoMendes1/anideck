@@ -73,6 +73,7 @@ export default function AbaModeracao() {
   const [ocupado, setOcupado] = useState<string | null>(null)
   const [regras, setRegras] = useState<RegrasComunidade | null>(null)
   const [salvandoRegras, setSalvandoRegras] = useState(false)
+  const [fechandoDesafios, setFechandoDesafios] = useState(false)
   const [agora] = useState(() => Date.now())
 
   const carregar = useCallback(async () => {
@@ -178,6 +179,26 @@ export default function AbaModeracao() {
       showToast(e instanceof Error && e.message ? e.message : 'Não foi possível salvar.', 'error')
     } finally {
       setSalvandoRegras(false)
+    }
+  }
+
+  const fecharDesafiosSemana = async () => {
+    if (!confirm('Deseja consolidar e fechar a semana dos desafios de clã agora, distribuindo as recompensas devidas?')) return
+    setFechandoDesafios(true)
+    try {
+      const auth = await cabecalho()
+      const res = await fetch('/api/admin/clas/desafios/fechar-semana', {
+        method: 'POST',
+        headers: { ...auth, 'Content-Type': 'application/json' },
+      })
+      const json = await res.json()
+      if (!res.ok) throw new Error(json.erro || json.message || 'Falha ao fechar desafios')
+      showToast(`Semana fechada! ${json.membros_pagos} membros receberam recompensas (${json.anicoins_distribuidos} ₳ distribuídos).`, 'success')
+      carregar()
+    } catch (e: unknown) {
+      showToast(e instanceof Error ? e.message : 'Não foi possível fechar os desafios.', 'error')
+    } finally {
+      setFechandoDesafios(false)
     }
   }
 
@@ -306,13 +327,25 @@ export default function AbaModeracao() {
         )}
       </section>
 
-      {/* MODERAÇÃO DE CLÃS (FASE 17, #180) */}
+      {/* MODERAÇÃO DE CLÃS (FASE 17, #180, #181) */}
       <section className="p-5 rounded-2xl bg-panel border border-line min-w-0">
-        <div className="flex items-center justify-between mb-2">
-          <h2 className="font-anton text-lg uppercase m-0">Denúncias de Clãs</h2>
-          <span className="text-xs px-2.5 py-0.5 rounded-full bg-panel-2 border border-line font-mono font-bold text-muted">
-            {denunciasClas.length} pendente(s)
-          </span>
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-2">
+          <div className="flex items-center gap-2">
+            <h2 className="font-anton text-lg uppercase m-0">Clãs & Desafios</h2>
+            <span className="text-xs px-2.5 py-0.5 rounded-full bg-panel-2 border border-line font-mono font-bold text-muted">
+              {denunciasClas.length} pendente(s)
+            </span>
+          </div>
+          <button
+            type="button"
+            onClick={fecharDesafiosSemana}
+            disabled={fechandoDesafios}
+            className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-holo-2/15 border border-holo-2/35 text-holo-3 hover:bg-holo-2/25 text-xs font-bold transition-all cursor-pointer disabled:opacity-50"
+            title="Consolida metas atingidas e credita recompensas de AniCoins aos membros"
+          >
+            <ShieldCheck size={14} />
+            <span>{fechandoDesafios ? 'Fechando...' : 'Fechar Semana dos Desafios'}</span>
+          </button>
         </div>
         <p className="text-[12.5px] text-muted mt-0 mb-4">
           Clãs denunciados por nome impróprio, tag inadequada ou manifestos abusivos. Renomeie o clã ou dissolva o grupo.

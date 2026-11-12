@@ -198,6 +198,13 @@ var tarefasPeriodicasPadrao = []TarefaPeriodica{
 		Frequencia: FrequenciaSemanal(0, 5),
 		Executar:   executarFecharSemanaLiga,
 	},
+	{
+		Nome:       "fechar_semana_desafios_cla",
+		Titulo:     "Fechamento semanal dos desafios de clã",
+		Descricao:  "Consolida os desafios da semana passada de todos os clãs, credita AniCoins para os membros que contribuíram e abre o desafio da nova semana.",
+		Frequencia: FrequenciaSemanal(0, 5),
+		Executar:   executarFecharSemanaDesafiosCla,
+	},
 }
 
 // TarefasPeriodicasRegistradas devolve uma cópia das tarefas ativas no worker.
@@ -293,6 +300,26 @@ func executarFecharSemanaLiga(ctx context.Context) (string, error) {
 		"p_nova_semana":    semanaAtual,
 	})
 	return fmt.Sprintf("Semana %s fechada para %s: %s", semanaPassada, semanaAtual, bruto), nil
+}
+
+// executarFecharSemanaDesafiosCla consolida os desafios coletivos dos clãs e credita AniCoins (Issue #181).
+func executarFecharSemanaDesafiosCla(ctx context.Context) (string, error) {
+	if err := ctx.Err(); err != nil {
+		return "", err
+	}
+	client, err := database.ServiceRoleClient()
+	if err != nil || client == nil {
+		return "", fmt.Errorf("service role indisponível: %w", err)
+	}
+	agora := time.Now().In(fusoGuilda)
+	semanaPassada := CodigoSemanaAtualBrasilia(agora.AddDate(0, 0, -1))
+	semanaAtual := CodigoSemanaAtualBrasilia(agora)
+
+	bruto := client.Rpc("fechar_semana_desafios_cla", "", map[string]interface{}{
+		"p_semana_fechada": semanaPassada,
+		"p_nova_semana":    semanaAtual,
+	})
+	return fmt.Sprintf("Desafios dos clãs fechados (%s -> %s): %s", semanaPassada, semanaAtual, bruto), nil
 }
 
 // diasHistoricoTarefas é por quanto tempo uma execução concluída fica visível no Painel.

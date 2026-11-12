@@ -20,6 +20,7 @@ import {
 } from 'lucide-react'
 import { useSessao } from '../contexts/SessaoContext'
 import { useToast } from '../contexts/ToastContext'
+import CardDesafioCla from '../components/clas/CardDesafioCla'
 import {
   obterClaPorTag,
   obterMeuCla,
@@ -295,6 +296,9 @@ export default function ClaDetalhe() {
           </div>
         </div>
       </div>
+
+      {/* DESAFIO SEMANAL COLETIVO DO CLÃ (#181) */}
+      <CardDesafioCla tag={cla.tag} claId={cla.id} souMembro={Boolean(souMembro)} />
 
       {/* ROSTER / LISTA DE MEMBROS */}
       <div className="p-6 sm:p-8 rounded-3xl bg-panel border border-line shadow-xl">
