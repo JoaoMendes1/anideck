@@ -165,3 +165,172 @@ func TestChaveReferenciaDesafioCla(t *testing.T) {
 		t.Errorf("Esperava %q, obteve %q", esperado, chave1)
 	}
 }
+
+func TestCalcularPontuacaoLigaCla(t *testing.T) {
+	testes := []struct {
+		nome             string
+		totalMembros     int
+		minMembros       int
+		somaTop10        int64
+		esperadoPontos   int
+		esperadoElegivel bool
+	}{
+		{
+			nome:             "Menos de 10 membros é inelegível e pontuação zero",
+			totalMembros:     8,
+			minMembros:       10,
+			somaTop10:        15000,
+			esperadoPontos:   0,
+			esperadoElegivel: false,
+		},
+		{
+			nome:             "Exatamente 10 membros calcula média aritmética exata",
+			totalMembros:     10,
+			minMembros:       10,
+			somaTop10:        12500,
+			esperadoPontos:   1250,
+			esperadoElegivel: true,
+		},
+		{
+			nome:             "Mais de 10 membros (ex: 25) pontua apenas pelos 10 melhores com arredondamento",
+			totalMembros:     25,
+			minMembros:       10,
+			somaTop10:        15256,
+			esperadoPontos:   1526, // 15256 / 10 = 1525.6 -> 1526
+			esperadoElegivel: true,
+		},
+		{
+			nome:             "MinMembros menor que 1 assume 10 como default defensivo",
+			totalMembros:     9,
+			minMembros:       0,
+			somaTop10:        5000,
+			esperadoPontos:   0,
+			esperadoElegivel: false,
+		},
+	}
+
+	for _, tc := range testes {
+		t.Run(tc.nome, func(t *testing.T) {
+			pontos, elegivel, motivo := CalcularPontuacaoLigaCla(tc.totalMembros, tc.minMembros, tc.somaTop10)
+			if elegivel != tc.esperadoElegivel {
+				t.Errorf("Elegibilidade: esperava %v, obteve %v", tc.esperadoElegivel, elegivel)
+			}
+			if pontos != tc.esperadoPontos {
+				t.Errorf("Pontuação: esperava %d, obteve %d", tc.esperadoPontos, pontos)
+			}
+			if !tc.esperadoElegivel && motivo == "" {
+				t.Errorf("Esperava motivo de inelegibilidade preenchido")
+			}
+		})
+	}
+}
+
+func TestCompararClasLiga(t *testing.T) {
+	dataBase := time.Date(2026, 1, 1, 0, 0, 0, 0, time.UTC)
+
+	claElegivel1 := RankingClaTemporadaItem{
+		ClaID:        "c1",
+		Nome:         "Clã Alfa",
+		ElegivelLiga: true,
+		Pontuacao:    2000,
+		XPTotal:      30000,
+		CriadoEm:     dataBase,
+	}
+
+	claElegivel2 := RankingClaTemporadaItem{
+		ClaID:        "c2",
+		Nome:         "Clã Beta",
+		ElegivelLiga: true,
+		Pontuacao:    1500,
+		XPTotal:      25000,
+		CriadoEm:     dataBase.AddDate(0, 1, 0),
+	}
+
+	claEmpateXP := RankingClaTemporadaItem{
+		ClaID:        "c3",
+		Nome:         "Clã Gama",
+		ElegivelLiga: true,
+		Pontuacao:    2000,
+		XPTotal:      35000, // Maior XP total que Alfa
+		CriadoEm:     dataBase.AddDate(0, 1, 0),
+	}
+
+	claEmpateAntigo := RankingClaTemporadaItem{
+		ClaID:        "c4",
+		Nome:         "Clã Delta",
+		ElegivelLiga: true,
+		Pontuacao:    2000,
+		XPTotal:      30000,
+		CriadoEm:     dataBase.AddDate(0, -1, 0), // Mais antigo que Alfa
+	}
+
+	claInelegivel := RankingClaTemporadaItem{
+		ClaID:        "c5",
+		Nome:         "Clã Ômega",
+		ElegivelLiga: false,
+		Pontuacao:    0,
+		XPTotal:      5000,
+		CriadoEm:     dataBase,
+	}
+
+	t.Run("Elegível vence inelegível", func(t *testing.T) {
+		res := CompararClasLiga(claElegivel2, claInelegivel)
+		if res >= 0 {
+			t.Errorf("Clã elegível deveria vir antes do inelegível: obteve %d", res)
+		}
+	})
+
+	t.Run("Maior pontuação vence", func(t *testing.T) {
+		res := CompararClasLiga(claElegivel1, claElegivel2)
+		if res >= 0 {
+			t.Errorf("Clã Alfa (2000 pts) deveria vir antes de Clã Beta (1500 pts): obteve %d", res)
+		}
+	})
+
+	t.Run("Empate na pontuação desempata por maior XP total", func(t *testing.T) {
+		res := CompararClasLiga(claEmpateXP, claElegivel1)
+		if res >= 0 {
+			t.Errorf("Clã Gama (35k XP) deveria vir antes de Alfa (30k XP): obteve %d", res)
+		}
+	})
+
+	t.Run("Empate na pontuação e no XP total desempata por antiguidade", func(t *testing.T) {
+		res := CompararClasLiga(claEmpateAntigo, claElegivel1)
+		if res >= 0 {
+			t.Errorf("Clã Delta (mais antigo) deveria vir antes de Alfa: obteve %d", res)
+		}
+	})
+}
+
+func TestChaveReferenciaLigaCla(t *testing.T) {
+	t.Run("Idempotência e formato da chave", func(t *testing.T) {
+		chave1 := ChaveReferenciaLigaCla("2026-FALL", "cla-123", "user-456")
+		chave2 := ChaveReferenciaLigaCla("2026-FALL", "cla-123", "user-456")
+		if chave1 != chave2 {
+			t.Errorf("Chaves devem ser iguais: %q != %q", chave1, chave2)
+		}
+		esperado := "liga_cla:2026-FALL:cla-123:user-456"
+		if chave1 != esperado {
+			t.Errorf("Esperava %q, obteve %q", esperado, chave1)
+		}
+	})
+}
+
+func TestCodigoTemporadaBrasilia(t *testing.T) {
+	testes := []struct {
+		data     time.Time
+		esperado string
+	}{
+		{time.Date(2026, 2, 15, 12, 0, 0, 0, time.UTC), "2026-WINTER"},
+		{time.Date(2026, 5, 20, 12, 0, 0, 0, time.UTC), "2026-SPRING"},
+		{time.Date(2026, 8, 10, 12, 0, 0, 0, time.UTC), "2026-SUMMER"},
+		{time.Date(2026, 11, 12, 12, 0, 0, 0, time.UTC), "2026-FALL"},
+	}
+
+	for _, tc := range testes {
+		obtido := CodigoTemporadaBrasilia(tc.data)
+		if obtido != tc.esperado {
+			t.Errorf("Para %v: esperava %q, obteve %q", tc.data, tc.esperado, obtido)
+		}
+	}
+}

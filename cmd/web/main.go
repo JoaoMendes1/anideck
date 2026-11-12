@@ -120,8 +120,10 @@ func main() {
 	r.Get("/api/membros/{a}/duelo/{b}", cartasHandler.HandleDueloDeGosto)
 	r.Get("/api/membros/ranking/genero", rankingsComunidadeHandler.HandleRankingGenero)
 	r.With(middleware.OptionalAuth).Get("/api/rankings/clima", rankingsComunidadeHandler.HandleClimaTemporada)
-	// Clãs (Fase 17, #180, #181): listagem, detalhes e desafio semanal
+	// Clãs (Fase 17, #180, #181, #182): listagem, ranking de temporada, campeões, detalhes e desafio semanal
 	r.Get("/api/clas", clasHandler.HandleListarClas)
+	r.Get("/api/clas/ranking/temporada", clasHandler.HandleRankingClasTemporada)
+	r.Get("/api/clas/ranking/campeoes", clasHandler.HandleHistoricoCampeoesClas)
 	r.Get("/api/clas/{tag}", clasHandler.HandleObterClaPorTag)
 	r.Get("/api/clas/{tag}/desafio", clasHandler.HandleObterDesafioCla)
 	r.Post("/api/anime/bulk", animeHandler.HandleGetAnimesByIDs)
@@ -309,6 +311,7 @@ func main() {
 		admin.Post("/api/admin/clas/{id}/dissolver", clasHandler.HandleAdminDissolverCla)
 		admin.Post("/api/admin/clas/{id}/renomear", clasHandler.HandleAdminRenomearCla)
 		admin.Post("/api/admin/clas/desafios/fechar-semana", clasHandler.HandleAdminFecharSemanaDesafios)
+		admin.Post("/api/admin/clas/temporada/fechar", clasHandler.HandleAdminFecharTemporadaClas)
 	})
 
 	workDir, _ := os.Getwd()

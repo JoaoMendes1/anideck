@@ -2,7 +2,9 @@ package handlers
 
 import (
 	"encoding/json"
+	"fmt"
 	"log"
+	"math"
 	"net/http"
 	"strconv"
 	"strings"
@@ -92,6 +94,123 @@ type ClaDenunciaItem struct {
 	Motivo             string    `json:"motivo"`
 	Status             string    `json:"status"`
 	CriadoEm           time.Time `json:"criado_em"`
+}
+
+// Tipos para Liga de Clãs por Temporada (Fase 17 · 17.1c, #182)
+
+type RankingClaTemporadaMembro struct {
+	Posicao   int    `json:"posicao"`
+	UserID    string `json:"user_id"`
+	Handle    string `json:"handle"`
+	Nome      string `json:"nome"`
+	AvatarURL string `json:"avatar_url,omitempty"`
+	XP        int64  `json:"xp"`
+}
+
+type RankingClaTemporadaItem struct {
+	Posicao          *int                        `json:"posicao"`
+	ClaID            string                      `json:"cla_id"`
+	Nome             string                      `json:"nome"`
+	Tag              string                      `json:"tag"`
+	Descricao        string                      `json:"descricao"`
+	Emblema          string                      `json:"emblema"`
+	CriadoEm         time.Time                   `json:"criado_em"`
+	TotalMembros     int                         `json:"total_membros"`
+	ElegivelLiga     bool                        `json:"elegivel_liga"`
+	MotivoIneligivel *string                     `json:"motivo_ineligivel"`
+	Pontuacao        int                         `json:"pontuacao"`
+	XPTotal          int64                       `json:"xp_total"`
+	Top10Membros     []RankingClaTemporadaMembro `json:"top10_membros"`
+}
+
+type TemporadaCampeaoCla struct {
+	Posicao            int       `json:"posicao"`
+	ClaID              string    `json:"cla_id"`
+	Nome               string    `json:"nome"`
+	Tag                string    `json:"tag"`
+	Emblema            string    `json:"emblema"`
+	Pontuacao          int       `json:"pontuacao"`
+	XPTotal            int64     `json:"xp_total"`
+	TotalMembros       int       `json:"total_membros"`
+	RecompensaAniCoins int       `json:"recompensa_anicoins"`
+	EmblemaSlug        string    `json:"emblema_slug,omitempty"`
+	FechadoEm          time.Time `json:"fechado_em,omitempty"`
+}
+
+type HistoricoTemporadaCampeoesItem struct {
+	Temporada string                `json:"temporada"`
+	FechadoEm time.Time             `json:"fechado_em"`
+	Campeoes  []TemporadaCampeaoCla `json:"campeoes"`
+}
+
+type RankingClasTemporadaResponse struct {
+	Temporada      string                    `json:"temporada"`
+	NomeEstacao    string                    `json:"nome_estacao"`
+	Ano            int                       `json:"ano"`
+	Inicio         time.Time                 `json:"inicio"`
+	Fim            time.Time                 `json:"fim"`
+	MinMembrosLiga int                       `json:"min_membros_liga"`
+	Fechada        bool                      `json:"fechada"`
+	Campeoes       []TemporadaCampeaoCla     `json:"campeoes"`
+	Ranking        []RankingClaTemporadaItem `json:"ranking"`
+}
+
+// CodigoTemporadaBrasilia devolve o identificador "YYYY-ESTACAO" no fuso de Brasília.
+func CodigoTemporadaBrasilia(t time.Time) string {
+	local := t.In(fusoGuilda)
+	trimestre := (int(local.Month()) - 1) / 3
+	return fmt.Sprintf("%04d-%s", local.Year(), temporadasPorTrimestre[trimestre])
+}
+
+// CalcularPontuacaoLigaCla aplica o piso de membros e a média aritmética dos 10 melhores membros.
+func CalcularPontuacaoLigaCla(totalMembros int, minMembros int, somaTop10 int64) (pontuacao int, elegivel bool, motivo string) {
+	if minMembros < 1 {
+		minMembros = 10
+	}
+	if totalMembros < minMembros {
+		return 0, false, fmt.Sprintf("Mínimo de %d membros para disputar a liga (atual: %d)", minMembros, totalMembros)
+	}
+	media := math.Round(float64(somaTop10) / 10.0)
+	return int(media), true, ""
+}
+
+// CompararClasLiga define o critério estrito de desempate da Liga de Clãs:
+// 1º Elegibilidade (elegíveis antes de inelegíveis)
+// 2º Pontuação (média top 10) decrescente
+// 3º XP total acumulado decrescente
+// 4º Antiguidade da fundação (mais antigo vence)
+// Retorna -1 se a deve vir antes de b, 1 se b deve vir antes de a, 0 se idênticos.
+func CompararClasLiga(a, b RankingClaTemporadaItem) int {
+	if a.ElegivelLiga != b.ElegivelLiga {
+		if a.ElegivelLiga {
+			return -1
+		}
+		return 1
+	}
+	if a.Pontuacao != b.Pontuacao {
+		if a.Pontuacao > b.Pontuacao {
+			return -1
+		}
+		return 1
+	}
+	if a.XPTotal != b.XPTotal {
+		if a.XPTotal > b.XPTotal {
+			return -1
+		}
+		return 1
+	}
+	if a.CriadoEm.Before(b.CriadoEm) {
+		return -1
+	}
+	if b.CriadoEm.Before(a.CriadoEm) {
+		return 1
+	}
+	return 0
+}
+
+// ChaveReferenciaLigaCla constrói a chave de idempotência para o crystal_ledger.
+func ChaveReferenciaLigaCla(temporada, claID, userID string) string {
+	return fmt.Sprintf("liga_cla:%s:%s:%s", temporada, claID, userID)
 }
 
 type ClasHandler struct{}
@@ -896,6 +1015,93 @@ func (h *ClasHandler) HandleAdminFecharSemanaDesafios(w http.ResponseWriter, r *
 	}))
 	if strings.Contains(raw, "\"error\"") || strings.Contains(raw, "\"code\"") {
 		msg := extrairMensagemErroBanco(raw, "Falha ao fechar semana dos desafios")
+		responderErroJSON(w, http.StatusBadRequest, msg)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	w.Write([]byte(raw))
+}
+
+// HandleRankingClasTemporada consulta o ranking e pódio da temporada da Liga de Clãs.
+func (h *ClasHandler) HandleRankingClasTemporada(w http.ResponseWriter, r *http.Request) {
+	temporada := strings.TrimSpace(r.URL.Query().Get("temporada"))
+	limite, _ := strconv.Atoi(r.URL.Query().Get("limite"))
+	if limite <= 0 || limite > 100 {
+		limite = 50
+	}
+
+	params := map[string]interface{}{
+		"p_limite": limite,
+	}
+	if temporada != "" {
+		params["p_temporada"] = temporada
+	}
+
+	raw := strings.TrimSpace(database.Client.Rpc("ranking_clas_temporada", "", params))
+	if raw == "" || raw == "null" {
+		responderErroJSON(w, http.StatusNotFound, "Temporada não encontrada")
+		return
+	}
+	if strings.Contains(raw, "\"error\"") || strings.Contains(raw, "\"code\"") {
+		msg := extrairMensagemErroBanco(raw, "Falha ao consultar ranking da temporada")
+		responderErroJSON(w, http.StatusBadRequest, msg)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	w.Write([]byte(raw))
+}
+
+// HandleHistoricoCampeoesClas devolve o histórico das temporadas encerradas com seus campeões.
+func (h *ClasHandler) HandleHistoricoCampeoesClas(w http.ResponseWriter, r *http.Request) {
+	raw := strings.TrimSpace(database.Client.Rpc("listar_temporadas_campeoes_clas", "", nil))
+	if raw == "" || raw == "null" {
+		raw = "[]"
+	}
+	if strings.Contains(raw, "\"error\"") || strings.Contains(raw, "\"code\"") {
+		msg := extrairMensagemErroBanco(raw, "Falha ao consultar histórico de campeões")
+		responderErroJSON(w, http.StatusBadRequest, msg)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	w.Write([]byte(raw))
+}
+
+// HandleAdminFecharTemporadaClas fecha uma temporada da liga de clãs sob demanda no Painel Admin.
+func (h *ClasHandler) HandleAdminFecharTemporadaClas(w http.ResponseWriter, r *http.Request) {
+	client, err := database.ServiceRoleClient()
+	if err != nil || client == nil {
+		responderErroJSON(w, http.StatusServiceUnavailable, "Service role indisponível")
+		return
+	}
+
+	agora := time.Now().In(fusoGuilda)
+	temporadaPassada := CodigoTemporadaBrasilia(agora.AddDate(0, -1, 0))
+	temporadaAtual := CodigoTemporadaBrasilia(agora)
+
+	var body struct {
+		TemporadaFechada string `json:"temporada_fechada"`
+		NovaTemporada    string `json:"nova_temporada"`
+	}
+	_ = json.NewDecoder(r.Body).Decode(&body)
+	if body.TemporadaFechada != "" {
+		temporadaPassada = body.TemporadaFechada
+	}
+	if body.NovaTemporada != "" {
+		temporadaAtual = body.NovaTemporada
+	}
+
+	raw := strings.TrimSpace(client.Rpc("fechar_temporada_clas", "", map[string]interface{}{
+		"p_temporada_fechada": temporadaPassada,
+		"p_nova_temporada":    temporadaAtual,
+	}))
+	if strings.Contains(raw, "\"error\"") || strings.Contains(raw, "\"code\"") {
+		msg := extrairMensagemErroBanco(raw, "Falha ao fechar temporada de clãs")
 		responderErroJSON(w, http.StatusBadRequest, msg)
 		return
 	}

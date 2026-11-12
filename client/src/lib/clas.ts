@@ -364,3 +364,105 @@ export async function obterMeuDesafioClaResumo(): Promise<MeuDesafioClaResumo> {
   }
   return res.json()
 }
+
+// -----------------------------------------------------------------------------
+// LIGA DE CLÃS POR TEMPORADA (Fase 17 · 17.1c, #182)
+// -----------------------------------------------------------------------------
+
+export interface RankingClaMembro {
+  posicao: number
+  user_id: string
+  handle: string
+  nome: string
+  avatar_url?: string | null
+  xp: number
+}
+
+export interface RankingClaItem {
+  posicao: number | null
+  cla_id: string
+  nome: string
+  tag: string
+  descricao: string
+  emblema: string
+  criado_em: string
+  total_membros: number
+  elegivel_liga: boolean
+  motivo_ineligivel: string | null
+  pontuacao: number
+  xp_total: number
+  top10_membros: RankingClaMembro[]
+}
+
+export interface TemporadaCampeaoCla {
+  posicao: number
+  cla_id: string
+  nome: string
+  tag: string
+  emblema: string
+  pontuacao: number
+  xp_total: number
+  total_membros: number
+  recompensa_anicoins: number
+  emblema_slug?: string
+  fechado_em?: string
+}
+
+export interface TemporadaHistoricoItem {
+  temporada: string
+  fechado_em: string
+  campeoes: TemporadaCampeaoCla[]
+}
+
+export interface RankingClaTemporadaData {
+  temporada: string
+  nome_estacao: string
+  ano: number
+  inicio: string
+  fim: string
+  min_membros_liga: number
+  fechada: boolean
+  campeoes: TemporadaCampeaoCla[]
+  ranking: RankingClaItem[]
+}
+
+export async function obterRankingClasTemporada(temporada?: string, limite = 50): Promise<RankingClaTemporadaData> {
+  const params = new URLSearchParams()
+  if (temporada) params.set('temporada', temporada)
+  if (limite) params.set('limite', String(limite))
+  const query = params.toString() ? `?${params.toString()}` : ''
+
+  const res = await fetch(`/api/clas/ranking/temporada${query}`)
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}))
+    throw new Error(err.erro || err.message || 'Falha ao carregar ranking da temporada')
+  }
+  return res.json()
+}
+
+export async function obterHistoricoCampeoesClas(): Promise<TemporadaHistoricoItem[]> {
+  const res = await fetch('/api/clas/ranking/campeoes')
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}))
+    throw new Error(err.erro || err.message || 'Falha ao carregar histórico de campeões')
+  }
+  return res.json()
+}
+
+export async function fecharTemporadaClasAdmin(temporadaFechada?: string, novaTemporada?: string): Promise<{
+  sucesso: boolean
+  temporada_fechada: string
+  nova_temporada?: string
+  membros_premiados: number
+  anicoins_distribuidos: number
+}> {
+  const headers = await authHeaders()
+  const res = await fetch('/api/admin/clas/temporada/fechar', {
+    method: 'POST',
+    headers: { ...headers, 'Content-Type': 'application/json' },
+    body: JSON.stringify({ temporada_fechada: temporadaFechada, nova_temporada: novaTemporada }),
+  })
+  const json = await res.json()
+  if (!res.ok) throw new Error(json.erro || json.message || 'Falha ao fechar temporada de clãs')
+  return json
+}

@@ -205,6 +205,13 @@ var tarefasPeriodicasPadrao = []TarefaPeriodica{
 		Frequencia: FrequenciaSemanal(0, 5),
 		Executar:   executarFecharSemanaDesafiosCla,
 	},
+	{
+		Nome:       "fechar_temporada_clas",
+		Titulo:     "Fechamento de temporada da Liga de Clãs",
+		Descricao:  "Consolida as posições da temporada encerrada, concede cosméticos exclusivos e credita AniCoins para os membros dos clãs do Top 3.",
+		Frequencia: FrequenciaTemporada(0, 10),
+		Executar:   executarFecharTemporadaClas,
+	},
 }
 
 // TarefasPeriodicasRegistradas devolve uma cópia das tarefas ativas no worker.
@@ -320,6 +327,26 @@ func executarFecharSemanaDesafiosCla(ctx context.Context) (string, error) {
 		"p_nova_semana":    semanaAtual,
 	})
 	return fmt.Sprintf("Desafios dos clãs fechados (%s -> %s): %s", semanaPassada, semanaAtual, bruto), nil
+}
+
+// executarFecharTemporadaClas consolida a liga de clãs por temporada, premiando o Top 3 (Issue #182).
+func executarFecharTemporadaClas(ctx context.Context) (string, error) {
+	if err := ctx.Err(); err != nil {
+		return "", err
+	}
+	client, err := database.ServiceRoleClient()
+	if err != nil || client == nil {
+		return "", fmt.Errorf("service role indisponível: %w", err)
+	}
+	agora := time.Now().In(fusoGuilda)
+	temporadaPassada := CodigoTemporadaBrasilia(agora.AddDate(0, -1, 0))
+	temporadaAtual := CodigoTemporadaBrasilia(agora)
+
+	bruto := client.Rpc("fechar_temporada_clas", "", map[string]interface{}{
+		"p_temporada_fechada": temporadaPassada,
+		"p_nova_temporada":    temporadaAtual,
+	})
+	return fmt.Sprintf("Temporada de clãs fechada (%s -> %s): %s", temporadaPassada, temporadaAtual, bruto), nil
 }
 
 // diasHistoricoTarefas é por quanto tempo uma execução concluída fica visível no Painel.

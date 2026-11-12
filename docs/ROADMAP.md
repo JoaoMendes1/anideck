@@ -47,7 +47,7 @@ Staging sobe já na Fase 1, como projeto esqueleto — mesmo padrão do JVM Syst
 | 14 · Guilda & Gamificação | ✅ Concluída (08/11/2026) |
 | 15 · Comunidade base | ✅ Concluída (08/11/2026, #154); falta abrir o beta |
 | 16 · Economia e cartas | ✅ Concluída (09/11/2026, #165); falta abrir o beta |
-| 17 · Comunidade viva | 🟡 Em andamento (09/11/2026, #179, #180, #181) |
+| 17 · Comunidade viva | 🟡 Em andamento (09/11/2026, #179, #180, #181, #182) |
 
 ---
 
@@ -746,10 +746,10 @@ Motivo: um motivo diário para voltar (`VISAO_COMUNIDADE.md`: Economia, Cartas, 
 Motivo: fazer a base jogar junta (`VISAO_COMUNIDADE.md`: Guildas como clãs, Conversa e Outras
 mecânicas). **Pré-requisitos:** Fase 16 concluída e base com gente suficiente (o épico sugere o mínimo).
 
-- [ ] 17.1 Clãs (o nome é a primeira decisão: "Guilda" já é a progressão pessoal)
+- [x] 17.1 Clãs (o nome é a primeira decisão: "Guilda" já é a progressão pessoal)
   - [x] 17.1a Clãs de 10 a 30 membros (#180)
   - [x] 17.1b Desafio semanal coletivo (#181)
-  - [ ] 17.1c Liga de clãs por temporada (#182)
+  - [x] 17.1c Liga de clãs por temporada (#182)
 - [ ] 17.2 Sala de estreia
   - [ ] 17.2a Chat ao vivo nas três horas depois do lançamento (#183)
   - [ ] 17.2b Destaques viram comentários e aviso de sala aberta (#184)

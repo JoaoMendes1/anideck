@@ -3,7 +3,7 @@
 // atividade e regras da Mana, da Vitalidade e do Modo Descanso.
 import { useCallback, useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { Check, EyeOff, Eye, Trash2, Save, ShieldCheck, Flag } from 'lucide-react'
+import { Check, EyeOff, Eye, Trash2, Save, ShieldCheck, Flag, Trophy } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import { useToast } from '../contexts/ToastContext'
 import { MOTIVOS_DENUNCIA, tempoRelativo, type RegrasComunidade } from '../lib/comunidade'
@@ -74,6 +74,7 @@ export default function AbaModeracao() {
   const [regras, setRegras] = useState<RegrasComunidade | null>(null)
   const [salvandoRegras, setSalvandoRegras] = useState(false)
   const [fechandoDesafios, setFechandoDesafios] = useState(false)
+  const [fechandoTemporada, setFechandoTemporada] = useState(false)
   const [agora] = useState(() => Date.now())
 
   const carregar = useCallback(async () => {
@@ -199,6 +200,26 @@ export default function AbaModeracao() {
       showToast(e instanceof Error ? e.message : 'Não foi possível fechar os desafios.', 'error')
     } finally {
       setFechandoDesafios(false)
+    }
+  }
+
+  const fecharTemporadaClas = async () => {
+    if (!confirm('Deseja consolidar e fechar a temporada da Liga de Clãs agora? Cosméticos exclusivos e AniCoins serão concedidos aos membros dos clãs no Top 3.')) return
+    setFechandoTemporada(true)
+    try {
+      const auth = await cabecalho()
+      const res = await fetch('/api/admin/clas/temporada/fechar', {
+        method: 'POST',
+        headers: { ...auth, 'Content-Type': 'application/json' },
+      })
+      const json = await res.json()
+      if (!res.ok) throw new Error(json.erro || json.message || 'Falha ao fechar temporada de clãs')
+      showToast(`Temporada fechada! ${json.membros_premiados} membros premiados (${json.anicoins_distribuidos} ₳ distribuídos).`, 'success')
+      carregar()
+    } catch (e: unknown) {
+      showToast(e instanceof Error ? e.message : 'Não foi possível fechar a temporada de clãs.', 'error')
+    } finally {
+      setFechandoTemporada(false)
     }
   }
 
@@ -336,16 +357,28 @@ export default function AbaModeracao() {
               {denunciasClas.length} pendente(s)
             </span>
           </div>
-          <button
-            type="button"
-            onClick={fecharDesafiosSemana}
-            disabled={fechandoDesafios}
-            className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-holo-2/15 border border-holo-2/35 text-holo-3 hover:bg-holo-2/25 text-xs font-bold transition-all cursor-pointer disabled:opacity-50"
-            title="Consolida metas atingidas e credita recompensas de AniCoins aos membros"
-          >
-            <ShieldCheck size={14} />
-            <span>{fechandoDesafios ? 'Fechando...' : 'Fechar Semana dos Desafios'}</span>
-          </button>
+          <div className="flex flex-wrap items-center gap-2">
+            <button
+              type="button"
+              onClick={fecharDesafiosSemana}
+              disabled={fechandoDesafios}
+              className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-holo-2/15 border border-holo-2/35 text-holo-3 hover:bg-holo-2/25 text-xs font-bold transition-all cursor-pointer disabled:opacity-50"
+              title="Consolida metas atingidas e credita recompensas de AniCoins aos membros"
+            >
+              <ShieldCheck size={14} />
+              <span>{fechandoDesafios ? 'Fechando...' : 'Fechar Semana dos Desafios'}</span>
+            </button>
+            <button
+              type="button"
+              onClick={fecharTemporadaClas}
+              disabled={fechandoTemporada}
+              className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-gold/15 border border-gold/40 text-gold hover:bg-gold/25 text-xs font-bold transition-all cursor-pointer disabled:opacity-50"
+              title="Consolida a pontuação da temporada, premia o Top 3 e abre a nova temporada"
+            >
+              <Trophy size={14} />
+              <span>{fechandoTemporada ? 'Fechando...' : 'Fechar Temporada da Liga'}</span>
+            </button>
+          </div>
         </div>
         <p className="text-[12.5px] text-muted mt-0 mb-4">
           Clãs denunciados por nome impróprio, tag inadequada ou manifestos abusivos. Renomeie o clã ou dissolva o grupo.

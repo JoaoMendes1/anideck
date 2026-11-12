@@ -85,6 +85,7 @@ SELECT pg_get_viewdef('nome_da_view'::regclass, true);
 | `053_caixa_loja_devolucao_avatar.sql` | Fase 16 (#198): Caixa/Cofre da plataforma no `crystal_ledger`, RPC `sacar_caixa_loja`, RPC `devolver_item` com taxa retida, cosméticos da Temporada 1, `apoiador` e `avatar_url` em `profiles`. Aplicar **antes** de promover o código | — |
 | `054_clas_sistema.sql` | Fase 17 (17.1a, #180): Clãs temáticos — tabelas `clas`, `cla_membros`, `cla_historico_saida`, `cla_convites`, `cla_denuncias`, RPCs seguras de criação, entrada, saída, transferência, moderação e consulta com XP semanal. Aplicar **antes** de promover o código | — |
 | `055_cla_desafio_semanal.sql` | Fase 17 (17.1b, #181): Desafio semanal coletivo do clã — tabela `cla_desafios`, meta proporcional, agregação de progresso no SQL, RPCs `obter_desafio_semanal_cla`, `meu_desafio_cla_resumo` e fechamento semanal com AniCoins. Aplicar **antes** de promover o código | — |
+| `056_cla_liga_temporada.sql` | Fase 17 (17.1c, #182): Liga de clãs por temporada — ranking com média dos 10 melhores membros, tabela `cla_temporadas_campeoes`, cosméticos exclusivos e premiação em AniCoins no fechamento. Aplicar **antes** de promover o código | — |
 
 Datas com `~` são a data do commit, não da aplicação no Supabase.
 
