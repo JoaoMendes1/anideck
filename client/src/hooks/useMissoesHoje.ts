@@ -11,7 +11,9 @@ export interface MissaoDiariaItem {
   tipo: string
   meta: number
   progresso: number
+  progresso_atual?: number
   recompensa_cristais: number
+  recompensa_anicoins?: number
   concluida: boolean
   resgatada: boolean
   icone: string
@@ -44,8 +46,51 @@ export function useMissoesHoje() {
         headers: { Authorization: `Bearer ${token}` },
       })
       if (res.ok) {
-        const json = (await res.json()) as ResumoMissoesHoje
-        setDados(json)
+        const json = await res.json()
+        const rawMissoes = Array.isArray(json.missoes) ? json.missoes : []
+        const missoesNormalizadas: MissaoDiariaItem[] = rawMissoes.map((m: Record<string, unknown>) => {
+          const meta = typeof m.meta === 'number' && m.meta > 0 ? m.meta : Number(m.meta) || 1
+          const prog = typeof m.progresso === 'number'
+            ? m.progresso
+            : typeof m.progresso_atual === 'number'
+            ? m.progresso_atual
+            : Number(m.progresso ?? m.progresso_atual) || 0
+          const recompensa = typeof m.recompensa_cristais === 'number'
+            ? m.recompensa_cristais
+            : typeof m.recompensa_anicoins === 'number'
+            ? m.recompensa_anicoins
+            : Number(m.recompensa_cristais ?? m.recompensa_anicoins) || 15
+
+          return {
+            id: String(m.id || ''),
+            titulo: String(m.titulo || 'Missão Diária'),
+            descricao: String(m.descricao || ''),
+            tipo: String(m.tipo || ''),
+            meta,
+            progresso: prog,
+            progresso_atual: prog,
+            recompensa_cristais: recompensa,
+            recompensa_anicoins: recompensa,
+            concluida: Boolean(m.concluida || prog >= meta),
+            resgatada: Boolean(m.resgatada),
+            icone: String(m.icone || 'Sparkles'),
+          }
+        })
+
+        const concluidasCount = typeof json.concluidas === 'number'
+          ? json.concluidas
+          : missoesNormalizadas.filter(m => m.concluida).length
+
+        setDados({
+          data: String(json.data || ''),
+          total: typeof json.total === 'number' ? json.total : missoesNormalizadas.length,
+          concluidas: concluidasCount,
+          todas_resgatadas: Boolean(
+            json.todas_resgatadas ||
+            (missoesNormalizadas.length > 0 && missoesNormalizadas.every(m => m.resgatada))
+          ),
+          missoes: missoesNormalizadas,
+        })
       }
     } catch {
       // Silencioso em caso de erro de rede

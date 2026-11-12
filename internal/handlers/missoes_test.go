@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"encoding/json"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -90,4 +91,45 @@ func TestMissoes_ValidacoesAuth(t *testing.T) {
 			t.Fatalf("Esperado 401, recebido %d", rec.Code)
 		}
 	})
+}
+
+func TestMissoes_SerializacaoJSON(t *testing.T) {
+	m := MissaoUsuario{
+		ID:                 "ep_hoje",
+		Tipo:               MissaoMarcarEpisodios,
+		Titulo:             "Episódio do Dia",
+		Descricao:          "Marque 1 ep",
+		Meta:               1,
+		Progresso:          1,
+		ProgressoAtual:     1,
+		RecompensaCristais: 15,
+		RecompensaAniCoins: 15,
+		Concluida:          true,
+		Resgatada:          false,
+		Icone:              "Play",
+	}
+
+	bytes, err := json.Marshal(m)
+	if err != nil {
+		t.Fatalf("Erro ao serializar: %v", err)
+	}
+
+	var mResult map[string]interface{}
+	if err := json.Unmarshal(bytes, &mResult); err != nil {
+		t.Fatalf("Erro ao deserializar: %v", err)
+	}
+
+	// Campos essenciais para evitar "Faltam NaN" no frontend
+	if _, ok := mResult["progresso"]; !ok {
+		t.Errorf("Campo 'progresso' obrigatório no JSON")
+	}
+	if _, ok := mResult["meta"]; !ok {
+		t.Errorf("Campo 'meta' obrigatório no JSON")
+	}
+	if _, ok := mResult["recompensa_cristais"]; !ok {
+		t.Errorf("Campo 'recompensa_cristais' obrigatório no JSON")
+	}
+	if _, ok := mResult["icone"]; !ok {
+		t.Errorf("Campo 'icone' obrigatório no JSON")
+	}
 }

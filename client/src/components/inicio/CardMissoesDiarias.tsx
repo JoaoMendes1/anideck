@@ -99,8 +99,14 @@ export default function CardMissoesDiarias() {
       {expandido && (
         <div className="p-3 sm:p-4 grid grid-cols-1 md:grid-cols-3 gap-3 bg-panel-2/30">
           {missoes.map((m: MissaoDiariaItem) => {
-            const pct = Math.min(100, Math.round((m.progresso / m.meta) * 100))
+            const prog = typeof m.progresso === 'number' && !isNaN(m.progresso) ? m.progresso : 0
+            const meta = typeof m.meta === 'number' && !isNaN(m.meta) && m.meta > 0 ? m.meta : 1
+            const pct = Math.min(100, Math.max(0, Math.round((prog / meta) * 100)))
+            const faltam = Math.max(0, meta - prog)
             const emResgate = resgatandoId === m.id
+            const recompensa = typeof m.recompensa_cristais === 'number' && !isNaN(m.recompensa_cristais)
+              ? m.recompensa_cristais
+              : 15
 
             return (
               <div
@@ -125,7 +131,7 @@ export default function CardMissoesDiarias() {
                     </div>
                     <span className="shrink-0 inline-flex items-center gap-1 px-2 py-0.5 rounded-full font-mono text-[11px] font-bold text-holo-3 bg-holo-3/10 border border-holo-3/20">
                       <IconeAniCoin size={12} />
-                      +{m.recompensa_cristais}
+                      +{recompensa}
                     </span>
                   </div>
 
@@ -139,7 +145,7 @@ export default function CardMissoesDiarias() {
                   <div className="flex items-center justify-between font-mono text-[10px] text-muted-2 mb-1.5">
                     <span>Progresso</span>
                     <span className="font-bold text-text">
-                      {m.progresso} <span className="text-muted-2">/ {m.meta}</span>
+                      {prog} <span className="text-muted-2">/ {meta}</span>
                     </span>
                   </div>
 
@@ -169,11 +175,11 @@ export default function CardMissoesDiarias() {
                       className="w-full py-1.5 px-3 rounded-lg bg-gradient-to-r from-gold via-amber-500 to-yellow-400 hover:from-amber-400 hover:to-yellow-300 text-void font-extrabold text-xs uppercase tracking-wider shadow-[0_0_12px_rgba(245,158,11,0.35)] active:scale-95 transition-all flex items-center justify-center gap-1.5 cursor-pointer disabled:opacity-50"
                     >
                       <Sparkles size={13} fill="currentColor" />
-                      {emResgate ? 'Resgatando...' : `Resgatar +${m.recompensa_cristais} ₳`}
+                      {emResgate ? 'Resgatando...' : `Resgatar +${recompensa} ₳`}
                     </button>
                   ) : (
                     <div className="w-full py-1.5 px-2 rounded-lg bg-panel border border-line/40 text-muted-2 font-mono text-[10.5px] text-center select-none truncate">
-                      {m.progresso === 0 ? 'Não iniciada' : `Faltam ${m.meta - m.progresso}`}
+                      {prog === 0 ? 'Não iniciada' : `Faltam ${faltam}`}
                     </div>
                   )}
                 </div>

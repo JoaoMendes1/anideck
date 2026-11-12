@@ -40,6 +40,7 @@ type ItemCatalogoMissao struct {
 	Descricao  string     `json:"descricao"`
 	Meta       int        `json:"meta"`
 	Recompensa int        `json:"recompensa"`
+	Icone      string     `json:"icone,omitempty"`
 }
 
 type MissaoUsuario struct {
@@ -48,18 +49,22 @@ type MissaoUsuario struct {
 	Titulo             string     `json:"titulo"`
 	Descricao          string     `json:"descricao"`
 	Meta               int        `json:"meta"`
+	Progresso          int        `json:"progresso"`
 	ProgressoAtual     int        `json:"progresso_atual"`
+	RecompensaCristais int        `json:"recompensa_cristais"`
 	RecompensaAniCoins int        `json:"recompensa_anicoins"`
 	Concluida          bool       `json:"concluida"`
 	Resgatada          bool       `json:"resgatada"`
+	Icone              string     `json:"icone"`
 }
 
 type RespostaMissoesHoje struct {
-	Data       string          `json:"data"`
-	Missoes    []MissaoUsuario `json:"missoes"`
-	Total      int             `json:"total"`
-	Concluidas int             `json:"concluidas"`
-	Resgatadas int             `json:"resgatadas"`
+	Data            string          `json:"data"`
+	Missoes         []MissaoUsuario `json:"missoes"`
+	Total           int             `json:"total"`
+	Concluidas      int             `json:"concluidas"`
+	Resgatadas      int             `json:"resgatadas"`
+	TodasResgatadas bool            `json:"todas_resgatadas"`
 }
 
 type MissoesHandler struct{}
@@ -74,6 +79,7 @@ func CatalogoPadraoMissoes() []ItemCatalogoMissao {
 			Descricao:  "Marque pelo menos 1 episódio como visto hoje",
 			Meta:       1,
 			Recompensa: 15,
+			Icone:      "Play",
 		},
 		{
 			ID:         "maratona",
@@ -82,6 +88,7 @@ func CatalogoPadraoMissoes() []ItemCatalogoMissao {
 			Descricao:  "Assista a 3 episódios de qualquer anime hoje",
 			Meta:       3,
 			Recompensa: 30,
+			Icone:      "Flame",
 		},
 		{
 			ID:         "lancamento",
@@ -90,6 +97,7 @@ func CatalogoPadraoMissoes() []ItemCatalogoMissao {
 			Descricao:  "Assista a 1 episódio de um anime em lançamento",
 			Meta:       1,
 			Recompensa: 20,
+			Icone:      "Sparkles",
 		},
 		{
 			ID:         "reacao",
@@ -98,6 +106,7 @@ func CatalogoPadraoMissoes() []ItemCatalogoMissao {
 			Descricao:  "Deixe sua reação com emoji em 2 episódios",
 			Meta:       2,
 			Recompensa: 15,
+			Icone:      "Smile",
 		},
 		{
 			ID:         "comentario",
@@ -106,6 +115,7 @@ func CatalogoPadraoMissoes() []ItemCatalogoMissao {
 			Descricao:  "Escreva um comentário em qualquer episódio",
 			Meta:       1,
 			Recompensa: 20,
+			Icone:      "MessageSquare",
 		},
 		{
 			ID:         "obra_concluida",
@@ -114,6 +124,7 @@ func CatalogoPadraoMissoes() []ItemCatalogoMissao {
 			Descricao:  "Marque 1 anime como completo no seu deck",
 			Meta:       1,
 			Recompensa: 40,
+			Icone:      "CheckCircle2",
 		},
 	}
 }
@@ -320,26 +331,50 @@ func (h *MissoesHandler) HandleGetMissoesHoje(w http.ResponseWriter, r *http.Req
 			resgatadas++
 		}
 
+		icone := m.Icone
+		if icone == "" {
+			switch m.Tipo {
+			case MissaoMarcarLancamento:
+				icone = "Sparkles"
+			case MissaoReagirEpisodio:
+				icone = "Smile"
+			case MissaoComentarEpisodio:
+				icone = "MessageSquare"
+			case MissaoCompletarObra:
+				icone = "CheckCircle2"
+			default:
+				if m.Meta > 1 {
+					icone = "Flame"
+				} else {
+					icone = "Play"
+				}
+			}
+		}
+
 		missoesRetorno = append(missoesRetorno, MissaoUsuario{
 			ID:                 m.ID,
 			Tipo:               m.Tipo,
 			Titulo:             m.Titulo,
 			Descricao:          m.Descricao,
 			Meta:               m.Meta,
+			Progresso:          progresso,
 			ProgressoAtual:     progresso,
+			RecompensaCristais: m.Recompensa,
 			RecompensaAniCoins: m.Recompensa,
 			Concluida:          atingiuMeta,
 			Resgatada:          jaResgatou,
+			Icone:              icone,
 		})
 	}
 
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(RespostaMissoesHoje{
-		Data:       dataStr,
-		Missoes:    missoesRetorno,
-		Total:      len(sorteadas),
-		Concluidas: concluidas,
-		Resgatadas: resgatadas,
+		Data:            dataStr,
+		Missoes:         missoesRetorno,
+		Total:           len(sorteadas),
+		Concluidas:      concluidas,
+		Resgatadas:      resgatadas,
+		TodasResgatadas: resgatadas >= len(sorteadas) && len(sorteadas) > 0,
 	})
 }
 
