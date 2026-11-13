@@ -89,6 +89,7 @@ func main() {
 	salasEstreiaHandler := &handlers.SalasEstreiaHandler{}
 	chefaoHandler := &handlers.ChefaoHandler{}
 	previsoesHandler := &handlers.PrevisoesHandler{}
+	convitesHandler := &handlers.ConvitesHandler{}
 
 	r := chi.NewRouter()
 	r.Use(chimw.RequestID)
@@ -230,6 +231,10 @@ func main() {
 		protegido.Post("/api/perfil/classe", previsoesHandler.HandleEscolherClasse)
 		protegido.Post("/api/perfil/titulo", previsoesHandler.HandleEquiparTitulo)
 
+		// Convites e Recompensas (Fase 17.5b, #191)
+		protegido.Get("/api/convites/meu", convitesHandler.HandleObterMeuConvite)
+		protegido.Post("/api/convites/resgatar", convitesHandler.HandleResgatarConvite)
+
 		protegido.Delete("/api/account", accountHandler.HandleDeleteAccount)
 	})
 
@@ -345,6 +350,10 @@ func main() {
 
 		// Previsões da Comunidade (Fase 17, #187): resolução manual e premiação
 		admin.Post("/api/admin/previsoes/{id}/resolver", previsoesHandler.HandleAdminResolverPrevisao)
+
+		// Configuração de Convites (Fase 17.5b, #191)
+		admin.Get("/api/admin/convites/config", convitesHandler.HandleAdminGetConfigConvites)
+		admin.Put("/api/admin/convites/config", convitesHandler.HandleAdminSaveConfigConvites)
 	})
 
 	workDir, _ := os.Getwd()

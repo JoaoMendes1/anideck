@@ -45,6 +45,14 @@ func (h *PrevisoesHandler) HandleListarPrevisoes(w http.ResponseWriter, r *http.
 		return
 	}
 
+	// Se o admin desativou as previsões, devolve lista vazia para ocultar da interface
+	regras := lerRegrasComunidade(client)
+	if !regras.PrevisoesAtivas {
+		w.Header().Set("Content-Type", "application/json")
+		w.Write([]byte("[]"))
+		return
+	}
+
 	raw := strings.TrimSpace(client.Rpc("listar_previsoes_ativas", "", nil))
 	if raw == "" || strings.HasPrefix(raw, "error") || (strings.Contains(raw, "\"code\"") && strings.Contains(raw, "\"message\"")) {
 		// Fallback com client anônimo
@@ -77,6 +85,17 @@ func (h *PrevisoesHandler) HandleApostarPrevisao(w http.ResponseWriter, r *http.
 	client, err := database.ClientWithToken(token)
 	if err != nil || client == nil {
 		http.Error(w, "Erro ao autenticar no banco.", http.StatusInternalServerError)
+		return
+	}
+
+	regras := lerRegrasComunidade(client)
+	if !regras.PrevisoesAtivas {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusBadRequest)
+		json.NewEncoder(w).Encode(map[string]interface{}{
+			"ok":   false,
+			"erro": "As previsões com Mana estão temporariamente desativadas pela administração.",
+		})
 		return
 	}
 

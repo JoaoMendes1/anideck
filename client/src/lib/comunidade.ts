@@ -12,6 +12,7 @@ export interface RegrasComunidade {
   hp_dias_para_cheio: number
   hp_piso: number
   descanso_max_dias: number
+  previsoes_ativas?: boolean
 }
 
 export interface PerfilProprio {

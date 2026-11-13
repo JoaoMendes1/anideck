@@ -3,10 +3,11 @@
 // atividade e regras da Mana, da Vitalidade e do Modo Descanso.
 import { useCallback, useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { Check, EyeOff, Eye, Trash2, Save, ShieldCheck, Flag, Trophy } from 'lucide-react'
+import { Check, EyeOff, Eye, Trash2, Save, ShieldCheck, Flag, Trophy, Gift, Crown } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import { useToast } from '../contexts/ToastContext'
 import { MOTIVOS_DENUNCIA, tempoRelativo, type RegrasComunidade } from '../lib/comunidade'
+import type { RegrasConvites } from '../lib/convites'
 
 interface ItemModeracao {
   comentario: {
@@ -49,7 +50,9 @@ type Acao = 'ocultar' | 'reexibir' | 'apagar' | 'dispensar'
 
 const ROTULO_MOTIVO: Record<string, string> = Object.fromEntries(MOTIVOS_DENUNCIA.map(m => [m.id, m.rotulo]))
 
-const CAMPOS_REGRAS: { chave: keyof RegrasComunidade; rotulo: string; ajuda: string }[] = [
+type ChaveRegraNumerica = 'mp_max' | 'mp_regen_dia' | 'mp_custo_comentario' | 'hp_janela_dias' | 'hp_dias_para_cheio' | 'hp_piso' | 'descanso_max_dias'
+
+const CAMPOS_REGRAS: { chave: ChaveRegraNumerica; rotulo: string; ajuda: string }[] = [
   { chave: 'mp_max', rotulo: 'Mana máxima', ajuda: 'Teto da barra azul.' },
   { chave: 'mp_regen_dia', rotulo: 'Recarga por dia', ajuda: 'Contínua ao longo do dia.' },
   { chave: 'mp_custo_comentario', rotulo: 'Custo do comentário', ajuda: '0 desliga o custo.' },
@@ -73,6 +76,8 @@ export default function AbaModeracao() {
   const [ocupado, setOcupado] = useState<string | null>(null)
   const [regras, setRegras] = useState<RegrasComunidade | null>(null)
   const [salvandoRegras, setSalvandoRegras] = useState(false)
+  const [regrasConvites, setRegrasConvites] = useState<RegrasConvites | null>(null)
+  const [salvandoConvites, setSalvandoConvites] = useState(false)
   const [fechandoDesafios, setFechandoDesafios] = useState(false)
   const [fechandoTemporada, setFechandoTemporada] = useState(false)
   const [agora] = useState(() => Date.now())
@@ -80,10 +85,11 @@ export default function AbaModeracao() {
   const carregar = useCallback(async () => {
     try {
       const auth = await cabecalho()
-      const [resFila, resRegras, resClas] = await Promise.all([
+      const [resFila, resRegras, resClas, resConvites] = await Promise.all([
         fetch('/api/admin/moderacao', { headers: auth }),
         fetch('/api/admin/comunidade/regras', { headers: auth }),
         fetch('/api/admin/clas/denuncias', { headers: auth }),
+        fetch('/api/admin/convites/config', { headers: auth }),
       ])
       if (!resFila.ok) throw new Error((await resFila.text()).trim() || 'Falha ao carregar a fila.')
       const dados = (await resFila.json()) as { fila: ItemModeracao[]; resumo: Resumo }
@@ -91,6 +97,7 @@ export default function AbaModeracao() {
       setResumo(dados.resumo)
       if (resRegras.ok) setRegras((await resRegras.json()) as RegrasComunidade)
       if (resClas.ok) setDenunciasClas(await resClas.json())
+      if (resConvites.ok) setRegrasConvites((await resConvites.json()) as RegrasConvites)
       setErro(null)
     } catch (e) {
       setErro(e instanceof Error ? e.message : 'Falha ao carregar a fila.')
@@ -180,6 +187,25 @@ export default function AbaModeracao() {
       showToast(e instanceof Error && e.message ? e.message : 'Não foi possível salvar.', 'error')
     } finally {
       setSalvandoRegras(false)
+    }
+  }
+
+  const salvarConvites = async () => {
+    if (!regrasConvites) return
+    setSalvandoConvites(true)
+    try {
+      const res = await fetch('/api/admin/convites/config', {
+        method: 'PUT',
+        headers: { ...(await cabecalho()), 'Content-Type': 'application/json' },
+        body: JSON.stringify(regrasConvites),
+      })
+      if (!res.ok) throw new Error((await res.text()).trim())
+      setRegrasConvites((await res.json()) as RegrasConvites)
+      showToast('Regras de convites salvas com sucesso!')
+    } catch (e) {
+      showToast(e instanceof Error && e.message ? e.message : 'Não foi possível salvar.', 'error')
+    } finally {
+      setSalvandoConvites(false)
     }
   }
 
@@ -341,8 +367,125 @@ export default function AbaModeracao() {
                 </label>
               ))}
             </div>
+
+            {/* TOGGLE PREVISÕES COM MANA */}
+            <div className="p-4 rounded-xl bg-panel-2 border border-line flex items-center justify-between gap-4 mt-3">
+              <div>
+                <span className="font-bold text-sm text-text block">
+                  Previsões Comunitárias com Mana (#187)
+                </span>
+                <span className="text-xs text-muted block">
+                  {regras.previsoes_ativas
+                    ? 'Ativadas: os membros podem ver enquetes e apostar Mana na Guilda e na aba Conversa.'
+                    : 'Desativadas: o card de previsões fica completamente oculto em todo o site.'}
+                </span>
+              </div>
+              <button
+                type="button"
+                onClick={() => setRegras({ ...regras, previsoes_ativas: !regras.previsoes_ativas })}
+                className={`px-4 py-2 rounded-xl font-bold font-mono text-xs transition-colors cursor-pointer ${
+                  regras.previsoes_ativas
+                    ? 'bg-green/20 border border-green text-green'
+                    : 'bg-void border border-line text-muted hover:text-text'
+                }`}
+              >
+                {regras.previsoes_ativas ? '✓ Ativadas' : '✕ Desativadas'}
+              </button>
+            </div>
+
             <button type="button" onClick={salvarRegras} disabled={salvandoRegras} className="mt-4 inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-gradient-to-r from-holo-1 to-holo-2 text-void text-sm font-extrabold cursor-pointer disabled:opacity-50">
               <Save size={14} aria-hidden /> {salvandoRegras ? 'Salvando…' : 'Salvar regras'}
+            </button>
+          </>
+        )}
+      </section>
+
+      {/* RECOMPENSAS POR CONVITE & CONVITE VIP DO FUNDADOR (#191) */}
+      <section className="p-5 rounded-2xl bg-panel border border-line min-w-0">
+        <div className="flex items-center gap-2 mb-1">
+          <Gift size={18} className="text-gold" />
+          <h2 className="font-anton text-lg uppercase m-0">Convites & Recrutamento (Fase 17.5b)</h2>
+        </div>
+        <p className="text-[12.5px] text-muted mt-0 mb-4">
+          Ajuste os valores de incentivo em AniCoins (₳) e XP para membros que convidam amigos e o pacote de boas-vindas VIP concedido pelo Fundador.
+        </p>
+
+        {regrasConvites === null ? (
+          <div className="h-32 rounded-xl bg-panel-2 animate-pulse" />
+        ) : (
+          <>
+            <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-3">
+              <label className="block p-3 rounded-xl bg-panel-2 border border-line min-w-0">
+                <span className="block text-[12px] font-bold text-text">AniCoins para quem convida</span>
+                <span className="block text-[11px] text-muted-2 mb-2">Moedas creditadas a cada amigo cadastrado.</span>
+                <input
+                  type="number"
+                  min={0}
+                  value={regrasConvites.anicoins_anfitriao}
+                  onChange={e => setRegrasConvites({ ...regrasConvites, anicoins_anfitriao: Number(e.target.value) })}
+                  className="w-full min-w-0 bg-panel border border-line rounded-lg px-3 py-2 text-sm font-mono outline-none focus:border-holo-3"
+                />
+              </label>
+
+              <label className="block p-3 rounded-xl bg-panel-2 border border-line min-w-0">
+                <span className="block text-[12px] font-bold text-text">XP para quem convida</span>
+                <span className="block text-[11px] text-muted-2 mb-2">Pontos adicionados à progressão de Guilda.</span>
+                <input
+                  type="number"
+                  min={0}
+                  value={regrasConvites.xp_anfitriao}
+                  onChange={e => setRegrasConvites({ ...regrasConvites, xp_anfitriao: Number(e.target.value) })}
+                  className="w-full min-w-0 bg-panel border border-line rounded-lg px-3 py-2 text-sm font-mono outline-none focus:border-holo-3"
+                />
+              </label>
+
+              <label className="block p-3 rounded-xl bg-panel-2 border border-line min-w-0">
+                <span className="block text-[12px] font-bold text-text">AniCoins Convidado (Comum)</span>
+                <span className="block text-[11px] text-muted-2 mb-2">Bônus de boas-vindas por link comum.</span>
+                <input
+                  type="number"
+                  min={0}
+                  value={regrasConvites.anicoins_convidado}
+                  onChange={e => setRegrasConvites({ ...regrasConvites, anicoins_convidado: Number(e.target.value) })}
+                  className="w-full min-w-0 bg-panel border border-line rounded-lg px-3 py-2 text-sm font-mono outline-none focus:border-holo-3"
+                />
+              </label>
+
+              <label className="block p-3 rounded-xl bg-panel-2 border border-gold/40 min-w-0 shadow-[0_0_15px_rgba(250,204,21,0.08)]">
+                <span className="flex items-center gap-1.5 text-[12px] font-bold text-gold">
+                  <Crown size={13} /> AniCoins Convidado (Fundador VIP)
+                </span>
+                <span className="block text-[11px] text-muted-2 mb-2">Bônus especial para quem entrar pelo seu link.</span>
+                <input
+                  type="number"
+                  min={0}
+                  value={regrasConvites.anicoins_convidado_admin}
+                  onChange={e => setRegrasConvites({ ...regrasConvites, anicoins_convidado_admin: Number(e.target.value) })}
+                  className="w-full min-w-0 bg-panel border border-gold/40 rounded-lg px-3 py-2 text-sm font-mono outline-none focus:border-gold text-gold font-bold"
+                />
+              </label>
+
+              <label className="block p-3 rounded-xl bg-panel-2 border border-gold/40 min-w-0 sm:col-span-2 shadow-[0_0_15px_rgba(250,204,21,0.08)]">
+                <span className="flex items-center gap-1.5 text-[12px] font-bold text-gold">
+                  <Crown size={13} /> Título de Honra do Convidado VIP
+                </span>
+                <span className="block text-[11px] text-muted-2 mb-2">Título desbloqueado e equipado no perfil do novo membro.</span>
+                <input
+                  type="text"
+                  value={regrasConvites.titulo_convidado_admin}
+                  onChange={e => setRegrasConvites({ ...regrasConvites, titulo_convidado_admin: e.target.value })}
+                  className="w-full min-w-0 bg-panel border border-gold/40 rounded-lg px-3 py-2 text-sm font-mono outline-none focus:border-gold text-gold font-bold"
+                />
+              </label>
+            </div>
+
+            <button
+              type="button"
+              onClick={salvarConvites}
+              disabled={salvandoConvites}
+              className="mt-4 inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-gradient-to-r from-gold via-amber-400 to-yellow-500 text-void text-sm font-extrabold cursor-pointer disabled:opacity-50 shadow-md"
+            >
+              <Save size={14} aria-hidden /> {salvandoConvites ? 'Salvando…' : 'Salvar regras de convites'}
             </button>
           </>
         )}

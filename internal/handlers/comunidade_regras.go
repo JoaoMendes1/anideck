@@ -16,18 +16,19 @@ import (
 // app_settings.comunidade_regras. O banco lê as mesmas chaves (sql/041), então o
 // custo da Mana cobrado no INSERT e o mostrado na tela vêm da mesma fonte.
 type RegrasComunidade struct {
-	MPMax             int `json:"mp_max"`
-	MPRegenDia        int `json:"mp_regen_dia"`
-	MPCustoComentario int `json:"mp_custo_comentario"`
-	HPJanelaDias      int `json:"hp_janela_dias"`
-	HPDiasParaCheio   int `json:"hp_dias_para_cheio"`
-	HPPiso            int `json:"hp_piso"`
-	DescansoMaxDias   int `json:"descanso_max_dias"`
+	MPMax             int  `json:"mp_max"`
+	MPRegenDia        int  `json:"mp_regen_dia"`
+	MPCustoComentario int  `json:"mp_custo_comentario"`
+	HPJanelaDias      int  `json:"hp_janela_dias"`
+	HPDiasParaCheio   int  `json:"hp_dias_para_cheio"`
+	HPPiso            int  `json:"hp_piso"`
+	DescansoMaxDias   int  `json:"descanso_max_dias"`
+	PrevisoesAtivas   bool `json:"previsoes_ativas"`
 }
 
 const chaveRegrasComunidade = "comunidade_regras"
 
-// RegrasComunidadePadrao espelha o valor inicial gravado pelo sql/041.
+// RegrasComunidadePadrao espelha o valor inicial gravado pelo sql/041 e sql/062.
 func RegrasComunidadePadrao() RegrasComunidade {
 	return RegrasComunidade{
 		MPMax:             50,
@@ -37,6 +38,7 @@ func RegrasComunidadePadrao() RegrasComunidade {
 		HPDiasParaCheio:   10,
 		HPPiso:            20,
 		DescansoMaxDias:   14,
+		PrevisoesAtivas:   false,
 	}
 }
 

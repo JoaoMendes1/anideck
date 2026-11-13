@@ -11,6 +11,7 @@ import CardMissoesDiarias from '../components/inicio/CardMissoesDiarias'
 import CardChefao from '../components/chefao/CardChefao'
 import SeletorClasse from '../components/comunidade/SeletorClasse'
 import CardPrevisoes from '../components/previsoes/CardPrevisoes'
+import CardConviteAmigos from '../components/comunidade/CardConviteAmigos'
 import SecaoColecaoCartas from '../components/comunidade/SecaoColecaoCartas'
 import { useCartas } from '../hooks/useCartas'
 import { chaveDoUsuario, lerDaMemoria, guardarNaMemoria } from '../lib/cacheDeTela'
@@ -486,6 +487,9 @@ export default function Guilda() {
         {/* COLUNA LATERAL */}
         <aside className="flex flex-col gap-6 lg:sticky lg:top-24">
           <CartaoVitais />
+
+          {/* CONVITE DE AMIGOS COM RECOMPENSAS (Fase 17.5b, #191) */}
+          <CardConviteAmigos onResgatado={() => recarregarComunidade()} />
 
           {/* INSÍGNIAS (CARTAS FOIL) */}
           <section className="p-5 rounded-2xl bg-panel border border-line">

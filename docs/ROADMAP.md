@@ -47,7 +47,7 @@ Staging sobe já na Fase 1, como projeto esqueleto — mesmo padrão do JVM Syst
 | 14 · Guilda & Gamificação | ✅ Concluída (08/11/2026) |
 | 15 · Comunidade base | ✅ Concluída (08/11/2026, #154); falta abrir o beta |
 | 16 · Economia e cartas | ✅ Concluída (09/11/2026, #165); falta abrir o beta |
-| 17 · Comunidade viva | 🟡 Em andamento (09/11/2026, #179, #180, #181, #182, #183, #184, #185, #186, #187, #189) |
+| 17 · Comunidade viva | 🟡 Em andamento (09/11/2026, #179, #180, #181, #182, #183, #184, #185, #186, #187, #189, #191) |
 
 ---
 
@@ -760,7 +760,7 @@ mecânicas). **Pré-requisitos:** Fase 16 concluída e base com gente suficiente
   - [x] 17.4c Classes Bardo, Ranger e Paladino (#189)
 - [ ] 17.5 AniDeck Wrapped e convite
   - [ ] 17.5a AniDeck Wrapped (#190)
-  - [ ] 17.5b Convite com recompensa (#191)
+  - [x] 17.5b Convite com recompensa (#191)
 - [ ] 17.6 Avatar montável, bloqueado até ter arte original (#192)
 - [ ] 17.7 Curadoria colaborativa: membros de rank alto sugerem correções (#188). *Estava na
       visão e faltava aqui.*
