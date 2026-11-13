@@ -36,6 +36,7 @@ const Clas = lazy(() => import('./pages/Clas'))
 const ClaDetalhe = lazy(() => import('./pages/ClaDetalhe'))
 const SalaEstreia = lazy(() => import('./pages/SalaEstreia'))
 const Chefao = lazy(() => import('./pages/Chefao'))
+const Wrapped = lazy(() => import('./pages/Wrapped'))
 
 // "/" é a Landing para o visitante e a Início para quem está logado.
 function RaizDoSite() {
@@ -77,6 +78,8 @@ function App() {
             {/* Rotas independentes (sem Navbar) */}
             <Route path="/login" element={<Auth />} />
             <Route path="/admin" element={<RotaProtegida><PainelAdmin /></RotaProtegida>} />
+            <Route path="/wrapped/:ano" element={<RotaProtegida><Wrapped /></RotaProtegida>} />
+            <Route path="/u/:handle/wrapped/:ano" element={<Wrapped />} />
           </Routes>
         </Suspense>
       </ToastProvider>

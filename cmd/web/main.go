@@ -90,6 +90,8 @@ func main() {
 	chefaoHandler := &handlers.ChefaoHandler{}
 	previsoesHandler := &handlers.PrevisoesHandler{}
 	convitesHandler := &handlers.ConvitesHandler{}
+	wrappedHandler := handlers.NewWrappedHandler()
+	curadoriaCollabHandler := handlers.NewCuradoriaCollabHandler()
 
 	r := chi.NewRouter()
 	r.Use(chimw.RequestID)
@@ -139,6 +141,8 @@ func main() {
 	r.With(middleware.OptionalAuth).Get("/api/chefao", chefaoHandler.HandleObterChefaoAtual)
 	// Previsões da Comunidade (Fase 17, #187): enquetes apostando Mana
 	r.With(middleware.OptionalAuth).Get("/api/previsoes", previsoesHandler.HandleListarPrevisoes)
+	// AniDeck Wrapped público (Fase 17.5a, #190)
+	r.Get("/api/u/{handle}/wrapped/{ano}", wrappedHandler.HandleGetWrappedPublico)
 	r.Post("/api/anime/bulk", animeHandler.HandleGetAnimesByIDs)
 	r.Post("/api/beta/request-invite", notificationsHandler.HandleRequestBetaInvite)
 	r.Post("/api/internal/check-new-episodes", notificationsHandler.HandleCheckNewEpisodes)
@@ -234,6 +238,12 @@ func main() {
 		// Convites e Recompensas (Fase 17.5b, #191)
 		protegido.Get("/api/convites/meu", convitesHandler.HandleObterMeuConvite)
 		protegido.Post("/api/convites/resgatar", convitesHandler.HandleResgatarConvite)
+
+		// AniDeck Wrapped pessoal (Fase 17.5a, #190)
+		protegido.Get("/api/wrapped/{ano}", wrappedHandler.HandleGetMeuWrapped)
+
+		// Curadoria Colaborativa (Fase 17.7, #188)
+		protegido.Post("/api/curation/sugerir", curadoriaCollabHandler.HandleSubmeterSugestao)
 
 		protegido.Delete("/api/account", accountHandler.HandleDeleteAccount)
 	})
@@ -354,6 +364,10 @@ func main() {
 		// Configuração de Convites (Fase 17.5b, #191)
 		admin.Get("/api/admin/convites/config", convitesHandler.HandleAdminGetConfigConvites)
 		admin.Put("/api/admin/convites/config", convitesHandler.HandleAdminSaveConfigConvites)
+
+		// Curadoria Colaborativa (Fase 17.7, #188): fila de revisão de sugestões da comunidade
+		admin.Get("/api/admin/curation/sugestoes-collab", curadoriaCollabHandler.HandleAdminListarSugestoes)
+		admin.Post("/api/admin/curation/sugestoes-collab/{id}/revisar", curadoriaCollabHandler.HandleAdminRevisarSugestao)
 	})
 
 	workDir, _ := os.Getwd()
