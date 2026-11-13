@@ -117,7 +117,7 @@ export default function Chefao() {
 
             <div className="flex items-center gap-1.5 text-xs font-mono text-muted">
               <Calendar size={13} />
-              <span>Temporada {chefao.temporada}</span>
+              <span>{formatarTemporada(chefao.temporada)}</span>
             </div>
           </div>
 

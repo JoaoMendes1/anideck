@@ -10,6 +10,7 @@ import BotaoCopiar from '../components/BotaoCopiar'
 import ReactMarkdown from 'react-markdown'
 import EpisodeGrid from '../components/EpisodeGrid'
 import ConversaDoAnime from '../components/comunidade/ConversaDoAnime'
+import CardPrevisoes from '../components/previsoes/CardPrevisoes'
 import PainelMinhaLista from '../components/detalhes/PainelMinhaLista'
 import FerramentasCuradoria from '../components/detalhes/FerramentasCuradoria'
 import NumerosDaObra, { type EstatisticasDaObra } from '../components/detalhes/NumerosDaObra'
@@ -730,13 +731,16 @@ export default function Detalhes() {
               )}
 
               {aba === 'conversa' && (
-                <ConversaDoAnime
-                  malId={anime.mal_id}
-                  totalEpisodes={naoLancado ? 0 : totalEpisodios}
-                  proximoAoAr={naoLancado ? undefined : anime.nextAiringEpisode?.episode}
-                  assistidosIniciais={episodiosAssistidos}
-                  aoIrParaEpisodios={() => trocarAba('episodios')}
-                />
+                <div className="space-y-6">
+                  <CardPrevisoes malId={anime.mal_id} />
+                  <ConversaDoAnime
+                    malId={anime.mal_id}
+                    totalEpisodes={naoLancado ? 0 : totalEpisodios}
+                    proximoAoAr={naoLancado ? undefined : anime.nextAiringEpisode?.episode}
+                    assistidosIniciais={episodiosAssistidos}
+                    aoIrParaEpisodios={() => trocarAba('episodios')}
+                  />
+                </div>
               )}
 
               {aba === 'numeros' && <NumerosDaObra nota={anime.score} ranking={anime.ranking} stats={stats} minhaNota={minhaEntrada?.nota ?? null} />}

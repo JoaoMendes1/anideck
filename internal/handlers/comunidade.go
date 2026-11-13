@@ -72,14 +72,17 @@ func episodioDaRota(w http.ResponseWriter, r *http.Request) (int, int, bool) {
 // =============================================================================
 
 type perfilProprio struct {
-	Existe         bool   `json:"existe"`
-	Handle         string `json:"handle"`
-	Nome           string `json:"nome"`
-	Bio            string `json:"bio"`
-	Vitrine        []int  `json:"vitrine"`
-	Publico        bool   `json:"publico"`
-	DescansoInicio string `json:"descanso_inicio"`
-	DescansoFim    string `json:"descanso_fim"`
+	Existe               bool     `json:"existe"`
+	Handle               string   `json:"handle"`
+	Nome                 string   `json:"nome"`
+	Bio                  string   `json:"bio"`
+	Vitrine              []int    `json:"vitrine"`
+	Publico              bool     `json:"publico"`
+	DescansoInicio       string   `json:"descanso_inicio"`
+	DescansoFim          string   `json:"descanso_fim"`
+	Classe               string   `json:"classe,omitempty"`
+	TituloAtivo          string   `json:"titulo_ativo,omitempty"`
+	TitulosDesbloqueados []string `json:"titulos_desbloqueados,omitempty"`
 }
 
 type estadoComunidade struct {
@@ -92,26 +95,39 @@ type estadoComunidade struct {
 
 func lerPerfilProprio(client *supabase.Client, userID string) (perfilProprio, error) {
 	data, _, err := client.From("profiles").
-		Select("handle,nome,bio,vitrine,publico,descanso_inicio,descanso_fim", "", false).
+		Select("handle,nome,bio,vitrine,publico,descanso_inicio,descanso_fim,classe,titulo_ativo,titulos_desbloqueados", "", false).
 		Eq("user_id", userID).
 		Execute()
 	if err != nil {
 		return perfilProprio{}, err
 	}
 	var linhas []struct {
-		Handle         string  `json:"handle"`
-		Nome           string  `json:"nome"`
-		Bio            string  `json:"bio"`
-		Vitrine        []int   `json:"vitrine"`
-		Publico        bool    `json:"publico"`
-		DescansoInicio *string `json:"descanso_inicio"`
-		DescansoFim    *string `json:"descanso_fim"`
+		Handle               string   `json:"handle"`
+		Nome                 string   `json:"nome"`
+		Bio                  string   `json:"bio"`
+		Vitrine              []int    `json:"vitrine"`
+		Publico              bool     `json:"publico"`
+		DescansoInicio       *string  `json:"descanso_inicio"`
+		DescansoFim          *string  `json:"descanso_fim"`
+		Classe               string   `json:"classe"`
+		TituloAtivo          string   `json:"titulo_ativo"`
+		TitulosDesbloqueados []string `json:"titulos_desbloqueados"`
 	}
 	if err := json.Unmarshal(data, &linhas); err != nil || len(linhas) == 0 {
 		return perfilProprio{Vitrine: []int{}, Publico: true}, err
 	}
 	l := linhas[0]
-	p := perfilProprio{Existe: true, Handle: l.Handle, Nome: l.Nome, Bio: l.Bio, Vitrine: l.Vitrine, Publico: l.Publico}
+	p := perfilProprio{
+		Existe:               true,
+		Handle:               l.Handle,
+		Nome:                 l.Nome,
+		Bio:                  l.Bio,
+		Vitrine:              l.Vitrine,
+		Publico:              l.Publico,
+		Classe:               l.Classe,
+		TituloAtivo:          l.TituloAtivo,
+		TitulosDesbloqueados: l.TitulosDesbloqueados,
+	}
 	if p.Vitrine == nil {
 		p.Vitrine = []int{}
 	}
@@ -980,6 +996,8 @@ type perfilPublico struct {
 	ClaTag          string         `json:"cla_tag,omitempty"`
 	ClaNome         string         `json:"cla_nome,omitempty"`
 	ClaPapel        string         `json:"cla_papel,omitempty"`
+	Classe          string         `json:"classe,omitempty"`
+	TituloAtivo     string         `json:"titulo_ativo,omitempty"`
 }
 
 // HandlePerfilPublico é público: o perfil de um @ com perfil aberto.
@@ -1025,10 +1043,14 @@ func (h *ComunidadeHandler) HandlePerfilPublico(w http.ResponseWriter, r *http.R
 	}
 
 	var profs []struct {
-		UserID string `json:"user_id"`
+		UserID      string `json:"user_id"`
+		Classe      string `json:"classe"`
+		TituloAtivo string `json:"titulo_ativo"`
 	}
-	if dataP, _, errP := database.Client.From("profiles").Select("user_id", "", false).Eq("handle", handle).Execute(); errP == nil {
+	if dataP, _, errP := database.Client.From("profiles").Select("user_id,classe,titulo_ativo", "", false).Eq("handle", handle).Execute(); errP == nil {
 		if json.Unmarshal(dataP, &profs) == nil && len(profs) > 0 {
+			p.Classe = profs[0].Classe
+			p.TituloAtivo = profs[0].TituloAtivo
 			var eqLinhas []struct {
 				Slot         string `json:"slot"`
 				StoreItemRef struct {

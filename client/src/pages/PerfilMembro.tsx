@@ -3,11 +3,12 @@
 // Só existe para perfil marcado como público; o resto do deck continua privado.
 import { useEffect, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
-import { Ban, CalendarDays, Heart, MessageCircle, PlayCircle, Sparkles, UserX, Swords } from 'lucide-react'
+import { Ban, CalendarDays, Heart, MessageCircle, PlayCircle, Sparkles, UserX, Swords, Award } from 'lucide-react'
 import { useSessao } from '../contexts/SessaoContext'
 import { useToast } from '../contexts/ToastContext'
 import { useComunidade } from '../hooks/useComunidade'
 import { obterEstiloRank } from '../lib/guilda'
+import { CLASSES_RPG } from '../lib/previsoes'
 import SeloEquipe from '../components/comunidade/SeloEquipe'
 import ModalDueloGosto from '../components/comunidade/ModalDueloGosto'
 import SecaoColecaoCartas from '../components/comunidade/SecaoColecaoCartas'
@@ -176,6 +177,16 @@ export default function PerfilMembro() {
               <span className={`font-mono text-[10px] font-bold uppercase tracking-wider px-2.5 py-0.5 rounded-full border ${estilo.bordaPilula} ${estilo.fundoPilula} ${estilo.seloTexto}`}>
                 Rank {perfil.rank} · Nível {perfil.nivel}
               </span>
+              {perfil.classe && CLASSES_RPG[perfil.classe] && (
+                <span className={`font-mono text-[10px] font-bold uppercase tracking-wider px-2.5 py-0.5 rounded-full border ${CLASSES_RPG[perfil.classe].borda} ${CLASSES_RPG[perfil.classe].fundo} ${CLASSES_RPG[perfil.classe].cor}`}>
+                  {CLASSES_RPG[perfil.classe].icone} {CLASSES_RPG[perfil.classe].nome}
+                </span>
+              )}
+              {perfil.titulo_ativo && (
+                <span className="font-mono text-[10px] font-bold uppercase px-2.5 py-0.5 rounded-full bg-gold/15 border border-gold/40 text-gold inline-flex items-center gap-1">
+                  <Award size={10} /> {perfil.titulo_ativo}
+                </span>
+              )}
               <SeloEquipe handle={perfil.handle} grande />
               <span className="font-mono text-[10px] text-muted-2 inline-flex items-center gap-1">
                 <CalendarDays size={11} aria-hidden /> membro desde {desde.toLocaleDateString('pt-BR', { month: 'short', year: 'numeric' })}

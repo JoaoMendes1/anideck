@@ -3,11 +3,14 @@ import { Link } from 'react-router-dom'
 import { Shield, Sparkles, Lock, Flame, Award, ChevronRight, Send, ShoppingBag } from 'lucide-react'
 import { useSessao } from '../contexts/SessaoContext'
 import { useCarteira } from '../hooks/useCarteira'
+import { useComunidade } from '../hooks/useComunidade'
 import CartaoVitais from '../components/comunidade/CartaoVitais'
 import IconeAniCoin from '../components/IconeAniCoin'
 import ModalTransferirAniCoins from '../components/ModalTransferirAniCoins'
 import CardMissoesDiarias from '../components/inicio/CardMissoesDiarias'
 import CardChefao from '../components/chefao/CardChefao'
+import SeletorClasse from '../components/comunidade/SeletorClasse'
+import CardPrevisoes from '../components/previsoes/CardPrevisoes'
 import SecaoColecaoCartas from '../components/comunidade/SecaoColecaoCartas'
 import { useCartas } from '../hooks/useCartas'
 import { chaveDoUsuario, lerDaMemoria, guardarNaMemoria } from '../lib/cacheDeTela'
@@ -29,6 +32,7 @@ export default function Guilda() {
   const [abaLivroRazao, setAbaLivroRazao] = useState<'xp' | 'cristais'>('xp')
   const [modalTransferirAberto, setModalTransferirAberto] = useState(false)
   const { saldo: saldoCristais, movimentos: movimentosCristais, recarregar: recarregarCarteira } = useCarteira()
+  const { estado: estadoComu, recarregar: recarregarComunidade } = useComunidade()
   const { cartas } = useCartas()
 
   useEffect(() => {
@@ -209,6 +213,23 @@ export default function Guilda() {
 
           {/* CHEFÃO DA TEMPORADA (Fase 17.3, #185) */}
           <CardChefao />
+
+          {/* SELETOR DE CLASSE E TÍTULOS (Fase 17.4, #186, #189) */}
+          <SeletorClasse
+            classeAtual={estadoComu?.perfil.classe || 'bardo'}
+            tituloAtual={estadoComu?.perfil.titulo_ativo || 'Aventureiro Iniciante'}
+            titulosDisponiveis={
+              estadoComu?.perfil.titulos_desbloqueados && estadoComu.perfil.titulos_desbloqueados.length > 0
+                ? estadoComu.perfil.titulos_desbloqueados
+                : ['Aventureiro Iniciante', 'Testemunha da Estreia', 'Carrasco de Tiamat', 'Voz da Comunidade']
+            }
+            onAtualizado={() => {
+              recarregarComunidade()
+            }}
+          />
+
+          {/* PREVISÕES DA COMUNIDADE COM APOSTAS DE MANA (Fase 17.4, #187) */}
+          <CardPrevisoes />
 
           {/* MISSÕES DIÁRIAS (Fase 16, #168) */}
           <CardMissoesDiarias />

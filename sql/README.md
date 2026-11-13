@@ -90,6 +90,7 @@ SELECT pg_get_viewdef('nome_da_view'::regclass, true);
 | `058_chefao_temporada.sql` | Fase 17 (17.3, #185): Chefão da Temporada — tabela `chefoes`, cálculo agregado de dano no SQL via `xp_ledger` (Armadilha 28), RPCs `obter_chefao_atual` e `pagar_recompensas_chefao` idempotente com AniCoins. Aplicar **antes** de promover o código | — |
 | `059_permissoes_chefao_temporada.sql` | Fase 17 (17.3, #185): Permissões de EXECUTE (GRANT) e sobrecarga sem argumentos para `obter_chefao_atual`, e calibração de HP da temporada | — |
 | `060_unificar_rpc_chefao.sql` | Fase 17 (17.3, #185): Remove sobrecarga sem parâmetros que causava o erro PGRST203 e mantém a função única canônica `obter_chefao_atual(p_temporada TEXT)` | — |
+| `061_titulos_previsoes_classes.sql` | Fase 17 (17.4, #186, #187, #189): Classes de RPG no perfil (Bardo, Ranger, Paladino), títulos equipáveis e sistema de Previsões apostando Mana | — |
 
 Datas com `~` são a data do commit, não da aplicação no Supabase.
 

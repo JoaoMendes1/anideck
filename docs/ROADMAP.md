@@ -47,7 +47,7 @@ Staging sobe já na Fase 1, como projeto esqueleto — mesmo padrão do JVM Syst
 | 14 · Guilda & Gamificação | ✅ Concluída (08/11/2026) |
 | 15 · Comunidade base | ✅ Concluída (08/11/2026, #154); falta abrir o beta |
 | 16 · Economia e cartas | ✅ Concluída (09/11/2026, #165); falta abrir o beta |
-| 17 · Comunidade viva | 🟡 Em andamento (09/11/2026, #179, #180, #181, #182, #183, #184, #185) |
+| 17 · Comunidade viva | 🟡 Em andamento (09/11/2026, #179, #180, #181, #182, #183, #184, #185, #186, #187, #189) |
 
 ---
 
@@ -754,10 +754,10 @@ mecânicas). **Pré-requisitos:** Fase 16 concluída e base com gente suficiente
   - [x] 17.2a Chat ao vivo nas três horas depois do lançamento (#183)
   - [x] 17.2b Destaques viram comentários e aviso de sala aberta (#184)
 - [x] 17.3 Chefão da Temporada (#185)
-- [ ] 17.4 Títulos, previsões e classes
-  - [ ] 17.4a Títulos ganhos (#186)
-  - [ ] 17.4b Previsões apostando Mana (#187)
-  - [ ] 17.4c Classes Bardo, Ranger e Paladino (#189)
+- [x] 17.4 Títulos, previsões e classes
+  - [x] 17.4a Títulos ganhos (#186)
+  - [x] 17.4b Previsões apostando Mana (#187)
+  - [x] 17.4c Classes Bardo, Ranger e Paladino (#189)
 - [ ] 17.5 AniDeck Wrapped e convite
   - [ ] 17.5a AniDeck Wrapped (#190)
   - [ ] 17.5b Convite com recompensa (#191)

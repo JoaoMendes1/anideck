@@ -1,7 +1,8 @@
 // client/src/lib/comunidade.ts
-// Tipos e regras puras da comunidade (Fase 15): perfil público, Mana, Vitalidade e
-// conversa por episódio. O que decide permissão mora no banco (sql/041); aqui só se
-// formata e se valida antes de enviar, para a mensagem de erro sair clara.
+// Tipos e regras puras da comunidade (Fase 15 e 17.4): perfil público, Mana, Vitalidade,
+// classes de RPG e conversa por episódio. O que decide permissão mora no banco (sql/041 e sql/061);
+// aqui só se formata e se valida antes de enviar, para a mensagem de erro sair clara.
+import type { ClasseRPG } from './previsoes'
 
 export interface RegrasComunidade {
   mp_max: number
@@ -22,6 +23,9 @@ export interface PerfilProprio {
   publico: boolean
   descanso_inicio: string
   descanso_fim: string
+  classe?: ClasseRPG
+  titulo_ativo?: string
+  titulos_desbloqueados?: string[]
 }
 
 export interface EstadoComunidade {
@@ -48,6 +52,8 @@ export interface AutorDoComentario {
   cla_tag?: string
   cla_nome?: string
   cla_papel?: string
+  classe?: ClasseRPG
+  titulo_ativo?: string
 }
 
 export interface ComentarioDaConversa {
@@ -85,6 +91,8 @@ export interface MembroNoRanking {
   cla_tag?: string
   cla_nome?: string
   cla_papel?: string
+  classe?: ClasseRPG
+  titulo_ativo?: string
 }
 
 export interface PerfilPublico {
@@ -108,6 +116,8 @@ export interface PerfilPublico {
   cla_tag?: string
   cla_nome?: string
   cla_papel?: string
+  classe?: ClasseRPG
+  titulo_ativo?: string
 }
 
 /**

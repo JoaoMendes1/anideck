@@ -88,6 +88,7 @@ func main() {
 	clasHandler := &handlers.ClasHandler{}
 	salasEstreiaHandler := &handlers.SalasEstreiaHandler{}
 	chefaoHandler := &handlers.ChefaoHandler{}
+	previsoesHandler := &handlers.PrevisoesHandler{}
 
 	r := chi.NewRouter()
 	r.Use(chimw.RequestID)
@@ -135,6 +136,8 @@ func main() {
 	r.With(middleware.OptionalAuth).Get("/api/salas-estreia/{id}/mensagens", salasEstreiaHandler.HandleListarMensagens)
 	// Chefão da Temporada (Fase 17, #185): status, HP e ranking de ataque
 	r.With(middleware.OptionalAuth).Get("/api/chefao", chefaoHandler.HandleObterChefaoAtual)
+	// Previsões da Comunidade (Fase 17, #187): enquetes apostando Mana
+	r.With(middleware.OptionalAuth).Get("/api/previsoes", previsoesHandler.HandleListarPrevisoes)
 	r.Post("/api/anime/bulk", animeHandler.HandleGetAnimesByIDs)
 	r.Post("/api/beta/request-invite", notificationsHandler.HandleRequestBetaInvite)
 	r.Post("/api/internal/check-new-episodes", notificationsHandler.HandleCheckNewEpisodes)
@@ -221,6 +224,11 @@ func main() {
 		protegido.Post("/api/salas-estreia/{id}/mensagens", salasEstreiaHandler.HandleEnviarMensagem)
 		protegido.Post("/api/salas-estreia/{id}/mensagens/{msgId}/curtida", salasEstreiaHandler.HandleCurtirMensagem)
 		protegido.Post("/api/salas-estreia/{id}/mensagens/{msgId}/denuncia", salasEstreiaHandler.HandleDenunciarMensagem)
+
+		// Previsões, Classes e Títulos (Fase 17.4, #186, #187, #189)
+		protegido.Post("/api/previsoes/{id}/apostar", previsoesHandler.HandleApostarPrevisao)
+		protegido.Post("/api/perfil/classe", previsoesHandler.HandleEscolherClasse)
+		protegido.Post("/api/perfil/titulo", previsoesHandler.HandleEquiparTitulo)
 
 		protegido.Delete("/api/account", accountHandler.HandleDeleteAccount)
 	})
@@ -334,6 +342,9 @@ func main() {
 		// Chefão da Temporada (Fase 17, #185): cadastro e pagamento manual
 		admin.Post("/api/admin/chefao", chefaoHandler.HandleAdminCriarOuEditarChefao)
 		admin.Post("/api/admin/chefao/{id}/pagar", chefaoHandler.HandleAdminPagarRecompensas)
+
+		// Previsões da Comunidade (Fase 17, #187): resolução manual e premiação
+		admin.Post("/api/admin/previsoes/{id}/resolver", previsoesHandler.HandleAdminResolverPrevisao)
 	})
 
 	workDir, _ := os.Getwd()
