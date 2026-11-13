@@ -19,8 +19,9 @@
 | 17 | Loja Cosmética (`/loja`) | `Loja.tsx` | ✅ Implementada · catálogo por categorias com preview em tempo real (molduras, temas de perfil, cores de nome e emblemas), compra com AniCoins, cosméticos exclusivos da Temporada 1, sistema de devolução de itens com taxa de retenção configurável para o cofre da plataforma, equipamento por slot e modal de Apoiador por link externo com cosméticos exclusivos | Fase 16 (#170, #171, #178, #198) |
 | 18 | Clãs & Alianças (`/clas`) | `Clas.tsx` | ✅ Implementada · lista de clãs ativos, busca por nome e tag `[TAG]`, card do próprio clã no topo, convites pendentes e modal de fundação de novo clã com emblemas e tipo | Fase 17 (#180) |
 | 19 | Detalhes do Clã (`/clas/:tag`) | `ClaDetalhe.tsx` | ✅ Implementada · painel do clã com emblema temático, estatísticas coletivas (membros e XP semanal acumulado), roster com papéis (Líder, Vice, Membros), ações de gestão (promover, rebaixar, expulsar, transferir liderança, convidar, sair e denunciar) | Fase 17 (#180) |
+| 20 | Sala de Estreia (`/sala-estreia/:id`) | `SalaEstreia.tsx` | ✅ Implementada · chat ao vivo nas 3 horas após o lançamento do episódio, presença e mensagens com Realtime/polling, taxa de 3s por usuário, destaques com curtidas, escudo de spoiler e migração automática para a aba Conversa do episódio | Fase 17 (#183, #184) |
 
-**Total: 19 telas implementadas.**
+**Total: 20 telas implementadas.**
 
 > Configurações tem oito seções, todas funcionando: Perfil (com foto de perfil otimizada e upload/URL), Perfil público, Preferências de
 > Gosto, Importar Lista, Aparência, Notificações, Conta e Ajuda. Um bloco dentro delas usa o componente `EmBreve`, dizendo no

@@ -10,6 +10,7 @@ import { getCategoryTheme } from '../lib/filters'
 import type { AnimeDaApi } from '../types/anime'
 import { gradienteDoCard, getStatusTheme, obterTextoDiaLancamento } from '../lib/deckHelpers'
 import { escolherLinkStreaming } from '../lib/inicio'
+import { listarSalasAoVivo, type SalaEstreia } from '../lib/salasEstreia'
 
 interface Entrada {
     mal_id: number
@@ -42,6 +43,7 @@ export default function Calendario() {
     const [error, setError] = useState<string | null>(null)
     const [agora, setAgora] = useState(() => Math.floor(Date.now() / 1000))
     const [abaAtiva, setAbaAtiva] = useState<'meus' | 'todos'>('meus')
+    const [salasAoVivo, setSalasAoVivo] = useState<SalaEstreia[]>([])
 
     const { session } = useSessao()
     const userId = session?.user.id
@@ -167,6 +169,7 @@ export default function Calendario() {
 
                 setAnimes(animesComEpisodio)
                 guardarNaMemoria(chave, animesComEpisodio)
+                listarSalasAoVivo().then(setSalasAoVivo).catch(() => {})
             } catch {
                 // Com a lista em memória, a falha da atualização por trás não vira erro na tela.
                 if (!emMemoria) setError('Não foi possível carregar o calendário.')
@@ -357,6 +360,20 @@ export default function Calendario() {
                                                                 <span className="font-mono text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-md bg-void/70 border border-line text-holo-3">
                                                                     EPISÓDIO {anime.nextAiringEpisode!.episode}
                                                                 </span>
+                                                                {(() => {
+                                                                    const sala = salasAoVivo.find(s => s.mal_id === anime.mal_id && s.ao_vivo)
+                                                                    if (!sala) return null
+                                                                    return (
+                                                                        <Link
+                                                                            to={`/sala-estreia/${sala.id}`}
+                                                                            className="inline-flex items-center gap-1 font-mono text-[9px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-md bg-coral/20 border border-coral/40 text-coral animate-pulse"
+                                                                            title="Sala de Estreia Ao Vivo! Clique para entrar no chat"
+                                                                        >
+                                                                            <span className="w-1.5 h-1.5 rounded-full bg-coral animate-ping" />
+                                                                            Ao Vivo
+                                                                        </Link>
+                                                                    )
+                                                                })()}
                                                                 {anime.status && temaStatus && (
                                                                     <span className={`font-extrabold text-[9px] uppercase tracking-wider px-2 py-0.5 rounded-md border ${temaStatus.bg} ${temaStatus.text} ${temaStatus.border}`}>
                                                                         {anime.status}

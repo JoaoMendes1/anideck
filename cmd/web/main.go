@@ -86,6 +86,7 @@ func main() {
 	cartasHandler := &handlers.CartasHandler{}
 	rankingsComunidadeHandler := &handlers.RankingsComunidadeHandler{}
 	clasHandler := &handlers.ClasHandler{}
+	salasEstreiaHandler := &handlers.SalasEstreiaHandler{}
 
 	r := chi.NewRouter()
 	r.Use(chimw.RequestID)
@@ -126,6 +127,11 @@ func main() {
 	r.Get("/api/clas/ranking/campeoes", clasHandler.HandleHistoricoCampeoesClas)
 	r.Get("/api/clas/{tag}", clasHandler.HandleObterClaPorTag)
 	r.Get("/api/clas/{tag}/desafio", clasHandler.HandleObterDesafioCla)
+	// Salas de Estreia (Fase 17, #183, #184): chat ao vivo pós-lançamento
+	r.Get("/api/salas-estreia/ao-vivo", salasEstreiaHandler.HandleListarSalasAoVivo)
+	r.Get("/api/salas-estreia/por-anime/{malId}", salasEstreiaHandler.HandleObterSalaPorAnime)
+	r.Get("/api/salas-estreia/{id}", salasEstreiaHandler.HandleObterSala)
+	r.With(middleware.OptionalAuth).Get("/api/salas-estreia/{id}/mensagens", salasEstreiaHandler.HandleListarMensagens)
 	r.Post("/api/anime/bulk", animeHandler.HandleGetAnimesByIDs)
 	r.Post("/api/beta/request-invite", notificationsHandler.HandleRequestBetaInvite)
 	r.Post("/api/internal/check-new-episodes", notificationsHandler.HandleCheckNewEpisodes)
@@ -207,6 +213,11 @@ func main() {
 		protegido.Post("/api/clas/{id}/convites", clasHandler.HandleConvidarMembro)
 		protegido.Post("/api/clas/convites/{id}/responder", clasHandler.HandleResponderConvite)
 		protegido.Post("/api/clas/{id}/denunciar", clasHandler.HandleDenunciarCla)
+
+		// Salas de Estreia: mensagens, curtidas e denúncias
+		protegido.Post("/api/salas-estreia/{id}/mensagens", salasEstreiaHandler.HandleEnviarMensagem)
+		protegido.Post("/api/salas-estreia/{id}/mensagens/{msgId}/curtida", salasEstreiaHandler.HandleCurtirMensagem)
+		protegido.Post("/api/salas-estreia/{id}/mensagens/{msgId}/denuncia", salasEstreiaHandler.HandleDenunciarMensagem)
 
 		protegido.Delete("/api/account", accountHandler.HandleDeleteAccount)
 	})
@@ -312,6 +323,10 @@ func main() {
 		admin.Post("/api/admin/clas/{id}/renomear", clasHandler.HandleAdminRenomearCla)
 		admin.Post("/api/admin/clas/desafios/fechar-semana", clasHandler.HandleAdminFecharSemanaDesafios)
 		admin.Post("/api/admin/clas/temporada/fechar", clasHandler.HandleAdminFecharTemporadaClas)
+
+		// Salas de Estreia: gestão e fechamento manual
+		admin.Post("/api/admin/salas-estreia", salasEstreiaHandler.HandleAdminCriarSalaManual)
+		admin.Post("/api/admin/salas-estreia/{id}/fechar", salasEstreiaHandler.HandleAdminFecharSala)
 	})
 
 	workDir, _ := os.Getwd()

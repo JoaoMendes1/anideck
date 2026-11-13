@@ -367,6 +367,7 @@ type comentarioDaConversa struct {
 	Autor         autorComentario `json:"autor"`
 	Texto         string          `json:"texto"`
 	MomentoSeg    *int            `json:"momento_seg"`
+	Origem        string          `json:"origem,omitempty"`
 	CreatedAt     string          `json:"created_at"`
 	EditadoEm     *string         `json:"editado_em"`
 	Curtidas      int             `json:"curtidas"`
@@ -380,6 +381,7 @@ type linhaComentario struct {
 	UserID       string  `json:"user_id"`
 	Texto        string  `json:"texto"`
 	MomentoSeg   *int    `json:"momento_seg"`
+	Origem       string  `json:"origem,omitempty"`
 	Oculto       bool    `json:"oculto"`
 	CreatedAt    string  `json:"created_at"`
 	EditadoEm    *string `json:"editado_em"`
@@ -406,6 +408,7 @@ func montarConversa(linhas []linhaComentario, autores map[string]autorComentario
 		}
 		lista = append(lista, comentarioDaConversa{
 			ID: l.ID, Autor: autor, Texto: l.Texto, MomentoSeg: l.MomentoSeg,
+			Origem: l.Origem,
 			CreatedAt: l.CreatedAt, EditadoEm: l.EditadoEm, Curtidas: curtidas,
 			CurtidoPorMim: curtidos[l.ID], Meu: l.UserID == eu, Oculto: l.Oculto,
 		})
@@ -461,7 +464,7 @@ func (h *ComunidadeHandler) HandleConversaDoEpisodio(w http.ResponseWriter, r *h
 	}
 
 	data, _, err := client.From("episode_comments").
-		Select("id,user_id,texto,momento_seg,oculto,created_at,editado_em,comment_likes(count)", "", false).
+		Select("id,user_id,texto,momento_seg,origem,oculto,created_at,editado_em,comment_likes(count)", "", false).
 		Eq("mal_id", mal).Eq("episode_number", ep).
 		Order("created_at", &postgrest.OrderOpts{Ascending: false}).
 		Limit(limiteComentarios, "").

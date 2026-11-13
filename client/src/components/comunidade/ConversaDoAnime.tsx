@@ -679,6 +679,11 @@ function ItemComentario({ comentario: c, agora, token, onRemover, onBloquear, on
             <SeloEquipe handle={c.autor.handle} />
             {c.autor.handle && <span className="font-mono text-[10.5px] text-muted-2">@{c.autor.handle}</span>}
             <span className="font-mono text-[10.5px] text-muted-2">· {tempoRelativo(c.created_at, agora)}</span>
+            {c.origem === 'sala_estreia' && (
+              <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full bg-coral/15 border border-coral/30 font-mono text-[9.5px] font-bold text-coral" title="Destaque do chat ao vivo de estreia">
+                🎙️ Sala de Estreia
+              </span>
+            )}
             {c.momento_seg !== null && (
               <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-holo-3/10 border border-holo-3/30 font-mono text-[10px] text-holo-3">
                 <Clock size={9} aria-hidden /> {formatarMomento(c.momento_seg)}

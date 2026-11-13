@@ -212,6 +212,13 @@ var tarefasPeriodicasPadrao = []TarefaPeriodica{
 		Frequencia: FrequenciaTemporada(0, 10),
 		Executar:   executarFecharTemporadaClas,
 	},
+	{
+		Nome:       "limpeza_salas_estreia",
+		Titulo:     "Limpeza de mensagens antigas das Salas de Estreia",
+		Descricao:  "Remove mensagens de chat ao vivo com mais de 30 dias em salas de estreia já encerradas (limites do plano gratuito).",
+		Frequencia: FrequenciaDiaria(3, 30),
+		Executar:   executarLimpezaSalasEstreia,
+	},
 }
 
 // TarefasPeriodicasRegistradas devolve uma cópia das tarefas ativas no worker.

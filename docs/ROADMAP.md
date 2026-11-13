@@ -750,9 +750,9 @@ mecânicas). **Pré-requisitos:** Fase 16 concluída e base com gente suficiente
   - [x] 17.1a Clãs de 10 a 30 membros (#180)
   - [x] 17.1b Desafio semanal coletivo (#181)
   - [x] 17.1c Liga de clãs por temporada (#182)
-- [ ] 17.2 Sala de estreia
-  - [ ] 17.2a Chat ao vivo nas três horas depois do lançamento (#183)
-  - [ ] 17.2b Destaques viram comentários e aviso de sala aberta (#184)
+- [x] 17.2 Sala de estreia
+  - [x] 17.2a Chat ao vivo nas três horas depois do lançamento (#183)
+  - [x] 17.2b Destaques viram comentários e aviso de sala aberta (#184)
 - [ ] 17.3 Chefão da Temporada (#185)
 - [ ] 17.4 Títulos, previsões e classes
   - [ ] 17.4a Títulos ganhos (#186)

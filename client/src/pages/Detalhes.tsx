@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, type ReactNode } from 'react'
 import { useParams, Link, useNavigate, useSearchParams, useLocation } from 'react-router-dom'
-import { PlayCircle, Star, AlertCircle, Trophy, X, ArrowLeft, CalendarDays, ChevronDown, Heart } from 'lucide-react'
+import { PlayCircle, Star, AlertCircle, Trophy, X, ArrowLeft, CalendarDays, ChevronDown, Heart, Radio } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import { useSessao } from '../contexts/SessaoContext'
 import { useToast } from '../contexts/ToastContext'
@@ -22,6 +22,7 @@ import { abaDaUrl, type AbaDetalhes, type EntradaNoDeck } from '../lib/detalhes'
 import { filtrarLinksStreaming } from '../lib/inicio'
 import { ultimoEpisodioDisponivel } from '../lib/comunidade'
 import { useMidia } from '../hooks/useMidia'
+import { obterSalaPorAnime, type SalaEstreia } from '../lib/salasEstreia'
 
 interface AnimeDetail {
   mal_id: number
@@ -113,6 +114,7 @@ export default function Detalhes() {
   const [imagemAmpliada, setImagemAmpliada] = useState<string | null>(null)
   const [episodiosAssistidos, setEpisodiosAssistidos] = useState<number[]>([])
   const [comentariosNaObra, setComentariosNaObra] = useState(0)
+  const [salaAoVivo, setSalaAoVivo] = useState<SalaEstreia | null>(null)
   const [sinopseAberta, setSinopseAberta] = useState(false)
 
   const [isLoggedIn, setIsLoggedIn] = useState(false)
@@ -157,6 +159,12 @@ export default function Detalhes() {
       .then(r => (r.ok ? (r.json() as Promise<{ comentarios: number }[]>) : []))
       .then(lista => setComentariosNaObra(lista.reduce((s, c) => s + (c.comentarios || 0), 0)))
       .catch(() => setComentariosNaObra(0))
+
+    if (id && Number(id) > 0) {
+      obterSalaPorAnime(Number(id))
+        .then(s => setSalaAoVivo(s))
+        .catch(() => setSalaAoVivo(null))
+    }
 
     const fetchData = async () => {
       if (emMemoria) {
@@ -491,6 +499,34 @@ export default function Detalhes() {
           <div className="min-w-0">
             {/* No celular o painel vem antes das abas; no monitor ele fica na coluna da direita. */}
             {!ehMonitor && <div className="mb-5">{painel(true)}</div>}
+
+            {salaAoVivo && salaAoVivo.ao_vivo && (
+              <Link
+                to={`/sala-estreia/${salaAoVivo.id}`}
+                className="mb-6 p-3.5 sm:p-4 rounded-2xl bg-gradient-to-r from-coral/20 via-panel to-holo-3/20 border border-coral/40 flex items-center justify-between gap-3 group hover:border-coral transition-all shadow-[0_0_20px_rgba(244,63,94,0.15)] select-none"
+              >
+                <div className="flex items-center gap-3 min-w-0">
+                  <div className="w-10 h-10 rounded-xl bg-coral/20 border border-coral/40 text-coral flex items-center justify-center shrink-0">
+                    <Radio size={20} className="animate-pulse" />
+                  </div>
+                  <div className="min-w-0">
+                    <div className="flex items-center gap-2">
+                      <span className="flex items-center gap-1 text-[10px] font-mono font-bold uppercase text-coral bg-coral/20 px-2 py-0.5 rounded-full border border-coral/30">
+                        <span className="w-1.5 h-1.5 rounded-full bg-coral animate-ping" />
+                        Ao Vivo Agora
+                      </span>
+                      <span className="font-mono text-xs text-muted">Episódio {salaAoVivo.episodio}</span>
+                    </div>
+                    <p className="font-bold text-sm sm:text-base text-text m-0 mt-0.5 truncate group-hover:text-coral transition-colors">
+                      Sala de Estreia Aberta! Entre no chat ao vivo com a comunidade
+                    </p>
+                  </div>
+                </div>
+                <span className="px-3.5 py-1.5 rounded-full text-xs font-bold font-mono bg-coral text-void uppercase tracking-wider shrink-0 group-hover:opacity-90">
+                  Entrar →
+                </span>
+              </Link>
+            )}
 
             <div ref={sentinelaAbas} aria-hidden />
             <nav

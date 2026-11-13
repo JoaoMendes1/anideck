@@ -55,6 +55,7 @@ export interface ComentarioDaConversa {
   autor: AutorDoComentario
   texto: string
   momento_seg: number | null
+  origem?: string
   created_at: string
   editado_em: string | null
   curtidas: number

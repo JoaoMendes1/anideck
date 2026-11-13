@@ -34,6 +34,7 @@ const PerfilMembro = lazy(() => import('./pages/PerfilMembro'))
 const Loja = lazy(() => import('./pages/Loja'))
 const Clas = lazy(() => import('./pages/Clas'))
 const ClaDetalhe = lazy(() => import('./pages/ClaDetalhe'))
+const SalaEstreia = lazy(() => import('./pages/SalaEstreia'))
 
 // "/" é a Landing para o visitante e a Início para quem está logado.
 function RaizDoSite() {
@@ -65,6 +66,7 @@ function App() {
               <Route path="/loja" element={<RotaProtegida><Loja /></RotaProtegida>} />
               <Route path="/clas" element={<Clas />} />
               <Route path="/clas/:tag" element={<ClaDetalhe />} />
+              <Route path="/sala-estreia/:id" element={<SalaEstreia />} />
               {/* Endereço antigo da tela, mantido para link salvo e histórico do navegador. */}
               <Route path="/estatisticas" element={<Navigate to="/meu-gosto" replace />} />
               <Route path="/configuracoes" element={<RotaProtegida><Configuracoes /></RotaProtegida>} />
