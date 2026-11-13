@@ -87,6 +87,7 @@ SELECT pg_get_viewdef('nome_da_view'::regclass, true);
 | `055_cla_desafio_semanal.sql` | Fase 17 (17.1b, #181): Desafio semanal coletivo do clã — tabela `cla_desafios`, meta proporcional, agregação de progresso no SQL, RPCs `obter_desafio_semanal_cla`, `meu_desafio_cla_resumo` e fechamento semanal com AniCoins. Aplicar **antes** de promover o código | — |
 | `056_cla_liga_temporada.sql` | Fase 17 (17.1c, #182): Liga de clãs por temporada — ranking com média dos 10 melhores membros, tabela `cla_temporadas_campeoes`, cosméticos exclusivos e premiação em AniCoins no fechamento. Aplicar **antes** de promover o código | — |
 | `057_salas_estreia.sql` | Fase 17 (17.2, #183 e #184): Sala de estreia — chat ao vivo nas 3h pós-lançamento, rate-limit de 3s, migração de destaques para `episode_comments` e limpeza de mensagens com mais de 30 dias. Aplicar **antes** de promover o código | — |
+| `058_chefao_temporada.sql` | Fase 17 (17.3, #185): Chefão da Temporada — tabela `chefoes`, cálculo agregado de dano no SQL via `xp_ledger` (Armadilha 28), RPCs `obter_chefao_atual` e `pagar_recompensas_chefao` idempotente com AniCoins. Aplicar **antes** de promover o código | — |
 
 Datas com `~` são a data do commit, não da aplicação no Supabase.
 

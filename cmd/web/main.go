@@ -87,6 +87,7 @@ func main() {
 	rankingsComunidadeHandler := &handlers.RankingsComunidadeHandler{}
 	clasHandler := &handlers.ClasHandler{}
 	salasEstreiaHandler := &handlers.SalasEstreiaHandler{}
+	chefaoHandler := &handlers.ChefaoHandler{}
 
 	r := chi.NewRouter()
 	r.Use(chimw.RequestID)
@@ -132,6 +133,8 @@ func main() {
 	r.Get("/api/salas-estreia/por-anime/{malId}", salasEstreiaHandler.HandleObterSalaPorAnime)
 	r.Get("/api/salas-estreia/{id}", salasEstreiaHandler.HandleObterSala)
 	r.With(middleware.OptionalAuth).Get("/api/salas-estreia/{id}/mensagens", salasEstreiaHandler.HandleListarMensagens)
+	// Chefão da Temporada (Fase 17, #185): status, HP e ranking de ataque
+	r.With(middleware.OptionalAuth).Get("/api/chefao", chefaoHandler.HandleObterChefaoAtual)
 	r.Post("/api/anime/bulk", animeHandler.HandleGetAnimesByIDs)
 	r.Post("/api/beta/request-invite", notificationsHandler.HandleRequestBetaInvite)
 	r.Post("/api/internal/check-new-episodes", notificationsHandler.HandleCheckNewEpisodes)
@@ -327,6 +330,10 @@ func main() {
 		// Salas de Estreia: gestão e fechamento manual
 		admin.Post("/api/admin/salas-estreia", salasEstreiaHandler.HandleAdminCriarSalaManual)
 		admin.Post("/api/admin/salas-estreia/{id}/fechar", salasEstreiaHandler.HandleAdminFecharSala)
+
+		// Chefão da Temporada (Fase 17, #185): cadastro e pagamento manual
+		admin.Post("/api/admin/chefao", chefaoHandler.HandleAdminCriarOuEditarChefao)
+		admin.Post("/api/admin/chefao/{id}/pagar", chefaoHandler.HandleAdminPagarRecompensas)
 	})
 
 	workDir, _ := os.Getwd()

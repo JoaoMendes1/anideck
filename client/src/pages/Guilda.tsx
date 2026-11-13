@@ -7,6 +7,7 @@ import CartaoVitais from '../components/comunidade/CartaoVitais'
 import IconeAniCoin from '../components/IconeAniCoin'
 import ModalTransferirAniCoins from '../components/ModalTransferirAniCoins'
 import CardMissoesDiarias from '../components/inicio/CardMissoesDiarias'
+import CardChefao from '../components/chefao/CardChefao'
 import SecaoColecaoCartas from '../components/comunidade/SecaoColecaoCartas'
 import { useCartas } from '../hooks/useCartas'
 import { chaveDoUsuario, lerDaMemoria, guardarNaMemoria } from '../lib/cacheDeTela'
@@ -205,6 +206,9 @@ export default function Guilda() {
               </div>
             </div>
           </section>
+
+          {/* CHEFÃO DA TEMPORADA (Fase 17.3, #185) */}
+          <CardChefao />
 
           {/* MISSÕES DIÁRIAS (Fase 16, #168) */}
           <CardMissoesDiarias />

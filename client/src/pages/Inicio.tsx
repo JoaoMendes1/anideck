@@ -24,6 +24,7 @@ import HeroProximoEpisodio from '../components/inicio/HeroProximoEpisodio'
 import PlayerHudInicio from '../components/inicio/PlayerHudInicio'
 import CardMissoesDiarias from '../components/inicio/CardMissoesDiarias'
 import CardDesafioClaInicio from '../components/inicio/CardDesafioClaInicio'
+import CardChefao from '../components/chefao/CardChefao'
 import TrilhasDaCuradoria, { type TrilhaDaHome } from '../components/inicio/TrilhasDaCuradoria'
 import { encontrarLacuna, type AfinidadeComNota } from '../lib/lacuna'
 import {
@@ -549,6 +550,7 @@ export default function Inicio() {
       {/* No monitor largo, o conteúdo ganha uma coluna lateral com a Guilda e a semana. */}
       <div className="xl:grid xl:grid-cols-[minmax(0,1fr)_340px] xl:gap-10 xl:items-start">
       <div className="min-w-0">
+      <CardChefao className="mb-6" />
       <CardDesafioClaInicio />
       <CardMissoesDiarias />
       {carregando && (

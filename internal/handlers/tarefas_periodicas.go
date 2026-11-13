@@ -219,6 +219,13 @@ var tarefasPeriodicasPadrao = []TarefaPeriodica{
 		Frequencia: FrequenciaDiaria(3, 30),
 		Executar:   executarLimpezaSalasEstreia,
 	},
+	{
+		Nome:       "conferir_chefao_temporada",
+		Titulo:     "Conferência e premiação do Chefão da Temporada",
+		Descricao:  "Verifica se o Chefão da Temporada foi derrotado pela comunidade e distribui as recompensas em AniCoins de forma idempotente para todos os contribuidores.",
+		Frequencia: FrequenciaDiaria(0, 15),
+		Executar:   executarFecharChefaoTemporada,
+	},
 }
 
 // TarefasPeriodicasRegistradas devolve uma cópia das tarefas ativas no worker.

@@ -20,8 +20,9 @@
 | 18 | Clãs & Alianças (`/clas`) | `Clas.tsx` | ✅ Implementada · lista de clãs ativos, busca por nome e tag `[TAG]`, card do próprio clã no topo, convites pendentes e modal de fundação de novo clã com emblemas e tipo | Fase 17 (#180) |
 | 19 | Detalhes do Clã (`/clas/:tag`) | `ClaDetalhe.tsx` | ✅ Implementada · painel do clã com emblema temático, estatísticas coletivas (membros e XP semanal acumulado), roster com papéis (Líder, Vice, Membros), ações de gestão (promover, rebaixar, expulsar, transferir liderança, convidar, sair e denunciar) | Fase 17 (#180) |
 | 20 | Sala de Estreia (`/sala-estreia/:id`) | `SalaEstreia.tsx` | ✅ Implementada · chat ao vivo nas 3 horas após o lançamento do episódio, presença e mensagens com Realtime/polling, taxa de 3s por usuário, destaques com curtidas, escudo de spoiler e migração automática para a aba Conversa do episódio | Fase 17 (#183, #184) |
+| 21 | Chefão da Temporada (`/chefao`) | `Chefao.tsx` | ✅ Implementada · raid comunitária com barra de HP coletivo por temporada, agregação de dano direto via episódios assistidos no SQL, status em tempo real (ativo, derrotado, escapou), contribuição individual e elegibilidade de recompensa, ranking Top 5 MVP e distribuição idempotente de AniCoins e títulos | Fase 17 (#185) |
 
-**Total: 20 telas implementadas.**
+**Total: 21 telas implementadas.**
 
 > Configurações tem oito seções, todas funcionando: Perfil (com foto de perfil otimizada e upload/URL), Perfil público, Preferências de
 > Gosto, Importar Lista, Aparência, Notificações, Conta e Ajuda. Um bloco dentro delas usa o componente `EmBreve`, dizendo no
