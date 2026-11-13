@@ -95,8 +95,8 @@ BEGIN
   -- Calcula o dano total com base no xp_ledger (Armadilha 28: dano somado no SQL)
   SELECT COALESCE(SUM(xp_earned), 0) INTO v_dano_total
     FROM public.xp_ledger
-   WHERE created_at >= v_chefao.inicio
-     AND created_at <= v_chefao.fim;
+   WHERE earned_at >= v_chefao.inicio
+     AND earned_at <= v_chefao.fim;
 
   -- Se atingiu o HP total e não estava marcado derrotado, atualiza
   IF v_dano_total >= v_chefao.hp_total THEN
@@ -121,8 +121,8 @@ BEGIN
     SELECT COALESCE(SUM(xp_earned), 0) INTO v_meu_dano
       FROM public.xp_ledger
      WHERE user_id = (SELECT auth.uid())
-       AND created_at >= v_chefao.inicio
-       AND created_at <= v_chefao.fim;
+       AND earned_at >= v_chefao.inicio
+       AND earned_at <= v_chefao.fim;
   END IF;
 
   -- Top 5 atacantes que mais causaram dano
@@ -139,8 +139,8 @@ BEGIN
       LEFT JOIN public.profiles p ON p.user_id = l.user_id
       LEFT JOIN public.cla_membros cm ON cm.user_id = l.user_id
       LEFT JOIN public.clas c ON c.id = cm.cla_id
-     WHERE l.created_at >= v_chefao.inicio
-       AND l.created_at <= v_chefao.fim
+     WHERE l.earned_at >= v_chefao.inicio
+       AND l.earned_at <= v_chefao.fim
      GROUP BY l.user_id, p.nome, p.handle, p.avatar_url, c.tag
      ORDER BY dano DESC
      LIMIT 5
@@ -201,8 +201,8 @@ BEGIN
   -- Confere se de fato atingiu a derrota
   SELECT COALESCE(SUM(xp_earned), 0) INTO v_dano_total
     FROM public.xp_ledger
-   WHERE created_at >= v_chefao.inicio
-     AND created_at <= v_chefao.fim;
+   WHERE earned_at >= v_chefao.inicio
+     AND earned_at <= v_chefao.fim;
 
   IF v_dano_total < v_chefao.hp_total AND NOT v_chefao.derrotado THEN
     RETURN jsonb_build_object('erro', 'O chefão ainda não foi derrotado.');
@@ -212,8 +212,8 @@ BEGIN
   FOR v_usuario IN
     SELECT l.user_id, SUM(l.xp_earned) AS dano
       FROM public.xp_ledger l
-     WHERE l.created_at >= v_chefao.inicio
-       AND l.created_at <= v_chefao.fim
+     WHERE l.earned_at >= v_chefao.inicio
+       AND l.earned_at <= v_chefao.fim
      GROUP BY l.user_id
     HAVING SUM(l.xp_earned) >= v_chefao.dano_minimo_recompensa
   LOOP
@@ -254,6 +254,12 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
+REVOKE ALL ON FUNCTION public.obter_chefao_atual(TEXT) FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION public.obter_chefao_atual(TEXT) TO anon, authenticated, service_role;
+
+REVOKE ALL ON FUNCTION public.pagar_recompensas_chefao(UUID) FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION public.pagar_recompensas_chefao(UUID) TO authenticated, service_role;
+
 -- =============================================================================
 -- SEED INICIAL: CHEFÃO DA TEMPORADA ATUAL (2026-FALL)
 -- =============================================================================
@@ -276,7 +282,7 @@ INSERT INTO public.chefoes (
   'O Terror Cósmico dos Episódios Não Vistos',
   'Uma besta dimensional colossal despertou das fendas entre as temporadas para devorar as histórias inacabadas. Cada episódio que você e a comunidade assistem canaliza energia pura que estilhaça as escamas do monstro. Unam forças para derrotá-la antes que o inverno chegue!',
   '🐉',
-  2500,
+  50000,
   '2026-10-01 00:00:00+00',
   '2026-12-31 23:59:59+00',
   50,
