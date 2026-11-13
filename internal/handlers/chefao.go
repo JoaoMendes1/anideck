@@ -100,7 +100,7 @@ func (h *ChefaoHandler) HandleObterChefaoAtual(w http.ResponseWriter, r *http.Re
 
 	if raw == "" || strings.HasPrefix(raw, "error") || (strings.Contains(raw, "\"code\"") && strings.Contains(raw, "\"message\"")) {
 		log.Printf("[CHEFAO] Erro ao obter chefão: %s", raw)
-		http.Error(w, "Erro ao consultar chefão da temporada.", http.StatusInternalServerError)
+		http.Error(w, fmt.Sprintf("Erro ao consultar chefão da temporada: %s", raw), http.StatusInternalServerError)
 		return
 	}
 
