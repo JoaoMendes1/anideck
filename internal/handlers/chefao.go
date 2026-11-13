@@ -82,9 +82,9 @@ func (h *ChefaoHandler) HandleObterChefaoAtual(w http.ResponseWriter, r *http.Re
 		return
 	}
 
-	var params map[string]interface{}
+	params := map[string]interface{}{"p_temporada": nil}
 	if temporada != "" {
-		params = map[string]interface{}{"p_temporada": temporada}
+		params["p_temporada"] = temporada
 	}
 
 	raw := strings.TrimSpace(client.Rpc("obter_chefao_atual", "", params))
