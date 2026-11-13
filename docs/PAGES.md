@@ -21,10 +21,11 @@
 | 19 | Detalhes do Clã (`/clas/:tag`) | `ClaDetalhe.tsx` | ✅ Implementada · painel do clã com emblema temático, estatísticas coletivas (membros e XP semanal acumulado), roster com papéis (Líder, Vice, Membros), ações de gestão (promover, rebaixar, expulsar, transferir liderança, convidar, sair e denunciar) | Fase 17 (#180) |
 | 20 | Sala de Estreia (`/sala-estreia/:id`) | `SalaEstreia.tsx` | ✅ Implementada · chat ao vivo nas 3 horas após o lançamento do episódio, presença e mensagens com Realtime/polling, taxa de 3s por usuário, destaques com curtidas, escudo de spoiler e migração automática para a aba Conversa do episódio | Fase 17 (#183, #184) |
 | 21 | Chefão da Temporada (`/chefao`) | `Chefao.tsx` | ✅ Implementada · raid comunitária com barra de HP coletivo por temporada, agregação de dano direto via episódios assistidos no SQL, status em tempo real (ativo, derrotado, escapou), contribuição individual e elegibilidade de recompensa, ranking Top 5 MVP e distribuição idempotente de AniCoins e títulos | Fase 17 (#185) |
+| 22 | AniDeck Wrapped (`/wrapped/:ano` e `/u/:handle/wrapped/:ano`) | `Wrapped.tsx` | ✅ Implementada · retrospectiva anual estilo stories com 6 slides temáticos, estatísticas agregadas em tempo real (horas, episódios, top animes, gêneros, cartas e reações), card compartilhável com cópia de link e acesso público opcional | Fase 17 (#190) |
 
-**Total: 21 telas implementadas.**
+**Total: 22 telas implementadas.**
 
-> Configurações tem oito seções, todas funcionando: Perfil (com foto de perfil otimizada e upload/URL), Perfil público, Preferências de
+> Configurações tem nove seções, todas funcionando: Perfil (com foto de perfil otimizada e upload/URL), Avatar Customizado (#avatar, montável em camadas vetoriais geométricas), Perfil público, Preferências de
 > Gosto, Importar Lista, Aparência, Notificações, Conta e Ajuda. Um bloco dentro delas usa o componente `EmBreve`, dizendo no
 > `nota` o que falta para sair do papel:
 >

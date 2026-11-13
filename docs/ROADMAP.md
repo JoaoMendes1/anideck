@@ -47,7 +47,7 @@ Staging sobe já na Fase 1, como projeto esqueleto — mesmo padrão do JVM Syst
 | 14 · Guilda & Gamificação | ✅ Concluída (08/11/2026) |
 | 15 · Comunidade base | ✅ Concluída (08/11/2026, #154); falta abrir o beta |
 | 16 · Economia e cartas | ✅ Concluída (09/11/2026, #165); falta abrir o beta |
-| 17 · Comunidade viva | 🟡 Em andamento (09/11/2026, #179, #180, #181, #182, #183, #184, #185, #186, #187, #189, #191) |
+| 17 · Comunidade viva | ✅ Concluída (13/11/2026, #179) |
 
 ---
 
@@ -741,10 +741,10 @@ Motivo: um motivo diário para voltar (`VISAO_COMUNIDADE.md`: Economia, Cartas, 
 - [x] 16.5 Apoiador por link externo, sem pagamento integrado (#178)
 - [x] 16.6 Caixa da plataforma/cofre, devolução de itens com taxa, cosméticos de temporada e upload de avatar (#198)
 
-## 🐉 Fase 17: Comunidade viva — *planejada (épico #179)*
+## 🐉 Fase 17: Comunidade viva — *concluída (épico #179)*
 
 Motivo: fazer a base jogar junta (`VISAO_COMUNIDADE.md`: Guildas como clãs, Conversa e Outras
-mecânicas). **Pré-requisitos:** Fase 16 concluída e base com gente suficiente (o épico sugere o mínimo).
+mecânicas). **Pré-requisitos:** Fase 16 concluída e base com gente suficiente.
 
 - [x] 17.1 Clãs (o nome é a primeira decisão: "Guilda" já é a progressão pessoal)
   - [x] 17.1a Clãs de 10 a 30 membros (#180)
@@ -758,12 +758,11 @@ mecânicas). **Pré-requisitos:** Fase 16 concluída e base com gente suficiente
   - [x] 17.4a Títulos ganhos (#186)
   - [x] 17.4b Previsões apostando Mana (#187)
   - [x] 17.4c Classes Bardo, Ranger e Paladino (#189)
-- [ ] 17.5 AniDeck Wrapped e convite
-  - [ ] 17.5a AniDeck Wrapped (#190)
+- [x] 17.5 AniDeck Wrapped e convite
+  - [x] 17.5a AniDeck Wrapped (#190)
   - [x] 17.5b Convite com recompensa (#191)
-- [ ] 17.6 Avatar montável, bloqueado até ter arte original (#192)
-- [ ] 17.7 Curadoria colaborativa: membros de rank alto sugerem correções (#188). *Estava na
-      visão e faltava aqui.*
+- [x] 17.6 Avatar montável em camadas vetoriais geométricas (#192)
+- [x] 17.7 Curadoria colaborativa: membros de rank alto sugerem correções (#188)
 
 ## 🔧 Manutenção pós-v1
 

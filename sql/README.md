@@ -92,6 +92,9 @@ SELECT pg_get_viewdef('nome_da_view'::regclass, true);
 | `060_unificar_rpc_chefao.sql` | Fase 17 (17.3, #185): Remove sobrecarga sem parâmetros que causava o erro PGRST203 e mantém a função única canônica `obter_chefao_atual(p_temporada TEXT)` | — |
 | `061_titulos_previsoes_classes.sql` | Fase 17 (17.4, #186, #187, #189): Classes de RPG no perfil (Bardo, Ranger, Paladino), títulos equipáveis e sistema de Previsões apostando Mana | — |
 | `062_convites_recompensas_e_toggle_previsoes.sql` | Fase 17 (17.4 e 17.5b, #187 e #191): Toggle de controle de previsões em comunidade_regras e sistema completo de convites com recompensas ajustáveis e Convite VIP do Administrador | — |
+| `063_anideck_wrapped.sql` | Fase 17 (17.5a, #190): AniDeck Wrapped — retrospectiva anual agregada no SQL (Armadilhas 3, 4 e 28), RPC `anideck_wrapped` para histórias e compartilhamento | — |
+| `064_curadoria_colaborativa.sql` | Fase 17 (17.7, #188): Curadoria colaborativa — tabela `curation_collab_suggestions`, validação de rank mínimo/limite diário, RPCs `submeter_sugestao_curadoria` e `admin_revisar_sugestao_curadoria` com recompensa em Cristais | — |
+| `065_avatar_montavel.sql` | Fase 17 (17.6, #192): Avatar montável em camadas — coluna `avatar_custom` em `profiles` e RPC `salvar_avatar_customizado` | — |
 
 Datas com `~` são a data do commit, não da aplicação no Supabase.
 
