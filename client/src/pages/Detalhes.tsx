@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, type ReactNode } from 'react'
 import { useParams, Link, useNavigate, useSearchParams, useLocation } from 'react-router-dom'
-import { PlayCircle, Star, AlertCircle, Trophy, X, ArrowLeft, CalendarDays, ChevronDown, Heart, Radio } from 'lucide-react'
+import { PlayCircle, Star, AlertCircle, Trophy, X, ArrowLeft, CalendarDays, ChevronDown, Heart, Radio, Sparkles } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import { useSessao } from '../contexts/SessaoContext'
 import { useToast } from '../contexts/ToastContext'
@@ -14,6 +14,7 @@ import CardPrevisoes from '../components/previsoes/CardPrevisoes'
 import PainelMinhaLista from '../components/detalhes/PainelMinhaLista'
 import FerramentasCuradoria from '../components/detalhes/FerramentasCuradoria'
 import NumerosDaObra, { type EstatisticasDaObra } from '../components/detalhes/NumerosDaObra'
+import ModalSugerirCorrecao from '../components/ModalSugerirCorrecao'
 import { getCategoryTheme } from '../lib/filters'
 import { obterTextoDiaLancamento } from '../lib/deckHelpers'
 import { temHistoriaNoApp, veioDeListaRestauravel } from '../lib/posicaoDeLista'
@@ -117,6 +118,7 @@ export default function Detalhes() {
   const [comentariosNaObra, setComentariosNaObra] = useState(0)
   const [salaAoVivo, setSalaAoVivo] = useState<SalaEstreia | null>(null)
   const [sinopseAberta, setSinopseAberta] = useState(false)
+  const [modalCorrecaoAberto, setModalCorrecaoAberto] = useState(false)
 
   const [isLoggedIn, setIsLoggedIn] = useState(false)
   const [isAdmin, setIsAdmin] = useState(false)
@@ -535,30 +537,44 @@ export default function Detalhes() {
               aria-label="Seções do anime"
               className="sticky top-[63px] md:top-[73px] z-30 -mx-4 px-4 sm:mx-0 sm:px-0 mb-6 bg-void/95 backdrop-blur-md border-b border-line"
             >
-              <div className="flex">
-                {abas.map(a => {
-                  const ativa = a.id === aba
-                  return (
-                    <button
-                      key={a.id}
-                      type="button"
-                      role="tab"
-                      id={`aba-${a.id}`}
-                      aria-selected={ativa}
-                      aria-controls={`painel-${a.id}`}
-                      onClick={() => trocarAba(a.id)}
-                      className={`relative flex-1 sm:flex-none sm:px-6 py-3.5 text-[13px] font-bold transition-colors cursor-pointer select-none ${ativa ? 'text-text' : 'text-muted hover:text-text'}`}
-                    >
-                      {a.rotulo}
-                      {a.contador && (
-                        <span className={`ml-1.5 font-mono text-[10px] ${a.id === 'episodios' ? 'hidden sm:inline' : ''} ${ativa ? 'text-holo-3' : 'text-muted-2'}`}>
-                          {a.contador}
-                        </span>
-                      )}
-                      {ativa && <span className="absolute left-3 right-3 sm:left-4 sm:right-4 bottom-0 h-[3px] rounded-full bg-gradient-to-r from-holo-1 to-holo-3" />}
-                    </button>
-                  )
-                })}
+              <div className="flex items-center justify-between">
+                <div className="flex flex-1 sm:flex-none">
+                  {abas.map(a => {
+                    const ativa = a.id === aba
+                    return (
+                      <button
+                        key={a.id}
+                        type="button"
+                        role="tab"
+                        id={`aba-${a.id}`}
+                        aria-selected={ativa}
+                        aria-controls={`painel-${a.id}`}
+                        onClick={() => trocarAba(a.id)}
+                        className={`relative flex-1 sm:flex-none sm:px-6 py-3.5 text-[13px] font-bold transition-colors cursor-pointer select-none ${ativa ? 'text-text' : 'text-muted hover:text-text'}`}
+                      >
+                        {a.rotulo}
+                        {a.contador && (
+                          <span className={`ml-1.5 font-mono text-[10px] ${a.id === 'episodios' ? 'hidden sm:inline' : ''} ${ativa ? 'text-holo-3' : 'text-muted-2'}`}>
+                            {a.contador}
+                          </span>
+                        )}
+                        {ativa && <span className="absolute left-3 right-3 sm:left-4 sm:right-4 bottom-0 h-[3px] rounded-full bg-gradient-to-r from-holo-1 to-holo-3" />}
+                      </button>
+                    )
+                  })}
+                </div>
+                {isLoggedIn && (
+                  <button
+                    type="button"
+                    onClick={() => setModalCorrecaoAberto(true)}
+                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-holo-2/15 border border-holo-2/30 text-holo-3 hover:bg-holo-2/25 text-xs font-bold transition-all cursor-pointer shrink-0"
+                    title="Membros com Rank B+ ganham +15 Cristais ao sugerir correções aprovadas"
+                  >
+                    <Sparkles size={13} />
+                    <span className="hidden sm:inline">Sugerir Correção</span>
+                    <span className="sm:hidden">Sugerir</span>
+                  </button>
+                )}
               </div>
             </nav>
 
@@ -760,6 +776,15 @@ export default function Detalhes() {
         alt={anime.title || 'Imagem do anime'}
         aoFechar={() => setImagemAmpliada(null)}
       />
+
+      {anime && (
+        <ModalSugerirCorrecao
+          aberto={modalCorrecaoAberto}
+          onFechar={() => setModalCorrecaoAberto(false)}
+          malId={anime.mal_id}
+          tituloAnime={anime.title}
+        />
+      )}
     </div>
   )
 }

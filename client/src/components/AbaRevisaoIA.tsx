@@ -5,7 +5,7 @@
 // modo automático (episódios, datas e links nunca entram sozinhos).
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { Check, ExternalLink, RefreshCw, Trash2 } from 'lucide-react'
+import { Check, ExternalLink, RefreshCw, Trash2, Users, Sparkles, X } from 'lucide-react'
 import ReactMarkdown from 'react-markdown'
 import { supabase } from '../lib/supabase'
 import { useToast } from '../contexts/ToastContext'
@@ -13,6 +13,7 @@ import { normalizar } from '../hooks/useTaxonomia'
 import { getCategoryTheme } from '../lib/filters'
 import { guardarNaMemoria, lerDaMemoria } from '../lib/cacheDeTela'
 import type { CuratedAnime } from '../types/curation'
+import { listarSugestoesCollabAdmin, revisarSugestaoCollabAdmin, type SugestaoCollab } from '../lib/curadoriaCollab'
 
 type Tipo = 'sinopse_tags' | 'episodios'
 type Status = 'pendente' | 'processando' | 'pronto' | 'erro' | 'aplicado' | 'descartado'
@@ -97,6 +98,40 @@ export default function AbaRevisaoIA({ curados = [] }: Props) {
   const [busca, setBusca] = useState('')
   const [marcados, setMarcados] = useState<number[]>([])
   const [atualizando, setAtualizando] = useState(false)
+
+  // Curadoria Colaborativa da Comunidade (Fase 17.7, #188)
+  const [abaInterna, setAbaInterna] = useState<'ia' | 'comunidade'>('ia')
+  const [sugestoesCollab, setSugestoesCollab] = useState<SugestaoCollab[]>([])
+  const [carregandoCollab, setCarregandoCollab] = useState(false)
+
+  const carregarSugestoesCollab = useCallback(async () => {
+    setCarregandoCollab(true)
+    try {
+      const lista = await listarSugestoesCollabAdmin()
+      setSugestoesCollab(lista)
+    } finally {
+      setCarregandoCollab(false)
+    }
+  }, [])
+
+  useEffect(() => {
+    carregarSugestoesCollab()
+  }, [carregarSugestoesCollab])
+
+  const revisarCollab = async (id: string, aprovar: boolean) => {
+    setOcupado(id)
+    try {
+      const ok = await revisarSugestaoCollabAdmin(id, aprovar)
+      if (ok) {
+        showToast(aprovar ? 'Sugestão aprovada! Membro recebeu +15 Cristais.' : 'Sugestão recusada.', aprovar ? 'success' : 'info')
+        setSugestoesCollab(prev => prev.filter(s => s.id !== id))
+      } else {
+        showToast('Falha ao processar sugestão.', 'error')
+      }
+    } finally {
+      setOcupado(null)
+    }
+  }
 
   const carregarFila = useCallback(async (comFeedback = false) => {
     if (comFeedback) setAtualizando(true)
@@ -224,6 +259,125 @@ export default function AbaRevisaoIA({ curados = [] }: Props) {
 
   return (
     <div className="flex flex-col gap-6">
+      {/* Seletor entre IA e Curadoria Colaborativa */}
+      <div className="flex items-center gap-2 border-b border-line pb-3">
+        <button
+          type="button"
+          onClick={() => setAbaInterna('ia')}
+          className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-bold transition-colors ${
+            abaInterna === 'ia'
+              ? 'bg-holo-2/15 text-holo-2 border border-holo-2/30'
+              : 'text-muted hover:text-text hover:bg-panel'
+          }`}
+        >
+          <Sparkles size={16} />
+          Fila da IA ({itens.filter(i => i.status === 'pronto').length})
+        </button>
+        <button
+          type="button"
+          onClick={() => {
+            setAbaInterna('comunidade')
+            carregarSugestoesCollab()
+          }}
+          className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-bold transition-colors ${
+            abaInterna === 'comunidade'
+              ? 'bg-gold/15 text-gold border border-gold/30'
+              : 'text-muted hover:text-text hover:bg-panel'
+          }`}
+        >
+          <Users size={16} />
+          Sugestões da Comunidade ({sugestoesCollab.length})
+        </button>
+      </div>
+
+      {abaInterna === 'comunidade' ? (
+        <section className="bg-panel border border-line rounded-2xl p-5">
+          <div className="flex items-center justify-between mb-4">
+            <div>
+              <h2 className="font-anton uppercase text-lg text-text">Sugestões de Curadoria dos Membros</h2>
+              <p className="text-xs text-muted mt-0.5">
+                Membros com Rank B ou superior que sugerem correções no catálogo. Cada aprovação credita +15 Cristais ao membro.
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={carregarSugestoesCollab}
+              disabled={carregandoCollab}
+              className={`${botao} bg-panel-2 border border-line text-muted hover:text-text`}
+            >
+              <RefreshCw size={13} className={carregandoCollab ? 'animate-spin' : ''} /> Atualizar
+            </button>
+          </div>
+
+          {sugestoesCollab.length === 0 ? (
+            <div className="text-center py-12 text-muted text-sm border border-dashed border-line rounded-xl">
+              Nenhuma sugestão colaborativa pendente de revisão.
+            </div>
+          ) : (
+            <div className="flex flex-col gap-4">
+              {sugestoesCollab.map(s => {
+                const rotuloCampo: Record<string, string> = {
+                  titulo_episodio: 'Título do Episódio',
+                  estreia: 'Data de Estreia',
+                  link_streaming: 'Link de Streaming',
+                  sinopse: 'Sinopse',
+                }
+                return (
+                  <article key={s.id} className="bg-panel-2 border border-line rounded-xl p-4 flex flex-col gap-3">
+                    <div className="flex flex-wrap items-center justify-between gap-2 border-b border-line/60 pb-2.5">
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs font-bold text-gold uppercase px-2 py-0.5 rounded bg-gold/10 border border-gold/20">
+                          {rotuloCampo[s.campo] || s.campo}
+                        </span>
+                        <Link to={`/anime/${s.mal_id}`} className="text-sm font-bold text-text hover:text-holo-2">
+                          {s.titulo_anime || `Anime MAL #${s.mal_id}`}
+                        </Link>
+                        {s.episodio_numero > 0 && (
+                          <span className="text-xs text-muted font-mono">Ep. {s.episodio_numero}</span>
+                        )}
+                      </div>
+                      <div className="text-xs text-muted">
+                        Sugerido por <span className="font-semibold text-text">@{s.autor_handle || 'membro'}</span>
+                      </div>
+                    </div>
+
+                    <div className="text-sm bg-panel border border-line/80 rounded-lg p-3">
+                      <div className="text-xs text-muted mb-1 font-mono uppercase">Novo valor sugerido:</div>
+                      <div className="text-text font-medium break-all whitespace-pre-wrap">{s.valor_sugerido}</div>
+                    </div>
+
+                    {s.motivo && (
+                      <div className="text-xs text-muted italic bg-panel/40 px-3 py-1.5 rounded border border-line/40">
+                        "{s.motivo}"
+                      </div>
+                    )}
+
+                    <div className="flex items-center justify-end gap-2 pt-1">
+                      <button
+                        type="button"
+                        disabled={ocupado === s.id}
+                        onClick={() => revisarCollab(s.id, false)}
+                        className={`${botao} bg-panel border border-line text-coral hover:bg-coral/10 hover:border-coral/30`}
+                      >
+                        <X size={14} /> Recusar
+                      </button>
+                      <button
+                        type="button"
+                        disabled={ocupado === s.id}
+                        onClick={() => revisarCollab(s.id, true)}
+                        className={`${botao} bg-gradient-to-r from-holo-1 to-holo-2 text-void font-bold shadow-sm`}
+                      >
+                        <Check size={14} /> Aprovar (+15 💎)
+                      </button>
+                    </div>
+                  </article>
+                )
+              })}
+            </div>
+          )}
+        </section>
+      ) : (
+        <>
       {erro && (
         <p className="text-coral text-sm bg-coral/10 border border-coral/30 rounded-xl px-4 py-3">
           {erro}
@@ -463,6 +617,8 @@ export default function AbaRevisaoIA({ curados = [] }: Props) {
           })}
         </div>
       </section>
+      </>
+      )}
     </div>
   )
 }
