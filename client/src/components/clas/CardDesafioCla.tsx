@@ -16,6 +16,7 @@ import {
 } from 'lucide-react'
 import { useSessao } from '../../contexts/SessaoContext'
 import IconeAniCoin from '../IconeAniCoin'
+import { formatarSemanaISO } from '../../lib/dataHora'
 import {
   obterDesafioCla,
   type DesafioCla,
@@ -99,8 +100,8 @@ export default function CardDesafioCla({ tag, souMembro }: Props) {
             </div>
             <div>
               <div className="flex items-center gap-2 flex-wrap mb-1">
-                <span className="font-mono text-[10px] font-bold uppercase tracking-widest px-2 py-0.5 rounded-full bg-holo-2/15 border border-holo-2/30 text-holo-2">
-                  Desafio da Semana · {desafio.semana}
+                <span className="font-mono text-[10px] font-bold uppercase tracking-widest px-2 py-0.5 rounded-full bg-holo-2/15 border border-holo-2/30 text-holo-2" title={`Código: ${desafio.semana}`}>
+                  Desafio da Semana · {formatarSemanaISO(desafio.semana)}
                 </span>
 
                 {bateuMeta ? (

@@ -3,7 +3,7 @@ import AbasDescobrir from '../components/AbasDescobrir'
 import { useState, useEffect, useCallback } from 'react'
 import { useToast } from '../contexts/ToastContext'
 import { useNavigate } from 'react-router-dom'
-import { AlertCircle, SlidersHorizontal, X, Info } from 'lucide-react'
+import { AlertCircle, SlidersHorizontal, X, Info, Sparkles } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import { useDadosRestaurados, usePosicaoDeLista, guardarDados, lerDados } from '../lib/posicaoDeLista'
 import {
@@ -91,6 +91,12 @@ export default function Rankings() {
     const [selectedSeason, setSelectedSeason] = useState(retrato?.selectedSeason ?? '')
     const [selectedYear, setSelectedYear] = useState(retrato?.selectedYear ?? '')
     const [selectedSort, setSelectedSort] = useState(retrato?.selectedSort ?? 'POPULARITY_DESC')
+    const [modoRanking, setModoRanking] = useState<'top_global' | 'em_alta' | 'clima'>(() => {
+        if (retrato?.selectedStatus === 'RELEASING' && retrato?.selectedSort === 'TRENDING_DESC') {
+            return 'em_alta'
+        }
+        return 'top_global'
+    })
 
     const activeFilterCount =
         selectedFilters.length +
@@ -273,71 +279,123 @@ export default function Rankings() {
             <div className="max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-10 pt-10">
                 <AbasDescobrir />
 
-                {/* --- CABEÇALHO NOVO COM ÍCONE DE INFO E CAIXA DE CREDIBILIDADE --- */}
-                <div className="mb-6">
-                    <p className="font-mono text-xs text-holo-3 tracking-widest mb-2 select-none">RANKING GLOBAL</p>
-                    
-                    <div className="flex items-center gap-3 mb-2">
-                        <h1 className="font-anton text-3xl md:text-4xl uppercase text-text select-none">Os mais aclamados</h1>
-                        <button
-                            onClick={() => setShowCredibilityInfo(!showCredibilityInfo)}
-                            className={`p-1.5 rounded-full transition-colors cursor-pointer ${
-                                showCredibilityInfo ? 'bg-holo-3/20 text-holo-3' : 'text-muted hover:bg-panel-2 hover:text-holo-3'
-                            }`}
-                            aria-label="Entenda o nosso cálculo"
-                            title="Por que nosso ranking é diferente?"
-                        >
-                            <Info size={22} />
-                        </button>
-                    </div>
-
-                    {showCredibilityInfo && (
-                        <div className="bg-panel-2 border border-holo-3/30 shadow-[0_0_15px_rgba(63,224,240,0.05)] rounded-xl p-4 mb-4 text-sm text-muted-2 animate-in fade-in slide-in-from-top-2">
-                            <p className="text-holo-3 font-bold mb-1 font-mono tracking-wide">A MATEMÁTICA DA CREDIBILIDADE 🧠</p>
-                            <p className="mb-2 leading-relaxed">
-                                Em rankings comuns, obras de nicho com pouquíssimos votos "nota 10" acabam ultrapassando clássicos globais injustamente. 
-                                Para resolver isso, o AniDeck aplica uma <strong className="text-text">Média Bayesiana</strong>.
-                            </p>
-                            <p className="leading-relaxed">
-                                Nós cruzamos a nota do público com o volume de engajamento (usuários). Isso ajusta a nota de animes com poucos votos em direção à média global, 
-                                criando um <strong className="text-text">ranking à prova de distorções</strong>. Mais justo, mais inteligente e com muito mais credibilidade.
-                            </p>
-                        </div>
-                    )}
-
-                    <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between text-muted text-sm select-none">
-                        <p>Direto da base pública da AniList — filtros aplicados no servidor.</p>
-                        {lastUpdated && selectedSort === 'POPULARITY_DESC' && activeFilterCount === 0 && (
-                            <p className="flex items-center gap-1.5 text-xs font-mono text-holo-3 bg-holo-3/10 px-3 py-1 rounded-full border border-holo-3/20 w-fit mt-2 sm:mt-0">
-                                ⏳ Atualizado às {new Date(lastUpdated).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
-                            </p>
-                        )}
-                    </div>
-                </div>
-                {/* ---------------------------------------------------------------- */}
-
-                <SecaoClimaTemporada />
-
-                <div className="flex gap-2 flex-wrap mb-6 select-none border-b border-line pb-4">
+                {/* --- SELETOR DE MODO DO RANKING --- */}
+                <div className="flex gap-2 flex-wrap mb-6 select-none border-b border-line pb-4" role="tablist" aria-label="Modo do Ranking">
                     <button
-                        onClick={() => { setSelectedStatus(''); setSelectedSeason(''); setSelectedYear(''); setSelectedSort('POPULARITY_DESC'); }}
-                        className={`text-[13px] font-bold px-5 py-2.5 rounded-full border transition-colors cursor-pointer ${selectedStatus === '' && selectedSort === 'POPULARITY_DESC'
+                        type="button"
+                        onClick={() => {
+                            setModoRanking('top_global')
+                            setSelectedStatus('')
+                            setSelectedSeason('')
+                            setSelectedYear('')
+                            setSelectedSort('POPULARITY_DESC')
+                        }}
+                        className={`text-[13px] font-bold px-5 py-2.5 rounded-full border transition-all cursor-pointer ${
+                            modoRanking === 'top_global'
                                 ? 'bg-gradient-to-r from-holo-1 to-holo-2 text-white border-transparent shadow-lg'
                                 : 'bg-panel border-line text-muted hover:border-holo-3 hover:text-text'
-                            }`}
+                        }`}
                     >
-                        🏆 Top Global
+                        🏆 Mais Aclamados (Top Global)
                     </button>
                     <button
-                        onClick={() => { setSelectedStatus('RELEASING'); setSelectedSort('TRENDING_DESC'); }}
-                        className={`text-[13px] font-bold px-5 py-2.5 rounded-full border transition-colors cursor-pointer flex items-center gap-2 ${selectedStatus === 'RELEASING' && selectedSort === 'TRENDING_DESC'
+                        type="button"
+                        onClick={() => {
+                            setModoRanking('em_alta')
+                            setSelectedStatus('RELEASING')
+                            setSelectedSeason('')
+                            setSelectedYear('')
+                            setSelectedSort('TRENDING_DESC')
+                        }}
+                        className={`text-[13px] font-bold px-5 py-2.5 rounded-full border transition-all cursor-pointer flex items-center gap-2 ${
+                            modoRanking === 'em_alta'
                                 ? 'bg-coral/20 border-coral text-coral shadow-[0_0_15px_rgba(255,92,108,0.2)]'
                                 : 'bg-panel border-line text-muted hover:border-coral hover:text-text'
-                            }`}
+                        }`}
                     >
-                        🔥 Em Alta / Temporada
+                        🔥 Em Alta na Temporada
+                    </button>
+                    <button
+                        type="button"
+                        onClick={() => setModoRanking('clima')}
+                        className={`text-[13px] font-bold px-5 py-2.5 rounded-full border transition-all cursor-pointer flex items-center gap-2 ${
+                            modoRanking === 'clima'
+                                ? 'bg-holo-2/20 border-holo-2 text-holo-2 shadow-[0_0_15px_rgba(34,211,238,0.25)]'
+                                : 'bg-panel border-line text-muted hover:border-holo-2 hover:text-text'
+                        }`}
+                    >
+                        <Sparkles size={15} />
+                        <span>Clima da Temporada</span>
                     </button>
                 </div>
+
+                {/* --- CABEÇALHO CONTEXTUAL E CAIXA DE CREDIBILIDADE --- */}
+                <div className="mb-6">
+                    {modoRanking === 'top_global' && (
+                        <>
+                            <p className="font-mono text-xs text-holo-3 tracking-widest mb-1.5 select-none">// ranking global bayesiano</p>
+                            <div className="flex items-center gap-3 mb-1.5">
+                                <h1 className="font-anton text-3xl md:text-4xl uppercase text-text select-none m-0">Os Mais Aclamados</h1>
+                                <button
+                                    onClick={() => setShowCredibilityInfo(!showCredibilityInfo)}
+                                    className={`p-1.5 rounded-full transition-colors cursor-pointer ${
+                                        showCredibilityInfo ? 'bg-holo-3/20 text-holo-3' : 'text-muted hover:bg-panel-2 hover:text-holo-3'
+                                    }`}
+                                    aria-label="Entenda o nosso cálculo"
+                                    title="Por que nosso ranking é diferente?"
+                                >
+                                    <Info size={22} />
+                                </button>
+                            </div>
+                            <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between text-muted text-sm select-none">
+                                <p className="m-0">Direto da base pública da AniList — ranking ponderado com média bayesiana para evitar distorções de nicho.</p>
+                                {lastUpdated && selectedSort === 'POPULARITY_DESC' && activeFilterCount === 0 && (
+                                    <p className="flex items-center gap-1.5 text-xs font-mono text-holo-3 bg-holo-3/10 px-3 py-1 rounded-full border border-holo-3/20 w-fit mt-2 sm:mt-0">
+                                        ⏳ Atualizado às {new Date(lastUpdated).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
+                                    </p>
+                                )}
+                            </div>
+                            {showCredibilityInfo && (
+                                <div className="bg-panel-2 border border-holo-3/30 shadow-[0_0_15px_rgba(63,224,240,0.05)] rounded-xl p-4 mt-3 text-sm text-muted-2 animate-in fade-in slide-in-from-top-2">
+                                    <p className="text-holo-3 font-bold mb-1 font-mono tracking-wide">A MATEMÁTICA DA CREDIBILIDADE 🧠</p>
+                                    <p className="mb-2 leading-relaxed">
+                                        Em rankings comuns, obras de nicho com pouquíssimos votos &quot;nota 10&quot; acabam ultrapassando clássicos globais injustamente. 
+                                        Para resolver isso, o AniDeck aplica uma <strong className="text-text">Média Bayesiana</strong>.
+                                    </p>
+                                    <p className="leading-relaxed">
+                                        Nós cruzamos a nota do público com o volume de engajamento (usuários). Isso ajusta a nota de animes com poucos votos em direção à média global, 
+                                        criando um <strong className="text-text">ranking à prova de distorções</strong>. Mais justo, mais inteligente e com muito mais credibilidade.
+                                    </p>
+                                </div>
+                            )}
+                        </>
+                    )}
+
+                    {modoRanking === 'em_alta' && (
+                        <>
+                            <p className="font-mono text-xs text-coral tracking-widest mb-1.5 select-none">// animes em lançamento</p>
+                            <h1 className="font-anton text-3xl md:text-4xl uppercase text-text select-none m-0 mb-1.5">Em Alta na Temporada</h1>
+                            <p className="text-muted text-sm select-none m-0">
+                                As obras que estão sendo lançadas neste trimestre com maior volume de discussão e acompanhamento.
+                            </p>
+                        </>
+                    )}
+
+                    {modoRanking === 'clima' && (
+                        <>
+                            <p className="font-mono text-xs text-holo-2 tracking-widest mb-1.5 select-none">// termômetro da comunidade</p>
+                            <h1 className="font-anton text-3xl md:text-4xl uppercase text-text select-none m-0 mb-1.5">Clima da Temporada</h1>
+                            <p className="text-muted text-sm select-none m-0">
+                                Rankings de sentimentos e reações reais marcados episódio a episódio pela comunidade.
+                            </p>
+                        </>
+                    )}
+                </div>
+
+                {modoRanking === 'clima' ? (
+                    <SecaoClimaTemporada />
+                ) : (
+                    <>
 
                 <div className="mb-6">
                     <button
@@ -482,6 +540,8 @@ export default function Rankings() {
                         {loading && <div className="w-3.5 h-3.5 border-2 border-current border-t-transparent rounded-full animate-spin" />}
                         {loading ? 'Carregando...' : 'Carregar mais'}
                     </button>
+                )}
+                    </>
                 )}
             </div>
         </div>

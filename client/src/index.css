@@ -184,13 +184,20 @@ html[data-tema='estudio'] {
 @utility card-g4 { background: linear-gradient(155deg, var(--grad-card-4), var(--grad-card-base) 75%); }
 @utility card-g5 { background: linear-gradient(155deg, var(--grad-card-5), var(--grad-card-base) 75%); }
 
-/* Ocultar barra de rolagem nos quick filters */
+/* Ocultar barra de rolagem nos quick filters e carrosséis */
 @utility scrollbar-hide {
   -ms-overflow-style: none;
   scrollbar-width: none;
 }
-.scrollbar-hide::-webkit-scrollbar {
+.scrollbar-hide::-webkit-scrollbar,
+.no-scrollbar::-webkit-scrollbar,
+.scrollbar-none::-webkit-scrollbar {
   display: none;
+}
+.no-scrollbar,
+.scrollbar-none {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
 }
 
 /* =========================================

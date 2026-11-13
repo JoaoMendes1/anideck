@@ -11,6 +11,7 @@ import { obterEstiloRank } from '../lib/guilda'
 import SeloEquipe from '../components/comunidade/SeloEquipe'
 import RankingClasLiga from '../components/comunidade/RankingClasLiga'
 import { obterClasseMoldura, obterClasseCorNome, renderizarEmblema } from '../lib/cosmeticos'
+import { formatarSemanaISO } from '../lib/dataHora'
 import type { MembroNoRanking } from '../lib/comunidade'
 
 type Periodo = 'semana' | 'temporada' | 'geral' | 'genero' | 'clas'
@@ -226,9 +227,12 @@ export default function Membros() {
                 </div>
               </div>
               <div className="flex items-center gap-2">
-                <span className="font-mono text-xs text-muted-2">Semana:</span>
-                <span className="font-mono text-xs font-bold text-text bg-panel px-2.5 py-1 rounded-lg border border-line">
-                  {dadosLiga.semana}
+                <span className="font-mono text-xs text-muted-2">Período:</span>
+                <span
+                  className="font-mono text-xs font-bold text-text bg-panel px-2.5 py-1 rounded-lg border border-line"
+                  title={`Código da semana: ${dadosLiga.semana}`}
+                >
+                  {formatarSemanaISO(dadosLiga.semana)}
                 </span>
               </div>
             </div>

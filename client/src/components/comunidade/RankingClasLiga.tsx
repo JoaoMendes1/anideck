@@ -6,6 +6,7 @@ import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import { Trophy, Crown, Medal, ChevronDown, ChevronUp, AlertCircle, Sparkles, Shield, History, Users } from 'lucide-react'
 import TagCla from '../TagCla'
+import { formatarTemporada } from '../../lib/dataHora'
 import {
   obterRankingClasTemporada,
   obterHistoricoCampeoesClas,
@@ -107,8 +108,8 @@ export default function RankingClasLiga() {
                 Em Andamento
               </span>
             )}
-            <span className="font-mono text-xs text-text font-bold bg-panel-2 px-2.5 py-1 rounded-lg border border-line">
-              {dados.temporada}
+            <span className="font-mono text-xs text-text font-bold bg-panel-2 px-2.5 py-1 rounded-lg border border-line" title={`Código: ${dados.temporada}`}>
+              {formatarTemporada(dados.temporada)}
             </span>
           </div>
         )}
@@ -150,7 +151,7 @@ export default function RankingClasLiga() {
                 <div className="flex items-center justify-between border-b border-line pb-3">
                   <div className="flex items-center gap-2">
                     <Trophy size={18} className="text-gold" />
-                    <span className="font-anton text-lg tracking-wide uppercase">Temporada {h.temporada}</span>
+                    <span className="font-anton text-lg tracking-wide uppercase">{formatarTemporada(h.temporada)}</span>
                   </div>
                   <span className="font-mono text-[11px] text-muted-2">
                     Encerrada em {new Date(h.fechado_em).toLocaleDateString('pt-BR')}

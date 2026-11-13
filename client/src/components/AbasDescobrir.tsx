@@ -7,6 +7,7 @@ const ABAS = [
   { para: '/descobrir', texto: 'Buscar' },
   { para: '/rankings', texto: 'Rankings' },
   { para: '/membros', texto: 'Membros' },
+  { para: '/clas', texto: 'Clãs' },
 ]
 
 export default function AbasDescobrir() {

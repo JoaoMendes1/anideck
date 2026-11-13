@@ -44,7 +44,7 @@ export default function Navbar() {
   }, [])
 
   const linkClasse = (...rotas: string[]) =>
-    `text-sm font-bold focus:outline-none select-none transition-colors ${
+    `text-xs lg:text-sm font-bold focus:outline-none select-none transition-colors whitespace-nowrap ${
       rotas.includes(location.pathname) ? 'text-text' : 'text-muted hover:text-text'
     }`
 
@@ -96,7 +96,7 @@ export default function Navbar() {
           {/* LINKS DE NAVEGAÇÃO DESKTOP */}
           {/* "Admin" saiu daqui e foi pro MenuPerfil: é destino raro e restrito,
               não merecia um slot fixo ao lado dos links de uso diário. */}
-          <div className="hidden md:flex items-center gap-6 lg:gap-7">
+          <div className="hidden md:flex items-center gap-3.5 lg:gap-5 xl:gap-6">
             <Link to="/" className={linkClasse('/')}>Início</Link>
             <Link to="/descobrir" className={linkClasse('/descobrir')}>Descobrir</Link>
             <Link to="/rankings" className={linkClasse('/rankings', '/membros')}>Rankings</Link>

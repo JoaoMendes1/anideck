@@ -57,7 +57,7 @@ export default function SecaoClimaTemporada() {
   const metaReacao = REACOES.find(r => r.id === reacaoAtiva) || REACOES[0]
 
   return (
-    <section className="mt-10 mb-12 p-5 sm:p-7 rounded-3xl bg-panel border border-line shadow-xl relative overflow-hidden">
+    <section className="p-5 sm:p-7 rounded-3xl bg-panel border border-line shadow-xl relative overflow-hidden mb-12">
       <div className="absolute top-0 right-0 w-96 h-96 bg-holo-1/5 rounded-full blur-3xl pointer-events-none" />
 
       <div className="relative z-10 mb-5">
@@ -80,7 +80,7 @@ export default function SecaoClimaTemporada() {
       </div>
 
       {/* Chips de Reações */}
-      <div className="flex gap-2 overflow-x-auto pb-3 mb-6 no-scrollbar select-none">
+      <div className="flex gap-2 overflow-x-auto pb-3 mb-6 scrollbar-hide no-scrollbar select-none">
         {REACOES.map(r => {
           const selecionado = r.id === reacaoAtiva
           return (

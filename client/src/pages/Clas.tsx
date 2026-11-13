@@ -502,18 +502,22 @@ export default function Clas() {
                 <label className="block text-xs font-bold uppercase text-muted mb-1.5">
                   Emblema do Clã
                 </label>
-                <div className="grid grid-cols-4 gap-2">
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
                   {Object.entries(EMBLEMAS_CLA).map(([chave, conf]) => (
                     <button
                       key={chave}
                       type="button"
                       onClick={() => setEmblema(chave)}
                       className={`p-3 rounded-xl border flex flex-col items-center gap-1.5 transition-all cursor-pointer ${
-                        emblema === chave ? 'bg-panel-2 border-holo-3 shadow-md' : 'bg-void border-line hover:border-line-hover'
+                        emblema === chave ? 'bg-panel-2 border-holo-3 shadow-md ring-1 ring-holo-3/50' : 'bg-void border-line hover:border-line-hover'
                       }`}
                     >
-                      {renderIconeEmblema(chave, 20)}
-                      <span className="text-[10px] font-bold text-muted truncate max-w-full">{conf.rotulo}</span>
+                      {renderIconeEmblema(chave, 22)}
+                      <span className={`text-[10.5px] font-bold text-center leading-tight line-clamp-2 min-h-[26px] flex items-center justify-center ${
+                        emblema === chave ? 'text-text font-black' : 'text-muted'
+                      }`}>
+                        {conf.rotulo}
+                      </span>
                     </button>
                   ))}
                 </div>
