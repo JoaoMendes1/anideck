@@ -118,18 +118,21 @@ func (h *ConvitesHandler) HandleResgatarConvite(w http.ResponseWriter, r *http.R
 func (h *ConvitesHandler) HandleAdminGetConfigConvites(w http.ResponseWriter, r *http.Request) {
 	client := database.Client
 	if client == nil {
-		http.Error(w, "Banco indisponível.", http.StatusServiceUnavailable)
-		return
+		if token, ok := r.Context().Value(middleware.TokenKey).(string); ok && token != "" {
+			client, _ = database.ClientWithToken(token)
+		}
 	}
 
 	regras := RegrasConvitesPadrao()
-	data, _, err := client.From("app_settings").Select("value", "", false).Eq("key", ChaveRegrasConvites).Execute()
-	if err == nil {
-		var linhas []struct {
-			Value string `json:"value"`
-		}
-		if json.Unmarshal(data, &linhas) == nil && len(linhas) > 0 {
-			_ = json.Unmarshal([]byte(linhas[0].Value), &regras)
+	if client != nil {
+		data, _, err := client.From("app_settings").Select("value", "", false).Eq("key", ChaveRegrasConvites).Execute()
+		if err == nil {
+			var linhas []struct {
+				Value string `json:"value"`
+			}
+			if json.Unmarshal(data, &linhas) == nil && len(linhas) > 0 {
+				_ = json.Unmarshal([]byte(linhas[0].Value), &regras)
+			}
 		}
 	}
 

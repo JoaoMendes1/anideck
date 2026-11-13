@@ -3,11 +3,11 @@
 // atividade e regras da Mana, da Vitalidade e do Modo Descanso.
 import { useCallback, useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { Check, EyeOff, Eye, Trash2, Save, ShieldCheck, Flag, Trophy, Gift, Crown } from 'lucide-react'
+import { Check, EyeOff, Eye, Trash2, Save, ShieldCheck, Flag, Trophy, Gift, Crown, AlertCircle } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import { useToast } from '../contexts/ToastContext'
-import { MOTIVOS_DENUNCIA, tempoRelativo, type RegrasComunidade } from '../lib/comunidade'
-import type { RegrasConvites } from '../lib/convites'
+import { MOTIVOS_DENUNCIA, tempoRelativo, type RegrasComunidade, REGRAS_COMUNIDADE_PADRAO } from '../lib/comunidade'
+import { type RegrasConvites, REGRAS_CONVITES_PADRAO } from '../lib/convites'
 
 interface ItemModeracao {
   comentario: {
@@ -72,35 +72,70 @@ export default function AbaModeracao() {
   const [fila, setFila] = useState<ItemModeracao[] | null>(null)
   const [denunciasClas, setDenunciasClas] = useState<DenunciaCla[]>([])
   const [resumo, setResumo] = useState<Resumo | null>(null)
-  const [erro, setErro] = useState<string | null>(null)
+  const [erroFila, setErroFila] = useState<string | null>(null)
   const [ocupado, setOcupado] = useState<string | null>(null)
-  const [regras, setRegras] = useState<RegrasComunidade | null>(null)
+  const [regras, setRegras] = useState<RegrasComunidade>(REGRAS_COMUNIDADE_PADRAO)
   const [salvandoRegras, setSalvandoRegras] = useState(false)
-  const [regrasConvites, setRegrasConvites] = useState<RegrasConvites | null>(null)
+  const [regrasConvites, setRegrasConvites] = useState<RegrasConvites>(REGRAS_CONVITES_PADRAO)
   const [salvandoConvites, setSalvandoConvites] = useState(false)
   const [fechandoDesafios, setFechandoDesafios] = useState(false)
   const [fechandoTemporada, setFechandoTemporada] = useState(false)
   const [agora] = useState(() => Date.now())
 
   const carregar = useCallback(async () => {
+    const auth = await cabecalho()
+
+    // 1. Fila de moderação de comentários
     try {
-      const auth = await cabecalho()
-      const [resFila, resRegras, resClas, resConvites] = await Promise.all([
-        fetch('/api/admin/moderacao', { headers: auth }),
-        fetch('/api/admin/comunidade/regras', { headers: auth }),
-        fetch('/api/admin/clas/denuncias', { headers: auth }),
-        fetch('/api/admin/convites/config', { headers: auth }),
-      ])
-      if (!resFila.ok) throw new Error((await resFila.text()).trim() || 'Falha ao carregar a fila.')
-      const dados = (await resFila.json()) as { fila: ItemModeracao[]; resumo: Resumo }
-      setFila(dados.fila)
-      setResumo(dados.resumo)
-      if (resRegras.ok) setRegras((await resRegras.json()) as RegrasComunidade)
-      if (resClas.ok) setDenunciasClas(await resClas.json())
-      if (resConvites.ok) setRegrasConvites((await resConvites.json()) as RegrasConvites)
-      setErro(null)
+      const resFila = await fetch('/api/admin/moderacao', { headers: auth })
+      if (resFila.ok) {
+        const dados = (await resFila.json()) as { fila: ItemModeracao[]; resumo: Resumo }
+        setFila(dados.fila ?? [])
+        setResumo(dados.resumo ?? null)
+        setErroFila(null)
+      } else {
+        const msg = (await resFila.text()).trim() || 'Fila de moderação indisponível no momento.'
+        setErroFila(msg)
+        setFila([])
+      }
     } catch (e) {
-      setErro(e instanceof Error ? e.message : 'Falha ao carregar a fila.')
+      setErroFila(e instanceof Error ? e.message : 'Não foi possível carregar a fila de denúncias.')
+      setFila([])
+    }
+
+    // 2. Regras da comunidade (Mana, Vitalidade, Previsões)
+    try {
+      const resRegras = await fetch('/api/admin/comunidade/regras', { headers: auth })
+      if (resRegras.ok) {
+        const dadosRegras = (await resRegras.json()) as RegrasComunidade
+        setRegras(dadosRegras)
+      }
+    } catch {
+      // Mantém REGRAS_COMUNIDADE_PADRAO já inicializado
+    }
+
+    // 3. Denúncias de Clãs
+    try {
+      const resClas = await fetch('/api/admin/clas/denuncias', { headers: auth })
+      if (resClas.ok) {
+        const dadosClas = await resClas.json()
+        setDenunciasClas(Array.isArray(dadosClas) ? dadosClas : [])
+      } else {
+        setDenunciasClas([])
+      }
+    } catch {
+      setDenunciasClas([])
+    }
+
+    // 4. Regras de Convites (Fase 17.5b)
+    try {
+      const resConvites = await fetch('/api/admin/convites/config', { headers: auth })
+      if (resConvites.ok) {
+        const dadosConvites = (await resConvites.json()) as RegrasConvites
+        setRegrasConvites(dadosConvites)
+      }
+    } catch {
+      // Mantém REGRAS_CONVITES_PADRAO já inicializado
     }
   }, [])
 
@@ -249,15 +284,6 @@ export default function AbaModeracao() {
     }
   }
 
-  if (erro) {
-    return (
-      <div className="p-5 rounded-2xl bg-panel border border-coral/40 text-sm">
-        <p className="font-bold text-coral m-0">Moderação indisponível</p>
-        <p className="text-muted mt-1 mb-0">{erro} Confira se o sql/041 já foi aplicado no Supabase.</p>
-      </div>
-    )
-  }
-
   return (
     <div className="space-y-6 min-w-0">
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
@@ -281,6 +307,13 @@ export default function AbaModeracao() {
         <p className="text-[12.5px] text-muted mt-0 mb-4">
           Ocultar esconde o comentário de todos, menos do autor. Apagar remove de vez. Dispensar fecha as denúncias e mantém o comentário.
         </p>
+
+        {erroFila && (
+          <div className="mb-4 p-3 rounded-xl bg-coral/10 border border-coral/30 text-xs text-coral flex items-center gap-2">
+            <AlertCircle size={15} className="shrink-0" />
+            <span>Aviso do serviço de moderação: {erroFila}</span>
+          </div>
+        )}
 
         {fila === null ? (
           <div className="h-24 rounded-xl bg-panel-2 animate-pulse" />

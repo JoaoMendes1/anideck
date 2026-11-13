@@ -26,6 +26,14 @@ export interface RegrasConvites {
   titulo_convidado_admin: string
 }
 
+export const REGRAS_CONVITES_PADRAO: RegrasConvites = {
+  anicoins_anfitriao: 30,
+  xp_anfitriao: 50,
+  anicoins_convidado: 20,
+  anicoins_convidado_admin: 50,
+  titulo_convidado_admin: 'Convidado do Fundador',
+}
+
 /**
  * Busca o código de convite do membro atual.
  */

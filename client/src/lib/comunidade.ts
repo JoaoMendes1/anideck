@@ -15,6 +15,17 @@ export interface RegrasComunidade {
   previsoes_ativas?: boolean
 }
 
+export const REGRAS_COMUNIDADE_PADRAO: RegrasComunidade = {
+  mp_max: 50,
+  mp_regen_dia: 20,
+  mp_custo_comentario: 5,
+  hp_janela_dias: 14,
+  hp_dias_para_cheio: 7,
+  hp_piso: 20,
+  descanso_max_dias: 14,
+  previsoes_ativas: true,
+}
+
 export interface PerfilProprio {
   existe: boolean
   handle: string

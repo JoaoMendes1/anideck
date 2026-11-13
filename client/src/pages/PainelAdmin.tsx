@@ -155,7 +155,9 @@ export default function PainelAdmin() {
   const abaAtiva: AbaAdmin =
     abaParam === 'controle' || abaParam === 'trilhas' || abaParam === 'revisao_ia' || abaParam === 'guilda' || abaParam === 'moderacao' || abaParam === 'economia'
       ? abaParam
-      : 'curadoria'
+      : abaParam === 'comunidade'
+        ? 'moderacao'
+        : 'curadoria'
 
   const secaoControle = searchParams.get('secao') || 'anilist'
   const itemAtivo = abaAtiva === 'controle' ? `controle:${secaoControle}` : abaAtiva

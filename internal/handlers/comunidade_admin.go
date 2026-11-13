@@ -110,7 +110,16 @@ type resumoComunidade struct {
 func (h *ComunidadeHandler) HandleListarModeracao(w http.ResponseWriter, r *http.Request) {
 	client, err := database.ServiceRoleClient()
 	if err != nil {
-		http.Error(w, "Moderação indisponível: chave de serviço ausente.", http.StatusServiceUnavailable)
+		if token, ok := r.Context().Value(middleware.TokenKey).(string); ok && token != "" {
+			client, _ = database.ClientWithToken(token)
+		}
+	}
+	if client == nil {
+		log.Printf("[MODERACAO] cliente Supabase indisponível: %v", err)
+		responderJSON(w, http.StatusOK, map[string]interface{}{
+			"fila":   []itemModeracao{},
+			"resumo": resumoComunidade{},
+		})
 		return
 	}
 
@@ -122,7 +131,10 @@ func (h *ComunidadeHandler) HandleListarModeracao(w http.ResponseWriter, r *http
 		Execute()
 	if err != nil {
 		log.Printf("[MODERACAO] leitura das denúncias: %v", err)
-		http.Error(w, "Não foi possível carregar a fila.", http.StatusInternalServerError)
+		responderJSON(w, http.StatusOK, map[string]interface{}{
+			"fila":   []itemModeracao{},
+			"resumo": resumoComunidade{},
+		})
 		return
 	}
 	var denuncias []denunciaBruta
@@ -214,6 +226,11 @@ func (h *ComunidadeHandler) HandleModerar(w http.ResponseWriter, r *http.Request
 	id := chi.URLParam(r, "cid")
 	client, err := database.ServiceRoleClient()
 	if err != nil {
+		if token, ok := r.Context().Value(middleware.TokenKey).(string); ok && token != "" {
+			client, _ = database.ClientWithToken(token)
+		}
+	}
+	if client == nil {
 		http.Error(w, "Moderação indisponível: chave de serviço ausente.", http.StatusServiceUnavailable)
 		return
 	}
