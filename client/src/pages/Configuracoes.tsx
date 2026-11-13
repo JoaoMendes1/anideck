@@ -6,14 +6,30 @@ import { useCatalogoStatus } from '../contexts/CatalogoStatusContext'
 import EmBreve from '../components/EmBreve'
 import PerfilPublicoConfig from '../components/comunidade/PerfilPublicoConfig'
 import { TEMAS, aplicarTema, useTema } from '../lib/temas'
-import { ChevronDown, MessageSquare, Check, AlertTriangle, Sparkles, Ban, Upload, FileText } from 'lucide-react'
+import { ChevronDown, MessageSquare, Check, AlertTriangle, Sparkles, Ban, Upload, FileText, Palette, RotateCcw } from 'lucide-react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useRotulos } from '../hooks/useRotulos'
 import { lerPreferenciasDeGosto, salvarPreferenciasDeGosto } from '../lib/preferenciasGosto'
 import { invalidarCachesDoDeck, removerDaMemoria, chaveDoUsuario } from '../lib/cacheDeTela'
+import AvatarMontavel from '../components/AvatarMontavel'
+import {
+  normalizarAvatar,
+  salvarAvatarCustom,
+  type AvatarCustom,
+  AVATAR_PADRAO,
+  CORES_PELE,
+  CORES_CABELO,
+  CORES_OLHOS,
+  OPCOES_OLHOS,
+  OPCOES_BOCA,
+  OPCOES_CABELO,
+  OPCOES_ACESSORIO,
+  OPCOES_FUNDO,
+} from '../lib/avatar'
 
 const ABAS = [
     { id: 'perfil', label: 'Perfil' },
+    { id: 'avatar', label: 'Avatar Customizado' },
     { id: 'comunidade', label: 'Perfil público' },
     { id: 'gosto', label: 'Preferências de Gosto' },
     { id: 'importar', label: 'Importar Lista' },
@@ -92,6 +108,11 @@ export default function Configuracoes() {
     const [salvando, setSalvando] = useState(false)
     const [erro, setErro] = useState<string | null>(null)
     const [faqAberta, setFaqAberta] = useState<number | null>(0)
+
+    // Avatar montável em camadas (#192)
+    const [avatarCustom, setAvatarCustom] = useState<AvatarCustom>(AVATAR_PADRAO)
+    const [usaAvatarCustom, setUsaAvatarCustom] = useState(false)
+    const [salvandoAvatar, setSalvandoAvatar] = useState(false)
 
     // Preferências de Gosto (#139)
     const [generosFavoritos, setGenerosFavoritos] = useState<string[]>([])
@@ -222,6 +243,14 @@ export default function Configuracoes() {
             const prefs = lerPreferenciasDeGosto(uid, session?.user.user_metadata)
             setGenerosFavoritos(prefs.favoritos)
             setGenerosBloqueados(prefs.bloqueados)
+            if (uid) {
+                supabase.from('profiles').select('avatar_custom').eq('id', uid).maybeSingle().then(({ data }) => {
+                    if (data?.avatar_custom) {
+                        setAvatarCustom(normalizarAvatar(data.avatar_custom))
+                        setUsaAvatarCustom(true)
+                    }
+                })
+            }
             setCarregando(false)
         })
     }, [])
@@ -398,6 +427,38 @@ export default function Configuracoes() {
         }
     }
 
+    const handleSalvarAvatarCustom = async () => {
+        setSalvandoAvatar(true)
+        try {
+            const ok = await salvarAvatarCustom(avatarCustom)
+            if (ok) {
+                setUsaAvatarCustom(true)
+                showToast('Avatar customizado em camadas salvo!', 'success')
+                window.dispatchEvent(new CustomEvent('anideck:comunidade-atualizada'))
+            } else {
+                showToast('Falha ao salvar avatar customizado.', 'error')
+            }
+        } finally {
+            setSalvandoAvatar(false)
+        }
+    }
+
+    const handleRemoverAvatarCustom = async () => {
+        setSalvandoAvatar(true)
+        try {
+            const ok = await salvarAvatarCustom(null)
+            if (ok) {
+                setUsaAvatarCustom(false)
+                showToast('Avatar customizado desativado. Usando foto/inicial.')
+                window.dispatchEvent(new CustomEvent('anideck:comunidade-atualizada'))
+            } else {
+                showToast('Falha ao remover avatar customizado.', 'error')
+            }
+        } finally {
+            setSalvandoAvatar(false)
+        }
+    }
+
     const handleUploadArquivoFoto = async (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0]
         if (!file) return
@@ -535,7 +596,9 @@ export default function Configuracoes() {
                 <Card>
                     <div className="flex flex-col sm:flex-row sm:items-center gap-4 pb-5 mb-5 border-b border-line">
                         <div className="relative w-16 h-16 rounded-full overflow-hidden shrink-0 border-2 border-line bg-gradient-to-br from-holo-2 to-holo-3 flex items-center justify-center text-void font-anton text-2xl shadow-inner">
-                            {avatarUrl ? (
+                            {usaAvatarCustom ? (
+                                <AvatarMontavel avatar={avatarCustom} tamanho={64} />
+                            ) : avatarUrl ? (
                                 <img src={avatarUrl} alt="Avatar" className="w-full h-full object-cover" />
                             ) : (
                                 inicial
@@ -549,6 +612,14 @@ export default function Configuracoes() {
 
                         <div className="flex-1">
                             <div className="flex flex-wrap items-center gap-2">
+                                <a
+                                    href="#avatar"
+                                    className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-gradient-to-r from-holo-1 to-holo-2 text-void text-[12.5px] font-bold shadow-sm hover:opacity-90 transition-opacity"
+                                >
+                                    <Palette size={14} />
+                                    <span>Montar Avatar Vetorial</span>
+                                </a>
+
                                 <label className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-panel-2 border border-line text-[12.5px] font-bold text-text hover:border-holo-3 transition-colors cursor-pointer">
                                     <Upload size={14} />
                                     <span>{salvandoFoto ? 'Salvando...' : 'Carregar foto'}</span>
@@ -654,6 +725,255 @@ export default function Configuracoes() {
                                 'Salvar alterações'
                             )}
                         </button>
+                    </div>
+                </Card>
+            </Secao>
+
+            {/* AVATAR MONTÁVEL EM CAMADAS (FASE 17.6, #192) */}
+            <Secao id="avatar" titulo="Avatar Customizado">
+                <Card>
+                    <div className="flex flex-col lg:flex-row gap-8">
+                        {/* Preview e Ações */}
+                        <div className="flex flex-col items-center justify-center p-6 bg-panel-2 border border-line rounded-2xl shrink-0 lg:w-64 text-center">
+                            <div className="relative mb-4">
+                                <AvatarMontavel
+                                    avatar={avatarCustom}
+                                    tamanho={128}
+                                    className="border-2 border-line/80 shadow-2xl"
+                                />
+                                {usaAvatarCustom && (
+                                    <span className="absolute -bottom-2 left-1/2 -translate-x-1/2 px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-holo-2 text-void shadow">
+                                        Ativo no perfil
+                                    </span>
+                                )}
+                            </div>
+
+                            <p className="text-xs text-muted mb-4 max-w-[200px]">
+                                Avatar geométrico estilizado em camadas SVG leves e nítidas em qualquer tamanho.
+                            </p>
+
+                            <div className="flex flex-col gap-2 w-full">
+                                <button
+                                    type="button"
+                                    disabled={salvandoAvatar}
+                                    onClick={handleSalvarAvatarCustom}
+                                    className="w-full py-2.5 px-4 rounded-xl bg-gradient-to-r from-holo-1 to-holo-2 text-void text-xs font-extrabold shadow hover:opacity-90 disabled:opacity-50 transition-opacity cursor-pointer flex items-center justify-center gap-1.5"
+                                >
+                                    <Check size={14} />
+                                    <span>{salvandoAvatar ? 'Salvando...' : 'Salvar Avatar'}</span>
+                                </button>
+
+                                {usaAvatarCustom && (
+                                    <button
+                                        type="button"
+                                        disabled={salvandoAvatar}
+                                        onClick={handleRemoverAvatarCustom}
+                                        className="w-full py-2 px-3 rounded-xl border border-line text-xs font-bold text-coral hover:bg-coral/10 hover:border-coral/30 transition-colors cursor-pointer"
+                                    >
+                                        Desativar (Usar Foto)
+                                    </button>
+                                )}
+
+                                <button
+                                    type="button"
+                                    onClick={() => setAvatarCustom({ ...AVATAR_PADRAO })}
+                                    className="w-full py-1.5 px-3 rounded-xl border border-line/60 text-[11px] font-bold text-muted hover:text-text transition-colors flex items-center justify-center gap-1 cursor-pointer"
+                                >
+                                    <RotateCcw size={12} /> Redefinir Peças
+                                </button>
+                            </div>
+                        </div>
+
+                        {/* Editor de Peças */}
+                        <div className="flex-1 flex flex-col gap-5 min-w-0">
+                            {/* 1. Fundo */}
+                            <div>
+                                <label className="block text-xs font-bold text-muted mb-2 uppercase tracking-wide">
+                                    Tema do Fundo
+                                </label>
+                                <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                                    {OPCOES_FUNDO.map(f => (
+                                        <button
+                                            key={f.id}
+                                            type="button"
+                                            onClick={() => setAvatarCustom(prev => ({ ...prev, fundo: f.id }))}
+                                            className={`flex items-center gap-2 p-2 rounded-xl border text-xs font-medium text-left transition-all ${
+                                                avatarCustom.fundo === f.id
+                                                    ? 'border-holo-2 bg-holo-2/15 text-holo-2'
+                                                    : 'border-line bg-panel-2 text-text hover:border-line/80'
+                                            }`}
+                                        >
+                                            <span className="w-5 h-5 rounded-full shrink-0 shadow-inner" style={{ background: f.gradiente }} />
+                                            <span className="truncate">{f.rotulo}</span>
+                                        </button>
+                                    ))}
+                                </div>
+                            </div>
+
+                            {/* 2. Base e Pele */}
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                <div>
+                                    <label className="block text-xs font-bold text-muted mb-2 uppercase tracking-wide">
+                                        Formato da Base
+                                    </label>
+                                    <div className="flex gap-2">
+                                        {(['redondo', 'quadrado', 'losango'] as const).map(b => (
+                                            <button
+                                                key={b}
+                                                type="button"
+                                                onClick={() => setAvatarCustom(prev => ({ ...prev, base: b }))}
+                                                className={`flex-1 py-1.5 px-3 rounded-xl border text-xs font-bold capitalize transition-all ${
+                                                    avatarCustom.base === b
+                                                        ? 'border-holo-2 bg-holo-2/15 text-holo-2'
+                                                        : 'border-line bg-panel-2 text-muted hover:text-text'
+                                                }`}
+                                            >
+                                                {b}
+                                            </button>
+                                        ))}
+                                    </div>
+                                </div>
+
+                                <div>
+                                    <label className="block text-xs font-bold text-muted mb-2 uppercase tracking-wide">
+                                        Tom de Pele
+                                    </label>
+                                    <div className="flex flex-wrap gap-2">
+                                        {CORES_PELE.map(c => (
+                                            <button
+                                                key={c}
+                                                type="button"
+                                                onClick={() => setAvatarCustom(prev => ({ ...prev, pele: c }))}
+                                                className={`w-7 h-7 rounded-full border-2 transition-transform ${
+                                                    avatarCustom.pele === c ? 'scale-110 border-holo-2 shadow' : 'border-line hover:scale-105'
+                                                }`}
+                                                style={{ backgroundColor: c }}
+                                            />
+                                        ))}
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* 3. Olhos e Cor */}
+                            <div>
+                                <label className="block text-xs font-bold text-muted mb-2 uppercase tracking-wide">
+                                    Olhos & Íris
+                                </label>
+                                <div className="flex flex-wrap gap-2 mb-3">
+                                    {OPCOES_OLHOS.map(o => (
+                                        <button
+                                            key={o.id}
+                                            type="button"
+                                            onClick={() => setAvatarCustom(prev => ({ ...prev, olhos: o.id }))}
+                                            className={`px-3 py-1.5 rounded-xl border text-xs font-medium transition-all ${
+                                                avatarCustom.olhos === o.id
+                                                    ? 'border-holo-2 bg-holo-2/15 text-holo-2'
+                                                    : 'border-line bg-panel-2 text-muted hover:text-text'
+                                            }`}
+                                        >
+                                            {o.rotulo}
+                                        </button>
+                                    ))}
+                                </div>
+                                <div className="flex items-center gap-2">
+                                    <span className="text-[11px] text-muted-2">Cor da íris:</span>
+                                    {CORES_OLHOS.map(c => (
+                                        <button
+                                            key={c}
+                                            type="button"
+                                            onClick={() => setAvatarCustom(prev => ({ ...prev, cor_olhos: c }))}
+                                            className={`w-5 h-5 rounded-full border transition-transform ${
+                                                avatarCustom.cor_olhos === c ? 'scale-125 border-holo-2 ring-2 ring-holo-2/30' : 'border-line/70'
+                                            }`}
+                                            style={{ backgroundColor: c }}
+                                        />
+                                    ))}
+                                </div>
+                            </div>
+
+                            {/* 4. Boca */}
+                            <div>
+                                <label className="block text-xs font-bold text-muted mb-2 uppercase tracking-wide">
+                                    Expressão da Boca
+                                </label>
+                                <div className="flex flex-wrap gap-2">
+                                    {OPCOES_BOCA.map(b => (
+                                        <button
+                                            key={b.id}
+                                            type="button"
+                                            onClick={() => setAvatarCustom(prev => ({ ...prev, boca: b.id }))}
+                                            className={`px-3 py-1.5 rounded-xl border text-xs font-medium transition-all ${
+                                                avatarCustom.boca === b.id
+                                                    ? 'border-holo-2 bg-holo-2/15 text-holo-2'
+                                                    : 'border-line bg-panel-2 text-muted hover:text-text'
+                                            }`}
+                                        >
+                                            {b.rotulo}
+                                        </button>
+                                    ))}
+                                </div>
+                            </div>
+
+                            {/* 5. Cabelo e Cor */}
+                            <div>
+                                <label className="block text-xs font-bold text-muted mb-2 uppercase tracking-wide">
+                                    Cabelo & Penteado
+                                </label>
+                                <div className="flex flex-wrap gap-2 mb-3">
+                                    {OPCOES_CABELO.map(c => (
+                                        <button
+                                            key={c.id}
+                                            type="button"
+                                            onClick={() => setAvatarCustom(prev => ({ ...prev, cabelo: c.id }))}
+                                            className={`px-3 py-1.5 rounded-xl border text-xs font-medium transition-all ${
+                                                avatarCustom.cabelo === c.id
+                                                    ? 'border-holo-2 bg-holo-2/15 text-holo-2'
+                                                    : 'border-line bg-panel-2 text-muted hover:text-text'
+                                            }`}
+                                        >
+                                            {c.rotulo}
+                                        </button>
+                                    ))}
+                                </div>
+                                <div className="flex items-center gap-2">
+                                    <span className="text-[11px] text-muted-2">Cor do cabelo:</span>
+                                    {CORES_CABELO.map(c => (
+                                        <button
+                                            key={c}
+                                            type="button"
+                                            onClick={() => setAvatarCustom(prev => ({ ...prev, cor_cabelo: c }))}
+                                            className={`w-5 h-5 rounded-full border transition-transform ${
+                                                avatarCustom.cor_cabelo === c ? 'scale-125 border-holo-2 ring-2 ring-holo-2/30' : 'border-line/70'
+                                            }`}
+                                            style={{ backgroundColor: c }}
+                                        />
+                                    ))}
+                                </div>
+                            </div>
+
+                            {/* 6. Acessório */}
+                            <div>
+                                <label className="block text-xs font-bold text-muted mb-2 uppercase tracking-wide">
+                                    Acessório Especial
+                                </label>
+                                <div className="flex flex-wrap gap-2">
+                                    {OPCOES_ACESSORIO.map(a => (
+                                        <button
+                                            key={a.id}
+                                            type="button"
+                                            onClick={() => setAvatarCustom(prev => ({ ...prev, acessorio: a.id }))}
+                                            className={`px-3 py-1.5 rounded-xl border text-xs font-medium transition-all ${
+                                                avatarCustom.acessorio === a.id
+                                                    ? 'border-gold bg-gold/15 text-gold'
+                                                    : 'border-line bg-panel-2 text-muted hover:text-text'
+                                            }`}
+                                        >
+                                            {a.rotulo}
+                                        </button>
+                                    ))}
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </Card>
             </Secao>
