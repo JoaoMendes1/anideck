@@ -82,13 +82,23 @@ func (h *ChefaoHandler) HandleObterChefaoAtual(w http.ResponseWriter, r *http.Re
 		return
 	}
 
-	params := map[string]interface{}{}
+	var params map[string]interface{}
 	if temporada != "" {
-		params["p_temporada"] = temporada
+		params = map[string]interface{}{"p_temporada": temporada}
 	}
 
 	raw := strings.TrimSpace(client.Rpc("obter_chefao_atual", "", params))
-	if raw == "" || strings.HasPrefix(raw, "error") {
+	// Fallback suave com database.Client se o client autenticado receber erro de permissão
+	if raw == "" || strings.HasPrefix(raw, "error") || (strings.Contains(raw, "\"code\"") && strings.Contains(raw, "\"message\"")) {
+		if client != database.Client && database.Client != nil {
+			fallbackRaw := strings.TrimSpace(database.Client.Rpc("obter_chefao_atual", "", params))
+			if fallbackRaw != "" && !strings.Contains(fallbackRaw, "\"code\"") && !strings.HasPrefix(fallbackRaw, "error") {
+				raw = fallbackRaw
+			}
+		}
+	}
+
+	if raw == "" || strings.HasPrefix(raw, "error") || (strings.Contains(raw, "\"code\"") && strings.Contains(raw, "\"message\"")) {
 		log.Printf("[CHEFAO] Erro ao obter chefão: %s", raw)
 		http.Error(w, "Erro ao consultar chefão da temporada.", http.StatusInternalServerError)
 		return

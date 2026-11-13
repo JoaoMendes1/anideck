@@ -40,16 +40,22 @@ export interface StatusChefao {
  * Consulta o status do chefão da temporada ativa ou informada.
  */
 export async function obterStatusChefao(temporada?: string): Promise<StatusChefao | null> {
-  const { data: { session } } = await supabase.auth.getSession()
-  const headers: HeadersInit = {}
-  if (session?.access_token) {
-    headers['Authorization'] = `Bearer ${session.access_token}`
-  }
+  try {
+    const { data: { session } } = await supabase.auth.getSession()
+    const headers: HeadersInit = {}
+    if (session?.access_token) {
+      headers['Authorization'] = `Bearer ${session.access_token}`
+    }
 
-  const query = temporada ? `?temporada=${encodeURIComponent(temporada)}` : ''
-  const res = await fetch(`/api/chefao${query}`, { headers })
-  if (!res.ok) return null
-  return res.json()
+    const query = temporada ? `?temporada=${encodeURIComponent(temporada)}` : ''
+    const res = await fetch(`/api/chefao${query}`, { headers })
+    if (!res.ok) return null
+    const json = await res.json()
+    if (!json || typeof json !== 'object' || json.code) return null
+    return json
+  } catch {
+    return null
+  }
 }
 
 /**
