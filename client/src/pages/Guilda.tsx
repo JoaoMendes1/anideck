@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
-import { Shield, Sparkles, Lock, Flame, Award, ChevronRight, Send, ShoppingBag } from 'lucide-react'
+import { Shield, Sparkles, Lock, Flame, Award, ChevronRight, Send, ShoppingBag, UserRound } from 'lucide-react'
 import { useSessao } from '../contexts/SessaoContext'
 import { useCarteira } from '../hooks/useCarteira'
 import { useComunidade } from '../hooks/useComunidade'
@@ -116,7 +116,13 @@ export default function Guilda() {
               Rank mede sua constância presente; Especialista de Gênero reconhece sua bagagem acumulada.
             </p>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2">
+            <Link
+              to="/personagem"
+              className="inline-flex items-center gap-1.5 px-4 py-2 rounded-full bg-gold/15 border border-gold/40 hover:bg-gold/25 text-xs font-bold text-gold transition-colors"
+            >
+              <UserRound size={13} /> Meu Personagem →
+            </Link>
             <Link
               to="/loja"
               className="inline-flex items-center gap-1.5 px-4 py-2 rounded-full bg-holo-3/15 border border-holo-3/40 hover:bg-holo-3/25 text-xs font-bold text-holo-3 transition-colors"

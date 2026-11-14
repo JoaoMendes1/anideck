@@ -1,0 +1,413 @@
+// client/src/pages/Personagem.tsx
+// Meu Personagem (Fase 18.1): o aventureiro do usuário, com a arte do estágio atual.
+//
+// Mobile-first: no celular a arte vem em cima e a ficha embaixo; a partir de `lg` as duas
+// ficam lado a lado. Nível, XP e rank são os da Guilda: o personagem não tem XP próprio.
+import { useCallback, useEffect, useState, type FormEvent } from 'react'
+import { Link } from 'react-router-dom'
+import { ChevronLeft, Footprints, Gem, Lock, Orbit, Shield, Shirt, Sword, type LucideIcon } from 'lucide-react'
+import {
+  ALTURA_DA_ARTE,
+  LARGURA_DA_ARTE,
+  NOME_MAXIMO,
+  PERSONAGEM_BASE_PADRAO,
+  arteDoEstagio,
+  despertarPersonagem,
+  obterPersonagem,
+  rotuloDaClasse,
+  rotuloDoElemento,
+  temArtePropria,
+  textoDoProximoEstagio,
+  validarNomeDoPersonagem,
+  type RespostaPersonagem,
+} from '../lib/personagem'
+
+// A luz atrás do personagem cresce com o estágio. São valores inteiros de CSS, e não
+// classes montadas por partes: o Tailwind só gera a classe que aparece completa no código.
+const LUZ_DO_ESTAGIO: Record<string, string> = {
+  iniciante:
+    'radial-gradient(60% 46% at 50% 58%, color-mix(in srgb, var(--color-holo-3) 16%, transparent), transparent 72%)',
+  aventureiro:
+    'radial-gradient(62% 48% at 50% 56%, color-mix(in srgb, var(--color-holo-2) 42%, transparent), transparent 72%)',
+  veterano:
+    'radial-gradient(64% 50% at 50% 56%, color-mix(in srgb, var(--color-holo-2) 52%, transparent), transparent 72%)',
+  lendario:
+    'radial-gradient(66% 52% at 50% 56%, color-mix(in srgb, var(--color-holo-2) 56%, transparent), color-mix(in srgb, var(--color-gold) 10%, transparent) 55%, transparent 76%)',
+}
+
+const ANEL_DO_ESTAGIO: Record<string, string> = {
+  iniciante: 'border-holo-3/35',
+  aventureiro: 'border-holo-2/60',
+  veterano: 'border-holo-2/80',
+  lendario: 'border-gold/70',
+}
+
+const SLOTS: { id: string; rotulo: string; Icone: LucideIcon }[] = [
+  { id: 'arma', rotulo: 'Arma', Icone: Sword },
+  { id: 'armadura', rotulo: 'Armadura', Icone: Shield },
+  { id: 'capa', rotulo: 'Capa', Icone: Shirt },
+  { id: 'botas', rotulo: 'Botas', Icone: Footprints },
+  { id: 'acessorio', rotulo: 'Acessório', Icone: Gem },
+]
+
+const CONTAINER = 'w-full min-w-0 max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-10 pt-6 pb-24'
+const ROTULO_DE_SECAO = 'font-mono text-[11px] font-semibold uppercase tracking-widest text-muted m-0'
+
+function Cabecalho() {
+  return (
+    <header className="mb-4 flex items-center gap-1 select-none">
+      <Link
+        to="/guilda"
+        aria-label="Voltar para a Guilda"
+        className="-ml-2 flex h-11 w-11 items-center justify-center rounded-full text-muted hover:text-text transition-colors"
+      >
+        <ChevronLeft size={22} />
+      </Link>
+      <p className={ROTULO_DE_SECAO}>Meu Personagem</p>
+    </header>
+  )
+}
+
+function TelaDespertar({ aoDespertar }: { aoDespertar: (dados: RespostaPersonagem) => void }) {
+  const [nome, setNome] = useState('')
+  const [erro, setErro] = useState('')
+  const [enviando, setEnviando] = useState(false)
+  const arte = arteDoEstagio(PERSONAGEM_BASE_PADRAO, 'iniciante')
+
+  const enviar = async (evento: FormEvent<HTMLFormElement>) => {
+    evento.preventDefault()
+    if (enviando) return
+
+    const conferido = validarNomeDoPersonagem(nome)
+    if (conferido.erro) {
+      setErro(conferido.erro)
+      return
+    }
+
+    setErro('')
+    setEnviando(true)
+    const resultado = await despertarPersonagem(conferido.nome)
+    setEnviando(false)
+
+    if (resultado.dados) {
+      aoDespertar(resultado.dados)
+      return
+    }
+    setErro(resultado.erro ?? 'Não foi possível despertar agora.')
+  }
+
+  return (
+    <div className={CONTAINER}>
+      <Cabecalho />
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,1fr)_420px] lg:items-center">
+        <div
+          className="relative h-[min(52vh,420px)] overflow-hidden rounded-2xl border border-line bg-void lg:h-[600px]"
+          style={{
+            backgroundImage:
+              'radial-gradient(58% 50% at 50% 56%, var(--color-holo-2), color-mix(in srgb, var(--color-holo-2) 35%, transparent) 40%, transparent 78%)',
+          }}
+        >
+          <div
+            aria-hidden="true"
+            className="absolute bottom-3 left-1/2 h-12 w-64 -translate-x-1/2 rounded-[50%] border border-text/40"
+          />
+          {arte && (
+            <img
+              src={arte.inteira}
+              width={LARGURA_DA_ARTE}
+              height={ALTURA_DA_ARTE}
+              alt="Silhueta de um aventureiro ainda sem nome"
+              decoding="async"
+              className="absolute bottom-1 left-1/2 h-[96%] w-auto max-w-none -translate-x-1/2 object-contain brightness-0"
+            />
+          )}
+        </div>
+
+        <form onSubmit={enviar} className="flex flex-col gap-4" noValidate>
+          <p className="font-mono text-[11px] font-semibold uppercase tracking-widest text-holo-3 m-0">O Despertar</p>
+          <h1 className="font-anton text-[clamp(2rem,8vw,2.6rem)] uppercase leading-[1.05] m-0">
+            Um novo mundo te espera
+          </h1>
+          <p className="text-sm leading-relaxed text-muted m-0">
+            Cada episódio que você assiste fortalece o seu aventureiro. Dê um nome a ele para começar a jornada.
+          </p>
+
+          <div className="flex flex-wrap gap-2">
+            <span className="rounded-full border border-line bg-panel px-3 py-1.5 text-xs font-bold">
+              Classe inicial: Espadachim
+            </span>
+            <span className="rounded-full border border-line bg-panel px-3 py-1.5 text-xs font-bold">
+              Elemento: Éter
+            </span>
+          </div>
+
+          <div className="flex flex-col gap-2">
+            <label htmlFor="nome-do-aventureiro" className={ROTULO_DE_SECAO}>
+              Nome do aventureiro
+            </label>
+            <input
+              id="nome-do-aventureiro"
+              type="text"
+              value={nome}
+              onChange={(e) => setNome(e.target.value)}
+              maxLength={NOME_MAXIMO}
+              autoComplete="off"
+              placeholder="Como ele vai se chamar?"
+              aria-invalid={erro ? true : undefined}
+              aria-describedby="ajuda-do-nome"
+              className="h-13 rounded-2xl border border-line bg-panel-2 px-4 text-base font-semibold text-text placeholder:text-muted-2 focus:border-holo-3 focus:outline-none"
+            />
+            <p id="ajuda-do-nome" className="text-xs leading-snug text-muted m-0">
+              De 2 a 24 caracteres. Por enquanto, só você vê este nome, e ele não pode ser trocado depois.
+            </p>
+            {erro && (
+              <p role="alert" className="text-xs font-bold text-coral m-0">
+                {erro}
+              </p>
+            )}
+          </div>
+
+          <button
+            type="submit"
+            disabled={enviando}
+            className="mt-2 h-13 rounded-full bg-gradient-to-r from-holo-1 to-holo-3 px-6 text-base font-extrabold text-void transition-opacity hover:opacity-90 disabled:opacity-60 cursor-pointer disabled:cursor-wait"
+          >
+            {enviando ? 'Despertando…' : 'Despertar'}
+          </button>
+        </form>
+      </div>
+    </div>
+  )
+}
+
+function FichaDoPersonagem({ dados }: { dados: RespostaPersonagem }) {
+  const { personagem, progressao, estagio, proximo_estagio: proximoEstagio } = dados
+  if (!personagem || !progressao || !estagio) return null
+
+  const estagios = dados.estagios ?? []
+  const base = personagem.personagem_base
+  const arte = arteDoEstagio(base, estagio.id)
+  const progressoPct = Math.min(100, Math.max(0, progressao.progresso_pct))
+
+  return (
+    <div className={CONTAINER}>
+      <Cabecalho />
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,1fr)_420px] lg:items-start">
+        <section
+          aria-label="Arte do personagem"
+          className="relative h-[min(62vh,520px)] overflow-hidden rounded-2xl border border-line bg-void lg:h-[680px]"
+          style={{ backgroundImage: LUZ_DO_ESTAGIO[estagio.id] ?? LUZ_DO_ESTAGIO.aventureiro }}
+        >
+          <div
+            aria-hidden="true"
+            className={`absolute bottom-3.5 left-1/2 h-13 w-72 -translate-x-1/2 rounded-[50%] border ${ANEL_DO_ESTAGIO[estagio.id] ?? 'border-holo-2/60'}`}
+          />
+          <div
+            aria-hidden="true"
+            className={`absolute bottom-6 left-1/2 h-8 w-52 -translate-x-1/2 rounded-[50%] border opacity-60 ${ANEL_DO_ESTAGIO[estagio.id] ?? 'border-holo-2/60'}`}
+          />
+          {arte && (
+            <img
+              src={arte.inteira}
+              width={LARGURA_DA_ARTE}
+              height={ALTURA_DA_ARTE}
+              alt={`${personagem.nome}, ${rotuloDaClasse(personagem.classe)}, no estágio ${estagio.nome}`}
+              decoding="async"
+              fetchPriority="high"
+              className="absolute bottom-2 left-1/2 h-[96%] w-auto max-w-none -translate-x-1/2 object-contain"
+            />
+          )}
+          <span className="absolute left-4 top-4 rounded-full border border-gold bg-void/70 px-3 py-1.5 font-mono text-xs font-semibold tracking-wider text-gold">
+            RANK {progressao.rank}
+          </span>
+          <span className="absolute right-4 top-4 rounded-full border border-holo-2 bg-void/70 px-3 py-1.5 font-mono text-xs font-semibold uppercase tracking-wider text-text">
+            {estagio.nome}
+          </span>
+        </section>
+
+        <div className="flex min-w-0 flex-col gap-6">
+          <div className="flex flex-col gap-2.5">
+            <h1 className="font-anton text-[clamp(2.2rem,9vw,2.8rem)] uppercase leading-none m-0 break-words">
+              {personagem.nome}
+            </h1>
+            <div className="flex flex-wrap gap-2">
+              <span className="inline-flex items-center gap-1.5 rounded-full border border-line bg-panel px-3 py-1.5 text-xs font-bold">
+                <Sword size={14} className="text-holo-3" aria-hidden="true" />
+                {rotuloDaClasse(personagem.classe)}
+              </span>
+              <span className="inline-flex items-center gap-1.5 rounded-full border border-line bg-panel px-3 py-1.5 text-xs font-bold">
+                <Orbit size={14} className="text-holo-2" aria-hidden="true" />
+                {rotuloDoElemento(personagem.elemento)}
+              </span>
+            </div>
+          </div>
+
+          <section aria-label="Progressão" className="flex flex-col gap-3 rounded-2xl border border-line bg-panel p-4">
+            <div className="flex items-end justify-between gap-3">
+              <div className="flex items-baseline gap-2">
+                <span className={ROTULO_DE_SECAO}>Nível</span>
+                <span className="font-anton text-4xl leading-none">{progressao.nivel}</span>
+              </div>
+              <span className="text-right text-xs font-bold text-gold">{progressao.titulo_rank}</span>
+            </div>
+            <div
+              role="progressbar"
+              aria-label="Experiência no nível atual"
+              aria-valuemin={0}
+              aria-valuemax={100}
+              aria-valuenow={progressoPct}
+              className="h-2 overflow-hidden rounded-full bg-line"
+            >
+              <div
+                className="h-full rounded-full bg-gradient-to-r from-holo-2 to-holo-3"
+                style={{ width: `${progressoPct}%` }}
+              />
+            </div>
+            <div className="flex justify-between gap-3 font-mono text-xs text-muted">
+              <span>
+                {progressao.xp_no_nivel.toLocaleString('pt-BR')} / {progressao.xp_para_proximo.toLocaleString('pt-BR')} XP
+              </span>
+              <Link to="/guilda" className="text-muted underline-offset-2 hover:text-text hover:underline">
+                da Guilda
+              </Link>
+            </div>
+            <div className="h-px bg-line" />
+            <div className="flex items-center justify-between gap-3 text-xs">
+              <span className="text-muted">Próximo estágio</span>
+              <span className="text-right font-bold">{textoDoProximoEstagio(proximoEstagio)}</span>
+            </div>
+          </section>
+
+          <section aria-labelledby="titulo-da-jornada" className="flex flex-col gap-3">
+            <h2 id="titulo-da-jornada" className={ROTULO_DE_SECAO}>
+              Jornada
+            </h2>
+            <ol className="m-0 grid list-none grid-cols-4 gap-2.5 p-0">
+              {estagios.map((item) => {
+                const atual = item.id === estagio.id
+                const mostraArte = temArtePropria(base, item.id) || item.alcancado
+                const mini = mostraArte ? arteDoEstagio(base, item.id)?.mini : undefined
+                return (
+                  <li key={item.id} aria-current={atual ? 'step' : undefined} className="flex min-w-0 flex-col gap-1.5">
+                    <div
+                      className={`relative h-24 overflow-hidden rounded-xl border-2 bg-panel ${
+                        atual ? 'border-gold' : mini ? 'border-line' : 'border-dashed border-line'
+                      }`}
+                    >
+                      {mini ? (
+                        <img
+                          src={mini}
+                          width={256}
+                          height={384}
+                          alt=""
+                          loading="lazy"
+                          decoding="async"
+                          className={`absolute -top-1.5 left-1/2 h-auto w-[150px] max-w-none -translate-x-1/2 ${
+                            item.alcancado ? '' : 'opacity-20 brightness-0 invert'
+                          }`}
+                        />
+                      ) : (
+                        <span className="absolute inset-0 flex items-center justify-center text-muted">
+                          <Lock size={20} aria-hidden="true" />
+                        </span>
+                      )}
+                    </div>
+                    <span
+                      className={`truncate text-xs font-bold leading-tight ${
+                        atual ? 'text-gold' : item.alcancado ? 'text-text' : 'text-muted'
+                      }`}
+                    >
+                      {item.nome}
+                    </span>
+                    <span className="font-mono text-[11px] leading-tight text-muted">nível {item.nivel_minimo}</span>
+                  </li>
+                )
+              })}
+            </ol>
+          </section>
+
+          <section aria-labelledby="titulo-dos-equipamentos" className="flex flex-col gap-3">
+            <div className="flex items-center justify-between gap-3">
+              <h2 id="titulo-dos-equipamentos" className={ROTULO_DE_SECAO}>
+                Equipamentos
+              </h2>
+              <span className="rounded-full border border-line px-2.5 py-0.5 font-mono text-[11px] text-muted">
+                em breve
+              </span>
+            </div>
+            <ul className="m-0 grid list-none grid-cols-5 gap-2.5 p-0">
+              {SLOTS.map(({ id, rotulo, Icone }) => (
+                <li key={id} className="flex min-w-0 flex-col items-center gap-1.5">
+                  <span className="flex h-16 w-full items-center justify-center rounded-xl border border-dashed border-line text-muted">
+                    <Icone size={22} aria-hidden="true" />
+                  </span>
+                  <span className="max-w-full truncate text-[11px] font-semibold text-muted">{rotulo}</span>
+                </li>
+              ))}
+            </ul>
+          </section>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+export default function Personagem() {
+  const [dados, setDados] = useState<RespostaPersonagem | null>(null)
+  const [carregando, setCarregando] = useState(true)
+  const [tentativa, setTentativa] = useState(0)
+
+  useEffect(() => {
+    let ativo = true
+    async function carregar() {
+      const resposta = await obterPersonagem()
+      if (!ativo) return
+      setDados(resposta)
+      setCarregando(false)
+    }
+    carregar()
+    return () => {
+      ativo = false
+    }
+  }, [tentativa])
+
+  const tentarDeNovo = useCallback(() => {
+    setCarregando(true)
+    setTentativa((n) => n + 1)
+  }, [])
+
+  if (carregando) {
+    return (
+      <div className={CONTAINER}>
+        <div className="grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,1fr)_420px]">
+          <div className="h-[min(62vh,520px)] animate-pulse rounded-2xl border border-line bg-panel lg:h-[680px]" />
+          <div className="h-72 animate-pulse rounded-2xl border border-line bg-panel" />
+        </div>
+      </div>
+    )
+  }
+
+  if (!dados) {
+    return (
+      <div className={`${CONTAINER} text-center`}>
+        <div className="mx-auto mt-6 max-w-md rounded-2xl border border-line bg-panel p-6">
+          <h1 className="font-anton text-2xl uppercase mb-2">Personagem indisponível no momento</h1>
+          <p className="mb-4 text-sm text-muted">Não foi possível carregar o seu aventureiro agora.</p>
+          <button
+            type="button"
+            onClick={tentarDeNovo}
+            className="inline-flex cursor-pointer items-center gap-2 rounded-full bg-gradient-to-r from-holo-1 to-holo-3 px-5 py-2.5 text-xs font-bold text-void"
+          >
+            Tentar de novo
+          </button>
+        </div>
+      </div>
+    )
+  }
+
+  if (!dados.existe) {
+    return <TelaDespertar aoDespertar={setDados} />
+  }
+
+  return <FichaDoPersonagem dados={dados} />
+}
