@@ -160,20 +160,35 @@ export function normalizarAvatar(raw: unknown): AvatarCustom {
   }
 }
 
+export type ResultadoAvatar = 'ok' | 'sem_perfil' | 'erro'
+
+/**
+ * Lê a resposta da RPC salvar_avatar_customizado. A função devolve ok=false com
+ * motivo "sem_perfil" quando o usuário ainda não tem linha em profiles: nesse caso
+ * nada foi gravado, e ausência de erro não significa que salvou.
+ */
+export function interpretarRespostaAvatar(dados: unknown, erro: unknown): ResultadoAvatar {
+  if (erro) return 'erro'
+  if (!dados || typeof dados !== 'object') return 'erro'
+  const resposta = dados as { ok?: unknown; motivo?: unknown }
+  if (resposta.ok === true) return 'ok'
+  return resposta.motivo === 'sem_perfil' ? 'sem_perfil' : 'erro'
+}
+
 /**
  * Salva a customização de avatar do usuário no Supabase.
  */
-export async function salvarAvatarCustom(avatar: AvatarCustom | null): Promise<boolean> {
+export async function salvarAvatarCustom(avatar: AvatarCustom | null): Promise<ResultadoAvatar> {
   try {
     const { data: { session } } = await supabase.auth.getSession()
-    if (!session?.access_token) return false
+    if (!session?.access_token) return 'erro'
 
-    const { error } = await supabase.rpc('salvar_avatar_customizado', {
+    const { data, error } = await supabase.rpc('salvar_avatar_customizado', {
       p_avatar: avatar,
     })
 
-    return !error
+    return interpretarRespostaAvatar(data, error)
   } catch {
-    return false
+    return 'erro'
   }
 }

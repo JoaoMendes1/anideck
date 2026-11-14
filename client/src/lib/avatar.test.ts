@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { normalizarAvatar, AVATAR_PADRAO } from './avatar'
+import { normalizarAvatar, interpretarRespostaAvatar, AVATAR_PADRAO } from './avatar'
 
 describe('normalizarAvatar', () => {
   it('retorna os valores padrão quando recebe null ou undefined', () => {
@@ -47,5 +47,23 @@ describe('normalizarAvatar', () => {
     }
 
     expect(normalizarAvatar(avatar)).toEqual(avatar)
+  })
+})
+
+describe('interpretarRespostaAvatar', () => {
+  it('reconhece o salvamento confirmado pela função', () => {
+    expect(interpretarRespostaAvatar({ ok: true, avatar: AVATAR_PADRAO }, null)).toBe('ok')
+    expect(interpretarRespostaAvatar({ ok: true, avatar: null }, null)).toBe('ok')
+  })
+
+  it('não trata como salvo quando o usuário ainda não tem perfil', () => {
+    expect(interpretarRespostaAvatar({ ok: false, motivo: 'sem_perfil' }, null)).toBe('sem_perfil')
+  })
+
+  it('devolve erro quando a chamada falha ou a resposta não confirma', () => {
+    expect(interpretarRespostaAvatar(null, { message: 'column "id" does not exist' })).toBe('erro')
+    expect(interpretarRespostaAvatar(null, null)).toBe('erro')
+    expect(interpretarRespostaAvatar({ ok: false }, null)).toBe('erro')
+    expect(interpretarRespostaAvatar('ok', null)).toBe('erro')
   })
 })

@@ -244,7 +244,7 @@ export default function Configuracoes() {
             setGenerosFavoritos(prefs.favoritos)
             setGenerosBloqueados(prefs.bloqueados)
             if (uid) {
-                supabase.from('profiles').select('avatar_custom').eq('id', uid).maybeSingle().then(({ data }) => {
+                supabase.from('profiles').select('avatar_custom').eq('user_id', uid).maybeSingle().then(({ data }) => {
                     if (data?.avatar_custom) {
                         setAvatarCustom(normalizarAvatar(data.avatar_custom))
                         setUsaAvatarCustom(true)
@@ -430,11 +430,13 @@ export default function Configuracoes() {
     const handleSalvarAvatarCustom = async () => {
         setSalvandoAvatar(true)
         try {
-            const ok = await salvarAvatarCustom(avatarCustom)
-            if (ok) {
+            const resultado = await salvarAvatarCustom(avatarCustom)
+            if (resultado === 'ok') {
                 setUsaAvatarCustom(true)
                 showToast('Avatar customizado em camadas salvo!', 'success')
                 window.dispatchEvent(new CustomEvent('anideck:comunidade-atualizada'))
+            } else if (resultado === 'sem_perfil') {
+                showToast('Crie seu perfil público (aba Perfil público) para salvar o avatar.', 'error')
             } else {
                 showToast('Falha ao salvar avatar customizado.', 'error')
             }
@@ -446,8 +448,8 @@ export default function Configuracoes() {
     const handleRemoverAvatarCustom = async () => {
         setSalvandoAvatar(true)
         try {
-            const ok = await salvarAvatarCustom(null)
-            if (ok) {
+            const resultado = await salvarAvatarCustom(null)
+            if (resultado === 'ok' || resultado === 'sem_perfil') {
                 setUsaAvatarCustom(false)
                 showToast('Avatar customizado desativado. Usando foto/inicial.')
                 window.dispatchEvent(new CustomEvent('anideck:comunidade-atualizada'))

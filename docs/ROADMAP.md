@@ -788,6 +788,11 @@ experiência pequena e funcional de cada vez.
 > numeração e não abrem escopo novo. Ficam registrados aqui em ordem cronológica inversa para
 > não sumirem: fase concluída não deve ser reaberta só para receber um conserto.
 
+### 14/11/2026 — Avatar montável volta a salvar e carregar (#203)
+
+- [x] **`sql/067`:** `salvar_avatar_customizado` filtra por `user_id`; o `065` usava `id`, coluna que `profiles` não tem. Quem ainda não tem perfil público recebe aviso para criá-lo, em vez de um sucesso que não gravou nada.
+- [x] **Leitura por `user_id`** em Configurações, com teste da interpretação da resposta da função.
+
 ### 14/11/2026 — Barra superior sem corte do sino e do menu de perfil (#202)
 
 - [x] **Navbar cabe de 320 a 1440 px:** logado, de 768 a 1279 px ficam Início, Descobrir, Meu Deck e Agenda; Rankings, Clãs, Loja e Meu Gosto seguem no menu de perfil. De 768 a 1023 px somem o nome ao lado do avatar e o selo de streak; abaixo de 380 px, o texto da marca. Solução provisória até o redesenho da barra.

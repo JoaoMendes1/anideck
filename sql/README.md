@@ -96,6 +96,7 @@ SELECT pg_get_viewdef('nome_da_view'::regclass, true);
 | `064_curadoria_colaborativa.sql` | Fase 17 (17.7, #188): Curadoria colaborativa — tabela `curation_collab_suggestions`, validação de rank mínimo/limite diário, RPCs `submeter_sugestao_curadoria` e `admin_revisar_sugestao_curadoria` com recompensa em Cristais | — |
 | `065_avatar_montavel.sql` | Fase 17 (17.6, #192): Avatar montável em camadas — coluna `avatar_custom` em `profiles` e RPC `salvar_avatar_customizado` | — |
 | `066_personagem_rpg.sql` | Fase 18 (18.1a, #199): Personagem do jogador — tabela `rpg_personagens` (uma linha por usuário, só identidade), RLS de dono só para leitura e RPC `despertar_personagem` idempotente | — |
+| `067_avatar_montavel_user_id.sql` | Correção (#203): recria `salvar_avatar_customizado` filtrando por `user_id` (o `065` usava `id`, coluna que `profiles` não tem), com teto de tamanho e resposta `sem_perfil` para quem não tem linha em `profiles`. Definição viva da função | — |
 
 Datas com `~` são a data do commit, não da aplicação no Supabase.
 
