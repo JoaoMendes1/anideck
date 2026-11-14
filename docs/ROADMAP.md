@@ -788,6 +788,12 @@ experiência pequena e funcional de cada vez.
 > numeração e não abrem escopo novo. Ficam registrados aqui em ordem cronológica inversa para
 > não sumirem: fase concluída não deve ser reaberta só para receber um conserto.
 
+### 14/11/2026 — Barra superior e HUD do jogador redesenhados (#204)
+
+- [x] **Cápsula de status na Navbar:** rank, nível e XP sempre; Vitalidade e Mana em número a partir de 1024 px e AniCoins a partir de 1280 px. O streak foi para o painel da cápsula.
+- [x] **Painel do jogador na Início:** emblema do rank, progresso do nível e três recursos (Vitalidade, Mana, AniCoins), sem valor fictício durante a carga. A "ficha na Guilda" da coluna lateral saiu, por repetir os mesmos números.
+- [x] **Fundação:** token `mana`, componente `BarraVital`, piso de 12 px no texto do HUD e ids únicos no ícone do AniCoin.
+
 ### 14/11/2026 — Avatar montável volta a salvar e carregar (#203)
 
 - [x] **`sql/067`:** `salvar_avatar_customizado` filtra por `user_id`; o `065` usava `id`, coluna que `profiles` não tem. Quem ainda não tem perfil público recebe aviso para criá-lo, em vez de um sucesso que não gravou nada.

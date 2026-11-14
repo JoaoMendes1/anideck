@@ -19,7 +19,8 @@
 --holo-3:#3FE0F0;    /* ciano — acento terciário (compõe o gradiente holo) */
 --gold:#FFC542;      /* notas/destaque de rank */
 --green:#a0ff78;     /* status "Em Dia" */
---coral:#FF5C6C;     /* estados de perigo/exclusão */
+--coral:#FF5C6C;     /* estados de perigo/exclusão e Vitalidade */
+--mana:#4DA3FF;      /* Mana */
 ```
 
 **Gradiente holo padrão** (usado em botões primários, título de marca, avatares):
@@ -51,6 +52,15 @@ alcançá-lo. Foi essa duplicação que a issue #88 removeu.
 
 Exceção deliberada: preto e branco puros (sombras e brilhos) ficam literais. Tokenizá-los
 implicaria que devem mudar junto com o tema, o que é decisão de design, não de arquitetura.
+
+### Indicadores do jogador
+
+Cada indicador tem uma cor só, em qualquer tela e em qualquer tema: **XP** `gold`,
+**Vitalidade** `coral`, **Mana** `mana`. A barra é sempre o componente `BarraVital`
+(`client/src/components/hud/BarraVital.tsx`); não se monta barra de indicador com cor avulsa.
+`mana`, como `gold`, `green` e `coral`, não muda com o tema.
+
+Texto de interface não desce de 12 px (`text-xs`).
 
 ## Tipografia
 

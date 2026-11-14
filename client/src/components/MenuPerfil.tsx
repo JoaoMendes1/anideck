@@ -51,7 +51,7 @@ export default function MenuPerfil() {
                 <div className="w-7 h-7 rounded-full bg-gradient-to-br from-holo-2 to-holo-3 flex items-center justify-center text-void font-bold text-xs">
                     {nome.charAt(0).toUpperCase()}
                 </div>
-                <span className="hidden lg:inline text-sm font-bold truncate max-w-[100px]">{nome}</span>
+                <span className="hidden 2xl:inline text-sm font-bold truncate max-w-[100px]">{nome}</span>
                 <ChevronDown size={13} className={`text-muted transition-transform ${aberto ? 'rotate-180' : ''}`} />
             </button>
 

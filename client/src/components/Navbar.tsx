@@ -44,8 +44,8 @@ export default function Navbar() {
   }, [])
 
   const linkClasse = (...rotas: string[]) =>
-    `text-xs lg:text-sm font-bold focus:outline-none select-none transition-colors whitespace-nowrap ${
-      rotas.includes(location.pathname) ? 'text-text' : 'text-muted hover:text-text'
+    `relative py-2 text-xs lg:text-sm font-bold select-none transition-colors whitespace-nowrap rounded-sm focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-holo-3 after:absolute after:left-0 after:right-0 after:-bottom-0.5 after:h-0.5 after:rounded-full after:bg-gradient-to-r after:from-holo-1 after:to-holo-3 after:transition-opacity ${
+      rotas.includes(location.pathname) ? 'text-text after:opacity-100' : 'text-muted hover:text-text after:opacity-0'
     }`
 
   // Logado, a barra ganha HUD, sino e perfil: abaixo de xl só cabem os links de uso
@@ -55,7 +55,7 @@ export default function Navbar() {
   return (
     <>
       <nav
-        className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${scrolled ? 'py-3 bg-void/85 backdrop-blur-md border-b border-line' : 'py-5 bg-transparent'
+        className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${scrolled ? 'py-2.5 bg-void/85 backdrop-blur-md border-b border-line' : 'py-4 bg-transparent'
           }`}
       >
         <div className="max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-10 flex items-center justify-between gap-4">
@@ -63,7 +63,7 @@ export default function Navbar() {
           {/* Logo */}
           <Link to="/" className="flex items-center gap-2.5 z-50 group">
             <LogoMark />
-            <div className={`font-anton text-lg tracking-wide group-hover:opacity-80 transition-opacity ${session ? 'max-[379px]:hidden' : ''}`}>
+            <div className={`font-anton text-lg tracking-wide group-hover:opacity-80 transition-opacity ${session ? 'max-[419px]:hidden' : ''}`}>
               Ani<span className="text-holo">Deck</span>
             </div>
           </Link>

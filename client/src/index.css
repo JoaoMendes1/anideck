@@ -20,6 +20,7 @@
   --color-gold: #FFC542;
   --color-green: #a0ff78;
   --color-coral: #FF5C6C;
+  --color-mana: #4DA3FF;
 
   /* Fontes mapeadas para usarmos classes como font-anton */
   --font-manrope: 'Manrope', sans-serif;
@@ -53,8 +54,8 @@
    dos gradientes decorativos), mudando o matiz e a saturacao. Por isso nenhuma tela
    quebra: o contraste entre camadas continua o mesmo.
 
-   gold, green e coral ficam de fora de proposito: sao cores semanticas (nota,
-   "em dia", erro) e mudam de significado se mudarem de tema.
+   gold, green, coral e mana ficam de fora de proposito: sao cores semanticas (nota e
+   XP, "em dia", erro e Vitalidade, Mana) e mudam de significado se mudarem de tema.
 
    Holo e o padrao e vive no @theme acima — nao tem bloco aqui. */
 

@@ -19,7 +19,6 @@ import {
   type AnimeResumido, type EntradaDoDeck, type ProgressoDoAnime,
 } from '../lib/inicio'
 import SuaSemana from '../components/inicio/SuaSemana'
-import ResumoGuildaCard from '../components/inicio/ResumoGuildaCard'
 import HeroProximoEpisodio from '../components/inicio/HeroProximoEpisodio'
 import PlayerHudInicio from '../components/inicio/PlayerHudInicio'
 import CardMissoesDiarias from '../components/inicio/CardMissoesDiarias'
@@ -790,7 +789,6 @@ export default function Inicio() {
 
       {!deckVazio && (
         <aside className="hidden xl:flex flex-col gap-6 sticky top-24">
-          <ResumoGuildaCard />
           {!carregando && (
             <div>
               <div className="flex items-center justify-between mb-3 select-none">

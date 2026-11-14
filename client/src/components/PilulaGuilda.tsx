@@ -4,7 +4,7 @@
 // por um instante. Tocar abre o painel com os números e o que faz cada barra mudar.
 import { useEffect, useRef, useState } from 'react'
 import { Link, useLocation } from 'react-router-dom'
-import { Flame, Sparkles, Users, X, ShoppingBag } from 'lucide-react'
+import { Droplet, Flame, Heart, Sparkles, Users, X, ShoppingBag } from 'lucide-react'
 import IconeAniCoin from './IconeAniCoin'
 import { obterEstiloRank } from '../lib/guilda'
 import { avisosDaMudanca, type AvisoDoHud, type FotoDoJogador } from '../lib/hud'
@@ -12,6 +12,7 @@ import { useResumoGuilda } from '../hooks/useResumoGuilda'
 import { useComunidade } from '../hooks/useComunidade'
 import { useCarteira } from '../hooks/useCarteira'
 import BarrasVitais from './comunidade/BarrasVitais'
+import BarraVital from './hud/BarraVital'
 
 // Tempo que cada aviso fica na tela; a animação em index.css (.aviso-hud) dura o mesmo.
 const DURACAO_AVISO = 1800
@@ -22,15 +23,6 @@ const ESTILO_DO_AVISO: Record<AvisoDoHud['tipo'], string> = {
   hp: 'text-coral border-coral/50',
   mp: 'text-holo-3 border-holo-3/50',
   cristal: 'text-holo-3 border-holo-3/50',
-}
-
-// O `largura` muda conforme o lugar: na coluna, flex-1 encolheria a altura a zero.
-function MiniBarra({ pct, classe, largura = 'w-full' }: { pct: number; classe: string; largura?: string }) {
-  return (
-    <span className={`h-1.5 rounded-full bg-panel-2 overflow-hidden block ${largura} border border-line/30`}>
-      <i className={`block h-full transition-all duration-700 ${classe}`} style={{ width: `${Math.min(100, Math.max(0, pct))}%` }} />
-    </span>
-  )
 }
 
 export default function PilulaGuilda() {
@@ -91,23 +83,13 @@ export default function PilulaGuilda() {
     `Rank ${status.rank} · Nível ${status.nivel} (${status.xp_no_nivel}/${status.xp_para_proximo} XP)`,
     hp !== null ? `Vitalidade ${hp}/100` : '',
     mp !== null && estado ? `Mana ${mp}/${estado.regras.mp_max}` : '',
+    `${saldo.toLocaleString('pt-BR')} AniCoins`,
   ]
     .filter(Boolean)
     .join(' · ')
 
   return (
-    <div ref={raiz} className="relative flex items-center gap-2 select-none">
-      {status.streak_atual > 0 && (
-        <Link
-          to="/meu-gosto"
-          title={`Streak atual: ${status.streak_atual} ${status.streak_atual === 1 ? 'dia' : 'dias'}`}
-          className="hidden sm:inline-flex md:hidden lg:inline-flex items-center gap-1 px-2.5 py-1 rounded-full font-mono text-[10.5px] font-bold border border-green/40 bg-green/12 text-green hover:bg-green/20 transition-colors"
-        >
-          <Flame size={12} className="fill-green/30" />
-          {status.streak_atual}
-        </Link>
-      )}
-
+    <div ref={raiz} className="relative flex items-center select-none">
       <button
         type="button"
         onClick={() => setAberto(a => !a)}
@@ -115,23 +97,38 @@ export default function PilulaGuilda() {
         aria-haspopup="dialog"
         aria-label={`Seu status: ${resumoTitulo}`}
         title={resumoTitulo}
-        className={`flex items-center gap-2 py-1 pl-1.5 pr-2.5 rounded-full border transition-all hover:brightness-110 cursor-pointer ${estilo.bordaPilula} ${estilo.fundoPilula}`}
+        className="flex items-center gap-2 sm:gap-2.5 h-10 pl-1 pr-2.5 sm:pr-3 rounded-full border border-line bg-panel/80 transition-colors hover:border-holo-2/70 focus-visible:outline-2 focus-visible:outline-holo-3 cursor-pointer"
       >
-        <span className={`w-5 h-5 rounded-full grid place-items-center shrink-0 font-anton text-[11px] leading-none ${estilo.seloBg}`}>{status.rank}</span>
-        <span className="flex flex-col gap-[3px] min-w-[64px] sm:min-w-[84px]">
-          <span className="flex items-center justify-between gap-2 font-mono text-[9px] text-muted leading-none">
+        <span className={`w-8 h-8 rounded-full grid place-items-center shrink-0 font-anton text-sm leading-none ${estilo.seloBg}`}>{status.rank}</span>
+
+        <span className="flex flex-col gap-1 w-16 sm:w-[88px]">
+          <span className="flex items-baseline justify-between gap-2 font-mono text-xs leading-none">
             <b className="text-text font-bold">Nv {status.nivel}</b>
-            <span className="hidden sm:inline">
-              {status.xp_no_nivel}/{status.xp_para_proximo}
-            </span>
+            <span className="hidden sm:inline text-muted tabular-nums">{Math.round(status.progresso_pct)}%</span>
           </span>
-          <MiniBarra pct={status.progresso_pct} classe={estilo.corBarra} />
+          <BarraVital tipo="xp" pct={status.progresso_pct} />
+          {/* No celular e no tablet não há espaço para os números: Vitalidade e Mana viram barras. */}
           {estado && (
-            <span className="flex gap-1">
-              <MiniBarra pct={estado.hp} classe="bg-gradient-to-r from-rose-500 to-coral shadow-[0_0_6px_rgba(255,107,107,0.4)]" largura="flex-1" />
-              <MiniBarra pct={(estado.mana / estado.regras.mp_max) * 100} classe="bg-gradient-to-r from-sky-400 to-holo-3 shadow-[0_0_6px_rgba(34,211,238,0.4)]" largura="flex-1" />
+            <span className="flex gap-1 lg:hidden">
+              <BarraVital tipo="hp" pct={estado.hp} className="h-1 flex-1" />
+              <BarraVital tipo="mp" pct={(estado.mana / estado.regras.mp_max) * 100} className="h-1 flex-1" />
             </span>
           )}
+        </span>
+
+        {estado && (
+          <span className="hidden lg:flex items-center gap-2.5 pl-2.5 border-l border-line font-mono text-xs font-bold tabular-nums">
+            <span className="inline-flex items-center gap-1 text-coral">
+              <Heart size={13} className="fill-coral/25" aria-hidden /> {estado.hp}
+            </span>
+            <span className="inline-flex items-center gap-1 text-mana">
+              <Droplet size={13} className="fill-mana/25" aria-hidden /> {mp}
+            </span>
+          </span>
+        )}
+
+        <span className="hidden xl:inline-flex items-center gap-1 pl-2.5 border-l border-line font-mono text-xs font-bold text-text tabular-nums">
+          <IconeAniCoin size={14} /> {saldo.toLocaleString('pt-BR')}
         </span>
       </button>
 
@@ -171,14 +168,26 @@ export default function PilulaGuilda() {
                 <span className="text-muted-2">/{status.xp_para_proximo}</span>
               </span>
             </div>
-            <div className="h-2 rounded-full bg-panel-2 overflow-hidden border border-line/60">
-              <div className={`h-full rounded-full transition-all duration-700 ${estilo.corBarra}`} style={{ width: `${Math.min(100, Math.max(0, status.progresso_pct))}%` }} />
-            </div>
+            <BarraVital tipo="xp" pct={status.progresso_pct} className="h-2 w-full" />
             <p className="text-[11.5px] text-muted-2 mt-1.5 mb-0">
               {status.xp_hoje > 0 ? `+${status.xp_hoje} XP hoje` : 'Nenhum XP hoje ainda'}
               {status.teto_diario > 0 ? ` (o teto diário é ${status.teto_diario}).` : '.'} Cada episódio marcado vale XP.
             </p>
           </div>
+
+          {status.streak_atual > 0 && (
+            <Link
+              to="/meu-gosto"
+              className="flex items-center justify-between p-2.5 rounded-xl bg-panel-2/60 border border-line/60 hover:border-green/60 transition-colors mb-2 group"
+            >
+              <span className="inline-flex items-center gap-1.5 font-mono text-xs text-muted group-hover:text-text uppercase tracking-wider">
+                <Flame size={14} className="text-green fill-green/30" aria-hidden /> Streak
+              </span>
+              <span className="font-mono text-xs font-bold text-green">
+                {status.streak_atual} {status.streak_atual === 1 ? 'dia' : 'dias'}
+              </span>
+            </Link>
+          )}
 
           <Link
             to="/loja"

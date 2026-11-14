@@ -3,6 +3,7 @@
 import { useEffect, useState, useCallback } from 'react'
 import { useSessao } from '../contexts/SessaoContext'
 import { chaveDoUsuario, guardarNaMemoria, lerDaMemoria } from '../lib/cacheDeTela'
+import { buscarUmaVez } from '../lib/buscaCompartilhada'
 
 export interface MovimentoCristal {
   id: string
@@ -28,16 +29,18 @@ export function useCarteira() {
   const [carregando, setCarregando] = useState(!carteira)
 
   const recarregar = useCallback(async () => {
-    if (!token) return
+    if (!token || !chave) return
     try {
-      const res = await fetch('/api/economia/carteira', {
-        headers: { Authorization: `Bearer ${token}` },
+      // A pílula da Navbar e o painel da Início pedem a carteira ao mesmo tempo: um pedido só.
+      const dados = await buscarUmaVez(chave, async () => {
+        const res = await fetch('/api/economia/carteira', {
+          headers: { Authorization: `Bearer ${token}` },
+        })
+        if (!res.ok) throw new Error(`HTTP ${res.status}`)
+        return (await res.json()) as CarteiraData
       })
-      if (res.ok) {
-        const dados = (await res.json()) as CarteiraData
-        guardarNaMemoria(chave, dados)
-        setCarteira(dados)
-      }
+      guardarNaMemoria(chave, dados)
+      setCarteira(dados)
     } catch {
       // Falha silenciosa
     } finally {
