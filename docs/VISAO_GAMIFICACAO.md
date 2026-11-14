@@ -290,6 +290,9 @@ gamificação que alimenta o ranking, não"*.
 
 > **08/11/2026:** a loja cosmética, os Cristais e o avatar montável passam a ter desenho no
 > `VISAO_COMUNIDADE.md` (Fases 16 e 17). O texto abaixo continua valendo para o personagem 3D.
+>
+> **14/11/2026:** o personagem foi **reaberto em 2D**, com arte gerada por IA, pelo
+> `VISAO_RPG.md` (Fase 18). O adiamento abaixo segue valendo só para o modelo 3D.
 
 Adiado, sem descarte. É a parte mais cara e a de menor retorno no estágio atual: o Habitica tem
 equipe de arte, este projeto tem um desenvolvedor.

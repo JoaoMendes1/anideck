@@ -48,6 +48,7 @@ Staging sobe já na Fase 1, como projeto esqueleto — mesmo padrão do JVM Syst
 | 15 · Comunidade base | ✅ Concluída (08/11/2026, #154); falta abrir o beta |
 | 16 · Economia e cartas | ✅ Concluída (09/11/2026, #165); falta abrir o beta |
 | 17 · Comunidade viva | ✅ Concluída (13/11/2026, #179) |
+| 18 · O Despertar Isekai | 🚧 Em andamento — 18.1 Meu Personagem (banco e API prontos, #199) |
 
 ---
 
@@ -763,6 +764,23 @@ mecânicas). **Pré-requisitos:** Fase 16 concluída e base com gente suficiente
   - [x] 17.5b Convite com recompensa (#191)
 - [x] 17.6 Avatar montável em camadas vetoriais geométricas (#192)
 - [x] 17.7 Curadoria colaborativa: membros de rank alto sugerem correções (#188)
+
+## 🗡️ Fase 18: O Despertar Isekai — *em andamento*
+
+Motivo: ligar o hábito de assistir animes a um RPG de fantasia Isekai, em que o usuário tem um
+aventureiro próprio que evolui com a atividade real (`VISAO_RPG.md`). Entrega incremental: uma
+experiência pequena e funcional de cada vez.
+
+- [ ] 18.1 Meu Personagem (primeiro MVP)
+  - [x] 18.1a Personagem do jogador: tabela `rpg_personagens`, despertar com nome e rota `/api/personagem`, com o estágio visual calculado pelo nível da Guilda (#199)
+  - [ ] 18.1b Tela `/personagem` mobile-first com a arte por estágio (#200)
+- [ ] 18.2 Visuais e loja: galeria de visuais (estágios e skins), cenários e slots de equipamento
+- [ ] 18.3 Progressão de RPG: atributos, habilidades e balanceamento
+- [ ] 18.4 Mundo e PvE
+- [ ] 18.5 Integração comunitária
+- [ ] 18.6 Arena e cartas
+
+**Pendência do dono:** aplicar `sql/066_personagem_rpg.sql` no Supabase antes de promover.
 
 ## 🔧 Manutenção pós-v1
 
