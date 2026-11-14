@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useRef, useMemo, type ReactNode } from 'react'
+import { createContext, useCallback, useContext, useState, useRef, useMemo, type ReactNode } from 'react'
 import { CheckCircle2, AlertCircle, Info, X } from 'lucide-react'
 
 export type ToastTipo = 'success' | 'error' | 'info'
@@ -22,7 +22,9 @@ export function ToastProvider({ children }: { children: ReactNode }) {
   })
   const timerRef = useRef<number | null>(null)
 
-  const showToast = (message: string, type: ToastTipo = 'success') => {
+  // Identidade estável: telas usam showToast como dependência de efeito, e uma função
+  // nova a cada aviso faria o efeito rodar de novo sempre que um aviso aparecesse.
+  const showToast = useCallback((message: string, type: ToastTipo = 'success') => {
     if (timerRef.current) {
       window.clearTimeout(timerRef.current)
     }
@@ -34,7 +36,7 @@ export function ToastProvider({ children }: { children: ReactNode }) {
       setToast((prev) => ({ ...prev, visible: false }))
       timerRef.current = null
     }, duracao)
-  }
+  }, [])
 
   const fecharToast = () => {
     if (timerRef.current) {
@@ -50,11 +52,13 @@ export function ToastProvider({ children }: { children: ReactNode }) {
       error: (msg: string) => showToast(msg, 'error'),
       info: (msg: string) => showToast(msg, 'info'),
     }),
-    [],
+    [showToast],
   )
 
+  const valor = useMemo(() => ({ showToast, toast: toastObj }), [showToast, toastObj])
+
   return (
-    <ToastContext.Provider value={{ showToast, toast: toastObj }}>
+    <ToastContext.Provider value={valor}>
       {children}
 
       {/* Componente visual do Toast moderno, retangular com cantos suaves (rounded-2xl) */}

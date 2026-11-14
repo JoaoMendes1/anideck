@@ -788,6 +788,11 @@ experiência pequena e funcional de cada vez.
 > numeração e não abrem escopo novo. Ficam registrados aqui em ordem cronológica inversa para
 > não sumirem: fase concluída não deve ser reaberta só para receber um conserto.
 
+### 14/11/2026 — Aviso de erro sem laço de requisições (#201)
+
+- [x] **`showToast` com identidade estável:** `useCallback` na função e `useMemo` no valor do `ToastProvider`. Um aviso exibido deixa de recarregar as telas que dependem dele, e erro de carga no Painel Admin não repete mais a chamada (item 31 do `PITFALLS.md`).
+- [x] **Primeiro teste de componente do front:** `ToastContext.test.tsx`, com `jsdom` e Testing Library.
+
 ### 08/11/2026 — Cristais, carteira com extrato e painel de economia (#167)
 
 - [x] **Cristais (crystal_ledger, sql/045):** saldo derivado atomicamente por `SUM(quantidade)` (`meu_saldo_cristais`), débitos serializados com `pg_advisory_xact_lock` impedindo saldo negativo, idempotência via `UNIQUE (user_id, motivo, referencia)` e parâmetros em `app_settings.economia_cristais`.

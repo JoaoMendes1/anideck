@@ -899,6 +899,31 @@ A AniList não define `episodes` para obras em lançamento (`RELEASING`), porque
 
 ---
 
+## 31. 🔁 Função de contexto recriada a cada render dispara os efeitos de quem depende dela
+
+**Incidente (14/11/2026, #201):** com a carga da aba Guilda do Painel Admin em erro, a tela fez
+6.418 chamadas a `/api/admin/guilda` em cerca de 3 segundos. Sem erro nenhum, qualquer aviso
+exibido já recarregava Admin (Guilda, Economia, Fila de revisão, Prompt da IA), Detalhes e
+Missões diárias.
+
+**Causa:** o `showToast` era uma função comum dentro do `ToastProvider`. Exibir um aviso muda o
+estado do provider, ele renderiza de novo e a função nasce com outra identidade. Seis pontos a
+listavam como dependência de `useEffect` ou `useCallback`, como o lint pede, e por isso rodavam
+de novo a cada aviso. Quando o próprio efeito avisava a falha da carga, o ciclo se fechava.
+
+**O que torna isso silencioso:** o lint aprova (a dependência está declarada), o TypeScript
+compila e, com a API respondendo, a tela só faz uma chamada a mais por aviso. O laço só aparece
+quando a rota falha, e a recarga pode sobrescrever campo de formulário ainda não salvo.
+
+Corrigido em 14/11/2026: `showToast` com `useCallback` e o valor do contexto com `useMemo`, com
+teste de componente em `client/src/contexts/ToastContext.test.tsx`.
+
+> **Pergunta obrigatória:** esta função ou este objeto entregue por um contexto mantém a mesma
+> identidade entre renderizações? Se o provider tem estado próprio, função sem `useCallback` e
+> valor sem `useMemo` mudam a cada alteração dele, e todo efeito que depende deles roda de novo.
+
+---
+
 ## 🧭 Como manter este arquivo
 
 - Toda vez que um bug **silencioso** chegar a produção (não quebrou, só devolveu dado errado),
