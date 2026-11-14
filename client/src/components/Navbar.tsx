@@ -48,6 +48,10 @@ export default function Navbar() {
       rotas.includes(location.pathname) ? 'text-text' : 'text-muted hover:text-text'
     }`
 
+  // Logado, a barra ganha HUD, sino e perfil: abaixo de xl só cabem os links de uso
+  // diário. Os demais continuam no menu de perfil. O visitante vê todos.
+  const secundario = session ? 'hidden xl:inline' : ''
+
   return (
     <>
       <nav
@@ -59,7 +63,7 @@ export default function Navbar() {
           {/* Logo */}
           <Link to="/" className="flex items-center gap-2.5 z-50 group">
             <LogoMark />
-            <div className="font-anton text-lg tracking-wide group-hover:opacity-80 transition-opacity">
+            <div className={`font-anton text-lg tracking-wide group-hover:opacity-80 transition-opacity ${session ? 'max-[379px]:hidden' : ''}`}>
               Ani<span className="text-holo">Deck</span>
             </div>
           </Link>
@@ -99,14 +103,14 @@ export default function Navbar() {
           <div className="hidden md:flex items-center gap-3.5 lg:gap-5 xl:gap-6">
             <Link to="/" className={linkClasse('/')}>Início</Link>
             <Link to="/descobrir" className={linkClasse('/descobrir')}>Descobrir</Link>
-            <Link to="/rankings" className={linkClasse('/rankings', '/membros')}>Rankings</Link>
-            <Link to="/clas" className={linkClasse('/clas')}>Clãs</Link>
+            <Link to="/rankings" className={`${linkClasse('/rankings', '/membros')} ${secundario}`}>Rankings</Link>
+            <Link to="/clas" className={`${linkClasse('/clas')} ${secundario}`}>Clãs</Link>
             {session && (
               <>
                 <Link to="/deck" className={linkClasse('/deck')}>Meu Deck</Link>
                 <Link to="/calendario" className={linkClasse('/calendario')}>Agenda</Link>
-                <Link to="/loja" className={linkClasse('/loja')}>Loja</Link>
-                <Link to="/meu-gosto" className={linkClasse('/meu-gosto')}>Meu Gosto</Link>
+                <Link to="/loja" className={`${linkClasse('/loja')} ${secundario}`}>Loja</Link>
+                <Link to="/meu-gosto" className={`${linkClasse('/meu-gosto')} ${secundario}`}>Meu Gosto</Link>
               </>
             )}
           </div>

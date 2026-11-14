@@ -788,6 +788,10 @@ experiência pequena e funcional de cada vez.
 > numeração e não abrem escopo novo. Ficam registrados aqui em ordem cronológica inversa para
 > não sumirem: fase concluída não deve ser reaberta só para receber um conserto.
 
+### 14/11/2026 — Barra superior sem corte do sino e do menu de perfil (#202)
+
+- [x] **Navbar cabe de 320 a 1440 px:** logado, de 768 a 1279 px ficam Início, Descobrir, Meu Deck e Agenda; Rankings, Clãs, Loja e Meu Gosto seguem no menu de perfil. De 768 a 1023 px somem o nome ao lado do avatar e o selo de streak; abaixo de 380 px, o texto da marca. Solução provisória até o redesenho da barra.
+
 ### 14/11/2026 — Aviso de erro sem laço de requisições (#201)
 
 - [x] **`showToast` com identidade estável:** `useCallback` na função e `useMemo` no valor do `ToastProvider`. Um aviso exibido deixa de recarregar as telas que dependem dele, e erro de carga no Painel Admin não repete mais a chamada (item 31 do `PITFALLS.md`).

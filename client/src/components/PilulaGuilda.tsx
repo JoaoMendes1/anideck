@@ -101,7 +101,7 @@ export default function PilulaGuilda() {
         <Link
           to="/meu-gosto"
           title={`Streak atual: ${status.streak_atual} ${status.streak_atual === 1 ? 'dia' : 'dias'}`}
-          className="hidden sm:inline-flex items-center gap-1 px-2.5 py-1 rounded-full font-mono text-[10.5px] font-bold border border-green/40 bg-green/12 text-green hover:bg-green/20 transition-colors"
+          className="hidden sm:inline-flex md:hidden lg:inline-flex items-center gap-1 px-2.5 py-1 rounded-full font-mono text-[10.5px] font-bold border border-green/40 bg-green/12 text-green hover:bg-green/20 transition-colors"
         >
           <Flame size={12} className="fill-green/30" />
           {status.streak_atual}

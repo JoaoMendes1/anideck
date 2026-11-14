@@ -45,12 +45,13 @@ export default function MenuPerfil() {
                 onClick={() => setAberto(!aberto)}
                 aria-expanded={aberto}
                 aria-haspopup="menu"
+                aria-label={`Menu de perfil de ${nome}`}
                 className="flex items-center gap-2.5 pl-1.5 pr-3 py-1.5 rounded-full bg-panel border border-line cursor-pointer hover:border-holo-3 transition-colors"
             >
                 <div className="w-7 h-7 rounded-full bg-gradient-to-br from-holo-2 to-holo-3 flex items-center justify-center text-void font-bold text-xs">
                     {nome.charAt(0).toUpperCase()}
                 </div>
-                <span className="text-sm font-bold truncate max-w-[100px]">{nome}</span>
+                <span className="hidden lg:inline text-sm font-bold truncate max-w-[100px]">{nome}</span>
                 <ChevronDown size={13} className={`text-muted transition-transform ${aberto ? 'rotate-180' : ''}`} />
             </button>
 
