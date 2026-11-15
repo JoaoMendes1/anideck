@@ -317,25 +317,23 @@ export default function NotificationBell() {
 
         {notifications.length > 0 && (
           <div className="flex items-center justify-between gap-2 mb-3 pb-3 border-b border-line">
-            <div className="flex items-center gap-1.5">
+            <div className="flex items-center gap-1 p-1 rounded-full bg-panel-2/70 border border-line">
               <button
                 type="button"
+                aria-pressed={filtroAba === 'todas'}
                 onClick={() => setFiltroAba('todas')}
-                className={`px-3 py-1 rounded-full text-xs font-bold transition-colors cursor-pointer ${
-                  filtroAba === 'todas'
-                    ? 'bg-holo-3/20 text-holo-3 border border-holo-3/40'
-                    : 'bg-panel-2 text-muted border border-line hover:text-text'
+                className={`px-3 py-1.5 rounded-full text-xs font-bold transition-colors cursor-pointer ${
+                  filtroAba === 'todas' ? 'bg-text text-void' : 'text-muted hover:text-text'
                 }`}
               >
                 Todas ({notifications.length})
               </button>
               <button
                 type="button"
+                aria-pressed={filtroAba === 'nao_lidas'}
                 onClick={() => setFiltroAba('nao_lidas')}
-                className={`px-3 py-1 rounded-full text-xs font-bold transition-colors cursor-pointer ${
-                  filtroAba === 'nao_lidas'
-                    ? 'bg-holo-3/20 text-holo-3 border border-holo-3/40'
-                    : 'bg-panel-2 text-muted border border-line hover:text-text'
+                className={`px-3 py-1.5 rounded-full text-xs font-bold transition-colors cursor-pointer ${
+                  filtroAba === 'nao_lidas' ? 'bg-text text-void' : 'text-muted hover:text-text'
                 }`}
               >
                 Não lidas ({naoLidas})
@@ -346,7 +344,7 @@ export default function NotificationBell() {
               <button
                 type="button"
                 onClick={markAllAsRead}
-                className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-bold text-holo-1 bg-holo-1/10 border border-holo-1/30 hover:bg-holo-1/20 transition-colors cursor-pointer"
+                className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-full text-xs font-bold text-muted hover:text-holo-3 transition-colors cursor-pointer"
                 title="Marcar todas como lidas"
               >
                 <CheckCheck size={13} /> Ler todas
@@ -373,7 +371,7 @@ export default function NotificationBell() {
           <div className="-mx-6">
             {agrupadas.map(({ grupo, itens }) => (
               <div key={grupo}>
-                <p className="px-6 pt-4 pb-2 text-xs font-bold uppercase tracking-wider text-muted-2">
+                <p className="px-6 pt-4 pb-2 font-mono text-xs uppercase tracking-[0.2em] text-muted-2">
                   {grupo}
                 </p>
                 {itens.map(n => {
@@ -385,15 +383,12 @@ export default function NotificationBell() {
                     return (
                       <div
                         key={n.id}
-                        className={`px-6 py-3.5 flex items-start gap-3.5 border-b border-line last:border-b-0 transition-colors hover:bg-panel-2 ${
-                          n.read_at ? 'opacity-65' : 'bg-gold/[0.04]'
+                        className={`relative px-6 py-3.5 flex items-start gap-3.5 transition-colors hover:bg-panel-2/70 ${
+                          n.read_at ? '' : 'bg-gold/[0.05] before:absolute before:left-0 before:inset-y-2 before:w-[3px] before:rounded-r-full before:bg-gold'
                         }`}
                       >
                         <div className="relative flex-shrink-0 w-12 h-12 rounded-xl bg-gold/15 border border-gold/40 text-gold flex items-center justify-center">
                           <UserPlus size={20} />
-                          {!n.read_at && (
-                            <span className="absolute -top-1 -right-1 w-2.5 h-2.5 rounded-full bg-gold border-2 border-panel" />
-                          )}
                         </div>
 
                         <div className="flex-1 min-w-0">
@@ -451,8 +446,8 @@ export default function NotificationBell() {
                   return (
                     <div
                       key={n.id}
-                      className={`px-6 py-3.5 flex items-start gap-3.5 border-b border-line last:border-b-0 transition-colors hover:bg-panel-2 ${
-                        n.read_at ? 'opacity-65' : 'bg-holo-3/[0.03]'
+                      className={`relative px-6 py-3.5 flex items-start gap-3.5 transition-colors hover:bg-panel-2/70 ${
+                        n.read_at ? '' : 'bg-holo-3/[0.05] before:absolute before:left-0 before:inset-y-2 before:w-[3px] before:rounded-r-full before:bg-holo-3'
                       }`}
                     >
                       <Link
@@ -464,12 +459,9 @@ export default function NotificationBell() {
                         className="relative flex-shrink-0"
                       >
                         {n.anime_image ? (
-                          <img src={n.anime_image} alt="" className="w-14 h-20 object-cover rounded-lg border border-line shadow-sm" />
+                          <img src={n.anime_image} alt="" className={`w-12 h-16 object-cover rounded-lg border border-line ${n.read_at ? 'opacity-60 grayscale-[40%]' : ''}`} />
                         ) : (
-                          <div className="w-14 h-20 rounded-lg bg-panel-2 border border-line" />
-                        )}
-                        {!n.read_at && (
-                          <span className="absolute -top-1 -right-1 w-2.5 h-2.5 rounded-full bg-holo-3 border-2 border-panel" />
+                          <div className="w-12 h-16 rounded-lg bg-panel-2 border border-line" />
                         )}
                       </Link>
 
@@ -483,14 +475,14 @@ export default function NotificationBell() {
                           className="block group"
                         >
                           <div className="flex items-center gap-1.5 mb-1 flex-wrap">
-                            <span className="px-2 py-0.5 rounded-full bg-holo-3/15 border border-holo-3/30 text-holo-3 text-xs font-bold tracking-wider uppercase">
+                            <span className="font-mono text-xs font-bold text-holo-3 tabular-nums">
                               EP. {n.episode_number}
                             </span>
                             <span className="text-xs text-muted-2 font-mono">
                               • {tempoRelativo(n.created_at)}
                             </span>
                           </div>
-                          <p className="text-[13px] font-bold text-text leading-snug line-clamp-2 group-hover:text-holo-3 transition-colors">
+                          <p className={`text-sm leading-snug line-clamp-2 group-hover:text-holo-3 transition-colors ${n.read_at ? 'font-medium text-muted' : 'font-bold text-text'}`}>
                             {n.anime_title || 'Anime'}
                           </p>
                           <p className="text-xs text-muted mt-0.5">

@@ -12,6 +12,7 @@ import {
 } from '../lib/filters'
 import FilterChipGroup from '../components/FilterChipGroup'
 import RankingCard from '../components/RankingCard'
+import PodioRanking from '../components/rankings/PodioRanking'
 import RankingSkeleton from '../components/RankingSkeleton'
 import FilterSheet from '../components/FilterSheet'
 import SecaoClimaTemporada from '../components/rankings/SecaoClimaTemporada'
@@ -104,6 +105,7 @@ export default function Rankings() {
         (selectedSeason ? 1 : 0) +
         (selectedYear ? 1 : 0) +
         (selectedSort !== 'POPULARITY_DESC' ? 1 : 0)
+    const mostrarPodio = activeFilterCount === 0 && modoRanking === 'top_global' && animes.length >= 3
 
     useEffect(() => {
         const carregarDeck = async () => {
@@ -495,8 +497,12 @@ export default function Rankings() {
                 {isInitialLoad ? (
                     <RankingSkeleton />
                 ) : (
-                    <div className="flex flex-col gap-3">
+                    <>
+                    {/* Pódio só no ranking puro: com filtro, o 1º da lista não é o 1º do AniDeck. */}
+                    {mostrarPodio && <PodioRanking animes={animes} />}
+                    <div className="grid grid-cols-1 2xl:grid-cols-2 gap-3">
                         {animes.map((anime, index) => {
+                            if (mostrarPodio && index < 3) return null
                             const savedEntry = savedEntries.find(e => e.mal_id === anime.mal_id)
                             return (
                                 <RankingCard
@@ -512,6 +518,7 @@ export default function Rankings() {
                             )
                         })}
                     </div>
+                    </>
                 )}
 
                 {error && (

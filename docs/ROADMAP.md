@@ -788,6 +788,11 @@ experiência pequena e funcional de cada vez.
 > numeração e não abrem escopo novo. Ficam registrados aqui em ordem cronológica inversa para
 > não sumirem: fase concluída não deve ser reaberta só para receber um conserto.
 
+### 15/11/2026 — Pódio no ranking e notificações mais limpas (#217)
+
+- [x] **Pódio** com os três primeiros do ranking global (`PodioRanking`), só sem filtro: com filtro, o 1º da lista não é o 1º do AniDeck. O resto em duas colunas a partir de 1536 px.
+- [x] **Notificações:** abas em controle segmentado, faixa lateral na cor do tipo para as não lidas, lidas com a capa apagada e o título em peso normal, no lugar de esmaecer a linha inteira.
+
 ### 15/11/2026 — Retrato do personagem em todo o app (#216)
 
 - [x] **Barra superior, `/membros` e perfil público** mostram o retrato do personagem no lugar da inicial. O servidor passou a devolver `avatar` e `estagio` em `/api/membros/ranking` e `/api/membros/{handle}`; o retrato acompanha o estágio de cada membro.
