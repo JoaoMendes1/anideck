@@ -774,6 +774,7 @@ experiência pequena e funcional de cada vez.
 - [x] 18.1 Meu Personagem (primeiro MVP)
   - [x] 18.1a Personagem do jogador: tabela `rpg_personagens`, despertar com nome e rota `/api/personagem`, com o estágio visual calculado pelo nível da Guilda (#199)
   - [x] 18.1b Tela `/personagem` mobile-first: despertar com nome, arte por estágio com reserva para estágio sem ilustração, jornada com silhueta dos estágios futuros e slots de equipamento "em breve" (#200)
+- [x] Arte do estágio Veterano (15/11/2026): os quatro estágios passam a ter ilustração, miniatura e retrato próprios; a reserva para estágio sem arte continua no código para personagem novo
 - [ ] 18.2 Visuais e loja
   - [x] 18.2a Escolha de visual: o jogador fixa a aparência de um estágio já alcançado, com prévia antes de confirmar, ou deixa no automático. Coluna `visual_equipado`, rota `PUT /api/personagem/visual`, e o retrato da barra superior, de `/membros` e do perfil público seguem o visual em uso (#218)
   - [x] 18.2b Cenários de fundo da tela do personagem, comprados na Loja: tipo e slot `cenario`, quatro cenários desenhados em CSS (sem imagem), categoria e prévia na Loja com o personagem do jogador, e `GET /api/personagem` devolvendo o cenário equipado (#219)

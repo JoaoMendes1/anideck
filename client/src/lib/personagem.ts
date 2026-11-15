@@ -14,6 +14,9 @@ import miniLendario from '../assets/personagem/espadachim-eter-lendario-mini.web
 import retratoIniciante from '../assets/personagem/espadachim-eter-iniciante-retrato.webp'
 import retratoAventureiro from '../assets/personagem/espadachim-eter-aventureiro-retrato.webp'
 import retratoLendario from '../assets/personagem/espadachim-eter-lendario-retrato.webp'
+import arteVeterano from '../assets/personagem/espadachim-eter-veterano.webp'
+import miniVeterano from '../assets/personagem/espadachim-eter-veterano-mini.webp'
+import retratoVeterano from '../assets/personagem/espadachim-eter-veterano-retrato.webp'
 
 export interface EstagioRPG {
   id: string
@@ -96,11 +99,12 @@ export const ORDEM_DOS_ESTAGIOS = ['iniciante', 'aventureiro', 'veterano', 'lend
 
 export const PERSONAGEM_BASE_PADRAO = 'espadachim_eter'
 
-// Estágio sem entrada aqui ainda não tem ilustração própria (hoje, o Veterano).
+// Estágio sem entrada aqui não tem ilustração própria e usa a do estágio anterior.
 export const ARTES: CatalogoDeArtes = {
   espadachim_eter: {
     iniciante: { inteira: arteIniciante, mini: miniIniciante, retrato: retratoIniciante },
     aventureiro: { inteira: arteAventureiro, mini: miniAventureiro, retrato: retratoAventureiro },
+    veterano: { inteira: arteVeterano, mini: miniVeterano, retrato: retratoVeterano },
     lendario: { inteira: arteLendario, mini: miniLendario, retrato: retratoLendario },
   },
 }

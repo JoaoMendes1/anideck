@@ -62,7 +62,7 @@ describe('personagem - escolha da arte', () => {
       expect(escolhida?.inteira).toBeTruthy()
       expect(escolhida?.mini).toBeTruthy()
     }
-    expect(temArtePropria('espadachim_eter', 'veterano', ARTES)).toBe(false)
+    expect(temArtePropria('espadachim_eter', 'veterano', ARTES)).toBe(true)
   })
 })
 
