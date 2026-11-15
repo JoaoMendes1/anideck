@@ -62,6 +62,14 @@ Cada indicador tem uma cor só, em qualquer tela e em qualquer tema: **XP** `gol
 
 Texto de interface não desce de 12 px (`text-xs`).
 
+### Insígnias de rank
+
+Cada rank tem um brasão próprio (`client/src/components/hud/InsigniaRank.tsx`) e uma cor
+principal (`COR_DO_RANK`, em `client/src/lib/insignias.ts`), usada na flâmula e no brilho.
+A forma sobe de complexidade com o rank: escudo (F, E, D), hexágono (C, B, A, S, SS), aletas
+(E, D), asas (B, A), louros e coroa (S, SS) e halo (SS). O streak usa laranja `#FF9A3C`,
+fora da paleta dos temas, por ser cor semântica de "chama".
+
 ## Tipografia
 
 | Uso | Fonte | Peso |

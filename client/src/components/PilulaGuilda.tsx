@@ -4,15 +4,17 @@
 // por um instante. Tocar abre o painel com os números e o que faz cada barra mudar.
 import { useEffect, useRef, useState } from 'react'
 import { Link, useLocation } from 'react-router-dom'
-import { Droplet, Flame, Heart, Sparkles, Users, X, ShoppingBag } from 'lucide-react'
+import { Droplet, Heart, Sparkles, Users, X, ShoppingBag } from 'lucide-react'
 import IconeAniCoin from './IconeAniCoin'
-import { obterEstiloRank } from '../lib/guilda'
+
 import { avisosDaMudanca, type AvisoDoHud, type FotoDoJogador } from '../lib/hud'
 import { useResumoGuilda } from '../hooks/useResumoGuilda'
 import { useComunidade } from '../hooks/useComunidade'
 import { useCarteira } from '../hooks/useCarteira'
 import BarrasVitais from './comunidade/BarrasVitais'
 import BarraVital from './hud/BarraVital'
+import InsigniaRank from './hud/InsigniaRank'
+import SeloStreak from './hud/SeloStreak'
 
 // Tempo que cada aviso fica na tela; a animação em index.css (.aviso-hud) dura o mesmo.
 const DURACAO_AVISO = 1800
@@ -78,7 +80,6 @@ export default function PilulaGuilda() {
 
   if (!status) return null
 
-  const estilo = obterEstiloRank(status.rank)
   const resumoTitulo = [
     `Rank ${status.rank} · Nível ${status.nivel} (${status.xp_no_nivel}/${status.xp_para_proximo} XP)`,
     hp !== null ? `Vitalidade ${hp}/100` : '',
@@ -99,7 +100,7 @@ export default function PilulaGuilda() {
         title={resumoTitulo}
         className="flex items-center gap-2 sm:gap-2.5 h-10 pl-1 pr-2.5 sm:pr-3 rounded-full border border-line bg-panel/80 transition-colors hover:border-holo-2/70 focus-visible:outline-2 focus-visible:outline-holo-3 cursor-pointer"
       >
-        <span className={`w-8 h-8 rounded-full grid place-items-center shrink-0 font-anton text-sm leading-none ${estilo.seloBg}`}>{status.rank}</span>
+        <InsigniaRank rank={status.rank} tamanho={34} />
 
         <span className="flex flex-col gap-1 w-16 sm:w-[88px]">
           <span className="flex items-baseline justify-between gap-2 font-mono text-xs leading-none">
@@ -148,9 +149,9 @@ export default function PilulaGuilda() {
           className="fixed left-4 right-4 top-[68px] md:absolute md:left-auto md:right-0 md:top-full md:mt-2 md:w-[340px] z-[70] rounded-2xl border border-line bg-panel/95 backdrop-blur-xl p-4 shadow-[0_24px_60px_-12px_rgba(0,0,0,0.8)]"
         >
           <div className="flex items-start gap-3 mb-4">
-            <span className={`w-11 h-11 rounded-xl grid place-items-center shrink-0 font-anton text-xl leading-none ${estilo.seloBg}`}>{status.rank}</span>
+            <InsigniaRank rank={status.rank} tamanho={52} />
             <div className="min-w-0 flex-1">
-              <p className="font-mono text-[10px] text-muted-2 uppercase tracking-widest m-0">Rank {status.rank} · Nível {status.nivel}</p>
+              <p className="font-mono text-xs text-muted-2 uppercase tracking-widest m-0">Rank {status.rank} · Nível {status.nivel}</p>
               <p className="font-anton text-lg uppercase leading-tight m-0 truncate">{status.titulo_rank}</p>
             </div>
             <button type="button" onClick={() => setAberto(false)} aria-label="Fechar" className="w-8 h-8 shrink-0 grid place-items-center rounded-full text-muted hover:text-text cursor-pointer">
@@ -176,16 +177,8 @@ export default function PilulaGuilda() {
           </div>
 
           {status.streak_atual > 0 && (
-            <Link
-              to="/meu-gosto"
-              className="flex items-center justify-between p-2.5 rounded-xl bg-panel-2/60 border border-line/60 hover:border-green/60 transition-colors mb-2 group"
-            >
-              <span className="inline-flex items-center gap-1.5 font-mono text-xs text-muted group-hover:text-text uppercase tracking-wider">
-                <Flame size={14} className="text-green fill-green/30" aria-hidden /> Streak
-              </span>
-              <span className="font-mono text-xs font-bold text-green">
-                {status.streak_atual} {status.streak_atual === 1 ? 'dia' : 'dias'}
-              </span>
+            <Link to="/meu-gosto" className="flex mb-2 rounded-[14px] focus-visible:outline-2 focus-visible:outline-holo-3">
+              <SeloStreak dias={status.streak_atual} />
             </Link>
           )}
 

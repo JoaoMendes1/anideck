@@ -788,6 +788,11 @@ experiência pequena e funcional de cada vez.
 > numeração e não abrem escopo novo. Ficam registrados aqui em ordem cronológica inversa para
 > não sumirem: fase concluída não deve ser reaberta só para receber um conserto.
 
+### 15/11/2026 — Insígnias de rank, flâmula e selo de streak (#205)
+
+- [x] **Oito insígnias, de F a SS** (`InsigniaRank`), a partir do desenho trazido pelo dono: escudo, aletas, pontas de prata, asas, estrela, louros, coroa e halo prismático. Versão compacta abaixo de 48 px; animação só de 96 px para cima.
+- [x] **Flâmula do rank** (`FlamulaRank`) e **selo de streak** com a semana em sete losangos (`SeloStreak`), na cápsula da Navbar e no painel do jogador da Início.
+
 ### 14/11/2026 — Barra superior e HUD do jogador redesenhados (#204)
 
 - [x] **Cápsula de status na Navbar:** rank, nível e XP sempre; Vitalidade e Mana em número a partir de 1024 px e AniCoins a partir de 1280 px. O streak foi para o painel da cápsula.

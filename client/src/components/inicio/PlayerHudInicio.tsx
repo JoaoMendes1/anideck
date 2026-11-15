@@ -3,10 +3,11 @@
 // próximo nível e os três recursos do dia (Vitalidade, Mana e AniCoins).
 import type { ReactNode } from 'react'
 import { Link } from 'react-router-dom'
-import { ChevronRight, Droplet, Flame, Heart, SlidersHorizontal, Sparkles, Target } from 'lucide-react'
+import { ChevronRight, Droplet, Heart, SlidersHorizontal, Sparkles, Target } from 'lucide-react'
 import IconeAniCoin from '../IconeAniCoin'
 import BarraVital, { type TipoDeBarra } from '../hud/BarraVital'
-import { obterEstiloRank } from '../../lib/guilda'
+import FlamulaRank from '../hud/FlamulaRank'
+import SeloStreak from '../hud/SeloStreak'
 import { useResumoGuilda } from '../../hooks/useResumoGuilda'
 import { useComunidade } from '../../hooks/useComunidade'
 import { useCarteira } from '../../hooks/useCarteira'
@@ -56,7 +57,6 @@ export default function PlayerHudInicio({ nome, dataHoje, aoAbrirGosto }: Props)
   const { saldo, carregando: carregandoCarteira } = useCarteira()
   const { concluidas, total, todasResgatadas } = useMissoesHoje()
 
-  const estilo = status ? obterEstiloRank(status.rank) : null
   const mana = estado ? Math.floor(estado.mana) : 0
   const mpMax = estado?.regras.mp_max ?? 0
   const questsProntas = total > 0 && concluidas === total && !todasResgatadas
@@ -70,21 +70,6 @@ export default function PlayerHudInicio({ nome, dataHoje, aoAbrirGosto }: Props)
       <div className="flex flex-col lg:flex-row lg:items-center gap-4 lg:gap-6">
         {/* Identidade: emblema do rank, saudação e progresso do nível */}
         <div className="flex items-center gap-4 min-w-0 flex-1">
-          {status && estilo ? (
-            <Link
-              to="/guilda"
-              title={`Rank ${status.rank} · ${status.titulo_rank}`}
-              className={`relative w-14 h-14 sm:w-16 sm:h-16 shrink-0 rounded-2xl grid place-items-center font-anton text-2xl sm:text-3xl leading-none transition-transform hover:scale-105 focus-visible:outline-2 focus-visible:outline-holo-3 ${estilo.seloBg}`}
-            >
-              {status.rank}
-              <span className="absolute -bottom-2 left-1/2 -translate-x-1/2 px-1.5 py-0.5 rounded-full bg-void border border-line font-mono text-xs font-bold text-text whitespace-nowrap">
-                Nv {status.nivel}
-              </span>
-            </Link>
-          ) : (
-            <div className="w-14 h-14 sm:w-16 sm:h-16 shrink-0 rounded-2xl shimmer" aria-hidden />
-          )}
-
           <div className="min-w-0 flex-1">
             <p className="font-mono text-xs text-muted-2 uppercase tracking-wider m-0">{dataHoje}</p>
             {/* leading folgado e padding: com leading-none, o truncate corta os acentos da Anton. */}
@@ -93,18 +78,15 @@ export default function PlayerHudInicio({ nome, dataHoje, aoAbrirGosto }: Props)
             </h1>
             {status && (
               <>
-                <p className="flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-muted mt-1 mb-2">
-                  <span className="font-bold text-text">{status.titulo_rank}</span>
-                  {status.streak_atual > 0 && (
-                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full border border-green/35 bg-green/10 text-green font-mono font-bold">
-                      <Flame size={12} className="fill-green/30" aria-hidden />
-                      {status.streak_atual} {status.streak_atual === 1 ? 'dia' : 'dias'}
-                    </span>
-                  )}
-                </p>
-                <BarraVital tipo="xp" pct={status.progresso_pct} className="h-2 w-full max-w-md" />
+                <div className="flex flex-wrap items-center gap-x-4 gap-y-3 mt-3 mb-4">
+                  <Link to="/guilda" title={`Rank ${status.rank} · ${status.titulo_rank}`} className="flex rounded-lg focus-visible:outline-2 focus-visible:outline-holo-3">
+                    <FlamulaRank rank={status.rank} titulo={status.titulo_rank} tamanho={52} />
+                  </Link>
+                  {status.streak_atual > 0 && <SeloStreak dias={status.streak_atual} />}
+                </div>
+                <BarraVital tipo="xp" pct={status.progresso_pct} className="h-2.5 w-full max-w-md" />
                 <p className="font-mono text-xs text-muted-2 mt-1.5 mb-0 tabular-nums">
-                  <b className="text-gold">{status.xp_no_nivel}</b>/{status.xp_para_proximo} XP para o nível {status.nivel + 1}
+                  <b className="text-text">Nível {status.nivel}</b> · <b className="text-gold">{status.xp_no_nivel}</b>/{status.xp_para_proximo} XP para o nível {status.nivel + 1}
                   {status.teto_diario > 0 && (
                     <span className="hidden sm:inline"> · hoje {status.xp_hoje}/{status.teto_diario}</span>
                   )}
