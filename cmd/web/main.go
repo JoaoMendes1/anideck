@@ -1,11 +1,16 @@
 package main
 
 import (
+	"context"
 	"encoding/json"
+	"errors"
 	"log"
 	"net/http"
 	"os"
+	"os/signal"
 	"path/filepath"
+	"syscall"
+	"time"
 
 	"github.com/go-chi/chi/v5"
 	chimw "github.com/go-chi/chi/v5/middleware"
@@ -144,8 +149,12 @@ func main() {
 	r.With(middleware.OptionalAuth).Get("/api/previsoes", previsoesHandler.HandleListarPrevisoes)
 	// AniDeck Wrapped público (Fase 17.5a, #190)
 	r.Get("/api/u/{handle}/wrapped/{ano}", wrappedHandler.HandleGetWrappedPublico)
-	r.Post("/api/anime/bulk", animeHandler.HandleGetAnimesByIDs)
-	r.Post("/api/beta/request-invite", notificationsHandler.HandleRequestBetaInvite)
+	// Rotas públicas que custam caro por chamada: teto de corpo e limite por IP, para um
+	// visitante sozinho não gastar a cota da AniList nem encher o painel de pedidos.
+	limiteDoLote := middleware.NovoLimitadorPorIP(60, time.Minute)
+	limiteDoConvite := middleware.NovoLimitadorPorIP(5, 10*time.Minute)
+	r.With(limiteDoLote.Middleware, middleware.LimitarCorpo(64<<10)).Post("/api/anime/bulk", animeHandler.HandleGetAnimesByIDs)
+	r.With(limiteDoConvite.Middleware, middleware.LimitarCorpo(4<<10)).Post("/api/beta/request-invite", notificationsHandler.HandleRequestBetaInvite)
 	r.Post("/api/internal/check-new-episodes", notificationsHandler.HandleCheckNewEpisodes)
 
 	r.Group(func(protegido chi.Router) {
@@ -382,7 +391,43 @@ func main() {
 
 	port := os.Getenv("PORT")
 	log.Printf("Servidor rodando na porta %s...", port)
-	if err := http.ListenAndServe(":"+port, r); err != nil {
+	// As chamadas ao Supabase passam pelo transporte padrão do Go, que não tem prazo: um
+	// banco que aceita a conexão e não responde prenderia a requisição para sempre. O
+	// prazo fica acima dos 90 s que as chamadas de IA podem levar até o primeiro byte.
+	if transporte, ok := http.DefaultTransport.(*http.Transport); ok {
+		transporte.ResponseHeaderTimeout = 100 * time.Second
+	}
+
+	// Prazos do servidor: sem eles, uma conexão lenta ou abandonada ocupa uma goroutine
+	// indefinidamente. O de escrita cobre a resposta mais demorada (IA).
+	servidor := &http.Server{
+		Addr:              ":" + port,
+		Handler:           r,
+		ReadHeaderTimeout: 10 * time.Second,
+		ReadTimeout:       60 * time.Second,
+		WriteTimeout:      180 * time.Second,
+		IdleTimeout:       120 * time.Second,
+	}
+
+	// Encerramento gracioso: no SIGTERM do deploy, o servidor para de aceitar conexões e
+	// deixa as requisições em andamento terminarem. O prazo cabe nos 10 s que o Docker
+	// espera antes de matar o processo.
+	ctx, parar := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
+	defer parar()
+	encerrado := make(chan struct{})
+	go func() {
+		<-ctx.Done()
+		prazo, cancelar := context.WithTimeout(context.Background(), 8*time.Second)
+		defer cancelar()
+		if err := servidor.Shutdown(prazo); err != nil {
+			log.Printf("Encerramento com requisições em andamento: %v", err)
+		}
+		close(encerrado)
+	}()
+
+	if err := servidor.ListenAndServe(); !errors.Is(err, http.ErrServerClosed) {
 		log.Fatalf("Erro ao iniciar o servidor: %v", err)
 	}
+	<-encerrado
+	log.Println("Servidor encerrado")
 }

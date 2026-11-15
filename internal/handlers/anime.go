@@ -114,6 +114,9 @@ func (h *AnimeHandler) HandleGetTop(w http.ResponseWriter, r *http.Request) {
 // respeitam o context.
 const prazoDaAniListNaTela = 5 * time.Second
 
+// Teto de ids por chamada de /api/anime/bulk. Bem acima de um deck grande.
+const maxIDsPorLote = 1000
+
 func (h *AnimeHandler) HandleGetAnime(w http.ResponseWriter, r *http.Request) {
 	id := chi.URLParam(r, "id")
 
@@ -229,6 +232,11 @@ func (h *AnimeHandler) HandleGetAnimesByIDs(w http.ResponseWriter, r *http.Reque
 	}
 	if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
 		http.Error(w, "Payload inválido", http.StatusBadRequest)
+		return
+	}
+	// A rota é pública: sem teto, um pedido só mandaria a AniList buscar milhares de obras.
+	if len(payload.IDs) > maxIDsPorLote {
+		http.Error(w, "Muitos ids no mesmo pedido", http.StatusBadRequest)
 		return
 	}
 

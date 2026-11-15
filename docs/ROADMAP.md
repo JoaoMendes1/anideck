@@ -788,6 +788,11 @@ experiência pequena e funcional de cada vez.
 > numeração e não abrem escopo novo. Ficam registrados aqui em ordem cronológica inversa para
 > não sumirem: fase concluída não deve ser reaberta só para receber um conserto.
 
+### 15/11/2026 — Prazos no servidor e limites nas rotas públicas (#211)
+
+- [x] **Servidor HTTP com prazos** de leitura, escrita e ociosidade, e **encerramento gracioso** no SIGTERM do deploy. Prazo de resposta de 100 s no transporte padrão, que é por onde passam as chamadas ao Supabase.
+- [x] **`/api/anime/bulk`** com teto de 1000 ids, corpo de 64 KiB e 60 chamadas por minuto por IP; **`/api/beta/request-invite`** com corpo de 4 KiB e 5 pedidos a cada 10 minutos por IP (`middleware.LimitarCorpo` e `middleware.LimitadorPorIP`).
+
 ### 15/11/2026 — Limite de erro nas páginas (#210)
 
 - [x] **`LimiteDeErro` em volta do miolo do `Layout`:** página que falha ao desenhar mostra um aviso com "Recarregar a página" e "Voltar ao início", em vez de deixar o app em branco. O erro é esquecido ao trocar de rota.
