@@ -135,7 +135,7 @@ export default function Membros() {
 
       <header className="flex flex-wrap items-end justify-between gap-4 mb-5">
         <div>
-          <p className="font-mono text-[10px] text-muted-2 uppercase tracking-widest mb-1 select-none">// guilda do anideck</p>
+          <p className="font-mono text-xs text-muted-2 uppercase tracking-widest mb-1 select-none">// guilda do anideck</p>
           <h1 className="font-anton text-3xl md:text-4xl uppercase m-0 select-none">
             Ranking de <span className="text-holo">membros</span>
           </h1>
@@ -213,11 +213,11 @@ export default function Membros() {
                       Divisão {dadosLiga.minha_divisao}
                     </span>
                     {dadosLiga.modo_divisao_ativa ? (
-                      <span className="font-mono text-[9px] uppercase px-1.5 py-0.5 rounded bg-holo-2/20 text-holo-2 border border-holo-2/30">
+                      <span className="font-mono text-xs uppercase px-1.5 py-0.5 rounded bg-holo-2/20 text-holo-2 border border-holo-2/30">
                         Grupo {dadosLiga.meu_grupo} (20 membros)
                       </span>
                     ) : (
-                      <span className="font-mono text-[9px] uppercase px-1.5 py-0.5 rounded bg-panel border border-line text-muted-2">
+                      <span className="font-mono text-xs uppercase px-1.5 py-0.5 rounded bg-panel border border-line text-muted-2">
                         Liga Unificada ({dadosLiga.total_ativos} ativos)
                       </span>
                     )}
@@ -274,7 +274,7 @@ export default function Membros() {
           ) : (
             <>
               {meuHandle && periodo === 'semana' && !minhaLinha && (
-                <p className="font-mono text-[11px] text-muted-2 mb-3">Você ainda não pontuou esta semana. Um episódio já te coloca na lista.</p>
+                <p className="font-mono text-xs text-muted-2 mb-3">Você ainda não pontuou esta semana. Um episódio já te coloca na lista.</p>
               )}
               <ol className="list-none m-0 p-0 space-y-2">
                 {lista.map(m => {
@@ -299,9 +299,9 @@ export default function Membros() {
                             <span className={`font-bold text-[14px] truncate ${obterClasseCorNome(m.cor_nome)}`}>{m.nome}</span>
                             {renderizarEmblema(m.emblema, 'sm')}
                             <SeloEquipe handle={m.handle} />
-                            {eu && <span className="font-mono text-[9.5px] uppercase px-1.5 py-0.5 rounded bg-holo-2/20 text-holo-2 shrink-0">você</span>}
+                            {eu && <span className="font-mono text-xs uppercase px-1.5 py-0.5 rounded bg-holo-2/20 text-holo-2 shrink-0">você</span>}
                           </span>
-                          <span className="block font-mono text-[10.5px] text-muted-2 truncate">
+                          <span className="block font-mono text-xs text-muted-2 truncate">
                             @{m.handle} · {m.titulo_rank}
                           </span>
                         </span>
@@ -313,7 +313,7 @@ export default function Membros() {
                             {periodo === 'semana' || periodo === 'temporada' ? '+' : ''}
                             {m.xp.toLocaleString('pt-BR')}
                           </span>
-                          <span className="block font-mono text-[9.5px] text-muted-2 uppercase mt-0.5">
+                          <span className="block font-mono text-xs text-muted-2 uppercase mt-0.5">
                             {periodo === 'genero' ? 'XP gênero' : `XP · nv ${m.nivel}`}
                           </span>
                         </span>
@@ -325,7 +325,7 @@ export default function Membros() {
             </>
           )}
 
-          <p className="font-mono text-[10.5px] text-muted-2 mt-6 flex items-start gap-2">
+          <p className="font-mono text-xs text-muted-2 mt-6 flex items-start gap-2">
             <Trophy size={12} className="shrink-0 mt-0.5" aria-hidden />
             Só aparecem perfis públicos. O XP vem de episódios marcados, com teto diário e sem farm de lista importada.
           </p>

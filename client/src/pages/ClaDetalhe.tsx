@@ -243,7 +243,7 @@ export default function ClaDetalhe() {
               <p className="text-xs sm:text-sm text-muted mt-2 max-w-2xl">
                 {cla.descricao || 'Nenhuma descrição fornecida.'}
               </p>
-              <div className="flex items-center gap-2 text-[11px] text-muted mt-3">
+              <div className="flex items-center gap-2 text-xs text-muted mt-3">
                 <Calendar size={13} />
                 <span>Fundado em {new Date(cla.criado_em).toLocaleDateString('pt-BR')}</span>
               </div>
@@ -254,11 +254,11 @@ export default function ClaDetalhe() {
           <div className="flex flex-col sm:flex-row md:flex-col items-start md:items-end gap-4 shrink-0">
             <div className="flex items-center gap-3 w-full sm:w-auto">
               <div className="px-4 py-2.5 rounded-2xl bg-void/60 border border-line text-center flex-1 sm:flex-none">
-                <span className="text-[10px] uppercase font-bold text-muted block">Membros</span>
+                <span className="text-xs uppercase font-bold text-muted block">Membros</span>
                 <span className="text-base font-black text-text">{cla.total_membros} / 30</span>
               </div>
               <div className="px-4 py-2.5 rounded-2xl bg-void/60 border border-line text-center flex-1 sm:flex-none">
-                <span className="text-[10px] uppercase font-bold text-muted block">XP Semana</span>
+                <span className="text-xs uppercase font-bold text-muted block">XP Semana</span>
                 <span className="text-base font-black text-holo-3">+{cla.xp_semana} XP</span>
               </div>
             </div>
@@ -349,12 +349,12 @@ export default function ClaDetalhe() {
                         {membro.nome}
                       </Link>
                       {ehLiderMembro && (
-                        <span className="inline-flex items-center gap-1 text-[10px] font-black uppercase px-2 py-0.5 rounded-md bg-amber-500/15 border border-amber-500/30 text-amber-400">
+                        <span className="inline-flex items-center gap-1 text-xs font-black uppercase px-2 py-0.5 rounded-md bg-amber-500/15 border border-amber-500/30 text-amber-400">
                           <Crown size={10} /> Líder
                         </span>
                       )}
                       {ehViceMembro && (
-                        <span className="inline-flex items-center gap-1 text-[10px] font-black uppercase px-2 py-0.5 rounded-md bg-holo-3/15 border border-holo-3/30 text-holo-3">
+                        <span className="inline-flex items-center gap-1 text-xs font-black uppercase px-2 py-0.5 rounded-md bg-holo-3/15 border border-holo-3/30 text-holo-3">
                           <Shield size={10} /> Vice
                         </span>
                       )}

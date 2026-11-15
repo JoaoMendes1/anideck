@@ -357,9 +357,9 @@ export default function AbaEconomia() {
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <div className="p-5 rounded-2xl bg-panel border border-line flex items-center justify-between">
           <div>
-            <p className="font-mono text-[10px] text-muted-2 uppercase tracking-widest m-0">Em circulação</p>
+            <p className="font-mono text-xs text-muted-2 uppercase tracking-widest m-0">Em circulação</p>
             <p className="font-anton text-2xl text-holo-3 mt-1 m-0">{totalCirculacao.toLocaleString('pt-BR')} ₳</p>
-            <p className="text-[11px] text-muted-2 mt-1 m-0">Soma de todas as carteiras</p>
+            <p className="text-xs text-muted-2 mt-1 m-0">Soma de todas as carteiras</p>
           </div>
           <div className="w-12 h-12 rounded-xl bg-holo-3/15 text-holo-3 grid place-items-center shrink-0">
             <IconeAniCoin size={26} animar />
@@ -368,14 +368,14 @@ export default function AbaEconomia() {
 
         <div className="p-5 rounded-2xl bg-panel border border-gold/40 shadow-[0_0_20px_rgba(245,158,11,0.08)] flex items-center justify-between">
           <div>
-            <p className="font-mono text-[10px] text-gold uppercase tracking-widest m-0 font-bold">// caixa da loja</p>
+            <p className="font-mono text-xs text-gold uppercase tracking-widest m-0 font-bold">// caixa da loja</p>
             <p className="font-anton text-2xl text-gold mt-1 m-0">{saldoCaixaLoja.toLocaleString('pt-BR')} ₳</p>
             <div className="flex items-center gap-2 mt-1">
-              <span className="text-[11px] text-muted-2">Cofre de vendas</span>
+              <span className="text-xs text-muted-2">Cofre de vendas</span>
               <button
                 type="button"
                 onClick={() => setModalSaqueAberto(true)}
-                className="text-[10.5px] font-mono font-bold text-gold hover:underline cursor-pointer"
+                className="text-xs font-mono font-bold text-gold hover:underline cursor-pointer"
               >
                 Sacar / Transferir →
               </button>
@@ -388,9 +388,9 @@ export default function AbaEconomia() {
 
         <div className="p-5 rounded-2xl bg-panel border border-line flex items-center justify-between">
           <div>
-            <p className="font-mono text-[10px] text-muted-2 uppercase tracking-widest m-0">Transações no ledger</p>
+            <p className="font-mono text-xs text-muted-2 uppercase tracking-widest m-0">Transações no ledger</p>
             <p className="font-anton text-2xl text-text mt-1 m-0">{totalTransacoes.toLocaleString('pt-BR')}</p>
-            <p className="text-[11px] text-muted-2 mt-1 m-0">Entradas e saídas registradas</p>
+            <p className="text-xs text-muted-2 mt-1 m-0">Entradas e saídas registradas</p>
           </div>
           <div className="w-12 h-12 rounded-xl bg-green/15 text-green grid place-items-center shrink-0">
             <Activity size={24} />
@@ -399,11 +399,11 @@ export default function AbaEconomia() {
 
         <div className="p-5 rounded-2xl bg-panel border border-line flex items-center justify-between">
           <div>
-            <p className="font-mono text-[10px] text-muted-2 uppercase tracking-widest m-0">Status da Economia</p>
+            <p className="font-mono text-xs text-muted-2 uppercase tracking-widest m-0">Status da Economia</p>
             <p className={`font-anton text-2xl mt-1 m-0 ${regras.ativo ? 'text-green' : 'text-coral'}`}>
               {regras.ativo ? 'ATIVA' : 'PAUSADA'}
             </p>
-            <p className="text-[11px] text-muted-2 mt-1 m-0">
+            <p className="text-xs text-muted-2 mt-1 m-0">
               {regras.ativo ? 'Operações habilitadas' : 'Operações bloqueadas'}
             </p>
           </div>
@@ -418,7 +418,7 @@ export default function AbaEconomia() {
         <section className="p-6 rounded-2xl bg-panel border border-line">
           <div className="flex items-center justify-between mb-4">
             <div>
-              <p className="font-mono text-[10px] text-muted-2 uppercase tracking-widest m-0">// parâmetros</p>
+              <p className="font-mono text-xs text-muted-2 uppercase tracking-widest m-0">// parâmetros</p>
               <h2 className="font-anton text-xl uppercase m-0 mt-0.5">Regras de AniCoins</h2>
             </div>
             <span className="font-mono text-xs px-2.5 py-0.5 rounded-full border border-line bg-panel-2 text-muted">
@@ -444,7 +444,7 @@ export default function AbaEconomia() {
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
-                <label htmlFor="aba-economia-missao-diaria" className="block font-mono text-[11px] text-muted uppercase mb-1">
+                <label htmlFor="aba-economia-missao-diaria" className="block font-mono text-xs text-muted uppercase mb-1">
                   Missão diária (₳)
                 </label>
                 <CampoNumerico
@@ -461,7 +461,7 @@ export default function AbaEconomia() {
               </div>
 
               <div>
-                <label htmlFor="aba-economia-teto-diario" className="block font-mono text-[11px] text-muted uppercase mb-1">
+                <label htmlFor="aba-economia-teto-diario" className="block font-mono text-xs text-muted uppercase mb-1">
                   Teto diário (₳)
                 </label>
                 <CampoNumerico
@@ -475,7 +475,7 @@ export default function AbaEconomia() {
               </div>
 
               <div>
-                <label htmlFor="aba-economia-custo-base-de-carta" className="block font-mono text-[11px] text-muted uppercase mb-1">
+                <label htmlFor="aba-economia-custo-base-de-carta" className="block font-mono text-xs text-muted uppercase mb-1">
                   Custo base de Carta (₳)
                 </label>
                 <CampoNumerico
@@ -489,7 +489,7 @@ export default function AbaEconomia() {
               </div>
 
               <div>
-                <label htmlFor="aba-economia-custo-base-de-cosmetico" className="block font-mono text-[11px] text-muted uppercase mb-1">
+                <label htmlFor="aba-economia-custo-base-de-cosmetico" className="block font-mono text-xs text-muted uppercase mb-1">
                   Custo base de Cosmético (₳)
                 </label>
                 <CampoNumerico
@@ -513,14 +513,14 @@ export default function AbaEconomia() {
                 />
                 <div>
                   <span className="text-xs font-bold text-text block">Permitir Devolução de Cosméticos</span>
-                  <span className="text-[11px] text-muted-2 block">
+                  <span className="text-xs text-muted-2 block">
                     Permite que membros revendam itens cosméticos à loja com reembolso parcial
                   </span>
                 </div>
               </label>
 
               <div>
-                <label htmlFor="aba-economia-taxa-de-retencao-do" className="block font-mono text-[11px] text-muted uppercase mb-1">
+                <label htmlFor="aba-economia-taxa-de-retencao-do" className="block font-mono text-xs text-muted uppercase mb-1">
                   Taxa de Retenção do Caixa ({regras.taxa_retencao_devolucao_pct ?? 30}%)
                 </label>
                 <CampoNumerico
@@ -532,7 +532,7 @@ export default function AbaEconomia() {
                   className="w-full bg-panel-2 border border-line rounded-xl px-3 py-2 text-sm text-text outline-none focus:border-holo-3 font-mono"
                   required
                 />
-                <p className="text-[10.5px] text-muted-2 mt-1 m-0">
+                <p className="text-xs text-muted-2 mt-1 m-0">
                   Lucro retido pelo cofre (ex: 30% retido = o usuário recebe 70% do preço de volta).
                 </p>
               </div>
@@ -552,7 +552,7 @@ export default function AbaEconomia() {
         <section className="p-6 rounded-2xl bg-panel border border-line">
           <div className="flex items-center justify-between mb-4">
             <div>
-              <p className="font-mono text-[10px] text-muted-2 uppercase tracking-widest m-0">// suporte &amp; auditoria</p>
+              <p className="font-mono text-xs text-muted-2 uppercase tracking-widest m-0">// suporte &amp; auditoria</p>
               <h2 className="font-anton text-xl uppercase m-0 mt-0.5">Ajuste Manual de Saldo</h2>
             </div>
             <span className="font-mono text-xs px-2.5 py-0.5 rounded-full border border-gold/40 bg-gold/10 text-gold">
@@ -567,7 +567,7 @@ export default function AbaEconomia() {
 
           <form onSubmit={handleAjusteManual} className="flex flex-col gap-3">
             <div>
-              <label htmlFor="aba-economia-usuario" className="block font-mono text-[11px] text-muted uppercase mb-1">
+              <label htmlFor="aba-economia-usuario" className="block font-mono text-xs text-muted uppercase mb-1">
                 Usuário (@handle ou UUID)
               </label>
               <div className="relative">
@@ -621,7 +621,7 @@ export default function AbaEconomia() {
                       )}
                       <div className="min-w-0 flex-1">
                         <span className="font-bold text-xs text-text block truncate">{m.nome || m.handle}</span>
-                        <span className="font-mono text-[10px] text-holo-3 block">@{m.handle}</span>
+                        <span className="font-mono text-xs text-holo-3 block">@{m.handle}</span>
                       </div>
                     </button>
                   ))}
@@ -629,14 +629,14 @@ export default function AbaEconomia() {
               )}
 
               {membroSelecionado && (
-                <p className="font-mono text-[10.5px] text-green mt-1 m-0 flex items-center gap-1">
+                <p className="font-mono text-xs text-green mt-1 m-0 flex items-center gap-1">
                   ✓ Selecionado: {membroSelecionado.nome ? `${membroSelecionado.nome} (@${membroSelecionado.handle})` : `@${membroSelecionado.handle}`}
                 </p>
               )}
             </div>
 
             <div>
-              <label htmlFor="aba-economia-quantidade" className="block font-mono text-[11px] text-muted uppercase mb-1">
+              <label htmlFor="aba-economia-quantidade" className="block font-mono text-xs text-muted uppercase mb-1">
                 Quantidade (+ para crédito, - para débito)
               </label>
               <input
@@ -651,7 +651,7 @@ export default function AbaEconomia() {
             </div>
 
             <div>
-              <label htmlFor="aba-economia-motivo-obrigatorio" className="block font-mono text-[11px] text-muted uppercase mb-1">
+              <label htmlFor="aba-economia-motivo-obrigatorio" className="block font-mono text-xs text-muted uppercase mb-1">
                 Motivo Obrigatório
               </label>
               <input
@@ -680,7 +680,7 @@ export default function AbaEconomia() {
       <section className="p-6 rounded-2xl bg-panel border border-line">
         <div className="flex items-center justify-between mb-4">
           <div>
-            <p className="font-mono text-[10px] text-muted-2 uppercase tracking-widest m-0">// sustentabilidade</p>
+            <p className="font-mono text-xs text-muted-2 uppercase tracking-widest m-0">// sustentabilidade</p>
             <h2 className="font-anton text-xl uppercase m-0 mt-0.5">Configuração de Apoiadores</h2>
           </div>
           <span className="font-mono text-xs px-2.5 py-0.5 rounded-full border border-line bg-panel-2 text-muted">
@@ -703,7 +703,7 @@ export default function AbaEconomia() {
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <label htmlFor="aba-economia-link-de-apoio-externo" className="block font-mono text-[10.5px] uppercase text-muted-2 mb-1.5">
+              <label htmlFor="aba-economia-link-de-apoio-externo" className="block font-mono text-xs uppercase text-muted-2 mb-1.5">
                 Link de Apoio Externo (Apoia.se, Catarse, Livepix etc.)
               </label>
               <input
@@ -717,7 +717,7 @@ export default function AbaEconomia() {
             </div>
 
             <div>
-              <label htmlFor="aba-economia-chave-pix-de-apoio" className="block font-mono text-[10.5px] uppercase text-muted-2 mb-1.5">
+              <label htmlFor="aba-economia-chave-pix-de-apoio" className="block font-mono text-xs uppercase text-muted-2 mb-1.5">
                 Chave Pix de Apoio (opcional)
               </label>
               <input
@@ -732,7 +732,7 @@ export default function AbaEconomia() {
           </div>
 
           <div>
-            <label htmlFor="aba-economia-mensagem-de-chamada-para" className="block font-mono text-[10.5px] uppercase text-muted-2 mb-1.5">
+            <label htmlFor="aba-economia-mensagem-de-chamada-para" className="block font-mono text-xs uppercase text-muted-2 mb-1.5">
               Mensagem de Chamada para Apoio
             </label>
             <textarea
@@ -758,7 +758,7 @@ export default function AbaEconomia() {
       <section className="p-6 rounded-2xl bg-panel border border-line">
         <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
           <div>
-            <p className="font-mono text-[10px] text-muted-2 uppercase tracking-widest m-0">// auditoria do ledger</p>
+            <p className="font-mono text-xs text-muted-2 uppercase tracking-widest m-0">// auditoria do ledger</p>
             <h2 className="font-anton text-xl uppercase m-0 mt-0.5">Últimas Transações Globais</h2>
           </div>
           <button
@@ -774,13 +774,13 @@ export default function AbaEconomia() {
 
         {movimentos.length === 0 ? (
           <div className="p-8 rounded-xl bg-panel-2 border border-line text-center">
-            <p className="text-sm text-muted m-0">Nenhum movimento registrado no crystal_ledger ainda.</p>
+            <p className="text-sm text-muted m-0">Nenhum movimento registrado ainda.</p>
           </div>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-left text-xs sm:text-sm">
               <thead>
-                <tr className="border-b border-line text-muted-2 font-mono text-[10.5px] uppercase">
+                <tr className="border-b border-line text-muted-2 font-mono text-xs uppercase">
                   <th className="py-2.5 px-3">Data / Hora</th>
                   <th className="py-2.5 px-3">Usuário</th>
                   <th className="py-2.5 px-3">Motivo</th>
@@ -838,7 +838,7 @@ export default function AbaEconomia() {
           <div className="w-full max-w-md rounded-2xl bg-panel border border-line shadow-2xl p-6 text-text relative">
             <div className="flex items-center justify-between mb-3">
               <div>
-                <span className="font-mono text-[10px] text-gold uppercase tracking-widest font-bold">// cofre da plataforma</span>
+                <span className="font-mono text-xs text-gold uppercase tracking-widest font-bold">// cofre da plataforma</span>
                 <h3 className="font-anton text-xl uppercase tracking-wide m-0">Sacar / Transferir do Caixa</h3>
               </div>
               <button
@@ -856,7 +856,7 @@ export default function AbaEconomia() {
 
             <form onSubmit={handleSacarCaixa} className="flex flex-col gap-3.5">
               <div>
-                <label htmlFor="aba-economia-destinatario" className="block font-mono text-[11px] text-muted uppercase mb-1">
+                <label htmlFor="aba-economia-destinatario" className="block font-mono text-xs text-muted uppercase mb-1">
                   Destinatário (@handle, UUID ou deixe em branco para você)
                 </label>
                 <input
@@ -870,7 +870,7 @@ export default function AbaEconomia() {
               </div>
 
               <div>
-                <label htmlFor="aba-economia-quantidade-2" className="block font-mono text-[11px] text-muted uppercase mb-1">
+                <label htmlFor="aba-economia-quantidade-2" className="block font-mono text-xs text-muted uppercase mb-1">
                   Quantidade (Disponível no Caixa: {saldoCaixaLoja.toLocaleString('pt-BR')} ₳)
                 </label>
                 <input
@@ -887,7 +887,7 @@ export default function AbaEconomia() {
               </div>
 
               <div>
-                <label htmlFor="aba-economia-motivo-do-saque" className="block font-mono text-[11px] text-muted uppercase mb-1">
+                <label htmlFor="aba-economia-motivo-do-saque" className="block font-mono text-xs text-muted uppercase mb-1">
                   Motivo do Saque
                 </label>
                 <input

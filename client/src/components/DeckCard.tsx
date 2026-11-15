@@ -50,16 +50,16 @@ export default function DeckCard({ entrada, animeLocal, gradientClass, onEdit }:
             gradientClass={gradientClass}
             nextAiringEpisode={mostraSelosDeAr ? animeLocal?.nextAiringEpisode : undefined}
             statusBadge={
-                <span className={`select-none text-[9px] md:text-[9.5px] font-extrabold px-2 py-1 rounded-md uppercase tracking-wider border truncate max-w-full ${temaStatus.bg} ${temaStatus.text} ${temaStatus.border}`}>
+                <span className={`select-none text-xs font-extrabold px-2 py-1 rounded-md uppercase tracking-wider border truncate max-w-full ${temaStatus.bg} ${temaStatus.text} ${temaStatus.border}`}>
                     {entrada.status}
                 </span>
             }
             extraBadges={
                 mostraSelosDeAr && (
                     <>
-                        {acabouDeLancar && <span className="select-none text-[8.5px] font-black px-2 py-1 rounded-md bg-coral text-white shadow-[0_0_10px_rgba(255,92,108,0.5)] uppercase tracking-widest">Novo EP</span>}
-                        {lancaHoje && !acabouDeLancar && <span className="select-none text-[8.5px] font-black px-2 py-1 rounded-md bg-holo-3 text-void shadow-[0_0_10px_rgba(63,224,240,0.5)] uppercase tracking-widest">Hoje</span>}
-                        {lancaAmanha && !acabouDeLancar && <span className="select-none text-[8.5px] font-black px-2 py-1 rounded-md bg-gold text-void shadow-[0_0_10px_rgba(255,197,66,0.5)] uppercase tracking-widest">Amanhã</span>}
+                        {acabouDeLancar && <span className="select-none text-xs font-black px-2 py-1 rounded-md bg-coral text-white shadow-[0_0_10px_rgba(255,92,108,0.5)] uppercase tracking-widest">Novo EP</span>}
+                        {lancaHoje && !acabouDeLancar && <span className="select-none text-xs font-black px-2 py-1 rounded-md bg-holo-3 text-void shadow-[0_0_10px_rgba(63,224,240,0.5)] uppercase tracking-widest">Hoje</span>}
+                        {lancaAmanha && !acabouDeLancar && <span className="select-none text-xs font-black px-2 py-1 rounded-md bg-gold text-void shadow-[0_0_10px_rgba(255,197,66,0.5)] uppercase tracking-widest">Amanhã</span>}
                     </>
                 )
             }

@@ -51,7 +51,7 @@ const SLOTS: { id: string; rotulo: string; Icone: LucideIcon }[] = [
 ]
 
 const CONTAINER = 'w-full min-w-0 max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-10 pt-6 pb-24'
-const ROTULO_DE_SECAO = 'font-mono text-[11px] font-semibold uppercase tracking-widest text-muted m-0'
+const ROTULO_DE_SECAO = 'font-mono text-xs font-semibold uppercase tracking-widest text-muted m-0'
 
 function Cabecalho() {
   return (
@@ -124,7 +124,7 @@ function TelaDespertar({ aoDespertar }: { aoDespertar: (dados: RespostaPersonage
         </div>
 
         <form onSubmit={enviar} className="flex flex-col gap-4" noValidate>
-          <p className="font-mono text-[11px] font-semibold uppercase tracking-widest text-holo-3 m-0">O Despertar</p>
+          <p className="font-mono text-xs font-semibold uppercase tracking-widest text-holo-3 m-0">O Despertar</p>
           <h1 className="font-anton text-[clamp(2rem,8vw,2.6rem)] uppercase leading-[1.05] m-0">
             Um novo mundo te espera
           </h1>
@@ -319,7 +319,7 @@ function FichaDoPersonagem({ dados }: { dados: RespostaPersonagem }) {
                     >
                       {item.nome}
                     </span>
-                    <span className="font-mono text-[11px] leading-tight text-muted">nível {item.nivel_minimo}</span>
+                    <span className="font-mono text-xs leading-tight text-muted">nível {item.nivel_minimo}</span>
                   </li>
                 )
               })}
@@ -331,7 +331,7 @@ function FichaDoPersonagem({ dados }: { dados: RespostaPersonagem }) {
               <h2 id="titulo-dos-equipamentos" className={ROTULO_DE_SECAO}>
                 Equipamentos
               </h2>
-              <span className="rounded-full border border-line px-2.5 py-0.5 font-mono text-[11px] text-muted">
+              <span className="rounded-full border border-line px-2.5 py-0.5 font-mono text-xs text-muted">
                 em breve
               </span>
             </div>
@@ -341,7 +341,7 @@ function FichaDoPersonagem({ dados }: { dados: RespostaPersonagem }) {
                   <span className="flex h-16 w-full items-center justify-center rounded-xl border border-dashed border-line text-muted">
                     <Icone size={22} aria-hidden="true" />
                   </span>
-                  <span className="max-w-full truncate text-[11px] font-semibold text-muted">{rotulo}</span>
+                  <span className="max-w-full truncate text-xs font-semibold text-muted">{rotulo}</span>
                 </li>
               ))}
             </ul>

@@ -85,15 +85,15 @@ export default function CuradoriaLinks({
     <div className="p-4 border border-line bg-panel-2 rounded-xl w-full max-w-full overflow-hidden">
       <div className="flex items-center justify-between mb-1">
         <h4 className="text-xs font-bold text-muted uppercase">Onde Assistir</h4>
-        <span className="text-[10px] text-muted-2">Toque no link para editar</span>
+        <span className="text-xs text-muted-2">Toque no link para editar</span>
       </div>
-      <p className="text-[10px] text-muted-2 mb-4">
+      <p className="text-xs text-muted-2 mb-4">
         Cadastrar qualquer link aqui substitui todos os da AniList para este anime.
       </p>
 
       <div className={`flex flex-col gap-3 mb-4 p-3 rounded-lg border transition-colors ${emEdicao ? 'bg-holo-3/5 border-holo-3' : 'bg-panel border-line'}`}>
         <div className="flex flex-wrap items-center gap-1.5">
-          <span className="font-mono text-[9.5px] uppercase tracking-wider text-muted-2 mr-1">Atalhos:</span>
+          <span className="font-mono text-xs uppercase tracking-wider text-muted-2 mr-1">Atalhos:</span>
           {PLATAFORMAS_SUGERIDAS.map((p) => {
             const ativa = plataforma.trim().toLowerCase() === p.toLowerCase()
             return (
@@ -101,7 +101,7 @@ export default function CuradoriaLinks({
                 key={p}
                 type="button"
                 onClick={() => setPlataforma(p)}
-                className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold border transition-colors cursor-pointer ${
+                className={`px-2.5 py-0.5 rounded-full text-xs font-bold border transition-colors cursor-pointer ${
                   ativa
                     ? 'bg-holo-2/20 border-holo-2 text-holo-2'
                     : 'bg-panel-2 border-line text-muted hover:text-text hover:border-muted-2'
@@ -115,7 +115,7 @@ export default function CuradoriaLinks({
 
         <div className="flex flex-col sm:flex-row sm:items-end gap-3">
           <div className="sm:w-44 shrink-0">
-            <label htmlFor="curadoria-links-plataforma" className="block text-[10px] mb-1 font-bold text-muted">Plataforma</label>
+            <label htmlFor="curadoria-links-plataforma" className="block text-xs mb-1 font-bold text-muted">Plataforma</label>
             <input
               id="curadoria-links-plataforma"
               type="text"
@@ -127,7 +127,7 @@ export default function CuradoriaLinks({
           </div>
 
           <div className="flex-1 min-w-0">
-            <label htmlFor="curadoria-links-link" className="block text-[10px] mb-1 font-bold text-muted">Link</label>
+            <label htmlFor="curadoria-links-link" className="block text-xs mb-1 font-bold text-muted">Link</label>
             <input
               id="curadoria-links-link"
               type="url"
@@ -176,8 +176,8 @@ export default function CuradoriaLinks({
               >
                 <ExternalLink size={14} className={editando ? 'text-holo-3 shrink-0' : 'text-muted-2 shrink-0'} />
                 <div className="min-w-0 flex-1">
-                  <div className={`text-[11px] font-bold ${editando ? 'text-holo-3' : 'text-text'}`}>{link.platform}</div>
-                  <div className="text-[10px] text-muted-2 truncate font-mono">{link.url}</div>
+                  <div className={`text-xs font-bold ${editando ? 'text-holo-3' : 'text-text'}`}>{link.platform}</div>
+                  <div className="text-xs text-muted-2 truncate font-mono">{link.url}</div>
                 </div>
                 <button
                   type="button"

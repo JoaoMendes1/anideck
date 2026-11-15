@@ -1,6 +1,6 @@
 | # | Página/Tela | Arquivo | Status | Fase do Roadmap |
 |---|---|---|---|---|
-| 1 | Landing pública (visitante) | `Landing.tsx` | ✅ Implementada · vitrine viva da curadoria, cards Foil e aviso de acesso Beta | Fase 3 / 13 (#142) |
+| 1 | Landing pública (visitante) | `Landing.tsx` | ✅ Implementada · vitrine viva da curadoria, cards Foil, aviso de acesso Beta e seção da Guilda com os componentes do painel do jogador (`VitrineGuilda`) | Fase 3 / 13 (#142, #213) |
 | 2 | Login / Cadastro | `Auth.tsx` | ✅ Implementada · aviso de Beta fechado com solicitação de convite e atalhos sem login | Fase 2 / 13 (#142) |
 | 3 | Meu Deck (dashboard logado) | `MeuDeck.tsx` | ✅ Implementada · container 1440px, filtro clicável nos StatCards, reconciliação automática de status Em Dia vs Assistindo quando saem episódios novos, dia da semana de lançamento e vitrine recolhível | Fase 2 / 3 / 13 / 16 (#135, #136, #197) |
 | 4 | Busca / Descobrir catálogo | `Busca.tsx` | ✅ Implementada · container 1440px e filtro por ano livre | Fase 2 / 13 |

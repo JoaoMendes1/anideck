@@ -18,7 +18,7 @@ interface AnimeDaVitrine {
 }
 
 const campo = 'w-full bg-panel-2 border border-line rounded-xl px-4 py-3 text-sm outline-none focus:border-holo-3 transition-colors'
-const rotulo = 'block text-[11px] font-bold text-muted mb-2 uppercase tracking-wide select-none'
+const rotulo = 'block text-xs font-bold text-muted mb-2 uppercase tracking-wide select-none'
 
 function dataCurta(iso: string) {
   const [a, m, d] = iso.split('-').map(Number)
@@ -202,7 +202,7 @@ function Formulario({ estado, token, nomeSugerido, daEquipe }: { estado: EstadoC
                 className={`${campo} pl-9`}
               />
             </div>
-            <p className={`text-[11px] mt-1 mb-0 ${checagem.erro && handle.length > 0 ? 'text-coral' : 'text-muted-2'}`}>
+            <p className={`text-xs mt-1 mb-0 ${checagem.erro && handle.length > 0 ? 'text-coral' : 'text-muted-2'}`}>
               {checagem.erro && handle.length > 0
                 ? checagem.erro
                 : daEquipe
@@ -226,7 +226,7 @@ function Formulario({ estado, token, nomeSugerido, daEquipe }: { estado: EstadoC
           placeholder="Shonen de manhã, slice of life à noite."
           className={`${campo} resize-none`}
         />
-        <p className="text-[11px] text-muted-2 mt-1 mb-0 text-right font-mono">{MAX_BIO - bio.length}</p>
+        <p className="text-xs text-muted-2 mt-1 mb-0 text-right font-mono">{MAX_BIO - bio.length}</p>
 
         <div className="mt-3">
           <div className="flex items-center justify-between gap-2 mb-2">
@@ -235,7 +235,7 @@ function Formulario({ estado, token, nomeSugerido, daEquipe }: { estado: EstadoC
                 Sua mão · {vitrine.length}/{limiteVitrine} cartas
               </span>
               {temExpansaoVitrine && (
-                <span className="font-mono text-[9px] uppercase px-1.5 py-0.5 rounded bg-holo-3/20 border border-holo-3/40 text-holo-3 font-bold">
+                <span className="font-mono text-xs uppercase px-1.5 py-0.5 rounded bg-holo-3/20 border border-holo-3/40 text-holo-3 font-bold">
                   +2 Loja
                 </span>
               )}
@@ -424,7 +424,7 @@ function Bloqueados({ token }: { token: string }) {
         {lista.map(h => (
           <li key={h} className="inline-flex items-center gap-2 pl-3 pr-1 py-1 rounded-full bg-panel-2 border border-line text-[12.5px]">
             @{h}
-            <button type="button" onClick={() => desbloquear(h)} className="px-2.5 py-1 rounded-full text-[11px] font-bold text-muted hover:text-text border border-line cursor-pointer">
+            <button type="button" onClick={() => desbloquear(h)} className="px-2.5 py-1 rounded-full text-xs font-bold text-muted hover:text-text border border-line cursor-pointer">
               Desbloquear
             </button>
           </li>

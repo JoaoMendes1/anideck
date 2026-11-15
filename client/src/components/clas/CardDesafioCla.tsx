@@ -100,16 +100,16 @@ export default function CardDesafioCla({ tag, souMembro }: Props) {
             </div>
             <div>
               <div className="flex items-center gap-2 flex-wrap mb-1">
-                <span className="font-mono text-[10px] font-bold uppercase tracking-widest px-2 py-0.5 rounded-full bg-holo-2/15 border border-holo-2/30 text-holo-2" title={`Código: ${desafio.semana}`}>
+                <span className="font-mono text-xs font-bold uppercase tracking-widest px-2 py-0.5 rounded-full bg-holo-2/15 border border-holo-2/30 text-holo-2" title={`Código: ${desafio.semana}`}>
                   Desafio da Semana · {formatarSemanaISO(desafio.semana)}
                 </span>
 
                 {bateuMeta ? (
-                  <span className="font-mono text-[10px] font-bold uppercase tracking-widest px-2.5 py-0.5 rounded-full bg-green/15 border border-green/35 text-green flex items-center gap-1 shadow-[0_0_12px_rgba(160,255,120,0.25)]">
+                  <span className="font-mono text-xs font-bold uppercase tracking-widest px-2.5 py-0.5 rounded-full bg-green/15 border border-green/35 text-green flex items-center gap-1 shadow-[0_0_12px_rgba(160,255,120,0.25)]">
                     <Trophy size={11} /> Meta Batida!
                   </span>
                 ) : (
-                  <span className="font-mono text-[10px] font-bold uppercase tracking-widest px-2.5 py-0.5 rounded-full bg-holo-3/15 border border-holo-3/30 text-holo-3 flex items-center gap-1">
+                  <span className="font-mono text-xs font-bold uppercase tracking-widest px-2.5 py-0.5 rounded-full bg-holo-3/15 border border-holo-3/30 text-holo-3 flex items-center gap-1">
                     <Clock size={11} /> Em andamento
                   </span>
                 )}
@@ -129,7 +129,7 @@ export default function CardDesafioCla({ tag, souMembro }: Props) {
               <IconeAniCoin size={18} />
             </div>
             <div>
-              <span className="font-mono text-[10px] uppercase font-bold text-muted block">Recompensa</span>
+              <span className="font-mono text-xs uppercase font-bold text-muted block">Recompensa</span>
               <span className="font-anton text-lg text-gold flex items-center gap-1.5">
                 +{desafio.recompensa_anicoins} <span className="font-sans text-xs font-semibold text-text">AniCoins / membro</span>
               </span>
@@ -146,7 +146,7 @@ export default function CardDesafioCla({ tag, souMembro }: Props) {
             <span className="font-bold text-text">
               <span className="text-holo-3 text-sm">{desafio.progresso_total}</span>
               <span className="text-muted"> / {desafio.meta} {desafio.unidade}</span>
-              <span className="ml-2 px-1.5 py-px rounded bg-panel-2 border border-line text-[11px] text-holo-1">
+              <span className="ml-2 px-1.5 py-px rounded bg-panel-2 border border-line text-xs text-holo-1">
                 {pct}%
               </span>
             </span>
@@ -162,7 +162,7 @@ export default function CardDesafioCla({ tag, souMembro }: Props) {
             />
           </div>
 
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mt-2.5 text-[11px] text-muted font-mono">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mt-2.5 text-xs text-muted font-mono">
             <span>
               {elegiveis} de {totalMembros} membros elegíveis à recompensa (mínimo 1 {desafio.unidade})
             </span>
@@ -189,11 +189,11 @@ export default function CardDesafioCla({ tag, souMembro }: Props) {
           </div>
           <div>
             {(minhaContribuicao?.contribuicao ?? 0) >= 1 ? (
-              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-green/15 border border-green/30 text-green font-mono font-bold text-[11px]">
+              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-green/15 border border-green/30 text-green font-mono font-bold text-xs">
                 <CheckCircle2 size={13} /> Você está apto para receber +{desafio.recompensa_anicoins} ₳
               </span>
             ) : (
-              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-gold/15 border border-gold/30 text-gold font-mono font-bold text-[11px]">
+              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-gold/15 border border-gold/30 text-gold font-mono font-bold text-xs">
                 <Award size={13} /> Contribua com pelo menos 1 {desafio.unidade} para garantir as moedas
               </span>
             )}
@@ -210,7 +210,7 @@ export default function CardDesafioCla({ tag, souMembro }: Props) {
         <div className="overflow-x-auto">
           <table className="w-full text-left text-xs border-collapse">
             <thead>
-              <tr className="border-b border-line text-muted font-mono text-[10.5px] uppercase">
+              <tr className="border-b border-line text-muted font-mono text-xs uppercase">
                 <th className="pb-2.5 font-bold">Membro</th>
                 <th className="pb-2.5 font-bold text-center">Papel</th>
                 <th className="pb-2.5 font-bold text-right">Contribuição</th>
@@ -229,7 +229,7 @@ export default function CardDesafioCla({ tag, souMembro }: Props) {
                   >
                     <td className="py-3 pr-2">
                       <div className="flex items-center gap-2.5">
-                        <span className="font-mono text-[11px] font-bold text-muted w-5 shrink-0">
+                        <span className="font-mono text-xs font-bold text-muted w-5 shrink-0">
                           #{idx + 1}
                         </span>
                         {m.avatar_url ? (
@@ -239,7 +239,7 @@ export default function CardDesafioCla({ tag, souMembro }: Props) {
                             className="w-7 h-7 rounded-full object-cover border border-line shrink-0"
                           />
                         ) : (
-                          <div className="w-7 h-7 rounded-full bg-void border border-line flex items-center justify-center font-bold text-[11px] text-holo-3 shrink-0">
+                          <div className="w-7 h-7 rounded-full bg-void border border-line flex items-center justify-center font-bold text-xs text-holo-3 shrink-0">
                             {m.nome.charAt(0).toUpperCase()}
                           </div>
                         )}
@@ -247,12 +247,12 @@ export default function CardDesafioCla({ tag, souMembro }: Props) {
                           <span className="text-text block truncate font-medium">
                             {m.nome}
                             {ehEu && (
-                              <span className="ml-1.5 text-[9px] px-1.5 py-px rounded bg-holo-2/30 text-holo-3 font-mono font-bold">
+                              <span className="ml-1.5 text-xs px-1.5 py-px rounded bg-holo-2/30 text-holo-3 font-mono font-bold">
                                 Você
                               </span>
                             )}
                           </span>
-                          <span className="text-[10px] text-muted-2 font-mono block">
+                          <span className="text-xs text-muted-2 font-mono block">
                             @{m.handle}
                           </span>
                         </div>
@@ -261,7 +261,7 @@ export default function CardDesafioCla({ tag, souMembro }: Props) {
 
                     <td className="py-3 px-2 text-center">
                       <span
-                        className={`inline-block px-2 py-0.5 rounded-full text-[10px] font-mono font-bold capitalize ${
+                        className={`inline-block px-2 py-0.5 rounded-full text-xs font-mono font-bold capitalize ${
                           m.papel === 'lider'
                             ? 'bg-gold/15 text-gold border border-gold/30'
                             : m.papel === 'vice'
@@ -277,16 +277,16 @@ export default function CardDesafioCla({ tag, souMembro }: Props) {
                       <span className={m.contribuicao > 0 ? 'text-holo-3 text-sm' : 'text-muted-2'}>
                         {m.contribuicao}
                       </span>{' '}
-                      <span className="text-[10px] text-muted">{desafio.unidade}</span>
+                      <span className="text-xs text-muted">{desafio.unidade}</span>
                     </td>
 
                     <td className="py-3 pl-2 text-right">
                       {m.elegivel ? (
-                        <span className="inline-flex items-center gap-1 text-[11px] font-mono font-bold text-green">
+                        <span className="inline-flex items-center gap-1 text-xs font-mono font-bold text-green">
                           <CheckCircle2 size={12} /> +{desafio.recompensa_anicoins} ₳
                         </span>
                       ) : (
-                        <span className="text-[10.5px] font-mono text-muted-2">
+                        <span className="text-xs font-mono text-muted-2">
                           0 ₳ (inapto)
                         </span>
                       )}

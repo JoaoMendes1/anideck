@@ -78,7 +78,7 @@ export default function ModalSugerirCorrecao({ aberto, onFechar, malId, tituloAn
 
         <div className="p-3 mb-5 rounded-2xl bg-holo-2/10 border border-holo-2/30 text-xs text-holo-3 flex items-center gap-2.5">
           <ShieldCheck size={18} className="shrink-0" />
-          <span>Membros a partir do Rank B podem colaborar com o acervo. Cada sugestão aprovada rende <strong>+15 Cristais 💎</strong> na sua conta!</span>
+          <span>Membros a partir do Rank B podem colaborar com o acervo. Cada sugestão aprovada rende <strong>+15 AniCoins</strong> na sua conta!</span>
         </div>
 
         <form onSubmit={submeter} className="space-y-4">

@@ -35,7 +35,7 @@ export default function SuaSemana({ semana, compacta = false }: { semana: DiaDaS
                 ativo ? 'bg-holo-3/15 border-holo-3/50 text-holo-3' : 'border-transparent hover:bg-panel-2 text-muted'
               }`}
             >
-              <span className="font-mono text-[9px] uppercase tracking-wider leading-none truncate max-w-full px-0.5">
+              <span className="font-mono text-xs uppercase tracking-wider leading-none truncate max-w-full px-0.5">
                 {i === 0 ? 'Hoje' : d.data.toLocaleDateString('pt-BR', { weekday: 'short' }).replace('.', '')}
               </span>
               <span className={`font-anton text-[17px] leading-none ${ativo ? 'text-text' : ''}`}>{d.data.getDate()}</span>
@@ -63,7 +63,7 @@ export default function SuaSemana({ semana, compacta = false }: { semana: DiaDaS
               <div className="min-w-0 flex-1">
                 <div className="flex items-center gap-2 mb-0.5">
                   <span className="font-anton text-[15px] text-holo-3 tabular-nums leading-none">{horaLocal(e.quando)}</span>
-                  <span className="font-mono text-[9.5px] text-muted-2 uppercase">Ep. {e.episodio}</span>
+                  <span className="font-mono text-xs text-muted-2 uppercase">Ep. {e.episodio}</span>
                 </div>
                 <Link to={`/anime/${e.anime.mal_id}`} className="block text-[13px] font-bold leading-snug line-clamp-2 hover:text-holo-3 transition-colors">
                   {e.anime.title}

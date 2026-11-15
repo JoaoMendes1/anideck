@@ -74,7 +74,7 @@ export default function Loja() {
 
         <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
           <div className="max-w-2xl">
-            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-holo-3/15 border border-holo-3/30 text-holo-3 font-mono text-[10.5px] font-bold uppercase tracking-widest mb-3">
+            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-holo-3/15 border border-holo-3/30 text-holo-3 font-mono text-xs font-bold uppercase tracking-widest mb-3">
               <Sparkles size={12} /> Bazar Comunitário
             </div>
             <h1 className="font-anton text-3xl sm:text-4xl lg:text-5xl uppercase tracking-wide m-0 text-text leading-tight">
@@ -91,12 +91,12 @@ export default function Loja() {
           {/* CARD DE SALDO & MISSÕES */}
           <div className="shrink-0 p-4 sm:p-5 rounded-2xl bg-panel-2/90 border border-line flex flex-col gap-3 min-w-[240px]">
             <div className="flex items-center justify-between">
-              <span className="font-mono text-[10px] text-muted-2 uppercase tracking-widest flex items-center gap-1.5">
+              <span className="font-mono text-xs text-muted-2 uppercase tracking-widest flex items-center gap-1.5">
                 <IconeAniCoin size={14} /> Sua Carteira
               </span>
               <Link
                 to="/#missoes-diarias-card"
-                className="font-mono text-[10.5px] text-holo-2 hover:underline flex items-center gap-1 font-bold"
+                className="font-mono text-xs text-holo-2 hover:underline flex items-center gap-1 font-bold"
               >
                 + AniCoins <ArrowRight size={11} />
               </Link>
@@ -107,7 +107,7 @@ export default function Loja() {
               </span>
               <span className="font-mono text-sm font-bold text-muted">₳ AniCoins</span>
             </div>
-            <p className="text-[11px] text-muted-2 m-0 border-t border-line/60 pt-2">
+            <p className="text-xs text-muted-2 m-0 border-t border-line/60 pt-2">
               Ganhe mais moedas completando as 3 missões do dia na Início.
             </p>
           </div>
@@ -139,7 +139,7 @@ export default function Loja() {
               }`}
             >
               <span>{f.rotulo}</span>
-              <span className={`text-[10px] px-1.5 py-px rounded-full ${ativo ? 'bg-void/25 text-void' : 'bg-panel-2 text-muted-2'}`}>
+              <span className={`text-xs px-1.5 py-px rounded-full ${ativo ? 'bg-void/25 text-void' : 'bg-panel-2 text-muted-2'}`}>
                 {qtd}
               </span>
             </button>
@@ -186,16 +186,16 @@ export default function Loja() {
                   {/* Topo do Card: Tipo & Raridade */}
                   <div className="flex items-center justify-between gap-2 mb-2">
                     <div className="flex items-center gap-1.5 flex-wrap">
-                      <span className="font-mono text-[10px] text-muted-2 uppercase tracking-widest">
+                      <span className="font-mono text-xs text-muted-2 uppercase tracking-widest">
                         // {item.tipo.replace('_', ' ')}
                       </span>
                       {item.temporada && (
-                        <span className="px-2 py-0.5 rounded-full font-mono text-[9px] font-bold uppercase bg-gradient-to-r from-red-600 to-amber-600 text-void flex items-center gap-1 shadow-sm">
+                        <span className="px-2 py-0.5 rounded-full font-mono text-xs font-bold uppercase bg-gradient-to-r from-red-600 to-amber-600 text-void flex items-center gap-1 shadow-sm">
                           <Zap size={10} fill="currentColor" /> S{item.temporada}
                         </span>
                       )}
                     </div>
-                    <span className={`px-2 py-0.5 rounded-full font-mono text-[10px] font-bold uppercase border ${corRaridade.badge}`}>
+                    <span className={`px-2 py-0.5 rounded-full font-mono text-xs font-bold uppercase border ${corRaridade.badge}`}>
                       {item.raridade}
                     </span>
                   </div>
@@ -237,7 +237,7 @@ export default function Loja() {
                         <span className={`text-base block ${obterClasseCorNome(item.estilo)}`}>
                           @{estado?.perfil.handle || 'usuario'}
                         </span>
-                        <span className="text-[10px] text-muted-2">Prévia nos comentários</span>
+                        <span className="text-xs text-muted-2">Prévia nos comentários</span>
                       </div>
                     )}
 
@@ -268,7 +268,7 @@ export default function Loja() {
                 {/* RODAPÉ DO CARD: PREÇO E AÇÃO */}
                 <div className="pt-3 border-t border-line/60 flex items-center justify-between gap-3">
                   <div>
-                    <span className="font-mono text-[10px] text-muted-2 block">Preço</span>
+                    <span className="font-mono text-xs text-muted-2 block">Preço</span>
                     <span className="font-anton text-xl text-holo-3 flex items-center gap-1">
                       <IconeAniCoin size={16} animar />
                       {item.preco.toLocaleString('pt-BR')} ₳

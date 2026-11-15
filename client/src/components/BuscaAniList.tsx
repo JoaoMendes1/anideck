@@ -74,7 +74,7 @@ export default function BuscaAniList({
               <img src={anime.coverImage?.large} alt="Capa" className="w-10 h-14 object-cover rounded-md shrink-0" />
               <div className="flex-1 min-w-0">
                 <div className="font-bold text-sm truncate text-white">{anime.title.romaji || anime.title.english}</div>
-                <div className="text-[10px] text-muted truncate mt-0.5 uppercase tracking-wide">
+                <div className="text-xs text-muted truncate mt-0.5 uppercase tracking-wide">
                   {anime.format} • {anime.status}
                 </div>
               </div>

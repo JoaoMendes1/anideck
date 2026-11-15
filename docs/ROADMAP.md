@@ -788,6 +788,12 @@ experiência pequena e funcional de cada vez.
 > numeração e não abrem escopo novo. Ficam registrados aqui em ordem cronológica inversa para
 > não sumirem: fase concluída não deve ser reaberta só para receber um conserto.
 
+### 15/11/2026 — Piso de 12 px no texto em todas as telas
+
+- [x] **574 tamanhos de texto entre 7 e 11,5 px viraram `text-xs` (12 px)** em 78 arquivos. Medido antes e depois nas 22 telas do roteiro de captura, em 360, 768 e 1440 px: de até 155 textos pequenos por tela (Deck) para zero, sem overflow horizontal e sem erro de console. O que sobra abaixo de 12 é texto dentro de SVG, que escala com o desenho.
+- [x] Ajustes onde o texto maior não cabia: barra inferior do celular ("Gosto" no lugar de "Meu Gosto", que quebrava em duas linhas), coluna da nota no `RankingCard`, atalhos do painel do Início em uma linha, botão "Sugerir correção" só com ícone no celular (as abas do Detalhes estavam coladas) e contador do sino.
+- [x] Textos que ainda diziam "Cristais" passaram a dizer "AniCoins" (Admin, sugestão de correção e uma mensagem de validação do servidor).
+
 ### 15/11/2026 — Landing mostra a Guilda (#213)
 
 - [x] **Seção "A Guilda do AniDeck"** na página de entrada (`components/landing/VitrineGuilda.tsx`): arte do personagem, insígnia do rank, orbes de Vitalidade e Mana, AniCoins, streak e barra de XP, com os mesmos componentes do painel do jogador e valores de exemplo, em três momentos da jornada. Troca sozinha a cada 5 s até a pessoa escolher; parada com movimento reduzido.

@@ -92,7 +92,7 @@ const GRUPOS_ADMIN: { titulo: string; itens: ItemDoMenu[] }[] = [
   { titulo: 'Comunidade', itens: [
     { id: 'moderacao', nome: 'Moderação', aba: 'moderacao' },
     { id: 'guilda', nome: 'Guilda e XP', aba: 'guilda' },
-    { id: 'economia', nome: 'Economia e Cristais', aba: 'economia' },
+    { id: 'economia', nome: 'Economia e AniCoins', aba: 'economia' },
     { id: 'controle:ranking', nome: 'Ranking', aba: 'controle', secao: 'ranking' },
   ] },
   { titulo: 'Sistema', itens: [
@@ -945,11 +945,11 @@ export default function PainelAdmin() {
             <span className="font-anton text-lg bg-gradient-to-r from-holo-1 via-holo-2 to-holo-3 text-transparent bg-clip-text hidden md:block">
               ANIDECK
             </span>
-            <span className="font-mono text-[10px] font-bold text-gold bg-gold/10 border border-gold/40 px-2.5 py-1 rounded-full">⚙ ADMIN</span>
+            <span className="font-mono text-xs font-bold text-gold bg-gold/10 border border-gold/40 px-2.5 py-1 rounded-full">⚙ ADMIN</span>
           </div>
           <div className="flex gap-1.5 sm:gap-3 items-center">
             <div className="flex items-center gap-1.5 sm:gap-2 bg-panel-2 border border-line rounded-full px-2.5 sm:px-3 py-1.5 select-none">
-              <span className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wider text-muted-2 border-r border-line pr-1.5 sm:pr-2" title="Saúde Passiva da API AniList">
+              <span className="flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-muted-2 border-r border-line pr-1.5 sm:pr-2" title="Saúde Passiva da API AniList">
                 <Activity size={12} />
                 {/* O rótulo textual da saúde some no mobile: o que importa ali é a cor
                     do ícone. A palavra OFFLINE do Kill Switch fica, porque é ação. */}
@@ -960,7 +960,7 @@ export default function PainelAdmin() {
               <button
                 type="button"
                 onClick={toggleKillSwitch}
-                className={`flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wider transition-colors cursor-pointer ${forceOffline ? 'text-coral hover:text-coral/80' : 'text-muted hover:text-text'}`}
+                className={`flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider transition-colors cursor-pointer ${forceOffline ? 'text-coral hover:text-coral/80' : 'text-muted hover:text-text'}`}
                 title={forceOffline ? "Reconectar AniList" : "Desconectar AniList (Forçar Offline)"}
               >
                 <PowerOff size={12} />
@@ -971,7 +971,7 @@ export default function PainelAdmin() {
               type="button"
               onClick={() => setConfigModalAberto(true)}
               title="Configurar a personalidade da IA"
-              className="flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-1.5 bg-gradient-to-r from-holo-1/10 to-holo-2/10 border border-holo-1/30 text-holo-1 hover:text-white hover:bg-gradient-to-r hover:from-holo-1 hover:to-holo-2 text-[11px] sm:text-xs font-bold rounded-full cursor-pointer transition-all shadow-[0_0_15px_rgba(255,79,216,0.15)] shrink-0"
+              className="flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-1.5 bg-gradient-to-r from-holo-1/10 to-holo-2/10 border border-holo-1/30 text-holo-1 hover:text-white hover:bg-gradient-to-r hover:from-holo-1 hover:to-holo-2 text-xs font-bold rounded-full cursor-pointer transition-all shadow-[0_0_15px_rgba(255,79,216,0.15)] shrink-0"
             >
               <Sparkles size={14} /> IA
             </button>
@@ -980,7 +980,7 @@ export default function PainelAdmin() {
               onClick={() => setOlheiroAberto(true)}
               title="Sugestões do Agente Olheiro"
               aria-label="Sugestões do Olheiro"
-              className="flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-1.5 bg-panel-2 border border-line text-muted hover:text-text text-[11px] sm:text-xs font-bold rounded-full cursor-pointer transition-all shrink-0"
+              className="flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-1.5 bg-panel-2 border border-line text-muted hover:text-text text-xs font-bold rounded-full cursor-pointer transition-all shrink-0"
             >
               <span aria-hidden="true">🔭</span> <span className="hidden sm:inline">Olheiro</span>
             </button>
@@ -1027,7 +1027,7 @@ export default function PainelAdmin() {
               </div>
 
               <div className="flex flex-wrap items-center gap-1.5 px-0.5">
-                <span className="font-mono text-[10px] uppercase tracking-widest text-muted-2 mr-1.5 hidden sm:inline">
+                <span className="font-mono text-xs uppercase tracking-widest text-muted-2 mr-1.5 hidden sm:inline">
                   {grupoAtivo.titulo}:
                 </span>
                 {grupoAtivo.itens.map(item => {
@@ -1114,11 +1114,11 @@ export default function PainelAdmin() {
                           key={d.mal_id}
                           type="button"
                           onClick={() => editarDestaque(d)}
-                          className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-lg bg-holo-3/15 hover:bg-holo-3/25 border border-holo-3/30 text-holo-3 font-semibold text-[11px] cursor-pointer transition-colors"
+                          className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-lg bg-holo-3/15 hover:bg-holo-3/25 border border-holo-3/30 text-holo-3 font-semibold text-xs cursor-pointer transition-colors"
                           title={`Editar curadoria de ${d.custom_title || d.mal_id}`}
                         >
                           <span className="truncate max-w-[200px]">{d.custom_title || `MAL ID ${d.mal_id}`}</span>
-                          <span className="opacity-70 text-[9px]">✎</span>
+                          <span className="opacity-70 text-xs">✎</span>
                         </button>
                       ))}
                     </div>
@@ -1189,8 +1189,8 @@ export default function PainelAdmin() {
         {abaAtiva === 'economia' && (
           <>
             <div className="mb-8 min-w-0">
-              <h1 className="font-anton text-3xl uppercase">Economia & Cristais</h1>
-              <p className="text-muted text-sm mt-1">Monitore cristais em circulação, configure tetos, faça ajustes manuais e audite o livro-razão.</p>
+              <h1 className="font-anton text-3xl uppercase">Economia & AniCoins</h1>
+              <p className="text-muted text-sm mt-1">Monitore os AniCoins em circulação, configure tetos, faça ajustes manuais e audite o livro-razão.</p>
             </div>
             <AbaEconomia />
           </>
@@ -1293,7 +1293,7 @@ export default function PainelAdmin() {
                           placeholder="Ex: 52991 — busque no myanimelist.net"
                           className="w-full bg-panel-2 border border-line rounded-xl px-4 py-2 text-sm outline-none focus:border-holo-2 disabled:opacity-50 disabled:cursor-not-allowed"
                         />
-                        <p className="text-[11px] text-muted-2 mt-1.5">
+                        <p className="text-xs text-muted-2 mt-1.5">
                           {editId
                             ? 'Trocar o MAL ID dessincronizaria o progresso e os decks já salvos. Para mudar, exclua e recrie.'
                             : 'É a chave que liga curadoria, cache, deck e progresso. Use sempre o id real do MyAnimeList.'}
@@ -1312,7 +1312,7 @@ export default function PainelAdmin() {
                           />
                         </div>
                         <div>
-                          <label className="block text-[10px] font-bold text-muted mb-2 uppercase tracking-wide">Status Manual</label>
+                          <label className="block text-xs font-bold text-muted mb-2 uppercase tracking-wide">Status Manual</label>
                           <div className="flex flex-wrap gap-2">
                             {[
                               { value: 'RELEASING', label: 'Lançamento' },
@@ -1421,7 +1421,7 @@ export default function PainelAdmin() {
 
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
                           <div>
-                            <label htmlFor="painel-admin-estreia-do-episodio-1" className="block text-[10px] mb-1 font-bold text-muted">Estreia do episódio 1 (data e hora)</label>
+                            <label htmlFor="painel-admin-estreia-do-episodio-1" className="block text-xs mb-1 font-bold text-muted">Estreia do episódio 1 (data e hora)</label>
                             <input
                               id="painel-admin-estreia-do-episodio-1"
                               type="datetime-local"
@@ -1429,14 +1429,14 @@ export default function PainelAdmin() {
                               onChange={(e) => setEstreia(e.target.value)}
                               className="w-full bg-panel border border-line rounded px-2 py-1.5 text-xs outline-none focus:border-holo-2 text-text"
                             />
-                            <p className="text-[9.5px] text-muted-2 mt-1">
+                            <p className="text-xs text-muted-2 mt-1">
                               No <strong>seu</strong> horário — a conversão é automática. É a hora que permite calcular a contagem regressiva sem a AniList.
                               calcular a contagem regressiva sem a AniList. Preenchido sozinho quando você salva o episódio 1 com data.
                             </p>
                           </div>
 
                           <div>
-                            <label htmlFor="painel-admin-duracao-do-episodio" className="block text-[10px] mb-1 font-bold text-muted">Duração do episódio (min)</label>
+                            <label htmlFor="painel-admin-duracao-do-episodio" className="block text-xs mb-1 font-bold text-muted">Duração do episódio (min)</label>
                             <input
                               id="painel-admin-duracao-do-episodio"
                               type="number"
@@ -1447,13 +1447,13 @@ export default function PainelAdmin() {
                               placeholder="24"
                               className="w-full bg-panel border border-line rounded px-2 py-1.5 text-xs outline-none focus:border-holo-2 text-text tabular-nums"
                             />
-                            <p className="text-[9.5px] text-muted-2 mt-1">Sem isso, o tempo assistido usa uma estimativa de 24 min.</p>
+                            <p className="text-xs text-muted-2 mt-1">Sem isso, o tempo assistido usa uma estimativa de 24 min.</p>
                           </div>
                         </div>
 
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                           <div>
-                            <span className="block text-[10px] mb-1.5 font-bold text-muted uppercase tracking-wide">Estado da curadoria</span>
+                            <span className="block text-xs mb-1.5 font-bold text-muted uppercase tracking-wide">Estado da curadoria</span>
                             <div className="flex flex-wrap gap-1.5">
                               {([
                                 { value: 'parcial', label: 'Parcial', activeClass: 'bg-panel border-holo-2 text-holo-2' },
@@ -1489,7 +1489,7 @@ export default function PainelAdmin() {
                             </label>
                           </div>
                         </div>
-                        <p className="text-[9.5px] text-muted-2 mt-2">
+                        <p className="text-xs text-muted-2 mt-2">
                           Desmarcar mantém o anime curado e com os dados aplicados — só tira ele da vitrine de destaques.
                         </p>
                       </div>
@@ -1505,7 +1505,7 @@ export default function PainelAdmin() {
                             type="button"
                             onClick={reescreverComIA}
                             disabled={gerandoIA || !sinopse}
-                            className="flex items-center gap-1.5 text-[10px] font-bold bg-holo-1/10 text-holo-1 border border-holo-1/30 px-2.5 py-1 rounded-md hover:bg-holo-1/20 transition-colors disabled:opacity-50 cursor-pointer"
+                            className="flex items-center gap-1.5 text-xs font-bold bg-holo-1/10 text-holo-1 border border-holo-1/30 px-2.5 py-1 rounded-md hover:bg-holo-1/20 transition-colors disabled:opacity-50 cursor-pointer"
                           >
                             {gerandoIA ? (
                               <div className="w-3 h-3 border-2 border-current border-t-transparent rounded-full animate-spin"></div>

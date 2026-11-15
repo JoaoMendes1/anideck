@@ -10,7 +10,7 @@ export default function SeloEquipe({ handle, grande = false }: { handle?: string
     <span
       title="Equipe do AniDeck"
       className={`inline-flex items-center gap-1 rounded-full border border-holo-3/50 bg-holo-3/12 text-holo-3 font-mono font-bold uppercase shrink-0 ${
-        grande ? 'px-2.5 py-0.5 text-[10px]' : 'px-1.5 py-px text-[9px]'
+        grande ? 'px-2.5 py-0.5 text-xs' : 'px-1.5 py-px text-xs'
       }`}
     >
       <ShieldCheck size={grande ? 12 : 10} aria-hidden /> Equipe

@@ -67,10 +67,10 @@ export default function CardChefao({ chefao: chefaoProp, className = '' }: Props
 
           <div className="min-w-0">
             <div className="flex items-center gap-2 flex-wrap">
-              <span className="font-mono text-[10px] font-bold uppercase tracking-widest text-coral bg-coral/15 px-2 py-0.5 rounded-full border border-coral/30">
+              <span className="font-mono text-xs font-bold uppercase tracking-widest text-coral bg-coral/15 px-2 py-0.5 rounded-full border border-coral/30">
                 Chefão da Temporada
               </span>
-              <span className="font-mono text-[10px] text-muted">
+              <span className="font-mono text-xs text-muted">
                 {formatarTemporada(chefao.temporada)}
               </span>
             </div>
@@ -84,15 +84,15 @@ export default function CardChefao({ chefao: chefaoProp, className = '' }: Props
         {/* Status */}
         <div className="shrink-0 text-right">
           {chefao.derrotado ? (
-            <span className="inline-flex items-center gap-1 font-mono text-[10px] font-bold uppercase px-2.5 py-1 rounded-full bg-green/20 border border-green/40 text-green">
+            <span className="inline-flex items-center gap-1 font-mono text-xs font-bold uppercase px-2.5 py-1 rounded-full bg-green/20 border border-green/40 text-green">
               <Trophy size={11} /> Derrotado!
             </span>
           ) : chefao.status === 'escapou' ? (
-            <span className="inline-flex items-center gap-1 font-mono text-[10px] font-bold uppercase px-2.5 py-1 rounded-full bg-panel-2 border border-line text-muted">
+            <span className="inline-flex items-center gap-1 font-mono text-xs font-bold uppercase px-2.5 py-1 rounded-full bg-panel-2 border border-line text-muted">
               Escapou
             </span>
           ) : (
-            <span className="inline-flex items-center gap-1 font-mono text-[10px] font-bold uppercase px-2.5 py-1 rounded-full bg-coral/20 border border-coral/40 text-coral animate-pulse">
+            <span className="inline-flex items-center gap-1 font-mono text-xs font-bold uppercase px-2.5 py-1 rounded-full bg-coral/20 border border-coral/40 text-coral animate-pulse">
               <Swords size={11} /> Em Batalha
             </span>
           )}
@@ -126,11 +126,11 @@ export default function CardChefao({ chefao: chefaoProp, className = '' }: Props
           <span className="font-bold text-text">{(chefao.meu_dano ?? 0).toLocaleString('pt-BR')} HP</span>
 
           {chefao.elegivel_recompensa ? (
-            <span className="inline-flex items-center gap-1 text-[10.5px] text-gold font-bold px-2 py-0.5 rounded-md bg-gold/15 border border-gold/30">
+            <span className="inline-flex items-center gap-1 text-xs text-gold font-bold px-2 py-0.5 rounded-md bg-gold/15 border border-gold/30">
               <Award size={11} /> Elegível para {chefao.recompensa_anicoins} <IconeAniCoin size={11} />
             </span>
           ) : (
-            <span className="text-[10px] text-muted-2">
+            <span className="text-xs text-muted-2">
               (cause mais {Math.max(0, (chefao.dano_minimo ?? 50) - (chefao.meu_dano ?? 0))} HP para ganhar {chefao.recompensa_anicoins} ₳)
             </span>
           )}

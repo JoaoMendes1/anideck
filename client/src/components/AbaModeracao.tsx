@@ -333,7 +333,7 @@ export default function AbaModeracao() {
           { rotulo: 'Denúncias abertas', valor: resumo?.denuncias_pendentes, alerta: (resumo?.denuncias_pendentes ?? 0) > 0 },
         ].map(c => (
           <div key={c.rotulo} className={`p-4 rounded-2xl bg-panel border ${c.alerta ? 'border-coral/50' : 'border-line'}`}>
-            <div className="font-mono text-[10px] text-muted-2 uppercase tracking-wider">{c.rotulo}</div>
+            <div className="font-mono text-xs text-muted-2 uppercase tracking-wider">{c.rotulo}</div>
             <div className={`font-anton text-2xl mt-1 ${c.alerta ? 'text-coral' : 'text-text'}`}>{c.valor ?? '—'}</div>
           </div>
         ))}
@@ -366,19 +366,19 @@ export default function AbaModeracao() {
             {fila.map(item => (
               <li key={item.comentario.id} className="p-4 rounded-xl bg-panel-2 border border-line min-w-0">
                 <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-[12px] mb-2">
-                  <span className="px-2 py-0.5 rounded-full bg-coral/15 border border-coral/40 text-coral font-mono text-[10.5px] font-bold">
+                  <span className="px-2 py-0.5 rounded-full bg-coral/15 border border-coral/40 text-coral font-mono text-xs font-bold">
                     {item.denuncias} {item.denuncias === 1 ? 'denúncia' : 'denúncias'}
                   </span>
                   {Object.entries(item.motivos).map(([m, n]) => (
-                    <span key={m} className="font-mono text-[10.5px] text-muted">
+                    <span key={m} className="font-mono text-xs text-muted">
                       {ROTULO_MOTIVO[m] ?? m}
                       {n > 1 ? ` ×${n}` : ''}
                     </span>
                   ))}
-                  <span className="font-mono text-[10.5px] text-muted-2">· última {tempoRelativo(item.ultima_em, agora)}</span>
+                  <span className="font-mono text-xs text-muted-2">· última {tempoRelativo(item.ultima_em, agora)}</span>
                 </div>
                 <p className="text-[14px] text-text whitespace-pre-wrap break-words m-0">{item.comentario.texto}</p>
-                <p className="font-mono text-[10.5px] text-muted-2 mt-2 mb-0 break-words">
+                <p className="font-mono text-xs text-muted-2 mt-2 mb-0 break-words">
                   {item.autor.handle ? `@${item.autor.handle}` : item.autor.nome} em{' '}
                   <Link to={`/anime/${item.comentario.mal_id}#conversa`} className="text-holo-3 hover:underline">
                     {item.titulo_anime || `anime ${item.comentario.mal_id}`} · ep {item.comentario.episode_number}
@@ -428,7 +428,7 @@ export default function AbaModeracao() {
               {CAMPOS_REGRAS.map(c => (
                 <label key={c.chave} className="block p-3 rounded-xl bg-panel-2 border border-line min-w-0">
                   <span className="block text-[12px] font-bold text-text">{c.rotulo}</span>
-                  <span className="block text-[11px] text-muted-2 mb-2">{c.ajuda}</span>
+                  <span className="block text-xs text-muted-2 mb-2">{c.ajuda}</span>
                   <CampoNumerico
                     min={0}
                     value={regras[c.chave]}
@@ -488,7 +488,7 @@ export default function AbaModeracao() {
             <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-3">
               <label className="block p-3 rounded-xl bg-panel-2 border border-line min-w-0">
                 <span className="block text-[12px] font-bold text-text">AniCoins para quem convida</span>
-                <span className="block text-[11px] text-muted-2 mb-2">Moedas creditadas a cada amigo cadastrado.</span>
+                <span className="block text-xs text-muted-2 mb-2">Moedas creditadas a cada amigo cadastrado.</span>
                 <CampoNumerico
                   min={0}
                   value={regrasConvites.anicoins_anfitriao}
@@ -499,7 +499,7 @@ export default function AbaModeracao() {
 
               <label className="block p-3 rounded-xl bg-panel-2 border border-line min-w-0">
                 <span className="block text-[12px] font-bold text-text">XP para quem convida</span>
-                <span className="block text-[11px] text-muted-2 mb-2">Pontos adicionados à progressão de Guilda.</span>
+                <span className="block text-xs text-muted-2 mb-2">Pontos adicionados à progressão de Guilda.</span>
                 <CampoNumerico
                   min={0}
                   value={regrasConvites.xp_anfitriao}
@@ -510,7 +510,7 @@ export default function AbaModeracao() {
 
               <label className="block p-3 rounded-xl bg-panel-2 border border-line min-w-0">
                 <span className="block text-[12px] font-bold text-text">AniCoins Convidado (Comum)</span>
-                <span className="block text-[11px] text-muted-2 mb-2">Bônus de boas-vindas por link comum.</span>
+                <span className="block text-xs text-muted-2 mb-2">Bônus de boas-vindas por link comum.</span>
                 <CampoNumerico
                   min={0}
                   value={regrasConvites.anicoins_convidado}
@@ -523,7 +523,7 @@ export default function AbaModeracao() {
                 <span className="flex items-center gap-1.5 text-[12px] font-bold text-gold">
                   <Crown size={13} /> AniCoins Convidado (Fundador VIP)
                 </span>
-                <span className="block text-[11px] text-muted-2 mb-2">Bônus especial para quem entrar pelo seu link.</span>
+                <span className="block text-xs text-muted-2 mb-2">Bônus especial para quem entrar pelo seu link.</span>
                 <CampoNumerico
                   min={0}
                   value={regrasConvites.anicoins_convidado_admin}
@@ -536,7 +536,7 @@ export default function AbaModeracao() {
                 <span className="flex items-center gap-1.5 text-[12px] font-bold text-gold">
                   <Crown size={13} /> Título de Honra do Convidado VIP
                 </span>
-                <span className="block text-[11px] text-muted-2 mb-2">Título desbloqueado e equipado no perfil do novo membro.</span>
+                <span className="block text-xs text-muted-2 mb-2">Título desbloqueado e equipado no perfil do novo membro.</span>
                 <input
                   type="text"
                   value={regrasConvites.titulo_convidado_admin}

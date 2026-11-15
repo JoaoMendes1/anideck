@@ -174,15 +174,15 @@ export default function EpisodeGrid({ malId, totalEpisodes, streamingEpisodes = 
       <div className="flex flex-wrap items-center justify-between gap-2 mb-4">
         <div className="flex flex-wrap items-center gap-2.5 select-none">
           <h2 className="font-anton text-base uppercase flex items-center gap-2 m-0">
-            <span className="font-mono text-[11px] text-holo-3">EP</span> Progresso
+            <span className="font-mono text-xs text-holo-3">EP</span> Progresso
           </h2>
           {diaLancamentoSemanal && (
-            <span className="font-mono text-[10px] font-bold px-2.5 py-0.5 rounded-full bg-holo-3/15 border border-holo-3/35 text-holo-3">
+            <span className="font-mono text-xs font-bold px-2.5 py-0.5 rounded-full bg-holo-3/15 border border-holo-3/35 text-holo-3">
               📅 {diaLancamentoSemanal}
             </span>
           )}
         </div>
-        <span className="font-mono text-[11px] text-muted-2 font-bold bg-panel border border-line px-2 py-1 rounded-md">
+        <span className="font-mono text-xs text-muted-2 font-bold bg-panel border border-line px-2 py-1 rounded-md">
           {watched.length} / {allEpisodes.length}
         </span>
       </div>
@@ -194,7 +194,7 @@ export default function EpisodeGrid({ malId, totalEpisodes, streamingEpisodes = 
               <Clock size={20} />
             </div>
             <div>
-              <span className="inline-block font-mono text-[10px] font-bold uppercase tracking-widest text-holo-3 mb-1">
+              <span className="inline-block font-mono text-xs font-bold uppercase tracking-widest text-holo-3 mb-1">
                 ✨ Obra Anunciada · Em Breve
               </span>
               <h3 className="font-bold text-sm text-text leading-snug">
@@ -216,7 +216,7 @@ export default function EpisodeGrid({ malId, totalEpisodes, streamingEpisodes = 
               <AlertTriangle size={20} />
             </div>
             <div>
-              <span className="inline-block font-mono text-[10px] font-bold uppercase tracking-widest text-coral mb-1">
+              <span className="inline-block font-mono text-xs font-bold uppercase tracking-widest text-coral mb-1">
                 🚨 Aviso de Emergência · Obra sem Episódios
               </span>
               <h3 className="font-bold text-sm text-text leading-snug">
@@ -272,7 +272,7 @@ export default function EpisodeGrid({ malId, totalEpisodes, streamingEpisodes = 
                     loading="lazy"
                   />
                 ) : (
-                  <span className="text-muted-2 font-mono text-[10px] uppercase tracking-widest">Sem miniatura</span>
+                  <span className="text-muted-2 font-mono text-xs uppercase tracking-widest">Sem miniatura</span>
                 )}
                 
                 {isWatched && (
@@ -292,9 +292,9 @@ export default function EpisodeGrid({ malId, totalEpisodes, streamingEpisodes = 
               <div className={isCompact ? 'min-w-0 flex-1' : 'p-2.5 sm:p-3'}>
                 <div className="flex justify-between items-start gap-2">
                   <div className="flex flex-col">
-                     <div className="font-mono text-[11px] text-holo-3 font-bold leading-none mb-1">EP {ep.number}</div>
+                     <div className="font-mono text-xs text-holo-3 font-bold leading-none mb-1">EP {ep.number}</div>
                      {getEpisodeDate(ep.number, ep.airedAt) && (
-                        <div className="font-mono text-[9px] text-muted-2 leading-none">{getEpisodeDate(ep.number, ep.airedAt)}</div>
+                        <div className="font-mono text-xs text-muted-2 leading-none">{getEpisodeDate(ep.number, ep.airedAt)}</div>
                      )}
                   </div>
                   
@@ -331,7 +331,7 @@ export default function EpisodeGrid({ malId, totalEpisodes, streamingEpisodes = 
       )}
 
       {isLoggedIn && episodesCount > 0 && (
-        <p className="font-mono text-[10.5px] text-muted-2 mt-3 mb-0">
+        <p className="font-mono text-xs text-muted-2 mt-3 mb-0">
           Marcar episódio rende <b className="text-text">XP na Guilda</b>, com bônus para quem assiste no lançamento; a partir do 3º do dia, o ganho diminui.
         </p>
       )}

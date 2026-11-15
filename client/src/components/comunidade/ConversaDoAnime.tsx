@@ -253,13 +253,13 @@ export default function ConversaDoAnime({ malId, totalEpisodes, proximoAoAr, ass
                   ativo ? 'border-holo-3 bg-holo-3/10' : 'border-line bg-panel hover:border-holo-3/50'
                 }`}
               >
-                <span className="flex items-center gap-1 font-mono text-[10px] text-muted-2 uppercase">
+                <span className="flex items-center gap-1 font-mono text-xs text-muted-2 uppercase">
                   {!visto && <Lock size={9} aria-label="não assistido" />}Ep
                 </span>
                 <span className="flex items-center gap-1.5">
                   <span className={`font-anton text-[15px] leading-none ${ativo ? 'text-holo-3' : 'text-text'}`}>{n}</span>
                   {(c?.comentarios ?? 0) > 0 && (
-                    <span className="inline-flex items-center gap-0.5 font-mono text-[9.5px] text-muted">
+                    <span className="inline-flex items-center gap-0.5 font-mono text-xs text-muted">
                       <MessageCircle size={9} aria-hidden />
                       {c?.comentarios}
                     </span>
@@ -275,7 +275,7 @@ export default function ConversaDoAnime({ malId, totalEpisodes, proximoAoAr, ass
             <button type="button" aria-label="Episódio anterior" disabled={(episodioAtual ?? 1) <= 1} onClick={() => setEpisodio(Math.max(1, (episodioAtual ?? 1) - 1))} className="w-9 h-9 grid place-items-center rounded-lg text-muted hover:text-text disabled:opacity-30 cursor-pointer">
               <ChevronLeft size={16} />
             </button>
-            <label className="flex items-center gap-1 font-mono text-[11px] text-muted-2">
+            <label className="flex items-center gap-1 font-mono text-xs text-muted-2">
               Ep
               <input
                 type="number"
@@ -296,7 +296,7 @@ export default function ConversaDoAnime({ malId, totalEpisodes, proximoAoAr, ass
           {maisComentados.length > 0 && (
             <div className="flex gap-1.5 overflow-x-auto scrollbar-hide">
               {maisComentados.map(c => (
-                <button key={c.episode_number} type="button" onClick={() => setEpisodio(c.episode_number)} className="shrink-0 px-2.5 py-1.5 rounded-full border border-line bg-panel font-mono text-[10.5px] text-muted hover:border-holo-3/50 cursor-pointer">
+                <button key={c.episode_number} type="button" onClick={() => setEpisodio(c.episode_number)} className="shrink-0 px-2.5 py-1.5 rounded-full border border-line bg-panel font-mono text-xs text-muted hover:border-holo-3/50 cursor-pointer">
                   Ep {c.episode_number} · {c.comentarios} 💬
                 </button>
               ))}
@@ -350,7 +350,7 @@ export default function ConversaDoAnime({ malId, totalEpisodes, proximoAoAr, ass
             )}
 
             <div className="flex items-center justify-between gap-2 mb-3">
-              <span className="font-mono text-[10.5px] text-muted-2 uppercase tracking-wider">
+              <span className="font-mono text-xs text-muted-2 uppercase tracking-wider">
                 {conversa?.comentarios.length ?? 0} {conversa?.comentarios.length === 1 ? 'comentário' : 'comentários'} no ep. {episodioAtual}
               </span>
               <div className="flex gap-1 p-0.5 rounded-full bg-panel-2 border border-line">
@@ -360,7 +360,7 @@ export default function ConversaDoAnime({ malId, totalEpisodes, proximoAoAr, ass
                     type="button"
                     onClick={() => setOrdem(o)}
                     aria-pressed={ordem === o}
-                    className={`px-3 py-1 rounded-full text-[11px] font-bold capitalize cursor-pointer ${ordem === o ? 'bg-panel text-text' : 'text-muted-2 hover:text-text'}`}
+                    className={`px-3 py-1 rounded-full text-xs font-bold capitalize cursor-pointer ${ordem === o ? 'bg-panel text-text' : 'text-muted-2 hover:text-text'}`}
                   >
                     {o}
                   </button>
@@ -466,7 +466,7 @@ function TermometroDoEpisodio({ episodio, reacoes, minhas, habilitado, onAlterna
     <div className="mb-5">
       <div className="flex items-baseline justify-between gap-2 mb-2">
         <span className="text-[13px] font-bold text-text">Como foi o ep. {episodio}?</span>
-        {total > 0 && <span className="font-mono text-[10.5px] text-muted-2">{total} {total === 1 ? 'reação' : 'reações'}</span>}
+        {total > 0 && <span className="font-mono text-xs text-muted-2">{total} {total === 1 ? 'reação' : 'reações'}</span>}
       </div>
       {total > 0 && (
         <div className="flex h-2 rounded-full overflow-hidden bg-void/50 border border-line/60 mb-1.5" role="img" aria-label={fatias.map(f => `${f.rotulo} ${f.pct}%`).join(', ')}>
@@ -476,7 +476,7 @@ function TermometroDoEpisodio({ episodio, reacoes, minhas, habilitado, onAlterna
         </div>
       )}
       {lider && (
-        <p className="text-[11.5px] text-muted mt-0 mb-2.5">
+        <p className="text-xs text-muted mt-0 mb-2.5">
           {lider.emoji} Para quem viu, este episódio {lider.veredito} ({lider.pct}%).
         </p>
       )}
@@ -503,7 +503,7 @@ function TermometroDoEpisodio({ episodio, reacoes, minhas, habilitado, onAlterna
                 {r.emoji}
               </span>
               <span className={`hidden lg:inline min-w-0 truncate text-[12.5px] font-bold ${ligada ? 'text-text' : 'text-muted'}`}>{r.rotulo}</span>
-              <span className={`block h-[10px] lg:h-auto lg:ml-auto font-mono text-[9px] lg:text-[11px] leading-[10px] lg:leading-none ${ligada ? 'text-holo-1' : 'text-muted-2'}`}>{n > 0 ? n : ''}</span>
+              <span className={`block h-[10px] lg:h-auto lg:ml-auto font-mono text-xs leading-[10px] lg:leading-none ${ligada ? 'text-holo-1' : 'text-muted-2'}`}>{n > 0 ? n : ''}</span>
             </button>
           )
         })}
@@ -576,7 +576,7 @@ function Compositor({ malId, episodio, token, mana, custo, onComentar }: {
       <div className="flex flex-wrap items-center justify-between gap-2 mt-2">
         <div className="flex flex-wrap items-center gap-2">
           {mostrarMomento ? (
-            <label className="inline-flex items-center gap-1.5 font-mono text-[11px] text-muted">
+            <label className="inline-flex items-center gap-1.5 font-mono text-xs text-muted">
               <Clock size={12} aria-hidden /> Minuto
               <input
                 value={momento}
@@ -588,17 +588,17 @@ function Compositor({ malId, episodio, token, mana, custo, onComentar }: {
               />
             </label>
           ) : (
-            <button type="button" onClick={() => setMostrarMomento(true)} className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full border border-line text-[11px] font-bold text-muted hover:text-text cursor-pointer">
+            <button type="button" onClick={() => setMostrarMomento(true)} className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full border border-line text-xs font-bold text-muted hover:text-text cursor-pointer">
               <Clock size={12} aria-hidden /> Marcar o minuto da cena
             </button>
           )}
-          <span className={`font-mono text-[10.5px] ${semMana ? 'text-coral' : 'text-muted-2'}`}>
+          <span className={`font-mono text-xs ${semMana ? 'text-coral' : 'text-muted-2'}`}>
             <Droplet size={11} className="inline -mt-0.5 mr-0.5 text-holo-3" aria-hidden />
             {semMana ? `Mana insuficiente (${mana}/${custo})` : `Custa ${custo} · você tem ${mana}`}
           </span>
         </div>
         <div className="flex items-center gap-3">
-          {restante < 150 && <span className={`font-mono text-[10.5px] ${restante < 0 ? 'text-coral' : 'text-muted-2'}`}>{restante}</span>}
+          {restante < 150 && <span className={`font-mono text-xs ${restante < 0 ? 'text-coral' : 'text-muted-2'}`}>{restante}</span>}
           <button
             type="button"
             onClick={enviar}
@@ -677,20 +677,20 @@ function ItemComentario({ comentario: c, agora, token, onRemover, onBloquear, on
             {c.autor.cla_tag && <TagCla tag={c.autor.cla_tag} />}
             {renderizarEmblema(c.autor.emblema, 'sm')}
             <SeloEquipe handle={c.autor.handle} />
-            {c.autor.handle && <span className="font-mono text-[10.5px] text-muted-2">@{c.autor.handle}</span>}
-            <span className="font-mono text-[10.5px] text-muted-2">· {tempoRelativo(c.created_at, agora)}</span>
+            {c.autor.handle && <span className="font-mono text-xs text-muted-2">@{c.autor.handle}</span>}
+            <span className="font-mono text-xs text-muted-2">· {tempoRelativo(c.created_at, agora)}</span>
             {c.origem === 'sala_estreia' && (
-              <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full bg-coral/15 border border-coral/30 font-mono text-[9.5px] font-bold text-coral" title="Destaque do chat ao vivo de estreia">
+              <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full bg-coral/15 border border-coral/30 font-mono text-xs font-bold text-coral" title="Destaque do chat ao vivo de estreia">
                 🎙️ Sala de Estreia
               </span>
             )}
             {c.momento_seg !== null && (
-              <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-holo-3/10 border border-holo-3/30 font-mono text-[10px] text-holo-3">
+              <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-holo-3/10 border border-holo-3/30 font-mono text-xs text-holo-3">
                 <Clock size={9} aria-hidden /> {formatarMomento(c.momento_seg)}
               </span>
             )}
             {c.oculto && (
-              <span className="px-1.5 py-0.5 rounded bg-coral/12 border border-coral/40 font-mono text-[10px] text-coral">
+              <span className="px-1.5 py-0.5 rounded bg-coral/12 border border-coral/40 font-mono text-xs text-coral">
                 oculto pela moderação
               </span>
             )}
@@ -704,7 +704,7 @@ function ItemComentario({ comentario: c, agora, token, onRemover, onBloquear, on
               disabled={c.meu}
               aria-pressed={c.curtido_por_mim}
               title={c.meu ? 'Seu comentário' : c.curtido_por_mim ? 'Tirar curtida' : 'Curtir'}
-              className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-[11.5px] font-bold transition-colors cursor-pointer disabled:cursor-default ${
+              className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-bold transition-colors cursor-pointer disabled:cursor-default ${
                 c.curtido_por_mim ? 'text-holo-1' : 'text-muted-2 hover:text-text'
               }`}
             >
@@ -712,16 +712,16 @@ function ItemComentario({ comentario: c, agora, token, onRemover, onBloquear, on
               {c.curtidas > 0 ? c.curtidas : c.meu ? '' : 'Curtir'}
             </button>
             {c.meu ? (
-              <button type="button" onClick={() => setPainel(painel === 'apagar' ? 'nenhum' : 'apagar')} className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-[11.5px] font-bold text-muted-2 hover:text-coral cursor-pointer">
+              <button type="button" onClick={() => setPainel(painel === 'apagar' ? 'nenhum' : 'apagar')} className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-bold text-muted-2 hover:text-coral cursor-pointer">
                 <Trash2 size={12} aria-hidden /> Apagar
               </button>
             ) : (
               <>
-                <button type="button" onClick={() => setPainel(painel === 'denunciar' ? 'nenhum' : 'denunciar')} className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-[11.5px] font-bold text-muted-2 hover:text-text cursor-pointer">
+                <button type="button" onClick={() => setPainel(painel === 'denunciar' ? 'nenhum' : 'denunciar')} className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-bold text-muted-2 hover:text-text cursor-pointer">
                   <Flag size={12} aria-hidden /> Denunciar
                 </button>
                 {c.autor.handle && (
-                  <button type="button" onClick={() => setPainel(painel === 'bloquear' ? 'nenhum' : 'bloquear')} className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-[11.5px] font-bold text-muted-2 hover:text-text cursor-pointer">
+                  <button type="button" onClick={() => setPainel(painel === 'bloquear' ? 'nenhum' : 'bloquear')} className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-bold text-muted-2 hover:text-text cursor-pointer">
                     <Ban size={12} aria-hidden /> Bloquear
                   </button>
                 )}
@@ -732,10 +732,10 @@ function ItemComentario({ comentario: c, agora, token, onRemover, onBloquear, on
           {painel === 'apagar' && (
             <div className="mt-2 flex flex-wrap items-center gap-2 p-3 rounded-xl bg-panel-2 border border-line text-[12.5px]">
               <span className="text-muted">Apagar este comentário? A Mana gasta não volta.</span>
-              <button type="button" disabled={ocupado} onClick={() => executar(`/api/comunidade/comentarios/${c.id}`, 'DELETE', null, 'Comentário apagado.', () => onRemover(c.id))} className="px-3 py-1 rounded-full bg-coral text-void font-extrabold text-[11.5px] cursor-pointer disabled:opacity-50">
+              <button type="button" disabled={ocupado} onClick={() => executar(`/api/comunidade/comentarios/${c.id}`, 'DELETE', null, 'Comentário apagado.', () => onRemover(c.id))} className="px-3 py-1 rounded-full bg-coral text-void font-extrabold text-xs cursor-pointer disabled:opacity-50">
                 Apagar
               </button>
-              <button type="button" onClick={() => setPainel('nenhum')} className="px-3 py-1 rounded-full border border-line text-muted font-bold text-[11.5px] cursor-pointer">
+              <button type="button" onClick={() => setPainel('nenhum')} className="px-3 py-1 rounded-full border border-line text-muted font-bold text-xs cursor-pointer">
                 Cancelar
               </button>
             </div>
@@ -744,10 +744,10 @@ function ItemComentario({ comentario: c, agora, token, onRemover, onBloquear, on
           {painel === 'bloquear' && (
             <div className="mt-2 flex flex-wrap items-center gap-2 p-3 rounded-xl bg-panel-2 border border-line text-[12.5px]">
               <span className="text-muted">Esconder os comentários de @{c.autor.handle} para você? Dá para desfazer no perfil dele.</span>
-              <button type="button" disabled={ocupado} onClick={() => executar(`/api/comunidade/bloqueios/${c.autor.handle}`, 'POST', null, `@${c.autor.handle} bloqueado.`, () => onBloquear(c.autor.handle))} className="px-3 py-1 rounded-full bg-text text-void font-extrabold text-[11.5px] cursor-pointer disabled:opacity-50">
+              <button type="button" disabled={ocupado} onClick={() => executar(`/api/comunidade/bloqueios/${c.autor.handle}`, 'POST', null, `@${c.autor.handle} bloqueado.`, () => onBloquear(c.autor.handle))} className="px-3 py-1 rounded-full bg-text text-void font-extrabold text-xs cursor-pointer disabled:opacity-50">
                 Bloquear
               </button>
-              <button type="button" onClick={() => setPainel('nenhum')} className="px-3 py-1 rounded-full border border-line text-muted font-bold text-[11.5px] cursor-pointer">
+              <button type="button" onClick={() => setPainel('nenhum')} className="px-3 py-1 rounded-full border border-line text-muted font-bold text-xs cursor-pointer">
                 Cancelar
               </button>
             </div>
@@ -764,17 +764,17 @@ function ItemComentario({ comentario: c, agora, token, onRemover, onBloquear, on
                     role="radio"
                     aria-checked={motivo === m.id}
                     onClick={() => setMotivo(m.id)}
-                    className={`px-2.5 py-1 rounded-full border text-[11.5px] font-bold cursor-pointer ${motivo === m.id ? 'border-holo-3 bg-holo-3/10 text-text' : 'border-line text-muted'}`}
+                    className={`px-2.5 py-1 rounded-full border text-xs font-bold cursor-pointer ${motivo === m.id ? 'border-holo-3 bg-holo-3/10 text-text' : 'border-line text-muted'}`}
                   >
                     {m.rotulo}
                   </button>
                 ))}
               </div>
               <div className="flex gap-2">
-                <button type="button" disabled={ocupado} onClick={() => executar(`/api/comunidade/comentarios/${c.id}/denuncia`, 'POST', { motivo }, 'Denúncia enviada. A moderação vai avaliar.', () => undefined)} className="px-3 py-1 rounded-full bg-gradient-to-r from-holo-1 to-holo-2 text-void font-extrabold text-[11.5px] cursor-pointer disabled:opacity-50">
+                <button type="button" disabled={ocupado} onClick={() => executar(`/api/comunidade/comentarios/${c.id}/denuncia`, 'POST', { motivo }, 'Denúncia enviada. A moderação vai avaliar.', () => undefined)} className="px-3 py-1 rounded-full bg-gradient-to-r from-holo-1 to-holo-2 text-void font-extrabold text-xs cursor-pointer disabled:opacity-50">
                   Enviar denúncia
                 </button>
-                <button type="button" onClick={() => setPainel('nenhum')} className="px-3 py-1 rounded-full border border-line text-muted font-bold text-[11.5px] cursor-pointer">
+                <button type="button" onClick={() => setPainel('nenhum')} className="px-3 py-1 rounded-full border border-line text-muted font-bold text-xs cursor-pointer">
                   Cancelar
                 </button>
               </div>

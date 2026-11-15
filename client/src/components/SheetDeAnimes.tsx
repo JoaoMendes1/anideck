@@ -45,7 +45,7 @@ export default function SheetDeAnimes({ titulo, animes, carregando, onClose }: S
                 <p className="text-[12.5px] text-muted-2 py-4">Nenhum anime encontrado nessa categoria.</p>
             ) : (
                 <>
-                    <p className="text-[11px] text-muted-2 mb-4 font-mono">
+                    <p className="text-xs text-muted-2 mb-4 font-mono">
                         {animes.length} {animes.length === 1 ? 'anime' : 'animes'}
                     </p>
                     <div className="grid grid-cols-3 sm:grid-cols-4 gap-3">
@@ -60,7 +60,7 @@ export default function SheetDeAnimes({ titulo, animes, carregando, onClose }: S
                                     score={anime.nota}
                                     gradientClass={gradienteDoCard(index)}
                                     statusBadge={
-                                        <span className={`select-none text-[9px] font-extrabold px-2 py-1 rounded-md uppercase tracking-wider border backdrop-blur-md truncate max-w-full ${tema.bg} ${tema.text} ${tema.border}`}>
+                                        <span className={`select-none text-xs font-extrabold px-2 py-1 rounded-md uppercase tracking-wider border backdrop-blur-md truncate max-w-full ${tema.bg} ${tema.text} ${tema.border}`}>
                                             {anime.status}
                                         </span>
                                     }

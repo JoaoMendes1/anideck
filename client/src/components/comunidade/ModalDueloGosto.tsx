@@ -91,7 +91,7 @@ export default function ModalDueloGosto({
           <div className="space-y-5">
             {/* MEDIDOR CENTRAL DE AFINIDADE */}
             <div className="p-5 rounded-2xl bg-panel-2/80 border border-line text-center relative overflow-hidden">
-              <span className="font-mono text-[10px] text-muted-2 uppercase tracking-widest block mb-1">
+              <span className="font-mono text-xs text-muted-2 uppercase tracking-widest block mb-1">
                 Afinidade de Gosto
               </span>
               <div className="font-anton text-6xl text-holo-3 leading-none my-1">
@@ -115,31 +115,31 @@ export default function ModalDueloGosto({
             {/* CARDS COMPARATIVOS */}
             <div className="grid grid-cols-2 gap-3">
               <div className="p-3.5 rounded-xl bg-panel-2 border border-line">
-                <div className="flex items-center gap-1.5 font-mono text-[10px] text-green uppercase font-bold mb-1">
+                <div className="flex items-center gap-1.5 font-mono text-xs text-green uppercase font-bold mb-1">
                   <HeartHandshake size={13} /> O que une
                 </div>
                 <div className="font-bold text-sm text-text">{resultado.genero_que_une}</div>
-                <span className="text-[10px] text-muted block mt-0.5">Gênero favorito compartilhado</span>
+                <span className="text-xs text-muted block mt-0.5">Gênero favorito compartilhado</span>
               </div>
 
               <div className="p-3.5 rounded-xl bg-panel-2 border border-line">
-                <div className="flex items-center gap-1.5 font-mono text-[10px] text-coral uppercase font-bold mb-1">
+                <div className="flex items-center gap-1.5 font-mono text-xs text-coral uppercase font-bold mb-1">
                   <ShieldAlert size={13} /> O que separa
                 </div>
                 <div className="font-bold text-sm text-text">{resultado.genero_que_separa}</div>
-                <span className="text-[10px] text-muted block mt-0.5">Maior diferença de consumo</span>
+                <span className="text-xs text-muted block mt-0.5">Maior diferença de consumo</span>
               </div>
 
               <div className="p-3.5 rounded-xl bg-panel-2 border border-line">
-                <span className="font-mono text-[10px] text-muted-2 uppercase block mb-1">Em Comum</span>
+                <span className="font-mono text-xs text-muted-2 uppercase block mb-1">Em Comum</span>
                 <div className="font-anton text-xl text-text leading-none">{resultado.obras_em_comum}</div>
-                <span className="text-[10px] text-muted block mt-0.5">Obras presentes em ambos decks</span>
+                <span className="text-xs text-muted block mt-0.5">Obras presentes em ambos decks</span>
               </div>
 
               <div className="p-3.5 rounded-xl bg-panel-2 border border-line">
-                <span className="font-mono text-[10px] text-muted-2 uppercase block mb-1">Sintonia de Notas</span>
+                <span className="font-mono text-xs text-muted-2 uppercase block mb-1">Sintonia de Notas</span>
                 <div className="font-anton text-xl text-gold leading-none">{resultado.concordancia_notas}%</div>
-                <span className="text-[10px] text-muted block mt-0.5">Concordância nas notas dadas</span>
+                <span className="text-xs text-muted block mt-0.5">Concordância nas notas dadas</span>
               </div>
             </div>
 

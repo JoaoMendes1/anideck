@@ -87,7 +87,7 @@ export default function AnimeCard({
 
             {semCapa && (
                 <div className="absolute inset-0 z-0 flex items-center justify-center bg-panel-2">
-                    <span className="font-mono text-[9px] text-muted-2 uppercase tracking-widest text-center px-2">
+                    <span className="font-mono text-xs text-muted-2 uppercase tracking-widest text-center px-2">
                         Capa indisponível
                     </span>
                 </div>
@@ -116,8 +116,8 @@ export default function AnimeCard({
                 {statusBadge}
                 {extraBadges}
                 {temRanking && (
-                    <div title={`#${ranking} no ranking geral da AniList`} className="flex items-center gap-1 font-anton text-[9.5px] px-1.5 py-0.5 rounded-md bg-void/80 text-holo-3 border border-holo-3/40 shadow-[0_0_8px_rgba(63,224,240,0.25)]">
-                        <span className="text-[8.5px] leading-none">🏆</span>#{ranking}
+                    <div title={`#${ranking} no ranking geral da AniList`} className="flex items-center gap-1 font-anton text-xs px-1.5 py-0.5 rounded-md bg-void/80 text-holo-3 border border-holo-3/40 shadow-[0_0_8px_rgba(63,224,240,0.25)]">
+                        <span className="text-xs leading-none">🏆</span>#{ranking}
                     </div>
                 )}
             </div>
@@ -135,14 +135,14 @@ export default function AnimeCard({
                     {listaGeneros.map((g) => (
                         <span
                             key={g}
-                            className={`text-[8px] font-bold px-1 py-[1px] rounded border truncate max-w-[92px] ${getCategoryTheme(g)}`}
+                            className={`text-xs font-bold px-1 py-[1px] rounded border truncate max-w-[92px] ${getCategoryTheme(g)}`}
                         >
                             {g}
                         </span>
                     ))}
                 </div>
 
-                <div className={`shrink-0 font-anton text-[10px] px-1.5 py-0.5 rounded-md border ${
+                <div className={`shrink-0 font-anton text-xs px-1.5 py-0.5 rounded-md border ${
                     temNota
                         ? 'bg-void/80 text-gold border-gold/50 shadow-[0_0_8px_rgba(255,197,66,0.3)]'
                         : 'bg-void/80 text-muted-2 border-line'
@@ -182,7 +182,7 @@ export default function AnimeCard({
                 </Link>
 
                 {/* Ano e Próximo Episódio rigorosamente alinhados */}
-                <div className="flex items-center gap-1.5 font-mono text-[10.5px] text-muted-2 font-semibold truncate">
+                <div className="flex items-center gap-1.5 font-mono text-xs text-muted-2 font-semibold truncate">
                     {year && <span>{year}</span>}
                     {year && proximoEpTexto && <span className="opacity-40">•</span>}
                     {proximoEpTexto && (

@@ -18,7 +18,7 @@ function AvisoCatalogo() {
       <p className="text-[12px] font-bold text-gold">
         Dados do catálogo temporariamente indisponíveis.
       </p>
-      <p className="mt-0.5 text-[11px] text-muted">
+      <p className="mt-0.5 text-xs text-muted">
         Seu deck e suas notas estão salvos.
       </p>
     </div>

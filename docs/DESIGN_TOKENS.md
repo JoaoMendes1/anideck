@@ -78,6 +78,11 @@ fora da paleta dos temas, por ser cor semântica de "chama".
 
 ## Tipografia
 
+**Piso de 12 px:** nenhum texto de interface usa tamanho arbitrário abaixo de `text-xs`
+(`text-[10px]`, `text-[11px]` e parecidos não entram). Quando o texto não couber, o que muda é
+o rótulo ou o espaço em volta, nunca o tamanho. Exceção: texto dentro de SVG, medido na unidade
+do desenho.
+
 | Uso | Fonte | Peso |
 |---|---|---|
 | Títulos grandes (h1, h2 de seção) | `'Anton', sans-serif` | 400 (a fonte só tem esse peso) |

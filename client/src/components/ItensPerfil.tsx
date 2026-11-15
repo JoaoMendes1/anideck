@@ -76,7 +76,7 @@ export default function ItensPerfil({ onNavegar }: { onNavegar: () => void }) {
               Só as bolinhas, sem rótulo por tema — a página tem os nomes.
             */}
             <div className="px-4 py-2.5">
-                <div className="text-[10px] font-bold uppercase tracking-wide text-muted-2 mb-2">Tema</div>
+                <div className="text-xs font-bold uppercase tracking-wide text-muted-2 mb-2">Tema</div>
                 <div className="flex gap-2">
                     {TEMAS.map((tema) => (
                         <button

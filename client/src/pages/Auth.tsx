@@ -127,7 +127,7 @@ export default function Auth() {
           </p>
 
           <div className="mb-5 p-3.5 rounded-2xl bg-gold/[0.08] border border-gold/30 text-left space-y-2">
-            <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-gold/15 border border-gold/35 font-mono text-[10px] font-bold uppercase tracking-wider text-gold">
+            <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-gold/15 border border-gold/35 font-mono text-xs font-bold uppercase tracking-wider text-gold">
               ⚠ Versão Beta · Acesso Limitado
             </div>
             <p className="text-xs text-muted leading-relaxed">
@@ -210,7 +210,7 @@ export default function Auth() {
           
           <div className="flex items-center gap-3 my-5">
             <div className="flex-1 h-px bg-line" />
-            <span className="text-[11px] font-bold uppercase tracking-wide text-muted-2">ou</span>
+            <span className="text-xs font-bold uppercase tracking-wide text-muted-2">ou</span>
             <div className="flex-1 h-px bg-line" />
           </div>
 
@@ -238,7 +238,7 @@ export default function Auth() {
               {isLogin ? 'Criar conta' : 'Entrar'}
             </button>
           </div>
-          <p className="text-center text-[11px] text-muted-2 mt-4 leading-relaxed">
+          <p className="text-center text-xs text-muted-2 mt-4 leading-relaxed">
             Ao criar uma conta, por e-mail ou com o Google, você concorda com a{' '}
             <Link to="/privacidade" className="text-holo-3 hover:underline">
               Política de Privacidade

@@ -72,7 +72,7 @@ export default function FerramentasCuradoria({ malId, curada, statusCuradoria, s
         <Wrench size={14} className="text-gold shrink-0" aria-hidden />
         <span className="text-[12px] font-bold text-gold">Curadoria</span>
         <span
-          className={`px-2 py-0.5 rounded-full text-[10px] font-mono uppercase border ${
+          className={`px-2 py-0.5 rounded-full text-xs font-mono uppercase border ${
             semEpisodios
               ? 'bg-coral/15 text-coral border-coral/50'
               : emBreve
@@ -84,7 +84,7 @@ export default function FerramentasCuradoria({ malId, curada, statusCuradoria, s
         >
           {semEpisodios ? 'Sem episódios' : emBreve ? (curada ? 'Curado · Em breve' : 'Em breve') : curada ? `Curado · ${rotuloStatus}` : 'Não curado'}
         </span>
-        <span className="font-mono text-[10px] text-muted-2 ml-auto hidden sm:inline">MAL #{malId}</span>
+        <span className="font-mono text-xs text-muted-2 ml-auto hidden sm:inline">MAL #{malId}</span>
         <ChevronDown size={15} className={`text-muted shrink-0 transition-transform ${aberta ? 'rotate-180' : ''} sm:ml-2 ml-auto`} aria-hidden />
       </button>
 
@@ -115,7 +115,7 @@ export default function FerramentasCuradoria({ malId, curada, statusCuradoria, s
             IA: tudo, com episódios
           </button>
           {curada && (
-            <label className="mt-2.5 inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-mono bg-void/60 border border-line text-muted cursor-pointer select-none">
+            <label className="mt-2.5 inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-mono bg-void/60 border border-line text-muted cursor-pointer select-none">
               <input type="checkbox" checked={forcarIA} onChange={e => setForcarIA(e.target.checked)} className="accent-gold cursor-pointer" />
               Curar de novo com IA
             </label>

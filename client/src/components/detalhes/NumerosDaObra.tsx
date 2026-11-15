@@ -37,7 +37,7 @@ export default function NumerosDaObra({ nota, ranking, stats, minhaNota }: Props
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
         {cartoes.map(c => (
           <div key={c.rotulo} className="bg-panel border border-line rounded-2xl p-4">
-            <div className="font-mono text-[10px] text-muted-2 uppercase tracking-wider flex items-center gap-1.5">
+            <div className="font-mono text-xs text-muted-2 uppercase tracking-wider flex items-center gap-1.5">
               {c.icone} {c.rotulo}
             </div>
             <div className={`font-anton text-2xl mt-1 ${c.cor}`}>{c.valor}</div>
@@ -49,7 +49,7 @@ export default function NumerosDaObra({ nota, ranking, stats, minhaNota }: Props
         <div className="bg-panel border border-line rounded-2xl p-5">
           <div className="flex items-baseline justify-between gap-2 mb-4">
             <h3 className="font-anton text-base uppercase m-0">Como a comunidade avaliou</h3>
-            <span className="font-mono text-[10.5px] text-muted-2">{votos.toLocaleString('pt-BR')} avaliações</span>
+            <span className="font-mono text-xs text-muted-2">{votos.toLocaleString('pt-BR')} avaliações</span>
           </div>
           <div className="flex items-end gap-1.5 h-[140px] mb-2">
             {[...stats.scores]
@@ -66,14 +66,14 @@ export default function NumerosDaObra({ nota, ranking, stats, minhaNota }: Props
                       className={`rounded-t-sm w-full relative ${daFaixa ? 'bg-holo-3' : 'bg-gradient-to-t from-holo-2/50 to-holo-2'}`}
                     >
                       {daFaixa && (
-                        <span className="absolute -top-5 left-1/2 -translate-x-1/2 bg-holo-3 text-void text-[8px] font-black px-1 rounded">VOCÊ</span>
+                        <span className="absolute -top-5 left-1/2 -translate-x-1/2 bg-holo-3 text-void text-xs font-black px-1 rounded">VOCÊ</span>
                       )}
                     </motion.div>
                   </div>
                 )
               })}
           </div>
-          <div className="flex justify-between font-mono text-[10px] text-muted-2 px-0.5 select-none">
+          <div className="flex justify-between font-mono text-xs text-muted-2 px-0.5 select-none">
             {[...stats.scores]
               .sort((a, b) => a.score - b.score)
               .map(s => (
@@ -91,7 +91,7 @@ export default function NumerosDaObra({ nota, ranking, stats, minhaNota }: Props
       ) : (
         <p className="text-sm text-muted">A distribuição de notas ainda não está disponível para esta obra.</p>
       )}
-      <p className="font-mono text-[10.5px] text-muted-2 m-0">Fonte: AniList. Os números do AniDeck entram aqui quando a base crescer.</p>
+      <p className="font-mono text-xs text-muted-2 m-0">Fonte: AniList. Os números do AniDeck entram aqui quando a base crescer.</p>
     </div>
   )
 }

@@ -100,11 +100,11 @@ export default function RankingClasLiga() {
           <div className="flex items-center gap-2 text-xs">
             <span className="font-mono text-muted-2">Status:</span>
             {dados.fechada ? (
-              <span className="px-2 py-0.5 rounded-full font-mono text-[10px] uppercase font-bold bg-muted-2/20 text-muted border border-muted-2/30">
+              <span className="px-2 py-0.5 rounded-full font-mono text-xs uppercase font-bold bg-muted-2/20 text-muted border border-muted-2/30">
                 Encerrada
               </span>
             ) : (
-              <span className="px-2 py-0.5 rounded-full font-mono text-[10px] uppercase font-bold bg-holo-2/20 text-holo-2 border border-holo-2/30 animate-pulse">
+              <span className="px-2 py-0.5 rounded-full font-mono text-xs uppercase font-bold bg-holo-2/20 text-holo-2 border border-holo-2/30 animate-pulse">
                 Em Andamento
               </span>
             )}
@@ -153,7 +153,7 @@ export default function RankingClasLiga() {
                     <Trophy size={18} className="text-gold" />
                     <span className="font-anton text-lg tracking-wide uppercase">{formatarTemporada(h.temporada)}</span>
                   </div>
-                  <span className="font-mono text-[11px] text-muted-2">
+                  <span className="font-mono text-xs text-muted-2">
                     Encerrada em {new Date(h.fechado_em).toLocaleDateString('pt-BR')}
                   </span>
                 </div>
@@ -178,10 +178,10 @@ export default function RankingClasLiga() {
                               {c.nome}
                             </Link>
                           </div>
-                          <p className="font-mono text-[10px] text-muted mt-1 m-0">
+                          <p className="font-mono text-xs text-muted mt-1 m-0">
                             Pontos: <b className="text-text">{c.pontuacao.toLocaleString('pt-BR')}</b> · XP: {c.xp_total.toLocaleString('pt-BR')}
                           </p>
-                          <p className="font-mono text-[9.5px] text-holo-2 mt-0.5 m-0 flex items-center gap-1">
+                          <p className="font-mono text-xs text-holo-2 mt-0.5 m-0 flex items-center gap-1">
                             <Sparkles size={10} /> +{c.recompensa_anicoins} ₳ por membro
                           </p>
                         </div>
@@ -206,7 +206,7 @@ export default function RankingClasLiga() {
               <p className="text-xs text-muted m-0">
                 <b>Pontuação Justa:</b> média de XP dos <b>10 melhores membros</b> na temporada. Clãs com menos de {dados.min_membros_liga} membros não pontuam.
               </p>
-              <p className="text-[11px] text-muted-2 m-0">
+              <p className="text-xs text-muted-2 m-0">
                 Desempate: 1º Pontuação Média · 2º XP Total Acumulado · 3º Antiguidade da fundação.
               </p>
             </div>
@@ -223,7 +223,7 @@ export default function RankingClasLiga() {
           {/* Pódio dos Top 3 */}
           {dados.ranking.filter(r => r.elegivel_liga && r.posicao && r.posicao <= 3).length > 0 && (
             <div>
-              <p className="font-mono text-[10px] text-muted-2 uppercase tracking-widest mb-3 select-none">// líderes da liga</p>
+              <p className="font-mono text-xs text-muted-2 uppercase tracking-widest mb-3 select-none">// líderes da liga</p>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
                 {dados.ranking
                   .filter(r => r.elegivel_liga && r.posicao && r.posicao <= 3)
@@ -258,17 +258,17 @@ export default function RankingClasLiga() {
                             <span className="text-muted">Pontuação Liga:</span>
                             <span className="font-anton text-base text-text">{c.pontuacao.toLocaleString('pt-BR')} pts</span>
                           </div>
-                          <div className="flex items-center justify-between text-[11px] text-muted-2">
+                          <div className="flex items-center justify-between text-xs text-muted-2">
                             <span>XP Total Acumulado:</span>
                             <span className="font-mono">{c.xp_total.toLocaleString('pt-BR')} XP</span>
                           </div>
-                          <div className="flex items-center justify-between text-[11px] text-muted-2">
+                          <div className="flex items-center justify-between text-xs text-muted-2">
                             <span>Membros Ativos:</span>
                             <span className="font-mono">{c.total_membros} membros</span>
                           </div>
                         </div>
 
-                        <div className="flex items-center justify-between text-[11px] pt-1 border-t border-line/60">
+                        <div className="flex items-center justify-between text-xs pt-1 border-t border-line/60">
                           <span className="text-holo-2 font-mono flex items-center gap-1 font-bold">
                             <Sparkles size={12} /> +{recompensaAniCoins} ₳ / membro
                           </span>
@@ -284,7 +284,7 @@ export default function RankingClasLiga() {
           {/* Tabela do Ranking Completo */}
           <div className="space-y-3">
             <div className="flex items-center justify-between">
-              <p className="font-mono text-[10px] text-muted-2 uppercase tracking-widest m-0 select-none">// classificação geral</p>
+              <p className="font-mono text-xs text-muted-2 uppercase tracking-widest m-0 select-none">// classificação geral</p>
               <span className="text-xs text-muted-2 font-mono">
                 {dados.ranking.length} clã{dados.ranking.length === 1 ? '' : 's'} ranqueado{dados.ranking.length === 1 ? '' : 's'}
               </span>
@@ -347,12 +347,12 @@ export default function RankingClasLiga() {
                               {item.nome}
                             </Link>
                             {!item.elegivel_liga && (
-                              <span className="px-1.5 py-0.5 rounded text-[9.5px] font-mono uppercase bg-amber-500/15 text-amber-400 border border-amber-500/30">
+                              <span className="px-1.5 py-0.5 rounded text-xs font-mono uppercase bg-amber-500/15 text-amber-400 border border-amber-500/30">
                                 Inelegível
                               </span>
                             )}
                           </div>
-                          <p className="text-[11px] text-muted-2 m-0 mt-0.5 truncate">
+                          <p className="text-xs text-muted-2 m-0 mt-0.5 truncate">
                             {item.elegivel_liga ? (
                               `${item.total_membros} membros · XP Total: ${item.xp_total.toLocaleString('pt-BR')}`
                             ) : (
@@ -366,7 +366,7 @@ export default function RankingClasLiga() {
                           <span className="block font-anton text-lg leading-none text-text">
                             {item.pontuacao.toLocaleString('pt-BR')}
                           </span>
-                          <span className="block font-mono text-[9px] text-muted-2 uppercase mt-0.5">
+                          <span className="block font-mono text-xs text-muted-2 uppercase mt-0.5">
                             {item.elegivel_liga ? 'Média Top 10' : 'Pontos'}
                           </span>
                         </div>
@@ -385,10 +385,10 @@ export default function RankingClasLiga() {
                       {expandido && (
                         <div className="px-4 pb-4 pt-1 border-t border-line/60 bg-panel-2/30 rounded-b-2xl">
                           <div className="flex items-center justify-between mb-2">
-                            <p className="font-mono text-[10px] text-muted-2 uppercase tracking-wider m-0">
+                            <p className="font-mono text-xs text-muted-2 uppercase tracking-wider m-0">
                               Top 10 Membros Pontuadores da Temporada
                             </p>
-                            <span className="font-mono text-[10px] text-holo-2">
+                            <span className="font-mono text-xs text-holo-2">
                               {item.top10_membros?.length || 0} contribuintes
                             </span>
                           </div>
@@ -411,7 +411,7 @@ export default function RankingClasLiga() {
                                   </span>
                                   <div className="min-w-0 flex-1">
                                     <span className="block font-bold text-xs truncate text-text">{m.nome}</span>
-                                    <span className="block font-mono text-[10px] text-muted-2 truncate">@{m.handle}</span>
+                                    <span className="block font-mono text-xs text-muted-2 truncate">@{m.handle}</span>
                                   </div>
                                   <span className="font-mono text-xs font-bold text-holo-2 shrink-0">
                                     +{m.xp.toLocaleString('pt-BR')} XP

@@ -22,12 +22,12 @@ export default function ImageUploadField({
   return (
     <div>
       <div className="flex justify-between items-center mb-2">
-        <label className="block text-[11px] font-bold">{label}</label>
+        <label className="block text-xs font-bold">{label}</label>
         {value && (
           <button
             type="button"
             onClick={() => onChange('')}
-            className="text-[10px] font-bold text-coral hover:text-coral/80 uppercase cursor-pointer"
+            className="text-xs font-bold text-coral hover:text-coral/80 uppercase cursor-pointer"
           >
             🗑️ Limpar
           </button>

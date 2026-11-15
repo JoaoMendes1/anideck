@@ -299,7 +299,7 @@ export default function NotificationBell() {
       >
         <Bell size={16} />
         {naoLidas > 0 && (
-          <span className="absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-coral text-[9px] font-bold text-void border border-void">
+          <span className="absolute -top-1.5 -right-1.5 flex h-[18px] min-w-[18px] px-1 items-center justify-center rounded-full bg-coral text-xs leading-none font-bold text-void border border-void">
             {naoLidas > 9 ? '9+' : naoLidas}
           </span>
         )}
@@ -346,7 +346,7 @@ export default function NotificationBell() {
               <button
                 type="button"
                 onClick={markAllAsRead}
-                className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[11px] font-bold text-holo-1 bg-holo-1/10 border border-holo-1/30 hover:bg-holo-1/20 transition-colors cursor-pointer"
+                className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-bold text-holo-1 bg-holo-1/10 border border-holo-1/30 hover:bg-holo-1/20 transition-colors cursor-pointer"
                 title="Marcar todas como lidas"
               >
                 <CheckCheck size={13} /> Ler todas
@@ -373,7 +373,7 @@ export default function NotificationBell() {
           <div className="-mx-6">
             {agrupadas.map(({ grupo, itens }) => (
               <div key={grupo}>
-                <p className="px-6 pt-4 pb-2 text-[11px] font-bold uppercase tracking-wider text-muted-2">
+                <p className="px-6 pt-4 pb-2 text-xs font-bold uppercase tracking-wider text-muted-2">
                   {grupo}
                 </p>
                 {itens.map(n => {
@@ -398,10 +398,10 @@ export default function NotificationBell() {
 
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center gap-1.5 mb-1 flex-wrap">
-                            <span className="px-2 py-0.5 rounded-full bg-gold/15 border border-gold/40 text-gold text-[10px] font-bold tracking-wider uppercase">
+                            <span className="px-2 py-0.5 rounded-full bg-gold/15 border border-gold/40 text-gold text-xs font-bold tracking-wider uppercase">
                               Convite Beta
                             </span>
-                            <span className="text-[11px] text-muted-2 font-mono">
+                            <span className="text-xs text-muted-2 font-mono">
                               • {tempoRelativo(n.created_at)}
                             </span>
                           </div>
@@ -409,7 +409,7 @@ export default function NotificationBell() {
                             {nome} solicitou acesso ao AniDeck
                           </p>
                           {email && (
-                            <p className="text-[11.5px] text-holo-3 font-mono truncate mt-0.5">
+                            <p className="text-xs text-holo-3 font-mono truncate mt-0.5">
                               {email}
                             </p>
                           )}
@@ -427,7 +427,7 @@ export default function NotificationBell() {
                                     showToast('Não foi possível copiar o e-mail.', 'error');
                                   }
                                 }}
-                                className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-panel-2 hover:bg-gold/15 border border-line hover:border-gold/40 text-text hover:text-gold text-[11px] font-bold transition-colors cursor-pointer"
+                                className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-panel-2 hover:bg-gold/15 border border-line hover:border-gold/40 text-text hover:text-gold text-xs font-bold transition-colors cursor-pointer"
                               >
                                 <Copy size={11} /> Copiar e-mail
                               </button>
@@ -483,17 +483,17 @@ export default function NotificationBell() {
                           className="block group"
                         >
                           <div className="flex items-center gap-1.5 mb-1 flex-wrap">
-                            <span className="px-2 py-0.5 rounded-full bg-holo-3/15 border border-holo-3/30 text-holo-3 text-[10px] font-bold tracking-wider uppercase">
+                            <span className="px-2 py-0.5 rounded-full bg-holo-3/15 border border-holo-3/30 text-holo-3 text-xs font-bold tracking-wider uppercase">
                               EP. {n.episode_number}
                             </span>
-                            <span className="text-[11px] text-muted-2 font-mono">
+                            <span className="text-xs text-muted-2 font-mono">
                               • {tempoRelativo(n.created_at)}
                             </span>
                           </div>
                           <p className="text-[13px] font-bold text-text leading-snug line-clamp-2 group-hover:text-holo-3 transition-colors">
                             {n.anime_title || 'Anime'}
                           </p>
-                          <p className="text-[11px] text-muted mt-0.5">
+                          <p className="text-xs text-muted mt-0.5">
                             {epJaVisto
                               ? `Você já assistiu ao episódio ${n.episode_number}.`
                               : `Episódio ${n.episode_number} já está disponível.`}
@@ -502,7 +502,7 @@ export default function NotificationBell() {
 
                         <div className="mt-2 flex items-center gap-2">
                           {epJaVisto ? (
-                            <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-green/15 border border-green/30 text-green text-[11px] font-bold">
+                            <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-green/15 border border-green/30 text-green text-xs font-bold">
                               <Check size={12} /> Ep. {n.episode_number} visto
                             </span>
                           ) : (
@@ -510,7 +510,7 @@ export default function NotificationBell() {
                               type="button"
                               disabled={marcandoEp[n.id]}
                               onClick={() => marcarEpisodioVistoRapido(n)}
-                              className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-panel-2 hover:bg-holo-1/15 border border-line hover:border-holo-1/40 text-text hover:text-holo-1 text-[11px] font-bold transition-colors cursor-pointer disabled:opacity-50"
+                              className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-panel-2 hover:bg-holo-1/15 border border-line hover:border-holo-1/40 text-text hover:text-holo-1 text-xs font-bold transition-colors cursor-pointer disabled:opacity-50"
                             >
                               <Plus size={12} />
                               {marcandoEp[n.id] ? 'Marcando...' : `Marcar Ep. ${n.episode_number} visto`}

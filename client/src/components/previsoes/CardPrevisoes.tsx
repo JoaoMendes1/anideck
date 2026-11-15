@@ -89,7 +89,7 @@ export default function CardPrevisoes({ className = '', malId }: Props) {
             <Sparkles size={16} />
           </div>
           <div>
-            <span className="font-mono text-[10px] font-bold uppercase tracking-widest text-holo-1 block">
+            <span className="font-mono text-xs font-bold uppercase tracking-widest text-holo-1 block">
               Oráculo da Comunidade
             </span>
             <h3 className="font-anton text-lg uppercase text-text m-0">
@@ -98,7 +98,7 @@ export default function CardPrevisoes({ className = '', malId }: Props) {
           </div>
         </div>
 
-        <span className="font-mono text-[11px] text-muted bg-panel-2 border border-line px-2.5 py-1 rounded-full">
+        <span className="font-mono text-xs text-muted bg-panel-2 border border-line px-2.5 py-1 rounded-full">
           {previsoes.filter((p) => p.status === 'aberta').length} abertas
         </span>
       </div>
@@ -117,11 +117,11 @@ export default function CardPrevisoes({ className = '', malId }: Props) {
               className="p-4 rounded-xl bg-void/60 border border-line hover:border-holo-1/40 transition-colors"
             >
               <div className="flex flex-wrap items-center justify-between gap-2 mb-2">
-                <span className="font-mono text-[10px] font-bold uppercase px-2 py-0.5 rounded-full bg-holo-3/15 border border-holo-3/30 text-holo-3">
+                <span className="font-mono text-xs font-bold uppercase px-2 py-0.5 rounded-full bg-holo-3/15 border border-holo-3/30 text-holo-3">
                   {prev.titulo_anime || 'Geral'}
                 </span>
 
-                <div className="flex items-center gap-2 font-mono text-[11px]">
+                <div className="flex items-center gap-2 font-mono text-xs">
                   <span className="text-muted">Prêmio:</span>
                   <span className="font-bold text-gold inline-flex items-center gap-1">
                     +{prev.recompensa_anicoins} <IconeAniCoin size={12} /> +2x MP
@@ -216,7 +216,7 @@ export default function CardPrevisoes({ className = '', malId }: Props) {
               )}
 
               {/* Rodapé da enquete */}
-              <div className="mt-3 flex items-center justify-between text-[10.5px] font-mono text-muted-2">
+              <div className="mt-3 flex items-center justify-between text-xs font-mono text-muted-2">
                 <span>{prev.total_apostadores} {prev.total_apostadores === 1 ? 'membro apostou' : 'membros apostaram'}</span>
                 <span>{prev.total_mana_apostada} MP acumulado no pote</span>
               </div>

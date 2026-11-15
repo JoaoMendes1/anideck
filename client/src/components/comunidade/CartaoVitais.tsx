@@ -14,11 +14,11 @@ export default function CartaoVitais() {
     <section className="p-5 rounded-2xl bg-panel border border-line">
       <div className="flex items-center justify-between gap-2 mb-4">
         <div>
-          <p className="font-mono text-[10px] text-muted-2 uppercase tracking-widest m-0">// comunidade</p>
+          <p className="font-mono text-xs text-muted-2 uppercase tracking-widest m-0">// comunidade</p>
           <h3 className="font-anton text-lg uppercase m-0 mt-0.5">Vitalidade &amp; Mana</h3>
         </div>
         {perfil.existe && (
-          <Link to={perfil.publico ? `/u/${perfil.handle}` : '/configuracoes#comunidade'} className="font-mono text-[11px] text-holo-3 hover:underline">
+          <Link to={perfil.publico ? `/u/${perfil.handle}` : '/configuracoes#comunidade'} className="font-mono text-xs text-holo-3 hover:underline">
             @{perfil.handle}
           </Link>
         )}
@@ -26,7 +26,7 @@ export default function CartaoVitais() {
 
       <BarrasVitais estado={estado} />
 
-      <p className="font-mono text-[10.5px] text-muted-2 mt-4 mb-0 leading-relaxed">
+      <p className="font-mono text-xs text-muted-2 mt-4 mb-0 leading-relaxed">
         A Vitalidade mede os últimos {estado.regras.hp_janela_dias} dias e nunca tira XP nem rank. Ficou parado? Ela cai devagar e
         volta com o próximo episódio.
       </p>

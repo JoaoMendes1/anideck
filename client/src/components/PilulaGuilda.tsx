@@ -136,7 +136,7 @@ export default function PilulaGuilda() {
       {/* Avisos de ganho: sobem da pílula e somem sozinhos. */}
       <div className="absolute top-full right-0 mt-1.5 flex flex-col items-end gap-1 pointer-events-none z-[60]" aria-live="polite">
         {avisos.map(a => (
-          <span key={a.id} className={`aviso-hud px-2 py-0.5 rounded-full border bg-void/90 font-mono text-[11px] font-bold shadow-lg ${ESTILO_DO_AVISO[a.tipo]}`}>
+          <span key={a.id} className={`aviso-hud px-2 py-0.5 rounded-full border bg-void/90 font-mono text-xs font-bold shadow-lg ${ESTILO_DO_AVISO[a.tipo]}`}>
             {a.texto}
           </span>
         ))}
@@ -160,7 +160,7 @@ export default function PilulaGuilda() {
           </div>
 
           <div className="mb-4">
-            <div className="flex items-center justify-between font-mono text-[10.5px] mb-1.5">
+            <div className="flex items-center justify-between font-mono text-xs mb-1.5">
               <span className="inline-flex items-center gap-1.5 text-muted uppercase tracking-wider">
                 <Sparkles size={12} className="text-gold" aria-hidden /> XP
               </span>
@@ -170,7 +170,7 @@ export default function PilulaGuilda() {
               </span>
             </div>
             <BarraVital tipo="xp" pct={status.progresso_pct} className="h-2 w-full" />
-            <p className="text-[11.5px] text-muted-2 mt-1.5 mb-0">
+            <p className="text-xs text-muted-2 mt-1.5 mb-0">
               {status.xp_hoje > 0 ? `+${status.xp_hoje} XP hoje` : 'Nenhum XP hoje ainda'}
               {status.teto_diario > 0 ? ` (o teto diário é ${status.teto_diario}).` : '.'} Cada episódio marcado vale XP.
             </p>
@@ -187,11 +187,11 @@ export default function PilulaGuilda() {
             title="Abrir Loja Cosmética"
             className="flex items-center justify-between p-2.5 rounded-xl bg-panel-2/60 border border-line/60 hover:border-gold/60 transition-colors mb-4 group cursor-pointer"
           >
-            <span className="inline-flex items-center gap-1.5 font-mono text-[11px] text-muted group-hover:text-text uppercase tracking-wider">
+            <span className="inline-flex items-center gap-1.5 font-mono text-xs text-muted group-hover:text-text uppercase tracking-wider">
               <IconeAniCoin size={15} /> AniCoins
             </span>
             <span className="font-mono text-xs font-bold text-holo-3 group-hover:text-gold flex items-center gap-1">
-              {saldo.toLocaleString('pt-BR')} ₳ <span className="text-[10px] text-muted-2">→ Loja</span>
+              {saldo.toLocaleString('pt-BR')} ₳ <span className="text-xs text-muted-2">→ Loja</span>
             </span>
           </Link>
 
@@ -208,16 +208,16 @@ export default function PilulaGuilda() {
           )}
 
           <div className="grid grid-cols-4 gap-1.5 mt-4">
-            <Link to="/guilda" className="px-1.5 py-2 rounded-xl border border-line text-center text-[11px] font-bold text-text hover:border-holo-3">
+            <Link to="/guilda" className="px-1.5 py-2 rounded-xl border border-line text-center text-xs font-bold text-text hover:border-holo-3">
               Guilda
             </Link>
-            <Link to="/clas" className="inline-flex items-center justify-center gap-1 px-1.5 py-2 rounded-xl border border-holo-3/40 bg-holo-3/10 text-center text-[11px] font-bold text-holo-3 hover:bg-holo-3/20">
+            <Link to="/clas" className="inline-flex items-center justify-center gap-1 px-1.5 py-2 rounded-xl border border-holo-3/40 bg-holo-3/10 text-center text-xs font-bold text-holo-3 hover:bg-holo-3/20">
               <Users size={12} /> Clãs
             </Link>
-            <Link to="/loja" className="inline-flex items-center justify-center gap-1 px-1.5 py-2 rounded-xl border border-gold/40 bg-gold/10 text-center text-[11px] font-bold text-gold hover:bg-gold/20">
+            <Link to="/loja" className="inline-flex items-center justify-center gap-1 px-1.5 py-2 rounded-xl border border-gold/40 bg-gold/10 text-center text-xs font-bold text-gold hover:bg-gold/20">
               <ShoppingBag size={12} /> Loja
             </Link>
-            <Link to="/membros" className="inline-flex items-center justify-center gap-1 px-1.5 py-2 rounded-xl border border-line text-[11px] font-bold text-text hover:border-holo-3">
+            <Link to="/membros" className="inline-flex items-center justify-center gap-1 px-1.5 py-2 rounded-xl border border-line text-xs font-bold text-text hover:border-holo-3">
               Ranking
             </Link>
           </div>

@@ -250,7 +250,7 @@ export function AbaControle({
           <span className={`w-2.5 h-2.5 rounded-full mt-2 shrink-0 ${forceOffline || apiHealth === 'OFFLINE' ? 'bg-coral' : apiHealth === 'WARNING' ? 'bg-gold' : 'bg-green'
             }`} />
           <div className="min-w-0">
-            <span className="block font-mono text-[10px] uppercase tracking-widest text-muted-2 mb-1">Status da Fonte</span>
+            <span className="block font-mono text-xs uppercase tracking-widest text-muted-2 mb-1">Status da Fonte</span>
             <h3 className="font-anton text-base uppercase">
               {forceOffline ? 'AniList desligada' : apiHealth === 'OFFLINE' ? 'AniList fora do ar' : 'AniList no ar'}
             </h3>
@@ -263,7 +263,7 @@ export function AbaControle({
         <div className="bg-panel border border-line rounded-2xl p-4 sm:p-5 flex gap-3.5 items-start">
           <span className="w-2.5 h-2.5 rounded-full mt-2 shrink-0 bg-holo-3" />
           <div className="min-w-0">
-            <span className="block font-mono text-[10px] uppercase tracking-widest text-muted-2 mb-1">Motor de Ranking</span>
+            <span className="block font-mono text-xs uppercase tracking-widest text-muted-2 mb-1">Motor de Ranking</span>
             <h3 className="font-anton text-base uppercase">
               {carregando ? '—' : formatarInstante(ranking?.ultimo_ciclo ?? '')}
             </h3>
@@ -280,7 +280,7 @@ export function AbaControle({
         >
           <span className={`w-2.5 h-2.5 rounded-full mt-2 shrink-0 ${orfaos.length > 0 ? 'bg-gold' : 'bg-green'}`} />
           <div className="min-w-0">
-            <span className="block font-mono text-[10px] uppercase tracking-widest text-muted-2 mb-1">Taxonomia</span>
+            <span className="block font-mono text-xs uppercase tracking-widest text-muted-2 mb-1">Taxonomia</span>
             <h3 className="font-anton text-2xl leading-none">{carregando ? '—' : orfaos.length}</h3>
             <p className="text-muted text-[12.5px] mt-1">
               {orfaos.length === 1 ? 'rótulo fora da taxonomia' : 'rótulos fora da taxonomia'}.
@@ -514,20 +514,20 @@ export function AbaControle({
                       placeholder="Sinônimo — o nome em inglês da AniList (opcional)"
                       className="w-full bg-panel border border-line rounded-lg px-3 py-2 text-[13px] outline-none focus:border-holo-2"
                     />
-                    <p className="text-muted-2 text-[11.5px] mt-1">
+                    <p className="text-muted-2 text-xs mt-1">
                       Cria uma segunda entrada com o mesmo nome na tela. É o que faz
                       "Reincarnation" e "Reencarnação" contarem como o mesmo rótulo.
                     </p>
                   </div>
                   <div className="flex items-center justify-between gap-3 mt-3 flex-wrap">
-                    <p className="text-muted-2 text-[11.5px]">
+                    <p className="text-muted-2 text-xs">
                       {CAMADAS.find(c => c.id === novaCamada)?.ajuda}
                     </p>
                     <button
                       type="button"
                       onClick={handleCriarRotulo}
                       disabled={aplicando}
-                      className="px-4 py-1.5 rounded-full text-[11px] font-bold bg-gradient-to-r from-holo-1 to-holo-2 text-void disabled:opacity-50 cursor-pointer transition-opacity"
+                      className="px-4 py-1.5 rounded-full text-xs font-bold bg-gradient-to-r from-holo-1 to-holo-2 text-void disabled:opacity-50 cursor-pointer transition-opacity"
                     >
                       {aplicando ? 'Salvando…' : 'Cadastrar'}
                     </button>
@@ -550,7 +550,7 @@ export function AbaControle({
                         <h3 className="font-anton text-[13px] uppercase tracking-wide text-muted">
                           {c.nome}
                         </h3>
-                        <span className="font-mono text-[11px] text-muted-2">{lista.length}</span>
+                        <span className="font-mono text-xs text-muted-2">{lista.length}</span>
                       </div>
 
                       <div className="grid gap-1.5 sm:grid-cols-2">
@@ -562,7 +562,7 @@ export function AbaControle({
                             <div className="min-w-0">
                               <strong className="block text-[13px] font-bold truncate">{r.display}</strong>
                               {r.entradas.length > 1 && (
-                                <span className="font-mono text-[10.5px] text-muted-2 truncate block">
+                                <span className="font-mono text-xs text-muted-2 truncate block">
                                   {r.entradas.filter(e => e !== r.display).join(' · ')}
                                 </span>
                               )}
@@ -638,7 +638,7 @@ export function AbaControle({
               {/* Só rótulo da taxonomia entra: o raw_name precisa ser o nome exato da
                   AniList, e texto livre cadastrado em português não acharia nada. */}
               <div className="p-3 rounded-xl border border-line bg-panel-2 space-y-2">
-                <p className="font-mono text-[11px] uppercase tracking-wider text-muted-2">
+                <p className="font-mono text-xs uppercase tracking-wider text-muted-2">
                   Adicionar rótulo
                 </p>
                 <div className="flex flex-wrap gap-2">
@@ -705,7 +705,7 @@ export function AbaControle({
                   </button>
                 </div>
 
-                <p className="text-muted-2 text-[11.5px]">
+                <p className="text-muted-2 text-xs">
                   Só aparecem rótulos que a AniList reconhece. Entrada em português, como
                   "Aventura", fica de fora: ela não acha nada e falharia em silêncio.
                 </p>
@@ -778,7 +778,7 @@ export function AbaControle({
                               aria-expanded={estaAberto}
                               className="w-full flex items-center gap-2.5 px-1 py-1 cursor-pointer text-left"
                             >
-                              <span className={`font-mono text-[11px] font-semibold px-3 py-1 rounded-full border ${o.veio_de_curadoria
+                              <span className={`font-mono text-xs font-semibold px-3 py-1 rounded-full border ${o.veio_de_curadoria
                                 ? 'bg-coral/10 border-coral/40 text-coral'
                                 : 'bg-gold/10 border-gold/40 text-gold'
                                 }`}>
@@ -801,7 +801,7 @@ export function AbaControle({
                                   <p className="text-muted text-[13px] py-2">Nenhum anime encontrado.</p>
                                 ) : (
                                   <>
-                                    <p className="text-muted-2 text-[11.5px] mb-1.5">
+                                    <p className="text-muted-2 text-xs mb-1.5">
                                       Clique para abrir no editor e ajustar as tags deste anime.
                                     </p>
                                     <ul className="flex flex-col gap-1 mb-4">
@@ -819,7 +819,7 @@ export function AbaControle({
                                           ) : (
                                             <span className="block text-[13px] py-2 text-muted truncate">
                                               {a.titulo ?? `mal_id ${a.mal_id}`}
-                                              <span className="text-muted-2 text-[11px] ml-2">(fora da curadoria)</span>
+                                              <span className="text-muted-2 text-xs ml-2">(fora da curadoria)</span>
                                             </span>
                                           )}
                                         </li>
@@ -858,7 +858,7 @@ export function AbaControle({
                                           onClick={() => setConfirmacao({
                                             tipo: 'renomear', rotulo: o, destino: r.canonico,
                                           })}
-                                          className="px-3 py-1 rounded-full text-[11.5px] font-bold bg-panel border border-line text-muted hover:text-text hover:border-holo-2 cursor-pointer transition-colors"
+                                          className="px-3 py-1 rounded-full text-xs font-bold bg-panel border border-line text-muted hover:text-text hover:border-holo-2 cursor-pointer transition-colors"
                                         >
                                           {r.display}
                                         </button>
@@ -870,7 +870,7 @@ export function AbaControle({
                                     type="button"
                                     onClick={() => setConfirmacao({ tipo: 'remover', rotulo: o })}
                                     disabled={aplicando}
-                                    className="mt-3 px-4 py-1.5 rounded-full text-[11px] font-bold bg-coral/10 border border-coral/40 text-coral hover:bg-coral/20 disabled:opacity-50 cursor-pointer transition-colors"
+                                    className="mt-3 px-4 py-1.5 rounded-full text-xs font-bold bg-coral/10 border border-coral/40 text-coral hover:bg-coral/20 disabled:opacity-50 cursor-pointer transition-colors"
                                   >
                                     Apagar esta tag dos animes
                                   </button>
@@ -954,16 +954,16 @@ export function AbaControle({
                           <div className="min-w-0 flex-1">
                             <div className="flex flex-wrap items-center gap-2 mb-1">
                               <strong className="text-[13.5px] font-bold text-text">{t.titulo}</strong>
-                              <span className="font-mono text-[10px] uppercase tracking-wider px-2 py-0.5 rounded-full bg-panel border border-line text-muted-2">
+                              <span className="font-mono text-xs uppercase tracking-wider px-2 py-0.5 rounded-full bg-panel border border-line text-muted-2">
                                 {t.frequencia}
                               </span>
-                              <span className="font-mono text-[10px] px-2 py-0.5 rounded-full bg-holo-3/10 border border-holo-3/30 text-holo-3">
+                              <span className="font-mono text-xs px-2 py-0.5 rounded-full bg-holo-3/10 border border-holo-3/30 text-holo-3">
                                 Período {t.periodo_atual}
                               </span>
                             </div>
                             <p className="text-[12.5px] text-muted m-0">{t.descricao}</p>
 
-                            <div className="mt-2 font-mono text-[11px] flex flex-wrap items-center gap-x-3 gap-y-1">
+                            <div className="mt-2 font-mono text-xs flex flex-wrap items-center gap-x-3 gap-y-1">
                               {u ? (
                                 <>
                                   <span className={temErro ? 'text-coral' : concluida ? 'text-green' : 'text-gold'}>
@@ -1132,7 +1132,7 @@ function LinhaOlheiro({
         <p className={`font-bold text-sm truncate ${tag.ativo ? 'text-text' : 'text-muted'}`}>
           {tag.rotulo}
         </p>
-        <p className="font-mono text-[11px] text-muted-2 truncate">
+        <p className="font-mono text-xs text-muted-2 truncate">
           {tag.raw_name} · {tag.camada}
         </p>
       </div>

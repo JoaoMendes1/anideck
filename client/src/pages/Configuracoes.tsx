@@ -675,13 +675,13 @@ export default function Configuracoes() {
                                 </div>
                             )}
 
-                            <p className="text-[11px] text-muted-2 mt-2 mb-0">
+                            <p className="text-xs text-muted-2 mt-2 mb-0">
                                 JPG, PNG ou WebP. A foto é salva de forma leve e exibida no seu perfil, comentários e rankings.
                             </p>
                         </div>
                     </div>
 
-                    <label htmlFor="nome" className="block text-[11px] font-bold text-muted mb-2 uppercase tracking-wide select-none">
+                    <label htmlFor="nome" className="block text-xs font-bold text-muted mb-2 uppercase tracking-wide select-none">
                         Nome de exibição
                     </label>
                     <input
@@ -694,11 +694,11 @@ export default function Configuracoes() {
                         placeholder={carregando ? 'Carregando...' : 'Como você quer ser chamado'}
                         className="w-full bg-panel-2 border border-line rounded-xl px-4 py-3 text-sm mb-1 outline-none focus:border-holo-3 transition-colors disabled:opacity-50"
                     />
-                    <p className="text-[11px] text-muted-2 mb-4">
+                    <p className="text-xs text-muted-2 mb-4">
                         Aparece na saudação do seu Deck e no topo do site.
                     </p>
 
-                    <label htmlFor="email" className="block text-[11px] font-bold text-muted mb-2 uppercase tracking-wide select-none">
+                    <label htmlFor="email" className="block text-xs font-bold text-muted mb-2 uppercase tracking-wide select-none">
                         E-mail
                     </label>
                     <input
@@ -708,7 +708,7 @@ export default function Configuracoes() {
                         readOnly
                         className="w-full bg-panel-2/50 border border-line rounded-xl px-4 py-3 text-sm text-muted cursor-not-allowed outline-none"
                     />
-                    <p className="text-[11px] text-muted-2 mt-1">
+                    <p className="text-xs text-muted-2 mt-1">
                         Trocar o e-mail exige confirmação nos dois endereços. Ainda não disponível.
                     </p>
 
@@ -744,7 +744,7 @@ export default function Configuracoes() {
                                     className="border-2 border-line/80 shadow-2xl"
                                 />
                                 {usaAvatarCustom && (
-                                    <span className="absolute -bottom-2 left-1/2 -translate-x-1/2 px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-holo-2 text-void shadow">
+                                    <span className="absolute -bottom-2 left-1/2 -translate-x-1/2 px-2.5 py-0.5 rounded-full text-xs font-bold uppercase tracking-wider bg-holo-2 text-void shadow">
                                         Ativo no perfil
                                     </span>
                                 )}
@@ -779,7 +779,7 @@ export default function Configuracoes() {
                                 <button
                                     type="button"
                                     onClick={() => setAvatarCustom({ ...AVATAR_PADRAO })}
-                                    className="w-full py-1.5 px-3 rounded-xl border border-line/60 text-[11px] font-bold text-muted hover:text-text transition-colors flex items-center justify-center gap-1 cursor-pointer"
+                                    className="w-full py-1.5 px-3 rounded-xl border border-line/60 text-xs font-bold text-muted hover:text-text transition-colors flex items-center justify-center gap-1 cursor-pointer"
                                 >
                                     <RotateCcw size={12} /> Redefinir Peças
                                 </button>
@@ -878,7 +878,7 @@ export default function Configuracoes() {
                                     ))}
                                 </div>
                                 <div className="flex items-center gap-2">
-                                    <span className="text-[11px] text-muted-2">Cor da íris:</span>
+                                    <span className="text-xs text-muted-2">Cor da íris:</span>
                                     {CORES_OLHOS.map(c => (
                                         <button
                                             key={c}
@@ -938,7 +938,7 @@ export default function Configuracoes() {
                                     ))}
                                 </div>
                                 <div className="flex items-center gap-2">
-                                    <span className="text-[11px] text-muted-2">Cor do cabelo:</span>
+                                    <span className="text-xs text-muted-2">Cor do cabelo:</span>
                                     {CORES_CABELO.map(c => (
                                         <button
                                             key={c}
@@ -996,7 +996,7 @@ export default function Configuracoes() {
                     </p>
 
                     <div className="mb-5">
-                        <label className="block text-[11px] font-bold text-text mb-2.5 uppercase tracking-wide">
+                        <label className="block text-xs font-bold text-text mb-2.5 uppercase tracking-wide">
                             Gêneros Favoritos ({generosFavoritos.length})
                         </label>
                         <div className="flex flex-wrap gap-2">
@@ -1022,10 +1022,10 @@ export default function Configuracoes() {
                     </div>
 
                     <div className="pt-4 border-t border-line mb-5">
-                        <label className="block text-[11px] font-bold text-muted mb-1 uppercase tracking-wide">
+                        <label className="block text-xs font-bold text-muted mb-1 uppercase tracking-wide">
                             Gêneros Ocultos / Bloqueados ({generosBloqueados.length})
                         </label>
-                        <p className="text-[11px] text-muted-2 mb-2.5">
+                        <p className="text-xs text-muted-2 mb-2.5">
                             Obras com esses gêneros nunca serão sugeridas no trilho Recomendados para Você.
                         </p>
                         <div className="flex flex-wrap gap-1.5">
@@ -1036,7 +1036,7 @@ export default function Configuracoes() {
                                         key={`bloq-${g}`}
                                         type="button"
                                         onClick={() => alternarGeneroBloqueado(g)}
-                                        className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-bold border transition-colors cursor-pointer ${
+                                        className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-bold border transition-colors cursor-pointer ${
                                             bloqueado
                                                 ? 'bg-coral/15 border-coral/40 text-coral'
                                                 : 'bg-panel-2 border-line text-muted-2 hover:text-muted'
@@ -1073,7 +1073,7 @@ export default function Configuracoes() {
                         <span className="text-xs font-bold text-text">
                             {nomeArquivoMal ? `Arquivo selecionado: ${nomeArquivoMal}` : 'Clique para selecionar seu arquivo .xml ou .xml.gz'}
                         </span>
-                        <span className="text-[11px] text-muted-2">Export padrão do MyAnimeList (até 10 MB)</span>
+                        <span className="text-xs text-muted-2">Export padrão do MyAnimeList (até 10 MB)</span>
                         <input
                             type="file"
                             accept=".xml,.gz,application/xml,text/xml,application/gzip"
@@ -1098,23 +1098,23 @@ export default function Configuracoes() {
                             <div className="grid grid-cols-2 sm:grid-cols-5 gap-2 text-center">
                                 <div className="bg-panel border border-line rounded-lg p-2.5">
                                     <div className="font-anton text-lg text-gold tabular-nums">{previaMal.completo}</div>
-                                    <div className="text-[10px] font-mono text-muted-2 uppercase">Completo</div>
+                                    <div className="text-xs font-mono text-muted-2 uppercase">Completo</div>
                                 </div>
                                 <div className="bg-panel border border-line rounded-lg p-2.5">
                                     <div className="font-anton text-lg text-holo-3 tabular-nums">{previaMal.assistindo}</div>
-                                    <div className="text-[10px] font-mono text-muted-2 uppercase">Assistindo</div>
+                                    <div className="text-xs font-mono text-muted-2 uppercase">Assistindo</div>
                                 </div>
                                 <div className="bg-panel border border-line rounded-lg p-2.5">
                                     <div className="font-anton text-lg text-holo-1 tabular-nums">{previaMal.queroAssistir}</div>
-                                    <div className="text-[10px] font-mono text-muted-2 uppercase">Quero Assistir</div>
+                                    <div className="text-xs font-mono text-muted-2 uppercase">Quero Assistir</div>
                                 </div>
                                 <div className="bg-panel border border-line rounded-lg p-2.5">
                                     <div className="font-anton text-lg text-muted tabular-nums">{previaMal.dropado}</div>
-                                    <div className="text-[10px] font-mono text-muted-2 uppercase">Dropado</div>
+                                    <div className="text-xs font-mono text-muted-2 uppercase">Dropado</div>
                                 </div>
                                 <div className="bg-panel border border-line rounded-lg p-2.5 col-span-2 sm:col-span-1">
                                     <div className="font-anton text-lg text-green tabular-nums">{previaMal.episodios}</div>
-                                    <div className="text-[10px] font-mono text-muted-2 uppercase">Episódios</div>
+                                    <div className="text-xs font-mono text-muted-2 uppercase">Episódios</div>
                                 </div>
                             </div>
 
@@ -1193,7 +1193,7 @@ export default function Configuracoes() {
                                         <div key={c} className="w-5 h-5 rounded-full border border-white/10" style={{ background: c }} />
                                     ))}
                                 </div>
-                                <span className="text-[11px] text-muted-2">{tema.desc}</span>
+                                <span className="text-xs text-muted-2">{tema.desc}</span>
                             </button>
                         ))}
                     </div>
@@ -1235,7 +1235,7 @@ export default function Configuracoes() {
                             </svg>
                             Conta Google
                         </div>
-                        <span className={`text-[10px] font-bold uppercase tracking-wide border rounded-full px-2.5 py-1 ${
+                        <span className={`text-xs font-bold uppercase tracking-wide border rounded-full px-2.5 py-1 ${
                             temGoogle ? 'text-holo-3 border-holo-3/40' : 'text-muted-2 border-line'
                         }`}>
                             {temGoogle ? 'Conectada' : 'Não conectada'}
@@ -1259,7 +1259,7 @@ export default function Configuracoes() {
 
                 {temSenha && (
                     <Card className="mb-4">
-                        <label htmlFor="configuracoes-senha-atual" className="block text-[11px] font-bold text-muted mb-2 uppercase tracking-wide">Senha atual</label>
+                        <label htmlFor="configuracoes-senha-atual" className="block text-xs font-bold text-muted mb-2 uppercase tracking-wide">Senha atual</label>
                         <input
                             id="configuracoes-senha-atual"
                             type="password"
@@ -1269,7 +1269,7 @@ export default function Configuracoes() {
                             className="w-full bg-panel-2 border border-line rounded-xl px-4 py-3 text-sm outline-none"
                         />
 
-                        <label htmlFor="configuracoes-nova-senha" className="block text-[11px] font-bold text-muted mb-2 mt-4 uppercase tracking-wide">Nova senha</label>
+                        <label htmlFor="configuracoes-nova-senha" className="block text-xs font-bold text-muted mb-2 mt-4 uppercase tracking-wide">Nova senha</label>
                         <input
                             id="configuracoes-nova-senha"
                             type="password"
@@ -1316,7 +1316,7 @@ export default function Configuracoes() {
                         <div className="space-y-3">
                                                       {temSenha ? (
                                 <div>
-                                    <label htmlFor="configuracoes-sua-senha" className="block text-[11px] font-bold text-muted mb-2 uppercase tracking-wide">
+                                    <label htmlFor="configuracoes-sua-senha" className="block text-xs font-bold text-muted mb-2 uppercase tracking-wide">
                                         Sua senha
                                     </label>
                                     <input
@@ -1330,7 +1330,7 @@ export default function Configuracoes() {
                                 </div>
                             ) : (
                                 <div>
-                                    <label className="block text-[11px] font-bold text-muted mb-2 uppercase tracking-wide">
+                                    <label className="block text-xs font-bold text-muted mb-2 uppercase tracking-wide">
                                         Confirme sua identidade
                                     </label>
                                     <button
@@ -1347,7 +1347,7 @@ export default function Configuracoes() {
                             )}
 
                             <div>
-                                <label htmlFor="configuracoes-digite-excluir-para-confirmar" className="block text-[11px] font-bold text-muted mb-2 uppercase tracking-wide">
+                                <label htmlFor="configuracoes-digite-excluir-para-confirmar" className="block text-xs font-bold text-muted mb-2 uppercase tracking-wide">
                                     Digite <span className="text-coral">EXCLUIR</span> para confirmar
                                 </label>
                                 <input
@@ -1424,7 +1424,7 @@ export default function Configuracoes() {
                   fonte está no ar — seria uma promessa que o dado não sustenta.
                 */}
                 <div className={`rounded-2xl border px-5 py-4 mb-5 ${indisponivel ? 'border-gold/40 bg-gold/10' : 'border-line bg-panel'}`}>
-                    <div className="text-[11px] font-bold uppercase tracking-wide text-muted mb-1 select-none">
+                    <div className="text-xs font-bold uppercase tracking-wide text-muted mb-1 select-none">
                         Fonte externa de catálogo
                     </div>
                     <p className={`text-[13px] font-bold ${indisponivel ? 'text-gold' : 'text-text'}`}>
@@ -1432,7 +1432,7 @@ export default function Configuracoes() {
                             ? 'Instabilidade detectada nesta sessão'
                             : 'Nenhuma falha registrada nesta sessão'}
                     </p>
-                    <p className="text-[11.5px] text-muted-2 mt-1">
+                    <p className="text-xs text-muted-2 mt-1">
                         Capas e títulos vêm da AniList. Seu Deck, suas notas e seu progresso
                         ficam salvos aqui e não dependem dela.
                     </p>
@@ -1454,7 +1454,7 @@ export default function Configuracoes() {
                     <Link to="/privacidade" className="text-[12.5px] font-bold text-holo-3 hover:underline">
                         Política de Privacidade
                     </Link>
-                    <p className="text-[11px] text-muted-2 mt-3 select-none">AniDeck v{VERSAO}</p>
+                    <p className="text-xs text-muted-2 mt-3 select-none">AniDeck v{VERSAO}</p>
                 </div>
             </Secao>
         </div>

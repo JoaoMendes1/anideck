@@ -57,7 +57,7 @@ export default function CardMissoesDiarias() {
               <h3 className="font-anton text-lg sm:text-xl uppercase tracking-wide m-0 text-text">
                 Missões do Dia
               </h3>
-              <span className={`px-2 py-0.5 rounded-full font-mono text-[10.5px] font-bold border ${
+              <span className={`px-2 py-0.5 rounded-full font-mono text-xs font-bold border ${
                 todasResgatadas
                   ? 'bg-green/15 border-green/40 text-green'
                   : concluidas === total
@@ -67,7 +67,7 @@ export default function CardMissoesDiarias() {
                 {concluidas}/{total} {concluidas === total ? 'Completas!' : 'Concluídas'}
               </span>
               {pendentesResgate > 0 && (
-                <span className="hidden sm:inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-holo-3/15 border border-holo-3/40 text-holo-3 font-mono text-[10px] font-bold animate-bounce">
+                <span className="hidden sm:inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-holo-3/15 border border-holo-3/40 text-holo-3 font-mono text-xs font-bold animate-bounce">
                   <Gift size={11} /> {pendentesResgate} pronta{pendentesResgate > 1 ? 's' : ''} para resgate!
                 </span>
               )}
@@ -129,20 +129,20 @@ export default function CardMissoesDiarias() {
                         {m.titulo}
                       </span>
                     </div>
-                    <span className="shrink-0 inline-flex items-center gap-1 px-2 py-0.5 rounded-full font-mono text-[11px] font-bold text-holo-3 bg-holo-3/10 border border-holo-3/20">
+                    <span className="shrink-0 inline-flex items-center gap-1 px-2 py-0.5 rounded-full font-mono text-xs font-bold text-holo-3 bg-holo-3/10 border border-holo-3/20">
                       <IconeAniCoin size={12} />
                       +{recompensa}
                     </span>
                   </div>
 
-                  <p className="text-[11.5px] text-muted leading-snug line-clamp-2 m-0 mb-3">
+                  <p className="text-xs text-muted leading-snug line-clamp-2 m-0 mb-3">
                     {m.descricao}
                   </p>
                 </div>
 
                 <div>
                   {/* Barra de Progresso com gradiente e porcentagem */}
-                  <div className="flex items-center justify-between font-mono text-[10px] text-muted-2 mb-1.5">
+                  <div className="flex items-center justify-between font-mono text-xs text-muted-2 mb-1.5">
                     <span>Progresso</span>
                     <span className="font-bold text-text">
                       {prog} <span className="text-muted-2">/ {meta}</span>
@@ -164,7 +164,7 @@ export default function CardMissoesDiarias() {
 
                   {/* Ação de Resgate / Status */}
                   {m.resgatada ? (
-                    <div className="w-full py-1.5 px-3 rounded-lg bg-green/10 border border-green/30 text-green font-mono text-[11px] font-bold flex items-center justify-center gap-1.5 select-none">
+                    <div className="w-full py-1.5 px-3 rounded-lg bg-green/10 border border-green/30 text-green font-mono text-xs font-bold flex items-center justify-center gap-1.5 select-none">
                       <Check size={13} /> Recompensa Coletada
                     </div>
                   ) : m.concluida ? (
@@ -178,7 +178,7 @@ export default function CardMissoesDiarias() {
                       {emResgate ? 'Resgatando...' : `Resgatar +${recompensa} ₳`}
                     </button>
                   ) : (
-                    <div className="w-full py-1.5 px-2 rounded-lg bg-panel border border-line/40 text-muted-2 font-mono text-[10.5px] text-center select-none truncate">
+                    <div className="w-full py-1.5 px-2 rounded-lg bg-panel border border-line/40 text-muted-2 font-mono text-xs text-center select-none truncate">
                       {prog === 0 ? 'Não iniciada' : `Faltam ${faltam}`}
                     </div>
                   )}

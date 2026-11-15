@@ -209,11 +209,11 @@ export default function Clas() {
 
             <div className="flex items-center gap-4 flex-wrap sm:flex-nowrap">
               <div className="text-left sm:text-right px-4 py-2 rounded-xl bg-void/50 border border-line/60">
-                <span className="text-[10px] uppercase font-bold text-muted block">XP Esta Semana</span>
+                <span className="text-xs uppercase font-bold text-muted block">XP Esta Semana</span>
                 <span className="text-lg font-black text-holo-3">+{meuCla.xp_semana || 0} XP</span>
               </div>
               <div className="text-left sm:text-right px-4 py-2 rounded-xl bg-void/50 border border-line/60">
-                <span className="text-[10px] uppercase font-bold text-muted block">Membros</span>
+                <span className="text-xs uppercase font-bold text-muted block">Membros</span>
                 <span className="text-lg font-black text-text">{meuCla.total_membros || 1} / 30</span>
               </div>
               <Link
@@ -358,15 +358,15 @@ export default function Clas() {
 
                   <div className="grid grid-cols-3 gap-2 py-3 border-y border-line/60 text-center mb-4">
                     <div>
-                      <span className="text-[10px] text-muted block uppercase font-bold">Membros</span>
+                      <span className="text-xs text-muted block uppercase font-bold">Membros</span>
                       <span className="text-xs font-black text-text">{cla.total_membros} / 30</span>
                     </div>
                     <div>
-                      <span className="text-[10px] text-muted block uppercase font-bold">XP Semana</span>
+                      <span className="text-xs text-muted block uppercase font-bold">XP Semana</span>
                       <span className="text-xs font-black text-holo-3">+{cla.xp_semana}</span>
                     </div>
                     <div>
-                      <span className="text-[10px] text-muted block uppercase font-bold">Nível Mín.</span>
+                      <span className="text-xs text-muted block uppercase font-bold">Nível Mín.</span>
                       <span className="text-xs font-black text-text">Nv. {cla.nivel_minimo}</span>
                     </div>
                   </div>
@@ -517,7 +517,7 @@ export default function Clas() {
                       }`}
                     >
                       {renderIconeEmblema(chave, 22)}
-                      <span className={`text-[10.5px] font-bold text-center leading-tight line-clamp-2 min-h-[26px] flex items-center justify-center ${
+                      <span className={`text-xs font-bold text-center leading-tight line-clamp-2 min-h-[26px] flex items-center justify-center ${
                         emblema === chave ? 'text-text font-black' : 'text-muted'
                       }`}>
                         {conf.rotulo}

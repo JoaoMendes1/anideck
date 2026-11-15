@@ -29,12 +29,12 @@ export default function EmBreve({ children, nota }: Props) {
               o inert o esconderia justamente de quem mais precisa ler o aviso.
             */}
             <div className="absolute top-4 right-4 z-10 flex flex-col items-end gap-1.5 max-w-[60%]">
-                <span className="inline-flex items-center gap-1.5 rounded-full border border-gold/40 bg-gold/10 px-2.5 py-1 text-[10px] font-bold uppercase tracking-wide text-gold whitespace-nowrap">
+                <span className="inline-flex items-center gap-1.5 rounded-full border border-gold/40 bg-gold/10 px-2.5 py-1 text-xs font-bold uppercase tracking-wide text-gold whitespace-nowrap">
                     <Clock size={11} />
                     Em breve
                 </span>
                 {nota && (
-                    <span className="text-right text-[11px] leading-snug text-muted-2">
+                    <span className="text-right text-xs leading-snug text-muted-2">
                         {nota}
                     </span>
                 )}

@@ -344,7 +344,7 @@ export default function MeuDeck() {
                                     }`}
                             >
                                 <span>{tab}</span>
-                                <span className={`font-mono text-[10.5px] px-1.5 py-0.5 rounded-full ${
+                                <span className={`font-mono text-xs px-1.5 py-0.5 rounded-full ${
                                     ativa
                                         ? 'bg-white/20 text-white'
                                         : 'bg-panel-2 text-muted-2 border border-line/60'

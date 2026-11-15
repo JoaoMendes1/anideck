@@ -65,7 +65,7 @@ func RegrasEconomiaPadrao() RegrasEconomia {
 func ValidarRegrasEconomia(r RegrasEconomia) string {
 	switch {
 	case r.TetoDiarioCristais < 10 || r.TetoDiarioCristais > 10000:
-		return "O teto diário de Cristais deve ficar entre 10 e 10.000."
+		return "O teto diário de AniCoins deve ficar entre 10 e 10.000."
 	case r.GanhoMissaoDiaria < 1 || r.GanhoMissaoDiaria > r.TetoDiarioCristais:
 		return "O ganho por missão diária deve ficar entre 1 e o teto diário."
 	case r.GanhoDesafioSemanal < 1 || r.GanhoDesafioSemanal > 5000:

@@ -88,7 +88,7 @@ export default function OnboardingGostoModal({
               1. O que você mais curte assistir? ({favoritos.length} selecionados)
             </span>
             {favoritos.length < 3 && (
-              <span className="text-[11px] font-mono text-gold">Escolha {3 - favoritos.length}+</span>
+              <span className="text-xs font-mono text-gold">Escolha {3 - favoritos.length}+</span>
             )}
           </div>
           <div className="flex flex-wrap gap-2">
@@ -117,7 +117,7 @@ export default function OnboardingGostoModal({
           <span className="block text-xs font-bold uppercase tracking-wider text-muted mb-1">
             2. Quer evitar algum gênero nas sugestões? (Opcional)
           </span>
-          <p className="text-[11px] text-muted-2 mb-2.5">
+          <p className="text-xs text-muted-2 mb-2.5">
             Animes com esses rótulos não aparecerão na seção Recomendados para Você.
           </p>
           <div className="flex flex-wrap gap-1.5">
@@ -128,7 +128,7 @@ export default function OnboardingGostoModal({
                   key={`bloq-${nome}`}
                   type="button"
                   onClick={() => alternarBloqueado(nome)}
-                  className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-bold border transition-colors cursor-pointer ${
+                  className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-bold border transition-colors cursor-pointer ${
                     bloqueado
                       ? 'bg-coral/15 border-coral/40 text-coral'
                       : 'bg-panel border-line text-muted-2 hover:text-muted'

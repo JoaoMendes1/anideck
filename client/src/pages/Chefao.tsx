@@ -164,7 +164,7 @@ export default function Chefao() {
               />
             </div>
 
-            <div className="flex items-center justify-between gap-2 mt-2 text-[11px] font-mono text-muted">
+            <div className="flex items-center justify-between gap-2 mt-2 text-xs font-mono text-muted">
               <span>Dano total acumulado: {(chefao.dano_total ?? 0).toLocaleString('pt-BR')} HP</span>
               <span>Alvo: {(chefao.hp_total ?? 0).toLocaleString('pt-BR')} HP</span>
             </div>
@@ -184,11 +184,11 @@ export default function Chefao() {
               </div>
               {session && (
                 chefao.elegivel_recompensa ? (
-                  <span className="inline-flex items-center gap-1 text-[11px] font-mono font-bold text-green bg-green/15 px-2.5 py-0.5 rounded-full border border-green/30">
+                  <span className="inline-flex items-center gap-1 text-xs font-mono font-bold text-green bg-green/15 px-2.5 py-0.5 rounded-full border border-green/30">
                     <CheckCircle2 size={12} /> Meta Atingida
                   </span>
                 ) : (
-                  <span className="text-[11px] font-mono text-muted">
+                  <span className="text-xs font-mono text-muted">
                     Meta: {danoMinimo} HP
                   </span>
                 )
@@ -236,7 +236,7 @@ export default function Chefao() {
             )}
           </div>
 
-          <div className="mt-4 pt-3 border-t border-line/60 flex items-center gap-2 text-[11.5px] text-muted-2">
+          <div className="mt-4 pt-3 border-t border-line/60 flex items-center gap-2 text-xs text-muted-2">
             <Info size={14} className="shrink-0 text-holo-3" />
             <span>Como bater? Cada episódio que você assiste converte o XP ganho em dano direto.</span>
           </div>
@@ -262,7 +262,7 @@ export default function Chefao() {
                   </div>
                   <div>
                     <span className="block font-bold text-sm text-text">AniCoins</span>
-                    <span className="text-[11px] text-muted">Moeda da loja cosmética</span>
+                    <span className="text-xs text-muted">Moeda da loja cosmética</span>
                   </div>
                 </div>
                 <span className="font-mono text-base font-black text-gold">
@@ -278,7 +278,7 @@ export default function Chefao() {
                     </div>
                     <div>
                       <span className="block font-bold text-sm text-text">Título Exclusivo</span>
-                      <span className="text-[11px] text-muted">Exibido no perfil da guilda</span>
+                      <span className="text-xs text-muted">Exibido no perfil da guilda</span>
                     </div>
                   </div>
                   <span className="font-mono text-xs font-bold text-holo-3 px-2 py-0.5 rounded-md bg-holo-3/10 border border-holo-3/30">
@@ -289,7 +289,7 @@ export default function Chefao() {
             </div>
           </div>
 
-          <div className="mt-4 pt-3 border-t border-line/60 text-[11px] text-muted-2">
+          <div className="mt-4 pt-3 border-t border-line/60 text-xs text-muted-2">
             Recompensa creditada automaticamente no fechamento da derrota.
           </div>
         </div>
@@ -339,7 +339,7 @@ export default function Chefao() {
                       {atacante.cla_tag && <TagCla tag={atacante.cla_tag} />}
                     </div>
                     {atacante.handle && (
-                      <span className="text-[11px] font-mono text-muted">@{atacante.handle}</span>
+                      <span className="text-xs font-mono text-muted">@{atacante.handle}</span>
                     )}
                   </div>
                 </div>
@@ -348,7 +348,7 @@ export default function Chefao() {
                   <span className="font-mono text-sm sm:text-base font-black text-coral">
                     {atacante.dano.toLocaleString('pt-BR')}
                   </span>
-                  <span className="block text-[10px] font-mono text-muted uppercase">Dano Causado</span>
+                  <span className="block text-xs font-mono text-muted uppercase">Dano Causado</span>
                 </div>
               </div>
             ))}

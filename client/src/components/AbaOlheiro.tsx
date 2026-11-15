@@ -78,7 +78,7 @@ export function AbaOlheiro({ onCurar }: Props) {
             >
               {a.nome}
               {total > 0 && (
-                <span className={`font-mono text-[10px] font-bold px-1.5 py-0.5 rounded-full ${a.id === 'demanda' ? 'bg-gold/15 text-gold' : 'bg-holo-2/15 text-holo-2'
+                <span className={`font-mono text-xs font-bold px-1.5 py-0.5 rounded-full ${a.id === 'demanda' ? 'bg-gold/15 text-gold' : 'bg-holo-2/15 text-holo-2'
                   }`}>
                   {total}
                 </span>
@@ -151,8 +151,8 @@ export function AbaOlheiro({ onCurar }: Props) {
 
                   <div className="p-2.5 flex flex-col gap-1.5 flex-1">
                     <h3 className="font-bold text-xs line-clamp-2 text-text">{s.titulo}</h3>
-                    <p className="text-[11px] text-muted flex-1 line-clamp-2">{s.motivo}</p>
-                    <span className="font-mono text-[10px] text-holo-1">
+                    <p className="text-xs text-muted flex-1 line-clamp-2">{s.motivo}</p>
+                    <span className="font-mono text-xs text-holo-1">
                       afinidade {s.score.toFixed(1)}
                     </span>
 
@@ -160,7 +160,7 @@ export function AbaOlheiro({ onCurar }: Props) {
                       <div className="flex gap-1.5">
                         <button
                           onClick={() => { onCurar(s); remover(s.id) }}
-                          className="flex-1 text-[11px] font-bold py-1.5 rounded-full bg-gradient-to-r from-holo-1 to-holo-2 text-void hover:opacity-90 cursor-pointer transition-opacity"
+                          className="flex-1 text-xs font-bold py-1.5 rounded-full bg-gradient-to-r from-holo-1 to-holo-2 text-void hover:opacity-90 cursor-pointer transition-opacity"
                         >
                           Manual
                         </button>
@@ -169,7 +169,7 @@ export function AbaOlheiro({ onCurar }: Props) {
                           onClick={() => enviarParaIA([s.mal_id], 'sinopse_tags')}
                           disabled={enfileirandoIA}
                           title="Curar Sinopse + Tags com IA (rápido via Groq)"
-                          className="flex-1 text-[11px] font-bold py-1.5 rounded-full bg-holo-1/15 border border-holo-1/40 text-holo-1 hover:bg-holo-1 hover:text-void cursor-pointer transition-colors disabled:opacity-50"
+                          className="flex-1 text-xs font-bold py-1.5 rounded-full bg-holo-1/15 border border-holo-1/40 text-holo-1 hover:bg-holo-1 hover:text-void cursor-pointer transition-colors disabled:opacity-50"
                         >
                           ✨ Sinopse/Tags
                         </button>
@@ -180,14 +180,14 @@ export function AbaOlheiro({ onCurar }: Props) {
                           onClick={() => enviarParaIA([s.mal_id], 'completo')}
                           disabled={enfileirandoIA}
                           title="Curar Tudo com IA (Sinopse, Tags e Episódios)"
-                          className="flex-1 text-[10px] font-bold py-1 rounded-full bg-panel border border-line text-muted hover:text-text hover:border-holo-2 cursor-pointer transition-colors disabled:opacity-50"
+                          className="flex-1 text-xs font-bold py-1 rounded-full bg-panel border border-line text-muted hover:text-text hover:border-holo-2 cursor-pointer transition-colors disabled:opacity-50"
                         >
                           🔎 Tudo (+ Eps)
                         </button>
                         <button
                           onClick={() => revisar(s.id, 'dispensado')}
                           title="Dispensar sugestão"
-                          className="px-2.5 text-[10px] font-bold py-1 rounded-full bg-panel border border-line text-muted hover:text-coral hover:border-coral/40 cursor-pointer transition-colors"
+                          className="px-2.5 text-xs font-bold py-1 rounded-full bg-panel border border-line text-muted hover:text-coral hover:border-coral/40 cursor-pointer transition-colors"
                         >
                           ✕
                         </button>
@@ -256,7 +256,7 @@ export function AbaOlheiro({ onCurar }: Props) {
                       {d.tem_admin && <Crown size={13} className="text-gold shrink-0" />}
                       {d.titulo}
                     </h3>
-                    <p className="font-mono text-[11px] text-muted-2 truncate">
+                    <p className="font-mono text-xs text-muted-2 truncate">
                       mal_id {d.mal_id}
                       {/* Corta o domínio do e-mail. Some quando existir nome de usuário. */}
                       {d.usuarios.length > 0 && ` · ${d.usuarios.map(u => u.split('@')[0]).join(', ')}`}
@@ -264,7 +264,7 @@ export function AbaOlheiro({ onCurar }: Props) {
                     </p>
                   </div>
 
-                  <span className="flex items-center gap-1.5 shrink-0 font-mono text-[11px] px-2.5 py-1 rounded-full border border-line text-muted">
+                  <span className="flex items-center gap-1.5 shrink-0 font-mono text-xs px-2.5 py-1 rounded-full border border-line text-muted">
                     <Users size={12} /> {d.total_usuarios}
                   </span>
 
@@ -273,7 +273,7 @@ export function AbaOlheiro({ onCurar }: Props) {
                     onClick={() => enviarParaIA([d.mal_id], 'sinopse_tags')}
                     disabled={enfileirandoIA}
                     title="Curar Sinopse + Tags com IA (rápido via Groq)"
-                    className="shrink-0 text-[11px] font-bold px-3 py-1.5 rounded-full bg-holo-1/15 border border-holo-1/40 text-holo-1 hover:bg-holo-1 hover:text-void cursor-pointer transition-colors disabled:opacity-50"
+                    className="shrink-0 text-xs font-bold px-3 py-1.5 rounded-full bg-holo-1/15 border border-holo-1/40 text-holo-1 hover:bg-holo-1 hover:text-void cursor-pointer transition-colors disabled:opacity-50"
                   >
                     ✨ Sinopse/Tags
                   </button>
@@ -283,14 +283,14 @@ export function AbaOlheiro({ onCurar }: Props) {
                     onClick={() => enviarParaIA([d.mal_id], 'completo')}
                     disabled={enfileirandoIA}
                     title="Curar Tudo com IA (Sinopse, Tags e Episódios)"
-                    className="shrink-0 text-[11px] font-bold px-3 py-1.5 rounded-full bg-panel border border-line text-muted hover:text-text hover:border-holo-2 cursor-pointer transition-colors disabled:opacity-50"
+                    className="shrink-0 text-xs font-bold px-3 py-1.5 rounded-full bg-panel border border-line text-muted hover:text-text hover:border-holo-2 cursor-pointer transition-colors disabled:opacity-50"
                   >
                     🔎 Tudo
                   </button>
 
                   <button
                     onClick={() => curarDemanda(d)}
-                    className="shrink-0 text-[11px] font-bold px-4 py-1.5 rounded-full bg-gradient-to-r from-holo-1 to-holo-2 text-void hover:opacity-90 cursor-pointer transition-opacity"
+                    className="shrink-0 text-xs font-bold px-4 py-1.5 rounded-full bg-gradient-to-r from-holo-1 to-holo-2 text-void hover:opacity-90 cursor-pointer transition-opacity"
                   >
                     Manual
                   </button>

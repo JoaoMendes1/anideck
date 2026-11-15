@@ -306,7 +306,7 @@ export default function Calendario() {
                                             <span className="w-2 h-2 rounded-full bg-coral animate-pulse" title="Lançamento hoje!"></span>
                                         )}
                                     </h2>
-                                    <span className={`font-mono text-[10px] font-bold px-2 py-0.5 rounded-full border ${badgeColor}`}>
+                                    <span className={`font-mono text-xs font-bold px-2 py-0.5 rounded-full border ${badgeColor}`}>
                                         {group.dateStr}
                                     </span>
                                     <div className="flex-1 h-[1px] bg-line"></div>
@@ -347,7 +347,7 @@ export default function Calendario() {
                                                             className="w-full h-full object-cover object-center group-hover:scale-105 transition-transform duration-300"
                                                         />
                                                     ) : (
-                                                        <div className="w-full h-full flex items-center justify-center font-mono text-[9px] text-muted-2 uppercase text-center p-2">
+                                                        <div className="w-full h-full flex items-center justify-center font-mono text-xs text-muted-2 uppercase text-center p-2">
                                                             S/ Capa
                                                         </div>
                                                     )}
@@ -357,7 +357,7 @@ export default function Calendario() {
                                                     <div>
                                                         <div className="flex flex-wrap items-center justify-between gap-1.5 mb-1.5 select-none">
                                                             <div className="flex flex-wrap items-center gap-1.5">
-                                                                <span className="font-mono text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-md bg-void/70 border border-line text-holo-3">
+                                                                <span className="font-mono text-xs font-bold uppercase tracking-wider px-2 py-0.5 rounded-md bg-void/70 border border-line text-holo-3">
                                                                     EPISÓDIO {anime.nextAiringEpisode!.episode}
                                                                 </span>
                                                                 {(() => {
@@ -366,7 +366,7 @@ export default function Calendario() {
                                                                     return (
                                                                         <Link
                                                                             to={`/sala-estreia/${sala.id}`}
-                                                                            className="inline-flex items-center gap-1 font-mono text-[9px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-md bg-coral/20 border border-coral/40 text-coral animate-pulse"
+                                                                            className="inline-flex items-center gap-1 font-mono text-xs font-bold uppercase tracking-wider px-2 py-0.5 rounded-md bg-coral/20 border border-coral/40 text-coral animate-pulse"
                                                                             title="Sala de Estreia Ao Vivo! Clique para entrar no chat"
                                                                         >
                                                                             <span className="w-1.5 h-1.5 rounded-full bg-coral animate-ping" />
@@ -375,7 +375,7 @@ export default function Calendario() {
                                                                     )
                                                                 })()}
                                                                 {anime.status && temaStatus && (
-                                                                    <span className={`font-extrabold text-[9px] uppercase tracking-wider px-2 py-0.5 rounded-md border ${temaStatus.bg} ${temaStatus.text} ${temaStatus.border}`}>
+                                                                    <span className={`font-extrabold text-xs uppercase tracking-wider px-2 py-0.5 rounded-md border ${temaStatus.bg} ${temaStatus.text} ${temaStatus.border}`}>
                                                                         {anime.status}
                                                                     </span>
                                                                 )}
@@ -393,7 +393,7 @@ export default function Calendario() {
                                                         </Link>
 
                                                         {diaSemanal && (
-                                                            <div className="font-mono text-[10px] text-holo-3/90 font-semibold mt-1 select-none">
+                                                            <div className="font-mono text-xs text-holo-3/90 font-semibold mt-1 select-none">
                                                                 📅 {diaSemanal}
                                                             </div>
                                                         )}
@@ -403,7 +403,7 @@ export default function Calendario() {
                                                                 {listaGeneros.slice(0, 3).map((g) => (
                                                                     <span
                                                                         key={g}
-                                                                        className={`max-w-[110px] truncate px-2 py-0.5 rounded-full border font-bold font-manrope text-[9.5px] ${getCategoryTheme(g)}`}
+                                                                        className={`max-w-[110px] truncate px-2 py-0.5 rounded-full border font-bold font-manrope text-xs ${getCategoryTheme(g)}`}
                                                                     >
                                                                         {g}
                                                                     </span>
@@ -413,7 +413,7 @@ export default function Calendario() {
                                                     </div>
 
                                                     <div className="flex items-center justify-between gap-2 pt-3 mt-3 border-t border-line/60 select-none">
-                                                        <span className={`inline-flex items-center justify-center font-mono text-[10.5px] sm:text-[11px] font-extrabold px-2.5 py-1 rounded-full border ${isLancado ? 'bg-green/15 text-green border-green/30' : 'bg-holo-3/15 text-holo-3 border-holo-3/30'}`}>
+                                                        <span className={`inline-flex items-center justify-center font-mono text-xs font-extrabold px-2.5 py-1 rounded-full border ${isLancado ? 'bg-green/15 text-green border-green/30' : 'bg-holo-3/15 text-holo-3 border-holo-3/30'}`}>
                                                             {remainingText}
                                                         </span>
 

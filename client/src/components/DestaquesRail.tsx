@@ -81,7 +81,7 @@ export default function DestaquesRail({
       {/* Cabeçalho da coluna de catálogo + ação rápida */}
       <div className="flex items-center justify-between gap-2">
         <div className="flex items-center gap-2 min-w-0">
-          <span className="font-mono text-[10px] uppercase tracking-widest text-muted-2">
+          <span className="font-mono text-xs uppercase tracking-widest text-muted-2">
             Catálogo ({destaquesFiltrados.length}/{destaques.length})
           </span>
         </div>
@@ -178,7 +178,7 @@ export default function DestaquesRail({
                       loading="lazy"
                     />
                   ) : (
-                    <span className="text-[8px] font-bold text-muted-2 text-center uppercase leading-tight">
+                    <span className="text-xs font-bold text-muted-2 text-center uppercase leading-tight">
                       Sem<br />Capa
                     </span>
                   )}
@@ -189,13 +189,13 @@ export default function DestaquesRail({
                     {anime.custom_title}
                   </h4>
                   <div className="flex items-center gap-2 mt-0.5 flex-wrap">
-                    <p className="text-[10px] font-mono text-muted">
+                    <p className="text-xs font-mono text-muted">
                       {anime.custom_characters?.length || 0} personagens
                       {totalEpisodiosCurado(anime) > 0 && ` · ${totalEpisodiosCurado(anime)} eps`}
                     </p>
                     {totalEpisodiosCurado(anime) === 0 && ehObraEmBreve(anime) && (
                       <span
-                        className="text-[9px] font-mono uppercase tracking-wider px-1.5 py-0.5 rounded border text-holo-3 border-holo-3/40 bg-holo-3/10"
+                        className="text-xs font-mono uppercase tracking-wider px-1.5 py-0.5 rounded border text-holo-3 border-holo-3/40 bg-holo-3/10"
                         title="Obra anunciada / em breve (ainda sem episódios)"
                       >
                         ✨ em breve
@@ -203,7 +203,7 @@ export default function DestaquesRail({
                     )}
                     {totalEpisodiosCurado(anime) === 0 && !ehObraEmBreve(anime) && (
                       <span
-                        className="text-[9px] font-mono uppercase tracking-wider px-1.5 py-0.5 rounded border text-gold border-gold/40 bg-gold/10"
+                        className="text-xs font-mono uppercase tracking-wider px-1.5 py-0.5 rounded border text-gold border-gold/40 bg-gold/10"
                         title="Nenhum episódio encontrado na curadoria nem no cache da AniList"
                       >
                         ⚠ 0 eps
@@ -212,14 +212,14 @@ export default function DestaquesRail({
                     {(() => {
                       const tema = TEMA_STATUS[anime.curation_status || 'parcial']
                       return (
-                        <span className={`text-[9px] font-mono uppercase tracking-wider px-1.5 py-0.5 rounded border ${tema.classe}`}>
+                        <span className={`text-xs font-mono uppercase tracking-wider px-1.5 py-0.5 rounded border ${tema.classe}`}>
                           {tema.rotulo}
                         </span>
                       )
                     })()}
                     {anime.is_destaque === false && (
                       <span
-                        className="text-[9px] font-mono uppercase tracking-wider px-1.5 py-0.5 rounded border text-muted-2 border-line"
+                        className="text-xs font-mono uppercase tracking-wider px-1.5 py-0.5 rounded border text-muted-2 border-line"
                         title="Curado, mas fora da vitrine de destaques"
                       >
                         oculto
@@ -254,7 +254,7 @@ function FilterChip({ active, onClick, label, icon }: { active: boolean; onClick
     <button
       type="button"
       onClick={onClick}
-      className={`flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-bold border transition-colors cursor-pointer ${
+      className={`flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-bold border transition-colors cursor-pointer ${
         active
           ? 'bg-holo-2/20 border-holo-2 text-holo-2'
           : 'bg-panel-2 border-line text-muted hover:text-text hover:border-muted-2'

@@ -123,7 +123,7 @@ export default function AbaRevisaoIA({ curados = [] }: Props) {
     try {
       const ok = await revisarSugestaoCollabAdmin(id, aprovar)
       if (ok) {
-        showToast(aprovar ? 'Sugestão aprovada! Membro recebeu +15 Cristais.' : 'Sugestão recusada.', aprovar ? 'success' : 'info')
+        showToast(aprovar ? 'Sugestão aprovada! Membro recebeu +15 AniCoins.' : 'Sugestão recusada.', aprovar ? 'success' : 'info')
         setSugestoesCollab(prev => prev.filter(s => s.id !== id))
       } else {
         showToast('Falha ao processar sugestão.', 'error')
@@ -296,7 +296,7 @@ export default function AbaRevisaoIA({ curados = [] }: Props) {
             <div>
               <h2 className="font-anton uppercase text-lg text-text">Sugestões de Curadoria dos Membros</h2>
               <p className="text-xs text-muted mt-0.5">
-                Membros com Rank B ou superior que sugerem correções no catálogo. Cada aprovação credita +15 Cristais ao membro.
+                Membros com Rank B ou superior que sugerem correções no catálogo. Cada aprovação credita +15 AniCoins ao membro.
               </p>
             </div>
             <button
@@ -367,7 +367,7 @@ export default function AbaRevisaoIA({ curados = [] }: Props) {
                         onClick={() => revisarCollab(s.id, true)}
                         className={`${botao} bg-gradient-to-r from-holo-1 to-holo-2 text-void font-bold shadow-sm`}
                       >
-                        <Check size={14} /> Aprovar (+15 💎)
+                        <Check size={14} /> Aprovar (+15 ₳)
                       </button>
                     </div>
                   </article>
@@ -427,7 +427,7 @@ export default function AbaRevisaoIA({ curados = [] }: Props) {
           ))}
           <div className="flex items-center gap-2 ml-auto">
             {temItensAtivos && (
-              <span className="inline-flex items-center gap-1.5 text-[11px] font-mono text-holo-3 bg-holo-3/10 border border-holo-3/30 px-2.5 py-1 rounded-full">
+              <span className="inline-flex items-center gap-1.5 text-xs font-mono text-holo-3 bg-holo-3/10 border border-holo-3/30 px-2.5 py-1 rounded-full">
                 <span className="w-2 h-2 rounded-full bg-holo-3 animate-ping" />
                 Tempo real ativo
               </span>
@@ -466,7 +466,7 @@ export default function AbaRevisaoIA({ curados = [] }: Props) {
                   {capaExibicao ? (
                     <img src={capaExibicao} alt={tituloExibicao} className="w-full h-full object-cover" loading="lazy" />
                   ) : (
-                    <span className="text-[9px] font-mono text-muted-2 text-center px-1">#{item.mal_id}</span>
+                    <span className="text-xs font-mono text-muted-2 text-center px-1">#{item.mal_id}</span>
                   )}
                 </Link>
 
@@ -479,9 +479,9 @@ export default function AbaRevisaoIA({ curados = [] }: Props) {
                       <span>{tituloExibicao}</span>
                       <ExternalLink size={12} className="opacity-60" />
                     </Link>
-                    <span className="font-mono text-[10px] text-muted-2 uppercase">{NOME_TIPO[item.tipo]}</span>
-                    <span className={`font-mono text-[10px] uppercase border rounded-full px-2 py-0.5 ${COR_STATUS[item.status]}`}>{item.status}</span>
-                    {item.tentativas > 1 && <span className="font-mono text-[10px] text-muted-2">{item.tentativas} tentativas</span>}
+                    <span className="font-mono text-xs text-muted-2 uppercase">{NOME_TIPO[item.tipo]}</span>
+                    <span className={`font-mono text-xs uppercase border rounded-full px-2 py-0.5 ${COR_STATUS[item.status]}`}>{item.status}</span>
+                    {item.tentativas > 1 && <span className="font-mono text-xs text-muted-2">{item.tentativas} tentativas</span>}
                   </header>
 
                   {item.erro && <p className="text-coral text-sm">{item.erro}</p>}
@@ -503,12 +503,12 @@ export default function AbaRevisaoIA({ curados = [] }: Props) {
                       </div>
 
                       <div className="flex flex-wrap items-center gap-1.5">
-                        <span className="font-mono text-[10px] text-muted uppercase mr-1">Tags:</span>
+                        <span className="font-mono text-xs text-muted uppercase mr-1">Tags:</span>
                         {(item.resultado.tags ?? []).length > 0 ? (
                           item.resultado.tags!.map(tag => (
                             <span
                               key={tag}
-                              className={`text-[10px] font-bold px-2.5 py-0.5 rounded-full border select-none ${getCategoryTheme(tag)}`}
+                              className={`text-xs font-bold px-2.5 py-0.5 rounded-full border select-none ${getCategoryTheme(tag)}`}
                             >
                               {tag}
                             </span>

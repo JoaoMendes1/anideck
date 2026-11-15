@@ -79,7 +79,7 @@ export default function ModalApoiador({ aberto, onFechar }: ModalApoiadorProps) 
             <Heart size={20} className="fill-holo-1/30" />
           </span>
           <div>
-            <span className="font-mono text-[10px] uppercase tracking-widest text-holo-1 font-bold">
+            <span className="font-mono text-xs uppercase tracking-widest text-holo-1 font-bold">
               // sustentabilidade comunitária
             </span>
             <h2 className="font-anton text-2xl uppercase tracking-wide m-0 text-text">
@@ -114,7 +114,7 @@ export default function ModalApoiador({ aberto, onFechar }: ModalApoiadorProps) 
                 <Heart size={18} className="fill-holo-1/30" />
               </span>
               <span className="font-bold text-xs text-text">Selo Apoiador</span>
-              <span className="text-[10px] text-muted-2 mt-0.5">No seu perfil</span>
+              <span className="text-xs text-muted-2 mt-0.5">No seu perfil</span>
             </div>
 
             <div className="p-3 rounded-2xl bg-panel-2 border border-line text-center flex flex-col items-center">
@@ -122,7 +122,7 @@ export default function ModalApoiador({ aberto, onFechar }: ModalApoiadorProps) 
                 <Sparkles size={18} />
               </span>
               <span className="font-bold text-xs text-text">Aura Cósmica</span>
-              <span className="text-[10px] text-muted-2 mt-0.5">Moldura única</span>
+              <span className="text-xs text-muted-2 mt-0.5">Moldura única</span>
             </div>
 
             <div className="p-3 rounded-2xl bg-panel-2 border border-line text-center flex flex-col items-center">
@@ -130,7 +130,7 @@ export default function ModalApoiador({ aberto, onFechar }: ModalApoiadorProps) 
                 <Crown size={18} />
               </span>
               <span className="font-bold text-xs text-text">Nebulosa VIP</span>
-              <span className="text-[10px] text-muted-2 mt-0.5">Tema de perfil</span>
+              <span className="text-xs text-muted-2 mt-0.5">Tema de perfil</span>
             </div>
           </div>
         </div>
@@ -152,7 +152,7 @@ export default function ModalApoiador({ aberto, onFechar }: ModalApoiadorProps) 
           {config.chave_pix && (
             <div className="p-3 rounded-2xl bg-panel-2 border border-line flex items-center justify-between gap-3">
               <div className="min-w-0 flex-1">
-                <span className="block font-mono text-[10px] uppercase text-muted-2">Chave Pix de Apoio:</span>
+                <span className="block font-mono text-xs uppercase text-muted-2">Chave Pix de Apoio:</span>
                 <span className="block font-mono text-xs text-text truncate">{config.chave_pix}</span>
               </div>
               <button

@@ -78,12 +78,12 @@ export default function CuradoriaPersonagens({
     <div className="p-4 border border-line bg-panel-2 rounded-xl w-full max-w-full overflow-hidden">
       <div className="flex items-center justify-between mb-4">
         <h4 className="text-xs font-bold text-muted uppercase">Elenco Curado (Personagens)</h4>
-        <span className="text-[10px] text-muted-2">Toque no personagem para editar</span>
+        <span className="text-xs text-muted-2">Toque no personagem para editar</span>
       </div>
 
       <div className={`flex flex-col sm:flex-row sm:items-end gap-3 mb-4 p-3 rounded-lg border transition-colors ${editIndex !== null ? 'bg-holo-3/5 border-holo-3' : 'bg-panel border-line'}`}>
         <div className="flex-1 min-w-0">
-          <label htmlFor="curadoria-personagens-nome" className="block text-[10px] mb-1 font-bold text-muted">Nome</label>
+          <label htmlFor="curadoria-personagens-nome" className="block text-xs mb-1 font-bold text-muted">Nome</label>
           <input
             id="curadoria-personagens-nome"
             type="text"
@@ -94,7 +94,7 @@ export default function CuradoriaPersonagens({
         </div>
 
         <div className="flex-1 min-w-0">
-          <label className="block text-[10px] mb-1 font-bold text-muted">URL da Foto ou Enviar</label>
+          <label className="block text-xs mb-1 font-bold text-muted">URL da Foto ou Enviar</label>
           <div className="flex items-center gap-1">
             <input
               type="text"
@@ -122,7 +122,7 @@ export default function CuradoriaPersonagens({
 
         <div className="flex items-end gap-2">
           <div className="flex-1 sm:flex-none">
-            <span className="block text-[10px] mb-1 font-bold text-muted">Papel</span>
+            <span className="block text-xs mb-1 font-bold text-muted">Papel</span>
             <div className="inline-flex rounded-lg bg-panel-2 border border-line p-0.5">
               {([
                 { value: 'MAIN', label: 'Principal' },
@@ -134,7 +134,7 @@ export default function CuradoriaPersonagens({
                     key={opt.value}
                     type="button"
                     onClick={() => setCharRole(opt.value)}
-                    className={`px-2.5 py-1 rounded-md text-[11px] font-bold transition-colors cursor-pointer ${
+                    className={`px-2.5 py-1 rounded-md text-xs font-bold transition-colors cursor-pointer ${
                       ativo
                         ? 'bg-holo-2/20 text-holo-2 border border-holo-2/50'
                         : 'text-muted hover:text-text border border-transparent'
@@ -183,7 +183,7 @@ export default function CuradoriaPersonagens({
                   {char.image ? (
                     <img src={char.image} alt={char.name} className="w-full h-full object-cover" loading="lazy" />
                   ) : (
-                    <div className="w-full h-full flex flex-col items-center justify-center text-[10px] text-muted-2 uppercase font-bold leading-tight bg-panel/50">
+                    <div className="w-full h-full flex flex-col items-center justify-center text-xs text-muted-2 uppercase font-bold leading-tight bg-panel/50">
                       <UploadCloud size={16} className="mb-1 opacity-50" />
                       NO<br/>IMAGE
                     </div>
@@ -201,8 +201,8 @@ export default function CuradoriaPersonagens({
                     <Trash2 size={12} />
                   </button>
                 </div>
-                <div className={`text-[10px] font-bold truncate ${isEditing ? 'text-holo-3' : 'text-text'}`}>{char.name}</div>
-                <div className="text-[9px] text-muted">{rotuloPapel(char.role)}</div>
+                <div className={`text-xs font-bold truncate ${isEditing ? 'text-holo-3' : 'text-text'}`}>{char.name}</div>
+                <div className="text-xs text-muted">{rotuloPapel(char.role)}</div>
               </div>
             )
           })}

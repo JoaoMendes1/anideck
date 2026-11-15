@@ -107,7 +107,7 @@ export default function SolicitarConviteBetaModal({
           </div>
         ) : (
           <>
-            <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-gold/15 border border-gold/40 text-gold font-mono text-[10px] font-bold uppercase tracking-widest mb-3">
+            <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-gold/15 border border-gold/40 text-gold font-mono text-xs font-bold uppercase tracking-widest mb-3">
               <Sparkles size={11} /> Acesso Beta · Convite
             </div>
             <h2 className="font-anton text-2xl uppercase text-text mb-1.5">

@@ -36,7 +36,7 @@ export default function SearchResultCard({
             isFavorite={isFavorite}
             gradientClass={gradientClass}
             statusBadge={
-                <span className="select-none text-[9px] md:text-[9.5px] font-extrabold px-2 py-1 rounded-md uppercase tracking-wider backdrop-blur-md border bg-void/70 text-holo-3 border-holo-3/50 drop-shadow-[0_1px_3px_rgba(0,0,0,1)] truncate max-w-full">
+                <span className="select-none text-xs font-extrabold px-2 py-1 rounded-md uppercase tracking-wider backdrop-blur-md border bg-void/70 text-holo-3 border-holo-3/50 drop-shadow-[0_1px_3px_rgba(0,0,0,1)] truncate max-w-full">
                     {statusLabel}
                 </span>
             }

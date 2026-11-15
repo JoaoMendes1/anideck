@@ -408,7 +408,7 @@ export default function Rankings() {
                         <SlidersHorizontal size={14} />
                         Filtros Avançados
                         {activeFilterCount > 0 && (
-                            <span className="flex items-center justify-center w-5 h-5 rounded-full bg-gradient-to-r from-holo-1 to-holo-2 text-void text-[10px] font-black">
+                            <span className="flex items-center justify-center w-5 h-5 rounded-full bg-gradient-to-r from-holo-1 to-holo-2 text-void text-xs font-black">
                                 {activeFilterCount}
                             </span>
                         )}
@@ -441,7 +441,7 @@ export default function Rankings() {
                             />
 
                             <div className="flex flex-wrap gap-2 p-3 mt-3 bg-panel-2 border border-line rounded-xl">
-                                <span className="text-[11px] font-bold text-muted uppercase w-full mb-1">
+                                <span className="text-xs font-bold text-muted uppercase w-full mb-1">
                                     Ano de lançamento (opcional com ou sem temporada):
                                 </span>
                                 {YEAR_OPTIONS.map(y => (
@@ -460,7 +460,7 @@ export default function Rankings() {
                         </div>
                         
                         <div>
-                            <p className="font-mono text-[10px] text-muted-2 tracking-widest mb-3 select-none uppercase">
+                            <p className="font-mono text-xs text-muted-2 tracking-widest mb-3 select-none uppercase">
                                 Gêneros e Tags
                             </p>
                             <div className="flex flex-wrap gap-2">

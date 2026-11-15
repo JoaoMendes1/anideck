@@ -105,7 +105,7 @@ function Secao({
           {link && (
             <Link
               to={link.para}
-              className="font-mono text-[10.5px] text-muted-2 uppercase tracking-widest hover:text-holo-3 transition-colors"
+              className="font-mono text-xs text-muted-2 uppercase tracking-widest hover:text-holo-3 transition-colors"
             >
               {link.texto} →
             </Link>
@@ -178,12 +178,12 @@ function Trilho({ cartazes }: { cartazes: Cartaz[] }) {
             )}
             <div className="absolute inset-0 bg-gradient-to-t from-void/80 via-transparent to-transparent opacity-60 group-hover:opacity-40 transition-opacity" />
             {c.legenda && (
-              <span className="absolute top-2.5 left-2.5 px-2 py-0.5 rounded-md bg-void/85 backdrop-blur-md border border-white/10 font-mono text-[10px] font-bold text-holo-3 uppercase tracking-wider">
+              <span className="absolute top-2.5 left-2.5 px-2 py-0.5 rounded-md bg-void/85 backdrop-blur-md border border-white/10 font-mono text-xs font-bold text-holo-3 uppercase tracking-wider">
                 {c.legenda}
               </span>
             )}
             {c.nota && c.nota > 0 ? (
-              <span className="absolute top-2.5 right-2.5 px-2 py-0.5 rounded-md bg-void/85 backdrop-blur-md border border-gold/30 font-mono text-[10px] font-bold text-gold">
+              <span className="absolute top-2.5 right-2.5 px-2 py-0.5 rounded-md bg-void/85 backdrop-blur-md border border-gold/30 font-mono text-xs font-bold text-gold">
                 ★ {c.nota.toFixed(1)}
               </span>
             ) : null}
@@ -490,7 +490,7 @@ export default function Inicio() {
                 </Link>
               )}
               <div>
-                <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-holo-1/15 border border-holo-1/35 text-holo-1 font-mono text-[10px] font-bold uppercase tracking-widest mb-2.5">
+                <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-holo-1/15 border border-holo-1/35 text-holo-1 font-mono text-xs font-bold uppercase tracking-widest mb-2.5">
                   <Sparkles size={11} /> Destaque da Curadoria
                 </div>
                 <Link to={`/anime/${heroAtual.mal_id}`}>
@@ -503,7 +503,7 @@ export default function Inicio() {
                     {heroAtual.custom_tags.slice(0, 4).map(tag => (
                       <span
                         key={tag}
-                        className={`px-2 py-0.5 rounded-full border font-mono text-[9.5px] font-bold uppercase ${getCategoryTheme(tag)}`}
+                        className={`px-2 py-0.5 rounded-full border font-mono text-xs font-bold uppercase ${getCategoryTheme(tag)}`}
                       >
                         {tag}
                       </span>
@@ -536,7 +536,7 @@ export default function Inicio() {
                   >
                     <ChevronLeft size={15} />
                   </button>
-                  <span className="font-mono text-[10px] text-muted-2 px-1 tabular-nums">
+                  <span className="font-mono text-xs text-muted-2 px-1 tabular-nums">
                     {(indiceHero % slidesHero.length) + 1}/{slidesHero.length}
                   </span>
                   <button
@@ -638,22 +638,22 @@ export default function Inicio() {
                     <div className="absolute inset-0 bg-gradient-to-t from-void via-void/25 to-transparent" />
 
                     {semEpisodios ? (
-                      <span className="absolute top-2.5 left-2.5 right-2.5 inline-flex items-center gap-1 px-2 py-1 rounded-lg bg-coral/90 backdrop-blur-md text-void font-mono text-[9.5px] font-extrabold uppercase tracking-wider shadow-md">
+                      <span className="absolute top-2.5 left-2.5 right-2.5 inline-flex items-center gap-1 px-2 py-1 rounded-lg bg-coral/90 backdrop-blur-md text-void font-mono text-xs font-extrabold uppercase tracking-wider shadow-md">
                         <AlertTriangle size={11} className="shrink-0" /> Sem episódios (Curar)
                       </span>
                     ) : diaSemana ? (
-                      <span className="absolute top-2.5 left-2.5 px-2.5 py-1 rounded-lg bg-void/85 backdrop-blur-md border border-holo-3/40 font-mono text-[9.5px] font-bold uppercase tracking-wider text-holo-3 shadow-md">
+                      <span className="absolute top-2.5 left-2.5 px-2.5 py-1 rounded-lg bg-void/85 backdrop-blur-md border border-holo-3/40 font-mono text-xs font-bold uppercase tracking-wider text-holo-3 shadow-md">
                         📅 {diaSemana}
                       </span>
                     ) : null}
 
                     <div className="absolute bottom-0 inset-x-0 p-3">
-                      <div className="flex items-center justify-between gap-2 font-mono text-[11px] text-white/90 mb-1.5 tabular-nums drop-shadow">
+                      <div className="flex items-center justify-between gap-2 font-mono text-xs text-white/90 mb-1.5 tabular-nums drop-shadow">
                         <span>
                           Visto: <strong className="text-white">{vistos}</strong>
                           {total > 0 ? ` / ${total} eps` : ' eps'}
                         </span>
-                        {total > 0 && <span className="text-[10px] text-holo-3 font-bold">{pct}%</span>}
+                        {total > 0 && <span className="text-xs text-holo-3 font-bold">{pct}%</span>}
                       </div>
                       <div className="h-1.5 w-full rounded-full bg-void/70 overflow-hidden border border-white/10">
                         <div
@@ -680,7 +680,7 @@ export default function Inicio() {
                     {semEpisodios ? (
                       <Link
                         to={isAdmin ? `/admin?aba=curadoria&mal_id=${c.anime.mal_id}` : `/anime/${c.anime.mal_id}`}
-                        className="w-full inline-flex items-center justify-center gap-1.5 py-2 px-2.5 rounded-xl bg-coral/15 hover:bg-coral/25 border border-coral/45 text-coral text-[11px] font-extrabold transition-colors text-center"
+                        className="w-full inline-flex items-center justify-center gap-1.5 py-2 px-2.5 rounded-xl bg-coral/15 hover:bg-coral/25 border border-coral/45 text-coral text-xs font-extrabold transition-colors text-center"
                       >
                         <AlertTriangle size={12} className="shrink-0" />
                         {isAdmin ? 'Curar episódios' : 'Sem episódios'}
@@ -690,7 +690,7 @@ export default function Inicio() {
                         type="button"
                         disabled
                         title="Este episódio ainda não foi ao ar"
-                        className="w-full inline-flex items-center justify-center gap-1.5 py-2 px-2.5 rounded-xl bg-panel-2 border border-line text-muted-2 text-[11px] font-bold cursor-not-allowed opacity-75"
+                        className="w-full inline-flex items-center justify-center gap-1.5 py-2 px-2.5 rounded-xl bg-panel-2 border border-line text-muted-2 text-xs font-bold cursor-not-allowed opacity-75"
                       >
                         <Lock size={12} className="shrink-0" /> Ep. {epAlvo} não lançado
                       </button>
@@ -699,7 +699,7 @@ export default function Inicio() {
                         type="button"
                         disabled={marcandoEp[c.anime.mal_id]}
                         onClick={() => avancarEpisodioRapido(c.anime.mal_id, epAlvo, c.anime.title)}
-                        className="w-full inline-flex items-center justify-center gap-1.5 py-2 px-2.5 rounded-xl bg-holo-1/15 hover:bg-holo-1/25 border border-holo-1/35 text-holo-1 text-[11.5px] font-extrabold transition-colors cursor-pointer disabled:opacity-50"
+                        className="w-full inline-flex items-center justify-center gap-1.5 py-2 px-2.5 rounded-xl bg-holo-1/15 hover:bg-holo-1/25 border border-holo-1/35 text-holo-1 text-xs font-extrabold transition-colors cursor-pointer disabled:opacity-50"
                       >
                         {recemMarcados[c.anime.mal_id] === c.proximoEpisodio ? (
                           <>
@@ -743,7 +743,7 @@ export default function Inicio() {
             <button
               type="button"
               onClick={() => setModalGostoAberto(true)}
-              className="font-mono text-[10.5px] text-holo-2 uppercase tracking-widest hover:underline cursor-pointer"
+              className="font-mono text-xs text-holo-2 uppercase tracking-widest hover:underline cursor-pointer"
             >
               Personalizar
             </button>
@@ -803,7 +803,7 @@ export default function Inicio() {
                 <h2 className="font-anton text-[16px] uppercase m-0 flex items-center gap-2 tracking-wide">
                   <CalendarDays size={15} className="text-holo-3" /> Sua semana
                 </h2>
-                <Link to="/calendario" className="font-mono text-[10px] text-muted-2 uppercase tracking-widest hover:text-holo-3">
+                <Link to="/calendario" className="font-mono text-xs text-muted-2 uppercase tracking-widest hover:text-holo-3">
                   Agenda →
                 </Link>
               </div>

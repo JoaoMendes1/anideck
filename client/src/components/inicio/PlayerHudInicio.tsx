@@ -230,7 +230,9 @@ export default function PlayerHudInicio({ nome, dataHoje, aoAbrirGosto }: Props)
               {carregandoCarteira ? <span className="mx-auto w-20 h-20 rounded-full shimmer" aria-hidden /> : <OrbeMoeda saldo={saldo} />}
             </div>
 
-            <div className="grid grid-cols-3 gap-2 sm:flex sm:flex-wrap xl:flex-col xl:items-stretch xl:w-[190px]">
+            {/* No celular os três atalhos dividem uma linha: sem ícone e sem seta, para o texto
+                caber inteiro em 360 px. */}
+            <div className="grid grid-cols-[1.25fr_1.1fr_0.9fr] gap-2 whitespace-nowrap sm:flex sm:flex-wrap xl:flex-col xl:items-stretch xl:w-[190px]">
               <button
                 type="button"
                 onClick={rolarParaMissoes}
@@ -242,14 +244,14 @@ export default function PlayerHudInicio({ nome, dataHoje, aoAbrirGosto }: Props)
                     : 'bg-gold/10 border-gold/35 text-gold hover:bg-gold/20'
                 }`}
               >
-                <span className="inline-flex items-center gap-1.5 sm:gap-2"><Target className="w-3.5 h-3.5 sm:w-4 sm:h-4" aria-hidden /> Missões</span>
-                <span className="inline-flex items-center font-mono tabular-nums">{concluidas}/{total}<ChevronRight size={14} aria-hidden /></span>
+                <span className="inline-flex items-center gap-1.5 sm:gap-2"><Target className="hidden sm:block w-4 h-4" aria-hidden /> Missões</span>
+                <span className="inline-flex items-center font-mono tabular-nums">{concluidas}/{total}<ChevronRight size={14} className="hidden sm:block" aria-hidden /></span>
               </button>
               <Link
                 to="/meu-gosto"
                 className="inline-flex items-center justify-center xl:justify-start gap-1.5 sm:gap-2 h-9 sm:h-11 px-2 sm:px-4 rounded-xl bg-holo-2/15 border border-holo-2/40 text-xs sm:text-sm font-extrabold text-[#c7b8ff] hover:bg-holo-2/25 transition-colors focus-visible:outline-2 focus-visible:outline-holo-3"
               >
-                <Sparkles className="w-3.5 h-3.5 sm:w-4 sm:h-4" aria-hidden /> Meu Gosto
+                <Sparkles className="hidden sm:block w-4 h-4" aria-hidden /> Meu Gosto
               </Link>
               <button
                 type="button"
@@ -257,7 +259,7 @@ export default function PlayerHudInicio({ nome, dataHoje, aoAbrirGosto }: Props)
                 title="Ajustar preferências de gênero e curadoria"
                 className="inline-flex items-center justify-center xl:justify-start gap-1.5 sm:gap-2 h-9 sm:h-11 px-2 sm:px-4 rounded-xl bg-panel-2 border border-line hover:border-holo-2 text-xs sm:text-sm font-bold text-text transition-colors cursor-pointer focus-visible:outline-2 focus-visible:outline-holo-3"
               >
-                <SlidersHorizontal className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-holo-2" aria-hidden /> Ajustar<span className="hidden sm:inline"> gosto</span>
+                <SlidersHorizontal className="hidden sm:block w-4 h-4 text-holo-2" aria-hidden /> Ajustar<span className="hidden sm:inline"> gosto</span>
               </button>
             </div>
           </div>

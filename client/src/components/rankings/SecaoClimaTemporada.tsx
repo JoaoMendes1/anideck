@@ -62,11 +62,11 @@ export default function SecaoClimaTemporada() {
 
       <div className="relative z-10 mb-5">
         <div className="flex items-center gap-2 mb-1.5">
-          <span className="font-mono text-[10.5px] uppercase tracking-widest text-holo-3 select-none flex items-center gap-1.5 font-bold">
+          <span className="font-mono text-xs uppercase tracking-widest text-holo-3 select-none flex items-center gap-1.5 font-bold">
             <Sparkles size={13} className="text-holo-3" />
             Clima da Temporada
           </span>
-          <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-holo-2/15 text-holo-2 border border-holo-2/30">
+          <span className="px-2 py-0.5 rounded-full text-xs font-bold bg-holo-2/15 text-holo-2 border border-holo-2/30">
             Comunidade
           </span>
         </div>
@@ -142,7 +142,7 @@ export default function SecaoClimaTemporada() {
                   #{idx + 1}
                 </span>
 
-                <span className="absolute bottom-2 right-2 flex items-center gap-1 px-2 py-0.5 rounded-full bg-void/85 backdrop-blur font-mono text-[10px] text-text border border-line">
+                <span className="absolute bottom-2 right-2 flex items-center gap-1 px-2 py-0.5 rounded-full bg-void/85 backdrop-blur font-mono text-xs text-text border border-line">
                   <span>{metaReacao.emoji}</span>
                   <span className="font-bold">{item.total_reacoes}</span>
                 </span>
@@ -153,7 +153,7 @@ export default function SecaoClimaTemporada() {
               </h3>
 
               {item.episodio_lider > 0 && (
-                <div className="mt-1.5 flex items-center gap-1.5 text-[11px] font-mono">
+                <div className="mt-1.5 flex items-center gap-1.5 text-xs font-mono">
                   {item.mostrar_spoiler ? (
                     <span className="text-holo-3 flex items-center gap-1">
                       <Flame size={12} className="text-coral" />

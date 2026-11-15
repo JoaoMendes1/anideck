@@ -87,7 +87,7 @@ export default function ReorderableTags({ tags, onChange }: ReorderableTagsProps
           Tags Customizadas
         </label>
         {tags.length > 1 && (
-          <span className="text-[10px] text-muted-2">
+          <span className="text-xs text-muted-2">
             Puxe pelo <GripHorizontal size={10} className="inline opacity-50 -mt-0.5" /> para mover
           </span>
         )}
@@ -152,7 +152,7 @@ export default function ReorderableTags({ tags, onChange }: ReorderableTagsProps
                     }`}
                   >
                     <span className="font-bold truncate">{r.display}</span>
-                    <span className="font-mono text-[10px] text-muted-2 shrink-0 uppercase">
+                    <span className="font-mono text-xs text-muted-2 shrink-0 uppercase">
                       {r.tier === 'genero' ? 'gênero' : r.tier === 'demografia' ? 'demografia' : 'tema'}
                     </span>
                   </button>
@@ -166,7 +166,7 @@ export default function ReorderableTags({ tags, onChange }: ReorderableTagsProps
               <p className="text-gold text-[12.5px] font-bold flex items-center gap-1.5">
                 <AlertTriangle size={12} /> "{tagInput.trim()}" não existe na taxonomia
               </p>
-              <p className="text-muted-2 text-[11.5px] mt-1">
+              <p className="text-muted-2 text-xs mt-1">
                 Só é possível usar rótulo cadastrado. Para criar um novo, vá em
                 Painel de Controle → Diagnóstico.
               </p>
@@ -175,13 +175,13 @@ export default function ReorderableTags({ tags, onChange }: ReorderableTagsProps
         </div>
       </div>
 
-      <p className="text-[10px] text-muted">
+      <p className="text-xs text-muted">
         A primeira tag <Crown size={10} className="inline text-gold -mt-0.5 mx-0.5" /> será o
         destaque principal na capa do anime.
       </p>
 
       {naoMapeadas > 0 && (
-        <p className="text-[10.5px] text-gold flex items-center gap-1.5">
+        <p className="text-xs text-gold flex items-center gap-1.5">
           <AlertTriangle size={11} className="shrink-0" />
           {naoMapeadas} tag(s) fora da taxonomia — em amarelo. Elas não entram em gráfico nenhum.
         </p>
@@ -211,7 +211,7 @@ function TagItem({
       // O título mostra o texto REAL gravado: a tela exibe "Ação" mas o banco pode
       // ter "Action" (import da AniList), e sem isso não haveria como descobrir.
       title={rotulo !== tag ? `Gravado como "${tag}"` : undefined}
-      className={`shrink-0 flex items-center gap-1 px-2 py-1.5 rounded-md text-[11px] font-bold border select-none transition-shadow ${
+      className={`shrink-0 flex items-center gap-1 px-2 py-1.5 rounded-md text-xs font-bold border select-none transition-shadow ${
         idx === 0 ? 'ring-1 ring-gold/50 shadow-[0_0_8px_rgba(255,197,66,0.15)]' : ''
       } ${conhecida ? getCategoryTheme(rotulo) : 'bg-gold/10 border-gold/40 text-gold'}`}
     >

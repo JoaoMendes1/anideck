@@ -19,7 +19,7 @@ export default function TagCla({ tag, emblema, comLink = true, className = '' }:
 
   const content = (
     <span
-      className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md border text-[10px] font-mono font-black tracking-wider uppercase select-none transition-colors ${pillStyle} ${className}`}
+      className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md border text-xs font-mono font-black tracking-wider uppercase select-none transition-colors ${pillStyle} ${className}`}
       title={`Clã [${limpa}]`}
     >
       {emblema && renderIconeEmblema(emblema, 11)}

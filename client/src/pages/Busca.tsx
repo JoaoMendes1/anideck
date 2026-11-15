@@ -343,7 +343,7 @@ export default function Busca() {
 
             {sugestoes.length > 0 && (
                 <div className="flex flex-wrap items-center gap-2 -mt-2 mb-4">
-                    <span className="font-mono text-[10px] text-muted-2 tracking-widest uppercase select-none">Filtrar por</span>
+                    <span className="font-mono text-xs text-muted-2 tracking-widest uppercase select-none">Filtrar por</span>
                     {sugestoes.map(r => (
                         <button
                             key={r.nome}
@@ -367,7 +367,7 @@ export default function Busca() {
                 >
                     <SlidersHorizontal size={16} />
                     {activeFilterCount > 0 && (
-                        <span className="flex items-center justify-center w-5 h-5 rounded-full bg-gradient-to-r from-holo-1 to-holo-2 text-void text-[10px] font-black">
+                        <span className="flex items-center justify-center w-5 h-5 rounded-full bg-gradient-to-r from-holo-1 to-holo-2 text-void text-xs font-black">
                             {activeFilterCount}
                         </span>
                     )}
@@ -402,25 +402,25 @@ export default function Busca() {
                 {!showFilters && activeFilterCount > 0 && (
                     <div className="flex items-center gap-2 flex-nowrap shrink-0 border-l border-line pl-3">
                         {selectedSort !== 'POPULARITY_DESC' && (
-                            <span className="flex items-center shrink-0 gap-1 px-2.5 py-1.5 rounded-full bg-gold/20 border border-gold/40 text-gold text-[11px] font-bold">
+                            <span className="flex items-center shrink-0 gap-1 px-2.5 py-1.5 rounded-full bg-gold/20 border border-gold/40 text-gold text-xs font-bold">
                                 {SORT_OPTIONS.find(s => s.value === selectedSort)?.label}
                                 <button onClick={() => { setSelectedSort('POPULARITY_DESC'); setPage(1) }} className="cursor-pointer hover:text-white"><X size={10} /></button>
                             </span>
                         )}
                         {selectedRotulos.filter(nome => !ROTULOS_RAPIDOS.includes(nome)).map(nome => (
-                            <span key={nome} className="flex items-center shrink-0 gap-1 px-2.5 py-1.5 rounded-full bg-holo-2/20 border border-holo-2/40 text-holo-2 text-[11px] font-bold">
+                            <span key={nome} className="flex items-center shrink-0 gap-1 px-2.5 py-1.5 rounded-full bg-holo-2/20 border border-holo-2/40 text-holo-2 text-xs font-bold">
                                 {nome}
                                 <button onClick={() => toggleRotulo(nome)} className="cursor-pointer hover:text-white"><X size={10} /></button>
                             </span>
                         ))}
                         {selectedStatus && (
-                            <span className="flex items-center shrink-0 gap-1 px-2.5 py-1.5 rounded-full bg-holo-3/20 border border-holo-3/40 text-holo-3 text-[11px] font-bold">
+                            <span className="flex items-center shrink-0 gap-1 px-2.5 py-1.5 rounded-full bg-holo-3/20 border border-holo-3/40 text-holo-3 text-xs font-bold">
                                 {STATUS_OPTIONS.find(s => s.value === selectedStatus)?.label}
                                 <button onClick={() => { setSelectedStatus(''); setPage(1) }} className="cursor-pointer hover:text-white"><X size={10} /></button>
                             </span>
                         )}
                         {(selectedSeason || selectedYear) && (
-                            <span className="flex items-center shrink-0 gap-1 px-2.5 py-1.5 rounded-full bg-holo-1/20 border border-holo-1/40 text-holo-1 text-[11px] font-bold">
+                            <span className="flex items-center shrink-0 gap-1 px-2.5 py-1.5 rounded-full bg-holo-1/20 border border-holo-1/40 text-holo-1 text-xs font-bold">
                                 {selectedSeason
                                     ? `${SEASON_OPTIONS.find(s => s.value === selectedSeason)?.emoji} ${SEASON_OPTIONS.find(s => s.value === selectedSeason)?.label}${selectedYear ? ` ${selectedYear}` : ''}`
                                     : `📅 Ano ${selectedYear}`}
@@ -459,7 +459,7 @@ export default function Busca() {
                     />
 
                     <div className="flex flex-wrap gap-2 p-3 bg-panel-2 border border-line rounded-xl">
-                        <span className="text-[11px] font-bold text-muted uppercase w-full mb-1">
+                        <span className="text-xs font-bold text-muted uppercase w-full mb-1">
                             Ano de lançamento (opcional com ou sem temporada):
                         </span>
                         {YEAR_OPTIONS.map(y => (
@@ -486,7 +486,7 @@ export default function Busca() {
                     if (doGrupo.length === 0) return null
                     return (
                         <div key={grupo.camada}>
-                            <p className="font-mono text-[10px] text-muted-2 tracking-widest mb-3 select-none uppercase">{grupo.titulo}</p>
+                            <p className="font-mono text-xs text-muted-2 tracking-widest mb-3 select-none uppercase">{grupo.titulo}</p>
                             <div className="flex flex-wrap gap-2">
                                 {doGrupo.map(r => {
                                     const isActive = selectedRotulos.includes(r.nome)

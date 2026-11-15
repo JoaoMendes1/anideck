@@ -42,7 +42,7 @@ export default function SecaoColecaoCartas({
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-5">
         <div>
           <div className="flex items-center gap-2 mb-1">
-            <span className="font-mono text-[10px] text-muted-2 uppercase tracking-widest block">
+            <span className="font-mono text-xs text-muted-2 uppercase tracking-widest block">
               // colecionáveis de animes completos
             </span>
           </div>
@@ -59,19 +59,19 @@ export default function SecaoColecaoCartas({
           <div className="px-3 py-1.5 rounded-xl bg-panel-2 border border-line flex items-center gap-1.5 font-mono text-xs">
             <Layers size={13} className="text-holo-3" />
             <span className="font-bold text-text">{cartas.length}</span>
-            <span className="text-muted-2 text-[10px]">cartas</span>
+            <span className="text-muted-2 text-xs">cartas</span>
           </div>
 
           <div className="px-3 py-1.5 rounded-xl bg-panel-2 border border-line flex items-center gap-1.5 font-mono text-xs">
             <Star size={13} className="text-amber-400 fill-amber-400/30" />
             <span className="font-bold text-amber-300">{totalFoil}</span>
-            <span className="text-muted-2 text-[10px]">Foil</span>
+            <span className="text-muted-2 text-xs">Foil</span>
           </div>
 
           <div className="px-3 py-1.5 rounded-xl bg-panel-2 border border-line flex items-center gap-1.5 font-mono text-xs">
             <Flame size={13} className="text-rose-400 fill-rose-400/30" />
             <span className="font-bold text-rose-300">{totalEstreia}</span>
-            <span className="text-muted-2 text-[10px]">Estreia</span>
+            <span className="text-muted-2 text-xs">Estreia</span>
           </div>
         </div>
       </div>

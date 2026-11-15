@@ -494,7 +494,7 @@ export default function Estatisticas() {
             o resto da página pra baixo demais. Fonte e padding encolhem via sm:. */}
         <div ref={registrar} className="reveal grid grid-cols-3 gap-2.5 sm:gap-4 mb-3 sm:mb-4" style={{ transitionDelay: '.05s' }}>
           <div className="bg-gradient-to-br from-holo-1/10 to-holo-3/10 border border-holo-3/30 rounded-2xl p-3.5 sm:p-6">
-            <div className="font-mono text-xs sm:text-xs text-muted-2 tracking-wider sm:tracking-widest mb-1.5 sm:mb-2 uppercase leading-tight">Tempo Assistido</div>
+            <div className="font-mono text-xs text-muted-2 tracking-wider sm:tracking-widest mb-1.5 sm:mb-2 uppercase leading-tight">Tempo Assistido</div>
             <div className="font-anton text-lg sm:text-3xl tabular-nums">{formatTime(Math.round(tempoAnimado))}</div>
           </div>
           <button
@@ -504,11 +504,11 @@ export default function Estatisticas() {
             className="bg-panel border border-line rounded-2xl p-3.5 sm:p-6 text-left transition-colors hover:border-holo-2 cursor-pointer disabled:cursor-default"
             title={favorito ? `Ver seus animes de ${traduzirGenero(generoFavorito)}` : undefined}
           >
-            <div className="font-mono text-xs sm:text-xs text-muted-2 tracking-wider sm:tracking-widest mb-1.5 sm:mb-2 uppercase leading-tight">Gênero Favorito</div>
+            <div className="font-mono text-xs text-muted-2 tracking-wider sm:tracking-widest mb-1.5 sm:mb-2 uppercase leading-tight">Gênero Favorito</div>
             <div className="font-anton text-lg sm:text-3xl text-holo-2 truncate">{traduzirGenero(generoFavorito)}</div>
           </button>
           <div className="bg-panel border border-line rounded-2xl p-3.5 sm:p-6">
-            <div className="font-mono text-xs sm:text-xs text-muted-2 tracking-wider sm:tracking-widest mb-1.5 sm:mb-2 uppercase leading-tight">Sua Nota Média</div>
+            <div className="font-mono text-xs text-muted-2 tracking-wider sm:tracking-widest mb-1.5 sm:mb-2 uppercase leading-tight">Sua Nota Média</div>
             <div className="font-anton text-lg sm:text-3xl text-gold tabular-nums">
               {overview?.nota_media ? notaAnimada.toFixed(1) : 'N/A'}
             </div>
@@ -523,14 +523,14 @@ export default function Estatisticas() {
               <Flame size={18} />
             </div>
             <b className="block font-anton text-2xl mb-0.5 tabular-nums">{Math.round(streakAtualAnimado)}</b>
-            <span className="text-xs sm:text-xs text-muted-2 font-bold uppercase tracking-wider">Streak Atual (dias)</span>
+            <span className="text-xs text-muted-2 font-bold uppercase tracking-wider">Streak Atual (dias)</span>
           </div>
           <div className="bg-panel border border-line border-t-[3px] border-t-gold rounded-[14px] p-4 sm:p-[18px]">
             <div className="w-7 h-7 rounded-lg bg-gold/20 text-gold flex items-center justify-center mb-2">
               <Trophy size={18} />
             </div>
             <b className="block font-anton text-2xl mb-0.5 tabular-nums">{Math.round(streakRecordeAnimado)}</b>
-            <span className="text-xs sm:text-xs text-muted-2 font-bold uppercase tracking-wider">Recorde de Streak (dias)</span>
+            <span className="text-xs text-muted-2 font-bold uppercase tracking-wider">Recorde de Streak (dias)</span>
           </div>
 
           {/* Perfil de gosto — concentração do consumo nos dois rótulos mais assistidos.
@@ -543,14 +543,14 @@ export default function Estatisticas() {
             {perfil.tipo ? (
               <>
                 <b className="block font-anton text-xl sm:text-2xl mb-0.5 capitalize">{perfil.tipo}</b>
-                <span className="text-xs sm:text-xs text-muted-2 font-bold uppercase tracking-wider">
+                <span className="text-xs text-muted-2 font-bold uppercase tracking-wider">
                   {perfil.concentracao.toFixed(0)}% em 2 categorias
                 </span>
               </>
             ) : (
               <>
                 <b className="block font-anton text-xl sm:text-2xl mb-0.5 text-muted-2">—</b>
-                <span className="text-xs sm:text-xs text-muted-2 font-bold uppercase tracking-wider">Perfil de gosto</span>
+                <span className="text-xs text-muted-2 font-bold uppercase tracking-wider">Perfil de gosto</span>
               </>
             )}
           </div>
@@ -564,12 +564,12 @@ export default function Estatisticas() {
             {conclusao.valida ? (
               <>
                 <b className="block font-anton text-xl sm:text-2xl mb-0.5 tabular-nums">{conclusao.taxa.toFixed(0)} de 10</b>
-                <span className="text-xs sm:text-xs text-muted-2 font-bold uppercase tracking-wider">Você termina</span>
+                <span className="text-xs text-muted-2 font-bold uppercase tracking-wider">Você termina</span>
               </>
             ) : (
               <>
                 <b className="block font-anton text-xl sm:text-2xl mb-0.5 text-muted-2">—</b>
-                <span className="text-xs sm:text-xs text-muted-2 font-bold uppercase tracking-wider">Taxa de conclusão</span>
+                <span className="text-xs text-muted-2 font-bold uppercase tracking-wider">Taxa de conclusão</span>
               </>
             )}
           </div>

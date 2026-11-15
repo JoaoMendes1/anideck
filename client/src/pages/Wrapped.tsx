@@ -263,7 +263,7 @@ export default function Wrapped() {
                         <strong className="text-xs font-bold text-text truncate block">
                           {anime.title}
                         </strong>
-                        <span className="text-[11px] font-mono text-muted">
+                        <span className="text-xs font-mono text-muted">
                           {anime.total_eps} episódios no ano
                         </span>
                       </div>
@@ -299,7 +299,7 @@ export default function Wrapped() {
                           <span className="flex items-center gap-1.5 text-text">
                             <span className="text-holo-1 font-mono text-xs font-extrabold">#{idx + 1}</span> {g.genero}
                           </span>
-                          <span className="font-mono text-muted-2 text-[11px]">{g.total} eps</span>
+                          <span className="font-mono text-muted-2 text-xs">{g.total} eps</span>
                         </div>
                         <div className="h-2 rounded-full bg-void overflow-hidden">
                           <div
@@ -336,19 +336,19 @@ export default function Wrapped() {
                 <div className="p-4 rounded-2xl bg-panel border border-line text-center">
                   <MessageSquare size={20} className="mx-auto text-holo-3 mb-1" />
                   <div className="font-anton text-3xl text-text mt-1">{dados.total_comentarios}</div>
-                  <span className="text-[11px] text-muted uppercase font-mono">Comentários</span>
+                  <span className="text-xs text-muted uppercase font-mono">Comentários</span>
                 </div>
 
                 <div className="p-4 rounded-2xl bg-panel border border-line text-center">
                   <Heart size={20} className="mx-auto text-rose-400 mb-1" />
                   <div className="font-anton text-3xl text-text mt-1">{dados.total_reacoes}</div>
-                  <span className="text-[11px] text-muted uppercase font-mono">Reações</span>
+                  <span className="text-xs text-muted uppercase font-mono">Reações</span>
                 </div>
 
                 <div className="p-4 rounded-2xl bg-panel border border-line text-center col-span-2">
                   <Award size={22} className="mx-auto text-gold mb-1" />
                   <div className="font-anton text-3xl text-gold mt-1">{dados.total_cartas}</div>
-                  <span className="text-[11px] text-muted uppercase font-mono">Cartas Colecionadas em {dados.ano}</span>
+                  <span className="text-xs text-muted uppercase font-mono">Cartas Colecionadas em {dados.ano}</span>
                 </div>
               </div>
 
@@ -377,19 +377,19 @@ export default function Wrapped() {
 
                 <div className="grid grid-cols-2 gap-2.5 text-center my-3">
                   <div className="p-2.5 rounded-xl bg-void/50 border border-line/60">
-                    <span className="text-[10px] text-muted font-mono uppercase block">Episódios</span>
+                    <span className="text-xs text-muted font-mono uppercase block">Episódios</span>
                     <strong className="font-anton text-2xl text-holo-2">{dados.total_episodios}</strong>
                   </div>
                   <div className="p-2.5 rounded-xl bg-void/50 border border-line/60">
-                    <span className="text-[10px] text-muted font-mono uppercase block">Horas</span>
+                    <span className="text-xs text-muted font-mono uppercase block">Horas</span>
                     <strong className="font-anton text-2xl text-holo-3">~{dados.horas_estimadas}h</strong>
                   </div>
                   <div className="p-2.5 rounded-xl bg-void/50 border border-line/60">
-                    <span className="text-[10px] text-muted font-mono uppercase block">Dias Ativos</span>
+                    <span className="text-xs text-muted font-mono uppercase block">Dias Ativos</span>
                     <strong className="font-anton text-xl text-text">{dados.dias_ativos}</strong>
                   </div>
                   <div className="p-2.5 rounded-xl bg-void/50 border border-line/60">
-                    <span className="text-[10px] text-muted font-mono uppercase block">Cartas</span>
+                    <span className="text-xs text-muted font-mono uppercase block">Cartas</span>
                     <strong className="font-anton text-xl text-gold">{dados.total_cartas}</strong>
                   </div>
                 </div>
@@ -431,7 +431,7 @@ export default function Wrapped() {
           >
             <ChevronLeft size={18} />
           </button>
-          <span className="font-mono text-[11px] font-bold">
+          <span className="font-mono text-xs font-bold">
             {slideAtual + 1} / {TOTAL_SLIDES}
           </span>
           <button

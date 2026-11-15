@@ -121,7 +121,7 @@ export default function AbaTrilhas() {
         return (
           <section key={t.id} className="bg-panel border border-line rounded-2xl p-4 sm:p-5 flex flex-col gap-3">
             <div className="flex items-center justify-between gap-2">
-              <span className="font-mono text-[10px] text-muted-2 uppercase tracking-widest">Trilha {indice + 1}</span>
+              <span className="font-mono text-xs text-muted-2 uppercase tracking-widest">Trilha {indice + 1}</span>
               <div className="flex gap-1">
                 <button type="button" aria-label="Subir trilha" onClick={() => setTrilhas(prev => mover(prev, indice, indice - 1))} className="p-1.5 rounded-lg text-muted hover:text-text cursor-pointer"><ArrowUp size={16} /></button>
                 <button type="button" aria-label="Descer trilha" onClick={() => setTrilhas(prev => mover(prev, indice, indice + 1))} className="p-1.5 rounded-lg text-muted hover:text-text cursor-pointer"><ArrowDown size={16} /></button>
@@ -136,7 +136,7 @@ export default function AbaTrilhas() {
             <ol className="flex flex-col gap-1.5">
               {t.mal_ids.map((id, pos) => (
                 <li key={id} className="flex items-center gap-2 bg-panel-2 border border-line rounded-lg px-3 py-1.5 text-sm">
-                  <span className="font-mono text-[11px] text-muted-2 w-5">{pos + 1}</span>
+                  <span className="font-mono text-xs text-muted-2 w-5">{pos + 1}</span>
                   <span className="flex-1 truncate">{tituloPorId.get(id) ?? `mal_id ${id} (fora do catálogo)`}</span>
                   <button type="button" aria-label="Subir" onClick={() => atualizar(t.id, { mal_ids: mover(t.mal_ids, pos, pos - 1) })} className="p-1 text-muted hover:text-text cursor-pointer"><ArrowUp size={14} /></button>
                   <button type="button" aria-label="Descer" onClick={() => atualizar(t.id, { mal_ids: mover(t.mal_ids, pos, pos + 1) })} className="p-1 text-muted hover:text-text cursor-pointer"><ArrowDown size={14} /></button>

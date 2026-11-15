@@ -70,7 +70,7 @@ export default function SeletorClasse({
       <div className="mb-6">
         <div className="flex items-center justify-between gap-2 mb-3">
           <div>
-            <span className="font-mono text-[10px] text-muted-2 uppercase tracking-widest block">
+            <span className="font-mono text-xs text-muted-2 uppercase tracking-widest block">
               // vocação de rpg (fase 17.4)
             </span>
             <h3 className="font-anton text-lg uppercase text-text m-0">Sua Classe na Guilda</h3>
@@ -103,17 +103,17 @@ export default function SeletorClasse({
                       <Check size={12} strokeWidth={3} />
                     </span>
                   ) : (
-                    <span className="text-[10px] font-mono uppercase text-muted">Escolher</span>
+                    <span className="text-xs font-mono uppercase text-muted">Escolher</span>
                   )}
                 </div>
 
                 <div className={`font-anton text-base uppercase mb-0.5 ${c.cor}`}>
                   {c.nome}
                 </div>
-                <div className="font-mono text-[10.5px] font-bold text-text mb-1">
+                <div className="font-mono text-xs font-bold text-text mb-1">
                   {c.papel}
                 </div>
-                <div className="text-[11px] text-muted leading-relaxed">
+                <div className="text-xs text-muted leading-relaxed">
                   {c.bonus}
                 </div>
               </button>
@@ -126,7 +126,7 @@ export default function SeletorClasse({
       <div className="pt-5 border-t border-line/60">
         <div className="flex items-center justify-between gap-2 mb-3">
           <div>
-            <span className="font-mono text-[10px] text-muted-2 uppercase tracking-widest block">
+            <span className="font-mono text-xs text-muted-2 uppercase tracking-widest block">
               // títulos de honra
             </span>
             <h4 className="font-anton text-base uppercase text-text m-0">Título Equipado</h4>

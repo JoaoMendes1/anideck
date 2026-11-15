@@ -36,7 +36,7 @@ export default function StatCard({ icon, value, label, accentColor, onClick, act
                     {icon}
                 </div>
                 <b className="block font-anton text-2xl mb-0.5 text-text">{value}</b>
-                <span className="text-[11px] text-muted-2 font-bold uppercase tracking-wider whitespace-nowrap">{label}</span>
+                <span className="text-xs text-muted-2 font-bold uppercase tracking-wider whitespace-nowrap">{label}</span>
             </button>
         )
     }
@@ -47,7 +47,7 @@ export default function StatCard({ icon, value, label, accentColor, onClick, act
                 {icon}
             </div>
             <b className="block font-anton text-2xl mb-0.5">{value}</b>
-            <span className="text-[11px] text-muted-2 font-bold uppercase tracking-wider whitespace-nowrap">{label}</span>
+            <span className="text-xs text-muted-2 font-bold uppercase tracking-wider whitespace-nowrap">{label}</span>
         </div>
     )
 }

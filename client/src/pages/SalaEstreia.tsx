@@ -274,16 +274,16 @@ export default function SalaEstreia() {
 
             <div className="min-w-0">
               <div className="flex items-center gap-2 flex-wrap">
-                <span className="font-mono text-[10px] font-bold uppercase tracking-widest px-2 py-0.5 rounded-full bg-holo-2/15 border border-holo-2/30 text-holo-2">
+                <span className="font-mono text-xs font-bold uppercase tracking-widest px-2 py-0.5 rounded-full bg-holo-2/15 border border-holo-2/30 text-holo-2">
                   Episódio {sala.episodio}
                 </span>
                 {sala.ao_vivo ? (
-                  <span className="flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-coral/20 border border-coral/40 text-coral text-[10px] font-mono font-bold uppercase animate-pulse">
+                  <span className="flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-coral/20 border border-coral/40 text-coral text-xs font-mono font-bold uppercase animate-pulse">
                     <span className="w-1.5 h-1.5 rounded-full bg-coral animate-ping" />
                     Ao Vivo
                   </span>
                 ) : (
-                  <span className="px-2 py-0.5 rounded-full bg-panel-2 border border-line text-muted text-[10px] font-mono font-bold uppercase">
+                  <span className="px-2 py-0.5 rounded-full bg-panel-2 border border-line text-muted text-xs font-mono font-bold uppercase">
                     Encerrada
                   </span>
                 )}
@@ -300,7 +300,7 @@ export default function SalaEstreia() {
               <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-panel-2 border border-coral/30 text-coral">
                 <Clock size={14} className="animate-spin text-coral" />
                 <div className="text-right">
-                  <span className="block text-[9px] font-mono uppercase tracking-wider text-muted">Encerra em</span>
+                  <span className="block text-xs font-mono uppercase tracking-wider text-muted">Encerra em</span>
                   <span className="font-mono text-xs sm:text-sm font-bold tracking-tight">
                     {formatarContagemRegressiva(segundosRestantes)}
                   </span>
@@ -315,12 +315,12 @@ export default function SalaEstreia() {
         </div>
 
         {/* Alerta de Spoiler Discreto */}
-        <div className="mt-3 pt-2.5 border-t border-line/60 flex items-center justify-between gap-2 text-[11px] text-muted">
+        <div className="mt-3 pt-2.5 border-t border-line/60 flex items-center justify-between gap-2 text-xs text-muted">
           <div className="flex items-center gap-1.5">
             <Radio size={13} className="text-holo-3 shrink-0" />
             <span>Chat de estreia · As mensagens comentam os acontecimentos do episódio em tempo real.</span>
           </div>
-          <span className="font-mono text-[10px] text-muted-2 hidden sm:inline">
+          <span className="font-mono text-xs text-muted-2 hidden sm:inline">
             Janela de 3h
           </span>
         </div>
@@ -352,14 +352,14 @@ export default function SalaEstreia() {
               <div className="flex items-start justify-between gap-2 mb-1.5">
                 <div className="flex items-center gap-2 flex-wrap min-w-0">
                   {/* Avatar com Moldura */}
-                  <div className="relative w-6 h-6 rounded-full bg-panel-2 border border-line flex items-center justify-center shrink-0 text-[10px] font-bold text-holo-3">
+                  <div className="relative w-6 h-6 rounded-full bg-panel-2 border border-line flex items-center justify-center shrink-0 text-xs font-bold text-holo-3">
                     {m.autor_avatar ? (
                       <img src={m.autor_avatar} alt={m.autor_nome} className="w-full h-full rounded-full object-cover" />
                     ) : (
                       m.autor_nome.charAt(0).toUpperCase()
                     )}
                     {m.autor_moldura && (
-                      <span className="absolute -top-1.5 -right-1.5 text-[10px]" title="Moldura">
+                      <span className="absolute -top-1.5 -right-1.5 text-xs" title="Moldura">
                         {m.autor_moldura}
                       </span>
                     )}
@@ -372,13 +372,13 @@ export default function SalaEstreia() {
                   {m.autor_cla_tag && <TagCla tag={m.autor_cla_tag} />}
 
                   {m.destaque && (
-                    <span className="flex items-center gap-0.5 px-1.5 py-px rounded-full bg-gold/15 border border-gold/30 text-gold text-[9.5px] font-mono font-bold">
+                    <span className="flex items-center gap-0.5 px-1.5 py-px rounded-full bg-gold/15 border border-gold/30 text-gold text-xs font-mono font-bold">
                       <Flame size={10} /> Destaque
                     </span>
                   )}
                 </div>
 
-                <div className="flex items-center gap-2 text-muted text-[10.5px] font-mono shrink-0">
+                <div className="flex items-center gap-2 text-muted text-xs font-mono shrink-0">
                   <span>
                     {new Date(m.created_at).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
                   </span>
@@ -391,7 +391,7 @@ export default function SalaEstreia() {
               </p>
 
               {/* Barra de Ações da Mensagem */}
-              <div className="flex items-center justify-between gap-2 mt-2 pt-1.5 border-t border-line/40 text-[11px]">
+              <div className="flex items-center justify-between gap-2 mt-2 pt-1.5 border-t border-line/40 text-xs">
                 <button
                   type="button"
                   onClick={() => handleCurtir(m.id)}
@@ -468,7 +468,7 @@ export default function SalaEstreia() {
               className="flex-1 bg-transparent px-3 py-2 text-sm text-text placeholder:text-muted focus:outline-none disabled:opacity-60"
             />
 
-            <span className="text-[10px] font-mono text-muted-2 px-1">
+            <span className="text-xs font-mono text-muted-2 px-1">
               {conteudo.length}/280
             </span>
 

@@ -29,29 +29,30 @@ export default function BottomNav() {
             <div className="flex items-center justify-around h-16 px-1">
                 <Link to="/" className={itemClasse('/')}>
                     <Home size={18} />
-                    <span className="text-[9px] font-bold">Início</span>
+                    <span className="text-xs font-bold">Início</span>
                 </Link>
 
                 <Link to="/rankings" className={itemClasse('/rankings')}>
                     <Trophy size={18} />
-                    <span className="text-[9px] font-bold">Rankings</span>
+                    <span className="text-xs font-bold">Rankings</span>
                 </Link>
 
                 {session ? (
                     <>
                         <Link to="/deck" className={itemClasse('/deck')}>
                             <LayoutDashboard size={18} />
-                            <span className="text-[9px] font-bold">Deck</span>
+                            <span className="text-xs font-bold">Deck</span>
                         </Link>
 
                         <Link to="/calendario" className={itemClasse('/calendario')}>
                             <CalendarDays size={18} />
-                            <span className="text-[9px] font-bold">Agenda</span>
+                            <span className="text-xs font-bold">Agenda</span>
                         </Link>
 
                         <Link to="/meu-gosto" className={itemClasse('/meu-gosto')}>
                             <BarChart2 size={18} />
-                            <span className="text-[9px] font-bold">Meu Gosto</span>
+                            {/* "Gosto", e não "Meu Gosto": com seis itens em 360 px, o nome inteiro quebrava em duas linhas. */}
+                            <span className="text-xs font-bold">Gosto</span>
                         </Link>
 
                         {/* Admin e Sair ficam no Sheet de Perfil: Sair é irreversível e
@@ -60,16 +61,16 @@ export default function BottomNav() {
                             onClick={() => setMenuAberto(true)}
                             className="flex flex-col items-center justify-center w-full h-full space-y-1 text-muted cursor-pointer focus:outline-none select-none"
                         >
-                            <div className="w-[18px] h-[18px] rounded-full bg-gradient-to-br from-holo-2 to-holo-3 flex items-center justify-center text-void font-bold text-[9px]">
+                            <div className="w-5 h-5 rounded-full bg-gradient-to-br from-holo-2 to-holo-3 flex items-center justify-center text-void font-bold text-xs leading-none">
                                 {(session.user.user_metadata?.display_name || 'U').charAt(0).toUpperCase()}
                             </div>
-                            <span className="text-[9px] font-bold">Perfil</span>
+                            <span className="text-xs font-bold">Perfil</span>
                         </button>
                     </>
                 ) : (
                     <Link to="/login" className="flex flex-col items-center justify-center w-full h-full space-y-1 text-muted focus:outline-none select-none">
                         <div className="w-5 h-5 rounded-full border border-line flex items-center justify-center bg-panel"><User size={12} /></div>
-                        <span className="text-[9px] font-bold">Entrar</span>
+                        <span className="text-xs font-bold">Entrar</span>
                     </Link>
                 )}
             </div>

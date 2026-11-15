@@ -54,14 +54,14 @@ export default function CardDesafioClaInicio() {
           </div>
           <div className="min-w-0">
             <div className="flex items-center gap-2 flex-wrap">
-              <span className="font-mono text-[10px] font-bold text-holo-3 px-1.5 py-px rounded bg-holo-3/15 border border-holo-3/30">
+              <span className="font-mono text-xs font-bold text-holo-3 px-1.5 py-px rounded bg-holo-3/15 border border-holo-3/30">
                 [{desafio.cla_tag}]
               </span>
               <span className="text-xs font-bold text-muted truncate">
                 {desafio.cla_nome}
               </span>
               {bateuMeta && (
-                <span className="text-[10px] font-mono font-bold text-green flex items-center gap-1 bg-green/15 px-2 py-px rounded-full border border-green/30">
+                <span className="text-xs font-mono font-bold text-green flex items-center gap-1 bg-green/15 px-2 py-px rounded-full border border-green/30">
                   <Trophy size={10} /> Meta Batida!
                 </span>
               )}
@@ -84,7 +84,7 @@ export default function CardDesafioClaInicio() {
       {/* BARRA DE PROGRESSO */}
       <div className="space-y-1.5">
         <div className="flex items-center justify-between text-xs font-mono">
-          <span className="text-muted text-[11px]">
+          <span className="text-muted text-xs">
             Progresso coletivo:{' '}
             <strong className="text-text">
               {desafio.progresso_total} / {desafio.meta} {desafio.unidade}
@@ -104,7 +104,7 @@ export default function CardDesafioClaInicio() {
           />
         </div>
 
-        <div className="flex items-center justify-between text-[11px] font-mono text-muted pt-1">
+        <div className="flex items-center justify-between text-xs font-mono text-muted pt-1">
           <span>
             Sua contribuição:{' '}
             <strong className="text-holo-3">{minhaQtd} {desafio.unidade}</strong>

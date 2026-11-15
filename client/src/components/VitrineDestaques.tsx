@@ -110,7 +110,7 @@ export default function VitrineDestaques() {
               // A vitrine continua utilizável quando o navegador bloqueia o storage.
             }
           }}
-          className="font-mono text-[10px] text-muted-2 uppercase tracking-widest hover:text-holo-3 transition-colors cursor-pointer"
+          className="font-mono text-xs text-muted-2 uppercase tracking-widest hover:text-holo-3 transition-colors cursor-pointer"
           aria-expanded={!recolhida}
         >
           {recolhida ? 'Expandir seleção' : 'Recolher seleção'}
@@ -157,7 +157,7 @@ export default function VitrineDestaques() {
             </h3>
 
             {anime.custom_format && (
-              <p className="mt-1 font-mono text-[9px] uppercase tracking-widest text-muted-2">
+              <p className="mt-1 font-mono text-xs uppercase tracking-widest text-muted-2">
                 {anime.custom_format}
               </p>
             )}

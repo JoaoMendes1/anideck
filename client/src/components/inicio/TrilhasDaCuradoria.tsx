@@ -45,7 +45,7 @@ export default function TrilhasDaCuradoria({ trilhas }: { trilhas: TrilhaDaHome[
             <div className="p-3.5">
               <div className="flex items-center justify-between gap-2">
                 <h3 className="font-anton text-[16px] uppercase leading-tight m-0 group-hover:text-holo-2 transition-colors line-clamp-1">{t.nome}</h3>
-                <span className="shrink-0 font-mono text-[10px] text-muted-2">{t.animes.length} obras</span>
+                <span className="shrink-0 font-mono text-xs text-muted-2">{t.animes.length} obras</span>
               </div>
               {t.subtitulo && <p className="text-xs text-muted mt-1 line-clamp-1">{t.subtitulo}</p>}
             </div>
@@ -66,11 +66,11 @@ export default function TrilhasDaCuradoria({ trilhas }: { trilhas: TrilhaDaHome[
                   <div className={`relative aspect-[2/3] rounded-xl overflow-hidden border border-line ${gradienteDoCard(i)}`}>
                     {a.image_url && <img src={miniatura(a.image_url)} alt={a.titulo} loading="lazy" className="absolute inset-0 w-full h-full object-cover" />}
                   </div>
-                  <span className="block mt-1.5 text-[11.5px] font-bold leading-snug line-clamp-2 group-hover:text-holo-3">{a.titulo}</span>
+                  <span className="block mt-1.5 text-xs font-bold leading-snug line-clamp-2 group-hover:text-holo-3">{a.titulo}</span>
                 </Link>
               ))}
             </div>
-            <div className="flex items-center gap-1.5 mt-5 font-mono text-[10px] text-muted-2 uppercase tracking-widest">
+            <div className="flex items-center gap-1.5 mt-5 font-mono text-xs text-muted-2 uppercase tracking-widest">
               <Compass size={12} /> Trilha montada pela curadoria do AniDeck
             </div>
           </>

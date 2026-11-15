@@ -28,7 +28,7 @@ export default function FilterChipGroup({
 }: FilterChipGroupProps) {
     return (
         <div>
-            <p className="font-mono text-[10px] text-muted-2 tracking-widest mb-3 select-none uppercase">
+            <p className="font-mono text-xs text-muted-2 tracking-widest mb-3 select-none uppercase">
                 {label}
             </p>
             <div className="flex flex-wrap gap-2">

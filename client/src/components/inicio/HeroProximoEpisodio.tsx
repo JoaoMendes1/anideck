@@ -114,11 +114,11 @@ export default function HeroProximoEpisodio({
           {/* Cabeçalho do Card: Badge + Tags (desktop) e Controles do Carrossel em linha */}
           <div className="flex items-center justify-between gap-3 mb-2.5">
             <div className="flex flex-wrap items-center gap-2 min-w-0">
-              <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-holo-1/15 border border-holo-1/35 text-holo-1 font-mono text-[10px] font-bold uppercase tracking-widest shrink-0">
+              <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-holo-1/15 border border-holo-1/35 text-holo-1 font-mono text-xs font-bold uppercase tracking-widest shrink-0">
                 <Play size={10} fill="currentColor" /> Seu próximo episódio
               </span>
               {anime.genres?.slice(0, 3).map((g) => (
-                <span key={g} className="hidden sm:inline-block px-2 py-0.5 rounded-full bg-panel-2/90 border border-line text-muted font-mono text-[10px] shrink-0">
+                <span key={g} className="hidden sm:inline-block px-2 py-0.5 rounded-full bg-panel-2/90 border border-line text-muted font-mono text-xs shrink-0">
                   {g}
                 </span>
               ))}
@@ -148,7 +148,7 @@ export default function HeroProximoEpisodio({
                     />
                   ))}
                 </div>
-                <span className="sm:hidden font-mono text-[10.5px] text-muted font-bold px-2 py-0.5 rounded-full bg-void/80 border border-line tabular-nums">
+                <span className="sm:hidden font-mono text-xs text-muted font-bold px-2 py-0.5 rounded-full bg-void/80 border border-line tabular-nums">
                   {indice + 1}/{listaItens.length}
                 </span>
                 <button
@@ -168,7 +168,7 @@ export default function HeroProximoEpisodio({
           {anime.genres && anime.genres.length > 0 && (
             <div className="flex sm:hidden flex-wrap gap-1.5 mb-2">
               {anime.genres.slice(0, 3).map((g) => (
-                <span key={g} className="px-2 py-0.5 rounded-full bg-panel-2/90 border border-line text-muted font-mono text-[9.5px]">
+                <span key={g} className="px-2 py-0.5 rounded-full bg-panel-2/90 border border-line text-muted font-mono text-xs">
                   {g}
                 </span>
               ))}
@@ -195,11 +195,11 @@ export default function HeroProximoEpisodio({
               </span>
             )}
             {total > 0 ? (
-              <span className="font-mono text-[11px] text-muted">
+              <span className="font-mono text-xs text-muted">
                 {vistos} de {total} vistos · {pct}%
               </span>
             ) : vistos > 0 ? (
-              <span className="font-mono text-[11px] text-muted">{vistos} assistidos</span>
+              <span className="font-mono text-xs text-muted">{vistos} assistidos</span>
             ) : null}
           </div>
 
@@ -215,7 +215,7 @@ export default function HeroProximoEpisodio({
                 <Lock size={14} className="text-gold" />
                 Ep. {episodio} ainda não saiu
                 {previsao && (
-                  <span className="inline-flex items-center gap-1 font-mono text-[11px] text-gold bg-gold/10 px-2 py-0.5 rounded-full">
+                  <span className="inline-flex items-center gap-1 font-mono text-xs text-gold bg-gold/10 px-2 py-0.5 rounded-full">
                     <Clock size={11} /> {previsao}
                   </span>
                 )}

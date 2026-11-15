@@ -106,7 +106,7 @@ export default function Guilda() {
   return (
     <div className="w-full min-w-0 max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-10 pt-6 pb-24">
       <header className="mb-6 select-none">
-        <p className="font-mono text-[10px] text-muted-2 uppercase tracking-widest mb-1">
+        <p className="font-mono text-xs text-muted-2 uppercase tracking-widest mb-1">
           // guilda do anideck · progressão & credibilidade
         </p>
         <div className="flex flex-wrap items-end justify-between gap-4">
@@ -226,7 +226,7 @@ export default function Guilda() {
           <section className="p-5 sm:p-6 rounded-2xl bg-panel border border-line">
             <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
               <div>
-                <p className="font-mono text-[10px] text-muted-2 uppercase tracking-widest m-0">
+                <p className="font-mono text-xs text-muted-2 uppercase tracking-widest m-0">
                   // livro-razão ({abaLivroRazao === 'xp' ? 'xp_ledger' : 'crystal_ledger'})
                 </p>
                 <h3 className="font-anton text-lg uppercase m-0 mt-0.5">
@@ -262,7 +262,7 @@ export default function Guilda() {
             {abaLivroRazao === 'xp' ? (
               <>
                 <div className="flex items-center justify-end mb-3">
-                  <span className="font-mono text-[10.5px] text-muted bg-panel-2 border border-line px-2.5 py-1 rounded-full">
+                  <span className="font-mono text-xs text-muted bg-panel-2 border border-line px-2.5 py-1 rounded-full">
                     Base +{economia.xp_base_episodio} XP · Cedo +{economia.bonus_cedo} XP
                   </span>
                 </div>
@@ -290,7 +290,7 @@ export default function Guilda() {
                             >
                               {item.titulo_anime} · <span className="font-mono">ep {item.episode_number}</span>
                             </Link>
-                            <div className="font-mono text-[10px] text-muted-2 mt-0.5 flex flex-wrap items-center gap-2">
+                            <div className="font-mono text-xs text-muted-2 mt-0.5 flex flex-wrap items-center gap-2">
                               <span>{item.reason}</span>
                               {item.reason.toLowerCase().includes('vitalidade') && (
                                 <span className="px-1.5 py-px rounded bg-green/15 text-green font-bold">bônus vitalidade</span>
@@ -313,7 +313,7 @@ export default function Guilda() {
                   </div>
                 )}
 
-                <p className="font-mono text-[10.5px] text-muted-2 mt-4 mb-0 leading-relaxed">
+                <p className="font-mono text-xs text-muted-2 mt-4 mb-0 leading-relaxed">
                   Cada linha guarda quanto valeu <b className="text-text">na hora</b>. Desmarcar um
                   episódio devolve exatamente isso, e listas importadas em lote não inflam seu Rank.
                 </p>
@@ -324,7 +324,7 @@ export default function Guilda() {
                   <div className="flex items-center gap-3">
                     <IconeAniCoin size={26} animar />
                     <div>
-                      <span className="font-mono text-[10px] text-muted-2 uppercase tracking-wider block">Saldo da Carteira</span>
+                      <span className="font-mono text-xs text-muted-2 uppercase tracking-wider block">Saldo da Carteira</span>
                       <span className="font-anton text-2xl text-holo-3">{saldoCristais.toLocaleString('pt-BR')} ₳</span>
                     </div>
                   </div>
@@ -344,7 +344,7 @@ export default function Guilda() {
                         <Send size={12} /> Transferir AniCoins
                       </button>
                     )}
-                    <span className="font-mono text-[10.5px] text-muted hidden sm:inline">
+                    <span className="font-mono text-xs text-muted hidden sm:inline">
                       {movimentosCristais.length} {movimentosCristais.length === 1 ? 'movimento' : 'movimentos'}
                     </span>
                   </div>
@@ -373,7 +373,7 @@ export default function Guilda() {
                             <span className="font-bold text-text capitalize block truncate">
                               {m.motivo.replace(/_/g, ' ')}
                             </span>
-                            <div className="font-mono text-[10px] text-muted-2 mt-0.5 flex flex-wrap items-center gap-2">
+                            <div className="font-mono text-xs text-muted-2 mt-0.5 flex flex-wrap items-center gap-2">
                               <span>{dataFormatada}</span>
                               {m.referencia && <span className="text-muted truncate max-w-[200px]">ref: {m.referencia}</span>}
                             </div>
@@ -391,7 +391,7 @@ export default function Guilda() {
                   </div>
                 )}
 
-                <p className="font-mono text-[10.5px] text-muted-2 mt-4 mb-0 leading-relaxed">
+                <p className="font-mono text-xs text-muted-2 mt-4 mb-0 leading-relaxed">
                   O saldo é derivado diretamente pelo somatório do livro-razão (<b className="text-text">crystal_ledger</b>).
                   Toda entrada e saída é imutável e com controle de concorrência.
                 </p>
@@ -403,12 +403,12 @@ export default function Guilda() {
           <section className="p-5 sm:p-6 rounded-2xl bg-panel border border-line">
             <div className="flex flex-wrap items-center justify-between gap-2 mb-3">
               <div>
-                <p className="font-mono text-[10px] text-muted-2 uppercase tracking-widest m-0">
+                <p className="font-mono text-xs text-muted-2 uppercase tracking-widest m-0">
                   // bagagem de acervo · moeda 2
                 </p>
                 <h3 className="font-anton text-lg uppercase m-0 mt-0.5">Especialista de Gênero</h3>
               </div>
-              <span className="font-mono text-[10.5px] text-holo-3 bg-holo-3/12 border border-holo-3/35 px-2.5 py-1 rounded-full">
+              <span className="font-mono text-xs text-holo-3 bg-holo-3/12 border border-holo-3/35 px-2.5 py-1 rounded-full">
                 Peso máx. {status.peso_maximo_voto.toFixed(1).replace('.', ',')}×
               </span>
             </div>
@@ -424,7 +424,7 @@ export default function Guilda() {
                   <div key={esp.genero} className="flex items-center gap-3">
                     <div className="w-28 sm:w-36 shrink-0">
                       <div className="text-xs sm:text-sm font-bold text-text truncate">{esp.genero}</div>
-                      <div className="font-mono text-[10px] text-muted-2">
+                      <div className="font-mono text-xs text-muted-2">
                         {esp.total_vistos} {esp.total_vistos === 1 ? 'obra' : 'obras'} ·{' '}
                         {esp.titulo_nivel}
                       </div>
@@ -451,7 +451,7 @@ export default function Guilda() {
                       >
                         {esp.rotulo_nivel}
                       </span>
-                      <div className="text-[9.5px] text-muted-2 mt-0.5">
+                      <div className="text-xs text-muted-2 mt-0.5">
                         {esp.peso_voto.toFixed(1).replace('.', ',')}× voto
                       </div>
                     </div>
@@ -460,7 +460,7 @@ export default function Guilda() {
               </div>
             )}
 
-            <p className="font-mono text-[10.5px] text-muted-2 mt-4 mb-0 leading-relaxed">
+            <p className="font-mono text-xs text-muted-2 mt-4 mb-0 leading-relaxed">
               Seu domínio vem de todo o seu acervo (<b className="text-text">N1</b> = 3 obras ·{' '}
               <b className="text-text">N2</b> = 8 · <b className="text-text">N3</b> = 15 ·{' '}
               <b className="text-text">N4</b> = 25 · <b className="text-text">N5</b> = 40+).
@@ -479,7 +479,7 @@ export default function Guilda() {
           <section className="p-5 rounded-2xl bg-panel border border-line">
             <div className="flex items-center justify-between gap-2 mb-3">
               <div>
-                <p className="font-mono text-[10px] text-muted-2 uppercase tracking-widest m-0">
+                <p className="font-mono text-xs text-muted-2 uppercase tracking-widest m-0">
                   // coleção de cartas
                 </p>
                 <h3 className="font-anton text-lg uppercase m-0 mt-0.5">Insígnias</h3>
@@ -508,8 +508,8 @@ export default function Guilda() {
 
                     <div>
                       <div className="font-bold text-xs leading-tight mb-1">{ins.nome}</div>
-                      <div className="text-[10.5px] opacity-85 leading-snug">{ins.descricao}</div>
-                      <div className="font-mono text-[9.5px] mt-2 pt-1.5 border-t border-white/15 flex items-center justify-between">
+                      <div className="text-xs opacity-85 leading-snug">{ins.descricao}</div>
+                      <div className="font-mono text-xs mt-2 pt-1.5 border-t border-white/15 flex items-center justify-between">
                         <span>{ins.desbloqueada ? 'CONQUISTADA' : 'PROGRESSO'}</span>
                         <b>
                           {Math.min(ins.progresso_atual, ins.meta)}/{ins.meta}
@@ -521,14 +521,14 @@ export default function Guilda() {
               })}
             </div>
 
-            <p className="font-mono text-[10px] text-muted-2 mt-3.5 mb-0 leading-relaxed">
+            <p className="font-mono text-xs text-muted-2 mt-3.5 mb-0 leading-relaxed">
               Insígnia é carta colecionável: avaliada automaticamente sobre suas marcas reais de uso.
             </p>
           </section>
 
           {/* ESCADA DE RANKS F → SS */}
           <section className="p-5 rounded-2xl bg-panel border border-line">
-            <p className="font-mono text-[10px] text-muted-2 uppercase tracking-widest m-0">
+            <p className="font-mono text-xs text-muted-2 uppercase tracking-widest m-0">
               // hierarquia da guilda
             </p>
             <h3 className="font-anton text-lg uppercase m-0 mt-0.5 mb-3">Classes F → SS</h3>
@@ -562,7 +562,7 @@ export default function Guilda() {
               })}
             </div>
 
-            <div className="mt-4 pt-3 border-t border-line flex items-center gap-2 text-[11px] text-muted">
+            <div className="mt-4 pt-3 border-t border-line flex items-center gap-2 text-xs text-muted">
               <Shield size={14} className="text-holo-2 shrink-0" />
               <span>Ficar dias sem assistir nunca reduz seu XP nem rebaixa seu Rank.</span>
             </div>

@@ -113,7 +113,7 @@ export default function CardConviteAmigos({ className = '', onResgatado }: Props
               {convite.especial_admin ? <Crown size={18} /> : <Gift size={18} />}
             </div>
             <div>
-              <span className="font-mono text-[10px] text-muted-2 uppercase tracking-widest block">
+              <span className="font-mono text-xs text-muted-2 uppercase tracking-widest block">
                 // recrutamento & recompensas (fase 17.5b)
               </span>
               <h3 className="font-anton text-lg uppercase text-text m-0 flex items-center gap-2">
@@ -151,7 +151,7 @@ export default function CardConviteAmigos({ className = '', onResgatado }: Props
             <span className="text-muted-2 shrink-0">Código:</span>
             <span className="font-bold text-text truncate">{convite.codigo}</span>
             <span className="text-line shrink-0">|</span>
-            <span className="truncate text-[11px] text-muted-2 select-all">{linkConvite}</span>
+            <span className="truncate text-xs text-muted-2 select-all">{linkConvite}</span>
           </div>
 
           <button
@@ -182,7 +182,7 @@ export default function CardConviteAmigos({ className = '', onResgatado }: Props
               <Users size={16} />
             </div>
             <div>
-              <span className="font-mono text-[10px] text-muted-2 uppercase block">Amigos Convidados</span>
+              <span className="font-mono text-xs text-muted-2 uppercase block">Amigos Convidados</span>
               <span className="font-anton text-lg text-text leading-none">{convite.usos_total}</span>
             </div>
           </div>
@@ -192,7 +192,7 @@ export default function CardConviteAmigos({ className = '', onResgatado }: Props
               <IconeAniCoin size={16} />
             </div>
             <div>
-              <span className="font-mono text-[10px] text-muted-2 uppercase block">AniCoins Ganhos</span>
+              <span className="font-mono text-xs text-muted-2 uppercase block">AniCoins Ganhos</span>
               <span className="font-anton text-lg text-gold leading-none">+{convite.anicoins_ganhos} ₳</span>
             </div>
           </div>

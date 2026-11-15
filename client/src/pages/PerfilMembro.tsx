@@ -180,17 +180,17 @@ export default function PerfilMembro() {
                 Rank {perfil.rank} · Nível {perfil.nivel}
               </span>
               {perfil.classe && CLASSES_RPG[perfil.classe] && (
-                <span className={`font-mono text-[10px] font-bold uppercase tracking-wider px-2.5 py-0.5 rounded-full border ${CLASSES_RPG[perfil.classe].borda} ${CLASSES_RPG[perfil.classe].fundo} ${CLASSES_RPG[perfil.classe].cor}`}>
+                <span className={`font-mono text-xs font-bold uppercase tracking-wider px-2.5 py-0.5 rounded-full border ${CLASSES_RPG[perfil.classe].borda} ${CLASSES_RPG[perfil.classe].fundo} ${CLASSES_RPG[perfil.classe].cor}`}>
                   {CLASSES_RPG[perfil.classe].icone} {CLASSES_RPG[perfil.classe].nome}
                 </span>
               )}
               {perfil.titulo_ativo && (
-                <span className="font-mono text-[10px] font-bold uppercase px-2.5 py-0.5 rounded-full bg-gold/15 border border-gold/40 text-gold inline-flex items-center gap-1">
+                <span className="font-mono text-xs font-bold uppercase px-2.5 py-0.5 rounded-full bg-gold/15 border border-gold/40 text-gold inline-flex items-center gap-1">
                   <Award size={10} /> {perfil.titulo_ativo}
                 </span>
               )}
               <SeloEquipe handle={perfil.handle} grande />
-              <span className="font-mono text-[10px] text-muted-2 inline-flex items-center gap-1">
+              <span className="font-mono text-xs text-muted-2 inline-flex items-center gap-1">
                 <CalendarDays size={11} aria-hidden /> membro desde {desde.toLocaleDateString('pt-BR', { month: 'short', year: 'numeric' })}
               </span>
             </div>
@@ -241,7 +241,7 @@ export default function PerfilMembro() {
             { rotulo: 'Vitalidade', valor: `${perfil.hp}/100`, icone: <Heart size={13} className="text-coral" aria-hidden /> },
           ].map(item => (
             <div key={item.rotulo} className="rounded-xl bg-panel-2 border border-line p-3">
-              <div className="font-mono text-[10px] text-muted-2 uppercase tracking-wider flex items-center gap-1.5">
+              <div className="font-mono text-xs text-muted-2 uppercase tracking-wider flex items-center gap-1.5">
                 {item.icone} {item.rotulo}
               </div>
               <div className="font-anton text-xl mt-1 leading-none">{item.valor}</div>
@@ -265,7 +265,7 @@ export default function PerfilMembro() {
                   <div className="aspect-[2/3] rounded-xl overflow-hidden border border-line group-hover:border-holo-3 transition-colors shadow-lg">
                     <img src={a.image_url} alt="" loading="lazy" className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
                   </div>
-                  <div className="text-[11.5px] font-bold mt-1.5 line-clamp-2 leading-tight group-hover:text-holo-3 transition-colors">{a.title}</div>
+                  <div className="text-xs font-bold mt-1.5 line-clamp-2 leading-tight group-hover:text-holo-3 transition-colors">{a.title}</div>
                 </Link>
               ))}
             </div>
@@ -276,7 +276,7 @@ export default function PerfilMembro() {
 
         <aside className="rounded-2xl bg-panel border border-line p-5">
           <h2 className="font-anton text-base uppercase m-0 mb-1">No deck</h2>
-          <p className="font-mono text-[10.5px] text-muted-2 mt-0 mb-4">{totalNoDeck} {totalNoDeck === 1 ? 'obra' : 'obras'} · os títulos ficam privados</p>
+          <p className="font-mono text-xs text-muted-2 mt-0 mb-4">{totalNoDeck} {totalNoDeck === 1 ? 'obra' : 'obras'} · os títulos ficam privados</p>
           {status.length > 0 ? (
             <ul className="list-none m-0 p-0 space-y-2.5">
               {status.map(s => (
@@ -300,7 +300,7 @@ export default function PerfilMembro() {
       {/* PERSONAGENS FAVORITOS (Fase 16, #174) */}
       {personagensMembro.length > 0 && (
         <section className="mt-6 rounded-2xl bg-panel border border-line p-5">
-          <span className="font-mono text-[10px] text-muted-2 uppercase tracking-widest block mb-1">
+          <span className="font-mono text-xs text-muted-2 uppercase tracking-widest block mb-1">
             // favoritos de @{perfil.handle}
           </span>
           <h2 className="font-anton text-base uppercase m-0 mb-4">Personagens Favoritos</h2>
@@ -312,7 +312,7 @@ export default function PerfilMembro() {
                 </div>
                 <div className="min-w-0 flex-1">
                   <span className="font-bold text-xs text-text block truncate">{p.nome}</span>
-                  <span className="font-mono text-[10px] text-holo-3 block mt-0.5">{p.papel || 'Favorito'}</span>
+                  <span className="font-mono text-xs text-holo-3 block mt-0.5">{p.papel || 'Favorito'}</span>
                 </div>
               </div>
             ))}

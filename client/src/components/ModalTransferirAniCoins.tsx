@@ -151,7 +151,7 @@ export default function ModalTransferirAniCoins({
           <div className="flex items-center gap-2.5">
             <IconeAniCoin size={22} animar />
             <div>
-              <span className="font-mono text-[10px] text-muted-2 uppercase tracking-wider block">
+              <span className="font-mono text-xs text-muted-2 uppercase tracking-wider block">
                 Seu Saldo Disponível
               </span>
               <span className="font-anton text-lg text-holo-3">
@@ -164,7 +164,7 @@ export default function ModalTransferirAniCoins({
 
         {/* Campo de busca do destinatário */}
         <div className="relative">
-          <label className="block font-mono text-[11px] text-muted uppercase tracking-wider mb-1.5">
+          <label className="block font-mono text-xs text-muted uppercase tracking-wider mb-1.5">
             Destinatário (@handle)
           </label>
           <div className="relative">
@@ -205,7 +205,7 @@ export default function ModalTransferirAniCoins({
                     <span className="font-mono text-xs font-bold text-holo-3 block">
                       @{membro.handle}
                     </span>
-                    <span className="text-[11.5px] text-muted block truncate">{membro.nome}</span>
+                    <span className="text-xs text-muted block truncate">{membro.nome}</span>
                   </div>
                   <UserCheck size={14} className="text-muted-2" />
                 </button>
@@ -220,9 +220,9 @@ export default function ModalTransferirAniCoins({
                 <span className="font-mono text-xs font-bold text-holo-3 block">
                   @{selecionado.handle}
                 </span>
-                <span className="text-[11px] text-muted block">{selecionado.nome}</span>
+                <span className="text-xs text-muted block">{selecionado.nome}</span>
               </div>
-              <span className="text-[10px] font-mono font-bold uppercase tracking-wider px-2 py-0.5 rounded bg-holo-3/20 text-holo-3">
+              <span className="text-xs font-mono font-bold uppercase tracking-wider px-2 py-0.5 rounded bg-holo-3/20 text-holo-3">
                 Confirmado
               </span>
             </div>
@@ -232,10 +232,10 @@ export default function ModalTransferirAniCoins({
         {/* Quantidade a transferir */}
         <div>
           <div className="flex items-center justify-between mb-1.5">
-            <label className="font-mono text-[11px] text-muted uppercase tracking-wider">
+            <label className="font-mono text-xs text-muted uppercase tracking-wider">
               Quantidade de AniCoins
             </label>
-            <div className="flex items-center gap-1 font-mono text-[10px]">
+            <div className="flex items-center gap-1 font-mono text-xs">
               <button
                 type="button"
                 onClick={() => setQuantidade(Math.max(1, Math.floor(saldoAtual * 0.25)))}

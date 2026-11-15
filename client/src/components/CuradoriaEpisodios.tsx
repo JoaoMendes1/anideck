@@ -203,9 +203,9 @@ export default function CuradoriaEpisodios({
     <div className="p-4 border border-line bg-panel-2 rounded-xl w-full max-w-full overflow-hidden">
       <div className="flex items-center justify-between mb-1">
         <h4 className="text-xs font-bold text-muted uppercase">Episódios Curados</h4>
-        <span className="text-[10px] text-muted-2">Toque no episódio para editar</span>
+        <span className="text-xs text-muted-2">Toque no episódio para editar</span>
       </div>
-      <p className="text-[10px] text-muted-2 mb-3">
+      <p className="text-xs text-muted-2 mb-3">
         Só o que você cadastrar aqui substitui a AniList — os demais episódios continuam vindo dela.
       </p>
 
@@ -215,7 +215,7 @@ export default function CuradoriaEpisodios({
           type="button"
           onClick={importar}
           disabled={importando}
-          className="flex items-center justify-center gap-1.5 text-[11px] font-bold bg-holo-3/10 text-holo-3 border border-holo-3/30 px-3 py-1.5 rounded-md hover:bg-holo-3/20 transition-colors disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer shrink-0"
+          className="flex items-center justify-center gap-1.5 text-xs font-bold bg-holo-3/10 text-holo-3 border border-holo-3/30 px-3 py-1.5 rounded-md hover:bg-holo-3/20 transition-colors disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer shrink-0"
         >
           <DownloadCloud size={13} />
           {importando ? 'Importando...' : 'Importar da AniList'}
@@ -238,7 +238,7 @@ export default function CuradoriaEpisodios({
           <button
             type="button"
             onClick={gerarVazios}
-            className="flex items-center gap-1.5 text-[11px] font-bold bg-panel-2 text-muted border border-line px-3 py-1.5 rounded-md hover:border-holo-2 hover:text-text transition-colors cursor-pointer shrink-0"
+            className="flex items-center gap-1.5 text-xs font-bold bg-panel-2 text-muted border border-line px-3 py-1.5 rounded-md hover:border-holo-2 hover:text-text transition-colors cursor-pointer shrink-0"
           >
             <ListPlus size={13} />
             Gerar vazios
@@ -250,7 +250,7 @@ export default function CuradoriaEpisodios({
         <button
           type="button"
           onClick={distribuirDatasSemanais}
-          className="flex items-center justify-center gap-1.5 text-[11px] font-bold bg-holo-2/15 text-holo-2 border border-holo-2/40 px-3 py-1.5 rounded-md hover:bg-holo-2/25 transition-colors cursor-pointer shrink-0"
+          className="flex items-center justify-center gap-1.5 text-xs font-bold bg-holo-2/15 text-holo-2 border border-holo-2/40 px-3 py-1.5 rounded-md hover:bg-holo-2/25 transition-colors cursor-pointer shrink-0"
           title="Calcula as datas de todos os episódios a cada 7 dias a partir do Episódio 1"
         >
           <Calendar size={13} />
@@ -260,7 +260,7 @@ export default function CuradoriaEpisodios({
 
       <div className={`flex flex-col sm:flex-row sm:items-end gap-3 mb-4 p-3 rounded-lg border transition-colors ${emEdicao ? 'bg-holo-3/5 border-holo-3' : 'bg-panel border-line'}`}>
         <div className="sm:w-20 shrink-0">
-          <label htmlFor="curadoria-episodios-no" className="block text-[10px] mb-1 font-bold text-muted">
+          <label htmlFor="curadoria-episodios-no" className="block text-xs mb-1 font-bold text-muted">
             {emEdicao ? <span className="inline-flex items-center gap-1">Nº <Lock size={9} /></span> : 'Nº'}
           </label>
           <input
@@ -276,7 +276,7 @@ export default function CuradoriaEpisodios({
         </div>
 
         <div className="flex-1 min-w-0">
-          <label htmlFor="curadoria-episodios-titulo" className="block text-[10px] mb-1 font-bold text-muted">Título</label>
+          <label htmlFor="curadoria-episodios-titulo" className="block text-xs mb-1 font-bold text-muted">Título</label>
           <input
             id="curadoria-episodios-titulo"
             type="text"
@@ -287,7 +287,7 @@ export default function CuradoriaEpisodios({
         </div>
 
         <div className="flex-1 min-w-0">
-          <label className="block text-[10px] mb-1 font-bold text-muted">Imagem ou Enviar</label>
+          <label className="block text-xs mb-1 font-bold text-muted">Imagem ou Enviar</label>
           <div className="flex items-center gap-1">
             <input
               type="text"
@@ -315,7 +315,7 @@ export default function CuradoriaEpisodios({
 
         <div className="flex items-end gap-2">
           <div className="flex-1 sm:flex-none">
-            <label htmlFor="curadoria-episodios-exibicao" className="block text-[10px] mb-1 font-bold text-muted">Exibição (data e hora)</label>
+            <label htmlFor="curadoria-episodios-exibicao" className="block text-xs mb-1 font-bold text-muted">Exibição (data e hora)</label>
             <input
               id="curadoria-episodios-exibicao"
               type="datetime-local"
@@ -361,7 +361,7 @@ export default function CuradoriaEpisodios({
                   {ep.image ? (
                     <img src={ep.image} alt={ep.title || `Episódio ${ep.number}`} className="w-full h-full object-cover" loading="lazy" />
                   ) : (
-                    <div className="w-full h-full flex flex-col items-center justify-center text-[10px] text-muted-2 uppercase font-bold leading-tight bg-panel/50">
+                    <div className="w-full h-full flex flex-col items-center justify-center text-xs text-muted-2 uppercase font-bold leading-tight bg-panel/50">
                       <UploadCloud size={16} className="mb-1 opacity-50" />
                       NO<br />IMAGE
                     </div>
@@ -379,10 +379,10 @@ export default function CuradoriaEpisodios({
                     <Trash2 size={12} />
                   </button>
                 </div>
-                <div className={`text-[10px] font-bold font-mono tabular-nums ${editando ? 'text-holo-3' : 'text-holo-2'}`}>EP {ep.number}</div>
-                <div className="text-[10px] text-text truncate">{ep.title || <span className="text-muted-2">sem título</span>}</div>
+                <div className={`text-xs font-bold font-mono tabular-nums ${editando ? 'text-holo-3' : 'text-holo-2'}`}>EP {ep.number}</div>
+                <div className="text-xs text-text truncate">{ep.title || <span className="text-muted-2">sem título</span>}</div>
                 {ep.aired_at && (
-                  <div className="text-[9.5px] text-holo-3/90 font-mono tabular-nums truncate mt-0.5" title={formatarDataCard(ep.aired_at) || ep.aired_at}>
+                  <div className="text-xs text-holo-3/90 font-mono tabular-nums truncate mt-0.5" title={formatarDataCard(ep.aired_at) || ep.aired_at}>
                     {formatarDataCard(ep.aired_at)}
                   </div>
                 )}

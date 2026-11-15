@@ -54,7 +54,7 @@ function IndicadorVariacao({ atual, anterior }: { atual?: number; anterior?: num
 
     return (
         <span
-            className={`flex items-center font-anton text-[9px] leading-none select-none ${subiu ? 'text-green' : 'text-coral'
+            className={`flex items-center font-anton text-xs leading-none select-none ${subiu ? 'text-green' : 'text-coral'
                 }`}
             title={`${subiu ? 'Subiu' : 'Caiu'} ${Math.abs(diferenca)} ${Math.abs(diferenca) === 1 ? 'posição' : 'posições'} desde o mês passado`}
         >
@@ -90,7 +90,7 @@ export default function RankingCard({ anime, rank, mostrarVariacao, isSaved, isF
                         className={`${rank <= 3 ? 'w-[72px] sm:w-20' : 'w-[62px] sm:w-[70px]'} aspect-[2/3] rounded-lg object-cover bg-panel-2 border border-line`}
                     />
                     <span
-                        className={`absolute -top-1.5 -left-1.5 flex items-center justify-center w-[22px] h-[22px] rounded-full font-anton text-[10px] select-none ${rankBadgeClass}`}
+                        className={`absolute -top-1.5 -left-1.5 flex items-center justify-center w-[22px] h-[22px] rounded-full font-anton text-xs select-none ${rankBadgeClass}`}
                     >
                         {rank}
                     </span>
@@ -117,7 +117,7 @@ export default function RankingCard({ anime, rank, mostrarVariacao, isSaved, isF
                 </div>
 
                 {/* Linha 1: Status e Episódios */}
-                <div className="flex items-center gap-1.5 font-mono text-[9.5px] sm:text-[10px] text-muted overflow-hidden">
+                <div className="flex items-center gap-1.5 font-mono text-xs text-muted overflow-hidden">
                     {anime.genres?.[0] && (
                         <span className={`px-1.5 py-[2px] rounded border font-bold font-manrope shrink-0 leading-none ${getCategoryTheme(anime.genres[0].name)}`}>
                             {anime.genres[0].name}
@@ -127,11 +127,12 @@ export default function RankingCard({ anime, rank, mostrarVariacao, isSaved, isF
                 </div>
 
                 {/* Linha 2: Transparência das notas. TROCADO PARA TRUNCATE para nunca quebrar a linha no celular */}
-                <div className="font-mono text-[9px] sm:text-[10px] mt-0.5 select-none truncate leading-none">
+                <div className="font-mono text-xs mt-0.5 select-none truncate leading-none">
                     {anime.bayesian_score ? (
                         <>
                             <span className="font-bold text-muted-2">AniList: ★ {anime.score > 0 ? anime.score.toFixed(1) : 'N/A'}</span>
-                            <span className="text-muted opacity-70 ml-1">({anime.popularity?.toLocaleString('pt-BR')} usuários)</span>
+                            {/* No celular a linha é curta: fica só a nota, em vez de um texto cortado. */}
+                            <span className="hidden sm:inline text-muted opacity-70 ml-1">({anime.popularity?.toLocaleString('pt-BR')} usuários)</span>
                         </>
                     ) : (
                         <span className="text-muted opacity-70">{anime.popularity?.toLocaleString('pt-BR')} usuários</span>
@@ -139,13 +140,14 @@ export default function RankingCard({ anime, rank, mostrarVariacao, isSaved, isF
                 </div>
             </div>
 
-            {/* COLUNA DA DIREITA: Largura fixa (w-[42px]) para não ser esmagada pelos títulos longos */}
-            <div className="relative z-30 flex flex-col items-center justify-between shrink-0 w-[42px] sm:w-[48px] h-full gap-2">
+            {/* COLUNA DA DIREITA: largura fixa para não ser esmagada pelos títulos longos. Cabe o
+                rótulo "ANIDECK" em 12 px. */}
+            <div className="relative z-30 flex flex-col items-center justify-between shrink-0 w-[58px] sm:w-[62px] h-full gap-2">
                 <div className="flex flex-col items-center justify-center pt-1">
                     <span className="font-anton text-sm sm:text-[15px] text-gold select-none leading-none">
                         ★ {anime.bayesian_score ? anime.bayesian_score.toFixed(1) : (anime.score > 0 ? anime.score.toFixed(1) : 'N/A')}
                     </span>
-                    <span className={`text-[7px] sm:text-[8px] font-bold uppercase mt-1 leading-none tracking-widest select-none ${anime.bayesian_score ? 'text-gold/70' : 'text-muted-2'}`}>
+                    <span className={`text-xs font-bold uppercase mt-1 leading-none tracking-wide select-none ${anime.bayesian_score ? 'text-gold/70' : 'text-muted-2'}`}>
                         {anime.bayesian_score ? 'ANIDECK' : 'ANILIST'}
                     </span>
                 </div>

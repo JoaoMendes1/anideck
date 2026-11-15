@@ -36,16 +36,16 @@ export default function DestaqueRailCard({ anime, gradClass, selected, onSelect,
             }}
           />
         ) : (
-          <span className="text-[8px] text-muted-2 font-bold uppercase text-center leading-tight px-1">Sem Capa</span>
+          <span className="text-xs text-muted-2 font-bold uppercase text-center leading-tight px-1">Sem Capa</span>
         )}
-        <span className="absolute bottom-0 left-0 right-0 bg-void/90 text-[9px] font-mono font-bold text-holo-3 text-center py-0.5">
+        <span className="absolute bottom-0 left-0 right-0 bg-void/90 text-xs font-mono font-bold text-holo-3 text-center py-0.5">
           #{anime.order_index}
         </span>
       </div>
 
       <div className="flex-1 min-w-0">
         <div className={`font-extrabold text-sm truncate ${selected ? 'text-white' : 'text-text'}`}>{anime.custom_title}</div>
-        <div className="text-[11px] text-muted-2 mt-0.5 truncate">{anime.custom_characters?.length || 0} personagens</div>
+        <div className="text-xs text-muted-2 mt-0.5 truncate">{anime.custom_characters?.length || 0} personagens</div>
       </div>
 
       <span

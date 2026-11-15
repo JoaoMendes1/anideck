@@ -73,7 +73,7 @@ export default function ImagemAmpliada({ src, alt, aoFechar }: Props) {
                 className="max-w-full max-h-full object-contain rounded-lg shadow-[0_20px_60px_-15px_rgba(0,0,0,0.9)]"
             />
 
-            <p className="absolute bottom-5 left-0 right-0 text-center text-[11px] text-muted-2 select-none pointer-events-none">
+            <p className="absolute bottom-5 left-0 right-0 text-center text-xs text-muted-2 select-none pointer-events-none">
                 Toque fora da imagem para fechar
             </p>
         </div>,

@@ -160,7 +160,7 @@ export default function AbaGuilda() {
         <section className="p-5 sm:p-6 rounded-2xl bg-panel border border-line">
           <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
             <div>
-              <p className="font-mono text-[10px] text-muted-2 uppercase tracking-widest m-0">
+              <p className="font-mono text-xs text-muted-2 uppercase tracking-widest m-0">
                 // economia de xp · app_settings
               </p>
               <h2 className="font-anton text-xl uppercase m-0 mt-0.5">Pesos, Teto Diário e Eventos</h2>
@@ -287,7 +287,7 @@ export default function AbaGuilda() {
             </label>
           </div>
 
-          <p className="font-mono text-[10.5px] text-muted-2 mt-3 mb-0">
+          <p className="font-mono text-xs text-muted-2 mt-3 mb-0">
             Mudar peso <b className="text-text">nunca é retroativo</b>: o <code className="text-holo-3">xp_ledger</code> guarda quanto cada episódio valeu na hora em que foi marcado.
           </p>
         </section>
@@ -296,12 +296,12 @@ export default function AbaGuilda() {
         <section className="p-5 sm:p-6 rounded-2xl bg-panel border border-line">
           <div className="flex items-center justify-between gap-2 mb-3">
             <div>
-              <p className="font-mono text-[10px] text-muted-2 uppercase tracking-widest m-0">
+              <p className="font-mono text-xs text-muted-2 uppercase tracking-widest m-0">
                 // escada de classes
               </p>
               <h2 className="font-anton text-xl uppercase m-0 mt-0.5">Faixas F → SS</h2>
             </div>
-            <span className="inline-flex items-center gap-1.5 font-mono text-[10.5px] text-muted">
+            <span className="inline-flex items-center gap-1.5 font-mono text-xs text-muted">
               <Users size={13} /> Distribuição atual
             </span>
           </div>
@@ -334,7 +334,7 @@ export default function AbaGuilda() {
                   }}
                   className="min-w-0 w-full px-3 py-1.5 rounded-lg bg-panel border border-line text-xs font-bold text-text"
                 />
-                <div className="flex items-center gap-1 font-mono text-[11px] text-muted">
+                <div className="flex items-center gap-1 font-mono text-xs text-muted">
                   <span>Nv</span>
                   <CampoNumerico semBotoes
                     min={1}
@@ -351,7 +351,7 @@ export default function AbaGuilda() {
                     className="w-12 sm:w-16 px-1.5 sm:px-2 py-1.5 rounded-lg bg-panel border border-line font-mono text-xs text-text disabled:opacity-50"
                   />
                 </div>
-                <span className="font-mono text-[11px] text-right text-holo-3 pr-1">
+                <span className="font-mono text-xs text-right text-holo-3 pr-1">
                   {distribuicao[r.rank] || 0} usu.
                 </span>
               </div>
@@ -363,7 +363,7 @@ export default function AbaGuilda() {
         <section className="p-5 sm:p-6 rounded-2xl bg-panel border border-line">
           <div className="flex flex-wrap items-center justify-between gap-2 mb-3">
             <div>
-              <p className="font-mono text-[10px] text-muted-2 uppercase tracking-widest m-0">
+              <p className="font-mono text-xs text-muted-2 uppercase tracking-widest m-0">
                 // cartas colecionáveis
               </p>
               <h2 className="font-anton text-xl uppercase m-0 mt-0.5">Catálogo de Insígnias</h2>
@@ -533,7 +533,7 @@ export default function AbaGuilda() {
           <div className="flex items-center gap-2 mb-3">
             <ShieldAlert size={16} className="text-gold" />
             <div>
-              <p className="font-mono text-[10px] text-muted-2 uppercase tracking-widest m-0">
+              <p className="font-mono text-xs text-muted-2 uppercase tracking-widest m-0">
                 // auditoria de ritmo
               </p>
               <h3 className="font-anton text-lg uppercase m-0">Atividade no Ledger</h3>
@@ -556,14 +556,14 @@ export default function AbaGuilda() {
                         Rank {item.rank} (Nv {item.nivel})
                       </span>
                     </div>
-                    <div className="font-mono text-[10px] text-muted-2 mt-0.5">
+                    <div className="font-mono text-xs text-muted-2 mt-0.5">
                       Hoje: {item.xp_hoje}/{economia.teto_diario} XP ({item.episodios_hoje} eps) · Total:{' '}
                       {item.xp_total} XP
                     </div>
                   </div>
                   {item.alerta && (
                     <span
-                      className={`font-mono text-[10px] font-bold px-2 py-0.5 rounded-full shrink-0 ${
+                      className={`font-mono text-xs font-bold px-2 py-0.5 rounded-full shrink-0 ${
                         item.alerta.includes('teto')
                           ? 'bg-gold/15 border border-gold/40 text-gold'
                           : 'bg-holo-3/15 border border-holo-3/40 text-holo-3'

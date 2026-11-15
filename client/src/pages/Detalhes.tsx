@@ -442,7 +442,7 @@ export default function Detalhes() {
               <BotaoCopiar texto={anime.title} className="mt-1 opacity-70 md:opacity-0 group-hover:opacity-100 focus:opacity-100 transition-opacity shrink-0" />
             </div>
 
-            <div className="flex flex-wrap items-center justify-center md:justify-start gap-x-2 gap-y-1 mt-2.5 font-mono text-[11.5px] text-muted">
+            <div className="flex flex-wrap items-center justify-center md:justify-start gap-x-2 gap-y-1 mt-2.5 font-mono text-xs text-muted">
               <span className="text-holo-3 font-bold">{traduzirStatus(anime.status)}</span>
               <span className="text-muted-2">·</span>
               <span>{anime.episodes || '?'} episódios</span>
@@ -465,7 +465,7 @@ export default function Detalhes() {
                 <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-panel/90 border border-gold/40 text-[12.5px] font-bold">
                   <Star size={14} className="text-gold fill-gold" aria-hidden />
                   <span className="text-gold">{anime.score.toFixed(1)}</span>
-                  <span className="text-muted-2 font-mono text-[10px] uppercase">AniList</span>
+                  <span className="text-muted-2 font-mono text-xs uppercase">AniList</span>
                 </span>
               )}
               {anime.ranking ? (
@@ -483,7 +483,7 @@ export default function Detalhes() {
             {anime.genres?.length > 0 && (
               <div className="flex flex-wrap justify-center md:justify-start gap-1.5 mt-3">
                 {anime.genres.slice(0, 5).map(g => (
-                  <span key={g.name} className={`text-[10.5px] font-bold px-2.5 py-0.5 rounded-full border select-none ${getCategoryTheme(g.name)}`}>
+                  <span key={g.name} className={`text-xs font-bold px-2.5 py-0.5 rounded-full border select-none ${getCategoryTheme(g.name)}`}>
                     {g.name}
                   </span>
                 ))}
@@ -514,7 +514,7 @@ export default function Detalhes() {
                   </div>
                   <div className="min-w-0">
                     <div className="flex items-center gap-2">
-                      <span className="flex items-center gap-1 text-[10px] font-mono font-bold uppercase text-coral bg-coral/20 px-2 py-0.5 rounded-full border border-coral/30">
+                      <span className="flex items-center gap-1 text-xs font-mono font-bold uppercase text-coral bg-coral/20 px-2 py-0.5 rounded-full border border-coral/30">
                         <span className="w-1.5 h-1.5 rounded-full bg-coral animate-ping" />
                         Ao Vivo Agora
                       </span>
@@ -554,7 +554,7 @@ export default function Detalhes() {
                       >
                         {a.rotulo}
                         {a.contador && (
-                          <span className={`ml-1.5 font-mono text-[10px] ${a.id === 'episodios' ? 'hidden sm:inline' : ''} ${ativa ? 'text-holo-3' : 'text-muted-2'}`}>
+                          <span className={`ml-1.5 font-mono text-xs ${a.id === 'episodios' ? 'hidden sm:inline' : ''} ${ativa ? 'text-holo-3' : 'text-muted-2'}`}>
                             {a.contador}
                           </span>
                         )}
@@ -567,12 +567,13 @@ export default function Detalhes() {
                   <button
                     type="button"
                     onClick={() => setModalCorrecaoAberto(true)}
-                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-holo-2/15 border border-holo-2/30 text-holo-3 hover:bg-holo-2/25 text-xs font-bold transition-all cursor-pointer shrink-0"
-                    title="Membros com Rank B+ ganham +15 Cristais ao sugerir correções aprovadas"
+                    // No celular fica só o ícone: com o texto, as quatro abas não cabiam em 360 px.
+                    aria-label="Sugerir correção"
+                    className="inline-flex items-center justify-center gap-1.5 w-9 h-9 sm:w-auto sm:h-auto sm:px-3 sm:py-1.5 rounded-full bg-holo-2/15 border border-holo-2/30 text-holo-3 hover:bg-holo-2/25 text-xs font-bold transition-all cursor-pointer shrink-0"
+                    title="Membros com Rank B+ ganham +15 AniCoins ao sugerir correções aprovadas"
                   >
-                    <Sparkles size={13} />
+                    <Sparkles size={14} aria-hidden />
                     <span className="hidden sm:inline">Sugerir Correção</span>
-                    <span className="sm:hidden">Sugerir</span>
                   </button>
                 )}
               </div>
@@ -582,7 +583,7 @@ export default function Detalhes() {
               {aba === 'sobre' && (
                 <div className="space-y-9">
                   <section>
-                    <TituloDeBloco extra={!anime.is_curated && <span className="font-mono text-[10px] uppercase tracking-wider text-muted-2">Tradução automática</span>}>
+                    <TituloDeBloco extra={!anime.is_curated && <span className="font-mono text-xs uppercase tracking-wider text-muted-2">Tradução automática</span>}>
                       Sinopse
                     </TituloDeBloco>
                     <div className="relative">
@@ -685,7 +686,7 @@ export default function Detalhes() {
                                 )}
                               </div>
                               <div className="font-bold text-[12px] leading-tight line-clamp-2 text-text">{char.name}</div>
-                              <div className="font-mono text-[9px] text-muted uppercase tracking-wider truncate mt-0.5">{char.role === 'MAIN' ? 'Principal' : char.role === 'SUPPORTING' ? 'Coadjuvante' : char.role}</div>
+                              <div className="font-mono text-xs text-muted uppercase tracking-wider truncate mt-0.5">{char.role === 'MAIN' ? 'Principal' : char.role === 'SUPPORTING' ? 'Coadjuvante' : char.role}</div>
                             </div>
                           )
                         })}
@@ -708,7 +709,7 @@ export default function Detalhes() {
                                 ) : (
                                   <div className="w-full h-full flex items-center justify-center text-muted-2 text-xs">Sem capa</div>
                                 )}
-                                <span className="absolute top-2 left-2 bg-void/85 border border-line/50 font-mono text-[9px] text-holo-3 uppercase px-1.5 py-0.5 rounded">
+                                <span className="absolute top-2 left-2 bg-void/85 border border-line/50 font-mono text-xs text-holo-3 uppercase px-1.5 py-0.5 rounded">
                                   {traduzirRelacao(rel.relation)}
                                 </span>
                               </div>

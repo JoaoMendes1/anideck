@@ -185,7 +185,7 @@ export default function PainelMinhaLista({ malId, entrada, assistidos, ultimoDis
 
   const indicadorSalvo = (
     <span
-      className={`inline-flex items-center gap-1 font-mono text-[10.5px] transition-opacity ${salvo === 'parado' ? 'opacity-0' : 'opacity-100'} ${salvo === 'salvo' ? 'text-green' : 'text-muted-2'}`}
+      className={`inline-flex items-center gap-1 font-mono text-xs transition-opacity ${salvo === 'parado' ? 'opacity-0' : 'opacity-100'} ${salvo === 'salvo' ? 'text-green' : 'text-muted-2'}`}
       aria-live="polite"
     >
       {salvo === 'salvando' ? <Loader2 size={11} className="animate-spin" aria-hidden /> : <Check size={11} aria-hidden />}
@@ -272,7 +272,7 @@ export default function PainelMinhaLista({ malId, entrada, assistidos, ultimoDis
       className="w-full flex items-center justify-between gap-3 px-4 py-3 rounded-xl bg-holo-3/10 border border-holo-3/40 text-left cursor-pointer hover:bg-holo-3/15 disabled:opacity-60"
     >
       <span className="min-w-0">
-        <span className="block font-mono text-[10px] text-holo-3 uppercase tracking-widest">Continuar</span>
+        <span className="block font-mono text-xs text-holo-3 uppercase tracking-widest">Continuar</span>
         <span className="block text-[13.5px] font-bold text-text">Marcar o episódio {proximo} como visto</span>
       </span>
       <span className="w-9 h-9 shrink-0 rounded-full bg-holo-3 text-void grid place-items-center">
@@ -409,7 +409,7 @@ export default function PainelMinhaLista({ malId, entrada, assistidos, ultimoDis
   return (
     <div className="rounded-2xl border border-holo-3/30 bg-gradient-to-br from-panel to-panel-2 p-4 space-y-4">
       <div className="flex items-center justify-between gap-2">
-        <span className="font-mono text-[10.5px] text-muted-2 uppercase tracking-widest">Na sua lista</span>
+        <span className="font-mono text-xs text-muted-2 uppercase tracking-widest">Na sua lista</span>
         <div className="flex items-center gap-2">
           {indicadorSalvo}
           {botaoFavorito}
@@ -521,10 +521,10 @@ function ReguaDeNota({ nota, onSalvar }: { nota: number | null; onSalvar: (nota:
           className={`regua-nota relative w-full appearance-none bg-transparent cursor-pointer ${valor === null ? 'opacity-50' : ''}`}
         />
       </div>
-      <div className="flex items-center justify-between font-mono text-[9.5px] text-muted-2 px-0.5 select-none">
+      <div className="flex items-center justify-between font-mono text-xs text-muted-2 px-0.5 select-none">
         <span aria-hidden>0</span>
         {valor !== null ? (
-          <button type="button" onClick={() => agendar(null, 0)} className="text-[10px] uppercase tracking-wider hover:text-coral cursor-pointer">
+          <button type="button" onClick={() => agendar(null, 0)} className="text-xs uppercase tracking-wider hover:text-coral cursor-pointer">
             Limpar nota
           </button>
         ) : (

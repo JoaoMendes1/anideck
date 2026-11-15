@@ -45,7 +45,7 @@ export default function CardCartaColecao({ carta }: Props) {
         <div className="absolute top-2 left-2 right-2 flex items-center justify-between gap-1 pointer-events-none z-20">
           {/* Raridade */}
           <span
-            className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full font-mono text-[9px] font-bold uppercase tracking-wider backdrop-blur-md border ${estilo.badge}`}
+            className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full font-mono text-xs font-bold uppercase tracking-wider backdrop-blur-md border ${estilo.badge}`}
           >
             {carta.raridade === 'rarissima' && <Sparkles size={9} />}
             {estilo.nomeLegivel}
@@ -53,7 +53,7 @@ export default function CardCartaColecao({ carta }: Props) {
 
           {/* Selo Foil */}
           {carta.is_foil && (
-            <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-full font-mono text-[9px] font-black uppercase bg-amber-400 text-void border border-amber-300 shadow-[0_0_10px_rgba(251,191,36,0.6)]">
+            <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-full font-mono text-xs font-black uppercase bg-amber-400 text-void border border-amber-300 shadow-[0_0_10px_rgba(251,191,36,0.6)]">
               FOIL
             </span>
           )}
@@ -62,7 +62,7 @@ export default function CardCartaColecao({ carta }: Props) {
         {/* SELO DE ESTREIA */}
         {carta.estreia && (
           <div className="absolute top-8 left-2 pointer-events-none z-20">
-            <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full font-mono text-[8.5px] font-bold uppercase tracking-wider bg-rose-500/20 border border-rose-500/40 text-rose-300 backdrop-blur-md">
+            <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full font-mono text-xs font-bold uppercase tracking-wider bg-rose-500/20 border border-rose-500/40 text-rose-300 backdrop-blur-md">
               <Flame size={8.5} className="fill-rose-400" /> Estreia
             </span>
           </div>
@@ -71,7 +71,7 @@ export default function CardCartaColecao({ carta }: Props) {
         {/* NOTA PESSOAL (SE HOUVER) */}
         {carta.nota > 0 && (
           <div className="absolute bottom-2 right-2 z-20">
-            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-void/80 border border-line backdrop-blur-md font-mono text-[10px] font-bold text-text">
+            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-void/80 border border-line backdrop-blur-md font-mono text-xs font-bold text-text">
               <Star size={10} className="fill-gold text-gold" />
               {carta.nota}
             </span>
@@ -84,7 +84,7 @@ export default function CardCartaColecao({ carta }: Props) {
         <h4 className="font-bold text-xs text-text group-hover:text-holo-3 transition-colors line-clamp-2 leading-tight m-0">
           {carta.titulo}
         </h4>
-        <span className="font-mono text-[9.5px] text-muted-2 mt-1.5 block">
+        <span className="font-mono text-xs text-muted-2 mt-1.5 block">
           Colecionada em {new Date(carta.obtida_em).toLocaleDateString('pt-BR')}
         </span>
       </div>
