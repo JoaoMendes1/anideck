@@ -97,6 +97,7 @@ SELECT pg_get_viewdef('nome_da_view'::regclass, true);
 | `065_avatar_montavel.sql` | Fase 17 (17.6, #192): Avatar montável em camadas — coluna `avatar_custom` em `profiles` e RPC `salvar_avatar_customizado` | — |
 | `066_personagem_rpg.sql` | Fase 18 (18.1a, #199): Personagem do jogador — tabela `rpg_personagens` (uma linha por usuário, só identidade), RLS de dono só para leitura e RPC `despertar_personagem` idempotente | — |
 | `067_avatar_montavel_user_id.sql` | Correção (#203): recria `salvar_avatar_customizado` filtrando por `user_id` (o `065` usava `id`, coluna que `profiles` não tem), com teto de tamanho e resposta `sem_perfil` para quem não tem linha em `profiles`. Definição viva da função | — |
+| `068_personagem_visual.sql` | Fase 18 (18.2a, #218): Visual escolhido pelo jogador — coluna `visual_equipado` em `rpg_personagens` (NULL = automático), só com o formato conferido; a regra de desbloqueio fica no Go, que grava pelo service role | — |
 
 Datas com `~` são a data do commit, não da aplicação no Supabase.
 

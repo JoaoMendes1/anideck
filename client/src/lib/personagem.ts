@@ -43,6 +43,13 @@ export interface ProgressaoPersonagem {
   titulo_rank: string
 }
 
+// Aparência em uso. Hoje todo visual é um estágio: o jogador fixa um que já alcançou, ou
+// deixa no automático, que acompanha o estágio do nível.
+export interface VisualPersonagem {
+  id: string
+  automatico: boolean
+}
+
 // Quem ainda não despertou recebe só `existe: false`: os outros campos ficam ausentes.
 export interface RespostaPersonagem {
   existe: boolean
@@ -50,7 +57,20 @@ export interface RespostaPersonagem {
   progressao?: ProgressaoPersonagem
   estagio?: EstagioRPG
   proximo_estagio?: EstagioRPG
+  visual?: VisualPersonagem
   estagios?: EstagioStatusRPG[]
+}
+
+// Disparado quando o personagem muda (despertar, troca de visual), para a barra superior
+// e o painel da Início buscarem de novo.
+export const EVENTO_PERSONAGEM_ATUALIZADO = 'anideck:personagem-atualizado'
+
+/**
+ * Id do visual que deve ser desenhado: o fixado pelo jogador ou, no automático, o do estágio.
+ * Resposta de servidor antigo, sem `visual`, cai no estágio.
+ */
+export function visualEmUso(dados: RespostaPersonagem | null | undefined): string | undefined {
+  return dados?.visual?.id ?? dados?.estagio?.id
 }
 
 export interface ArteDoEstagio {
@@ -201,4 +221,25 @@ export async function despertarPersonagem(
 /** Retrato (rosto recortado) do estágio, para o avatar. Sem estágio, o do primeiro. */
 export function retratoDoEstagio(estagioId?: string, personagemBase: string = PERSONAGEM_BASE_PADRAO): string | undefined {
   return arteDoEstagio(personagemBase, estagioId || ORDEM_DOS_ESTAGIOS[0])?.retrato
+}
+
+/**
+ * Fixa um visual já desbloqueado; com texto vazio, volta ao automático. Devolve os dados
+ * prontos para a tela, ou a mensagem de erro.
+ */
+export async function equiparVisual(visual: string): Promise<{ dados?: RespostaPersonagem; erro?: string }> {
+  const falha = 'Não foi possível trocar o visual agora. Tente de novo em instantes.'
+  try {
+    const res = await fetch('/api/personagem/visual', {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json', ...(await cabecalhoDeAutenticacao()) },
+      body: JSON.stringify({ visual }),
+    })
+    const json = (await res.json().catch(() => null)) as (RespostaPersonagem & { error?: string }) | null
+    if (!res.ok) return { erro: json?.error || falha }
+    if (!json || json.existe !== true) return { erro: falha }
+    return { dados: json }
+  } catch {
+    return { erro: falha }
+  }
 }

@@ -1,5 +1,6 @@
 // client/src/pages/Personagem.tsx
-// Meu Personagem (Fase 18.1): o aventureiro do usuário, com a arte do estágio atual.
+// Meu Personagem: o aventureiro do usuário, com a arte do visual em uso. O visual acompanha
+// o estágio do nível, ou fica fixado num estágio já alcançado, escolhido na Jornada.
 //
 // Mobile-first: no celular a arte vem em cima e a ficha embaixo; a partir de `lg` as duas
 // ficam lado a lado. Nível, XP e rank são os da Guilda: o personagem não tem XP próprio.
@@ -10,15 +11,18 @@ import {
   ALTURA_DA_ARTE,
   LARGURA_DA_ARTE,
   NOME_MAXIMO,
+  EVENTO_PERSONAGEM_ATUALIZADO,
   PERSONAGEM_BASE_PADRAO,
   arteDoEstagio,
   despertarPersonagem,
+  equiparVisual,
   obterPersonagem,
   rotuloDaClasse,
   rotuloDoElemento,
   temArtePropria,
   textoDoProximoEstagio,
   validarNomeDoPersonagem,
+  visualEmUso,
   type RespostaPersonagem,
 } from '../lib/personagem'
 
@@ -47,7 +51,7 @@ const SLOTS: { id: string; rotulo: string; Icone: LucideIcon }[] = [
   { id: 'armadura', rotulo: 'Armadura', Icone: Shield },
   { id: 'capa', rotulo: 'Capa', Icone: Shirt },
   { id: 'botas', rotulo: 'Botas', Icone: Footprints },
-  { id: 'acessorio', rotulo: 'Acessório', Icone: Gem },
+  { id: 'acessorio', rotulo: 'Joia', Icone: Gem },
 ]
 
 const CONTAINER = 'w-full min-w-0 max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-10 pt-6 pb-24'
@@ -180,14 +184,46 @@ function TelaDespertar({ aoDespertar }: { aoDespertar: (dados: RespostaPersonage
   )
 }
 
-function FichaDoPersonagem({ dados }: { dados: RespostaPersonagem }) {
+function FichaDoPersonagem({
+  dados,
+  aoAtualizar,
+}: {
+  dados: RespostaPersonagem
+  aoAtualizar: (dados: RespostaPersonagem) => void
+}) {
+  // Visual que o jogador está só experimentando; null mostra o que está em uso.
+  const [previa, setPrevia] = useState<string | null>(null)
+  const [salvando, setSalvando] = useState(false)
+  const [erroDoVisual, setErroDoVisual] = useState('')
+
   const { personagem, progressao, estagio, proximo_estagio: proximoEstagio } = dados
   if (!personagem || !progressao || !estagio) return null
 
   const estagios = dados.estagios ?? []
   const base = personagem.personagem_base
-  const arte = arteDoEstagio(base, estagio.id)
+  const emUso = visualEmUso(dados) ?? estagio.id
+  const fixado = dados.visual ? !dados.visual.automatico : false
+  const mostrado = previa ?? emUso
+  const emPrevia = previa !== null && previa !== emUso
+  const nomeDoMostrado = estagios.find((e) => e.id === mostrado)?.nome ?? estagio.nome
+  const arte = arteDoEstagio(base, mostrado)
   const progressoPct = Math.min(100, Math.max(0, progressao.progresso_pct))
+
+  const trocarVisual = async (visual: string) => {
+    if (salvando) return
+    setErroDoVisual('')
+    setSalvando(true)
+    const resultado = await equiparVisual(visual)
+    setSalvando(false)
+
+    if (resultado.dados) {
+      aoAtualizar(resultado.dados)
+      setPrevia(null)
+      window.dispatchEvent(new Event(EVENTO_PERSONAGEM_ATUALIZADO))
+      return
+    }
+    setErroDoVisual(resultado.erro ?? 'Não foi possível trocar o visual agora.')
+  }
 
   return (
     <div className={CONTAINER}>
@@ -196,22 +232,22 @@ function FichaDoPersonagem({ dados }: { dados: RespostaPersonagem }) {
         <section
           aria-label="Arte do personagem"
           className="relative h-[min(62vh,520px)] overflow-hidden rounded-2xl border border-line bg-void lg:h-[680px]"
-          style={{ backgroundImage: LUZ_DO_ESTAGIO[estagio.id] ?? LUZ_DO_ESTAGIO.aventureiro }}
+          style={{ backgroundImage: LUZ_DO_ESTAGIO[mostrado] ?? LUZ_DO_ESTAGIO.aventureiro }}
         >
           <div
             aria-hidden="true"
-            className={`absolute bottom-3.5 left-1/2 h-13 w-72 -translate-x-1/2 rounded-[50%] border ${ANEL_DO_ESTAGIO[estagio.id] ?? 'border-holo-2/60'}`}
+            className={`absolute bottom-3.5 left-1/2 h-13 w-72 -translate-x-1/2 rounded-[50%] border ${ANEL_DO_ESTAGIO[mostrado] ?? 'border-holo-2/60'}`}
           />
           <div
             aria-hidden="true"
-            className={`absolute bottom-6 left-1/2 h-8 w-52 -translate-x-1/2 rounded-[50%] border opacity-60 ${ANEL_DO_ESTAGIO[estagio.id] ?? 'border-holo-2/60'}`}
+            className={`absolute bottom-6 left-1/2 h-8 w-52 -translate-x-1/2 rounded-[50%] border opacity-60 ${ANEL_DO_ESTAGIO[mostrado] ?? 'border-holo-2/60'}`}
           />
           {arte && (
             <img
               src={arte.inteira}
               width={LARGURA_DA_ARTE}
               height={ALTURA_DA_ARTE}
-              alt={`${personagem.nome}, ${rotuloDaClasse(personagem.classe)}, no estágio ${estagio.nome}`}
+              alt={`${personagem.nome}, ${rotuloDaClasse(personagem.classe)}, com o visual ${nomeDoMostrado}`}
               decoding="async"
               fetchPriority="high"
               className="absolute bottom-2 left-1/2 h-[96%] w-auto max-w-none -translate-x-1/2 object-contain"
@@ -220,8 +256,12 @@ function FichaDoPersonagem({ dados }: { dados: RespostaPersonagem }) {
           <span className="absolute left-4 top-4 rounded-full border border-gold bg-void/70 px-3 py-1.5 font-mono text-xs font-semibold tracking-wider text-gold">
             RANK {progressao.rank}
           </span>
-          <span className="absolute right-4 top-4 rounded-full border border-holo-2 bg-void/70 px-3 py-1.5 font-mono text-xs font-semibold uppercase tracking-wider text-text">
-            {estagio.nome}
+          <span
+            className={`absolute right-4 top-4 rounded-full border bg-void/70 px-3 py-1.5 font-mono text-xs font-semibold uppercase tracking-wider text-text ${
+              emPrevia ? 'border-holo-3' : 'border-holo-2'
+            }`}
+          >
+            {emPrevia ? `Prévia · ${nomeDoMostrado}` : estagio.nome}
           </span>
         </section>
 
@@ -241,6 +281,134 @@ function FichaDoPersonagem({ dados }: { dados: RespostaPersonagem }) {
               </span>
             </div>
           </div>
+
+          <section aria-labelledby="titulo-da-jornada" className="flex flex-col gap-3">
+            <h2 id="titulo-da-jornada" className={ROTULO_DE_SECAO}>
+              Jornada e visual
+            </h2>
+            <ol className="m-0 grid list-none grid-cols-4 gap-2.5 p-0">
+              {estagios.map((item) => {
+                const atual = item.id === estagio.id
+                const selecionado = item.id === mostrado
+                const mostraArte = temArtePropria(base, item.id) || item.alcancado
+                const mini = mostraArte ? arteDoEstagio(base, item.id)?.mini : undefined
+                const miolo = (
+                  <>
+                    <span
+                      className={`relative block h-24 overflow-hidden rounded-xl border-2 bg-panel ${
+                        selecionado && emPrevia
+                          ? 'border-holo-3'
+                          : atual
+                            ? 'border-gold'
+                            : mini
+                              ? 'border-line'
+                              : 'border-dashed border-line'
+                      }`}
+                    >
+                      {mini ? (
+                        <img
+                          src={mini}
+                          width={256}
+                          height={384}
+                          alt=""
+                          loading="lazy"
+                          decoding="async"
+                          className={`absolute -top-1.5 left-1/2 h-auto w-[150px] max-w-none -translate-x-1/2 ${
+                            item.alcancado ? '' : 'opacity-20 brightness-0 invert'
+                          }`}
+                        />
+                      ) : (
+                        <span className="absolute inset-0 flex items-center justify-center text-muted">
+                          <Lock size={20} aria-hidden="true" />
+                        </span>
+                      )}
+                      {item.id === emUso && (
+                        <span className="absolute inset-x-0 bottom-0 bg-void/80 py-0.5 text-center font-mono text-xs font-semibold text-holo-3">
+                          em uso
+                        </span>
+                      )}
+                    </span>
+                    <span
+                      className={`block truncate text-xs font-bold leading-tight ${
+                        atual ? 'text-gold' : item.alcancado ? 'text-text' : 'text-muted'
+                      }`}
+                    >
+                      {item.nome}
+                    </span>
+                    <span className="block font-mono text-xs leading-tight text-muted">nível {item.nivel_minimo}</span>
+                  </>
+                )
+                return (
+                  <li key={item.id} aria-current={atual ? 'step' : undefined} className="min-w-0">
+                    {item.alcancado ? (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setErroDoVisual('')
+                          setPrevia(item.id === emUso ? null : item.id)
+                        }}
+                        aria-pressed={selecionado}
+                        aria-label={`Ver o visual ${item.nome}`}
+                        className="flex w-full min-w-0 cursor-pointer flex-col gap-1.5 rounded-xl text-left"
+                      >
+                        {miolo}
+                      </button>
+                    ) : (
+                      <div className="flex min-w-0 flex-col gap-1.5">{miolo}</div>
+                    )}
+                  </li>
+                )
+              })}
+            </ol>
+
+            {emPrevia ? (
+              <div className="flex flex-wrap items-center gap-2 rounded-2xl border border-holo-3/40 bg-panel p-3">
+                <p role="status" className="m-0 min-w-0 flex-1 basis-40 text-xs text-muted">
+                  Experimentando <strong className="text-text">{nomeDoMostrado}</strong>
+                </p>
+                <button
+                  type="button"
+                  onClick={() => trocarVisual(mostrado)}
+                  disabled={salvando}
+                  className="h-11 cursor-pointer rounded-full bg-gradient-to-r from-holo-1 to-holo-3 px-4 text-xs font-extrabold text-void disabled:cursor-wait disabled:opacity-60"
+                >
+                  {salvando ? 'Trocando…' : 'Usar este visual'}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setPrevia(null)}
+                  disabled={salvando}
+                  className="h-11 cursor-pointer rounded-full border border-line px-4 text-xs font-bold text-muted hover:text-text"
+                >
+                  Cancelar
+                </button>
+              </div>
+            ) : fixado ? (
+              <div className="flex flex-wrap items-center gap-2">
+                <p className="m-0 min-w-0 flex-1 basis-40 text-xs leading-snug text-muted">
+                  Visual fixado em <strong className="text-text">{nomeDoMostrado}</strong>. Ele não muda quando você sobe de
+                  estágio.
+                </p>
+                <button
+                  type="button"
+                  onClick={() => trocarVisual('')}
+                  disabled={salvando}
+                  className="h-11 cursor-pointer rounded-full border border-line px-4 text-xs font-bold text-text hover:border-holo-3 disabled:cursor-wait disabled:opacity-60"
+                >
+                  {salvando ? 'Trocando…' : 'Voltar ao automático'}
+                </button>
+              </div>
+            ) : (
+              <p className="m-0 text-xs leading-snug text-muted">
+                O visual acompanha o seu estágio. Toque num estágio já alcançado para experimentar outro.
+              </p>
+            )}
+            {erroDoVisual && (
+              <p role="alert" className="m-0 text-xs font-bold text-coral">
+                {erroDoVisual}
+              </p>
+            )}
+          </section>
 
           <section aria-label="Progressão" className="flex flex-col gap-3 rounded-2xl border border-line bg-panel p-4">
             <div className="flex items-end justify-between gap-3">
@@ -276,54 +444,6 @@ function FichaDoPersonagem({ dados }: { dados: RespostaPersonagem }) {
               <span className="text-muted">Próximo estágio</span>
               <span className="text-right font-bold">{textoDoProximoEstagio(proximoEstagio)}</span>
             </div>
-          </section>
-
-          <section aria-labelledby="titulo-da-jornada" className="flex flex-col gap-3">
-            <h2 id="titulo-da-jornada" className={ROTULO_DE_SECAO}>
-              Jornada
-            </h2>
-            <ol className="m-0 grid list-none grid-cols-4 gap-2.5 p-0">
-              {estagios.map((item) => {
-                const atual = item.id === estagio.id
-                const mostraArte = temArtePropria(base, item.id) || item.alcancado
-                const mini = mostraArte ? arteDoEstagio(base, item.id)?.mini : undefined
-                return (
-                  <li key={item.id} aria-current={atual ? 'step' : undefined} className="flex min-w-0 flex-col gap-1.5">
-                    <div
-                      className={`relative h-24 overflow-hidden rounded-xl border-2 bg-panel ${
-                        atual ? 'border-gold' : mini ? 'border-line' : 'border-dashed border-line'
-                      }`}
-                    >
-                      {mini ? (
-                        <img
-                          src={mini}
-                          width={256}
-                          height={384}
-                          alt=""
-                          loading="lazy"
-                          decoding="async"
-                          className={`absolute -top-1.5 left-1/2 h-auto w-[150px] max-w-none -translate-x-1/2 ${
-                            item.alcancado ? '' : 'opacity-20 brightness-0 invert'
-                          }`}
-                        />
-                      ) : (
-                        <span className="absolute inset-0 flex items-center justify-center text-muted">
-                          <Lock size={20} aria-hidden="true" />
-                        </span>
-                      )}
-                    </div>
-                    <span
-                      className={`truncate text-xs font-bold leading-tight ${
-                        atual ? 'text-gold' : item.alcancado ? 'text-text' : 'text-muted'
-                      }`}
-                    >
-                      {item.nome}
-                    </span>
-                    <span className="font-mono text-xs leading-tight text-muted">nível {item.nivel_minimo}</span>
-                  </li>
-                )
-              })}
-            </ol>
           </section>
 
           <section aria-labelledby="titulo-dos-equipamentos" className="flex flex-col gap-3">
@@ -371,6 +491,11 @@ export default function Personagem() {
     }
   }, [tentativa])
 
+  const aoDespertar = useCallback((resposta: RespostaPersonagem) => {
+    setDados(resposta)
+    window.dispatchEvent(new Event(EVENTO_PERSONAGEM_ATUALIZADO))
+  }, [])
+
   const tentarDeNovo = useCallback(() => {
     setCarregando(true)
     setTentativa((n) => n + 1)
@@ -406,8 +531,8 @@ export default function Personagem() {
   }
 
   if (!dados.existe) {
-    return <TelaDespertar aoDespertar={setDados} />
+    return <TelaDespertar aoDespertar={aoDespertar} />
   }
 
-  return <FichaDoPersonagem dados={dados} />
+  return <FichaDoPersonagem dados={dados} aoAtualizar={setDados} />
 }

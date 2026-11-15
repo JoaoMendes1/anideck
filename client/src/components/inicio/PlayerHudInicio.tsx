@@ -20,6 +20,7 @@ import {
   LARGURA_DA_ARTE,
   PERSONAGEM_BASE_PADRAO,
   arteDoEstagio,
+  visualEmUso,
   rotuloDaClasse,
   rotuloDoElemento,
 } from '../../lib/personagem'
@@ -56,7 +57,8 @@ export default function PlayerHudInicio({ nome, dataHoje, aoAbrirGosto }: Props)
 
   const heroi = personagem?.existe ? personagem : null
   const base = heroi?.personagem?.personagem_base ?? PERSONAGEM_BASE_PADRAO
-  const arte = heroi?.estagio ? arteDoEstagio(base, heroi.estagio.id) : undefined
+  const visual = visualEmUso(heroi)
+  const arte = visual ? arteDoEstagio(base, visual) : undefined
   const classe = heroi?.personagem
     ? `${rotuloDaClasse(heroi.personagem.classe)} do ${rotuloDoElemento(heroi.personagem.elemento)}`
     : ''

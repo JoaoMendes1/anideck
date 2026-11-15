@@ -7,7 +7,7 @@ import { supabase } from '../lib/supabase'
 import { useSessao } from '../contexts/SessaoContext'
 import { buscarUmaVez, VALIDADE_NA_MONTAGEM } from '../lib/buscaCompartilhada'
 import { usePersonagem } from './usePersonagem'
-import { PERSONAGEM_BASE_PADRAO, retratoDoEstagio } from '../lib/personagem'
+import { PERSONAGEM_BASE_PADRAO, retratoDoEstagio, visualEmUso } from '../lib/personagem'
 
 export function useMeuAvatar() {
   const { session } = useSessao()
@@ -32,7 +32,7 @@ export function useMeuAvatar() {
   }, [uid])
 
   const retrato = personagem?.existe
-    ? retratoDoEstagio(personagem.estagio?.id, personagem.personagem?.personagem_base ?? PERSONAGEM_BASE_PADRAO)
+    ? retratoDoEstagio(visualEmUso(personagem), personagem.personagem?.personagem_base ?? PERSONAGEM_BASE_PADRAO)
     : undefined
 
   return { avatar, retrato }

@@ -263,3 +263,121 @@ func TestHandleDespertarPersonagem_RecusaAntesDoBanco(t *testing.T) {
 		})
 	}
 }
+
+func TestResolverVisual(t *testing.T) {
+	estagios := EstagiosPadrao()
+
+	casos := []struct {
+		descricao  string
+		equipado   string
+		nivel      int
+		esperado   string
+		automatico bool
+	}{
+		{"sem visual fixado segue o estágio do nível", "", 12, "aventureiro", true},
+		{"visual fixado e alcançado vale", "iniciante", 58, "iniciante", false},
+		{"fixar o próprio estágio atual também conta como fixado", "lendario", 58, "lendario", false},
+		{"visual fixado exatamente no nível mínimo vale", "aventureiro", 10, "aventureiro", false},
+		{"visual que deixou de estar alcançado volta ao automático", "lendario", 12, "aventureiro", true},
+		{"um nível abaixo do mínimo ainda não vale", "aventureiro", 9, "iniciante", true},
+		{"visual desconhecido volta ao automático", "mitico", 30, "veterano", true},
+	}
+	for _, c := range casos {
+		visual := ResolverVisual(c.equipado, c.nivel, estagios)
+		if visual.ID != c.esperado || visual.Automatico != c.automatico {
+			t.Errorf("%s: esperava %q (automático=%v), veio %+v", c.descricao, c.esperado, c.automatico, visual)
+		}
+	}
+}
+
+func TestValidarEscolhaDeVisual(t *testing.T) {
+	estagios := EstagiosPadrao()
+
+	aceitos := []struct {
+		visual string
+		nivel  int
+	}{
+		{"", 1},
+		{"iniciante", 1},
+		{"iniciante", 60},
+		{"aventureiro", 10},
+		{"lendario", 55},
+	}
+	for _, c := range aceitos {
+		if err := ValidarEscolhaDeVisual(c.visual, c.nivel, estagios); err != nil {
+			t.Errorf("visual %q no nível %d deveria ser aceito: %v", c.visual, c.nivel, err)
+		}
+	}
+
+	recusados := []struct {
+		visual string
+		nivel  int
+	}{
+		{"aventureiro", 9},
+		{"lendario", 54},
+		{"veterano", 1},
+		{"mitico", 99},
+		{"Iniciante", 99},
+		{"iniciante ", 99},
+	}
+	for _, c := range recusados {
+		if err := ValidarEscolhaDeVisual(c.visual, c.nivel, estagios); err == nil {
+			t.Errorf("visual %q no nível %d deveria ser recusado", c.visual, c.nivel)
+		}
+	}
+}
+
+func TestMontarRespostaPersonagem_Visual(t *testing.T) {
+	fixado := "iniciante"
+	linha := linhaPersonagemBanco{Nome: "Ren", PersonagemBase: "espadachim_eter", VisualEquipado: &fixado}
+
+	// 100.000 XP é Lendário: o Iniciante está alcançado e pode ficar fixado.
+	resposta := montarRespostaPersonagem(linha, 100000, RanksPadrao(), EstagiosPadrao())
+	if resposta.Visual == nil || resposta.Visual.ID != "iniciante" || resposta.Visual.Automatico {
+		t.Fatalf("visual fixado deveria valer: %+v", resposta.Visual)
+	}
+	if resposta.Estagio.ID != "lendario" {
+		t.Errorf("fixar um visual não muda o estágio do nível, veio %q", resposta.Estagio.ID)
+	}
+
+	semFixar := montarRespostaPersonagem(linhaPersonagemBanco{Nome: "Ren"}, 1980, RanksPadrao(), EstagiosPadrao())
+	if semFixar.Visual == nil || semFixar.Visual.ID != "aventureiro" || !semFixar.Visual.Automatico {
+		t.Errorf("sem visual fixado deveria seguir o estágio: %+v", semFixar.Visual)
+	}
+
+	// O XP caiu para o nível 9: o Lendário fixado deixa de valer, sem erro.
+	lendario := "lendario"
+	caiu := montarRespostaPersonagem(linhaPersonagemBanco{Nome: "Ren", VisualEquipado: &lendario}, 1979, RanksPadrao(), EstagiosPadrao())
+	if caiu.Visual.ID != "iniciante" || !caiu.Visual.Automatico {
+		t.Errorf("visual não alcançado deveria voltar ao automático: %+v", caiu.Visual)
+	}
+}
+
+func TestHandleEquiparVisual_RecusaAntesDoBanco(t *testing.T) {
+	h := &PersonagemHandler{}
+
+	semAuth := httptest.NewRecorder()
+	h.HandleEquiparVisual(semAuth, httptest.NewRequest(http.MethodPut, "/api/personagem/visual", bytes.NewReader([]byte(`{"visual":"iniciante"}`))))
+	if semAuth.Code != http.StatusUnauthorized {
+		t.Fatalf("PUT sem auth: esperava 401, recebeu %d", semAuth.Code)
+	}
+
+	casos := map[string]string{
+		"corpo ilegível": `{"visual":`,
+		"visual longo":   `{"visual":"` + strings.Repeat("a", 41) + `"}`,
+	}
+	for nome, corpo := range casos {
+		t.Run(nome, func(t *testing.T) {
+			req := httptest.NewRequest(http.MethodPut, "/api/personagem/visual", bytes.NewReader([]byte(corpo)))
+			ctx := context.WithValue(req.Context(), middleware.UserIDKey, "00000000-0000-0000-0000-0000000000aa")
+			ctx = context.WithValue(ctx, middleware.TokenKey, "token-de-teste")
+			w := httptest.NewRecorder()
+
+			h.HandleEquiparVisual(w, req.WithContext(ctx))
+
+			if w.Code != http.StatusBadRequest {
+				t.Fatalf("esperava 400, recebeu %d (%s)", w.Code, w.Body.String())
+			}
+		})
+	}
+}

@@ -5,7 +5,7 @@ import { useEffect, useState } from 'react'
 import { useSessao } from '../contexts/SessaoContext'
 import { chaveDoUsuario, guardarNaMemoria, lerDaMemoria } from '../lib/cacheDeTela'
 import { buscarUmaVez } from '../lib/buscaCompartilhada'
-import { obterPersonagem, type RespostaPersonagem } from '../lib/personagem'
+import { EVENTO_PERSONAGEM_ATUALIZADO, obterPersonagem, type RespostaPersonagem } from '../lib/personagem'
 
 interface EstadoDoPersonagem {
   dados: RespostaPersonagem | null
@@ -23,23 +23,30 @@ export function usePersonagem(): EstadoDoPersonagem {
   useEffect(() => {
     if (!chave) return
     let ativo = true
-    buscarUmaVez(chave, async () => {
-      const resposta = await obterPersonagem()
-      if (!resposta) throw new Error('personagem indisponível')
-      return resposta
-    })
-      .then((resposta) => {
-        guardarNaMemoria(chave, resposta)
-        if (ativo) setDados(resposta)
+    const buscar = () => {
+      buscarUmaVez(chave, async () => {
+        const resposta = await obterPersonagem()
+        if (!resposta) throw new Error('personagem indisponível')
+        return resposta
       })
-      .catch(() => {
-        // Sem personagem na tela, o palco mostra a insígnia; nada a avisar.
-      })
-      .finally(() => {
-        if (ativo) setCarregando(false)
-      })
+        .then((resposta) => {
+          guardarNaMemoria(chave, resposta)
+          if (ativo) setDados(resposta)
+        })
+        .catch(() => {
+          // Sem personagem na tela, o palco mostra a insígnia; nada a avisar.
+        })
+        .finally(() => {
+          if (ativo) setCarregando(false)
+        })
+    }
+    buscar()
+    // Despertar ou trocar de visual em /personagem muda o retrato da barra superior, que
+    // fica montada o tempo todo: sem este aviso ela só atualizaria ao recarregar a página.
+    window.addEventListener(EVENTO_PERSONAGEM_ATUALIZADO, buscar)
     return () => {
       ativo = false
+      window.removeEventListener(EVENTO_PERSONAGEM_ATUALIZADO, buscar)
     }
   }, [chave])
 

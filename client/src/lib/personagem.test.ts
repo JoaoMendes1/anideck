@@ -9,6 +9,7 @@ import {
   temArtePropria,
   textoDoProximoEstagio,
   validarNomeDoPersonagem,
+  visualEmUso,
   type CatalogoDeArtes,
 } from './personagem'
 
@@ -102,5 +103,24 @@ describe('personagem - textos', () => {
   it('descreve o próximo estágio, ou o fim da jornada', () => {
     expect(textoDoProximoEstagio({ id: 'veterano', nome: 'Veterano', nivel_minimo: 28 })).toBe('Veterano no nível 28')
     expect(textoDoProximoEstagio(undefined)).toBe('Estágio máximo')
+  })
+})
+
+describe('personagem - visual em uso', () => {
+  const estagio = { id: 'lendario', nome: 'Lendário', nivel_minimo: 55 }
+
+  it('usa o visual informado pelo servidor, fixado ou automático', () => {
+    expect(visualEmUso({ existe: true, estagio, visual: { id: 'iniciante', automatico: false } })).toBe('iniciante')
+    expect(visualEmUso({ existe: true, estagio, visual: { id: 'lendario', automatico: true } })).toBe('lendario')
+  })
+
+  it('sem o campo visual, cai no estágio', () => {
+    expect(visualEmUso({ existe: true, estagio })).toBe('lendario')
+  })
+
+  it('sem personagem, não há visual', () => {
+    expect(visualEmUso({ existe: false })).toBeUndefined()
+    expect(visualEmUso(null)).toBeUndefined()
+    expect(visualEmUso(undefined)).toBeUndefined()
   })
 })

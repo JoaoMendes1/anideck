@@ -13,7 +13,7 @@ import { lerPreferenciasDeGosto, salvarPreferenciasDeGosto } from '../lib/prefer
 import { invalidarCachesDoDeck, removerDaMemoria, chaveDoUsuario } from '../lib/cacheDeTela'
 import AvatarMontavel from '../components/AvatarMontavel'
 import { usePersonagem } from '../hooks/usePersonagem'
-import { PERSONAGEM_BASE_PADRAO, arteDoEstagio } from '../lib/personagem'
+import { PERSONAGEM_BASE_PADRAO, arteDoEstagio, visualEmUso } from '../lib/personagem'
 import {
   normalizarAvatar,
   salvarAvatarCustom,
@@ -108,8 +108,9 @@ export default function Configuracoes() {
     const [avatarCustom, setAvatarCustom] = useState<AvatarCustom>(AVATAR_PADRAO)
     const [usaAvatarCustom, setUsaAvatarCustom] = useState(false)
     const { dados: personagem } = usePersonagem()
-    const retratoDoPersonagem = personagem?.existe && personagem.estagio
-        ? arteDoEstagio(personagem.personagem?.personagem_base ?? PERSONAGEM_BASE_PADRAO, personagem.estagio.id)?.retrato
+    const visualDoPersonagem = personagem?.existe ? visualEmUso(personagem) : undefined
+    const retratoDoPersonagem = visualDoPersonagem
+        ? arteDoEstagio(personagem?.personagem?.personagem_base ?? PERSONAGEM_BASE_PADRAO, visualDoPersonagem)?.retrato
         : undefined
     const [salvandoAvatar, setSalvandoAvatar] = useState(false)
 

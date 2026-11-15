@@ -864,7 +864,8 @@ type membroNoRanking struct {
 	Moldura    string `json:"moldura,omitempty"`
 	CorNome    string `json:"cor_nome,omitempty"`
 	Emblema    string `json:"emblema,omitempty"`
-	// Avatar e estágio do personagem: o cliente desenha o retrato com eles.
+	// Avatar e visual em uso do personagem: o cliente desenha o retrato com eles. O campo
+	// se chama `estagio` porque todo visual, hoje, é um estágio.
 	Avatar  json.RawMessage `json:"avatar,omitempty"`
 	Estagio string          `json:"estagio,omitempty"`
 }
@@ -952,6 +953,17 @@ func (h *ComunidadeHandler) HandleRankingMembros(w http.ResponseWriter, r *http.
 				}
 				for i := range lista {
 					lista[i].Avatar = avatares[lista[i].Handle]
+				}
+				// Quem fixou um visual aparece com ele; os demais ficam no estágio do nível.
+				fixados := visuaisEquipadosPorUsuario(uids)
+				handleDoFixado := make(map[string]string, len(fixados))
+				for uid, visual := range fixados {
+					handleDoFixado[u2h[uid]] = visual
+				}
+				for i := range lista {
+					if visual, ok := handleDoFixado[lista[i].Handle]; ok {
+						lista[i].Estagio = ResolverVisual(visual, lista[i].Nivel, estagios).ID
+					}
 				}
 				var eqLinhas []struct {
 					UserID       string `json:"user_id"`
@@ -1049,7 +1061,8 @@ func (h *ComunidadeHandler) HandlePerfilPublico(w http.ResponseWriter, r *http.R
 	status := CalcularNivelERank(dados.XPTotal, ranks)
 	p := dados.perfilPublico
 	p.Nivel, p.Rank, p.TituloRank = status.Nivel, status.Rank, status.TituloRank
-	estagio, _ := CalcularEstagio(status.Nivel, carregarEstagiosRPG(database.Client))
+	estagiosDoPerfil := carregarEstagiosRPG(database.Client)
+	estagio, _ := CalcularEstagio(status.Nivel, estagiosDoPerfil)
 	p.Estagio = estagio.ID
 	inicio, fim := "", ""
 	if dados.DescansoInicio != nil {
@@ -1078,6 +1091,9 @@ func (h *ComunidadeHandler) HandlePerfilPublico(w http.ResponseWriter, r *http.R
 			p.TituloAtivo = profs[0].TituloAtivo
 			if avatarEscolhido(profs[0].Avatar) {
 				p.Avatar = profs[0].Avatar
+			}
+			if visual, ok := visuaisEquipadosPorUsuario([]string{profs[0].UserID})[profs[0].UserID]; ok {
+				p.Estagio = ResolverVisual(visual, p.Nivel, estagiosDoPerfil).ID
 			}
 			var eqLinhas []struct {
 				Slot         string `json:"slot"`

@@ -48,7 +48,7 @@ Staging sobe já na Fase 1, como projeto esqueleto — mesmo padrão do JVM Syst
 | 15 · Comunidade base | ✅ Concluída (08/11/2026, #154); falta abrir o beta |
 | 16 · Economia e cartas | ✅ Concluída (09/11/2026, #165); falta abrir o beta |
 | 17 · Comunidade viva | ✅ Concluída (13/11/2026, #179) |
-| 18 · O Despertar Isekai | 🚧 Em andamento — 18.1 Meu Personagem entregue (#199, #200); falta aplicar o `sql/066` e conferir em produção |
+| 18 · O Despertar Isekai | 🚧 Em andamento — 18.1 Meu Personagem (#199, #200) e 18.2a escolha de visual (#218) entregues; falta aplicar o `sql/068` |
 
 ---
 
@@ -774,13 +774,17 @@ experiência pequena e funcional de cada vez.
 - [x] 18.1 Meu Personagem (primeiro MVP)
   - [x] 18.1a Personagem do jogador: tabela `rpg_personagens`, despertar com nome e rota `/api/personagem`, com o estágio visual calculado pelo nível da Guilda (#199)
   - [x] 18.1b Tela `/personagem` mobile-first: despertar com nome, arte por estágio com reserva para estágio sem ilustração, jornada com silhueta dos estágios futuros e slots de equipamento "em breve" (#200)
-- [ ] 18.2 Visuais e loja: galeria de visuais (estágios e skins), cenários e slots de equipamento
+- [ ] 18.2 Visuais e loja
+  - [x] 18.2a Escolha de visual: o jogador fixa a aparência de um estágio já alcançado, com prévia antes de confirmar, ou deixa no automático. Coluna `visual_equipado`, rota `PUT /api/personagem/visual`, e o retrato da barra superior, de `/membros` e do perfil público seguem o visual em uso (#218)
+  - [ ] 18.2b Cenários de fundo da tela do personagem, comprados na Loja
+  - [ ] 18.2c Skins: visuais desbloqueados por compra ou evento, sobre a mesma coluna
+  - [ ] 18.2d Slots de equipamento
 - [ ] 18.3 Progressão de RPG: atributos, habilidades e balanceamento
 - [ ] 18.4 Mundo e PvE
 - [ ] 18.5 Integração comunitária
 - [ ] 18.6 Arena e cartas
 
-**Pendência do dono:** aplicar `sql/066_personagem_rpg.sql` no Supabase antes de promover.
+**Pendência do dono:** aplicar `sql/068_personagem_visual.sql` no Supabase. Sem ele a tela do personagem continua abrindo, mas a troca de visual responde erro.
 
 ## 🔧 Manutenção pós-v1
 
