@@ -81,7 +81,9 @@ type RespostaPersonagem struct {
 	Estagio        *EstagioRPG           `json:"estagio,omitempty"`
 	ProximoEstagio *EstagioRPG           `json:"proximo_estagio,omitempty"`
 	Visual         *VisualPersonagem     `json:"visual,omitempty"`
-	Estagios       []EstagioStatusRPG    `json:"estagios,omitempty"`
+	// Estilo do cenário equipado na Loja; vazio é o fundo padrão.
+	Cenario  string             `json:"cenario,omitempty"`
+	Estagios []EstagioStatusRPG `json:"estagios,omitempty"`
 }
 
 // EstagiosPadrao devolve os quatro estágios, do primeiro ao último. Os níveis acompanham
@@ -335,6 +337,36 @@ type contextoPersonagem struct {
 	xpTotal  int
 	ranks    []FaixaRank
 	estagios []EstagioRPG
+	cenario  string
+}
+
+// resposta monta o corpo da API a partir do que foi lido.
+func (c contextoPersonagem) resposta() RespostaPersonagem {
+	r := montarRespostaPersonagem(*c.linha, c.xpTotal, c.ranks, c.estagios)
+	r.Cenario = c.cenario
+	return r
+}
+
+// carregarCenarioEquipado devolve o estilo do cenário equipado, ou vazio. Falha de leitura
+// também devolve vazio: cenário é enfeite, e a tela abre com o fundo padrão.
+func carregarCenarioEquipado(dbClient *supabase.Client, userID string) string {
+	dados, _, err := dbClient.From("user_equipped").
+		Select("store_items(estilo)", "", false).
+		Eq("user_id", userID).
+		Eq("slot", slotCenario).
+		Execute()
+	if err != nil {
+		return ""
+	}
+	var linhas []struct {
+		Item struct {
+			Estilo string `json:"estilo"`
+		} `json:"store_items"`
+	}
+	if json.Unmarshal(dados, &linhas) != nil || len(linhas) == 0 {
+		return ""
+	}
+	return linhas[0].Item.Estilo
 }
 
 // carregarContextoPersonagem lê a linha do personagem e, se ela existir, o XP e as faixas.
@@ -350,7 +382,13 @@ func carregarContextoPersonagem(dbClient *supabase.Client, userID string) (conte
 	for _, l := range carregarLedgerUsuario(dbClient, userID) {
 		xpTotal += l.XPEarned
 	}
-	return contextoPersonagem{linha: linha, xpTotal: xpTotal, ranks: ranks, estagios: carregarEstagiosRPG(dbClient)}, nil
+	return contextoPersonagem{
+		linha:    linha,
+		xpTotal:  xpTotal,
+		ranks:    ranks,
+		estagios: carregarEstagiosRPG(dbClient),
+		cenario:  carregarCenarioEquipado(dbClient, userID),
+	}, nil
 }
 
 // carregarRespostaPersonagem lê o que a tela precisa.
@@ -362,7 +400,7 @@ func carregarRespostaPersonagem(dbClient *supabase.Client, userID string) (Respo
 	if ctx.linha == nil {
 		return RespostaPersonagem{Existe: false}, nil
 	}
-	return montarRespostaPersonagem(*ctx.linha, ctx.xpTotal, ctx.ranks, ctx.estagios), nil
+	return ctx.resposta(), nil
 }
 
 // visuaisEquipadosPorUsuario lê o visual fixado de vários usuários, para o retrato nas
@@ -559,5 +597,5 @@ func (h *PersonagemHandler) HandleEquiparVisual(w http.ResponseWriter, r *http.R
 	} else {
 		ctx.linha.VisualEquipado = &visual
 	}
-	responderJSON(w, http.StatusOK, montarRespostaPersonagem(*ctx.linha, ctx.xpTotal, ctx.ranks, ctx.estagios))
+	responderJSON(w, http.StatusOK, ctx.resposta())
 }

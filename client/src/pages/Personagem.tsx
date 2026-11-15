@@ -6,7 +6,8 @@
 // ficam lado a lado. Nível, XP e rank são os da Guilda: o personagem não tem XP próprio.
 import { useCallback, useEffect, useState, type FormEvent } from 'react'
 import { Link } from 'react-router-dom'
-import { ChevronLeft, Footprints, Gem, Lock, Orbit, Shield, Shirt, Sword, type LucideIcon } from 'lucide-react'
+import { ChevronLeft, Footprints, Gem, Image, Lock, Orbit, Shield, Shirt, Sword, type LucideIcon } from 'lucide-react'
+import { obterFundoDoCenario } from '../lib/cosmeticos'
 import {
   ALTURA_DA_ARTE,
   LARGURA_DA_ARTE,
@@ -207,6 +208,9 @@ function FichaDoPersonagem({
   const emPrevia = previa !== null && previa !== emUso
   const nomeDoMostrado = estagios.find((e) => e.id === mostrado)?.nome ?? estagio.nome
   const arte = arteDoEstagio(base, mostrado)
+  // A luz do estágio fica por cima do cenário, para o personagem não se perder no fundo.
+  const luz = LUZ_DO_ESTAGIO[mostrado] ?? LUZ_DO_ESTAGIO.aventureiro
+  const cenario = obterFundoDoCenario(dados.cenario)
   const progressoPct = Math.min(100, Math.max(0, progressao.progresso_pct))
 
   const trocarVisual = async (visual: string) => {
@@ -232,7 +236,8 @@ function FichaDoPersonagem({
         <section
           aria-label="Arte do personagem"
           className="relative h-[min(62vh,520px)] overflow-hidden rounded-2xl border border-line bg-void lg:h-[680px]"
-          style={{ backgroundImage: LUZ_DO_ESTAGIO[mostrado] ?? LUZ_DO_ESTAGIO.aventureiro }}
+          data-cenario={cenario ? dados.cenario : 'padrao'}
+          style={{ backgroundImage: cenario ? `${luz}, ${cenario}` : luz }}
         >
           <div
             aria-hidden="true"
@@ -263,6 +268,13 @@ function FichaDoPersonagem({
           >
             {emPrevia ? `Prévia · ${nomeDoMostrado}` : estagio.nome}
           </span>
+          <Link
+            to="/loja"
+            className="absolute bottom-3 right-3 inline-flex h-11 items-center gap-1.5 rounded-full border border-line bg-void/70 px-3 text-xs font-bold text-muted hover:text-text"
+          >
+            <Image size={14} aria-hidden="true" />
+            Cenários
+          </Link>
         </section>
 
         <div className="flex min-w-0 flex-col gap-6">

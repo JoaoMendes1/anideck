@@ -58,6 +58,8 @@ export interface RespostaPersonagem {
   estagio?: EstagioRPG
   proximo_estagio?: EstagioRPG
   visual?: VisualPersonagem
+  // Estilo do cenário equipado na Loja (chave de CENARIOS, em lib/cosmeticos); ausente é o fundo padrão.
+  cenario?: string
   estagios?: EstagioStatusRPG[]
 }
 

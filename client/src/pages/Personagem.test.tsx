@@ -127,3 +127,26 @@ describe('Personagem - escolha de visual', () => {
     expect(screen.getByRole('img', { name: /com o visual Aventureiro/ })).toBeTruthy()
   })
 })
+
+describe('Personagem - cenário', () => {
+  it('aplica o cenário equipado por baixo da luz do estágio', async () => {
+    const comCenario = personagemNoNivel(12, { id: 'aventureiro', automatico: true })
+    comCenario.cenario = 'cenario-aurora'
+    vi.mocked(obterPersonagem).mockResolvedValue(comCenario)
+    abrir()
+
+    const palco = await screen.findByRole('region', { name: 'Arte do personagem' })
+    expect(palco.getAttribute('data-cenario')).toBe('cenario-aurora')
+    expect(screen.getByRole('link', { name: 'Cenários' }).getAttribute('href')).toBe('/loja')
+  })
+
+  it('sem cenário, ou com um estilo que o app não conhece, usa o fundo padrão', async () => {
+    const desconhecido = personagemNoNivel(12, { id: 'aventureiro', automatico: true })
+    desconhecido.cenario = 'cenario-que-nao-existe'
+    vi.mocked(obterPersonagem).mockResolvedValue(desconhecido)
+    abrir()
+
+    const palco = await screen.findByRole('region', { name: 'Arte do personagem' })
+    expect(palco.getAttribute('data-cenario')).toBe('padrao')
+  })
+})

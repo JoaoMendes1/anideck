@@ -381,3 +381,22 @@ func TestHandleEquiparVisual_RecusaAntesDoBanco(t *testing.T) {
 		})
 	}
 }
+
+func TestContextoPersonagem_RespostaLevaOCenario(t *testing.T) {
+	linha := linhaPersonagemBanco{Nome: "Ren", PersonagemBase: "espadachim_eter"}
+	ctx := contextoPersonagem{linha: &linha, xpTotal: 1980, ranks: RanksPadrao(), estagios: EstagiosPadrao(), cenario: "cenario-aurora"}
+
+	resposta := ctx.resposta()
+	if resposta.Cenario != "cenario-aurora" || resposta.Estagio.ID != "aventureiro" {
+		t.Fatalf("resposta deveria levar o cenário e o estágio: %+v", resposta)
+	}
+
+	ctx.cenario = ""
+	corpo, err := json.Marshal(ctx.resposta())
+	if err != nil {
+		t.Fatalf("falha ao serializar: %v", err)
+	}
+	if strings.Contains(string(corpo), `"cenario"`) {
+		t.Errorf("sem cenário equipado, o campo não deveria aparecer no JSON: %s", corpo)
+	}
+}

@@ -55,3 +55,17 @@ func TestLojaHandler_Validacoes(t *testing.T) {
 		t.Fatalf("devolver sem auth: esperava 401, recebeu %d", wDevolver.Code)
 	}
 }
+
+func TestSlotCosmeticoValido(t *testing.T) {
+	for _, slot := range []string{"moldura", "tema_perfil", "cor_nome", "emblema", "cenario"} {
+		if !SlotCosmeticoValido(slot) {
+			t.Errorf("slot %q deveria ser aceito", slot)
+		}
+	}
+	// "expansao" é tipo de item, mas não ocupa slot: vale só por ser comprada.
+	for _, slot := range []string{"", "expansao", "Cenario", "cenario ", "visual", "moldura;drop"} {
+		if SlotCosmeticoValido(slot) {
+			t.Errorf("slot %q deveria ser recusado", slot)
+		}
+	}
+}

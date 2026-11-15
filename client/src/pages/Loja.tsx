@@ -16,9 +16,12 @@ import {
   obterClasseMoldura,
   obterClasseCorNome,
   obterClasseTemaPerfil,
+  obterFundoDoCenario,
   renderizarEmblema,
   type ItemCosmeticoLoja,
 } from '../lib/cosmeticos'
+import { usePersonagem } from '../hooks/usePersonagem'
+import { ORDEM_DOS_ESTAGIOS, PERSONAGEM_BASE_PADRAO, arteDoEstagio, visualEmUso } from '../lib/personagem'
 
 function renderIconeItem(icone: string, raridade: string) {
   const cor = CORES_RARIDADE[raridade]?.texto || 'text-holo-3'
@@ -49,6 +52,13 @@ export default function Loja() {
 
   const meuNome = estado?.perfil.nome || estado?.perfil.handle || session?.user.user_metadata?.display_name || 'Viajante'
   const meuAvatar = (session?.user.user_metadata?.avatar_url as string | undefined) || null
+  // A prévia do cenário mostra o personagem do jogador com o visual em uso; sem personagem,
+  // o do primeiro estágio.
+  const { dados: personagem } = usePersonagem()
+  const miniDoPersonagem = arteDoEstagio(
+    personagem?.personagem?.personagem_base ?? PERSONAGEM_BASE_PADRAO,
+    visualEmUso(personagem) ?? ORDEM_DOS_ESTAGIOS[0],
+  )?.mini
 
   const itensFiltrados = useMemo(() => {
     if (filtroTipo === 'todos') return itens
@@ -123,6 +133,7 @@ export default function Loja() {
           { id: 'tema_perfil', rotulo: 'Temas' },
           { id: 'cor_nome', rotulo: 'Cores de Nome' },
           { id: 'emblema', rotulo: 'Emblemas' },
+          { id: 'cenario', rotulo: 'Cenários' },
           { id: 'expansao', rotulo: 'Melhorias' },
         ].map((f) => {
           const ativo = filtroTipo === f.id
@@ -253,6 +264,28 @@ export default function Loja() {
                       <div className="flex items-center gap-1.5 font-mono text-sm text-text font-bold">
                         <span>{meuNome}</span>
                         {renderizarEmblema(item.estilo, 18)}
+                      </div>
+                    )}
+
+                    {item.tipo === 'cenario' && (
+                      <div
+                        className="relative h-28 w-full overflow-hidden rounded-lg border border-line/60 bg-void"
+                        style={{ backgroundImage: obterFundoDoCenario(item.estilo) }}
+                      >
+                        {miniDoPersonagem && (
+                          <img
+                            src={miniDoPersonagem}
+                            width={256}
+                            height={384}
+                            alt=""
+                            loading="lazy"
+                            decoding="async"
+                            className="absolute bottom-0 left-1/2 h-[118%] w-auto max-w-none -translate-x-1/2"
+                          />
+                        )}
+                        <span className="absolute left-2 top-2 rounded-full bg-void/70 px-2 py-0.5 font-mono text-xs text-muted">
+                          Fundo do personagem
+                        </span>
                       </div>
                     )}
 
