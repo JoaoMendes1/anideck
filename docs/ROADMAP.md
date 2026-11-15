@@ -788,6 +788,18 @@ experiência pequena e funcional de cada vez.
 > numeração e não abrem escopo novo. Ficam registrados aqui em ordem cronológica inversa para
 > não sumirem: fase concluída não deve ser reaberta só para receber um conserto.
 
+### 15/11/2026 — Foco de teclado e nome nos campos que faltavam
+
+- [x] **Um anel de foco só**, na cor do tema, em link, botão e aba (`:where(...):focus-visible` em `index.css`); a barra inferior do celular voltou a mostrar foco.
+- [x] `aria-label` nos 14 campos fora do Admin que ainda não tinham nome (buscas, nota, transferência de AniCoins, sala de estreia).
+
+### 15/11/2026 — Fontes servidas pelo site e menos pedidos repetidos (#214)
+
+- [x] **Fontes no próprio site** (`client/src/fontes.css`, pacotes `@fontsource`): sai o `@import` do Google Fonts, e com ele o pedido a terceiros e um salto na descoberta das fontes. Só latin e latin-ext, com `unicode-range`. A JetBrains Mono ganhou o peso 700, que era simulado pelo navegador.
+- [x] **Início de 23 para 21 chamadas** (eram 26 antes do #209): missões e destaques da curadoria passam por `buscarUmaVez`. Sobram quatro buscas, que são diferentes entre si.
+- [x] **Aviso de mudança esvazia as respostas guardadas** (`EVENTOS_DE_MUDANCA` em `lib/buscaCompartilhada.ts`), para uma tela aberta logo depois de marcar um episódio não mostrar o número de antes. O contador de missões do painel passou a acompanhar o resgate feito no cartão.
+- [x] CI no Node 22, a mesma versão maior do Dockerfile.
+
 ### 15/11/2026 — Piso de 12 px no texto em todas as telas
 
 - [x] **574 tamanhos de texto entre 7 e 11,5 px viraram `text-xs` (12 px)** em 78 arquivos. Medido antes e depois nas 22 telas do roteiro de captura, em 360, 768 e 1440 px: de até 155 textos pequenos por tela (Deck) para zero, sem overflow horizontal e sem erro de console. O que sobra abaixo de 12 é texto dentro de SVG, que escala com o desenho.

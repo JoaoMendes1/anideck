@@ -10,6 +10,7 @@ import { useRevealOnScroll } from '../hooks/useRevealOnScroll'
 import { miniatura } from '../lib/miniatura'
 import { gradienteDoCard } from '../lib/deckHelpers'
 import type { CuratedAnime } from '../types/curation'
+import { buscarDestaquesDaCuradoria } from '../lib/destaques'
 
 // Fica abaixo da dobra: carregada à parte para não pesar no arquivo principal do site.
 const VitrineGuilda = lazy(() => import('../components/landing/VitrineGuilda'))
@@ -21,12 +22,9 @@ export default function Landing() {
 
   useEffect(() => {
     let ativo = true
-    fetch('/api/curation?destaques=true')
-      .then(res => (res.ok ? res.json() : []))
-      .then((dados: CuratedAnime[]) => {
-        if (ativo && Array.isArray(dados)) {
-          setDestaques(dados.slice(0, 10))
-        }
+    buscarDestaquesDaCuradoria()
+      .then(dados => {
+        if (ativo) setDestaques(dados.slice(0, 10))
       })
       .catch(() => {})
     return () => { ativo = false }

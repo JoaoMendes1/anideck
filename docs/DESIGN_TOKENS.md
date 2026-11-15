@@ -89,7 +89,11 @@ do desenho.
 | Corpo de texto | `'Manrope', sans-serif` | 400-800 |
 | Labels, dados, tags, timestamps | `'JetBrains Mono', monospace` | 400-700 |
 
-Import usado em todos os protótipos:
+No app, as três fontes são servidas pelo próprio site (`client/src/fontes.css`, pacotes
+`@fontsource`), nos pesos 400 da Anton, 400 a 800 da Manrope e 400 a 700 da JetBrains Mono.
+Peso fora dessa lista é simulado pelo navegador.
+
+Import usado nos protótipos em `docs/prototipos/` (HTML avulso, fora do app):
 ```
 https://fonts.googleapis.com/css2?family=Anton&family=Manrope:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap
 ```

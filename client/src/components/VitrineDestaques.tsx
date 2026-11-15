@@ -15,6 +15,7 @@ import { gradienteDoCard } from '../lib/deckHelpers'
 import { usePosicaoDeTrilho } from '../lib/posicaoDeLista'
 import { lerDaMemoria, guardarNaMemoria } from '../lib/cacheDeTela'
 import { miniatura } from '../lib/miniatura'
+import { buscarDestaquesDaCuradoria } from '../lib/destaques'
 
 const MAX_NA_VITRINE = 12
 const CHAVE_VITRINE_RECOLHIDA = 'anideck:vitrine-recolhida'
@@ -43,10 +44,8 @@ export default function VitrineDestaques() {
 
     const buscar = async () => {
       try {
-        const res = await fetch('/api/curation?destaques=true')
-        if (!res.ok) throw new Error()
-        const dados: CuratedAnime[] = await res.json()
-        const lista = (dados || []).slice(0, MAX_NA_VITRINE)
+        const dados = await buscarDestaquesDaCuradoria()
+        const lista = dados.slice(0, MAX_NA_VITRINE)
         guardarNaMemoria('vitrine', lista)
         if (!cancelado) setDestaques(lista)
       } catch {

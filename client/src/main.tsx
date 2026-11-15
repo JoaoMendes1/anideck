@@ -2,6 +2,7 @@ import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 // Importando BrowserRouter, que é o motor de rotas para web
 import { BrowserRouter } from 'react-router-dom'
+import './fontes.css'
 import './index.css'
 import App from './App.tsx'
 

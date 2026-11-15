@@ -34,6 +34,7 @@ import {
 } from '../lib/preferenciasGosto'
 import type { AnimeDaApi } from '../types/anime'
 import type { CuratedAnime } from '../types/curation'
+import { buscarDestaquesDaCuradoria } from '../lib/destaques'
 
 interface Cartaz {
   mal_id: number
@@ -270,7 +271,7 @@ export default function Inicio() {
           fetch('/api/entries/progresso', auth).then(r => lerJson<ProgressoDoAnime[]>(r, [])),
           fetch('/api/trilhas').then(r => lerJson<TrilhaDaHome[]>(r, [])).catch(() => []),
           fetch('/api/ranking?page=1&perPage=10').then(r => lerJson<{ data?: AnimeDaApi[] }>(r, {})).catch(() => ({ data: [] })),
-          fetch('/api/curation?destaques=true').then(r => lerJson<CuratedAnime[]>(r, [])).catch(() => []),
+          buscarDestaquesDaCuradoria().catch((): CuratedAnime[] => []),
           (async (): Promise<StatsParaInicio> => {
             const guardadas = lerDaMemoria<StatsParaInicio>(chaveStats)
             if (guardadas) return guardadas

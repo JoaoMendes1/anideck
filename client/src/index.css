@@ -1,5 +1,5 @@
-/* 1. Importa as fontes oficiais do Google Fonts definidas para o projeto */
-@import url('https://fonts.googleapis.com/css2?family=Anton&family=Manrope:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap');
+/* 1. As fontes do projeto (Anton, Manrope e JetBrains Mono) são servidas pelo próprio site:
+      ver fontes.css, importado antes deste arquivo em main.tsx. */
 
 /* 2. Importa o Tailwind CSS */
 @import "tailwindcss";

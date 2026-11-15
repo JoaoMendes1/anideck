@@ -30,7 +30,16 @@ export function buscarUmaVez<T>(chave: string, buscar: () => Promise<T>, validad
   return promessa
 }
 
-/** Só para testes: esquece as respostas guardadas. */
+/** Esquece as respostas guardadas: a próxima busca volta ao servidor. */
 export function esquecerBuscasRecentes(): void {
   recentes.clear()
+}
+
+// Avisos de que algo mudou no servidor. Depois de um deles, nenhuma resposta guardada vale
+// mais: sem isto, marcar um episódio numa tela e abrir outra logo em seguida mostraria o
+// número de antes, se nenhum componente montado tivesse refeito a busca nesse meio-tempo.
+export const EVENTOS_DE_MUDANCA = ['anideck:episodio-atualizado', 'anideck:comunidade-atualizada', 'anideck:cristais-atualizados']
+
+if (typeof window !== 'undefined') {
+  for (const evento of EVENTOS_DE_MUDANCA) window.addEventListener(evento, esquecerBuscasRecentes)
 }
