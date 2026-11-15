@@ -100,7 +100,7 @@ func TestHandleImportMAL(t *testing.T) {
 		}
 
 		corpo, _ := json.Marshal(map[string]interface{}{
-			"xml":               `<myanimelist><anime><series_animedb_id>1</series_animedb_id><series_title>Cowboy Bebop</series_title><my_watched_episodes>12</my_watched_episodes><my_score>9</my_score><my_status>Watching</my_status></anime></myanimelist>`,
+			"xml":                `<myanimelist><anime><series_animedb_id>1</series_animedb_id><series_title>Cowboy Bebop</series_title><my_watched_episodes>12</my_watched_episodes><my_score>9</my_score><my_status>Watching</my_status></anime></myanimelist>`,
 			"importar_notas":     true,
 			"ignorar_duplicados": true,
 		})

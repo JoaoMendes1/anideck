@@ -34,15 +34,60 @@ type MonstroRPG struct {
 	ChanceItem   int    `json:"chance_item"`
 	RaridadeItem string `json:"raridade_item"`
 	Ordem        int    `json:"ordem"`
+	// Velocidade não é coluna: vem do nível e do tipo (VelocidadeDoMonstro).
+	Velocidade int `json:"velocidade"`
 }
 
-// TurnoBatalha é um golpe, para a tela reproduzir a luta.
+// VelocidadeDoMonstro cresce um pouco abaixo da do jogador do mesmo nível: quem investe em
+// Agilidade age primeiro; chefe e raro são mais rápidos.
+func VelocidadeDoMonstro(m MonstroRPG) int {
+	v := 3 + m.Nivel*4/5
+	switch m.Tipo {
+	case "raro":
+		v += 2
+	case "chefe":
+		v += 4
+	}
+	return v
+}
+
+// PoderDoMonstro usa a mesma conta do jogador, para a comparação ser justa.
+func PoderDoMonstro(m MonstroRPG) int {
+	return CalcularPoder(AtributosRPG{Vida: m.Vida, Ataque: m.Ataque, Defesa: m.Defesa, Velocidade: VelocidadeDoMonstro(m)})
+}
+
+// TurnoBatalha é uma ação, para a tela reproduzir a luta.
 type TurnoBatalha struct {
 	Atacante    string `json:"atacante"`
 	Dano        int    `json:"dano"`
 	Critico     bool   `json:"critico"`
 	VidaJogador int    `json:"vida_jogador"`
 	VidaMonstro int    `json:"vida_monstro"`
+	// Nome da habilidade usada; vazio é ataque comum.
+	Habilidade string `json:"habilidade,omitempty"`
+	// Esquiva: o golpe do monstro não acertou.
+	Esquiva bool `json:"esquiva,omitempty"`
+	// Cura: Vida recuperada nesta ação.
+	Cura int `json:"cura,omitempty"`
+	// Éter do jogador depois da ação.
+	Eter int `json:"eter"`
+}
+
+// CombatenteRPG é o jogador na luta: os números e as habilidades já liberadas.
+type CombatenteRPG struct {
+	Atributos   AtributosRPG
+	Habilidades []HabilidadeRPG
+}
+
+// CombatenteDoEstado separa do livro só as habilidades liberadas.
+func CombatenteDoEstado(e EstadoEquipamento) CombatenteRPG {
+	c := CombatenteRPG{Atributos: e.Atributos}
+	for _, h := range e.Habilidades {
+		if h.Desbloqueada {
+			c.Habilidades = append(c.Habilidades, h)
+		}
+	}
+	return c
 }
 
 // ResultadoSimulado é a luta inteira, antes de gravar.
@@ -64,13 +109,13 @@ func CalcularDano(ataque, defesa int) float64 {
 	return float64(ataque*ataque) / float64(ataque+defesa)
 }
 
-// golpe aplica a variação de 85% a 115% e o crítico (10% de chance, 1,5x). Todo golpe dá
-// pelo menos 1 de dano.
-func golpe(rng *rand.Rand, ataque, defesa int) (int, bool) {
+// golpe aplica a variação de 85% a 115% e o crítico. Todo golpe dá pelo menos 1 de dano.
+// critPorMil é a chance em milésimos; multCrit, o multiplicador (1,5 = 50% a mais).
+func golpe(rng *rand.Rand, ataque, defesa, critPorMil int, multCrit float64) (int, bool) {
 	dano := CalcularDano(ataque, defesa) * (0.85 + rng.Float64()*0.30)
-	critico := rng.Float64() < 0.10
+	critico := rng.Intn(1000) < critPorMil
 	if critico {
-		dano *= 1.5
+		dano *= multCrit
 	}
 	if dano < 1 {
 		dano = 1
@@ -78,40 +123,185 @@ func golpe(rng *rand.Rand, ataque, defesa int) (int, bool) {
 	return int(dano + 0.5), critico
 }
 
-// SimularBatalha resolve a luta. O jogador ataca primeiro em cada rodada. É uma função pura:
-// o mesmo gerador dá sempre a mesma luta, o que permite testar e auditar.
-func SimularBatalha(jogador AtributosRPG, monstro MonstroRPG, rng *rand.Rand) ResultadoSimulado {
-	vidaJogador := jogador.Vida
-	vidaMonstro := monstro.Vida
-	turnos := make([]TurnoBatalha, 0, maxTurnosBatalha*2)
+// Regras fixas do monstro e do Éter.
+const (
+	critMonstroPorMil = 100 // 10% de crítico, como antes do sql/077
+	multCritMonstro   = 1.5 // a 1,5x
+	eterPorRodada     = 2   // Éter que volta a cada rodada
+)
 
-	for rodada := 1; rodada <= maxTurnosBatalha; rodada++ {
-		dano, critico := golpe(rng, jogador.Ataque, monstro.Defesa)
-		vidaMonstro -= dano
-		if vidaMonstro < 0 {
-			vidaMonstro = 0
-		}
-		turnos = append(turnos, TurnoBatalha{Atacante: "jogador", Dano: dano, Critico: critico, VidaJogador: vidaJogador, VidaMonstro: vidaMonstro})
-		if vidaMonstro == 0 {
-			return ResultadoSimulado{Venceu: true, Rodadas: rodada, Turnos: turnos}
-		}
+// lutaEmAndamento guarda o que muda durante a luta.
+type lutaEmAndamento struct {
+	j           CombatenteRPG
+	m           MonstroRPG
+	rng         *rand.Rand
+	vidaJogador int
+	vidaMonstro int
+	eter        int
+	recargas    map[string]int
+	despertou   bool
+	dobro       bool
+	turnos      []TurnoBatalha
+}
 
-		dano, critico = golpe(rng, monstro.Ataque, jogador.Defesa)
-		vidaJogador -= dano
-		if vidaJogador < 0 {
-			vidaJogador = 0
-		}
-		turnos = append(turnos, TurnoBatalha{Atacante: "monstro", Dano: dano, Critico: critico, VidaJogador: vidaJogador, VidaMonstro: vidaMonstro})
-		if vidaJogador == 0 {
-			return ResultadoSimulado{Venceu: false, Rodadas: rodada, Turnos: turnos}
+func (l *lutaEmAndamento) registrar(t TurnoBatalha) {
+	t.VidaJogador, t.VidaMonstro, t.Eter = l.vidaJogador, l.vidaMonstro, l.eter
+	l.turnos = append(l.turnos, t)
+}
+
+// pronta diz se a habilidade pode ser usada agora.
+func (l *lutaEmAndamento) pronta(h HabilidadeRPG) bool {
+	return h.Efeito != efeitoDespertar && l.eter >= h.CustoEter && l.recargas[h.ID] == 0
+}
+
+// escolher decide a ação do jogador, sem pedir nada a ele: cura quando a Vida passa da
+// metade para baixo; senão, a habilidade de ataque de nível mais alto que o Éter paga;
+// senão, ataque comum (nil).
+func (l *lutaEmAndamento) escolher() *HabilidadeRPG {
+	if l.vidaJogador*2 < l.j.Atributos.Vida {
+		for i := range l.j.Habilidades {
+			if h := &l.j.Habilidades[i]; h.Efeito == efeitoCura && l.pronta(*h) {
+				return h
+			}
 		}
 	}
-	return ResultadoSimulado{Venceu: false, Rodadas: maxTurnosBatalha, Turnos: turnos}
+	var melhor *HabilidadeRPG
+	for i := range l.j.Habilidades {
+		h := &l.j.Habilidades[i]
+		if h.Efeito == efeitoCura || !l.pronta(*h) {
+			continue
+		}
+		if melhor == nil || h.NivelMinimo > melhor.NivelMinimo {
+			melhor = h
+		}
+	}
+	return melhor
+}
+
+// golpeDoJogador dá um golpe com o ataque indicado, aplicando crítico e o dobro do despertar.
+func (l *lutaEmAndamento) golpeDoJogador(ataque int) (int, bool) {
+	a := l.j.Atributos
+	dano, critico := golpe(l.rng, ataque, l.m.Defesa, a.CriticoPorMil, float64(a.DanoCritico)/100)
+	if l.dobro {
+		dano *= 2
+		l.dobro = false
+	}
+	return dano, critico
+}
+
+// vezDoJogador faz a ação do jogador. Devolve true quando o monstro cai.
+func (l *lutaEmAndamento) vezDoJogador() bool {
+	a := l.j.Atributos
+	h := l.escolher()
+	t := TurnoBatalha{Atacante: "jogador"}
+	if h != nil {
+		l.eter -= h.CustoEter
+		l.recargas[h.ID] = h.Recarga
+		t.Habilidade = h.Nome
+	}
+
+	switch {
+	case h == nil:
+		t.Dano, t.Critico = l.golpeDoJogador(a.Ataque)
+	case h.Efeito == efeitoCura:
+		cura := int(float64(a.Vida)*h.Fator + 0.5)
+		cura = min(cura, a.Vida-l.vidaJogador)
+		l.vidaJogador += cura
+		t.Cura = cura
+	case h.Efeito == efeitoGolpeDuplo:
+		for range 2 {
+			dano, critico := l.golpeDoJogador(int(float64(a.Ataque)*h.Fator + 0.5))
+			t.Dano += dano
+			t.Critico = t.Critico || critico
+		}
+	case h.Efeito == efeitoArcano:
+		t.Dano, t.Critico = l.golpeDoJogador(int(float64(a.Ataque)*h.Fator + float64(a.Magia)*h.Fator2 + 0.5))
+	default:
+		t.Dano, t.Critico = l.golpeDoJogador(int(float64(a.Ataque)*h.Fator + 0.5))
+	}
+
+	l.vidaMonstro = max(0, l.vidaMonstro-t.Dano)
+	l.registrar(t)
+	return l.vidaMonstro == 0
+}
+
+// vezDoMonstro faz o golpe do monstro, com a chance de esquiva, e dispara o despertar.
+// Devolve true quando o jogador cai.
+func (l *lutaEmAndamento) vezDoMonstro() bool {
+	t := TurnoBatalha{Atacante: "monstro"}
+	if l.rng.Intn(1000) < l.j.Atributos.EsquivaPorMil {
+		t.Esquiva = true
+	} else {
+		t.Dano, t.Critico = golpe(l.rng, l.m.Ataque, l.j.Atributos.Defesa, critMonstroPorMil, multCritMonstro)
+		l.vidaJogador = max(0, l.vidaJogador-t.Dano)
+	}
+	l.registrar(t)
+	if l.vidaJogador == 0 {
+		return true
+	}
+
+	// A habilidade única reage ao golpe: quem está caindo desperta.
+	if !l.despertou && l.vidaJogador*2 < l.j.Atributos.Vida {
+		for _, h := range l.j.Habilidades {
+			if h.Efeito != efeitoDespertar {
+				continue
+			}
+			cura := min(int(float64(l.j.Atributos.Vida)*h.Fator+0.5), l.j.Atributos.Vida-l.vidaJogador)
+			l.vidaJogador += cura
+			l.despertou, l.dobro = true, true
+			l.registrar(TurnoBatalha{Atacante: "jogador", Habilidade: h.Nome, Cura: cura})
+			break
+		}
+	}
+	return false
+}
+
+// SimularBatalha resolve a luta. Quem tem mais Velocidade age primeiro em cada rodada
+// (empate favorece o jogador). As habilidades são usadas sozinhas. É uma função pura: o
+// mesmo gerador dá sempre a mesma luta, o que permite testar e auditar.
+func SimularBatalha(jogador CombatenteRPG, monstro MonstroRPG, rng *rand.Rand) ResultadoSimulado {
+	if monstro.Velocidade == 0 {
+		monstro.Velocidade = VelocidadeDoMonstro(monstro)
+	}
+	l := &lutaEmAndamento{
+		j: jogador, m: monstro, rng: rng,
+		vidaJogador: jogador.Atributos.Vida,
+		vidaMonstro: monstro.Vida,
+		eter:        jogador.Atributos.Eter,
+		recargas:    map[string]int{},
+		turnos:      make([]TurnoBatalha, 0, maxTurnosBatalha*2),
+	}
+	jogadorPrimeiro := jogador.Atributos.Velocidade >= monstro.Velocidade
+
+	for rodada := 1; rodada <= maxTurnosBatalha; rodada++ {
+		if jogadorPrimeiro {
+			if l.vezDoJogador() {
+				return ResultadoSimulado{Venceu: true, Rodadas: rodada, Turnos: l.turnos}
+			}
+			if l.vezDoMonstro() {
+				return ResultadoSimulado{Venceu: false, Rodadas: rodada, Turnos: l.turnos}
+			}
+		} else {
+			if l.vezDoMonstro() {
+				return ResultadoSimulado{Venceu: false, Rodadas: rodada, Turnos: l.turnos}
+			}
+			if l.vezDoJogador() {
+				return ResultadoSimulado{Venceu: true, Rodadas: rodada, Turnos: l.turnos}
+			}
+		}
+		l.eter = min(jogador.Atributos.Eter, l.eter+eterPorRodada)
+		for id, r := range l.recargas {
+			if r > 0 {
+				l.recargas[id] = r - 1
+			}
+		}
+	}
+	return ResultadoSimulado{Venceu: false, Rodadas: maxTurnosBatalha, Turnos: l.turnos}
 }
 
 // DificuldadeContra compara o Poder do jogador com o do monstro, para a tela avisar antes.
 func DificuldadeContra(jogador AtributosRPG, monstro MonstroRPG) string {
-	poderMonstro := CalcularPoder(AtributosRPG{Vida: monstro.Vida, Ataque: monstro.Ataque, Defesa: monstro.Defesa})
+	poderMonstro := PoderDoMonstro(monstro)
 	if poderMonstro <= 0 {
 		return "facil"
 	}
@@ -198,6 +388,9 @@ func lerMonstros(dbClient *supabase.Client) ([]MonstroRPG, error) {
 		return nil, err
 	}
 	sort.SliceStable(monstros, func(i, j int) bool { return monstros[i].Ordem < monstros[j].Ordem })
+	for i := range monstros {
+		monstros[i].Velocidade = VelocidadeDoMonstro(monstros[i])
+	}
 	return monstros, nil
 }
 
@@ -253,7 +446,7 @@ func (h *RPGHandler) HandleGetExpedicoes(w http.ResponseWriter, r *http.Request)
 	for _, m := range monstros {
 		lista = append(lista, MonstroNaLista{
 			MonstroRPG:  m,
-			Poder:       CalcularPoder(AtributosRPG{Vida: m.Vida, Ataque: m.Ataque, Defesa: m.Defesa}),
+			Poder:       PoderDoMonstro(m),
 			Dificuldade: DificuldadeContra(equipamento.Atributos, m),
 		})
 	}
@@ -319,7 +512,7 @@ func (h *RPGHandler) HandleBatalhar(w http.ResponseWriter, r *http.Request) {
 	}
 
 	rng := novoGeradorDeBatalha()
-	resultado := SimularBatalha(equipamento.Atributos, *monstro, rng)
+	resultado := SimularBatalha(CombatenteDoEstado(equipamento), *monstro, rng)
 
 	var itemSorteado *ItemRPG
 	if resultado.Venceu {
@@ -328,7 +521,7 @@ func (h *RPGHandler) HandleBatalhar(w http.ResponseWriter, r *http.Request) {
 		for _, c := range candidatos {
 			ids = append(ids, c.ID)
 		}
-		if id := EscolherItemDaRecompensa(rng, monstro.ChanceItem, ids); id != "" {
+		if id := EscolherItemDaRecompensa(rng, monstro.ChanceItem+equipamento.Atributos.SorteItem, ids); id != "" {
 			for i := range candidatos {
 				if candidatos[i].ID == id {
 					itemSorteado = &candidatos[i]

@@ -1,6 +1,15 @@
 // client/src/lib/rpg.test.ts
 import { describe, it, expect } from 'vitest'
-import { ESTILO_DA_RARIDADE, SLOTS_RPG, diferencaDaTroca, estiloDaRaridade, resumoDoItem } from './rpg'
+import {
+  ESTILO_DA_RARIDADE,
+  SLOTS_RPG,
+  descreverTurno,
+  diferencaDaTroca,
+  estiloDaRaridade,
+  porMilEmPorcento,
+  resumoDoItem,
+  somaDosPontos,
+} from './rpg'
 
 describe('rpg - equipamentos', () => {
   it('lista os cinco slots na ordem do servidor', () => {
@@ -64,5 +73,28 @@ describe('rpg - invocação', () => {
     expect(faltamParaGarantia({ sem_epico: 0, chances })).toBe(10)
     expect(faltamParaGarantia({ sem_epico: 9, chances })).toBe(1)
     expect(faltamParaGarantia({ sem_epico: 12, chances })).toBe(1)
+  })
+})
+
+describe('atributos primários e registro da luta', () => {
+  it('soma os pontos e mostra milésimos como porcentagem', () => {
+    expect(somaDosPontos({ forca: 3, inteligencia: 0, constituicao: 2, agilidade: 0, destreza: 1, sorte: 0 })).toBe(6)
+    expect(porMilEmPorcento(70)).toBe('7%')
+    expect(porMilEmPorcento(115)).toBe('11,5%')
+    expect(porMilEmPorcento(undefined)).toBe('0%')
+  })
+
+  it('descreve cada tipo de turno', () => {
+    const base = { dano: 12, critico: false, vida_jogador: 100, vida_monstro: 50 }
+    expect(descreverTurno({ ...base, atacante: 'jogador' }, 'Lobo')).toEqual({ texto: 'Você golpeia', valor: '−12' })
+    expect(descreverTurno({ ...base, atacante: 'jogador', habilidade: 'Corte Duplo' }, 'Lobo').texto).toBe('Você usa Corte Duplo')
+    expect(descreverTurno({ ...base, atacante: 'jogador', dano: 0, habilidade: 'Despertar do Éter', cura: 30 }, 'Lobo')).toEqual({
+      texto: 'Despertar do Éter: recupera Vida',
+      valor: '+30',
+    })
+    expect(descreverTurno({ ...base, atacante: 'monstro', dano: 0, esquiva: true }, 'Lobo')).toEqual({
+      texto: 'Lobo ataca, e você esquiva',
+      valor: '0',
+    })
   })
 })

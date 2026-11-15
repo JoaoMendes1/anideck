@@ -12,11 +12,11 @@ func TestInicioTemporadaBrasilia(t *testing.T) {
 	}
 
 	testes := []struct {
-		nome           string
-		instante       time.Time
-		esperadoAno    int
-		esperadoMes    time.Month
-		esperadoDia    int
+		nome        string
+		instante    time.Time
+		esperadoAno int
+		esperadoMes time.Month
+		esperadoDia int
 	}{
 		{
 			nome:        "Último minuto de março (Q1)",

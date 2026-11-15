@@ -67,7 +67,9 @@ type estadoJogadorBanco struct {
 		Slot   string `json:"slot"`
 		ItemID string `json:"item_id"`
 	} `json:"equipados"`
-	Bilhetes   int             `json:"bilhetes"`
+	Bilhetes int `json:"bilhetes"`
+	// Ausente com o sql/076 sem o 077; objeto vazio é quem nunca distribuiu.
+	Pontos     *PrimariosRPG   `json:"pontos"`
 	Cosmeticos json.RawMessage `json:"cosmeticos"`
 	Skins      json.RawMessage `json:"skins"`
 }
@@ -112,6 +114,9 @@ func contextoDoEstado(e estadoJogadorBanco, cfg configRPG) (contextoPersonagem, 
 	for _, eq := range e.Equipados {
 		ctx.equipados[eq.Slot] = eq.ItemID
 	}
+	if e.Pontos != nil {
+		ctx.pontos, ctx.pontosLidos = *e.Pontos, true
+	}
 	return ctx, nil
 }
 
@@ -144,10 +149,35 @@ func lerEstadoJogador(dbClient *supabase.Client) (contextoPersonagem, bool, erro
 // ida ao banco (rpg_estado_jogador, sql/076). Sem essa função aplicada, cai no caminho antigo,
 // que lê tabela por tabela.
 func carregarContextoPersonagem(dbClient *supabase.Client, userID string) (contextoPersonagem, error) {
-	if ctx, ok, err := lerEstadoJogador(dbClient); ok {
+	ctx, ok, err := lerEstadoJogador(dbClient)
+	if !ok {
+		ctx, err = carregarContextoPersonagemAntigo(dbClient, userID)
+	}
+	if err != nil || ctx.linha == nil {
 		return ctx, err
 	}
-	return carregarContextoPersonagemAntigo(dbClient, userID)
+	// Sem o sql/077 na leitura única, os pontos vêm à parte; sem a tabela, ficam zerados.
+	if !ctx.pontosLidos {
+		ctx.pontos = lerPontos(dbClient, userID)
+	}
+	return ctx, nil
+}
+
+// lerPontos lê os pontos distribuídos. Falha ou tabela ausente dão zero em tudo: o
+// personagem continua jogável com os atributos da base.
+func lerPontos(dbClient *supabase.Client, userID string) PrimariosRPG {
+	dados, _, err := dbClient.From("rpg_atributos").
+		Select("forca,inteligencia,constituicao,agilidade,destreza,sorte", "", false).
+		Eq("user_id", userID).
+		Execute()
+	if err != nil {
+		return PrimariosRPG{}
+	}
+	var linhas []PrimariosRPG
+	if json.Unmarshal(dados, &linhas) != nil || len(linhas) == 0 {
+		return PrimariosRPG{}
+	}
+	return linhas[0]
 }
 
 // carregarContextoPersonagemAntigo é a leitura de antes do sql/076, mantida como reserva.
@@ -179,9 +209,20 @@ func carregarContextoPersonagemAntigo(dbClient *supabase.Client, userID string) 
 // não recebeu o kit, e só então o kit é entregue e lido de novo.
 func equipamentoDoContexto(dbClient *supabase.Client, userID string, ctx contextoPersonagem) (EstadoEquipamento, error) {
 	nivel := CalcularNivelERank(ctx.xpTotal, ctx.ranks).Nivel
+	var estado EstadoEquipamento
 	if ctx.inventarioLido && len(ctx.inventario) > 0 {
-		return MontarEstadoEquipamento(nivel, ctx.inventario, ctx.equipados), nil
+		estado = MontarEstadoEquipamento(nivel, ctx.inventario, ctx.equipados, ctx.pontos)
+	} else {
+		dbClient.Rpc("rpg_garantir_kit_inicial", "", map[string]interface{}{})
+		var err error
+		if estado, err = carregarEstadoEquipamento(dbClient, userID, nivel, ctx.pontos); err != nil {
+			return EstadoEquipamento{}, err
+		}
 	}
-	dbClient.Rpc("rpg_garantir_kit_inicial", "", map[string]interface{}{})
-	return carregarEstadoEquipamento(dbClient, userID, nivel)
+	base := ""
+	if ctx.linha != nil {
+		base = ctx.linha.PersonagemBase
+	}
+	estado.Habilidades = LivroDeHabilidades(base, nivel)
+	return estado, nil
 }

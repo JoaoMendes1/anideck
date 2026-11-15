@@ -11,6 +11,8 @@ import { obterFundoDoCenario } from '../lib/cosmeticos'
 import CamadaDaAura from '../components/personagem/CamadaDaAura'
 import PainelEquipamentos from '../components/personagem/PainelEquipamentos'
 import SlotsDoPersonagem from '../components/personagem/SlotsDoPersonagem'
+import PainelAtributos from '../components/personagem/PainelAtributos'
+import LivroDeHabilidades from '../components/personagem/LivroDeHabilidades'
 import { obterEquipamentos, type EstadoEquipamento, type SlotId } from '../lib/rpg'
 import {
   ALTURA_DA_ARTE,
@@ -551,6 +553,8 @@ function FichaDoPersonagem({
             aoFecharSlot={() => setSlotAberto(null)}
             aoAtualizar={aoAtualizarEquipamento}
           />
+          {equipamento && <PainelAtributos estado={equipamento} aoAtualizar={aoAtualizarEquipamento} />}
+          {equipamento && <LivroDeHabilidades habilidades={equipamento.habilidades} />}
         </div>
       </div>
     </div>

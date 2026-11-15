@@ -15,7 +15,8 @@ Onde este bloco e o plano original discordarem, vale este bloco.
 | Elenco | Confirmada | Personagens prontos, como em Wuthering Waves. Classe e elemento são do personagem, não escolhidos pelo usuário |
 | Visuais e skins | Proposta (18.2) | Estágio e skin viram a mesma coisa, um "visual", que só difere em como se desbloqueia: por nível, por compra ou por evento. Skin é uma ilustração só, sem estágios |
 | Telas | Confirmada | Retrato no celular, que é a prioridade; no PC, arranjo em paisagem com os mesmos dados. 3D fica para o longo prazo |
-| Atributos de combate | Confirmada | HP, ATK e DEF só aparecem quando o combate existir (18.3) |
+| Atributos de combate | Confirmada | Seis primários (Força, Inteligência, Constituição, Agilidade, Destreza, Sorte) com pontos a cada 2 níveis, e derivados chamados Vida e Éter, não HP e MP, que já são da comunidade. Regras em `docs/DECISIONS.md` (#227) |
+| Habilidades | Confirmada | Livro por classe, liberado por nível, e uma habilidade única por personagem do elenco. No combate, usadas sozinhas (#227) |
 | Sorteio (gacha) | Confirmada | Só gratuito, com bilhetes ganhos jogando, que não se compram nem se transferem. O ECA Digital (Lei 15.211/2025, art. 20) veda caixa de recompensa paga em jogo de acesso provável por menores |
 | Moeda | Confirmada | Os AniCoins podem vir a ser vendidos (`VISAO_COMUNIDADE.md`). Por isso nenhum sorteio é pago com eles; a linha "Cristais não são comprados com dinheiro", na seção 13 abaixo, está superada |
 | Primeiros usuários | Confirmada | Grupo pequeno e limitado, os "Primordiais", antes de abrir |

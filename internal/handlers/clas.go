@@ -84,16 +84,16 @@ type MeuClaResponse struct {
 }
 
 type ClaDenunciaItem struct {
-	ID                 string    `json:"id"`
-	ClaID              string    `json:"cla_id"`
-	ClaNome            string    `json:"cla_nome"`
-	ClaTag             string    `json:"cla_tag"`
-	DenuncianteUserID  string    `json:"denunciante_user_id"`
-	DenuncianteNome    string    `json:"denunciante_nome,omitempty"`
-	DenuncianteHandle  string    `json:"denunciante_handle,omitempty"`
-	Motivo             string    `json:"motivo"`
-	Status             string    `json:"status"`
-	CriadoEm           time.Time `json:"criado_em"`
+	ID                string    `json:"id"`
+	ClaID             string    `json:"cla_id"`
+	ClaNome           string    `json:"cla_nome"`
+	ClaTag            string    `json:"cla_tag"`
+	DenuncianteUserID string    `json:"denunciante_user_id"`
+	DenuncianteNome   string    `json:"denunciante_nome,omitempty"`
+	DenuncianteHandle string    `json:"denunciante_handle,omitempty"`
+	Motivo            string    `json:"motivo"`
+	Status            string    `json:"status"`
+	CriadoEm          time.Time `json:"criado_em"`
 }
 
 // Tipos para Liga de Clãs por Temporada (Fase 17 · 17.1c, #182)
@@ -492,7 +492,7 @@ func (h *ClasHandler) HandleTransferirLideranca(w http.ResponseWriter, r *http.R
 	}
 
 	resRaw := strings.TrimSpace(client.Rpc("transferir_lideranca_cla", "", map[string]interface{}{
-		"p_cla_id":         claID,
+		"p_cla_id":        claID,
 		"p_novo_lider_id": payload.NovoLiderID,
 	}))
 

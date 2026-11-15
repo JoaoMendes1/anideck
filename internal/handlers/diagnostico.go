@@ -422,7 +422,6 @@ func violaChaveEstrangeira(err error) bool {
 		strings.Contains(texto, "foreign key constraint")
 }
 
-
 func (h *DiagnosticoHandler) HandleRemoverDaTaxonomia(w http.ResponseWriter, r *http.Request) {
 	token, ok := r.Context().Value(middleware.TokenKey).(string)
 	if !ok {
@@ -468,7 +467,7 @@ func (h *DiagnosticoHandler) HandleRemoverDaTaxonomia(w http.ResponseWriter, r *
 		return
 	}
 
-		if _, _, err := client.From("genre_taxonomy").
+	if _, _, err := client.From("genre_taxonomy").
 		Delete("", "exact").
 		Eq("raw_name", req.RawName).
 		Execute(); err != nil {

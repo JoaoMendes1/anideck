@@ -12,6 +12,7 @@ import {
   diferencaDaTroca,
   equiparItemRPG,
   estiloDaRaridade,
+  porMilEmPorcento,
   resumoDoItem,
   type EstadoEquipamento,
   type SlotId,
@@ -74,7 +75,7 @@ export default function PainelEquipamentos({
       <section aria-labelledby="titulo-dos-equipamentos" className="flex flex-col gap-2">
         <div className="flex items-center justify-between gap-3">
           <h2 id="titulo-dos-equipamentos" className={ROTULO_DE_SECAO}>
-            Atributos e equipamentos
+            Status e equipamentos
           </h2>
           <span className="rounded-full border border-line px-2.5 py-0.5 font-mono text-xs text-muted">indisponível</span>
         </div>
@@ -94,11 +95,25 @@ export default function PainelEquipamentos({
     { chave: 'defesa', rotulo: 'Defesa', Icone: Shield, valor: atributos.defesa, bonus: atributos.defesa - base.defesa, cor: 'text-holo-3' },
   ]
 
+  // O resto do status, quando o servidor já o calcula (sql/077).
+  const secundarios =
+    atributos.magia === undefined
+      ? []
+      : [
+          { rotulo: 'Magia', valor: String(atributos.magia) },
+          { rotulo: 'Éter', valor: String(atributos.eter ?? 0) },
+          { rotulo: 'Velocidade', valor: String(atributos.velocidade ?? 0) },
+          { rotulo: 'Crítico', valor: porMilEmPorcento(atributos.critico_por_mil) },
+          { rotulo: 'Dano crítico', valor: `${atributos.dano_critico ?? 150}%` },
+          { rotulo: 'Esquiva', valor: porMilEmPorcento(atributos.esquiva_por_mil) },
+          { rotulo: 'Sorte de item', valor: `+${atributos.sorte_item ?? 0}%` },
+        ]
+
   return (
     <section aria-labelledby="titulo-dos-equipamentos" className="flex flex-col gap-3">
       <div className="flex items-center justify-between gap-3">
         <h2 id="titulo-dos-equipamentos" className={ROTULO_DE_SECAO}>
-          Atributos e equipamentos
+          Status e equipamentos
         </h2>
         <span className="inline-flex items-center gap-1 rounded-full border border-holo-2/50 px-2.5 py-0.5 font-mono text-xs font-semibold text-text">
           <Zap size={12} className="text-holo-2" aria-hidden="true" />
@@ -118,6 +133,17 @@ export default function PainelEquipamentos({
           </div>
         ))}
       </dl>
+
+      {secundarios.length > 0 && (
+        <dl className="m-0 grid grid-cols-2 gap-x-4 gap-y-1.5 rounded-xl border border-line bg-panel p-3 sm:grid-cols-3">
+          {secundarios.map(({ rotulo, valor }) => (
+            <div key={rotulo} className="flex min-w-0 items-baseline justify-between gap-2">
+              <dt className="truncate text-xs text-muted">{rotulo}</dt>
+              <dd className="m-0 font-mono text-sm font-semibold text-text">{valor}</dd>
+            </div>
+          ))}
+        </dl>
+      )}
 
       <p className="m-0 text-xs text-muted">Toque num slot ao lado do personagem para trocar o item.</p>
 

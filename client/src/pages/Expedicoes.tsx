@@ -29,6 +29,7 @@ import {
   batalhar,
   batalhasRestantes,
   estiloDaRaridade,
+  descreverTurno,
   obterExpedicoes,
   resumoDoItem,
   rotuloDaDificuldade,
@@ -129,6 +130,7 @@ function TelaDeBatalha({ batalha, aoVoltar }: { batalha: RespostaBatalha; aoVolt
         {recentes.map((turno, i) => {
           const numero = mostrados - i
           const doJogador = turno.atacante === 'jogador'
+          const { texto, valor } = descreverTurno(turno, monstro.nome)
           return (
             <li
               key={numero}
@@ -137,10 +139,14 @@ function TelaDeBatalha({ batalha, aoVoltar }: { batalha: RespostaBatalha; aoVolt
               } ${i === 0 ? '' : 'opacity-70'}`}
             >
               <span className="min-w-0 truncate">
-                {doJogador ? 'Você golpeia' : `${monstro.nome} ataca`}
+                {turno.habilidade ? <strong className={turno.cura ? 'text-green' : 'text-holo-2'}>{texto}</strong> : texto}
                 {turno.critico && <strong className="ml-1 text-gold">Crítico!</strong>}
               </span>
-              <span className={`shrink-0 font-mono font-bold ${doJogador ? 'text-holo-3' : 'text-coral'}`}>−{turno.dano}</span>
+              <span
+                className={`shrink-0 font-mono font-bold ${turno.cura ? 'text-green' : turno.esquiva ? 'text-muted' : doJogador ? 'text-holo-3' : 'text-coral'}`}
+              >
+                {valor}
+              </span>
             </li>
           )
         })}

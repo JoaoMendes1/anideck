@@ -48,7 +48,7 @@ func (h *AccountHandler) HandleDeleteAccount(w http.ResponseWriter, r *http.Requ
 		return
 	}
 
-		deletar := h.Deletar
+	deletar := h.Deletar
 	if deletar == nil {
 		deletar = deletarUsuarioSupabase
 	}
@@ -67,7 +67,7 @@ func (h *AccountHandler) HandleDeleteAccount(w http.ResponseWriter, r *http.Requ
 	log.Printf("[EXCLUSAO CONTA] iniciando exclusao do usuario %s em %s",
 		userID, time.Now().Format(time.RFC3339))
 
-		if err := deletar(userID); err != nil {
+	if err := deletar(userID); err != nil {
 		log.Printf("[ERRO EXCLUSAO CONTA] usuario %s: %v", userID, err)
 		http.Error(w, "Não foi possível excluir a conta", http.StatusInternalServerError)
 		return

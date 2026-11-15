@@ -273,8 +273,8 @@ func (h *RankingsComunidadeHandler) HandleClimaTemporada(w http.ResponseWriter, 
 		}
 
 		var progresso []struct {
-			MalID          int `json:"mal_id"`
-			EpisodeNumber  int `json:"episode_number"`
+			MalID         int `json:"mal_id"`
+			EpisodeNumber int `json:"episode_number"`
 		}
 		if dataProg, _, errP := database.Client.From("episode_progress").
 			Select("mal_id,episode_number", "", false).

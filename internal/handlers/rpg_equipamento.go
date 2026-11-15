@@ -13,13 +13,26 @@ import (
 	supabase "github.com/supabase-community/supabase-go"
 )
 
-// AtributosRPG são os números de combate do personagem. Chamam-se Vida, Ataque e Defesa, e
-// não HP e MP, porque esses dois já são a Vitalidade e a Mana da comunidade.
+// AtributosRPG são os números de combate do personagem, derivados dos primários e somados
+// aos itens. Chamam-se Vida e Éter, e não HP e MP, porque Vitalidade e Mana já são da
+// comunidade.
 type AtributosRPG struct {
 	Vida   int `json:"vida"`
 	Ataque int `json:"ataque"`
 	Defesa int `json:"defesa"`
-	// Poder resume os três num número só, para comparar com um monstro de relance.
+	// Magia reforça as habilidades arcanas; Éter é o que elas gastam.
+	Magia int `json:"magia"`
+	Eter  int `json:"eter"`
+	// Velocidade decide quem age primeiro na rodada.
+	Velocidade int `json:"velocidade"`
+	// Chances em milésimos (70 = 7%), para não usar ponto flutuante na resposta.
+	CriticoPorMil int `json:"critico_por_mil"`
+	// DanoCritico é o multiplicador do crítico, em porcento (150 = 1,5x).
+	DanoCritico   int `json:"dano_critico"`
+	EsquivaPorMil int `json:"esquiva_por_mil"`
+	// SorteItem soma pontos percentuais à chance de item da vitória.
+	SorteItem int `json:"sorte_item"`
+	// Poder resume tudo num número só, para comparar com um monstro de relance.
 	Poder int `json:"poder"`
 }
 
@@ -53,11 +66,18 @@ type SlotRPG struct {
 
 // EstadoEquipamento é o corpo de GET e PUT /api/personagem/equipamentos.
 type EstadoEquipamento struct {
-	Nivel      int                `json:"nivel"`
-	Base       AtributosRPG       `json:"base"`
-	Atributos  AtributosRPG       `json:"atributos"`
-	Slots      []SlotRPG          `json:"slots"`
-	Inventario []ItemDoInventario `json:"inventario"`
+	Nivel int `json:"nivel"`
+	// Base é sem itens, já com os pontos; Atributos é com tudo.
+	Base      AtributosRPG `json:"base"`
+	Atributos AtributosRPG `json:"atributos"`
+	// Primários: o que o nível dá, os pontos em uso e quantos o nível permite.
+	PrimariosBase     PrimariosRPG       `json:"primarios_base"`
+	Pontos            PrimariosRPG       `json:"pontos"`
+	PontosDisponiveis int                `json:"pontos_disponiveis"`
+	Slots             []SlotRPG          `json:"slots"`
+	Inventario        []ItemDoInventario `json:"inventario"`
+	// Livro de habilidades da classe, com as bloqueadas pelo nível.
+	Habilidades []HabilidadeRPG `json:"habilidades"`
 }
 
 // SlotsRPG devolve os slots na ordem em que a tela os mostra. A lista repete o CHECK de
@@ -77,30 +97,21 @@ func SlotRPGValido(slot string) bool {
 }
 
 // CalcularPoder resume os atributos. Vida vale um décimo porque cresce dez vezes mais
-// rápido que ataque e defesa.
+// rápido que ataque e defesa; Magia vale metade porque só entra nas habilidades arcanas.
 func CalcularPoder(a AtributosRPG) int {
-	return a.Vida/10 + a.Ataque*2 + a.Defesa*2
+	return a.Vida/10 + a.Ataque*2 + a.Defesa*2 + a.Magia/2 + a.Velocidade
 }
 
-// AtributosBase são os atributos de um personagem sem equipamento. Crescem em linha reta
-// com o nível, que por sua vez vem só de assistir animes: o equipamento ajuda, mas não
-// substitui a atividade real.
+// AtributosBase são os atributos de um personagem sem equipamento e sem pontos. Crescem
+// com o nível, que vem só de assistir animes: o equipamento e os pontos ajudam, mas não
+// substituem a atividade real.
 func AtributosBase(nivel int) AtributosRPG {
-	if nivel < 1 {
-		nivel = 1
-	}
-	a := AtributosRPG{
-		Vida:   100 + 20*(nivel-1),
-		Ataque: 10 + 3*(nivel-1),
-		Defesa: 5 + 2*(nivel-1),
-	}
-	a.Poder = CalcularPoder(a)
-	return a
+	return DerivarAtributos(nivel, PrimariosBase(nivel))
 }
 
 // SomarAtributos junta os atributos base aos dos itens equipados.
 func SomarAtributos(base AtributosRPG, itens []ItemRPG) AtributosRPG {
-	total := AtributosRPG{Vida: base.Vida, Ataque: base.Ataque, Defesa: base.Defesa}
+	total := base
 	for _, i := range itens {
 		total.Vida += i.Vida
 		total.Ataque += i.Ataque
@@ -139,7 +150,7 @@ func interpretarInventarioRPG(dados []byte) ([]linhaInventarioRPG, error) {
 // MontarEstadoEquipamento calcula o que a tela mostra e o que o combate usa. Um item
 // equipado só conta se o jogador ainda o possui e se o nível o alcança: desmarcar episódios
 // reduz o XP, e o item acima do nível fica no slot sem somar atributo, em vez de dar erro.
-func MontarEstadoEquipamento(nivel int, inventario []linhaInventarioRPG, equipados map[string]string) EstadoEquipamento {
+func MontarEstadoEquipamento(nivel int, inventario []linhaInventarioRPG, equipados map[string]string, pontos PrimariosRPG) EstadoEquipamento {
 	if nivel < 1 {
 		nivel = 1
 	}
@@ -188,19 +199,25 @@ func MontarEstadoEquipamento(nivel int, inventario []linhaInventarioRPG, equipad
 		return lista[i].Nome < lista[j].Nome
 	})
 
-	base := AtributosBase(nivel)
+	disponiveis := PontosDisponiveis(nivel)
+	pontos = LimitarPontos(pontos, disponiveis)
+	primariosBase := PrimariosBase(nivel)
+	base := DerivarAtributos(nivel, primariosBase.Somar(pontos))
 	return EstadoEquipamento{
-		Nivel:      nivel,
-		Base:       base,
-		Atributos:  SomarAtributos(base, emUso),
-		Slots:      slots,
-		Inventario: lista,
+		Nivel:             nivel,
+		Base:              base,
+		Atributos:         SomarAtributos(base, emUso),
+		PrimariosBase:     primariosBase,
+		Pontos:            pontos,
+		PontosDisponiveis: disponiveis,
+		Slots:             slots,
+		Inventario:        lista,
 	}
 }
 
 // carregarEstadoEquipamento lê inventário e slots do jogador e monta o estado. É a mesma
 // conta para a tela e para o combate, que não aceita atributo vindo do navegador.
-func carregarEstadoEquipamento(dbClient *supabase.Client, userID string, nivel int) (EstadoEquipamento, error) {
+func carregarEstadoEquipamento(dbClient *supabase.Client, userID string, nivel int, pontos PrimariosRPG) (EstadoEquipamento, error) {
 	dados, _, err := dbClient.From("rpg_inventario").
 		Select("quantidade,rpg_itens(id,slot,nome,descricao,raridade,vida,ataque,defesa,nivel_minimo)", "", false).
 		Eq("user_id", userID).
@@ -232,7 +249,7 @@ func carregarEstadoEquipamento(dbClient *supabase.Client, userID string, nivel i
 		equipados[l.Slot] = l.ItemID
 	}
 
-	return MontarEstadoEquipamento(nivel, inventario, equipados), nil
+	return MontarEstadoEquipamento(nivel, inventario, equipados, pontos), nil
 }
 
 // RPGHandler responde pelas rotas de jogo do personagem: equipamentos, batalhas e invocação.

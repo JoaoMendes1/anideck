@@ -222,4 +222,3 @@ func TestValidacoesAdminGuilda(t *testing.T) {
 		t.Fatal("esperava erro para regra de insígnia desconhecida")
 	}
 }
-

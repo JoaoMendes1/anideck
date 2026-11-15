@@ -48,7 +48,7 @@ Staging sobe já na Fase 1, como projeto esqueleto — mesmo padrão do JVM Syst
 | 15 · Comunidade base | ✅ Concluída (08/11/2026, #154); falta abrir o beta |
 | 16 · Economia e cartas | ✅ Concluída (09/11/2026, #165); falta abrir o beta |
 | 17 · Comunidade viva | ✅ Concluída (13/11/2026, #179) |
-| 18 · O Despertar Isekai | 🚧 Em andamento — 18.1 Meu Personagem (#199, #200), 18.2a escolha de visual (#218), 18.2b cenários (#219), 18.2e auras (#220) , equipamentos com atributos (#221), expedições (#222), invocação gratuita (#223), skins (#224) e desempenho da tela (#226) entregues; falta aplicar o `sql/075` e o `sql/076` |
+| 18 · O Despertar Isekai | 🚧 Em andamento — 18.1 Meu Personagem (#199, #200), 18.2a escolha de visual (#218), 18.2b cenários (#219), 18.2e auras (#220) , equipamentos com atributos (#221), expedições (#222), invocação gratuita (#223), skins (#224), desempenho da tela (#226) e atributos com livro de habilidades (#227) entregues; falta aplicar do `sql/075` ao `sql/077` |
 
 ---
 
@@ -784,13 +784,15 @@ experiência pequena e funcional de cada vez.
   - [x] 18.2e Auras do personagem, compradas na Loja: tipo e slot `aura`, três auras em CSS desenhadas atrás da ilustração (`CamadaDaAura`), paradas para quem pediu movimento reduzido, com categoria e prévia na Loja (#220)
 - [ ] 18.3 Progressão de RPG
   - [x] 18.3a Atributos Vida, Ataque e Defesa, calculados no servidor a partir do nível e dos itens equipados; item acima do nível fica no slot sem somar (#221)
+  - [x] 18.3b Seis atributos primários (Força, Inteligência, Constituição, Agilidade, Destreza e Sorte), com 1 ponto para distribuir a cada 2 níveis e redistribuição livre, conferida no banco; derivados calculados no servidor: Vida, Ataque, Defesa, Magia, Éter, Velocidade, Crítico, Dano crítico, Esquiva e Sorte de item (#227)
+  - [x] 18.3c Livro de habilidades: cinco comuns do Espadachim liberadas por nível e a única do personagem, "Despertar do Éter". No combate, ordem pela Velocidade, esquiva, crítico pela Destreza, Éter que volta a cada rodada e habilidades usadas sozinhas, com o nome no registro da expedição (#227)
 - [ ] 18.4 Mundo e PvE
   - [x] 18.4a Expedições: oito monstros, batalha por turnos simulada no servidor com os atributos dele, limite de batalhas por dia (`app_settings.rpg_batalhas_por_dia`, padrão 5), vitória dá bilhetes de invocação e chance de item; combate não dá XP (#222). Arte provisória: ícone e cor por monstro
 - [ ] 18.5 Integração comunitária
 - [ ] 18.6 Arena, cartas e invocação
   - [x] 18.6a Invocação gratuita: bilhetes ganhos só em expedições, invocar 1 ou 10, chances visíveis e iguais às do sorteio (`rpg_chances_invocacao`), garantia de épico ou melhor a cada 10, repetidos somam no inventário (#223). Sem pagamento por desenho: ECA Digital, art. 20
 
-**Pendência do dono:** aplicar o `sql/075_rpg_ajustes.sql` (#225) e o `sql/076_rpg_estado_jogador.sql` (#226); sem o 076 a tela funciona, pelo caminho lento. Do `071` ao `074` foram aplicados e conferidos no snapshot em 15/11/2026.
+**Pendência do dono:** aplicar o `sql/075_rpg_ajustes.sql` (#225) o `sql/076_rpg_estado_jogador.sql` (#226) e o `sql/077_rpg_atributos.sql` (#227), nessa ordem. Sem o 076 a tela funciona pelo caminho lento; sem o 077, os pontos ficam zerados e não dá para salvar. Do `071` ao `074` foram aplicados e conferidos no snapshot em 15/11/2026.
 
 **Arte pendente (o sistema já está pronto para recebê-la, sem mudar código de regra):** ilustração de cada skin (entra em `ARTES` com o id da skin e sai de `SKINS`), ícone ou ilustração de cada item de equipamento e de cada monstro, e a segunda personagem do elenco.
 

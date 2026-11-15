@@ -160,7 +160,7 @@ func (h *PrevisoesHandler) HandleAdminResolverPrevisao(w http.ResponseWriter, r 
 	}
 
 	params := map[string]interface{}{
-		"p_previsao_id":      previsaoID,
+		"p_previsao_id":     previsaoID,
 		"p_opcao_vencedora": req.OpcaoVencedora,
 	}
 

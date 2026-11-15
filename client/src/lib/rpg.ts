@@ -10,7 +10,32 @@ export interface AtributosRPG {
   vida: number
   ataque: number
   defesa: number
+  /** Os campos abaixo chegam com o servidor do sql/077; respostas antigas não os têm. */
+  magia?: number
+  eter?: number
+  velocidade?: number
+  /** Milésimos: 70 = 7%. */
+  critico_por_mil?: number
+  /** Porcento: 150 = 1,5x. */
+  dano_critico?: number
+  esquiva_por_mil?: number
+  /** Pontos percentuais somados à chance de item. */
+  sorte_item?: number
   poder: number
+}
+
+export type PrimarioId = 'forca' | 'inteligencia' | 'constituicao' | 'agilidade' | 'destreza' | 'sorte'
+export type PrimariosRPG = Record<PrimarioId, number>
+
+export interface HabilidadeRPG {
+  id: string
+  nome: string
+  descricao: string
+  tipo: 'comum' | 'unica'
+  nivel_minimo: number
+  custo_eter: number
+  recarga: number
+  desbloqueada: boolean
 }
 
 export type SlotId = 'arma' | 'armadura' | 'capa' | 'botas' | 'joia'
@@ -45,6 +70,32 @@ export interface EstadoEquipamento {
   atributos: AtributosRPG
   slots: SlotRPG[]
   inventario: ItemDoInventario[]
+  primarios_base?: PrimariosRPG
+  pontos?: PrimariosRPG
+  pontos_disponiveis?: number
+  habilidades?: HabilidadeRPG[]
+}
+
+/** O que cada atributo primário faz, na ordem da tela. O efeito é texto: a conta é do servidor. */
+export const PRIMARIOS_RPG: { id: PrimarioId; rotulo: string; efeito: string }[] = [
+  { id: 'forca', rotulo: 'Força', efeito: 'Ataque' },
+  { id: 'inteligencia', rotulo: 'Inteligência', efeito: 'Magia e Éter' },
+  { id: 'constituicao', rotulo: 'Constituição', efeito: 'Vida e Defesa' },
+  { id: 'agilidade', rotulo: 'Agilidade', efeito: 'Velocidade e esquiva' },
+  { id: 'destreza', rotulo: 'Destreza', efeito: 'Crítico' },
+  { id: 'sorte', rotulo: 'Sorte', efeito: 'Chance de item' },
+]
+
+export const PRIMARIOS_ZERADOS: PrimariosRPG = { forca: 0, inteligencia: 0, constituicao: 0, agilidade: 0, destreza: 0, sorte: 0 }
+
+export function somaDosPontos(p: PrimariosRPG): number {
+  return PRIMARIOS_RPG.reduce((total, { id }) => total + (p[id] ?? 0), 0)
+}
+
+/** Milésimos em porcentagem curta: 70 vira "7%", 115 vira "11,5%". */
+export function porMilEmPorcento(valor: number | undefined): string {
+  const v = (valor ?? 0) / 10
+  return `${Number.isInteger(v) ? v : v.toFixed(1).replace('.', ',')}%`
 }
 
 // Arte provisória: o slot dá o ícone e a raridade dá a cor. A ilustração de cada item entra
@@ -100,6 +151,25 @@ async function cabecalhoDeAutenticacao(): Promise<Record<string, string>> {
     data: { session },
   } = await supabase.auth.getSession()
   return session?.access_token ? { Authorization: `Bearer ${session.access_token}` } : {}
+}
+
+const FALHA_DOS_PONTOS = 'Não foi possível salvar os pontos agora.'
+
+/** Grava a distribuição inteira dos pontos. Devolve o estado novo ou a mensagem de erro. */
+export async function distribuirPontos(pontos: PrimariosRPG): Promise<{ dados?: EstadoEquipamento; erro?: string }> {
+  try {
+    const res = await fetch('/api/personagem/atributos', {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json', ...(await cabecalhoDeAutenticacao()) },
+      body: JSON.stringify(pontos),
+    })
+    const json = (await res.json().catch(() => null)) as (EstadoEquipamento & { error?: string }) | null
+    if (!res.ok) return { erro: json?.error || FALHA_DOS_PONTOS }
+    if (!json || !Array.isArray(json.slots)) return { erro: FALHA_DOS_PONTOS }
+    return { dados: json }
+  } catch {
+    return { erro: FALHA_DOS_PONTOS }
+  }
 }
 
 /** Lê atributos, slots e inventário. Devolve null quando a leitura falha. */
@@ -180,6 +250,11 @@ export interface TurnoBatalha {
   critico: boolean
   vida_jogador: number
   vida_monstro: number
+  /** Nome da habilidade usada; ausente é ataque comum. */
+  habilidade?: string
+  esquiva?: boolean
+  cura?: number
+  eter?: number
 }
 
 export interface RespostaBatalha {
@@ -188,6 +263,17 @@ export interface RespostaBatalha {
   resultado: { venceu: boolean; rodadas: number; turnos: TurnoBatalha[] }
   recompensa: { bilhetes: number; item?: ItemRPG }
   hoje: HojeRPG
+}
+
+/** Texto de uma linha do registro da luta e o número ao lado (dano ou cura). */
+export function descreverTurno(turno: TurnoBatalha, nomeDoMonstro: string): { texto: string; valor: string } {
+  if (turno.atacante === 'monstro') {
+    if (turno.esquiva) return { texto: `${nomeDoMonstro} ataca, e você esquiva`, valor: '0' }
+    return { texto: `${nomeDoMonstro} ataca`, valor: `−${turno.dano}` }
+  }
+  if (turno.cura) return { texto: `${turno.habilidade ?? 'Você'}: recupera Vida`, valor: `+${turno.cura}` }
+  if (turno.habilidade) return { texto: `Você usa ${turno.habilidade}`, valor: `−${turno.dano}` }
+  return { texto: 'Você golpeia', valor: `−${turno.dano}` }
 }
 
 export const ROTULO_DA_DIFICULDADE: Record<Dificuldade, { rotulo: string; classe: string }> = {

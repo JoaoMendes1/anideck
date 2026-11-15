@@ -104,8 +104,8 @@ func TestCalcularMetaDesafioCla(t *testing.T) {
 }
 
 func TestEventoContaParaDesafio(t *testing.T) {
-	inicioSemana := time.Date(2026, 11, 9, 0, 0, 0, 0, time.UTC)  // Segunda
-	fimSemana := time.Date(2026, 11, 16, 0, 0, 0, 0, time.UTC)    // Próxima segunda
+	inicioSemana := time.Date(2026, 11, 9, 0, 0, 0, 0, time.UTC) // Segunda
+	fimSemana := time.Date(2026, 11, 16, 0, 0, 0, 0, time.UTC)   // Próxima segunda
 
 	membroAntigo := time.Date(2026, 10, 1, 0, 0, 0, 0, time.UTC)
 	membroNovoQuarta := time.Date(2026, 11, 11, 14, 0, 0, 0, time.UTC)

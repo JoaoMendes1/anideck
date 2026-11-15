@@ -192,6 +192,7 @@ func main() {
 		protegido.Put("/api/personagem/visual", personagemHandler.HandleEquiparVisual)
 		protegido.Get("/api/personagem/equipamentos", rpgHandler.HandleGetEquipamentos)
 		protegido.Put("/api/personagem/equipamentos", rpgHandler.HandleEquiparItemRPG)
+		protegido.Put("/api/personagem/atributos", rpgHandler.HandleDistribuirPontos)
 		protegido.Get("/api/rpg/batalhas", rpgHandler.HandleGetExpedicoes)
 		protegido.Post("/api/rpg/batalhas", rpgHandler.HandleBatalhar)
 		protegido.Get("/api/rpg/invocacao", rpgHandler.HandleGetInvocacao)

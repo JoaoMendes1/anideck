@@ -15,6 +15,15 @@ func monstroTeste(vida, ataque, defesa int) MonstroRPG {
 	return MonstroRPG{ID: "teste", Nome: "Teste", Tipo: "comum", Nivel: 1, Vida: vida, Ataque: ataque, Defesa: defesa}
 }
 
+func monstroDoNivel(nivel int, tipo string, vida, ataque, defesa int) MonstroRPG {
+	return MonstroRPG{ID: "teste", Nome: "Teste", Tipo: tipo, Nivel: nivel, Vida: vida, Ataque: ataque, Defesa: defesa}
+}
+
+// combatente monta o Espadachim de um nível, com o livro de habilidades daquele nível.
+func combatente(nivel int, a AtributosRPG) CombatenteRPG {
+	return CombatenteDoEstado(EstadoEquipamento{Atributos: a, Habilidades: LivroDeHabilidades(personagemBasePadrao, nivel)})
+}
+
 func TestCalcularDano(t *testing.T) {
 	if d := CalcularDano(10, 0); d != 10 {
 		t.Errorf("sem defesa, o dano é o ataque: %v", d)
@@ -28,8 +37,8 @@ func TestCalcularDano(t *testing.T) {
 }
 
 func TestSimularBatalha_MesmaSementeMesmaLuta(t *testing.T) {
-	jogador := AtributosBase(10)
-	monstro := monstroTeste(300, 40, 20)
+	jogador := combatente(30, AtributosBase(30))
+	monstro := monstroDoNivel(30, "raro", 1200, 95, 55)
 	a := SimularBatalha(jogador, monstro, rand.New(rand.NewSource(42)))
 	b := SimularBatalha(jogador, monstro, rand.New(rand.NewSource(42)))
 	if a.Venceu != b.Venceu || len(a.Turnos) != len(b.Turnos) {
@@ -43,15 +52,11 @@ func TestSimularBatalha_MesmaSementeMesmaLuta(t *testing.T) {
 }
 
 func TestSimularBatalha_RegrasDaLuta(t *testing.T) {
-	for semente := int64(0); semente < 50; semente++ {
-		r := SimularBatalha(AtributosBase(5), monstroTeste(150, 20, 8), rand.New(rand.NewSource(semente)))
+	for semente := int64(0); semente < 100; semente++ {
+		jogador := combatente(30, AtributosBase(30))
+		r := SimularBatalha(jogador, monstroDoNivel(30, "comum", 1200, 95, 55), rand.New(rand.NewSource(semente)))
 		if len(r.Turnos) == 0 || r.Turnos[0].Atacante != "jogador" {
-			t.Fatalf("o jogador ataca primeiro: %+v", r.Turnos)
-		}
-		for i := 1; i < len(r.Turnos); i++ {
-			if r.Turnos[i].Atacante == r.Turnos[i-1].Atacante {
-				t.Fatalf("os ataques se alternam: turno %d", i)
-			}
+			t.Fatalf("mais rápido, o jogador age primeiro: %+v", r.Turnos)
 		}
 		ultimo := r.Turnos[len(r.Turnos)-1]
 		if r.Venceu && (ultimo.VidaMonstro != 0 || ultimo.Atacante != "jogador") {
@@ -60,10 +65,58 @@ func TestSimularBatalha_RegrasDaLuta(t *testing.T) {
 		if !r.Venceu && ultimo.VidaJogador != 0 && r.Rodadas != maxTurnosBatalha {
 			t.Fatalf("derrota é por vida zerada ou por tempo: %+v", r)
 		}
+		despertares := 0
 		for _, turno := range r.Turnos {
-			if turno.Dano < 1 || turno.VidaJogador < 0 || turno.VidaMonstro < 0 {
-				t.Fatalf("dano mínimo 1 e vida nunca negativa: %+v", turno)
+			if turno.VidaJogador < 0 || turno.VidaMonstro < 0 || turno.VidaJogador > jogador.Atributos.Vida {
+				t.Fatalf("vida fora da faixa: %+v", turno)
 			}
+			if turno.Eter < 0 || turno.Eter > jogador.Atributos.Eter {
+				t.Fatalf("Éter fora da faixa: %+v", turno)
+			}
+			if turno.Esquiva && turno.Dano != 0 {
+				t.Fatalf("esquiva não leva dano: %+v", turno)
+			}
+			if turno.Cura == 0 && !turno.Esquiva && turno.Dano < 1 {
+				t.Fatalf("golpe que acerta dá pelo menos 1: %+v", turno)
+			}
+			if turno.Habilidade == "Despertar do Éter" {
+				despertares++
+			}
+		}
+		if despertares > 1 {
+			t.Fatalf("o despertar é uma vez por luta: %d", despertares)
+		}
+	}
+}
+
+func TestSimularBatalha_MonstroMaisRapidoAgePrimeiro(t *testing.T) {
+	lento := combatente(1, AtributosBase(1))
+	r := SimularBatalha(lento, monstroDoNivel(50, "chefe", 2200, 150, 90), rand.New(rand.NewSource(3)))
+	if r.Turnos[0].Atacante != "monstro" {
+		t.Fatalf("o chefe é mais rápido e age primeiro: %+v", r.Turnos[0])
+	}
+}
+
+func TestSimularBatalha_UsaHabilidades(t *testing.T) {
+	vistas := map[string]bool{}
+	for semente := int64(0); semente < 50; semente++ {
+		r := SimularBatalha(combatente(45, AtributosBase(45)), monstroDoNivel(45, "chefe", 4000, 140, 80), rand.New(rand.NewSource(semente)))
+		for _, turno := range r.Turnos {
+			if turno.Habilidade != "" {
+				vistas[turno.Habilidade] = true
+			}
+		}
+	}
+	for _, nome := range []string{"Golpe Firme", "Tempestade de Aço", "Despertar do Éter"} {
+		if !vistas[nome] {
+			t.Errorf("%s nunca foi usada: %v", nome, vistas)
+		}
+	}
+	// Nível 1 só tem o Golpe Firme.
+	r := SimularBatalha(combatente(1, AtributosBase(1)), monstroTeste(60, 8, 3), rand.New(rand.NewSource(1)))
+	for _, turno := range r.Turnos {
+		if turno.Habilidade != "" && turno.Habilidade != "Golpe Firme" {
+			t.Fatalf("habilidade acima do nível: %s", turno.Habilidade)
 		}
 	}
 }
@@ -71,10 +124,10 @@ func TestSimularBatalha_RegrasDaLuta(t *testing.T) {
 func TestSimularBatalha_ForcaDecide(t *testing.T) {
 	forte, fraco := 0, 0
 	for semente := int64(0); semente < 100; semente++ {
-		if SimularBatalha(AtributosBase(30), monstroTeste(60, 8, 3), rand.New(rand.NewSource(semente))).Venceu {
+		if SimularBatalha(combatente(30, AtributosBase(30)), monstroTeste(60, 8, 3), rand.New(rand.NewSource(semente))).Venceu {
 			forte++
 		}
-		if SimularBatalha(AtributosBase(1), monstroTeste(3000, 190, 120), rand.New(rand.NewSource(semente))).Venceu {
+		if SimularBatalha(combatente(1, AtributosBase(1)), monstroDoNivel(50, "chefe", 3000, 190, 120), rand.New(rand.NewSource(semente))).Venceu {
 			fraco++
 		}
 	}
@@ -84,7 +137,7 @@ func TestSimularBatalha_ForcaDecide(t *testing.T) {
 }
 
 func TestSimularBatalha_EmpateDefensivoAcabaEmDerrota(t *testing.T) {
-	jogador := AtributosRPG{Vida: 100000, Ataque: 1, Defesa: 1000}
+	jogador := CombatenteRPG{Atributos: AtributosRPG{Vida: 100000, Ataque: 1, Defesa: 1000, Velocidade: 10}}
 	r := SimularBatalha(jogador, monstroTeste(100000, 1, 1000), rand.New(rand.NewSource(1)))
 	if r.Venceu || r.Rodadas != maxTurnosBatalha || len(r.Turnos) != maxTurnosBatalha*2 {
 		t.Fatalf("luta sem fim deveria parar no limite como derrota: venceu=%v rodadas=%d turnos=%d", r.Venceu, r.Rodadas, len(r.Turnos))
@@ -100,13 +153,13 @@ func TestBalanceamentoInicial(t *testing.T) {
 		equipo  AtributosRPG
 		monstro MonstroRPG
 	}{
-		{"slime, nível 1 com kit", 1, AtributosRPG{Vida: 30, Ataque: 5, Defesa: 4}, monstroTeste(60, 8, 3)},
-		{"lobo, nível 10 com raros", 10, AtributosRPG{Vida: 90, Ataque: 15, Defesa: 11}, monstroTeste(300, 40, 20)},
-		{"cavaleiro, nível 35 com épicos", 35, AtributosRPG{Vida: 220, Ataque: 34, Defesa: 27}, monstroTeste(1300, 105, 60)},
-		{"dragão, nível 55 com lendários", 55, AtributosRPG{Vida: 400, Ataque: 60, Defesa: 40}, monstroTeste(2200, 150, 90)},
+		{"slime, nível 1 com kit", 1, AtributosRPG{Vida: 30, Ataque: 5, Defesa: 4}, monstroDoNivel(1, "comum", 60, 8, 3)},
+		{"lobo, nível 10 com raros", 10, AtributosRPG{Vida: 90, Ataque: 15, Defesa: 11}, monstroDoNivel(10, "comum", 300, 40, 20)},
+		{"cavaleiro, nível 35 com épicos", 35, AtributosRPG{Vida: 220, Ataque: 34, Defesa: 27}, monstroDoNivel(35, "raro", 1300, 105, 60)},
+		{"dragão, nível 55 com lendários", 55, AtributosRPG{Vida: 400, Ataque: 60, Defesa: 40}, monstroDoNivel(50, "chefe", 2200, 150, 90)},
 	}
 	for _, c := range casos {
-		jogador := SomarAtributos(AtributosBase(c.nivel), []ItemRPG{{Vida: c.equipo.Vida, Ataque: c.equipo.Ataque, Defesa: c.equipo.Defesa}})
+		jogador := combatente(c.nivel, SomarAtributos(AtributosBase(c.nivel), []ItemRPG{{Vida: c.equipo.Vida, Ataque: c.equipo.Ataque, Defesa: c.equipo.Defesa}}))
 		vitorias := 0
 		for semente := int64(0); semente < 200; semente++ {
 			if SimularBatalha(jogador, c.monstro, rand.New(rand.NewSource(semente))).Venceu {
@@ -121,7 +174,7 @@ func TestBalanceamentoInicial(t *testing.T) {
 
 func TestDificuldadeContra(t *testing.T) {
 	monstro := monstroTeste(300, 40, 20)
-	poder := CalcularPoder(AtributosRPG{Vida: 300, Ataque: 40, Defesa: 20})
+	poder := PoderDoMonstro(monstro)
 	casos := map[int]string{poder * 2: "facil", poder: "equilibrada", poder * 8 / 10: "dificil", poder / 2: "perigosa"}
 	for p, esperado := range casos {
 		if d := DificuldadeContra(AtributosRPG{Poder: p}, monstro); d != esperado {

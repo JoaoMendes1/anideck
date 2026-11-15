@@ -441,6 +441,9 @@ type contextoPersonagem struct {
 	equipados      map[string]string
 	bilhetes       int
 	inventarioLido bool
+	// Pontos distribuídos (sql/077). pontosLidos false: a leitura única não os trouxe.
+	pontos      PrimariosRPG
+	pontosLidos bool
 }
 
 // resposta monta o corpo da API a partir do que foi lido.
