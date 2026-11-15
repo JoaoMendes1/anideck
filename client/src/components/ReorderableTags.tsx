@@ -119,6 +119,7 @@ export default function ReorderableTags({ tags, onChange }: ReorderableTagsProps
           <input
             ref={inputRef}
             type="text"
+            aria-label="Adicionar rótulo"
             value={tagInput}
             onChange={e => { setTagInput(e.target.value); setDestacada(0) }}
             onKeyDown={handleKeyDown}

@@ -105,6 +105,7 @@ export default function DestaquesRail({
           <input
             type="text"
             placeholder="Buscar por título ou MAL ID..."
+            aria-label="Buscar destaque por título ou MAL ID"
             value={busca}
             onChange={(e) => setBusca(e.target.value)}
             className="w-full bg-panel-2 border border-line rounded-xl pl-9 pr-8 py-2 text-sm outline-none focus:border-holo-2 text-text placeholder:text-muted/50 transition-colors"

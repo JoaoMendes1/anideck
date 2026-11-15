@@ -213,6 +213,7 @@ export default function CardConviteAmigos({ className = '', onResgatado }: Props
               <input
                 type="text"
                 placeholder="Cole o código do seu amigo (ex: handle)"
+                aria-label="Código de convite de um amigo"
                 value={codigoParaResgatar}
                 onChange={(e) => setCodigoParaResgatar(e.target.value)}
                 className="flex-1 bg-void border border-line rounded-xl px-3.5 py-2 text-xs font-mono text-text placeholder:text-muted-2 outline-none focus:border-holo-3"

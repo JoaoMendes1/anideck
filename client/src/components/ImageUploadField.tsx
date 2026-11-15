@@ -36,6 +36,7 @@ export default function ImageUploadField({
 
       <input
         type="text"
+        aria-label="Endereço da imagem"
         value={value}
         onChange={(e) => onChange(e.target.value)}
         placeholder="https://..."

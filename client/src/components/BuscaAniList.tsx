@@ -48,6 +48,7 @@ export default function BuscaAniList({
       <div className="flex gap-2 group">
         <input
           type="text"
+          aria-label="Buscar na AniList por título ou ID"
           value={termoBusca}
           onChange={(e) => onChangeTermo(e.target.value)}
           placeholder="Busque por título ou cole o ID (ex: 16498)..."

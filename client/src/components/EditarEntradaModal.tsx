@@ -303,6 +303,7 @@ export default function EditarEntradaModal({ entrada, onFechar, onSalvar, onExcl
                             min="0"
                             max="10"
                             step="0.1"
+                            aria-label="Sua nota, de 0 a 10"
                             value={nota}
                             onChange={(e) => setNota(e.target.value)}
                             placeholder="Sem nota"

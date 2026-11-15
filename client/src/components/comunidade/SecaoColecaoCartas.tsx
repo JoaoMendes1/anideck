@@ -137,6 +137,7 @@ export default function SecaoColecaoCartas({
           <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted" />
           <input
             type="text"
+            aria-label="Buscar carta por anime"
             value={busca}
             onChange={(e) => setBusca(e.target.value)}
             placeholder="Buscar por anime..."

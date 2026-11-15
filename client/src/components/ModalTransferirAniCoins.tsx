@@ -173,6 +173,7 @@ export default function ModalTransferirAniCoins({
             </span>
             <input
               type="text"
+              aria-label="Buscar membro para receber"
               value={busca}
               onChange={(e) => {
                 setBusca(e.target.value)
@@ -264,6 +265,7 @@ export default function ModalTransferirAniCoins({
               type="number"
               min="1"
               max={saldoAtual}
+              aria-label="Quantidade de AniCoins"
               value={quantidade}
               onChange={(e) => setQuantidade(e.target.value === '' ? '' : Number(e.target.value))}
               placeholder="Ex: 50"

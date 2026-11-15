@@ -127,7 +127,7 @@ export default function ModalSugerirCorrecao({ aberto, onFechar, malId, tituloAn
           )}
 
           <div>
-            <label className="block text-xs font-bold text-text mb-1">
+            <label htmlFor="modal-sugerir-correcao-valor" className="block text-xs font-bold text-text mb-1">
               {campo === 'titulo_episodio'
                 ? 'Título em Português Sugerido'
                 : campo === 'link_streaming'
@@ -138,6 +138,7 @@ export default function ModalSugerirCorrecao({ aberto, onFechar, malId, tituloAn
             </label>
             {campo === 'sinopse' ? (
               <textarea
+                id="modal-sugerir-correcao-valor"
                 rows={4}
                 value={valor}
                 onChange={e => setValor(e.target.value)}
@@ -146,6 +147,7 @@ export default function ModalSugerirCorrecao({ aberto, onFechar, malId, tituloAn
               />
             ) : (
               <input
+                id="modal-sugerir-correcao-valor"
                 type="text"
                 value={valor}
                 onChange={e => setValor(e.target.value)}

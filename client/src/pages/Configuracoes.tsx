@@ -659,6 +659,7 @@ export default function Configuracoes() {
                                 <div className="mt-3 flex items-center gap-2 max-w-md">
                                     <input
                                         type="url"
+                                        aria-label="Endereço da foto"
                                         value={urlFotoInput}
                                         onChange={(e) => setUrlFotoInput(e.target.value)}
                                         placeholder="https://exemplo.com/foto.jpg"

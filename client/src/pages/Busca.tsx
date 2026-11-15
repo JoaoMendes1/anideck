@@ -334,6 +334,7 @@ export default function Busca() {
                 <input
                     ref={inputBuscaRef}
                     type="text"
+                    aria-label="Buscar anime ou rótulo"
                     value={query}
                     onChange={(e) => { setQuery(e.target.value); setPage(1); }}
                     placeholder="Buscar anime ou rótulo..."

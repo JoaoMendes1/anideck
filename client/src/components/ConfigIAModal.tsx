@@ -79,6 +79,7 @@ export default function ConfigIAModal({ isOpen, onClose }: ConfigIAModalProps) {
         ) : (
           <div className="relative group">
             <textarea
+              aria-label="Prompt da IA"
               value={aiPrompt}
               onChange={(e) => setAiPrompt(e.target.value)}
               className="w-full bg-panel-2 border border-line rounded-xl px-5 py-4 text-[13px] md:text-[14px] outline-none focus:border-holo-1 min-h-[350px] resize-y custom-scrollbar text-text leading-relaxed font-mono shadow-inner"

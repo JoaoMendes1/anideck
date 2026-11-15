@@ -59,7 +59,7 @@ export default function BottomNav() {
                             não pode estar num alvo pequeno ao lado dos itens de uso diário. */}
                         <button
                             onClick={() => setMenuAberto(true)}
-                            className="flex flex-col items-center justify-center w-full h-full space-y-1 text-muted cursor-pointer focus:outline-none select-none"
+                            className="flex flex-col items-center justify-center w-full h-full space-y-1 text-muted cursor-pointer select-none"
                         >
                             <div className="w-5 h-5 rounded-full bg-gradient-to-br from-holo-2 to-holo-3 flex items-center justify-center text-void font-bold text-xs leading-none">
                                 {(session.user.user_metadata?.display_name || 'U').charAt(0).toUpperCase()}
@@ -68,7 +68,7 @@ export default function BottomNav() {
                         </button>
                     </>
                 ) : (
-                    <Link to="/login" className="flex flex-col items-center justify-center w-full h-full space-y-1 text-muted focus:outline-none select-none">
+                    <Link to="/login" className="flex flex-col items-center justify-center w-full h-full space-y-1 text-muted select-none">
                         <div className="w-5 h-5 rounded-full border border-line flex items-center justify-center bg-panel"><User size={12} /></div>
                         <span className="text-xs font-bold">Entrar</span>
                     </Link>

@@ -460,6 +460,7 @@ export default function SalaEstreia() {
           <form onSubmit={handleEnviar} className="flex items-center gap-2 p-1.5 rounded-2xl bg-panel border border-line shadow-lg">
             <input
               type="text"
+              aria-label={`Comentário sobre o episódio ${sala.episodio}`}
               value={conteudo}
               onChange={e => setConteudo(e.target.value)}
               placeholder={`Comente sobre o episódio ${sala.episodio}...`}
