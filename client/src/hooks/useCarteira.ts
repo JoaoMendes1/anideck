@@ -3,7 +3,7 @@
 import { useEffect, useState, useCallback } from 'react'
 import { useSessao } from '../contexts/SessaoContext'
 import { chaveDoUsuario, guardarNaMemoria, lerDaMemoria } from '../lib/cacheDeTela'
-import { buscarUmaVez } from '../lib/buscaCompartilhada'
+import { VALIDADE_NA_MONTAGEM, buscarUmaVez } from '../lib/buscaCompartilhada'
 
 export interface MovimentoCristal {
   id: string
@@ -28,7 +28,7 @@ export function useCarteira() {
   const [carteira, setCarteira] = useState<CarteiraData | null>(() => lerDaMemoria<CarteiraData>(chave) ?? null)
   const [carregando, setCarregando] = useState(!carteira)
 
-  const recarregar = useCallback(async () => {
+  const buscar = useCallback(async (validadeMs: number) => {
     if (!token || !chave) return
     try {
       // A pílula da Navbar e o painel da Início pedem a carteira ao mesmo tempo: um pedido só.
@@ -38,7 +38,7 @@ export function useCarteira() {
         })
         if (!res.ok) throw new Error(`HTTP ${res.status}`)
         return (await res.json()) as CarteiraData
-      })
+      }, validadeMs)
       guardarNaMemoria(chave, dados)
       setCarteira(dados)
     } catch {
@@ -48,14 +48,16 @@ export function useCarteira() {
     }
   }, [token, chave])
 
+  const recarregar = useCallback(() => buscar(0), [buscar])
+
   useEffect(() => {
-    recarregar()
+    buscar(VALIDADE_NA_MONTAGEM)
     const handleAtualizar = () => { recarregar() }
     window.addEventListener('anideck:cristais-atualizados', handleAtualizar)
     return () => {
       window.removeEventListener('anideck:cristais-atualizados', handleAtualizar)
     }
-  }, [recarregar])
+  }, [buscar, recarregar])
 
   return {
     saldo: carteira?.saldo ?? 0,

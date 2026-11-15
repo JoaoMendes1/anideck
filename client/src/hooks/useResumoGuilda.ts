@@ -4,7 +4,7 @@
 import { useEffect, useState } from 'react'
 import { useSessao } from '../contexts/SessaoContext'
 import { chaveDoUsuario, guardarNaMemoria, lerDaMemoria } from '../lib/cacheDeTela'
-import { buscarUmaVez } from '../lib/buscaCompartilhada'
+import { VALIDADE_NA_MONTAGEM, buscarUmaVez } from '../lib/buscaCompartilhada'
 import type { StatusNivelGuilda } from '../lib/guilda'
 
 export function useResumoGuilda(): StatusNivelGuilda | null {
@@ -17,13 +17,13 @@ export function useResumoGuilda(): StatusNivelGuilda | null {
     if (!token || !chave) return
     let ativo = true
 
-    const buscarResumo = async () => {
+    const buscarResumo = async (validadeMs: number) => {
       try {
         const dados = await buscarUmaVez(chave, async () => {
           const res = await fetch('/api/guilda/resumo', { headers: { Authorization: `Bearer ${token}` } })
           if (!res.ok) throw new Error(`HTTP ${res.status}`)
           return (await res.json()) as StatusNivelGuilda
-        })
+        }, validadeMs)
         guardarNaMemoria(chave, dados)
         if (ativo) setStatus(dados)
       } catch {
@@ -31,11 +31,12 @@ export function useResumoGuilda(): StatusNivelGuilda | null {
       }
     }
 
-    buscarResumo()
-    window.addEventListener('anideck:episodio-atualizado', buscarResumo)
+    buscarResumo(VALIDADE_NA_MONTAGEM)
+    const aoMudar = () => { buscarResumo(0) }
+    window.addEventListener('anideck:episodio-atualizado', aoMudar)
     return () => {
       ativo = false
-      window.removeEventListener('anideck:episodio-atualizado', buscarResumo)
+      window.removeEventListener('anideck:episodio-atualizado', aoMudar)
     }
   }, [token, chave])
 

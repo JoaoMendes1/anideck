@@ -197,6 +197,33 @@ function Trilho({ cartazes }: { cartazes: Cartaz[] }) {
   )
 }
 
+// Busca título, capa e episódios dos animes do deck, de uma vez só.
+async function buscarAnimesDoDeck(entradas: EntradaDoDeck[]): Promise<Record<number, AnimeResumido>> {
+  const animes: Record<number, AnimeResumido> = {}
+  if (entradas.length === 0) return animes
+  const res = await fetch('/api/anime/bulk', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ ids: entradas.map(e => e.mal_id) }),
+  })
+  const media = (await lerJson<{ data?: AnimeDaApi[] }>(res, {})).data ?? []
+  for (const m of media) {
+    animes[m.mal_id] = {
+      mal_id: m.mal_id,
+      title: m.title || 'Título indisponível',
+      image_url: m.images?.jpg?.image_url || '',
+      episodes: m.episodes || m.streamingEpisodes?.length || (m.nextAiringEpisode?.episode ? m.nextAiringEpisode.episode - 1 : 0),
+      synopsis: m.synopsis,
+      genres: m.genres?.slice(0, 3).map(g => g.name),
+      streaming: m.streaming ?? undefined,
+      streamingEpisodes: m.streamingEpisodes,
+      nextAiringEpisode: m.nextAiringEpisode,
+      banner: m.bannerImage,
+    }
+  }
+  return animes
+}
+
 export default function Inicio() {
   const { session, isAdmin } = useSessao()
   const { showToast } = useToast()
@@ -234,8 +261,12 @@ export default function Inicio() {
 
     const carregar = async () => {
       try {
-        const [entradas, progresso, trilhas, rankingResp, destaquesResp, stats] = await Promise.all([
-          fetch('/api/entries', auth).then(r => lerJson<EntradaDoDeck[]>(r, [])),
+        // As capas dependem só do deck: o pedido delas sai assim que o deck chega, sem
+        // esperar as outras cinco buscas.
+        const entradasP = fetch('/api/entries', auth).then(r => lerJson<EntradaDoDeck[]>(r, []))
+        const [entradas, animes, progresso, trilhas, rankingResp, destaquesResp, stats] = await Promise.all([
+          entradasP,
+          entradasP.then(buscarAnimesDoDeck),
           fetch('/api/entries/progresso', auth).then(r => lerJson<ProgressoDoAnime[]>(r, [])),
           fetch('/api/trilhas').then(r => lerJson<TrilhaDaHome[]>(r, [])).catch(() => []),
           fetch('/api/ranking?page=1&perPage=10').then(r => lerJson<{ data?: AnimeDaApi[] }>(r, {})).catch(() => ({ data: [] })),
@@ -247,36 +278,31 @@ export default function Inicio() {
           })(),
         ])
 
-        const animes: Record<number, AnimeResumido> = {}
-        if (entradas.length > 0) {
-          const res = await fetch('/api/anime/bulk', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ ids: entradas.map(e => e.mal_id) }),
-          })
-          const media = (await lerJson<{ data?: AnimeDaApi[] }>(res, {})).data ?? []
-          for (const m of media) {
-            animes[m.mal_id] = {
-              mal_id: m.mal_id,
-              title: m.title || 'Título indisponível',
-              image_url: m.images?.jpg?.image_url || '',
-              episodes: m.episodes || m.streamingEpisodes?.length || (m.nextAiringEpisode?.episode ? m.nextAiringEpisode.episode - 1 : 0),
-              synopsis: m.synopsis,
-              genres: m.genres?.slice(0, 3).map(g => g.name),
-              streaming: m.streaming ?? undefined,
-              streamingEpisodes: m.streamingEpisodes,
-              nextAiringEpisode: m.nextAiringEpisode,
-              banner: m.bannerImage,
-            }
+        const noDeck = new Set(entradas.map(e => e.mal_id))
+
+        const ranking = (rankingResp.data ?? []).map((a, i) => ({
+          mal_id: a.mal_id,
+          titulo: a.title,
+          imagem: a.images?.jpg?.image_url || '',
+          legenda: `#${a.current_rank || i + 1}`,
+          nota: a.score,
+        }))
+        const base = { entradas, animes, progresso, trilhas, ranking, destaquesHero: (destaquesResp || []).slice(0, 6) }
+
+        // Primeira pintura: deck, ranking e trilhas já aparecem. Recomendações e lacuna
+        // dependem de mais buscas e entram depois; até lá ficam as da visita anterior.
+        if (ativo) {
+          setDados(anterior => ({ ...base, recomendados: anterior.recomendados, lacuna: anterior.lacuna }))
+          setCarregando(false)
+          if (entradas.length < 3 && !prefsAtuais.tutorialConcluido) {
+            setModalGostoAberto(true)
           }
         }
 
-        const noDeck = new Set(entradas.map(e => e.mal_id))
-
-        // Recomendações personalizadas (#139)
         const generosAlvo = selecionarGenerosRecomendados(stats.genres ?? [], prefsAtuais, 3)
-        let itensRecomendados: Cartaz[] = []
-        if (generosAlvo.length > 0) {
+
+        const buscarRecomendados = async (): Promise<Cartaz[]> => {
+          if (generosAlvo.length === 0) return []
           const buscas = await Promise.all(
             generosAlvo.map(rotulo => {
               const params = new URLSearchParams({ rotulo, so_curadoria: '1', perPage: '18' })
@@ -286,52 +312,34 @@ export default function Inicio() {
             }),
           )
           const todosCandidatos = buscas.flatMap(b => b.data ?? [])
-          const filtrados = filtrarRecomendacoesPorGosto(todosCandidatos, noDeck, prefsAtuais.bloqueados)
-          itensRecomendados = filtrados.slice(0, 12).map(a => ({
-            mal_id: a.mal_id,
-            titulo: a.title,
-            imagem: a.images?.jpg?.image_url || '',
-            nota: a.score,
-            legenda: a.genres?.[0]?.name,
-          }))
+          return filtrarRecomendacoesPorGosto(todosCandidatos, noDeck, prefsAtuais.bloqueados)
+            .slice(0, 12)
+            .map(a => ({
+              mal_id: a.mal_id,
+              titulo: a.title,
+              imagem: a.images?.jpg?.image_url || '',
+              nota: a.score,
+              legenda: a.genres?.[0]?.name,
+            }))
         }
 
-        let lacuna: DadosDaInicio['lacuna'] = null
-        const achada = encontrarLacuna(stats.genres ?? [], stats.overview?.[0]?.nota_media ?? 0)
-        if (achada) {
+        const buscarLacuna = async (): Promise<DadosDaInicio['lacuna']> => {
+          const achada = encontrarLacuna(stats.genres ?? [], stats.overview?.[0]?.nota_media ?? 0)
+          if (!achada) return null
           const params = new URLSearchParams({ rotulo: achada.rotulo, so_curadoria: '1', perPage: '30' })
           const busca = await fetch(`/api/search?${params}`).then(r => lerJson<{ data?: AnimeDaApi[] }>(r, {})).catch(() => ({ data: [] }))
           const sugestoes = filtrarRecomendacoesPorGosto(busca.data ?? [], noDeck, prefsAtuais.bloqueados)
             .slice(0, 10)
             .map(a => ({ mal_id: a.mal_id, titulo: a.title, imagem: a.images?.jpg?.image_url || '', nota: a.score }))
-          if (sugestoes.length > 0) lacuna = { ...achada, sugestoes }
+          return sugestoes.length > 0 ? { ...achada, sugestoes } : null
         }
 
-        const ranking = (rankingResp.data ?? []).map((a, i) => ({
-          mal_id: a.mal_id,
-          titulo: a.title,
-          imagem: a.images?.jpg?.image_url || '',
-          legenda: `#${a.current_rank || i + 1}`,
-          nota: a.score,
-        }))
+        // As duas buscas não dependem uma da outra: saem juntas.
+        const [itensRecomendados, lacuna] = await Promise.all([buscarRecomendados(), buscarLacuna()])
 
-        const novos: DadosDaInicio = {
-          entradas,
-          animes,
-          progresso,
-          trilhas,
-          ranking,
-          destaquesHero: (destaquesResp || []).slice(0, 6),
-          recomendados: { generos: generosAlvo, itens: itensRecomendados },
-          lacuna,
-        }
+        const novos: DadosDaInicio = { ...base, recomendados: { generos: generosAlvo, itens: itensRecomendados }, lacuna }
         guardarNaMemoria(chave, novos)
-        if (ativo) {
-          setDados(novos)
-          if (entradas.length < 3 && !prefsAtuais.tutorialConcluido) {
-            setModalGostoAberto(true)
-          }
-        }
+        if (ativo) setDados(novos)
       } finally {
         if (ativo) setCarregando(false)
       }

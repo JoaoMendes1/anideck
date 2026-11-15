@@ -1,19 +1,42 @@
-import { describe, expect, it, vi } from 'vitest'
-import { buscarUmaVez } from './buscaCompartilhada'
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
+import { buscarUmaVez, esquecerBuscasRecentes } from './buscaCompartilhada'
 
 describe('buscarUmaVez', () => {
-  it('pedidos simultâneos dividem a mesma busca', async () => {
-    const buscar = vi.fn(() => new Promise<number>(resolver => setTimeout(() => resolver(7), 5)))
-    const [a, b] = await Promise.all([buscarUmaVez('k', buscar), buscarUmaVez('k', buscar)])
-    expect(a).toBe(7)
-    expect(b).toBe(7)
+  beforeEach(() => {
+    vi.useFakeTimers()
+    esquecerBuscasRecentes()
+  })
+  afterEach(() => vi.useRealTimers())
+
+  it('junta pedidos simultâneos num só', async () => {
+    const buscar = vi.fn(() => Promise.resolve('a'))
+    const [x, y] = await Promise.all([buscarUmaVez('k1', buscar), buscarUmaVez('k1', buscar)])
+    expect(x).toBe('a')
+    expect(y).toBe('a')
     expect(buscar).toHaveBeenCalledTimes(1)
   })
-  it('depois de terminar, a próxima busca é nova, mesmo se a anterior falhou', async () => {
-    const falha = vi.fn(() => Promise.reject(new Error('rede')))
-    await expect(buscarUmaVez('x', falha)).rejects.toThrow('rede')
-    const ok = vi.fn(() => Promise.resolve('ok'))
-    await expect(buscarUmaVez('x', ok)).resolves.toBe('ok')
-    expect(ok).toHaveBeenCalledTimes(1)
+
+  it('sem validade, consulta de novo depois que o primeiro pedido termina', async () => {
+    const buscar = vi.fn(() => Promise.resolve('a'))
+    await buscarUmaVez('k2', buscar)
+    await buscarUmaVez('k2', buscar)
+    expect(buscar).toHaveBeenCalledTimes(2)
+  })
+
+  it('com validade, reaproveita a resposta recente e volta a consultar quando ela vence', async () => {
+    const buscar = vi.fn(() => Promise.resolve('a'))
+    await buscarUmaVez('k3', buscar, 10_000)
+    await buscarUmaVez('k3', buscar, 10_000)
+    expect(buscar).toHaveBeenCalledTimes(1)
+    vi.advanceTimersByTime(10_001)
+    await buscarUmaVez('k3', buscar, 10_000)
+    expect(buscar).toHaveBeenCalledTimes(2)
+  })
+
+  it('não guarda resposta de pedido que falhou', async () => {
+    const buscar = vi.fn(() => Promise.reject(new Error('fora')))
+    await expect(buscarUmaVez('k4', buscar, 10_000)).rejects.toThrow('fora')
+    await expect(buscarUmaVez('k4', buscar, 10_000)).rejects.toThrow('fora')
+    expect(buscar).toHaveBeenCalledTimes(2)
   })
 })

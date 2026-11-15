@@ -9,7 +9,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useSessao } from '../contexts/SessaoContext'
 import { chaveDoUsuario, guardarNaMemoria, lerDaMemoria } from '../lib/cacheDeTela'
-import { buscarUmaVez } from '../lib/buscaCompartilhada'
+import { VALIDADE_NA_MONTAGEM, buscarUmaVez } from '../lib/buscaCompartilhada'
 import { manaNaTela, taxaRegenEfetiva } from '../lib/hud'
 import type { EstadoComunidade } from '../lib/comunidade'
 
@@ -49,14 +49,14 @@ export function useComunidade() {
     [chave]
   )
 
-  const recarregar = useCallback(async () => {
+  const buscar = useCallback(async (validadeMs: number) => {
     if (!token || !chave) return
     try {
       const dados = await buscarUmaVez(chave, async () => {
         const res = await fetch('/api/comunidade/eu', { headers: { Authorization: `Bearer ${token}` } })
         if (!res.ok) throw new ErroDaApi(`HTTP ${res.status}`)
         return (await res.json()) as EstadoComunidade
-      })
+      }, validadeMs)
       aplicar(dados)
       setIndisponivel(false)
     } catch (e) {
@@ -66,9 +66,11 @@ export function useComunidade() {
     }
   }, [token, chave, aplicar])
 
+  const recarregar = useCallback(() => buscar(0), [buscar])
+
   useEffect(() => {
     if (!token) return
-    recarregar()
+    buscar(VALIDADE_NA_MONTAGEM)
 
     const aoMudar = (ev: Event) => {
       const novo = (ev as CustomEvent<EstadoComunidade | undefined>).detail
@@ -81,7 +83,7 @@ export function useComunidade() {
       window.removeEventListener(EVENTO_COMUNIDADE, aoMudar)
       window.removeEventListener('anideck:episodio-atualizado', recarregar)
     }
-  }, [token, recarregar, aplicar])
+  }, [token, buscar, recarregar, aplicar])
 
   const manaCheia = !guardado || guardado.estado.mana >= guardado.estado.regras.mp_max
   useEffect(() => {
