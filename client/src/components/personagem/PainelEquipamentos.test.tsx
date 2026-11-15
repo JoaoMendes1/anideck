@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import { describe, it, expect, afterEach, beforeEach, vi } from 'vitest'
 import { render, cleanup, screen, fireEvent, waitFor } from '@testing-library/react'
-import type { EstadoEquipamento } from '../../lib/rpg'
+import type { EstadoEquipamento, ItemRPG } from '../../lib/rpg'
 
 vi.mock('../../lib/rpg', async (original) => {
   const real = await original<typeof import('../../lib/rpg')>()
@@ -15,7 +15,7 @@ const espada = { id: 'espada_de_ferro', slot: 'arma' as const, nome: 'Espada de 
 const lamina = { id: 'lamina_de_eter', slot: 'arma' as const, nome: 'Lâmina de Éter', descricao: '', raridade: 'raro' as const, vida: 0, ataque: 10, defesa: 0, nivel_minimo: 10 }
 const primordial = { id: 'lamina_primordial', slot: 'arma' as const, nome: 'Lâmina Primordial', descricao: '', raridade: 'lendario' as const, vida: 0, ataque: 45, defesa: 0, nivel_minimo: 55 }
 
-function estado(armaEquipada = espada): EstadoEquipamento {
+function estado(armaEquipada: ItemRPG = espada): EstadoEquipamento {
   return {
     nivel: 12,
     base: { vida: 320, ataque: 43, defesa: 27, poder: 172 },
