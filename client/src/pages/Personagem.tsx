@@ -6,9 +6,10 @@
 // ficam lado a lado. Nível, XP e rank são os da Guilda: o personagem não tem XP próprio.
 import { useCallback, useEffect, useState, type FormEvent } from 'react'
 import { Link } from 'react-router-dom'
-import { ChevronLeft, Footprints, Gem, Image, Lock, Orbit, Shield, Shirt, Sword, type LucideIcon } from 'lucide-react'
+import { ChevronLeft, Image, Lock, Orbit, Sword } from 'lucide-react'
 import { obterFundoDoCenario } from '../lib/cosmeticos'
 import CamadaDaAura from '../components/personagem/CamadaDaAura'
+import PainelEquipamentos from '../components/personagem/PainelEquipamentos'
 import {
   ALTURA_DA_ARTE,
   LARGURA_DA_ARTE,
@@ -48,13 +49,6 @@ const ANEL_DO_ESTAGIO: Record<string, string> = {
   lendario: 'border-gold/70',
 }
 
-const SLOTS: { id: string; rotulo: string; Icone: LucideIcon }[] = [
-  { id: 'arma', rotulo: 'Arma', Icone: Sword },
-  { id: 'armadura', rotulo: 'Armadura', Icone: Shield },
-  { id: 'capa', rotulo: 'Capa', Icone: Shirt },
-  { id: 'botas', rotulo: 'Botas', Icone: Footprints },
-  { id: 'acessorio', rotulo: 'Joia', Icone: Gem },
-]
 
 const CONTAINER = 'w-full min-w-0 max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-10 pt-6 pb-24'
 const ROTULO_DE_SECAO = 'font-mono text-xs font-semibold uppercase tracking-widest text-muted m-0'
@@ -460,26 +454,7 @@ function FichaDoPersonagem({
             </div>
           </section>
 
-          <section aria-labelledby="titulo-dos-equipamentos" className="flex flex-col gap-3">
-            <div className="flex items-center justify-between gap-3">
-              <h2 id="titulo-dos-equipamentos" className={ROTULO_DE_SECAO}>
-                Equipamentos
-              </h2>
-              <span className="rounded-full border border-line px-2.5 py-0.5 font-mono text-xs text-muted">
-                em breve
-              </span>
-            </div>
-            <ul className="m-0 grid list-none grid-cols-5 gap-2.5 p-0">
-              {SLOTS.map(({ id, rotulo, Icone }) => (
-                <li key={id} className="flex min-w-0 flex-col items-center gap-1.5">
-                  <span className="flex h-16 w-full items-center justify-center rounded-xl border border-dashed border-line text-muted">
-                    <Icone size={22} aria-hidden="true" />
-                  </span>
-                  <span className="max-w-full truncate text-xs font-semibold text-muted">{rotulo}</span>
-                </li>
-              ))}
-            </ul>
-          </section>
+          <PainelEquipamentos />
         </div>
       </div>
     </div>

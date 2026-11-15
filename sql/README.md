@@ -100,6 +100,7 @@ SELECT pg_get_viewdef('nome_da_view'::regclass, true);
 | `068_personagem_visual.sql` | Fase 18 (18.2a, #218): Visual escolhido pelo jogador — coluna `visual_equipado` em `rpg_personagens` (NULL = automático), só com o formato conferido; a regra de desbloqueio fica no Go, que grava pelo service role | — |
 | `069_loja_cenarios.sql` | Fase 18 (18.2b, #219): Cenários de fundo do personagem na Loja — tipo e slot `cenario` nos `CHECK` de `store_items` e `user_equipped`, `equipar_item` recriada com o slot novo e quatro cenários no catálogo | — |
 | `070_loja_auras.sql` | Fase 18 (18.2e, #220): Auras do personagem na Loja — tipo e slot `aura` nos `CHECK` de `store_items` e `user_equipped`, `equipar_item` recriada com o slot novo e três auras no catálogo | — |
+| `071_rpg_equipamentos.sql` | Fase 18 (18.2d e 18.3a, #221): Equipamentos do personagem — catálogo `rpg_itens`, `rpg_inventario` e `rpg_equipados` só com leitura do dono, RPCs `rpg_garantir_kit_inicial` e `rpg_equipar_item` (posse, slot e nível) e o catálogo inicial de 17 itens | — |
 
 Datas com `~` são a data do commit, não da aplicação no Supabase.
 

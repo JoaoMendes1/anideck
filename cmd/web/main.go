@@ -85,6 +85,7 @@ func main() {
 	filaIAHandler := &handlers.FilaIAHandler{}
 	guildaHandler := &handlers.GuildaHandler{}
 	personagemHandler := &handlers.PersonagemHandler{}
+	rpgHandler := &handlers.RPGHandler{}
 	comunidadeHandler := &handlers.ComunidadeHandler{}
 	economiaHandler := &handlers.EconomiaHandler{}
 	missoesHandler := &handlers.MissoesHandler{}
@@ -189,6 +190,8 @@ func main() {
 		protegido.Get("/api/personagem", personagemHandler.HandleGetPersonagem)
 		protegido.Post("/api/personagem", personagemHandler.HandleDespertarPersonagem)
 		protegido.Put("/api/personagem/visual", personagemHandler.HandleEquiparVisual)
+		protegido.Get("/api/personagem/equipamentos", rpgHandler.HandleGetEquipamentos)
+		protegido.Put("/api/personagem/equipamentos", rpgHandler.HandleEquiparItemRPG)
 		protegido.Get("/api/economia/carteira", economiaHandler.HandleGetCarteira)
 
 		// Missões Diárias (Fase 16, #168): sorteio determinístico e resgate de AniCoins

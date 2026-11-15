@@ -48,7 +48,7 @@ Staging sobe já na Fase 1, como projeto esqueleto — mesmo padrão do JVM Syst
 | 15 · Comunidade base | ✅ Concluída (08/11/2026, #154); falta abrir o beta |
 | 16 · Economia e cartas | ✅ Concluída (09/11/2026, #165); falta abrir o beta |
 | 17 · Comunidade viva | ✅ Concluída (13/11/2026, #179) |
-| 18 · O Despertar Isekai | 🚧 Em andamento — 18.1 Meu Personagem (#199, #200), 18.2a escolha de visual (#218), 18.2b cenários (#219) e 18.2e auras (#220) entregues; falta aplicar o `sql/070` |
+| 18 · O Despertar Isekai | 🚧 Em andamento — 18.1 Meu Personagem (#199, #200), 18.2a escolha de visual (#218), 18.2b cenários (#219), 18.2e auras (#220) e equipamentos com atributos (#221) entregues; falta aplicar o `sql/071` |
 
 ---
 
@@ -779,14 +779,15 @@ experiência pequena e funcional de cada vez.
   - [x] 18.2a Escolha de visual: o jogador fixa a aparência de um estágio já alcançado, com prévia antes de confirmar, ou deixa no automático. Coluna `visual_equipado`, rota `PUT /api/personagem/visual`, e o retrato da barra superior, de `/membros` e do perfil público seguem o visual em uso (#218)
   - [x] 18.2b Cenários de fundo da tela do personagem, comprados na Loja: tipo e slot `cenario`, quatro cenários desenhados em CSS (sem imagem), categoria e prévia na Loja com o personagem do jogador, e `GET /api/personagem` devolvendo o cenário equipado (#219)
   - [ ] 18.2c Skins: visuais desbloqueados por compra ou evento, sobre a mesma coluna
-  - [ ] 18.2d Slots de equipamento
+  - [x] 18.2d Slots de equipamento: catálogo `rpg_itens`, inventário e slots próprios, kit inicial equipado na primeira visita, troca com ganho e perda de cada item, conferida no banco por posse, slot e nível (#221). Arte provisória: ícone por slot e cor por raridade
   - [x] 18.2e Auras do personagem, compradas na Loja: tipo e slot `aura`, três auras em CSS desenhadas atrás da ilustração (`CamadaDaAura`), paradas para quem pediu movimento reduzido, com categoria e prévia na Loja (#220)
-- [ ] 18.3 Progressão de RPG: atributos, habilidades e balanceamento
+- [ ] 18.3 Progressão de RPG
+  - [x] 18.3a Atributos Vida, Ataque e Defesa, calculados no servidor a partir do nível e dos itens equipados; item acima do nível fica no slot sem somar (#221)
 - [ ] 18.4 Mundo e PvE
 - [ ] 18.5 Integração comunitária
 - [ ] 18.6 Arena e cartas
 
-**Pendência do dono:** aplicar `sql/070_loja_auras.sql` no Supabase. Sem ele as auras não aparecem na Loja e o resto segue igual.
+**Pendência do dono:** aplicar `sql/071_rpg_equipamentos.sql` no Supabase. Sem ele a tela do personagem continua abrindo, com os slots vazios de antes.
 
 ## 🔧 Manutenção pós-v1
 
