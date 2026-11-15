@@ -48,7 +48,7 @@ Staging sobe já na Fase 1, como projeto esqueleto — mesmo padrão do JVM Syst
 | 15 · Comunidade base | ✅ Concluída (08/11/2026, #154); falta abrir o beta |
 | 16 · Economia e cartas | ✅ Concluída (09/11/2026, #165); falta abrir o beta |
 | 17 · Comunidade viva | ✅ Concluída (13/11/2026, #179) |
-| 18 · O Despertar Isekai | 🚧 Em andamento — 18.1 Meu Personagem (#199, #200), 18.2a escolha de visual (#218) e 18.2b cenários na Loja (#219) entregues; falta aplicar o `sql/069` |
+| 18 · O Despertar Isekai | 🚧 Em andamento — 18.1 Meu Personagem (#199, #200), 18.2a escolha de visual (#218), 18.2b cenários (#219) e 18.2e auras (#220) entregues; falta aplicar o `sql/070` |
 
 ---
 
@@ -779,12 +779,13 @@ experiência pequena e funcional de cada vez.
   - [x] 18.2b Cenários de fundo da tela do personagem, comprados na Loja: tipo e slot `cenario`, quatro cenários desenhados em CSS (sem imagem), categoria e prévia na Loja com o personagem do jogador, e `GET /api/personagem` devolvendo o cenário equipado (#219)
   - [ ] 18.2c Skins: visuais desbloqueados por compra ou evento, sobre a mesma coluna
   - [ ] 18.2d Slots de equipamento
+  - [x] 18.2e Auras do personagem, compradas na Loja: tipo e slot `aura`, três auras em CSS desenhadas atrás da ilustração (`CamadaDaAura`), paradas para quem pediu movimento reduzido, com categoria e prévia na Loja (#220)
 - [ ] 18.3 Progressão de RPG: atributos, habilidades e balanceamento
 - [ ] 18.4 Mundo e PvE
 - [ ] 18.5 Integração comunitária
 - [ ] 18.6 Arena e cartas
 
-**Pendência do dono:** aplicar `sql/069_loja_cenarios.sql` no Supabase. Sem ele os cenários não aparecem na Loja e o resto segue igual.
+**Pendência do dono:** aplicar `sql/070_loja_auras.sql` no Supabase. Sem ele as auras não aparecem na Loja e o resto segue igual.
 
 ## 🔧 Manutenção pós-v1
 

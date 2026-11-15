@@ -57,13 +57,13 @@ func TestLojaHandler_Validacoes(t *testing.T) {
 }
 
 func TestSlotCosmeticoValido(t *testing.T) {
-	for _, slot := range []string{"moldura", "tema_perfil", "cor_nome", "emblema", "cenario"} {
+	for _, slot := range []string{"moldura", "tema_perfil", "cor_nome", "emblema", "cenario", "aura"} {
 		if !SlotCosmeticoValido(slot) {
 			t.Errorf("slot %q deveria ser aceito", slot)
 		}
 	}
 	// "expansao" é tipo de item, mas não ocupa slot: vale só por ser comprada.
-	for _, slot := range []string{"", "expansao", "Cenario", "cenario ", "visual", "moldura;drop"} {
+	for _, slot := range []string{"", "expansao", "Cenario", "cenario ", "Aura", "visual", "moldura;drop"} {
 		if SlotCosmeticoValido(slot) {
 			t.Errorf("slot %q deveria ser recusado", slot)
 		}

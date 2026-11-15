@@ -8,6 +8,7 @@ import { useCallback, useEffect, useState, type FormEvent } from 'react'
 import { Link } from 'react-router-dom'
 import { ChevronLeft, Footprints, Gem, Image, Lock, Orbit, Shield, Shirt, Sword, type LucideIcon } from 'lucide-react'
 import { obterFundoDoCenario } from '../lib/cosmeticos'
+import CamadaDaAura from '../components/personagem/CamadaDaAura'
 import {
   ALTURA_DA_ARTE,
   LARGURA_DA_ARTE,
@@ -247,6 +248,7 @@ function FichaDoPersonagem({
             aria-hidden="true"
             className={`absolute bottom-6 left-1/2 h-8 w-52 -translate-x-1/2 rounded-[50%] border opacity-60 ${ANEL_DO_ESTAGIO[mostrado] ?? 'border-holo-2/60'}`}
           />
+          <CamadaDaAura estilo={dados.aura} />
           {arte && (
             <img
               src={arte.inteira}
@@ -273,7 +275,7 @@ function FichaDoPersonagem({
             className="absolute bottom-3 right-3 inline-flex h-11 items-center gap-1.5 rounded-full border border-line bg-void/70 px-3 text-xs font-bold text-muted hover:text-text"
           >
             <Image size={14} aria-hidden="true" />
-            Cenários
+            Cenários e auras
           </Link>
         </section>
 

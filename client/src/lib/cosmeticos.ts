@@ -6,7 +6,7 @@ import { Crown, Flame, Heart } from 'lucide-react'
 
 export interface ItemCosmeticoLoja {
   id: string
-  tipo: 'moldura' | 'tema_perfil' | 'cor_nome' | 'emblema' | 'expansao' | 'cenario'
+  tipo: 'moldura' | 'tema_perfil' | 'cor_nome' | 'emblema' | 'expansao' | 'cenario' | 'aura'
   nome: string
   descricao: string
   preco: number
@@ -74,6 +74,39 @@ export function obterFundoDoCenario(estilo?: string | null): string | undefined 
   // hasOwn: o estilo vem do banco, e uma chave como "toString" acharia a função herdada.
   if (!estilo || !Object.hasOwn(CENARIOS, estilo)) return undefined
   return CENARIOS[estilo]
+}
+
+// Auras do personagem: uma camada de luz atrás da ilustração. `fundo` é o desenho e
+// `mascara`, quando existe, recorta esse desenho (os raios somem nas bordas). Valores
+// inteiros de CSS, como nos cenários.
+export interface EstiloDaAura {
+  fundo: string
+  mascara?: string
+}
+
+export const AURAS: Record<string, EstiloDaAura> = {
+  'aura-chama-azul': {
+    fundo:
+      'radial-gradient(30% 44% at 50% 56%, rgba(120,190,255,0.62), rgba(60,120,255,0.3) 55%, transparent 74%), ' +
+      'radial-gradient(18% 30% at 50% 30%, rgba(160,220,255,0.4), transparent 72%)',
+  },
+  'aura-sombra-violeta': {
+    fundo:
+      'radial-gradient(34% 46% at 50% 58%, rgba(20,6,40,0.85), rgba(90,40,160,0.5) 58%, transparent 76%), ' +
+      'radial-gradient(48% 16% at 50% 90%, rgba(150,90,255,0.45), transparent 72%)',
+  },
+  'aura-raios-dourados': {
+    fundo:
+      'repeating-conic-gradient(from 0deg at 50% 54%, rgba(255,205,90,0.5) 0deg 5deg, transparent 5deg 15deg), ' +
+      'radial-gradient(26% 36% at 50% 54%, rgba(255,215,120,0.55), transparent 72%)',
+    mascara: 'radial-gradient(46% 52% at 50% 54%, #000 30%, transparent 72%)',
+  },
+}
+
+/** Estilo da aura, ou undefined para estilo ausente ou desconhecido (sem aura). */
+export function obterEstiloDaAura(estilo?: string | null): EstiloDaAura | undefined {
+  if (!estilo || !Object.hasOwn(AURAS, estilo)) return undefined
+  return AURAS[estilo]
 }
 
 export const CORES_RARIDADE: Record<string, { badge: string; texto: string; border: string }> = {

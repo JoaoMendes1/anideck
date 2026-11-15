@@ -21,6 +21,7 @@ import {
   type ItemCosmeticoLoja,
 } from '../lib/cosmeticos'
 import { usePersonagem } from '../hooks/usePersonagem'
+import CamadaDaAura from '../components/personagem/CamadaDaAura'
 import { ORDEM_DOS_ESTAGIOS, PERSONAGEM_BASE_PADRAO, arteDoEstagio, visualEmUso } from '../lib/personagem'
 
 function renderIconeItem(icone: string, raridade: string) {
@@ -134,6 +135,7 @@ export default function Loja() {
           { id: 'cor_nome', rotulo: 'Cores de Nome' },
           { id: 'emblema', rotulo: 'Emblemas' },
           { id: 'cenario', rotulo: 'Cenários' },
+          { id: 'aura', rotulo: 'Auras' },
           { id: 'expansao', rotulo: 'Melhorias' },
         ].map((f) => {
           const ativo = filtroTipo === f.id
@@ -285,6 +287,26 @@ export default function Loja() {
                         )}
                         <span className="absolute left-2 top-2 rounded-full bg-void/70 px-2 py-0.5 font-mono text-xs text-muted">
                           Fundo do personagem
+                        </span>
+                      </div>
+                    )}
+
+                    {item.tipo === 'aura' && (
+                      <div className="relative h-28 w-full overflow-hidden rounded-lg border border-line/60 bg-void">
+                        <CamadaDaAura estilo={item.estilo} />
+                        {miniDoPersonagem && (
+                          <img
+                            src={miniDoPersonagem}
+                            width={256}
+                            height={384}
+                            alt=""
+                            loading="lazy"
+                            decoding="async"
+                            className="absolute bottom-0 left-1/2 h-[118%] w-auto max-w-none -translate-x-1/2"
+                          />
+                        )}
+                        <span className="absolute left-2 top-2 rounded-full bg-void/70 px-2 py-0.5 font-mono text-xs text-muted">
+                          Aura do personagem
                         </span>
                       </div>
                     )}

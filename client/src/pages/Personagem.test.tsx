@@ -137,7 +137,7 @@ describe('Personagem - cenário', () => {
 
     const palco = await screen.findByRole('region', { name: 'Arte do personagem' })
     expect(palco.getAttribute('data-cenario')).toBe('cenario-aurora')
-    expect(screen.getByRole('link', { name: 'Cenários' }).getAttribute('href')).toBe('/loja')
+    expect(screen.getByRole('link', { name: 'Cenários e auras' }).getAttribute('href')).toBe('/loja')
   })
 
   it('sem cenário, ou com um estilo que o app não conhece, usa o fundo padrão', async () => {
@@ -148,5 +148,31 @@ describe('Personagem - cenário', () => {
 
     const palco = await screen.findByRole('region', { name: 'Arte do personagem' })
     expect(palco.getAttribute('data-cenario')).toBe('padrao')
+  })
+})
+
+describe('Personagem - aura', () => {
+  it('desenha a aura equipada atrás da ilustração', async () => {
+    const comAura = personagemNoNivel(12, { id: 'aventureiro', automatico: true })
+    comAura.aura = 'aura-chama-azul'
+    vi.mocked(obterPersonagem).mockResolvedValue(comAura)
+    abrir()
+
+    const palco = await screen.findByRole('region', { name: 'Arte do personagem' })
+    const camada = palco.querySelector('[data-aura]')
+    expect(camada?.getAttribute('data-aura')).toBe('aura-chama-azul')
+    // A camada vem antes da imagem no palco, então fica por baixo dela.
+    const imagem = palco.querySelector('img')
+    expect(camada && imagem && camada.compareDocumentPosition(imagem) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+  })
+
+  it('sem aura, ou com um estilo desconhecido, não desenha camada', async () => {
+    const desconhecida = personagemNoNivel(12, { id: 'aventureiro', automatico: true })
+    desconhecida.aura = 'aura-que-nao-existe'
+    vi.mocked(obterPersonagem).mockResolvedValue(desconhecida)
+    abrir()
+
+    const palco = await screen.findByRole('region', { name: 'Arte do personagem' })
+    expect(palco.querySelector('[data-aura]')).toBeNull()
   })
 })

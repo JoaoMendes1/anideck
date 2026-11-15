@@ -82,7 +82,9 @@ type RespostaPersonagem struct {
 	ProximoEstagio *EstagioRPG           `json:"proximo_estagio,omitempty"`
 	Visual         *VisualPersonagem     `json:"visual,omitempty"`
 	// Estilo do cenário equipado na Loja; vazio é o fundo padrão.
-	Cenario  string             `json:"cenario,omitempty"`
+	Cenario string `json:"cenario,omitempty"`
+	// Estilo da aura equipada na Loja; vazio é sem aura.
+	Aura     string             `json:"aura,omitempty"`
 	Estagios []EstagioStatusRPG `json:"estagios,omitempty"`
 }
 
@@ -338,35 +340,51 @@ type contextoPersonagem struct {
 	ranks    []FaixaRank
 	estagios []EstagioRPG
 	cenario  string
+	aura     string
 }
 
 // resposta monta o corpo da API a partir do que foi lido.
 func (c contextoPersonagem) resposta() RespostaPersonagem {
 	r := montarRespostaPersonagem(*c.linha, c.xpTotal, c.ranks, c.estagios)
 	r.Cenario = c.cenario
+	r.Aura = c.aura
 	return r
 }
 
-// carregarCenarioEquipado devolve o estilo do cenário equipado, ou vazio. Falha de leitura
-// também devolve vazio: cenário é enfeite, e a tela abre com o fundo padrão.
-func carregarCenarioEquipado(dbClient *supabase.Client, userID string) string {
+// carregarEquipadosDoPersonagem devolve o estilo do cenário e o da aura equipados, numa
+// consulta só. Falha de leitura devolve os dois vazios: são enfeites, e a tela abre sem eles.
+func carregarEquipadosDoPersonagem(dbClient *supabase.Client, userID string) (cenario, aura string) {
 	dados, _, err := dbClient.From("user_equipped").
-		Select("store_items(estilo)", "", false).
+		Select("slot,store_items(estilo)", "", false).
 		Eq("user_id", userID).
-		Eq("slot", slotCenario).
+		In("slot", []string{slotCenario, slotAura}).
 		Execute()
 	if err != nil {
-		return ""
+		return "", ""
 	}
+	return separarEquipadosDoPersonagem(dados)
+}
+
+// separarEquipadosDoPersonagem lê a resposta de user_equipped e separa cenário de aura.
+func separarEquipadosDoPersonagem(dados []byte) (cenario, aura string) {
 	var linhas []struct {
+		Slot string `json:"slot"`
 		Item struct {
 			Estilo string `json:"estilo"`
 		} `json:"store_items"`
 	}
-	if json.Unmarshal(dados, &linhas) != nil || len(linhas) == 0 {
-		return ""
+	if json.Unmarshal(dados, &linhas) != nil {
+		return "", ""
 	}
-	return linhas[0].Item.Estilo
+	for _, l := range linhas {
+		switch l.Slot {
+		case slotCenario:
+			cenario = l.Item.Estilo
+		case slotAura:
+			aura = l.Item.Estilo
+		}
+	}
+	return cenario, aura
 }
 
 // carregarContextoPersonagem lê a linha do personagem e, se ela existir, o XP e as faixas.
@@ -382,12 +400,14 @@ func carregarContextoPersonagem(dbClient *supabase.Client, userID string) (conte
 	for _, l := range carregarLedgerUsuario(dbClient, userID) {
 		xpTotal += l.XPEarned
 	}
+	cenario, aura := carregarEquipadosDoPersonagem(dbClient, userID)
 	return contextoPersonagem{
 		linha:    linha,
 		xpTotal:  xpTotal,
 		ranks:    ranks,
 		estagios: carregarEstagiosRPG(dbClient),
-		cenario:  carregarCenarioEquipado(dbClient, userID),
+		cenario:  cenario,
+		aura:     aura,
 	}, nil
 }
 

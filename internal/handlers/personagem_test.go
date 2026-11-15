@@ -400,3 +400,40 @@ func TestContextoPersonagem_RespostaLevaOCenario(t *testing.T) {
 		t.Errorf("sem cenário equipado, o campo não deveria aparecer no JSON: %s", corpo)
 	}
 }
+
+func TestSepararEquipadosDoPersonagem(t *testing.T) {
+	casos := []struct {
+		descricao string
+		bruto     string
+		cenario   string
+		aura      string
+	}{
+		{"os dois equipados", `[{"slot":"aura","store_items":{"estilo":"aura-chama-azul"}},{"slot":"cenario","store_items":{"estilo":"cenario-aurora"}}]`, "cenario-aurora", "aura-chama-azul"},
+		{"só cenário", `[{"slot":"cenario","store_items":{"estilo":"cenario-abismo"}}]`, "cenario-abismo", ""},
+		{"só aura", `[{"slot":"aura","store_items":{"estilo":"aura-raios-dourados"}}]`, "", "aura-raios-dourados"},
+		{"nada equipado", `[]`, "", ""},
+		{"slot de outro tipo é ignorado", `[{"slot":"moldura","store_items":{"estilo":"moldura-cyber-holo"}}]`, "", ""},
+		{"item apagado do catálogo vem sem estilo", `[{"slot":"aura","store_items":null}]`, "", ""},
+		{"resposta ilegível", `{"message":"erro"}`, "", ""},
+		{"resposta vazia", ``, "", ""},
+	}
+	for _, c := range casos {
+		cenario, aura := separarEquipadosDoPersonagem([]byte(c.bruto))
+		if cenario != c.cenario || aura != c.aura {
+			t.Errorf("%s: esperava cenário %q e aura %q, vieram %q e %q", c.descricao, c.cenario, c.aura, cenario, aura)
+		}
+	}
+}
+
+func TestContextoPersonagem_RespostaLevaAAura(t *testing.T) {
+	linha := linhaPersonagemBanco{Nome: "Ren", PersonagemBase: "espadachim_eter"}
+	ctx := contextoPersonagem{linha: &linha, xpTotal: 1980, ranks: RanksPadrao(), estagios: EstagiosPadrao(), aura: "aura-chama-azul"}
+
+	corpo, err := json.Marshal(ctx.resposta())
+	if err != nil {
+		t.Fatalf("falha ao serializar: %v", err)
+	}
+	if !strings.Contains(string(corpo), `"aura":"aura-chama-azul"`) || strings.Contains(string(corpo), `"cenario"`) {
+		t.Errorf("resposta deveria levar só a aura: %s", corpo)
+	}
+}

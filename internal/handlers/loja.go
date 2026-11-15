@@ -39,14 +39,17 @@ type UserEquippedItem struct {
 
 type LojaHandler struct{}
 
-// slotCenario é o slot do fundo da tela do personagem.
-const slotCenario = "cenario"
+// Slots do personagem: o fundo da tela e o efeito de luz atrás da ilustração.
+const (
+	slotCenario = "cenario"
+	slotAura    = "aura"
+)
 
 // SlotCosmeticoValido diz se o slot aceita item equipado. A lista repete a do CHECK de
 // user_equipped e a da função equipar_item: slot novo precisa entrar nos três lugares.
 func SlotCosmeticoValido(slot string) bool {
 	switch slot {
-	case "moldura", "tema_perfil", "cor_nome", "emblema", slotCenario:
+	case "moldura", "tema_perfil", "cor_nome", "emblema", slotCenario, slotAura:
 		return true
 	}
 	return false
@@ -279,7 +282,7 @@ func (h *LojaHandler) HandleEquiparItem(w http.ResponseWriter, r *http.Request) 
 
 	slot := strings.TrimSpace(body.Slot)
 	if !SlotCosmeticoValido(slot) {
-		responderErroJSON(w, http.StatusBadRequest, "Slot inválido. Use moldura, tema_perfil, cor_nome, emblema ou cenario.")
+		responderErroJSON(w, http.StatusBadRequest, "Slot inválido. Use moldura, tema_perfil, cor_nome, emblema, cenario ou aura.")
 		return
 	}
 
