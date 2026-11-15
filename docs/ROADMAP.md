@@ -789,7 +789,7 @@ experiência pequena e funcional de cada vez.
 - [ ] 18.6 Arena, cartas e invocação
   - [x] 18.6a Invocação gratuita: bilhetes ganhos só em expedições, invocar 1 ou 10, chances visíveis e iguais às do sorteio (`rpg_chances_invocacao`), garantia de épico ou melhor a cada 10, repetidos somam no inventário (#223). Sem pagamento por desenho: ECA Digital, art. 20
 
-**Pendência do dono:** aplicar do `sql/071` ao `sql/074` no Supabase, nessa ordem. Sem eles a tela do personagem continua abrindo, e expedições e invocação mostram "indisponíveis".
+**Pendência do dono:** aplicar o `sql/075_rpg_ajustes.sql` (#225). Do `071` ao `074` foram aplicados e conferidos no snapshot em 15/11/2026.
 
 **Arte pendente (o sistema já está pronto para recebê-la, sem mudar código de regra):** ilustração de cada skin (entra em `ARTES` com o id da skin e sai de `SKINS`), ícone ou ilustração de cada item de equipamento e de cada monstro, e a segunda personagem do elenco.
 
