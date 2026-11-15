@@ -134,3 +134,103 @@ export async function equiparItemRPG(
     return { erro: falha }
   }
 }
+
+// ---------------------------------------------------------------------------------------
+// Expedições (combate)
+// ---------------------------------------------------------------------------------------
+
+export type TipoMonstro = 'comum' | 'raro' | 'chefe'
+export type Dificuldade = 'facil' | 'equilibrada' | 'dificil' | 'perigosa'
+
+export interface MonstroRPG {
+  id: string
+  nome: string
+  descricao: string
+  tipo: TipoMonstro
+  nivel: number
+  vida: number
+  ataque: number
+  defesa: number
+  bilhetes: number
+  chance_item: number
+  raridade_item: Raridade
+}
+
+export interface MonstroNaLista extends MonstroRPG {
+  poder: number
+  dificuldade: Dificuldade
+}
+
+export interface HojeRPG {
+  feitas: number
+  limite: number
+  bilhetes: number
+}
+
+export interface EstadoExpedicoes {
+  atributos: AtributosRPG
+  hoje: HojeRPG
+  monstros: MonstroNaLista[]
+}
+
+export interface TurnoBatalha {
+  atacante: 'jogador' | 'monstro'
+  dano: number
+  critico: boolean
+  vida_jogador: number
+  vida_monstro: number
+}
+
+export interface RespostaBatalha {
+  monstro: MonstroRPG
+  jogador: AtributosRPG
+  resultado: { venceu: boolean; rodadas: number; turnos: TurnoBatalha[] }
+  recompensa: { bilhetes: number; item?: ItemRPG }
+  hoje: HojeRPG
+}
+
+export const ROTULO_DA_DIFICULDADE: Record<Dificuldade, { rotulo: string; classe: string }> = {
+  facil: { rotulo: 'Fácil', classe: 'text-green border-green/50' },
+  equilibrada: { rotulo: 'Equilibrada', classe: 'text-holo-3 border-holo-3/50' },
+  dificil: { rotulo: 'Difícil', classe: 'text-gold border-gold/50' },
+  perigosa: { rotulo: 'Perigosa', classe: 'text-coral border-coral/50' },
+}
+
+export function rotuloDaDificuldade(d: string | undefined) {
+  return ROTULO_DA_DIFICULDADE[(d ?? 'equilibrada') as Dificuldade] ?? ROTULO_DA_DIFICULDADE.equilibrada
+}
+
+/** Quantas batalhas ainda cabem hoje (nunca negativo). */
+export function batalhasRestantes(hoje: HojeRPG | undefined): number {
+  if (!hoje) return 0
+  return Math.max(0, hoje.limite - hoje.feitas)
+}
+
+export async function obterExpedicoes(): Promise<{ dados?: EstadoExpedicoes; erro?: string; semPersonagem?: boolean }> {
+  try {
+    const res = await fetch('/api/rpg/batalhas', { headers: await cabecalhoDeAutenticacao() })
+    if (res.status === 404) return { semPersonagem: true }
+    const json = (await res.json().catch(() => null)) as (EstadoExpedicoes & { error?: string }) | null
+    if (!res.ok || !json || !Array.isArray(json.monstros)) return { erro: json?.error || 'Expedições indisponíveis no momento.' }
+    return { dados: json }
+  } catch {
+    return { erro: 'Expedições indisponíveis no momento.' }
+  }
+}
+
+export async function batalhar(monstroId: string): Promise<{ dados?: RespostaBatalha; erro?: string }> {
+  const falha = 'Não foi possível batalhar agora.'
+  try {
+    const res = await fetch('/api/rpg/batalhas', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', ...(await cabecalhoDeAutenticacao()) },
+      body: JSON.stringify({ monstro_id: monstroId }),
+    })
+    const json = (await res.json().catch(() => null)) as (RespostaBatalha & { error?: string }) | null
+    if (!res.ok) return { erro: json?.error || falha }
+    if (!json || !json.resultado || !Array.isArray(json.resultado.turnos)) return { erro: falha }
+    return { dados: json }
+  } catch {
+    return { erro: falha }
+  }
+}

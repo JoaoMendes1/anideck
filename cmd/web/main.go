@@ -192,6 +192,8 @@ func main() {
 		protegido.Put("/api/personagem/visual", personagemHandler.HandleEquiparVisual)
 		protegido.Get("/api/personagem/equipamentos", rpgHandler.HandleGetEquipamentos)
 		protegido.Put("/api/personagem/equipamentos", rpgHandler.HandleEquiparItemRPG)
+		protegido.Get("/api/rpg/batalhas", rpgHandler.HandleGetExpedicoes)
+		protegido.Post("/api/rpg/batalhas", rpgHandler.HandleBatalhar)
 		protegido.Get("/api/economia/carteira", economiaHandler.HandleGetCarteira)
 
 		// Missões Diárias (Fase 16, #168): sorteio determinístico e resgate de AniCoins

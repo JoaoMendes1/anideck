@@ -33,3 +33,18 @@ describe('rpg - equipamentos', () => {
     expect(estiloDaRaridade(undefined)).toBe(ESTILO_DA_RARIDADE.comum)
   })
 })
+
+describe('rpg - expedições', () => {
+  it('conta as batalhas restantes sem passar de zero', async () => {
+    const { batalhasRestantes } = await import('./rpg')
+    expect(batalhasRestantes({ feitas: 2, limite: 5, bilhetes: 0 })).toBe(3)
+    expect(batalhasRestantes({ feitas: 7, limite: 5, bilhetes: 0 })).toBe(0)
+    expect(batalhasRestantes(undefined)).toBe(0)
+  })
+
+  it('dificuldade desconhecida cai em equilibrada', async () => {
+    const { ROTULO_DA_DIFICULDADE, rotuloDaDificuldade } = await import('./rpg')
+    expect(rotuloDaDificuldade('perigosa')).toBe(ROTULO_DA_DIFICULDADE.perigosa)
+    expect(rotuloDaDificuldade('impossivel')).toBe(ROTULO_DA_DIFICULDADE.equilibrada)
+  })
+})
