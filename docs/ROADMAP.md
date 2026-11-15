@@ -48,7 +48,7 @@ Staging sobe já na Fase 1, como projeto esqueleto — mesmo padrão do JVM Syst
 | 15 · Comunidade base | ✅ Concluída (08/11/2026, #154); falta abrir o beta |
 | 16 · Economia e cartas | ✅ Concluída (09/11/2026, #165); falta abrir o beta |
 | 17 · Comunidade viva | ✅ Concluída (13/11/2026, #179) |
-| 18 · O Despertar Isekai | 🚧 Em andamento — 18.1 Meu Personagem (#199, #200), 18.2a escolha de visual (#218), 18.2b cenários (#219), 18.2e auras (#220) , equipamentos com atributos (#221), expedições (#222), invocação gratuita (#223) e skins (#224) entregues; falta aplicar do `sql/071` ao `sql/074` |
+| 18 · O Despertar Isekai | 🚧 Em andamento — 18.1 Meu Personagem (#199, #200), 18.2a escolha de visual (#218), 18.2b cenários (#219), 18.2e auras (#220) , equipamentos com atributos (#221), expedições (#222), invocação gratuita (#223), skins (#224) e desempenho da tela (#226) entregues; falta aplicar o `sql/075` e o `sql/076` |
 
 ---
 
@@ -780,6 +780,7 @@ experiência pequena e funcional de cada vez.
   - [x] 18.2b Cenários de fundo da tela do personagem, comprados na Loja: tipo e slot `cenario`, quatro cenários desenhados em CSS (sem imagem), categoria e prévia na Loja com o personagem do jogador, e `GET /api/personagem` devolvendo o cenário equipado (#219)
   - [x] 18.2c Skins: quatro trajes na Loja, vestidos pela mesma escolha de visual (posse conferida em `user_items`), com o filtro aplicado em todo lugar onde o personagem aparece; devolver a skin volta ao automático (#224). Arte provisória: estágio tingido por filtro CSS
   - [x] 18.2d Slots de equipamento: catálogo `rpg_itens`, inventário e slots próprios, kit inicial equipado na primeira visita, troca com ganho e perda de cada item, conferida no banco por posse, slot e nível (#221). Arte provisória: ícone por slot e cor por raridade
+  - [x] Desempenho e slots sobre a arte: o estado do jogador vem numa consulta só (`rpg_estado_jogador`, com a soma do XP no banco), a configuração de rank e estágio fica 60 s em memória, o kit inicial só é pedido quando o inventário vem vazio, e a tela abre com uma chamada à API (`?completo=1`). Os cinco slots ficam sobre a arte, e item comum deixou de parecer slot vazio (#226)
   - [x] 18.2e Auras do personagem, compradas na Loja: tipo e slot `aura`, três auras em CSS desenhadas atrás da ilustração (`CamadaDaAura`), paradas para quem pediu movimento reduzido, com categoria e prévia na Loja (#220)
 - [ ] 18.3 Progressão de RPG
   - [x] 18.3a Atributos Vida, Ataque e Defesa, calculados no servidor a partir do nível e dos itens equipados; item acima do nível fica no slot sem somar (#221)
@@ -789,7 +790,7 @@ experiência pequena e funcional de cada vez.
 - [ ] 18.6 Arena, cartas e invocação
   - [x] 18.6a Invocação gratuita: bilhetes ganhos só em expedições, invocar 1 ou 10, chances visíveis e iguais às do sorteio (`rpg_chances_invocacao`), garantia de épico ou melhor a cada 10, repetidos somam no inventário (#223). Sem pagamento por desenho: ECA Digital, art. 20
 
-**Pendência do dono:** aplicar o `sql/075_rpg_ajustes.sql` (#225). Do `071` ao `074` foram aplicados e conferidos no snapshot em 15/11/2026.
+**Pendência do dono:** aplicar o `sql/075_rpg_ajustes.sql` (#225) e o `sql/076_rpg_estado_jogador.sql` (#226); sem o 076 a tela funciona, pelo caminho lento. Do `071` ao `074` foram aplicados e conferidos no snapshot em 15/11/2026.
 
 **Arte pendente (o sistema já está pronto para recebê-la, sem mudar código de regra):** ilustração de cada skin (entra em `ARTES` com o id da skin e sai de `SKINS`), ícone ou ilustração de cada item de equipamento e de cada monstro, e a segunda personagem do elenco.
 

@@ -88,6 +88,8 @@ type RespostaPersonagem struct {
 	Estagios []EstagioStatusRPG `json:"estagios,omitempty"`
 	// Skins que o jogador possui: visuais desbloqueados por compra na Loja.
 	Skins []SkinPersonagem `json:"skins,omitempty"`
+	// Equipamento e atributos, só com ?completo=1: a barra superior não precisa deles.
+	Equipamento *EstadoEquipamento `json:"equipamento,omitempty"`
 }
 
 // SkinPersonagem é um traje comprado na Loja. O id é o próprio visual.
@@ -433,6 +435,12 @@ type contextoPersonagem struct {
 	cenario  string
 	aura     string
 	skins    []SkinPersonagem
+	// Vindos da leitura única (sql/076). inventarioLido diz se vieram: sem ela, ficam vazios
+	// e o equipamento é lido à parte.
+	inventario     []linhaInventarioRPG
+	equipados      map[string]string
+	bilhetes       int
+	inventarioLido bool
 }
 
 // resposta monta o corpo da API a partir do que foi lido.
@@ -482,31 +490,6 @@ func separarEquipadosDoPersonagem(dados []byte) (cenario, aura string) {
 		}
 	}
 	return cenario, aura
-}
-
-// carregarContextoPersonagem lê a linha do personagem e, se ela existir, o XP e as faixas.
-// O XP vem do mesmo ledger da Guilda, então o nível é sempre o mesmo da pílula da Navbar.
-func carregarContextoPersonagem(dbClient *supabase.Client, userID string) (contextoPersonagem, error) {
-	linha, err := lerPersonagem(dbClient, userID)
-	if err != nil || linha == nil {
-		return contextoPersonagem{}, err
-	}
-
-	_, ranks, _ := carregarConfigGuilda(dbClient)
-	xpTotal := 0
-	for _, l := range carregarLedgerUsuario(dbClient, userID) {
-		xpTotal += l.XPEarned
-	}
-	cenario, aura := carregarEquipadosDoPersonagem(dbClient, userID)
-	return contextoPersonagem{
-		linha:    linha,
-		xpTotal:  xpTotal,
-		ranks:    ranks,
-		estagios: carregarEstagiosRPG(dbClient),
-		cenario:  cenario,
-		aura:     aura,
-		skins:    carregarSkinsDoJogador(dbClient, userID),
-	}, nil
 }
 
 // carregarRespostaPersonagem lê o que a tela precisa.
@@ -615,11 +598,25 @@ func (h *PersonagemHandler) HandleGetPersonagem(w http.ResponseWriter, r *http.R
 		return
 	}
 
-	resposta, err := carregarRespostaPersonagem(dbClient, userID)
+	ctx, err := carregarContextoPersonagem(dbClient, userID)
 	if err != nil {
 		log.Printf("[PERSONAGEM] Falha ao ler personagem (user=%s): %v", userID, err)
 		responderErroJSON(w, http.StatusServiceUnavailable, "Banco indisponível no momento.")
 		return
+	}
+	if ctx.linha == nil {
+		responderJSON(w, http.StatusOK, RespostaPersonagem{Existe: false})
+		return
+	}
+	resposta := ctx.resposta()
+	// ?completo=1 é a tela do personagem: leva o equipamento na mesma resposta, para a página
+	// fazer uma chamada só. Falha no equipamento não derruba o resto.
+	if r.URL.Query().Get("completo") == "1" {
+		if equipamento, errEq := equipamentoDoContexto(dbClient, userID, ctx); errEq == nil {
+			resposta.Equipamento = &equipamento
+		} else {
+			log.Printf("[PERSONAGEM] Falha ao ler equipamento (user=%s): %v", userID, errEq)
+		}
 	}
 	responderJSON(w, http.StatusOK, resposta)
 }

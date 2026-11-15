@@ -5,6 +5,7 @@
 // do arquivo acontece aqui. Trocar uma ilustração, ou mudar onde elas ficam guardadas,
 // não mexe em regra de jogo.
 import { supabase } from './supabase'
+import type { EstadoEquipamento } from './rpg'
 import arteIniciante from '../assets/personagem/espadachim-eter-iniciante.webp'
 import arteAventureiro from '../assets/personagem/espadachim-eter-aventureiro.webp'
 import arteLendario from '../assets/personagem/espadachim-eter-lendario.webp'
@@ -68,6 +69,8 @@ export interface RespostaPersonagem {
   estagios?: EstagioStatusRPG[]
   // Skins compradas na Loja; o id de cada uma é um visual que pode ser vestido.
   skins?: SkinPersonagem[]
+  /** Só com `completo`: equipamento e atributos, na mesma resposta. */
+  equipamento?: EstadoEquipamento
 }
 
 // Disparado quando o personagem muda (despertar, troca de visual), para a barra superior
@@ -226,10 +229,15 @@ async function cabecalhoDeAutenticacao(): Promise<Record<string, string>> {
   return session?.access_token ? { Authorization: `Bearer ${session.access_token}` } : {}
 }
 
-/** Busca o personagem de quem está logado. Devolve null quando a leitura falha. */
-export async function obterPersonagem(): Promise<RespostaPersonagem | null> {
+/**
+ * Busca o personagem de quem está logado. Devolve null quando a leitura falha.
+ * `completo` traz também o equipamento: é o que a tela do personagem usa, numa chamada só; a
+ * barra superior e os retratos usam a leve.
+ */
+export async function obterPersonagem(opcoes: { completo?: boolean } = {}): Promise<RespostaPersonagem | null> {
   try {
-    const res = await fetch('/api/personagem', { headers: await cabecalhoDeAutenticacao() })
+    const url = opcoes.completo ? '/api/personagem?completo=1' : '/api/personagem'
+    const res = await fetch(url, { headers: await cabecalhoDeAutenticacao() })
     if (!res.ok) return null
     const json = (await res.json()) as RespostaPersonagem
     if (!json || typeof json.existe !== 'boolean') return null

@@ -1,16 +1,17 @@
 // client/src/components/personagem/PainelEquipamentos.tsx
-// Atributos, os cinco slots e a troca de item, na tela do personagem.
+// Atributos e a troca de item, na tela do personagem.
 //
-// Os números vêm prontos do servidor. Tocar num slot abre a lista dos itens daquele slot,
-// com o ganho ou a perda de cada troca; a troca em si é conferida e gravada no servidor.
-import { useEffect, useState } from 'react'
+// O estado vem da página, que o recebe na mesma chamada do personagem; os slots ficam sobre a
+// arte (SlotsDoPersonagem). Este painel mostra os números e, com um slot aberto, a lista dos
+// itens daquele slot com o ganho ou a perda de cada troca. A troca é conferida e gravada no
+// servidor.
+import { useEffect, useRef, useState } from 'react'
 import { Lock, Shield, Swords, Heart, Zap, X } from 'lucide-react'
 import {
   SLOTS_RPG,
   diferencaDaTroca,
   equiparItemRPG,
   estiloDaRaridade,
-  obterEquipamentos,
   resumoDoItem,
   type EstadoEquipamento,
   type SlotId,
@@ -28,24 +29,27 @@ function Diferenca({ valor, rotulo }: { valor: number; rotulo: string }) {
   )
 }
 
-export default function PainelEquipamentos() {
-  const [estado, setEstado] = useState<EstadoEquipamento | null>(null)
-  const [carregando, setCarregando] = useState(true)
-  const [slotAberto, setSlotAberto] = useState<SlotId | null>(null)
+export default function PainelEquipamentos({
+  estado,
+  slotAberto,
+  aoFecharSlot,
+  aoAtualizar,
+}: {
+  /** undefined: ainda carregando; null: o servidor não respondeu. */
+  estado: EstadoEquipamento | null | undefined
+  slotAberto: SlotId | null
+  aoFecharSlot: () => void
+  aoAtualizar: (estado: EstadoEquipamento) => void
+}) {
   const [salvando, setSalvando] = useState(false)
   const [erro, setErro] = useState('')
+  const listaRef = useRef<HTMLDivElement>(null)
 
+  // No celular a lista fica abaixo da arte: ao abrir um slot, ela é trazida para a tela.
   useEffect(() => {
-    let ativo = true
-    obterEquipamentos().then((resposta) => {
-      if (!ativo) return
-      setEstado(resposta)
-      setCarregando(false)
-    })
-    return () => {
-      ativo = false
-    }
-  }, [])
+    setErro('')
+    if (slotAberto) listaRef.current?.scrollIntoView?.({ block: 'nearest', behavior: 'smooth' })
+  }, [slotAberto])
 
   const trocar = async (slot: SlotId, itemId: string) => {
     if (salvando) return
@@ -54,37 +58,27 @@ export default function PainelEquipamentos() {
     const resultado = await equiparItemRPG(slot, itemId)
     setSalvando(false)
     if (resultado.dados) {
-      setEstado(resultado.dados)
-      setSlotAberto(null)
+      aoAtualizar(resultado.dados)
+      aoFecharSlot()
       return
     }
     setErro(resultado.erro ?? 'Não foi possível trocar o equipamento agora.')
   }
 
-  if (carregando) {
-    return <div className="h-48 animate-pulse rounded-2xl border border-line bg-panel" />
+  if (estado === undefined) {
+    return <div className="h-40 animate-pulse rounded-2xl border border-line bg-panel" />
   }
 
-  // Sem resposta (servidor sem o sql/071, ou fora do ar): os slots aparecem vazios, como antes.
   if (!estado) {
     return (
-      <section aria-labelledby="titulo-dos-equipamentos" className="flex flex-col gap-3">
+      <section aria-labelledby="titulo-dos-equipamentos" className="flex flex-col gap-2">
         <div className="flex items-center justify-between gap-3">
           <h2 id="titulo-dos-equipamentos" className={ROTULO_DE_SECAO}>
-            Equipamentos
+            Atributos e equipamentos
           </h2>
-          <span className="rounded-full border border-line px-2.5 py-0.5 font-mono text-xs text-muted">em breve</span>
+          <span className="rounded-full border border-line px-2.5 py-0.5 font-mono text-xs text-muted">indisponível</span>
         </div>
-        <ul className="m-0 grid list-none grid-cols-5 gap-2.5 p-0">
-          {SLOTS_RPG.map(({ id, rotulo, Icone }) => (
-            <li key={id} className="flex min-w-0 flex-col items-center gap-1.5">
-              <span className="flex h-16 w-full items-center justify-center rounded-xl border border-dashed border-line text-muted">
-                <Icone size={22} aria-hidden="true" />
-              </span>
-              <span className="max-w-full truncate text-xs font-semibold text-muted">{rotulo}</span>
-            </li>
-          ))}
-        </ul>
+        <p className="m-0 text-xs text-muted">Não foi possível carregar os equipamentos agora.</p>
       </section>
     )
   }
@@ -125,44 +119,15 @@ export default function PainelEquipamentos() {
         ))}
       </dl>
 
-      <ul className="m-0 grid list-none grid-cols-5 gap-2.5 p-0">
-        {SLOTS_RPG.map(({ id, rotulo, Icone }) => {
-          const item = itemNoSlot(id)
-          const estilo = estiloDaRaridade(item?.raridade)
-          const aberto = slotAberto === id
-          return (
-            <li key={id} className="min-w-0">
-              <button
-                type="button"
-                onClick={() => {
-                  setErro('')
-                  setSlotAberto(aberto ? null : id)
-                }}
-                aria-expanded={aberto}
-                aria-label={item ? `${rotulo}: ${item.nome}. Trocar` : `${rotulo}: vazio. Equipar`}
-                className="flex w-full min-w-0 cursor-pointer flex-col items-center gap-1.5"
-              >
-                <span
-                  className={`flex h-16 w-full items-center justify-center rounded-xl border-2 ${
-                    aberto ? 'border-holo-3' : item ? estilo.borda : 'border-dashed border-line'
-                  } ${item ? estilo.fundo : ''} ${item ? estilo.texto : 'text-muted'}`}
-                >
-                  <Icone size={22} aria-hidden="true" />
-                </span>
-                <span className="max-w-full truncate text-xs font-semibold text-muted">{rotulo}</span>
-              </button>
-            </li>
-          )
-        })}
-      </ul>
+      <p className="m-0 text-xs text-muted">Toque num slot ao lado do personagem para trocar o item.</p>
 
       {slotAberto && (
-        <div className="flex flex-col gap-2 rounded-2xl border border-holo-3/40 bg-panel p-3">
+        <div ref={listaRef} className="flex scroll-mt-4 flex-col gap-2 rounded-2xl border border-holo-3/40 bg-panel p-3">
           <div className="flex items-center justify-between gap-2">
             <p className="m-0 text-xs font-bold text-text">{rotuloAberto}</p>
             <button
               type="button"
-              onClick={() => setSlotAberto(null)}
+              onClick={aoFecharSlot}
               aria-label="Fechar a lista de itens"
               className="flex h-11 w-11 cursor-pointer items-center justify-center rounded-full text-muted hover:text-text"
             >

@@ -10,6 +10,7 @@ import (
 	"net/http"
 	"sort"
 	"strings"
+	"sync"
 
 	"github.com/JoaoMendes1/anideck/internal/database"
 	supabase "github.com/supabase-community/supabase-go"
@@ -222,21 +223,28 @@ func (h *RPGHandler) HandleGetExpedicoes(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
-	sessao.dbClient.Rpc("rpg_garantir_kit_inicial", "", map[string]interface{}{})
-	equipamento, err := carregarEstadoEquipamento(sessao.dbClient, sessao.userID, sessao.nivel)
-	if err != nil {
-		log.Printf("[RPG] Falha ao ler equipamentos (user=%s): %v", sessao.userID, err)
+	// As três leituras não dependem uma da outra: vão em paralelo.
+	var (
+		equipamento       EstadoEquipamento
+		monstros          []MonstroRPG
+		hoje              HojeRPG
+		errEq, errM, errH error
+		wg                sync.WaitGroup
+	)
+	wg.Add(3)
+	go func() {
+		defer wg.Done()
+		equipamento, errEq = equipamentoDoContexto(sessao.dbClient, sessao.userID, sessao.ctx)
+	}()
+	go func() { defer wg.Done(); monstros, errM = lerMonstros(sessao.dbClient) }()
+	go func() { defer wg.Done(); hoje, errH = lerHojeRPG(sessao.dbClient) }()
+	wg.Wait()
+	if errEq != nil || errM != nil {
+		log.Printf("[RPG] Falha ao ler expedições (user=%s): equipamento=%v monstros=%v", sessao.userID, errEq, errM)
 		responderErroJSON(w, http.StatusServiceUnavailable, "Expedições indisponíveis no momento.")
 		return
 	}
-	monstros, err := lerMonstros(sessao.dbClient)
-	if err != nil {
-		log.Printf("[RPG] Falha ao ler monstros: %v", err)
-		responderErroJSON(w, http.StatusServiceUnavailable, "Expedições indisponíveis no momento.")
-		return
-	}
-	hoje, err := lerHojeRPG(sessao.dbClient)
-	if err != nil {
+	if errH != nil {
 		responderErroJSON(w, http.StatusServiceUnavailable, "Expedições indisponíveis no momento.")
 		return
 	}
@@ -272,8 +280,22 @@ func (h *RPGHandler) HandleBatalhar(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	monstros, err := lerMonstros(sessao.dbClient)
-	if err != nil {
+	var (
+		monstros          []MonstroRPG
+		hoje              HojeRPG
+		equipamento       EstadoEquipamento
+		errM, errH, errEq error
+		wg                sync.WaitGroup
+	)
+	wg.Add(3)
+	go func() { defer wg.Done(); monstros, errM = lerMonstros(sessao.dbClient) }()
+	go func() { defer wg.Done(); hoje, errH = lerHojeRPG(sessao.dbClient) }()
+	go func() {
+		defer wg.Done()
+		equipamento, errEq = equipamentoDoContexto(sessao.dbClient, sessao.userID, sessao.ctx)
+	}()
+	wg.Wait()
+	if errM != nil || errEq != nil {
 		responderErroJSON(w, http.StatusServiceUnavailable, "Expedições indisponíveis no momento.")
 		return
 	}
@@ -291,15 +313,8 @@ func (h *RPGHandler) HandleBatalhar(w http.ResponseWriter, r *http.Request) {
 
 	// Conferência antecipada do limite, só para não simular à toa; quem decide é a função
 	// de registro, que trava por usuário.
-	if hoje, err := lerHojeRPG(sessao.dbClient); err == nil && hoje.Feitas >= hoje.Limite {
+	if errH == nil && hoje.Feitas >= hoje.Limite {
 		responderErroJSON(w, http.StatusTooManyRequests, "Você já fez todas as batalhas de hoje. Volte amanhã.")
-		return
-	}
-
-	sessao.dbClient.Rpc("rpg_garantir_kit_inicial", "", map[string]interface{}{})
-	equipamento, err := carregarEstadoEquipamento(sessao.dbClient, sessao.userID, sessao.nivel)
-	if err != nil {
-		responderErroJSON(w, http.StatusServiceUnavailable, "Expedições indisponíveis no momento.")
 		return
 	}
 

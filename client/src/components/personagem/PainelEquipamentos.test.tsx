@@ -1,15 +1,29 @@
 // @vitest-environment jsdom
 import { describe, it, expect, afterEach, beforeEach, vi } from 'vitest'
+import { useState } from 'react'
 import { render, cleanup, screen, fireEvent, waitFor } from '@testing-library/react'
-import type { EstadoEquipamento, ItemRPG } from '../../lib/rpg'
+import type { EstadoEquipamento, ItemRPG, SlotId } from '../../lib/rpg'
 
 vi.mock('../../lib/rpg', async (original) => {
   const real = await original<typeof import('../../lib/rpg')>()
-  return { ...real, obterEquipamentos: vi.fn(), equiparItemRPG: vi.fn() }
+  return { ...real, equiparItemRPG: vi.fn() }
 })
 
 import PainelEquipamentos from './PainelEquipamentos'
-import { equiparItemRPG, obterEquipamentos } from '../../lib/rpg'
+import SlotsDoPersonagem from './SlotsDoPersonagem'
+import { ESTILO_DA_RARIDADE, equiparItemRPG } from '../../lib/rpg'
+
+// Monta os slots e o painel como a página: o estado fica fora dos dois.
+function Tela({ inicial }: { inicial: EstadoEquipamento | null | undefined }) {
+  const [estado, setEstado] = useState(inicial)
+  const [aberto, setAberto] = useState<SlotId | null>(null)
+  return (
+    <>
+      <SlotsDoPersonagem estado={estado} slotAberto={aberto} aoEscolher={(s) => setAberto((a) => (a === s ? null : s))} />
+      <PainelEquipamentos estado={estado} slotAberto={aberto} aoFecharSlot={() => setAberto(null)} aoAtualizar={setEstado} />
+    </>
+  )
+}
 
 const espada = { id: 'espada_de_ferro', slot: 'arma' as const, nome: 'Espada de Ferro', descricao: '', raridade: 'comum' as const, vida: 0, ataque: 4, defesa: 0, nivel_minimo: 1 }
 const lamina = { id: 'lamina_de_eter', slot: 'arma' as const, nome: 'Lâmina de Éter', descricao: '', raridade: 'raro' as const, vida: 0, ataque: 10, defesa: 0, nivel_minimo: 10 }
@@ -30,15 +44,13 @@ function estado(armaEquipada: ItemRPG = espada): EstadoEquipamento {
 }
 
 beforeEach(() => {
-  vi.mocked(obterEquipamentos).mockReset()
   vi.mocked(equiparItemRPG).mockReset()
 })
 afterEach(cleanup)
 
 describe('PainelEquipamentos', () => {
   it('mostra atributos, poder e o item de cada slot', async () => {
-    vi.mocked(obterEquipamentos).mockResolvedValue(estado())
-    render(<PainelEquipamentos />)
+    render(<Tela inicial={estado()} />)
 
     await screen.findByText('Poder 180')
     expect(screen.getByText('47')).toBeTruthy()
@@ -48,9 +60,8 @@ describe('PainelEquipamentos', () => {
   })
 
   it('abre o slot, mostra o ganho da troca e equipa', async () => {
-    vi.mocked(obterEquipamentos).mockResolvedValue(estado())
     vi.mocked(equiparItemRPG).mockResolvedValue({ dados: estado(lamina) })
-    render(<PainelEquipamentos />)
+    render(<Tela inicial={estado()} />)
 
     fireEvent.click(await screen.findByRole('button', { name: 'Arma: Espada de Ferro. Trocar' }))
     expect(screen.getByText('+6 Ataque')).toBeTruthy()
@@ -63,9 +74,8 @@ describe('PainelEquipamentos', () => {
   })
 
   it('remover envia o slot vazio', async () => {
-    vi.mocked(obterEquipamentos).mockResolvedValue(estado())
     vi.mocked(equiparItemRPG).mockResolvedValue({ dados: estado() })
-    render(<PainelEquipamentos />)
+    render(<Tela inicial={estado()} />)
 
     fireEvent.click(await screen.findByRole('button', { name: 'Arma: Espada de Ferro. Trocar' }))
     fireEvent.click(screen.getByRole('button', { name: 'Remover' }))
@@ -73,20 +83,31 @@ describe('PainelEquipamentos', () => {
   })
 
   it('mostra o erro do servidor', async () => {
-    vi.mocked(obterEquipamentos).mockResolvedValue(estado())
     vi.mocked(equiparItemRPG).mockResolvedValue({ erro: 'Este item exige o nível 10.' })
-    render(<PainelEquipamentos />)
+    render(<Tela inicial={estado()} />)
 
     fireEvent.click(await screen.findByRole('button', { name: 'Arma: Espada de Ferro. Trocar' }))
     fireEvent.click(screen.getByRole('button', { name: 'Equipar' }))
     await waitFor(() => expect(screen.getByRole('alert').textContent).toBe('Este item exige o nível 10.'))
   })
 
-  it('sem resposta do servidor, mostra os slots vazios de antes', async () => {
-    vi.mocked(obterEquipamentos).mockResolvedValue(null)
-    render(<PainelEquipamentos />)
-
-    await screen.findByText('em breve')
+  it('sem resposta do servidor, avisa e não desenha slots', () => {
+    render(<Tela inicial={null} />)
+    expect(screen.getByText('indisponível')).toBeTruthy()
     expect(screen.queryByRole('button')).toBeNull()
+  })
+
+  it('carregando, não desenha slots', () => {
+    render(<Tela inicial={undefined} />)
+    expect(screen.queryByRole('button')).toBeNull()
+  })
+
+  it('item comum não se parece com slot vazio', () => {
+    expect(ESTILO_DA_RARIDADE.comum.borda).not.toContain('line')
+    render(<Tela inicial={estado()} />)
+    const arma = screen.getByRole('button', { name: 'Arma: Espada de Ferro. Trocar' })
+    const botas = screen.getByRole('button', { name: 'Botas: vazio. Equipar' })
+    expect(arma.className).not.toContain('border-dashed')
+    expect(botas.className).toContain('border-dashed')
   })
 })

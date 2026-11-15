@@ -244,6 +244,7 @@ type sessaoRPG struct {
 	userID   string
 	dbClient *supabase.Client
 	nivel    int
+	ctx      contextoPersonagem
 }
 
 // abrirSessaoRPG confere a autenticação e a existência do personagem. Quando devolve false,
@@ -277,6 +278,7 @@ func abrirSessaoRPG(w http.ResponseWriter, r *http.Request) (sessaoRPG, bool) {
 		userID:   userID,
 		dbClient: dbClient,
 		nivel:    CalcularNivelERank(ctx.xpTotal, ctx.ranks).Nivel,
+		ctx:      ctx,
 	}, true
 }
 
@@ -288,9 +290,7 @@ func (h *RPGHandler) HandleGetEquipamentos(w http.ResponseWriter, r *http.Reques
 		return
 	}
 
-	sessao.dbClient.Rpc("rpg_garantir_kit_inicial", "", map[string]interface{}{})
-
-	estado, err := carregarEstadoEquipamento(sessao.dbClient, sessao.userID, sessao.nivel)
+	estado, err := equipamentoDoContexto(sessao.dbClient, sessao.userID, sessao.ctx)
 	if err != nil {
 		log.Printf("[RPG] Falha ao ler equipamentos (user=%s): %v", sessao.userID, err)
 		responderErroJSON(w, http.StatusServiceUnavailable, "Equipamentos indisponíveis no momento.")
@@ -348,7 +348,13 @@ func (h *RPGHandler) HandleEquiparItemRPG(w http.ResponseWriter, r *http.Request
 		return
 	}
 
-	estado, err := carregarEstadoEquipamento(sessao.dbClient, sessao.userID, sessao.nivel)
+	// Lê de novo para devolver o estado já com a troca: uma ida ao banco pela leitura única.
+	ctx, err := carregarContextoPersonagem(sessao.dbClient, sessao.userID)
+	if err != nil || ctx.linha == nil {
+		responderErroJSON(w, http.StatusServiceUnavailable, "Equipamentos indisponíveis no momento.")
+		return
+	}
+	estado, err := equipamentoDoContexto(sessao.dbClient, sessao.userID, ctx)
 	if err != nil {
 		responderErroJSON(w, http.StatusServiceUnavailable, "Equipamentos indisponíveis no momento.")
 		return

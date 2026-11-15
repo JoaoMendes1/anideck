@@ -10,7 +10,13 @@ vi.mock('../lib/personagem', async (original) => {
   return { ...real, obterPersonagem: vi.fn(), equiparVisual: vi.fn(), despertarPersonagem: vi.fn() }
 })
 
+vi.mock('../lib/rpg', async (original) => {
+  const real = await original<typeof import('../lib/rpg')>()
+  return { ...real, obterEquipamentos: vi.fn() }
+})
+
 import Personagem from './Personagem'
+import { obterEquipamentos } from '../lib/rpg'
 import { EVENTO_PERSONAGEM_ATUALIZADO, equiparVisual, obterPersonagem } from '../lib/personagem'
 
 const estagios = [
@@ -43,6 +49,8 @@ function abrir() {
 
 beforeEach(() => {
   vi.mocked(obterPersonagem).mockReset()
+  vi.mocked(obterEquipamentos).mockReset()
+  vi.mocked(obterEquipamentos).mockResolvedValue(null)
   vi.mocked(equiparVisual).mockReset()
 })
 afterEach(cleanup)
@@ -201,5 +209,35 @@ describe('Personagem - skins', () => {
     abrir()
     await screen.findByText(/O visual acompanha o seu estágio/)
     expect(screen.queryByText('Trajes')).toBeNull()
+  })
+
+  it('carrega personagem e equipamento numa chamada só, com os slots sobre a arte', async () => {
+    const equipamento = {
+      nivel: 12,
+      base: { vida: 320, ataque: 43, defesa: 27, poder: 172 },
+      atributos: { vida: 320, ataque: 47, defesa: 27, poder: 180 },
+      slots: [
+        { slot: 'arma' as const, item: { id: 'espada_de_ferro', slot: 'arma' as const, nome: 'Espada de Ferro', descricao: '', raridade: 'comum' as const, vida: 0, ataque: 4, defesa: 0, nivel_minimo: 1 } },
+        { slot: 'armadura' as const },
+        { slot: 'capa' as const },
+        { slot: 'botas' as const },
+        { slot: 'joia' as const },
+      ],
+      inventario: [],
+    }
+    vi.mocked(obterPersonagem).mockResolvedValue({ ...personagemNoNivel(12, { id: 'aventureiro', automatico: true }), equipamento })
+    abrir()
+
+    await screen.findByRole('button', { name: 'Arma: Espada de Ferro. Trocar' })
+    expect(obterPersonagem).toHaveBeenCalledTimes(1)
+    expect(obterPersonagem).toHaveBeenCalledWith({ completo: true })
+    expect(obterEquipamentos).not.toHaveBeenCalled()
+    expect(screen.getByText('Poder 180')).toBeTruthy()
+  })
+
+  it('sem o equipamento na resposta, busca só ele', async () => {
+    vi.mocked(obterPersonagem).mockResolvedValue(personagemNoNivel(12, { id: 'aventureiro', automatico: true }))
+    abrir()
+    await waitFor(() => expect(obterEquipamentos).toHaveBeenCalledTimes(1))
   })
 })

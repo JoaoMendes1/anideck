@@ -10,6 +10,8 @@ import { ChevronLeft, Image, Lock, Orbit, Sparkles, Sword, Swords } from 'lucide
 import { obterFundoDoCenario } from '../lib/cosmeticos'
 import CamadaDaAura from '../components/personagem/CamadaDaAura'
 import PainelEquipamentos from '../components/personagem/PainelEquipamentos'
+import SlotsDoPersonagem from '../components/personagem/SlotsDoPersonagem'
+import { obterEquipamentos, type EstadoEquipamento, type SlotId } from '../lib/rpg'
 import {
   ALTURA_DA_ARTE,
   LARGURA_DA_ARTE,
@@ -183,12 +185,17 @@ function TelaDespertar({ aoDespertar }: { aoDespertar: (dados: RespostaPersonage
 function FichaDoPersonagem({
   dados,
   aoAtualizar,
+  equipamento,
+  aoAtualizarEquipamento,
 }: {
   dados: RespostaPersonagem
   aoAtualizar: (dados: RespostaPersonagem) => void
+  equipamento: EstadoEquipamento | null | undefined
+  aoAtualizarEquipamento: (estado: EstadoEquipamento) => void
 }) {
   // Visual que o jogador está só experimentando; null mostra o que está em uso.
   const [previa, setPrevia] = useState<string | null>(null)
+  const [slotAberto, setSlotAberto] = useState<SlotId | null>(null)
   const [salvando, setSalvando] = useState(false)
   const [erroDoVisual, setErroDoVisual] = useState('')
 
@@ -232,7 +239,7 @@ function FichaDoPersonagem({
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,1fr)_420px] lg:items-start">
         <section
           aria-label="Arte do personagem"
-          className="relative h-[min(62vh,520px)] overflow-hidden rounded-2xl border border-line bg-void lg:h-[680px]"
+          className="relative h-[min(62vh,520px)] overflow-hidden rounded-2xl border border-line bg-void lg:sticky lg:top-6 lg:h-[680px]"
           data-cenario={cenario ? dados.cenario : 'padrao'}
           style={{ backgroundImage: cenario ? `${luz}, ${cenario}` : luz }}
         >
@@ -257,6 +264,11 @@ function FichaDoPersonagem({
               className="absolute bottom-2 left-1/2 h-[96%] w-auto max-w-none -translate-x-1/2 object-contain"
             />
           )}
+          <SlotsDoPersonagem
+            estado={equipamento}
+            slotAberto={slotAberto}
+            aoEscolher={(slot) => setSlotAberto((atual) => (atual === slot ? null : slot))}
+          />
           <span className="absolute left-4 top-4 rounded-full border border-gold bg-void/70 px-3 py-1.5 font-mono text-xs font-semibold tracking-wider text-gold">
             RANK {progressao.rank}
           </span>
@@ -533,7 +545,12 @@ function FichaDoPersonagem({
             </Link>
           </nav>
 
-          <PainelEquipamentos />
+          <PainelEquipamentos
+            estado={equipamento}
+            slotAberto={slotAberto}
+            aoFecharSlot={() => setSlotAberto(null)}
+            aoAtualizar={aoAtualizarEquipamento}
+          />
         </div>
       </div>
     </div>
@@ -544,13 +561,18 @@ export default function Personagem() {
   const [dados, setDados] = useState<RespostaPersonagem | null>(null)
   const [carregando, setCarregando] = useState(true)
   const [tentativa, setTentativa] = useState(0)
+  // Fica fora de `dados` porque trocar o visual devolve o personagem sem o equipamento.
+  // undefined: ainda não veio; null: o servidor não respondeu.
+  const [equipamento, setEquipamento] = useState<EstadoEquipamento | null | undefined>(undefined)
 
   useEffect(() => {
     let ativo = true
     async function carregar() {
-      const resposta = await obterPersonagem()
+      // Uma chamada só: personagem e equipamento juntos.
+      const resposta = await obterPersonagem({ completo: true })
       if (!ativo) return
       setDados(resposta)
+      setEquipamento(resposta?.equipamento)
       setCarregando(false)
     }
     carregar()
@@ -558,6 +580,19 @@ export default function Personagem() {
       ativo = false
     }
   }, [tentativa])
+
+  // Reserva: quem acabou de despertar, ou resposta sem o equipamento, busca só ele.
+  const precisaDoEquipamento = Boolean(dados?.existe) && equipamento === undefined
+  useEffect(() => {
+    if (!precisaDoEquipamento) return
+    let ativo = true
+    obterEquipamentos().then((resposta) => {
+      if (ativo) setEquipamento(resposta)
+    })
+    return () => {
+      ativo = false
+    }
+  }, [precisaDoEquipamento])
 
   const aoDespertar = useCallback((resposta: RespostaPersonagem) => {
     setDados(resposta)
@@ -602,5 +637,12 @@ export default function Personagem() {
     return <TelaDespertar aoDespertar={aoDespertar} />
   }
 
-  return <FichaDoPersonagem dados={dados} aoAtualizar={setDados} />
+  return (
+    <FichaDoPersonagem
+      dados={dados}
+      aoAtualizar={setDados}
+      equipamento={equipamento}
+      aoAtualizarEquipamento={setEquipamento}
+    />
+  )
 }

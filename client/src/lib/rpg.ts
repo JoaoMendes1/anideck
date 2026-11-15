@@ -59,7 +59,8 @@ export const SLOTS_RPG: { id: SlotId; rotulo: string; Icone: LucideIcon }[] = [
 
 // Classes inteiras, para o Tailwind gerar cada uma.
 export const ESTILO_DA_RARIDADE: Record<Raridade, { rotulo: string; texto: string; borda: string; fundo: string }> = {
-  comum: { rotulo: 'Comum', texto: 'text-muted', borda: 'border-line', fundo: 'bg-panel' },
+  // Comum tem borda cheia e texto claro: o slot vazio é o tracejado apagado, e os dois não se confundem.
+  comum: { rotulo: 'Comum', texto: 'text-text', borda: 'border-text/45', fundo: 'bg-void/80' },
   raro: { rotulo: 'Raro', texto: 'text-holo-3', borda: 'border-holo-3/60', fundo: 'bg-holo-3/10' },
   epico: { rotulo: 'Épico', texto: 'text-holo-2', borda: 'border-holo-2/70', fundo: 'bg-holo-2/10' },
   lendario: { rotulo: 'Lendário', texto: 'text-gold', borda: 'border-gold/70', fundo: 'bg-gold/10' },
