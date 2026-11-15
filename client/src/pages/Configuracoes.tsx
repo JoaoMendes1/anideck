@@ -432,7 +432,7 @@ export default function Configuracoes() {
             const resultado = await salvarAvatarCustom(avatarCustom)
             if (resultado === 'ok') {
                 setUsaAvatarCustom(true)
-                showToast('Avatar customizado em camadas salvo!', 'success')
+                showToast('Avatar salvo!', 'success')
                 window.dispatchEvent(new CustomEvent('anideck:comunidade-atualizada'))
             } else if (resultado === 'sem_perfil') {
                 showToast('Crie seu perfil público (aba Perfil público) para salvar o avatar.', 'error')
@@ -450,7 +450,7 @@ export default function Configuracoes() {
             const resultado = await salvarAvatarCustom(null)
             if (resultado === 'ok' || resultado === 'sem_perfil') {
                 setUsaAvatarCustom(false)
-                showToast('Avatar customizado desativado. Usando foto/inicial.')
+                showToast('Avatar desativado. Usando a foto da conta.')
                 window.dispatchEvent(new CustomEvent('anideck:comunidade-atualizada'))
             } else {
                 showToast('Falha ao remover avatar customizado.', 'error')

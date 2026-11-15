@@ -424,7 +424,7 @@ func montarConversa(linhas []linhaComentario, autores map[string]autorComentario
 		}
 		lista = append(lista, comentarioDaConversa{
 			ID: l.ID, Autor: autor, Texto: l.Texto, MomentoSeg: l.MomentoSeg,
-			Origem: l.Origem,
+			Origem:    l.Origem,
 			CreatedAt: l.CreatedAt, EditadoEm: l.EditadoEm, Curtidas: curtidas,
 			CurtidoPorMim: curtidos[l.ID], Meu: l.UserID == eu, Oculto: l.Oculto,
 		})
@@ -864,6 +864,9 @@ type membroNoRanking struct {
 	Moldura    string `json:"moldura,omitempty"`
 	CorNome    string `json:"cor_nome,omitempty"`
 	Emblema    string `json:"emblema,omitempty"`
+	// Avatar e estágio do personagem: o cliente desenha o retrato com eles.
+	Avatar  json.RawMessage `json:"avatar,omitempty"`
+	Estagio string          `json:"estagio,omitempty"`
 }
 
 // HandleRankingMembros é público. periodo=semana conta o XP desde segunda-feira
@@ -907,6 +910,7 @@ func (h *ComunidadeHandler) HandleRankingMembros(w http.ResponseWriter, r *http.
 	}
 
 	_, ranks, _ := carregarConfigGuilda(nil)
+	estagios := carregarEstagiosRPG(database.Client)
 	lista := make([]membroNoRanking, 0, len(linhas))
 	for _, l := range linhas {
 		base := l.XP
@@ -920,6 +924,8 @@ func (h *ComunidadeHandler) HandleRankingMembros(w http.ResponseWriter, r *http.
 			Posicao: l.Posicao, Handle: l.Handle, Nome: l.Nome, XP: l.XP,
 			Nivel: status.Nivel, Rank: status.Rank, TituloRank: status.TituloRank,
 		})
+		estagio, _ := CalcularEstagio(status.Nivel, estagios)
+		lista[len(lista)-1].Estagio = estagio.ID
 	}
 
 	if len(lista) > 0 {
@@ -928,16 +934,24 @@ func (h *ComunidadeHandler) HandleRankingMembros(w http.ResponseWriter, r *http.
 			handles[i] = item.Handle
 		}
 		var profs []struct {
-			UserID string `json:"user_id"`
-			Handle string `json:"handle"`
+			UserID string          `json:"user_id"`
+			Handle string          `json:"handle"`
+			Avatar json.RawMessage `json:"avatar_custom"`
 		}
-		if dataP, _, errP := database.Client.From("profiles").Select("user_id,handle", "", false).In("handle", handles).Execute(); errP == nil {
+		if dataP, _, errP := database.Client.From("profiles").Select("user_id,handle,avatar_custom", "", false).In("handle", handles).Execute(); errP == nil {
 			if json.Unmarshal(dataP, &profs) == nil && len(profs) > 0 {
 				uids := make([]string, len(profs))
 				u2h := make(map[string]string, len(profs))
+				avatares := make(map[string]json.RawMessage, len(profs))
 				for i, pr := range profs {
 					uids[i] = pr.UserID
 					u2h[pr.UserID] = pr.Handle
+					if avatarEscolhido(pr.Avatar) {
+						avatares[pr.Handle] = pr.Avatar
+					}
+				}
+				for i := range lista {
+					lista[i].Avatar = avatares[lista[i].Handle]
 				}
 				var eqLinhas []struct {
 					UserID       string `json:"user_id"`
@@ -976,28 +990,36 @@ func (h *ComunidadeHandler) HandleRankingMembros(w http.ResponseWriter, r *http.
 }
 
 type perfilPublico struct {
-	Handle          string         `json:"handle"`
-	Nome            string         `json:"nome"`
-	Bio             string         `json:"bio"`
-	Vitrine         []int          `json:"vitrine"`
-	MembroDesde     string         `json:"membro_desde"`
-	XPTotal         int            `json:"xp_total"`
-	EpisodiosVistos int            `json:"episodios_vistos"`
-	Comentarios     int            `json:"comentarios"`
-	Status          map[string]int `json:"status"`
-	Nivel           int            `json:"nivel"`
-	Rank            string         `json:"rank"`
-	TituloRank      string         `json:"titulo_rank"`
-	HP              int            `json:"hp"`
-	Moldura         string         `json:"moldura,omitempty"`
-	TemaPerfil      string         `json:"tema_perfil,omitempty"`
-	CorNome         string         `json:"cor_nome,omitempty"`
-	Emblema         string         `json:"emblema,omitempty"`
-	ClaTag          string         `json:"cla_tag,omitempty"`
-	ClaNome         string         `json:"cla_nome,omitempty"`
-	ClaPapel        string         `json:"cla_papel,omitempty"`
-	Classe          string         `json:"classe,omitempty"`
-	TituloAtivo     string         `json:"titulo_ativo,omitempty"`
+	Handle          string          `json:"handle"`
+	Nome            string          `json:"nome"`
+	Bio             string          `json:"bio"`
+	Vitrine         []int           `json:"vitrine"`
+	MembroDesde     string          `json:"membro_desde"`
+	XPTotal         int             `json:"xp_total"`
+	EpisodiosVistos int             `json:"episodios_vistos"`
+	Comentarios     int             `json:"comentarios"`
+	Status          map[string]int  `json:"status"`
+	Nivel           int             `json:"nivel"`
+	Rank            string          `json:"rank"`
+	TituloRank      string          `json:"titulo_rank"`
+	HP              int             `json:"hp"`
+	Moldura         string          `json:"moldura,omitempty"`
+	TemaPerfil      string          `json:"tema_perfil,omitempty"`
+	CorNome         string          `json:"cor_nome,omitempty"`
+	Emblema         string          `json:"emblema,omitempty"`
+	ClaTag          string          `json:"cla_tag,omitempty"`
+	ClaNome         string          `json:"cla_nome,omitempty"`
+	ClaPapel        string          `json:"cla_papel,omitempty"`
+	Classe          string          `json:"classe,omitempty"`
+	TituloAtivo     string          `json:"titulo_ativo,omitempty"`
+	Avatar          json.RawMessage `json:"avatar,omitempty"`
+	Estagio         string          `json:"estagio,omitempty"`
+}
+
+// avatarEscolhido diz se a coluna avatar_custom tem um avatar salvo (e não está vazia ou nula).
+func avatarEscolhido(bruto json.RawMessage) bool {
+	t := strings.TrimSpace(string(bruto))
+	return t != "" && t != "null" && t != "{}"
 }
 
 // HandlePerfilPublico é público: o perfil de um @ com perfil aberto.
@@ -1027,6 +1049,8 @@ func (h *ComunidadeHandler) HandlePerfilPublico(w http.ResponseWriter, r *http.R
 	status := CalcularNivelERank(dados.XPTotal, ranks)
 	p := dados.perfilPublico
 	p.Nivel, p.Rank, p.TituloRank = status.Nivel, status.Rank, status.TituloRank
+	estagio, _ := CalcularEstagio(status.Nivel, carregarEstagiosRPG(database.Client))
+	p.Estagio = estagio.ID
 	inicio, fim := "", ""
 	if dados.DescansoInicio != nil {
 		inicio = *dados.DescansoInicio
@@ -1043,14 +1067,18 @@ func (h *ComunidadeHandler) HandlePerfilPublico(w http.ResponseWriter, r *http.R
 	}
 
 	var profs []struct {
-		UserID      string `json:"user_id"`
-		Classe      string `json:"classe"`
-		TituloAtivo string `json:"titulo_ativo"`
+		UserID      string          `json:"user_id"`
+		Classe      string          `json:"classe"`
+		TituloAtivo string          `json:"titulo_ativo"`
+		Avatar      json.RawMessage `json:"avatar_custom"`
 	}
-	if dataP, _, errP := database.Client.From("profiles").Select("user_id,classe,titulo_ativo", "", false).Eq("handle", handle).Execute(); errP == nil {
+	if dataP, _, errP := database.Client.From("profiles").Select("user_id,classe,titulo_ativo,avatar_custom", "", false).Eq("handle", handle).Execute(); errP == nil {
 		if json.Unmarshal(dataP, &profs) == nil && len(profs) > 0 {
 			p.Classe = profs[0].Classe
 			p.TituloAtivo = profs[0].TituloAtivo
+			if avatarEscolhido(profs[0].Avatar) {
+				p.Avatar = profs[0].Avatar
+			}
 			var eqLinhas []struct {
 				Slot         string `json:"slot"`
 				StoreItemRef struct {

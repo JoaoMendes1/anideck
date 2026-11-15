@@ -788,6 +788,11 @@ experiência pequena e funcional de cada vez.
 > numeração e não abrem escopo novo. Ficam registrados aqui em ordem cronológica inversa para
 > não sumirem: fase concluída não deve ser reaberta só para receber um conserto.
 
+### 15/11/2026 — Retrato do personagem em todo o app (#216)
+
+- [x] **Barra superior, `/membros` e perfil público** mostram o retrato do personagem no lugar da inicial. O servidor passou a devolver `avatar` e `estagio` em `/api/membros/ranking` e `/api/membros/{handle}`; o retrato acompanha o estágio de cada membro.
+- [x] Quem não salvou avatar aparece com o retrato no fundo padrão; a foto da conta continua tendo prioridade quando existe.
+
 ### 15/11/2026 — Avatar vira o retrato do personagem
 
 - [x] **O avatar passa a ser o rosto do personagem do jogador**, recortado da ilustração do estágio atual (`retrato` em `ARTES`, 256 × 256), sobre o fundo e no formato escolhidos. O rosto montado por peças em SVG saiu: não chegava perto do traço das ilustrações. Em Configurações ficam só o tema do fundo e o formato.

@@ -12,6 +12,8 @@ import SeloEquipe from '../components/comunidade/SeloEquipe'
 import RankingClasLiga from '../components/comunidade/RankingClasLiga'
 import { obterClasseMoldura, obterClasseCorNome, renderizarEmblema } from '../lib/cosmeticos'
 import { formatarSemanaISO } from '../lib/dataHora'
+import AvatarMontavel from '../components/AvatarMontavel'
+import { retratoDoEstagio } from '../lib/personagem'
 import type { MembroNoRanking } from '../lib/comunidade'
 
 type Periodo = 'semana' | 'temporada' | 'geral' | 'genero' | 'clas'
@@ -291,8 +293,8 @@ export default function Membros() {
                         <span className={`w-8 text-center font-anton text-lg shrink-0 ${podio ? MEDALHAS[m.posicao - 1] : 'text-muted-2'}`}>
                           {m.posicao === 1 ? <Crown size={20} className="mx-auto" aria-label="1º" /> : m.posicao}
                         </span>
-                        <span className={`w-10 h-10 rounded-full shrink-0 grid place-items-center font-anton text-base text-void bg-gradient-to-br from-holo-2 to-holo-3 ${obterClasseMoldura(m.moldura)}`} aria-hidden>
-                          {m.nome.charAt(0).toUpperCase()}
+                        <span className={`shrink-0 rounded-full ${obterClasseMoldura(m.moldura)}`} aria-hidden>
+                          <AvatarMontavel avatar={m.avatar ?? null} retrato={retratoDoEstagio(m.estagio)} nome={m.nome} tamanho={40} />
                         </span>
                         <span className="min-w-0 flex-1">
                           <span className="flex items-center gap-2 min-w-0">

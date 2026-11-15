@@ -6,9 +6,12 @@
 import { useEffect, useRef, useState } from 'react'
 import { ChevronDown } from 'lucide-react'
 import { useSessao } from '../contexts/SessaoContext'
+import AvatarMontavel from './AvatarMontavel'
+import { useMeuAvatar } from '../hooks/useMeuAvatar'
 import ItensPerfil from './ItensPerfil'
 
 export default function MenuPerfil() {
+    const meuAvatar = useMeuAvatar()
     const { session } = useSessao()
     const [aberto, setAberto] = useState(false)
     const containerRef = useRef<HTMLDivElement>(null)
@@ -48,9 +51,7 @@ export default function MenuPerfil() {
                 aria-label={`Menu de perfil de ${nome}`}
                 className="flex items-center gap-2.5 pl-1.5 pr-3 py-1.5 rounded-full bg-panel border border-line cursor-pointer hover:border-holo-3 transition-colors"
             >
-                <div className="w-7 h-7 rounded-full bg-gradient-to-br from-holo-2 to-holo-3 flex items-center justify-center text-void font-bold text-xs">
-                    {nome.charAt(0).toUpperCase()}
-                </div>
+                <AvatarMontavel avatar={meuAvatar.avatar} retrato={meuAvatar.retrato} nome={nome} tamanho={28} />
                 <span className="hidden xl:inline text-sm font-bold truncate max-w-[100px]">{nome}</span>
                 <ChevronDown size={13} className={`text-muted transition-transform ${aberto ? 'rotate-180' : ''}`} />
             </button>

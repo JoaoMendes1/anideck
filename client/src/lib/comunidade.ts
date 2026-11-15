@@ -58,6 +58,9 @@ export interface AutorDoComentario {
   handle: string
   nome: string
   moldura?: string
+  /** Avatar salvo (fundo e formato) e estágio do personagem, para o retrato. */
+  avatar?: unknown
+  estagio?: string
   cor_nome?: string
   tema_perfil?: string
   emblema?: string
@@ -97,6 +100,9 @@ export interface MembroNoRanking {
   rank: string
   titulo_rank: string
   moldura?: string
+  /** Avatar salvo (fundo e formato) e estágio do personagem, para o retrato. */
+  avatar?: unknown
+  estagio?: string
   cor_nome?: string
   tema_perfil?: string
   emblema?: string
@@ -122,6 +128,9 @@ export interface PerfilPublico {
   titulo_rank: string
   hp: number
   moldura?: string
+  /** Avatar salvo (fundo e formato) e estágio do personagem, para o retrato. */
+  avatar?: unknown
+  estagio?: string
   cor_nome?: string
   tema_perfil?: string
   emblema?: string

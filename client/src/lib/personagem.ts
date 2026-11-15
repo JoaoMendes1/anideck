@@ -197,3 +197,8 @@ export async function despertarPersonagem(
     return { erro: falha }
   }
 }
+
+/** Retrato (rosto recortado) do estágio, para o avatar. Sem estágio, o do primeiro. */
+export function retratoDoEstagio(estagioId?: string, personagemBase: string = PERSONAGEM_BASE_PADRAO): string | undefined {
+  return arteDoEstagio(personagemBase, estagioId || ORDEM_DOS_ESTAGIOS[0])?.retrato
+}

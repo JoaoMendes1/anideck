@@ -16,6 +16,8 @@ import SecaoColecaoCartas from '../components/comunidade/SecaoColecaoCartas'
 import TagCla from '../components/TagCla'
 import { obterClasseMoldura, obterClasseCorNome, obterClasseTemaPerfil, renderizarEmblema } from '../lib/cosmeticos'
 import { faixaDoHP, type PerfilPublico } from '../lib/comunidade'
+import AvatarMontavel from '../components/AvatarMontavel'
+import { retratoDoEstagio } from '../lib/personagem'
 import type { CartaColecao, PersonagemFavorito } from '../lib/cartas'
 
 interface CartaDaVitrine {
@@ -170,8 +172,8 @@ export default function PerfilMembro() {
       <section className={`relative overflow-hidden rounded-2xl border border-line p-5 sm:p-7 mb-6 ${obterClasseTemaPerfil(perfil.tema_perfil)}`}>
         <div className="absolute -top-24 -right-24 w-72 h-72 rounded-full bg-holo-2/15 blur-3xl pointer-events-none" aria-hidden />
         <div className="relative flex flex-col sm:flex-row sm:items-center gap-5">
-          <span className={`w-20 h-20 sm:w-24 sm:h-24 rounded-2xl shrink-0 grid place-items-center font-anton text-4xl text-void bg-gradient-to-br from-holo-1 via-holo-2 to-holo-3 shadow-[0_0_40px_rgba(123,92,255,0.25)] ${obterClasseMoldura(perfil.moldura)}`} aria-hidden>
-            {perfil.nome.charAt(0).toUpperCase()}
+          <span className={`shrink-0 rounded-2xl shadow-[0_0_40px_rgba(123,92,255,0.25)] ${obterClasseMoldura(perfil.moldura)}`}>
+            <AvatarMontavel avatar={perfil.avatar ?? { base: 'quadrado' }} retrato={retratoDoEstagio(perfil.estagio)} nome={perfil.nome} tamanho={96} />
           </span>
           <div className="min-w-0 flex-1">
             <div className="flex flex-wrap items-center gap-2 mb-1">

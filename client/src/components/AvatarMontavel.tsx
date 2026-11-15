@@ -8,7 +8,7 @@ import { normalizarAvatar, type AvatarCustom, OPCOES_FUNDO } from '../lib/avatar
 import { ARTES, PERSONAGEM_BASE_PADRAO, ORDEM_DOS_ESTAGIOS } from '../lib/personagem'
 
 interface Props {
-  avatar?: AvatarCustom | null
+  avatar?: AvatarCustom | null | unknown
   url?: string | null
   nome?: string | null
   tamanho?: number
@@ -21,10 +21,11 @@ const RETRATO_PADRAO = ARTES[PERSONAGEM_BASE_PADRAO]?.[ORDEM_DOS_ESTAGIOS[0]]?.r
 
 export default function AvatarMontavel({ avatar, url, nome = 'A', tamanho = 48, className = '', retrato }: Props) {
   const c = useMemo(() => normalizarAvatar(avatar), [avatar])
+  const temAvatar = avatar !== null && avatar !== undefined
   const fundoItem = OPCOES_FUNDO.find(f => f.id === c.fundo) || OPCOES_FUNDO[0]
 
   // Sem avatar escolhido, vale a foto da conta (Google, por exemplo).
-  if (!avatar && url) {
+  if (!temAvatar && url) {
     return (
       <img
         src={url}
@@ -39,8 +40,9 @@ export default function AvatarMontavel({ avatar, url, nome = 'A', tamanho = 48, 
 
   const imagem = retrato ?? RETRATO_PADRAO
 
-  // Sem avatar e sem foto (ou sem ilustração disponível): a inicial do nome.
-  if ((!avatar && !url) || !imagem) {
+  // Sem ilustração disponível, ou sem avatar, foto nem retrato: a inicial do nome.
+  // Quem passa o retrato quer o rosto do personagem mesmo sem avatar salvo (fundo padrão).
+  if (!imagem || (!temAvatar && !retrato)) {
     const inicial = (nome || 'A').trim().charAt(0).toUpperCase()
     return (
       <div
