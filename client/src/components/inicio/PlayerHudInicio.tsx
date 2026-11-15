@@ -91,7 +91,7 @@ export default function PlayerHudInicio({ nome, dataHoje, aoAbrirGosto }: Props)
           </div>
 
           {/* Palco: no celular divide a célula com a identidade, que fica por cima. */}
-          <div className="relative col-start-1 row-start-1 lg:col-start-2 lg:row-span-2 min-h-[400px] lg:min-h-[440px] overflow-hidden">
+          <div className="relative col-start-1 row-start-1 lg:col-start-2 lg:row-span-2 min-h-[340px] lg:min-h-[440px] overflow-hidden">
             <div aria-hidden className="palco-aura absolute -right-20 top-6 w-[330px] h-[330px] lg:left-[-15px] lg:right-auto rounded-full bg-[radial-gradient(circle,rgba(63,224,240,0.42),rgba(123,92,255,0.22)_42%,transparent_70%)]" />
             <div aria-hidden className="hidden lg:block absolute left-12 right-12 bottom-5 h-5 rounded-[50%] bg-[radial-gradient(ellipse,rgba(63,224,240,0.45),transparent_70%)]" />
             {PARTICULAS.map((p, i) => (
@@ -109,7 +109,7 @@ export default function PlayerHudInicio({ nome, dataHoje, aoAbrirGosto }: Props)
                 height={ALTURA_DA_ARTE}
                 alt={heroi?.personagem ? `${heroi.personagem.nome}, ${classe}, no estágio ${heroi.estagio?.nome}` : ''}
                 fetchPriority="high"
-                className="palco-respira absolute bottom-0 right-[-40px] h-[380px] w-auto lg:right-auto lg:left-1/2 lg:-translate-x-1/2 lg:bottom-3 lg:h-[420px] drop-shadow-[0_0_18px_rgba(63,224,240,0.35)]"
+                className="palco-respira absolute bottom-0 right-[-40px] h-[330px] w-auto lg:right-auto lg:left-1/2 lg:-translate-x-1/2 lg:bottom-3 lg:h-[420px] drop-shadow-[0_0_18px_rgba(63,224,240,0.35)]"
               />
             ) : (
               // Sem personagem: a insígnia ocupa o palco no celular e o convite fica no desktop.
@@ -136,7 +136,7 @@ export default function PlayerHudInicio({ nome, dataHoje, aoAbrirGosto }: Props)
           </div>
 
           {/* Identidade */}
-          <div className="relative z-10 col-start-1 row-start-1 lg:col-start-3 flex flex-col gap-4 p-4 sm:p-6 lg:pl-6 lg:pr-8 lg:pt-7 min-h-[400px] lg:min-h-0">
+          <div className="relative z-10 col-start-1 row-start-1 lg:col-start-3 flex flex-col gap-4 p-4 sm:p-6 lg:pl-6 lg:pr-8 lg:pt-7 min-h-[340px] lg:min-h-0">
             <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-3">
               <div className="flex flex-col items-start gap-2 min-w-0 max-w-[230px] sm:max-w-sm lg:max-w-none">
                 <Link to="/guilda" className="lg:hidden rounded-lg focus-visible:outline-2 focus-visible:outline-holo-3" aria-label={`Rank ${status.rank}: ${status.titulo_rank}. Abrir a Guilda`}>
@@ -156,9 +156,15 @@ export default function PlayerHudInicio({ nome, dataHoje, aoAbrirGosto }: Props)
                     Desperte seu personagem ›
                   </Link>
                 )}
+                {/* No celular o streak vira uma pílula de uma linha; o selo completo fica no desktop. */}
+                {status.streak_atual > 0 && (
+                  <span className="lg:hidden mt-1">
+                    <SeloStreak dias={status.streak_atual} compacto />
+                  </span>
+                )}
               </div>
               {status.streak_atual > 0 && (
-                <div className="shrink-0">
+                <div className="hidden lg:block shrink-0">
                   <SeloStreak dias={status.streak_atual} />
                 </div>
               )}
@@ -173,7 +179,7 @@ export default function PlayerHudInicio({ nome, dataHoje, aoAbrirGosto }: Props)
                   <span className="font-mono text-xs font-bold tracking-[0.14em] text-muted uppercase tabular-nums">
                     Nível · <b className="text-gold">{status.xp_no_nivel}</b>/{status.xp_para_proximo} XP
                   </span>
-                  <span className={`text-xs font-extrabold rounded-full px-2.5 py-0.5 ${status.progresso_pct >= 90 ? 'bg-gold text-void' : 'text-muted'}`}>
+                  <span className={`text-xs font-extrabold ${status.progresso_pct >= 90 ? 'rounded-full px-2.5 py-0.5 bg-gold text-void' : 'text-muted'}`}>
                     Faltam {faltam} XP
                   </span>
                 </div>
@@ -224,11 +230,11 @@ export default function PlayerHudInicio({ nome, dataHoje, aoAbrirGosto }: Props)
               {carregandoCarteira ? <span className="mx-auto w-20 h-20 rounded-full shimmer" aria-hidden /> : <OrbeMoeda saldo={saldo} />}
             </div>
 
-            <div className="flex flex-wrap gap-2 xl:flex-col xl:items-stretch xl:w-[190px]">
+            <div className="grid grid-cols-3 gap-2 sm:flex sm:flex-wrap xl:flex-col xl:items-stretch xl:w-[190px]">
               <button
                 type="button"
                 onClick={rolarParaMissoes}
-                className={`inline-flex items-center justify-between gap-2 h-11 px-4 rounded-xl text-sm font-extrabold border transition-colors cursor-pointer focus-visible:outline-2 focus-visible:outline-holo-3 ${
+                className={`inline-flex items-center justify-center xl:justify-between gap-1.5 sm:gap-2 h-9 sm:h-11 px-2 sm:px-4 rounded-xl text-xs sm:text-sm font-extrabold border transition-colors cursor-pointer focus-visible:outline-2 focus-visible:outline-holo-3 ${
                   todasResgatadas
                     ? 'bg-green/10 border-green/30 text-green hover:bg-green/20'
                     : questsProntas
@@ -236,22 +242,22 @@ export default function PlayerHudInicio({ nome, dataHoje, aoAbrirGosto }: Props)
                     : 'bg-gold/10 border-gold/35 text-gold hover:bg-gold/20'
                 }`}
               >
-                <span className="inline-flex items-center gap-2"><Target size={16} aria-hidden /> Missões</span>
+                <span className="inline-flex items-center gap-1.5 sm:gap-2"><Target className="w-3.5 h-3.5 sm:w-4 sm:h-4" aria-hidden /> Missões</span>
                 <span className="inline-flex items-center font-mono tabular-nums">{concluidas}/{total}<ChevronRight size={14} aria-hidden /></span>
               </button>
               <Link
                 to="/meu-gosto"
-                className="inline-flex items-center gap-2 h-11 px-4 rounded-xl bg-holo-2/15 border border-holo-2/40 text-sm font-extrabold text-[#c7b8ff] hover:bg-holo-2/25 transition-colors focus-visible:outline-2 focus-visible:outline-holo-3"
+                className="inline-flex items-center justify-center xl:justify-start gap-1.5 sm:gap-2 h-9 sm:h-11 px-2 sm:px-4 rounded-xl bg-holo-2/15 border border-holo-2/40 text-xs sm:text-sm font-extrabold text-[#c7b8ff] hover:bg-holo-2/25 transition-colors focus-visible:outline-2 focus-visible:outline-holo-3"
               >
-                <Sparkles size={16} aria-hidden /> Meu Gosto
+                <Sparkles className="w-3.5 h-3.5 sm:w-4 sm:h-4" aria-hidden /> Meu Gosto
               </Link>
               <button
                 type="button"
                 onClick={aoAbrirGosto}
                 title="Ajustar preferências de gênero e curadoria"
-                className="inline-flex items-center gap-2 h-11 px-4 rounded-xl bg-panel-2 border border-line hover:border-holo-2 text-sm font-bold text-text transition-colors cursor-pointer focus-visible:outline-2 focus-visible:outline-holo-3"
+                className="inline-flex items-center justify-center xl:justify-start gap-1.5 sm:gap-2 h-9 sm:h-11 px-2 sm:px-4 rounded-xl bg-panel-2 border border-line hover:border-holo-2 text-xs sm:text-sm font-bold text-text transition-colors cursor-pointer focus-visible:outline-2 focus-visible:outline-holo-3"
               >
-                <SlidersHorizontal size={16} className="text-holo-2" aria-hidden /> Ajustar gosto
+                <SlidersHorizontal className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-holo-2" aria-hidden /> Ajustar<span className="hidden sm:inline"> gosto</span>
               </button>
             </div>
           </div>

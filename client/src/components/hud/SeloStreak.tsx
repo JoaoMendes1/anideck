@@ -9,9 +9,31 @@ const CLASSE_DO_DIA = {
   completo: 'bg-gradient-to-br from-[#FFF0B8] via-gold to-holo-1 border-white shadow-[0_0_9px_#FFC542]',
 } as const
 
-export default function SeloStreak({ dias }: { dias: number }) {
+interface Props {
+  dias: number
+  /** Uma linha só, sem a trilha da semana: para onde o espaço é curto (celular). */
+  compacto?: boolean
+}
+
+export default function SeloStreak({ dias, compacto = false }: Props) {
   const semana = diasDaSemanaDoStreak(dias)
   const completa = semana[0] === 'completo'
+
+  if (compacto) {
+    return (
+      <span
+        className={`inline-flex items-center gap-1.5 h-7 pl-1.5 pr-2.5 rounded-full border text-xs font-extrabold text-[#FFC58F] ${
+          completa ? 'border-gold/65 bg-[#FF9A3C]/20' : 'border-[#FF9A3C]/45 bg-[#FF9A3C]/12'
+        }`}
+      >
+        <svg className="streak-chama" width="15" height="15" viewBox="0 0 24 24" aria-hidden>
+          <path d="M12 2c1.2 3.6 5.2 5.4 5.2 11.2a5.2 5.2 0 0 1-10.4 0c0-2.6 1.3-4.2 2.5-5.3.2 1.8 1 2.9 2.2 3.2C11.1 8.1 10.7 5 12 2z" fill={completa ? '#FFC542' : '#FF9A3C'} />
+        </svg>
+        <b className="font-anton text-sm leading-none text-[#FFE29A] tabular-nums">{dias}</b>
+        {rotuloDoStreak(dias)}
+      </span>
+    )
+  }
 
   return (
     <span

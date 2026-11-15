@@ -23,7 +23,7 @@ export default function BarraVital({ tipo, pct, className = 'h-1.5 w-full' }: Pr
   return (
     <span className={`block rounded-full bg-void/70 overflow-hidden ${className}`}>
       <span
-        className={`block h-full rounded-full transition-[width] duration-700 motion-reduce:transition-none ${COR_DA_BARRA[tipo]}`}
+        className={`block h-full rounded-full transition-[width] duration-700 motion-reduce:transition-none ${COR_DA_BARRA[tipo]} ${largura > 0 ? 'min-w-2' : ''}`}
         style={{ width: `${largura}%` }}
       />
     </span>
