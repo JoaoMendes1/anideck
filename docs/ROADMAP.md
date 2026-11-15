@@ -48,7 +48,7 @@ Staging sobe já na Fase 1, como projeto esqueleto — mesmo padrão do JVM Syst
 | 15 · Comunidade base | ✅ Concluída (08/11/2026, #154); falta abrir o beta |
 | 16 · Economia e cartas | ✅ Concluída (09/11/2026, #165); falta abrir o beta |
 | 17 · Comunidade viva | ✅ Concluída (13/11/2026, #179) |
-| 18 · O Despertar Isekai | 🚧 Em andamento — 18.1 Meu Personagem (#199, #200), 18.2a escolha de visual (#218), 18.2b cenários (#219), 18.2e auras (#220) , equipamentos com atributos (#221) e expedições (#222) entregues; falta aplicar o `sql/071` e o `sql/072` |
+| 18 · O Despertar Isekai | 🚧 Em andamento — 18.1 Meu Personagem (#199, #200), 18.2a escolha de visual (#218), 18.2b cenários (#219), 18.2e auras (#220) , equipamentos com atributos (#221), expedições (#222) e invocação gratuita (#223) entregues; falta aplicar do `sql/071` ao `sql/073` |
 
 ---
 
@@ -786,9 +786,10 @@ experiência pequena e funcional de cada vez.
 - [ ] 18.4 Mundo e PvE
   - [x] 18.4a Expedições: oito monstros, batalha por turnos simulada no servidor com os atributos dele, limite de batalhas por dia (`app_settings.rpg_batalhas_por_dia`, padrão 5), vitória dá bilhetes de invocação e chance de item; combate não dá XP (#222). Arte provisória: ícone e cor por monstro
 - [ ] 18.5 Integração comunitária
-- [ ] 18.6 Arena e cartas
+- [ ] 18.6 Arena, cartas e invocação
+  - [x] 18.6a Invocação gratuita: bilhetes ganhos só em expedições, invocar 1 ou 10, chances visíveis e iguais às do sorteio (`rpg_chances_invocacao`), garantia de épico ou melhor a cada 10, repetidos somam no inventário (#223). Sem pagamento por desenho: ECA Digital, art. 20
 
-**Pendência do dono:** aplicar `sql/071_rpg_equipamentos.sql` e `sql/072_rpg_batalhas.sql` no Supabase, nessa ordem. Sem eles a tela do personagem continua abrindo, e as expedições mostram "indisponíveis".
+**Pendência do dono:** aplicar `sql/071_rpg_equipamentos.sql`, `sql/072_rpg_batalhas.sql` e `sql/073_rpg_invocacao.sql` no Supabase, nessa ordem. Sem eles a tela do personagem continua abrindo, e expedições e invocação mostram "indisponíveis".
 
 ## 🔧 Manutenção pós-v1
 

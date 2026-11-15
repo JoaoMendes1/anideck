@@ -102,6 +102,7 @@ SELECT pg_get_viewdef('nome_da_view'::regclass, true);
 | `070_loja_auras.sql` | Fase 18 (18.2e, #220): Auras do personagem na Loja — tipo e slot `aura` nos `CHECK` de `store_items` e `user_equipped`, `equipar_item` recriada com o slot novo e três auras no catálogo | — |
 | `071_rpg_equipamentos.sql` | Fase 18 (18.2d e 18.3a, #221): Equipamentos do personagem — catálogo `rpg_itens`, `rpg_inventario` e `rpg_equipados` só com leitura do dono, RPCs `rpg_garantir_kit_inicial` e `rpg_equipar_item` (posse, slot e nível) e o catálogo inicial de 17 itens | — |
 | `072_rpg_batalhas.sql` | Fase 18 (18.4a, #222): Expedições — `rpg_monstros`, `rpg_recursos` (bilhetes), `rpg_batalhas`, `rpg_batalhas_hoje()` e `rpg_registrar_batalha()` só para o service role, com limite diário travado por usuário; oito monstros iniciais | — |
+| `073_rpg_invocacao.sql` | Fase 18 (18.6a, #223): Invocação gratuita — `rpg_invocacoes` (histórico), `rpg_chances_invocacao()`, `rpg_estado_invocacao()` e `rpg_invocar(1 ou 10)`, com débito, sorteio e garantia de épico a cada 10 na mesma transação | — |
 
 Datas com `~` são a data do commit, não da aplicação no Supabase.
 

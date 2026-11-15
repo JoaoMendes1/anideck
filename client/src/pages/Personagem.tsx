@@ -6,7 +6,7 @@
 // ficam lado a lado. Nível, XP e rank são os da Guilda: o personagem não tem XP próprio.
 import { useCallback, useEffect, useState, type FormEvent } from 'react'
 import { Link } from 'react-router-dom'
-import { ChevronLeft, Image, Lock, Orbit, Sword, Swords } from 'lucide-react'
+import { ChevronLeft, Image, Lock, Orbit, Sparkles, Sword, Swords } from 'lucide-react'
 import { obterFundoDoCenario } from '../lib/cosmeticos'
 import CamadaDaAura from '../components/personagem/CamadaDaAura'
 import PainelEquipamentos from '../components/personagem/PainelEquipamentos'
@@ -463,6 +463,17 @@ function FichaDoPersonagem({
               <span className="min-w-0 flex-1">
                 <span className="block text-sm font-bold text-text">Expedições</span>
                 <span className="block text-xs text-muted">Enfrente monstros e ganhe bilhetes e itens</span>
+              </span>
+              <span aria-hidden="true" className="text-muted">→</span>
+            </Link>
+            <Link
+              to="/invocacao"
+              className="flex min-h-14 items-center gap-3 rounded-2xl border border-gold/40 bg-gold/10 px-4 py-3 hover:border-gold"
+            >
+              <Sparkles size={20} className="shrink-0 text-gold" aria-hidden="true" />
+              <span className="min-w-0 flex-1">
+                <span className="block text-sm font-bold text-text">Invocação</span>
+                <span className="block text-xs text-muted">Troque bilhetes por equipamentos</span>
               </span>
               <span aria-hidden="true" className="text-muted">→</span>
             </Link>

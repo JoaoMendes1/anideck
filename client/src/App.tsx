@@ -32,6 +32,7 @@ const Inicio = lazy(() => import('./pages/Inicio'))
 const Guilda = lazy(() => import('./pages/Guilda'))
 const Personagem = lazy(() => import('./pages/Personagem'))
 const Expedicoes = lazy(() => import('./pages/Expedicoes'))
+const Invocacao = lazy(() => import('./pages/Invocacao'))
 const Membros = lazy(() => import('./pages/Membros'))
 const PerfilMembro = lazy(() => import('./pages/PerfilMembro'))
 const Loja = lazy(() => import('./pages/Loja'))
@@ -74,6 +75,7 @@ function App() {
               <Route path="/guilda" element={<RotaProtegida><Guilda /></RotaProtegida>} />
               <Route path="/personagem" element={<RotaProtegida><Personagem /></RotaProtegida>} />
               <Route path="/expedicoes" element={<RotaProtegida><Expedicoes /></RotaProtegida>} />
+              <Route path="/invocacao" element={<RotaProtegida><Invocacao /></RotaProtegida>} />
               <Route path="/loja" element={<RotaProtegida><Loja /></RotaProtegida>} />
               <Route path="/clas" element={<Clas />} />
               <Route path="/clas/:tag" element={<ClaDetalhe />} />

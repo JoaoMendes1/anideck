@@ -234,3 +234,67 @@ export async function batalhar(monstroId: string): Promise<{ dados?: RespostaBat
     return { erro: falha }
   }
 }
+
+// ---------------------------------------------------------------------------------------
+// Invocação (gratuita: bilhetes só vêm de batalha)
+// ---------------------------------------------------------------------------------------
+
+// Em por mil, como o banco devolve: 600 = 60%.
+export interface ChancesInvocacao {
+  comum: number
+  raro: number
+  epico: number
+  lendario: number
+  garantia: number
+}
+
+export interface ItemInvocado extends ItemRPG {
+  garantida: boolean
+}
+
+export interface EstadoInvocacao {
+  bilhetes: number
+  sem_epico: number
+  chances: ChancesInvocacao
+  itens?: ItemInvocado[]
+}
+
+/** Por mil em texto de porcentagem: 600 → "60%", 15 → "1,5%". */
+export function porcentagem(porMil: number): string {
+  const valor = porMil / 10
+  return `${Number.isInteger(valor) ? valor : valor.toFixed(1).replace('.', ',')}%`
+}
+
+/** Quantas invocações faltam para a garantia de épico ou melhor (a próxima é 1). */
+export function faltamParaGarantia(estado: Pick<EstadoInvocacao, 'sem_epico' | 'chances'>): number {
+  return Math.max(1, estado.chances.garantia - estado.sem_epico)
+}
+
+export async function obterInvocacao(): Promise<{ dados?: EstadoInvocacao; erro?: string; semPersonagem?: boolean }> {
+  try {
+    const res = await fetch('/api/rpg/invocacao', { headers: await cabecalhoDeAutenticacao() })
+    if (res.status === 404) return { semPersonagem: true }
+    const json = (await res.json().catch(() => null)) as (EstadoInvocacao & { error?: string }) | null
+    if (!res.ok || !json || !json.chances) return { erro: json?.error || 'Invocação indisponível no momento.' }
+    return { dados: json }
+  } catch {
+    return { erro: 'Invocação indisponível no momento.' }
+  }
+}
+
+export async function invocar(vezes: 1 | 10): Promise<{ dados?: EstadoInvocacao; erro?: string }> {
+  const falha = 'Não foi possível invocar agora.'
+  try {
+    const res = await fetch('/api/rpg/invocacao', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', ...(await cabecalhoDeAutenticacao()) },
+      body: JSON.stringify({ vezes }),
+    })
+    const json = (await res.json().catch(() => null)) as (EstadoInvocacao & { error?: string }) | null
+    if (!res.ok) return { erro: json?.error || falha }
+    if (!json || !Array.isArray(json.itens)) return { erro: falha }
+    return { dados: json }
+  } catch {
+    return { erro: falha }
+  }
+}

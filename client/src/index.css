@@ -233,6 +233,8 @@ html[data-tema='estudio'] {
 @keyframes slowSpin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
 @keyframes slowSpinReverse { 0% { transform: rotate(360deg); } 100% { transform: rotate(0deg); } }
 @keyframes breatheLight { 0%, 100% { opacity: 0.85; } 50% { opacity: 1; } }
+/* Revelação dos itens da invocação. */
+@keyframes surgir { from { opacity: 0; transform: translateY(8px) scale(0.96); } to { opacity: 1; transform: none; } }
 @keyframes twinkle { 0%, 100% { opacity: 0.5; } 50% { opacity: 0.85; } }
 
 /* =========================================

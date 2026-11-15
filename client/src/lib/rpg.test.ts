@@ -48,3 +48,21 @@ describe('rpg - expedições', () => {
     expect(rotuloDaDificuldade('impossivel')).toBe(ROTULO_DA_DIFICULDADE.equilibrada)
   })
 })
+
+describe('rpg - invocação', () => {
+  it('escreve por mil como porcentagem', async () => {
+    const { porcentagem } = await import('./rpg')
+    expect(porcentagem(600)).toBe('60%')
+    expect(porcentagem(85)).toBe('8,5%')
+    expect(porcentagem(15)).toBe('1,5%')
+    expect(porcentagem(0)).toBe('0%')
+  })
+
+  it('conta quanto falta para a garantia, nunca menos de 1', async () => {
+    const { faltamParaGarantia } = await import('./rpg')
+    const chances = { comum: 600, raro: 300, epico: 85, lendario: 15, garantia: 10 }
+    expect(faltamParaGarantia({ sem_epico: 0, chances })).toBe(10)
+    expect(faltamParaGarantia({ sem_epico: 9, chances })).toBe(1)
+    expect(faltamParaGarantia({ sem_epico: 12, chances })).toBe(1)
+  })
+})
