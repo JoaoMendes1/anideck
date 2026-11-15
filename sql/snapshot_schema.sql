@@ -1,7 +1,7 @@
 -- =============================================================================
 -- snapshot_schema.sql — RETRATO DO BANCO. NAO EXECUTE ESTE ARQUIVO.
 -- =============================================================================
--- Regenerado em 15/11/2026 12:36 a partir do banco de producao.
+-- Regenerado em 15/11/2026 19:37 a partir do banco de producao.
 --
 -- PARA QUE SERVE: consulta rapida do estado real do banco, sem precisar abrir
 -- o painel do Supabase nem confiar nos arquivos sql/ antigos (que podem ter
@@ -400,12 +400,77 @@
 --     mal_id                       bigint NOT NULL
 --     position                     integer NOT NULL
 
+-- rpg_batalhas
+--     id                           bigint NOT NULL
+--     user_id                      uuid NOT NULL
+--     monstro_id                   text NOT NULL
+--     venceu                       boolean NOT NULL
+--     turnos                       integer NOT NULL
+--     bilhetes                     integer NOT NULL
+--     item_id                      text
+--     criado_em                    timestamp with time zone NOT NULL
+
+-- rpg_equipados
+--     user_id                      uuid NOT NULL
+--     slot                         text NOT NULL
+--     item_id                      text NOT NULL
+--     equipado_em                  timestamp with time zone NOT NULL
+
+-- rpg_inventario
+--     user_id                      uuid NOT NULL
+--     item_id                      text NOT NULL
+--     quantidade                   integer NOT NULL
+--     obtido_em                    timestamp with time zone NOT NULL
+
+-- rpg_invocacoes
+--     id                           bigint NOT NULL
+--     user_id                      uuid NOT NULL
+--     item_id                      text
+--     raridade                     text NOT NULL
+--     garantida                    boolean NOT NULL
+--     criado_em                    timestamp with time zone NOT NULL
+
+-- rpg_itens
+--     id                           text NOT NULL
+--     slot                         text NOT NULL
+--     nome                         text NOT NULL
+--     descricao                    text NOT NULL
+--     raridade                     text NOT NULL
+--     vida                         integer NOT NULL
+--     ataque                       integer NOT NULL
+--     defesa                       integer NOT NULL
+--     nivel_minimo                 integer NOT NULL
+--     inicial                      boolean NOT NULL
+--     ativo                        boolean NOT NULL
+--     ordem                        integer NOT NULL
+
+-- rpg_monstros
+--     id                           text NOT NULL
+--     nome                         text NOT NULL
+--     descricao                    text NOT NULL
+--     tipo                         text NOT NULL
+--     nivel                        integer NOT NULL
+--     vida                         integer NOT NULL
+--     ataque                       integer NOT NULL
+--     defesa                       integer NOT NULL
+--     bilhetes                     integer NOT NULL
+--     chance_item                  integer NOT NULL
+--     raridade_item                text NOT NULL
+--     ativo                        boolean NOT NULL
+--     ordem                        integer NOT NULL
+
 -- rpg_personagens
 --     user_id                      uuid NOT NULL
 --     nome                         text NOT NULL
 --     personagem_base              text NOT NULL
 --     criado_em                    timestamp with time zone NOT NULL
 --     visual_equipado              text
+
+-- rpg_recursos
+--     user_id                      uuid NOT NULL
+--     bilhetes                     integer NOT NULL
+--     invocacoes_sem_epico         integer NOT NULL
+--     atualizado_em                timestamp with time zone NOT NULL
 
 -- sala_mensagem_curtidas
 --     mensagem_id                  uuid NOT NULL
@@ -544,7 +609,14 @@
 -- ranking_current_cache     | RLS: t     | policies: 0
 -- ranking_genero            | RLS: t     | policies: 1
 -- ranking_snapshots         | RLS: t     | policies: 0
+-- rpg_batalhas              | RLS: t     | policies: 1
+-- rpg_equipados             | RLS: t     | policies: 1
+-- rpg_inventario            | RLS: t     | policies: 1
+-- rpg_invocacoes            | RLS: t     | policies: 1
+-- rpg_itens                 | RLS: t     | policies: 2
+-- rpg_monstros              | RLS: t     | policies: 2
 -- rpg_personagens           | RLS: t     | policies: 1
+-- rpg_recursos              | RLS: t     | policies: 1
 -- sala_mensagem_curtidas    | RLS: t     | policies: 3
 -- sala_mensagem_denuncias   | RLS: t     | policies: 1
 -- sala_mensagens            | RLS: t     | policies: 2
@@ -1121,7 +1193,43 @@ CREATE OR REPLACE VIEW public.view_user_year_distribution WITH (security_invoker
 --     USING:  true
 --     CHECK:  -
 
+-- rpg_batalhas           | rpg_batalhas_le_o_proprio                     | SELECT | authenticated     
+--     USING:  (( SELECT auth.uid() AS uid) = user_id)
+--     CHECK:  -
+
+-- rpg_equipados          | rpg_equipados_le_o_proprio                    | SELECT | authenticated     
+--     USING:  (( SELECT auth.uid() AS uid) = user_id)
+--     CHECK:  -
+
+-- rpg_inventario         | rpg_inventario_le_o_proprio                   | SELECT | authenticated     
+--     USING:  (( SELECT auth.uid() AS uid) = user_id)
+--     CHECK:  -
+
+-- rpg_invocacoes         | rpg_invocacoes_le_o_proprio                   | SELECT | authenticated     
+--     USING:  (( SELECT auth.uid() AS uid) = user_id)
+--     CHECK:  -
+
+-- rpg_itens              | rpg_itens_escrita_admin                       | ALL    | authenticated     
+--     USING:  is_admin()
+--     CHECK:  is_admin()
+
+-- rpg_itens              | rpg_itens_leitura                             | SELECT | authenticated     
+--     USING:  ((ativo = true) OR is_admin())
+--     CHECK:  -
+
+-- rpg_monstros           | rpg_monstros_escrita_admin                    | ALL    | authenticated     
+--     USING:  is_admin()
+--     CHECK:  is_admin()
+
+-- rpg_monstros           | rpg_monstros_leitura                          | SELECT | authenticated     
+--     USING:  ((ativo = true) OR is_admin())
+--     CHECK:  -
+
 -- rpg_personagens        | rpg_personagens_le_o_proprio                  | SELECT | authenticated     
+--     USING:  (( SELECT auth.uid() AS uid) = user_id)
+--     CHECK:  -
+
+-- rpg_recursos           | rpg_recursos_le_o_proprio                     | SELECT | authenticated     
 --     USING:  (( SELECT auth.uid() AS uid) = user_id)
 --     CHECK:  -
 
@@ -1298,6 +1406,15 @@ CREATE OR REPLACE VIEW public.view_user_year_distribution WITH (security_invoker
 -- resolver_previsao              | definer: t     | anon: t     | auth: t     | service: t     | search_path=public, pg_temp
 -- responder_convite_cla          | definer: t     | anon: t     | auth: t     | service: t     | search_path=public, pg_temp
 -- rls_auto_enable                | definer: t     | anon: t     | auth: t     | service: t     | search_path=pg_catalog
+-- rpg_batalhas_hoje              | definer: t     | anon: f     | auth: t     | service: t     | search_path=public, pg_temp
+-- rpg_chances_invocacao          | definer: f     | anon: t     | auth: t     | service: t     | sem search_path
+-- rpg_contar_batalhas_hoje       | definer: t     | anon: f     | auth: f     | service: t     | search_path=public, pg_temp
+-- rpg_equipar_item               | definer: t     | anon: f     | auth: t     | service: t     | search_path=public, pg_temp
+-- rpg_estado_invocacao           | definer: t     | anon: f     | auth: t     | service: t     | search_path=public, pg_temp
+-- rpg_garantir_kit_inicial       | definer: t     | anon: f     | auth: t     | service: t     | search_path=public, pg_temp
+-- rpg_invocar                    | definer: t     | anon: f     | auth: t     | service: t     | search_path=public, pg_temp
+-- rpg_limite_batalhas_dia        | definer: t     | anon: f     | auth: t     | service: t     | search_path=public, pg_temp
+-- rpg_registrar_batalha          | definer: t     | anon: f     | auth: f     | service: t     | search_path=public, pg_temp
 -- sacar_caixa_loja               | definer: t     | anon: f     | auth: f     | service: t     | search_path=public, pg_temp
 -- sair_cla                       | definer: t     | anon: t     | auth: t     | service: t     | search_path=public, pg_temp
 -- saldo_caixa_loja               | definer: t     | anon: f     | auth: f     | service: t     | search_path=public, pg_temp
