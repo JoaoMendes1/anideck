@@ -788,6 +788,16 @@ experiência pequena e funcional de cada vez.
 > numeração e não abrem escopo novo. Ficam registrados aqui em ordem cronológica inversa para
 > não sumirem: fase concluída não deve ser reaberta só para receber um conserto.
 
+### 15/11/2026 — Limite de erro nas páginas (#210)
+
+- [x] **`LimiteDeErro` em volta do miolo do `Layout`:** página que falha ao desenhar mostra um aviso com "Recarregar a página" e "Voltar ao início", em vez de deixar o app em branco. O erro é esquecido ao trocar de rota.
+
+### 15/11/2026 — Início aparece antes e pede menos ao servidor (#209)
+
+- [x] **Primeira pintura sem esperar as recomendações:** as capas do deck são pedidas junto com as outras buscas, e recomendações e lacuna entram depois, em paralelo.
+- [x] **Resposta recente reaproveitada na montagem** (`buscarUmaVez` com validade de 10 s): Navbar e Início deixam de pedir duas vezes o resumo da Guilda, o estado da comunidade e a carteira. Com API simulada, a abertura caiu de 26 para 23 chamadas.
+- [x] **Painel do jogador mais enxuto no celular:** streak em pílula de uma linha e atalhos menores, três em linha.
+
 ### 15/11/2026 — Meu Gosto legível: legenda fiel, anos alcançáveis e piso de 12 px (#208)
 
 - [x] **Status com cor fixa em todos os temas** (tokens `status-*`): a fatia do donut e a legenda passam a usar a mesma cor.

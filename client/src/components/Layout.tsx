@@ -1,9 +1,10 @@
 import { Suspense, useState } from 'react'
-import { Outlet } from 'react-router-dom'
+import { Outlet, useLocation } from 'react-router-dom'
 import Navbar from './Navbar'
 import BottomNav from './BottomNav'
 import CarregandoPagina from './CarregandoPagina'
 import MenuLateral from './MenuLateral'
+import LimiteDeErro from './LimiteDeErro'
 import { useSessao } from '../contexts/SessaoContext'
 import { guardarMenuAberto, lerMenuAberto } from '../lib/menuLateral'
 import { CatalogoStatusProvider, useCatalogoStatus } from '../contexts/CatalogoStatusContext'
@@ -26,6 +27,7 @@ function AvisoCatalogo() {
 
 function LayoutInterno() {
   const { session } = useSessao()
+  const { pathname } = useLocation()
   const [menuAberto, setMenuAberto] = useState(lerMenuAberto)
 
   const alternarMenu = () => {
@@ -56,9 +58,11 @@ function LayoutInterno() {
         <AvisoCatalogo />
         {/* Só o miolo espera o código da página chegar (ver lazy() no App.tsx);
             Navbar e BottomNav ficam de pé durante a espera. */}
-        <Suspense fallback={<CarregandoPagina />}>
-          <Outlet />
-        </Suspense>
+        <LimiteDeErro chave={pathname}>
+          <Suspense fallback={<CarregandoPagina />}>
+            <Outlet />
+          </Suspense>
+        </LimiteDeErro>
       </main>
 
       {/* A BottomNav tem a classe md:hidden internamente, então só renderiza no mobile */}
