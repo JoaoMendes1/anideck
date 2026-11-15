@@ -139,7 +139,7 @@ export default function Loja() {
               }`}
             >
               <span>{f.rotulo}</span>
-              <span className={`text-[10px] px-1.5 py-0.2 rounded-full ${ativo ? 'bg-void/25 text-void' : 'bg-panel-2 text-muted-2'}`}>
+              <span className={`text-[10px] px-1.5 py-px rounded-full ${ativo ? 'bg-void/25 text-void' : 'bg-panel-2 text-muted-2'}`}>
                 {qtd}
               </span>
             </button>

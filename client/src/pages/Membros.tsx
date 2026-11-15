@@ -7,7 +7,7 @@ import { Crown, Trophy, Users, Shield } from 'lucide-react'
 import AbasDescobrir from '../components/AbasDescobrir'
 import { useSessao } from '../contexts/SessaoContext'
 import { useComunidade } from '../hooks/useComunidade'
-import { obterEstiloRank } from '../lib/guilda'
+import InsigniaRank from '../components/hud/InsigniaRank'
 import SeloEquipe from '../components/comunidade/SeloEquipe'
 import RankingClasLiga from '../components/comunidade/RankingClasLiga'
 import { obterClasseMoldura, obterClasseCorNome, renderizarEmblema } from '../lib/cosmeticos'
@@ -86,7 +86,8 @@ export default function Membros() {
     })
       .then(r => (r.ok ? r.json() : null))
       .then(d => {
-        if (ativo && d) setDadosLiga(d)
+        // Só aceita a resposta no formato esperado: sem a divisão, o cartão da liga quebraria a tela.
+        if (ativo && d && typeof d.minha_divisao === 'string') setDadosLiga(d)
       })
       .catch(() => undefined)
 
@@ -277,7 +278,6 @@ export default function Membros() {
               )}
               <ol className="list-none m-0 p-0 space-y-2">
                 {lista.map(m => {
-                  const estilo = obterEstiloRank(m.rank)
                   const eu = m.handle === meuHandle
                   const podio = m.posicao <= 3
                   return (
@@ -305,8 +305,8 @@ export default function Membros() {
                             @{m.handle} · {m.titulo_rank}
                           </span>
                         </span>
-                        <span className={`hidden sm:grid w-10 h-10 rounded-xl place-items-center font-anton text-base shrink-0 ${estilo.seloBg} ${estilo.seloTexto}`} title={`Rank ${m.rank}`}>
-                          {m.rank}
+                        <span className="hidden sm:block shrink-0" title={`Rank ${m.rank}`}>
+                          <InsigniaRank rank={m.rank} tamanho={42} />
                         </span>
                         <span className="text-right shrink-0">
                           <span className="block font-anton text-lg leading-none">

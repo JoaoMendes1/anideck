@@ -788,6 +788,13 @@ experiência pequena e funcional de cada vez.
 > numeração e não abrem escopo novo. Ficam registrados aqui em ordem cronológica inversa para
 > não sumirem: fase concluída não deve ser reaberta só para receber um conserto.
 
+### 15/11/2026 — Identidade nova na Guilda, no ranking de membros e no perfil público
+
+- [x] **Insígnia do rank** (`InsigniaRank`) no cartão principal e na escada de classes da Guilda, na lista de `/membros` e na pílula do perfil público, no lugar do anel e dos selos de letra.
+- [x] **Vitalidade e Mana com as cores fixas** (coral e `mana`) no painel da cápsula, na Guilda e nas Configurações: `BarrasVitais` passou a usar `BarraVital`. Barra de XP da Guilda em dourado; streak com o `SeloStreak`.
+- [x] **Entrada animada dos modais:** as classes `animate-in`, `fade-in`, `zoom-in-95`, `slide-in-from-top-2` e `animate-fade-in` estavam nos componentes sem CSS por trás; agora existem em `index.css` (200 ms, só `opacity` e `transform`, desligadas com movimento reduzido). `py-0.2`, que não gera regra, virou `py-px`.
+- [x] Cartão da liga em `/membros` só aparece com resposta no formato esperado (antes, uma resposta sem a divisão derrubava a tela).
+
 ### 15/11/2026 — Campo numérico, confirmações do app e rótulos nos formulários (#212)
 
 - [x] **`CampoNumerico`** no lugar de 23 campos `type="number"` (Admin e criação de clã): apagar o conteúdo não vira mais `0` no meio da digitação. Ver PITFALLS, item 32.

@@ -90,6 +90,12 @@ https://fonts.googleapis.com/css2?family=Anton&family=Manrope:wght@400;500;600;7
 ```
 
 ## Padrões de componente recorrentes
+- **Entrada de modal e aviso:** `animate-in` junto de `fade-in`, `zoom-in-95` ou `slide-in-from-top-2`
+  (ou `animate-fade-in` sozinha). Definidas em `index.css`: 200 ms, só `opacity` e `transform`,
+  desligadas com `prefers-reduced-motion`. Não são do Tailwind nem de plugin; classe parecida que
+  não esteja nessa lista não gera CSS.
+- **Campo de número:** `CampoNumerico` (ver PITFALLS, item 32). **Confirmação:** `useConfirmacao`,
+  nunca `confirm()` ou `prompt()` do navegador.
 - **Cards:** `background: var(--panel); border: 1px solid var(--line); border-radius: 14-18px`
 - **Botão primário:** gradiente holo, texto `var(--void)`, `border-radius: 99px` (pill)
 - **Badge de status:** fundo com opacidade baixa da cor + borda da mesma cor + texto na cor cheia

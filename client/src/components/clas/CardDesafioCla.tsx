@@ -146,7 +146,7 @@ export default function CardDesafioCla({ tag, souMembro }: Props) {
             <span className="font-bold text-text">
               <span className="text-holo-3 text-sm">{desafio.progresso_total}</span>
               <span className="text-muted"> / {desafio.meta} {desafio.unidade}</span>
-              <span className="ml-2 px-1.5 py-0.2 rounded bg-panel-2 border border-line text-[11px] text-holo-1">
+              <span className="ml-2 px-1.5 py-px rounded bg-panel-2 border border-line text-[11px] text-holo-1">
                 {pct}%
               </span>
             </span>
@@ -247,7 +247,7 @@ export default function CardDesafioCla({ tag, souMembro }: Props) {
                           <span className="text-text block truncate font-medium">
                             {m.nome}
                             {ehEu && (
-                              <span className="ml-1.5 text-[9px] px-1.5 py-0.2 rounded bg-holo-2/30 text-holo-3 font-mono font-bold">
+                              <span className="ml-1.5 text-[9px] px-1.5 py-px rounded bg-holo-2/30 text-holo-3 font-mono font-bold">
                                 Você
                               </span>
                             )}

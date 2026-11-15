@@ -8,6 +8,7 @@ import { useSessao } from '../contexts/SessaoContext'
 import { useToast } from '../contexts/ToastContext'
 import { useComunidade } from '../hooks/useComunidade'
 import { obterEstiloRank } from '../lib/guilda'
+import InsigniaRank from '../components/hud/InsigniaRank'
 import { CLASSES_RPG } from '../lib/previsoes'
 import SeloEquipe from '../components/comunidade/SeloEquipe'
 import ModalDueloGosto from '../components/comunidade/ModalDueloGosto'
@@ -174,7 +175,8 @@ export default function PerfilMembro() {
           </span>
           <div className="min-w-0 flex-1">
             <div className="flex flex-wrap items-center gap-2 mb-1">
-              <span className={`font-mono text-[10px] font-bold uppercase tracking-wider px-2.5 py-0.5 rounded-full border ${estilo.bordaPilula} ${estilo.fundoPilula} ${estilo.seloTexto}`}>
+              <span className={`inline-flex items-center gap-1.5 font-mono text-xs font-bold uppercase tracking-wider pl-1 pr-2.5 py-0.5 rounded-full border ${estilo.bordaPilula} ${estilo.fundoPilula} ${estilo.seloTexto}`}>
+                <InsigniaRank rank={perfil.rank} tamanho={26} />
                 Rank {perfil.rank} · Nível {perfil.nivel}
               </span>
               {perfil.classe && CLASSES_RPG[perfil.classe] && (

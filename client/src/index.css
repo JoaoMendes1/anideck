@@ -398,6 +398,29 @@ html[data-tema='estudio'] {
   .aviso-hud { animation: none; }
 }
 
+/* Entrada de modais e avisos. Estas classes já estavam nos componentes, vindas de um plugin
+   de animação que nunca foi instalado: sem CSS por trás, os modais apareciam de uma vez.
+   `animate-in` roda a entrada; `fade-in`, `zoom-in-95` e `slide-in-from-top-2` dizem de
+   onde ela parte. Só opacity e transform. */
+@keyframes entrar {
+  from {
+    opacity: var(--entrar-opacidade, 1);
+    transform: translateY(var(--entrar-desloc, 0)) scale(var(--entrar-escala, 1));
+  }
+}
+@utility animate-in {
+  animation: entrar 200ms ease-out;
+  @media (prefers-reduced-motion: reduce) { animation: none; }
+}
+@utility animate-fade-in {
+  --entrar-opacidade: 0;
+  animation: entrar 200ms ease-out;
+  @media (prefers-reduced-motion: reduce) { animation: none; }
+}
+@utility fade-in { --entrar-opacidade: 0; }
+@utility zoom-in-95 { --entrar-opacidade: 0; --entrar-escala: 0.95; }
+@utility slide-in-from-top-2 { --entrar-desloc: -0.5rem; }
+
 /* Insígnias de rank e selo de streak (components/hud). Só transform e opacity, para não
    custar repintura; desligadas com movimento reduzido. */
 @keyframes insigniaGira { to { transform: rotate(360deg); } }

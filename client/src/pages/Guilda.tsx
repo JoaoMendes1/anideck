@@ -1,11 +1,14 @@
 import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
-import { Shield, Sparkles, Lock, Flame, Award, ChevronRight, Send, ShoppingBag, UserRound } from 'lucide-react'
+import { Shield, Sparkles, Lock, Award, ChevronRight, Send, ShoppingBag, UserRound } from 'lucide-react'
 import { useSessao } from '../contexts/SessaoContext'
 import { useCarteira } from '../hooks/useCarteira'
 import { useComunidade } from '../hooks/useComunidade'
 import CartaoVitais from '../components/comunidade/CartaoVitais'
 import IconeAniCoin from '../components/IconeAniCoin'
+import InsigniaRank from '../components/hud/InsigniaRank'
+import SeloStreak from '../components/hud/SeloStreak'
+import BarraVital from '../components/hud/BarraVital'
 import ModalTransferirAniCoins from '../components/ModalTransferirAniCoins'
 import CardMissoesDiarias from '../components/inicio/CardMissoesDiarias'
 import CardChefao from '../components/chefao/CardChefao'
@@ -98,7 +101,6 @@ export default function Guilda() {
   }
 
   const { status, economia, ranks, extrato, especialistas, insignias } = dados
-  const estiloRank = obterEstiloRank(status.rank)
   const totalDesbloqueadas = insignias.filter((i) => i.desbloqueada).length
 
   return (
@@ -145,39 +147,20 @@ export default function Guilda() {
           {/* CARTÃO PRINCIPAL DE RANK E NÍVEL */}
           <section className="p-5 sm:p-6 rounded-2xl bg-panel border border-line relative overflow-hidden">
             <div className="flex flex-col sm:flex-row sm:items-center gap-5">
-              {/* Anel de Rank */}
-              <div
-                className="w-24 h-24 rounded-full shrink-0 grid place-items-center relative p-1.5 mx-auto sm:mx-0"
-                style={{
-                  background: `conic-gradient(var(--color-holo-2) 0turn ${
-                    Math.min(100, Math.max(4, status.progresso_pct)) / 100
-                  }turn, var(--color-panel-2) ${
-                    Math.min(100, Math.max(4, status.progresso_pct)) / 100
-                  }turn 1turn)`,
-                }}
-              >
-                <div className="w-full h-full rounded-full bg-panel grid place-items-center border border-line/60">
-                  <span className={`font-anton text-4xl leading-none ${estiloRank.seloTexto}`}>
-                    {status.rank}
-                  </span>
-                </div>
-              </div>
+              {/* Insígnia do rank, a mesma do painel do Início e do menu. */}
+              <InsigniaRank rank={status.rank} tamanho={116} className="shrink-0 mx-auto sm:mx-0" />
 
               <div className="flex-1 min-w-0 text-center sm:text-left">
                 <div className="flex flex-wrap items-center justify-center sm:justify-start gap-2 mb-1">
-                  <span className="font-mono text-[10px] font-bold uppercase tracking-wider px-2.5 py-0.5 rounded-full bg-holo-2/15 border border-holo-2/40 text-holo-2">
+                  <span className="inline-flex items-center h-7 font-mono text-xs font-bold uppercase tracking-wider px-2.5 rounded-full bg-holo-2/15 border border-holo-2/40 text-holo-2">
                     Rank {status.rank}
                   </span>
-                  {status.streak_atual > 0 && (
-                    <span className="inline-flex items-center gap-1 font-mono text-[10px] font-bold px-2.5 py-0.5 rounded-full bg-green/12 border border-green/40 text-green">
-                      <Flame size={11} /> Streak {status.streak_atual}d
-                    </span>
-                  )}
-                  <span className="inline-flex items-center gap-1.5 font-mono text-[10px] font-bold px-2.5 py-0.5 rounded-full bg-holo-3/15 border border-holo-3/40 text-holo-3">
-                    <IconeAniCoin size={12} /> {saldoCristais.toLocaleString('pt-BR')} ₳
+                  {status.streak_atual > 0 && <SeloStreak dias={status.streak_atual} compacto />}
+                  <span className="inline-flex items-center gap-1.5 h-7 font-mono text-xs font-bold px-2.5 rounded-full bg-gold/12 border border-gold/40 text-gold">
+                    <IconeAniCoin size={13} /> {saldoCristais.toLocaleString('pt-BR')} ₳
                   </span>
                   {!status.gamificacao_ativa && (
-                    <span className="font-mono text-[10px] font-bold px-2.5 py-0.5 rounded-full bg-coral/15 border border-coral/40 text-coral">
+                    <span className="inline-flex items-center h-7 font-mono text-xs font-bold px-2.5 rounded-full bg-coral/15 border border-coral/40 text-coral">
                       XP em manutenção
                     </span>
                   )}
@@ -191,14 +174,9 @@ export default function Guilda() {
                   {status.xp_para_proximo} XP ({status.xp_total.toLocaleString('pt-BR')} XP total)
                 </p>
 
-                <div className="h-2.5 rounded-full bg-panel-2 overflow-hidden mt-3 border border-line/60">
-                  <div
-                    className={`h-full rounded-full transition-all duration-700 ${estiloRank.corBarra}`}
-                    style={{ width: `${Math.min(100, Math.max(0, status.progresso_pct))}%` }}
-                  />
-                </div>
+                <BarraVital tipo="xp" pct={status.progresso_pct} className="h-2.5 w-full mt-3" />
 
-                <div className="flex flex-wrap items-center justify-between gap-2 mt-3 font-mono text-[11px] text-muted-2">
+                <div className="flex flex-wrap items-center justify-between gap-2 mt-3 font-mono text-xs text-muted-2">
                   <span>
                     Hoje:{' '}
                     <b className={status.xp_hoje >= status.teto_diario ? 'text-gold' : 'text-green'}>
@@ -315,10 +293,10 @@ export default function Guilda() {
                             <div className="font-mono text-[10px] text-muted-2 mt-0.5 flex flex-wrap items-center gap-2">
                               <span>{item.reason}</span>
                               {item.reason.toLowerCase().includes('vitalidade') && (
-                                <span className="px-1.5 py-0.2 rounded bg-green/15 text-green font-bold">bônus vitalidade</span>
+                                <span className="px-1.5 py-px rounded bg-green/15 text-green font-bold">bônus vitalidade</span>
                               )}
                               {item.de_hoje && (
-                                <span className="px-1.5 py-0.2 rounded bg-holo-3/15 text-holo-3">hoje</span>
+                                <span className="px-1.5 py-px rounded bg-holo-3/15 text-holo-3">hoje</span>
                               )}
                             </div>
                           </div>
@@ -572,14 +550,10 @@ export default function Guilda() {
                     }`}
                   >
                     <div className="flex items-center gap-2.5 min-w-0">
-                      <span
-                        className={`w-6 h-6 rounded-full grid place-items-center font-anton text-xs shrink-0 ${est.seloBg}`}
-                      >
-                        {r.rank}
-                      </span>
+                      <InsigniaRank rank={r.rank} tamanho={32} className={`shrink-0 ${atingido ? '' : 'opacity-45 grayscale'}`} />
                       <span className="font-bold truncate">{r.titulo}</span>
                     </div>
-                    <span className="font-mono text-[10.5px] shrink-0 flex items-center gap-1">
+                    <span className="font-mono text-xs shrink-0 flex items-center gap-1">
                       Nv {r.nivel_minimo}+
                       {atual && <ChevronRight size={12} className="text-holo-3" />}
                     </span>

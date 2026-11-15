@@ -162,7 +162,7 @@ export default function Wrapped() {
         <div className="flex-1 p-6 pt-12 flex flex-col justify-between relative z-10">
           {/* SLIDE 0: CAPA */}
           {slideAtual === 0 && (
-            <div className="flex-1 flex flex-col justify-center items-center text-center animate-fadeIn">
+            <div className="flex-1 flex flex-col justify-center items-center text-center animate-fade-in">
               <div className="px-3.5 py-1 rounded-full bg-holo-1/15 border border-holo-1/40 text-holo-1 text-xs font-mono font-bold uppercase tracking-wider mb-4 flex items-center gap-1.5">
                 <Sparkles size={13} /> Retrospectiva Anual
               </div>
@@ -183,7 +183,7 @@ export default function Wrapped() {
 
           {/* SLIDE 1: TEMPO E MARATONA */}
           {slideAtual === 1 && (
-            <div className="flex-1 flex flex-col justify-center animate-fadeIn">
+            <div className="flex-1 flex flex-col justify-center animate-fade-in">
               <span className="font-mono text-xs uppercase tracking-widest text-holo-3 mb-2 flex items-center gap-1.5">
                 <Clock size={14} /> Dedicação às Telas
               </span>
@@ -226,7 +226,7 @@ export default function Wrapped() {
 
           {/* SLIDE 2: TOP 5 ANIMES */}
           {slideAtual === 2 && (
-            <div className="flex-1 flex flex-col justify-center animate-fadeIn">
+            <div className="flex-1 flex flex-col justify-center animate-fade-in">
               <span className="font-mono text-xs uppercase tracking-widest text-gold mb-2 flex items-center gap-1.5">
                 <Star size={14} /> Obras Marcantes
               </span>
@@ -276,7 +276,7 @@ export default function Wrapped() {
 
           {/* SLIDE 3: GÊNEROS FAVORITOS */}
           {slideAtual === 3 && (
-            <div className="flex-1 flex flex-col justify-center animate-fadeIn">
+            <div className="flex-1 flex flex-col justify-center animate-fade-in">
               <span className="font-mono text-xs uppercase tracking-widest text-holo-1 mb-2 flex items-center gap-1.5">
                 <Sparkles size={14} /> Seu Gosto Pessoal
               </span>
@@ -324,7 +324,7 @@ export default function Wrapped() {
 
           {/* SLIDE 4: GUILDA E COMUNIDADE */}
           {slideAtual === 4 && (
-            <div className="flex-1 flex flex-col justify-center animate-fadeIn">
+            <div className="flex-1 flex flex-col justify-center animate-fade-in">
               <span className="font-mono text-xs uppercase tracking-widest text-green mb-2 flex items-center gap-1.5">
                 <Award size={14} /> Presença na Comunidade
               </span>
@@ -363,7 +363,7 @@ export default function Wrapped() {
 
           {/* SLIDE 5: CARD FINAL COMPARTILHÁVEL */}
           {slideAtual === 5 && (
-            <div className="flex-1 flex flex-col justify-between animate-fadeIn py-2">
+            <div className="flex-1 flex flex-col justify-between animate-fade-in py-2">
               <div className="p-5 rounded-2xl bg-gradient-to-b from-panel via-panel-2 to-panel border border-holo-2/50 shadow-[0_0_30px_rgba(123,92,255,0.15)] relative">
                 <div className="flex items-center justify-between border-b border-line/60 pb-3 mb-3">
                   <div>

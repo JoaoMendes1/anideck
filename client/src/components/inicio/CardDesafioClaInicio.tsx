@@ -54,14 +54,14 @@ export default function CardDesafioClaInicio() {
           </div>
           <div className="min-w-0">
             <div className="flex items-center gap-2 flex-wrap">
-              <span className="font-mono text-[10px] font-bold text-holo-3 px-1.5 py-0.2 rounded bg-holo-3/15 border border-holo-3/30">
+              <span className="font-mono text-[10px] font-bold text-holo-3 px-1.5 py-px rounded bg-holo-3/15 border border-holo-3/30">
                 [{desafio.cla_tag}]
               </span>
               <span className="text-xs font-bold text-muted truncate">
                 {desafio.cla_nome}
               </span>
               {bateuMeta && (
-                <span className="text-[10px] font-mono font-bold text-green flex items-center gap-1 bg-green/15 px-2 py-0.2 rounded-full border border-green/30">
+                <span className="text-[10px] font-mono font-bold text-green flex items-center gap-1 bg-green/15 px-2 py-px rounded-full border border-green/30">
                   <Trophy size={10} /> Meta Batida!
                 </span>
               )}
