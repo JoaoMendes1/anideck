@@ -788,6 +788,11 @@ experiência pequena e funcional de cada vez.
 > numeração e não abrem escopo novo. Ficam registrados aqui em ordem cronológica inversa para
 > não sumirem: fase concluída não deve ser reaberta só para receber um conserto.
 
+### 15/11/2026 — Menu lateral no desktop (#207)
+
+- [x] **`MenuLateral` para quem está logado, de 1280 px para cima:** trilho de ícones até 1536 px e, daí em diante, aberto com rótulos e botão de recolher (preferência guardada no navegador). Grupos Jornada, Guilda e Gestão, e cartão do jogador no rodapé.
+- [x] **Navbar de 1280 px para cima:** saem a marca e os links, entra o campo de busca. Abaixo disso e para visitante, nada muda.
+
 ### 15/11/2026 — Palco do herói e orbes na Início (#206)
 
 - [x] **Palco do herói:** a arte do estágio atual do personagem, com aura e partículas; no desktop, coluna própria do rank com a insígnia grande, o título e o próximo rank. Sem personagem despertado, o palco mostra a insígnia e o convite para despertar.

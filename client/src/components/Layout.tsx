@@ -1,8 +1,11 @@
-import { Suspense } from 'react'
+import { Suspense, useState } from 'react'
 import { Outlet } from 'react-router-dom'
 import Navbar from './Navbar'
 import BottomNav from './BottomNav'
 import CarregandoPagina from './CarregandoPagina'
+import MenuLateral from './MenuLateral'
+import { useSessao } from '../contexts/SessaoContext'
+import { guardarMenuAberto, lerMenuAberto } from '../lib/menuLateral'
 import { CatalogoStatusProvider, useCatalogoStatus } from '../contexts/CatalogoStatusContext'
 
 function AvisoCatalogo() {
@@ -22,14 +25,34 @@ function AvisoCatalogo() {
 }
 
 function LayoutInterno() {
+  const { session } = useSessao()
+  const [menuAberto, setMenuAberto] = useState(lerMenuAberto)
+
+  const alternarMenu = () => {
+    setMenuAberto((aberto) => {
+      guardarMenuAberto(!aberto)
+      return !aberto
+    })
+  }
+
+  // A largura do menu lateral vive numa variável CSS: o menu, a barra superior e o
+  // conteúdo leem o mesmo valor. Só existe para quem está logado, de xl para cima:
+  // trilho de 72 px, ou 232 px aberto (de 2xl para cima).
+  const larguraDoMenu = !session
+    ? '[--menu-lateral:0px]'
+    : menuAberto
+    ? '[--menu-lateral:0px] xl:[--menu-lateral:72px] 2xl:[--menu-lateral:232px]'
+    : '[--menu-lateral:0px] xl:[--menu-lateral:72px]'
+
   return (
-    <div className="relative min-h-screen flex flex-col">
+    <div className={`relative min-h-screen flex flex-col ${larguraDoMenu}`}>
       <div className="bg-ambient"></div>
 
+      {session && <MenuLateral aberto={menuAberto} aoAlternar={alternarMenu} />}
       <Navbar />
 
       {/* pt-24 compensa a navbar superior. pb-24 compensa a BottomNav no mobile... */}
-      <main className="relative z-10 flex-1 flex flex-col pt-24 pb-20 md:pb-0 w-full max-w-[100vw] overflow-x-hidden">
+      <main className="relative z-10 flex-1 flex flex-col pt-24 pb-20 md:pb-0 pl-[var(--menu-lateral)] w-full max-w-[100vw] overflow-x-hidden">
         <AvisoCatalogo />
         {/* Só o miolo espera o código da página chegar (ver lazy() no App.tsx);
             Navbar e BottomNav ficam de pé durante a espera. */}

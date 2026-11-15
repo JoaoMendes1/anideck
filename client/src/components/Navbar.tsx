@@ -48,20 +48,22 @@ export default function Navbar() {
       rotas.includes(location.pathname) ? 'text-text after:opacity-100' : 'text-muted hover:text-text after:opacity-0'
     }`
 
-  // Logado, a barra ganha HUD, sino e perfil: abaixo de xl só cabem os links de uso
-  // diário. Os demais continuam no menu de perfil. O visitante vê todos.
-  const secundario = session ? 'hidden xl:inline' : ''
+  // Logado, a barra ganha HUD, sino e perfil: de md a xl só cabem os links de uso diário
+  // (os demais ficam no menu de perfil) e, de xl para cima, a navegação inteira passa
+  // para o menu lateral. O visitante vê todos os links, em qualquer largura.
+  const secundario = session ? 'hidden' : ''
+  const soSemMenuLateral = session ? 'xl:hidden' : ''
 
   return (
     <>
       <nav
-        className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${scrolled ? 'py-2.5 bg-void/85 backdrop-blur-md border-b border-line' : 'py-4 bg-transparent'
+        className={`fixed top-0 left-[var(--menu-lateral)] right-0 z-50 transition-all duration-300 ${scrolled ? 'py-2.5 bg-void/85 backdrop-blur-md border-b border-line' : 'py-4 bg-transparent'
           }`}
       >
         <div className="max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-10 flex items-center justify-between gap-4">
 
           {/* Logo */}
-          <Link to="/" className="flex items-center gap-2.5 z-50 group">
+          <Link to="/" className={`flex items-center gap-2.5 z-50 group ${soSemMenuLateral}`}>
             <LogoMark />
             <div className={`font-anton text-lg tracking-wide group-hover:opacity-80 transition-opacity ${session ? 'max-[419px]:hidden' : ''}`}>
               Ani<span className="text-holo">Deck</span>
@@ -100,7 +102,16 @@ export default function Navbar() {
           {/* LINKS DE NAVEGAÇÃO DESKTOP */}
           {/* "Admin" saiu daqui e foi pro MenuPerfil: é destino raro e restrito,
               não merecia um slot fixo ao lado dos links de uso diário. */}
-          <div className="hidden md:flex items-center gap-3.5 lg:gap-5 xl:gap-6">
+          {session && (
+            <Link
+              to="/descobrir?foco=1"
+              className="hidden xl:flex items-center gap-2.5 h-11 w-full max-w-[420px] px-4 rounded-xl border border-line bg-panel/85 text-sm text-muted-2 transition-colors hover:border-holo-3 hover:text-text focus-visible:outline-2 focus-visible:outline-holo-3"
+            >
+              <Search size={17} aria-hidden />
+              Buscar anime
+            </Link>
+          )}
+          <div className={`hidden md:flex items-center gap-3.5 lg:gap-5 xl:gap-6 ${soSemMenuLateral}`}>
             <Link to="/" className={linkClasse('/')}>Início</Link>
             <Link to="/descobrir" className={linkClasse('/descobrir')}>Descobrir</Link>
             <Link to="/rankings" className={`${linkClasse('/rankings', '/membros')} ${secundario}`}>Rankings</Link>
@@ -117,7 +128,7 @@ export default function Navbar() {
 
           {/* Ações (Busca, Auth/User) */}
           <div className="hidden md:flex items-center gap-3">
-            <Link to="/descobrir" className="w-9 h-9 rounded-full border border-line bg-panel text-muted flex items-center justify-center transition-all hover:border-holo-3 hover:text-holo-3" title="Buscar">
+            <Link to="/descobrir" className={`w-9 h-9 rounded-full border border-line bg-panel text-muted flex items-center justify-center transition-all hover:border-holo-3 hover:text-holo-3 ${soSemMenuLateral}`} title="Buscar">
               <Search size={16} />
             </Link>
 
