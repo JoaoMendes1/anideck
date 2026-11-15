@@ -19,8 +19,18 @@ interface Props {
   maximo: number
   rotulo: string
   detalhe: ReactNode
-  para: string
+  /** Destino do clique. Sem ele, o orbe é só uma figura (vitrine da Landing). */
+  para?: string
   tamanho?: number
+}
+
+const CLASSE_DO_INVOLUCRO = 'group flex flex-col items-center gap-2 rounded-2xl p-1 focus-visible:outline-2 focus-visible:outline-holo-3'
+
+function Involucro({ para, descricao, children }: { para?: string; descricao: string; children: ReactNode }) {
+  if (!para) {
+    return <span role="img" aria-label={descricao} className={CLASSE_DO_INVOLUCRO}>{children}</span>
+  }
+  return <Link to={para} aria-label={descricao} className={CLASSE_DO_INVOLUCRO}>{children}</Link>
 }
 
 export default function OrbeVital({ tipo, pct, valor, maximo, rotulo, detalhe, para, tamanho = 80 }: Props) {
@@ -31,11 +41,7 @@ export default function OrbeVital({ tipo, pct, valor, maximo, rotulo, detalhe, p
   const forma = tamanho * 3
 
   return (
-    <Link
-      to={para}
-      aria-label={`${rotulo}: ${valor} de ${maximo}`}
-      className="group flex flex-col items-center gap-2 rounded-2xl p-1 focus-visible:outline-2 focus-visible:outline-holo-3"
-    >
+    <Involucro para={para} descricao={`${rotulo}: ${valor} de ${maximo}`}>
       <span
         className="relative block rounded-full overflow-hidden transition-transform group-hover:scale-105"
         style={{
@@ -65,18 +71,14 @@ export default function OrbeVital({ tipo, pct, valor, maximo, rotulo, detalhe, p
       </span>
       <span className={`text-xs font-extrabold ${cor.rotulo}`}>{rotulo}</span>
       <span className="-mt-1.5 text-xs text-muted text-center leading-snug">{detalhe}</span>
-    </Link>
+    </Involucro>
   )
 }
 
 /** AniCoins no mesmo formato dos orbes, como uma moeda. */
-export function OrbeMoeda({ saldo, tamanho = 80 }: { saldo: number; tamanho?: number }) {
+export function OrbeMoeda({ saldo, tamanho = 80, figura = false }: { saldo: number; tamanho?: number; /** Só figura, sem link para a Loja. */ figura?: boolean }) {
   return (
-    <Link
-      to="/loja"
-      aria-label={`${saldo} AniCoins. Abrir a Loja`}
-      className="group flex flex-col items-center gap-2 rounded-2xl p-1 focus-visible:outline-2 focus-visible:outline-holo-3"
-    >
+    <Involucro para={figura ? undefined : '/loja'} descricao={figura ? `${saldo} AniCoins` : `${saldo} AniCoins. Abrir a Loja`}>
       <span
         className="grid place-items-center rounded-full transition-transform group-hover:scale-105"
         style={{
@@ -94,7 +96,7 @@ export function OrbeMoeda({ saldo, tamanho = 80 }: { saldo: number; tamanho?: nu
         </span>
       </span>
       <span className="text-xs font-extrabold text-gold">AniCoins</span>
-      <span className="-mt-1.5 text-xs text-muted group-hover:text-text">Abrir a Loja ›</span>
-    </Link>
+      <span className="-mt-1.5 text-xs text-muted group-hover:text-text">{figura ? 'Para a Loja' : 'Abrir a Loja ›'}</span>
+    </Involucro>
   )
 }

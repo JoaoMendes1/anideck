@@ -22,7 +22,7 @@ export default function SeloStreak({ dias, compacto = false }: Props) {
   if (compacto) {
     return (
       <span
-        className={`inline-flex items-center gap-1.5 h-7 pl-1.5 pr-2.5 rounded-full border text-xs font-extrabold text-[#FFC58F] ${
+        className={`inline-flex shrink-0 items-center gap-1.5 h-7 pl-1.5 pr-2.5 rounded-full border text-xs font-extrabold whitespace-nowrap text-[#FFC58F] ${
           completa ? 'border-gold/65 bg-[#FF9A3C]/20' : 'border-[#FF9A3C]/45 bg-[#FF9A3C]/12'
         }`}
       >

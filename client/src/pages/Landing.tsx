@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { lazy, Suspense, useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import {
   MonitorPlay, Sparkles, Layers, Compass, Trophy, CalendarDays,
@@ -10,6 +10,9 @@ import { useRevealOnScroll } from '../hooks/useRevealOnScroll'
 import { miniatura } from '../lib/miniatura'
 import { gradienteDoCard } from '../lib/deckHelpers'
 import type { CuratedAnime } from '../types/curation'
+
+// Fica abaixo da dobra: carregada à parte para não pesar no arquivo principal do site.
+const VitrineGuilda = lazy(() => import('../components/landing/VitrineGuilda'))
 
 export default function Landing() {
   const addToRefs = useRevealOnScroll()
@@ -39,7 +42,7 @@ export default function Landing() {
       <div className="container max-w-[1140px] mx-auto px-5 pt-6">
         <div className="rounded-2xl border border-gold/35 bg-gradient-to-r from-gold/10 via-panel to-holo-2/10 px-4 py-3.5 sm:px-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
           <div className="flex items-start sm:items-center gap-3">
-            <span className="px-2.5 py-1 rounded-full bg-gold/20 border border-gold/40 text-gold font-mono text-[10px] font-extrabold uppercase tracking-wider shrink-0">
+            <span className="px-2.5 py-1 rounded-full bg-gold/20 border border-gold/40 text-gold font-mono text-xs font-extrabold uppercase tracking-wider shrink-0">
               Beta Fechado
             </span>
             <p className="text-xs sm:text-[13px] text-muted leading-snug">
@@ -68,7 +71,7 @@ export default function Landing() {
               Todo anime que <span className="text-holo">importa</span>, guardado do seu jeito.
             </h1>
             <p className="text-muted text-[16.5px] leading-relaxed max-w-[490px] mx-auto md:mx-0 mb-8">
-              Catálogo completo da AniList com curadoria editorial em português, controle de episódios, agenda viva no seu fuso e estatísticas de gosto — numa interface de colecionador.
+              Catálogo completo da AniList com curadoria editorial em português, controle de episódios, agenda viva no seu fuso e uma Guilda em que cada episódio vale XP — numa interface de colecionador.
             </p>
             <div className="flex gap-3 flex-wrap justify-center md:justify-start">
               <Link
@@ -92,9 +95,9 @@ export default function Landing() {
             </div>
 
             <div className="flex gap-7 mt-11 flex-wrap justify-center md:justify-start">
-              <div><b className="block font-anton text-xl uppercase">28 mil+</b><span className="text-[11px] text-muted-2 font-bold">TÍTULOS DA ANILIST</span></div>
-              <div><b className="block font-anton text-xl uppercase">Curadoria</b><span className="text-[11px] text-muted-2 font-bold">SINOPSES E TAGS EM PT-BR</span></div>
-              <div><b className="block font-anton text-xl uppercase">Streaming</b><span className="text-[11px] text-muted-2 font-bold">LINKS OFICIAIS MAPEADOS</span></div>
+              <div><b className="block font-anton text-xl uppercase">Catálogo</b><span className="text-xs text-muted-2 font-bold">COMPLETO DA ANILIST</span></div>
+              <div><b className="block font-anton text-xl uppercase">Curadoria</b><span className="text-xs text-muted-2 font-bold">SINOPSES E TAGS EM PT-BR</span></div>
+              <div><b className="block font-anton text-xl uppercase">Guilda</b><span className="text-xs text-muted-2 font-bold">RANK, XP E MISSÕES</span></div>
             </div>
           </div>
 
@@ -139,7 +142,7 @@ export default function Landing() {
                 <div className="font-anton text-[16px] uppercase text-text leading-tight line-clamp-2">
                   {cardTopo?.custom_title || 'Sua próxima obsessão'}
                 </div>
-                <div className="text-[10.5px] text-holo-3 font-mono mt-1 uppercase truncate">
+                <div className="text-xs text-holo-3 font-mono mt-1 uppercase truncate">
                   {cardTopo?.custom_tags?.slice(0, 3).join(' · ') || 'AÇÃO · FANTASIA · CURADORIA'}
                 </div>
               </div>
@@ -154,7 +157,7 @@ export default function Landing() {
         <section ref={addToRefs} className="container max-w-[1140px] mx-auto px-5 py-8 reveal">
           <div className="flex items-end justify-between gap-4 mb-5">
             <div>
-              <div className="font-mono text-[11px] text-holo-3 tracking-[0.14em] uppercase mb-1">
+              <div className="font-mono text-xs text-holo-3 tracking-[0.14em] uppercase mb-1">
                 // EXPLORE AGORA SEM CONTA
               </div>
               <h2 className="font-anton uppercase text-[clamp(1.4rem,3vw,1.9rem)] m-0">
@@ -189,7 +192,7 @@ export default function Landing() {
                   {anime.custom_title}
                 </h3>
                 {anime.custom_format && (
-                  <p className="mt-0.5 font-mono text-[9.5px] uppercase tracking-widest text-muted-2">
+                  <p className="mt-0.5 font-mono text-xs uppercase tracking-widest text-muted-2">
                     {anime.custom_format}
                   </p>
                 )}
@@ -199,10 +202,27 @@ export default function Landing() {
         </section>
       )}
 
+      {/* A GUILDA: o painel do jogador com os componentes de verdade */}
+      <section ref={addToRefs} className="container max-w-[1140px] mx-auto px-5 pt-14 pb-4 reveal">
+        <div className="text-center mb-9">
+          <div className="font-mono text-xs text-holo-3 tracking-[0.14em] mb-2.5">// A GUILDA DO ANIDECK</div>
+          <h2 className="font-anton uppercase text-[clamp(1.5rem,3.4vw,2.2rem)] mb-2.5">
+            Cada episódio te leva <span className="text-holo">mais longe</span>
+          </h2>
+          <p className="text-muted text-sm max-w-[560px] mx-auto">
+            Seu personagem evolui com o que você assiste: rank de F a SS, Vitalidade, Mana, missões do dia e uma coleção para exibir.
+          </p>
+        </div>
+        {/* A reserva tem a altura da vitrine, para a página não pular quando ela chega. */}
+        <Suspense fallback={<div className="min-h-[1040px] lg:min-h-[520px] rounded-3xl border border-line bg-panel" />}>
+          <VitrineGuilda aoPedirConvite={() => setModalConviteAberto(true)} />
+        </Suspense>
+      </section>
+
       {/* OS 4 PILARES DO PRODUTO */}
       <section ref={addToRefs} className="container max-w-[1140px] mx-auto px-5 py-20 reveal">
         <div className="text-center mb-11">
-          <div className="font-mono text-[11.5px] text-holo-3 tracking-[0.14em] mb-2.5">// POR DENTRO DO ANIDECK</div>
+          <div className="font-mono text-xs text-holo-3 tracking-[0.14em] mb-2.5">// POR DENTRO DO ANIDECK</div>
           <h2 className="font-anton uppercase text-[clamp(1.5rem,3.4vw,2.2rem)] mb-2.5">Mais do que uma lista</h2>
           <p className="text-muted text-sm max-w-[540px] mx-auto">
             Projetado para quem acompanha lançamentos toda semana e quer entender o próprio gosto sem planilhas feias.

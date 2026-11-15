@@ -788,6 +788,12 @@ experiência pequena e funcional de cada vez.
 > numeração e não abrem escopo novo. Ficam registrados aqui em ordem cronológica inversa para
 > não sumirem: fase concluída não deve ser reaberta só para receber um conserto.
 
+### 15/11/2026 — Landing mostra a Guilda (#213)
+
+- [x] **Seção "A Guilda do AniDeck"** na página de entrada (`components/landing/VitrineGuilda.tsx`): arte do personagem, insígnia do rank, orbes de Vitalidade e Mana, AniCoins, streak e barra de XP, com os mesmos componentes do painel do jogador e valores de exemplo, em três momentos da jornada. Troca sozinha a cada 5 s até a pessoa escolher; parada com movimento reduzido.
+- [x] Seção carregada à parte (6 kB), para o arquivo principal não crescer. `OrbeVital` e `OrbeMoeda` aceitam uso como figura, sem link.
+- [x] Saiu o "28 mil+ títulos", número escrito à mão e sem fonte. Textos da página no piso de 12 px.
+
 ### 15/11/2026 — Identidade nova na Guilda, no ranking de membros e no perfil público
 
 - [x] **Insígnia do rank** (`InsigniaRank`) no cartão principal e na escada de classes da Guilda, na lista de `/membros` e na pílula do perfil público, no lugar do anel e dos selos de letra.
