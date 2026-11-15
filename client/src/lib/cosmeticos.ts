@@ -6,7 +6,7 @@ import { Crown, Flame, Heart } from 'lucide-react'
 
 export interface ItemCosmeticoLoja {
   id: string
-  tipo: 'moldura' | 'tema_perfil' | 'cor_nome' | 'emblema' | 'expansao' | 'cenario' | 'aura'
+  tipo: 'moldura' | 'tema_perfil' | 'cor_nome' | 'emblema' | 'expansao' | 'cenario' | 'aura' | 'skin'
   nome: string
   descricao: string
   preco: number

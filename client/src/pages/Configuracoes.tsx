@@ -13,7 +13,7 @@ import { lerPreferenciasDeGosto, salvarPreferenciasDeGosto } from '../lib/prefer
 import { invalidarCachesDoDeck, removerDaMemoria, chaveDoUsuario } from '../lib/cacheDeTela'
 import AvatarMontavel from '../components/AvatarMontavel'
 import { usePersonagem } from '../hooks/usePersonagem'
-import { PERSONAGEM_BASE_PADRAO, arteDoEstagio, visualEmUso } from '../lib/personagem'
+import { PERSONAGEM_BASE_PADRAO, arteDoEstagio, filtroDoVisual, visualEmUso } from '../lib/personagem'
 import {
   normalizarAvatar,
   salvarAvatarCustom,
@@ -599,7 +599,7 @@ export default function Configuracoes() {
                     <div className="flex flex-col sm:flex-row sm:items-center gap-4 pb-5 mb-5 border-b border-line">
                         <div className="relative w-16 h-16 rounded-full overflow-hidden shrink-0 border-2 border-line bg-gradient-to-br from-holo-2 to-holo-3 flex items-center justify-center text-void font-anton text-2xl shadow-inner">
                             {usaAvatarCustom ? (
-                                <AvatarMontavel avatar={avatarCustom} retrato={retratoDoPersonagem} tamanho={64} />
+                                <AvatarMontavel avatar={avatarCustom} retrato={retratoDoPersonagem} filtro={filtroDoVisual(visualDoPersonagem)} tamanho={64} />
                             ) : avatarUrl ? (
                                 <img src={avatarUrl} alt="Avatar" className="w-full h-full object-cover" />
                             ) : (
@@ -741,7 +741,7 @@ export default function Configuracoes() {
                             <div className="relative mb-4">
                                 <AvatarMontavel
                                     avatar={avatarCustom}
-                                    retrato={retratoDoPersonagem}
+                                    retrato={retratoDoPersonagem} filtro={filtroDoVisual(visualDoPersonagem)}
                                     tamanho={128}
                                     className="border-2 border-line/80 shadow-2xl"
                                 />

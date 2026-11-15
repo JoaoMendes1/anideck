@@ -111,6 +111,8 @@ export default function PlayerHudInicio({ nome, dataHoje, aoAbrirGosto }: Props)
                 height={ALTURA_DA_ARTE}
                 alt={heroi?.personagem ? `${heroi.personagem.nome}, ${classe}, no estágio ${heroi.estagio?.nome}` : ''}
                 fetchPriority="high"
+                // O brilho também é um filter: com skin, os dois vão juntos no mesmo valor.
+                style={arte.filtro ? { filter: `${arte.filtro} drop-shadow(0 0 18px rgba(63,224,240,0.35))` } : undefined}
                 className="palco-respira absolute bottom-0 right-[-40px] h-[330px] w-auto lg:right-auto lg:left-1/2 lg:-translate-x-1/2 lg:bottom-3 lg:h-[420px] drop-shadow-[0_0_18px_rgba(63,224,240,0.35)]"
               />
             ) : (

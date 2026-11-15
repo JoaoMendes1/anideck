@@ -17,7 +17,7 @@ import TagCla from '../components/TagCla'
 import { obterClasseMoldura, obterClasseCorNome, obterClasseTemaPerfil, renderizarEmblema } from '../lib/cosmeticos'
 import { faixaDoHP, type PerfilPublico } from '../lib/comunidade'
 import AvatarMontavel from '../components/AvatarMontavel'
-import { retratoDoEstagio } from '../lib/personagem'
+import { filtroDoVisual, retratoDoEstagio } from '../lib/personagem'
 import type { CartaColecao, PersonagemFavorito } from '../lib/cartas'
 
 interface CartaDaVitrine {
@@ -173,7 +173,7 @@ export default function PerfilMembro() {
         <div className="absolute -top-24 -right-24 w-72 h-72 rounded-full bg-holo-2/15 blur-3xl pointer-events-none" aria-hidden />
         <div className="relative flex flex-col sm:flex-row sm:items-center gap-5">
           <span className={`shrink-0 rounded-2xl shadow-[0_0_40px_rgba(123,92,255,0.25)] ${obterClasseMoldura(perfil.moldura)}`}>
-            <AvatarMontavel avatar={perfil.avatar ?? { base: 'quadrado' }} retrato={retratoDoEstagio(perfil.estagio)} nome={perfil.nome} tamanho={96} />
+            <AvatarMontavel avatar={perfil.avatar ?? { base: 'quadrado' }} retrato={retratoDoEstagio(perfil.estagio)} filtro={filtroDoVisual(perfil.estagio)} nome={perfil.nome} tamanho={96} />
           </span>
           <div className="min-w-0 flex-1">
             <div className="flex flex-wrap items-center gap-2 mb-1">

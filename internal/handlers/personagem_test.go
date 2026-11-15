@@ -437,3 +437,73 @@ func TestContextoPersonagem_RespostaLevaAAura(t *testing.T) {
 		t.Errorf("resposta deveria levar só a aura: %s", corpo)
 	}
 }
+
+func TestSkins_ResolverEValidar(t *testing.T) {
+	estagios := EstagiosPadrao()
+	skins := []SkinPersonagem{{ID: "skin_carmesim", Nome: "Traje Carmesim", Estilo: "skin-carmesim"}}
+
+	if v := ResolverVisualComSkins("skin_carmesim", 3, estagios, skins); v.ID != "skin_carmesim" || v.Automatico {
+		t.Errorf("skin possuída vale em qualquer nível: %+v", v)
+	}
+	if v := ResolverVisualComSkins("skin_solar", 3, estagios, skins); v.ID != "iniciante" || !v.Automatico {
+		t.Errorf("skin não possuída (devolvida) volta ao automático: %+v", v)
+	}
+	if v := ResolverVisualComSkins("iniciante", 60, estagios, skins); v.ID != "iniciante" || v.Automatico {
+		t.Errorf("estágio fixado continua valendo: %+v", v)
+	}
+
+	if err := ValidarEscolhaDeVisualComSkins("skin_carmesim", 1, estagios, skins); err != nil {
+		t.Errorf("skin possuída pode ser vestida: %v", err)
+	}
+	if err := ValidarEscolhaDeVisualComSkins("skin_solar", 60, estagios, skins); err == nil {
+		t.Error("skin não possuída deveria ser recusada")
+	}
+	if err := ValidarEscolhaDeVisualComSkins("lendario", 10, estagios, skins); err == nil {
+		t.Error("estágio não alcançado continua recusado")
+	}
+	if err := ValidarEscolhaDeVisualComSkins("", 1, estagios, nil); err != nil {
+		t.Errorf("vazio volta ao automático: %v", err)
+	}
+}
+
+func TestVisualParaRetrato(t *testing.T) {
+	estagios := EstagiosPadrao()
+	if v := VisualParaRetrato("skin_sombra", 1, estagios); v != "skin_sombra" {
+		t.Errorf("skin (já conferida) aparece no retrato: %q", v)
+	}
+	if v := VisualParaRetrato("lendario", 12, estagios); v != "aventureiro" {
+		t.Errorf("estágio não alcançado cai no do nível: %q", v)
+	}
+}
+
+func TestSepararSkins(t *testing.T) {
+	bruto := `[
+		{"item_id":"skin_carmesim","store_items":{"id":"skin_carmesim","nome":"Traje Carmesim","estilo":"skin-carmesim","tipo":"skin"}},
+		{"item_id":"moldura_x","store_items":{"id":"moldura_x","nome":"Moldura","estilo":"m","tipo":"moldura"}},
+		{"item_id":"apagado","store_items":null},
+		{"item_id":"estranho","store_items":{"id":"estranho","nome":"?","estilo":"?","tipo":"skin"}}
+	]`
+	skins := separarSkins([]byte(bruto))
+	if len(skins) != 1 || skins[0].ID != "skin_carmesim" || skins[0].Estilo != "skin-carmesim" {
+		t.Fatalf("só a skin válida deveria ficar: %+v", skins)
+	}
+	if separarSkins([]byte(`{"message":"erro"}`)) != nil {
+		t.Error("resposta de erro não tem skins")
+	}
+}
+
+func TestContextoPersonagem_SkinVestida(t *testing.T) {
+	fixada := "skin_carmesim"
+	linha := linhaPersonagemBanco{Nome: "Ren", PersonagemBase: "espadachim_eter", VisualEquipado: &fixada}
+	skins := []SkinPersonagem{{ID: "skin_carmesim", Nome: "Traje Carmesim", Estilo: "skin-carmesim"}}
+
+	r := contextoPersonagem{linha: &linha, xpTotal: 1980, ranks: RanksPadrao(), estagios: EstagiosPadrao(), skins: skins}.resposta()
+	if r.Visual == nil || r.Visual.ID != "skin_carmesim" || r.Visual.Automatico || len(r.Skins) != 1 {
+		t.Fatalf("skin vestida deveria valer e ser listada: visual=%+v skins=%+v", r.Visual, r.Skins)
+	}
+
+	semPosse := contextoPersonagem{linha: &linha, xpTotal: 1980, ranks: RanksPadrao(), estagios: EstagiosPadrao()}.resposta()
+	if semPosse.Visual.ID != "aventureiro" || !semPosse.Visual.Automatico {
+		t.Errorf("skin devolvida volta ao automático: %+v", semPosse.Visual)
+	}
+}

@@ -51,7 +51,7 @@ export default function MenuPerfil() {
                 aria-label={`Menu de perfil de ${nome}`}
                 className="flex items-center gap-2.5 pl-1.5 pr-3 py-1.5 rounded-full bg-panel border border-line cursor-pointer hover:border-holo-3 transition-colors"
             >
-                <AvatarMontavel avatar={meuAvatar.avatar} retrato={meuAvatar.retrato} nome={nome} tamanho={28} />
+                <AvatarMontavel avatar={meuAvatar.avatar} retrato={meuAvatar.retrato} filtro={meuAvatar.filtro} nome={nome} tamanho={28} />
                 <span className="hidden xl:inline text-sm font-bold truncate max-w-[100px]">{nome}</span>
                 <ChevronDown size={13} className={`text-muted transition-transform ${aberto ? 'rotate-180' : ''}`} />
             </button>

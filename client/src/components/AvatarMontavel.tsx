@@ -15,11 +15,13 @@ interface Props {
   className?: string
   /** Retrato do estágio atual do personagem. Sem ele, usa o do primeiro estágio. */
   retrato?: string
+  // Filtro da arte provisória de skin (filtroDoVisual).
+  filtro?: string
 }
 
 const RETRATO_PADRAO = ARTES[PERSONAGEM_BASE_PADRAO]?.[ORDEM_DOS_ESTAGIOS[0]]?.retrato
 
-export default function AvatarMontavel({ avatar, url, nome = 'A', tamanho = 48, className = '', retrato }: Props) {
+export default function AvatarMontavel({ avatar, url, nome = 'A', tamanho = 48, className = '', retrato, filtro }: Props) {
   const c = useMemo(() => normalizarAvatar(avatar), [avatar])
   const temAvatar = avatar !== null && avatar !== undefined
   const fundoItem = OPCOES_FUNDO.find(f => f.id === c.fundo) || OPCOES_FUNDO[0]
@@ -69,6 +71,7 @@ export default function AvatarMontavel({ avatar, url, nome = 'A', tamanho = 48, 
         width={tamanho}
         height={tamanho}
         draggable={false}
+        style={filtro ? { filter: filtro } : undefined}
         className={`relative w-full h-full object-cover ${c.base === 'losango' ? '-rotate-45 scale-[1.35]' : ''}`}
       />
     </div>

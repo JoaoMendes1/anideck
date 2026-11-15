@@ -86,6 +86,97 @@ type RespostaPersonagem struct {
 	// Estilo da aura equipada na Loja; vazio é sem aura.
 	Aura     string             `json:"aura,omitempty"`
 	Estagios []EstagioStatusRPG `json:"estagios,omitempty"`
+	// Skins que o jogador possui: visuais desbloqueados por compra na Loja.
+	Skins []SkinPersonagem `json:"skins,omitempty"`
+}
+
+// SkinPersonagem é um traje comprado na Loja. O id é o próprio visual.
+type SkinPersonagem struct {
+	ID     string `json:"id"`
+	Nome   string `json:"nome"`
+	Estilo string `json:"estilo"`
+}
+
+// prefixoSkin marca os ids de skin, que nunca se confundem com um estágio.
+const prefixoSkin = "skin_"
+
+// ehSkin diz se o visual é uma skin.
+func ehSkin(visual string) bool {
+	return strings.HasPrefix(visual, prefixoSkin)
+}
+
+func possuiSkin(skins []SkinPersonagem, id string) bool {
+	for _, s := range skins {
+		if s.ID == id {
+			return true
+		}
+	}
+	return false
+}
+
+// ResolverVisualComSkins vale como ResolverVisual, mais as skins: a skin fixada vale
+// enquanto o jogador a possui. Devolvida na Loja, o personagem volta ao automático.
+func ResolverVisualComSkins(equipado string, nivel int, estagios []EstagioRPG, skins []SkinPersonagem) VisualPersonagem {
+	if ehSkin(equipado) && possuiSkin(skins, equipado) {
+		return VisualPersonagem{ID: equipado, Automatico: false}
+	}
+	return ResolverVisual(equipado, nivel, estagios)
+}
+
+// ValidarEscolhaDeVisualComSkins aceita, além dos estágios alcançados, as skins possuídas.
+func ValidarEscolhaDeVisualComSkins(visual string, nivel int, estagios []EstagioRPG, skins []SkinPersonagem) error {
+	if ehSkin(visual) {
+		if possuiSkin(skins, visual) {
+			return nil
+		}
+		return errors.New("Você não possui esta skin.")
+	}
+	return ValidarEscolhaDeVisual(visual, nivel, estagios)
+}
+
+// VisualParaRetrato é o visual que o retrato de um membro mostra. A posse da skin já foi
+// conferida em visuaisEquipadosPorUsuario.
+func VisualParaRetrato(visual string, nivel int, estagios []EstagioRPG) string {
+	if ehSkin(visual) {
+		return visual
+	}
+	return ResolverVisual(visual, nivel, estagios).ID
+}
+
+// separarSkins lê user_items com o item da Loja embutido e fica só com as skins.
+func separarSkins(dados []byte) []SkinPersonagem {
+	var linhas []struct {
+		Item *struct {
+			ID     string `json:"id"`
+			Nome   string `json:"nome"`
+			Estilo string `json:"estilo"`
+			Tipo   string `json:"tipo"`
+		} `json:"store_items"`
+	}
+	if json.Unmarshal(dados, &linhas) != nil {
+		return nil
+	}
+	skins := make([]SkinPersonagem, 0, len(linhas))
+	for _, l := range linhas {
+		if l.Item == nil || l.Item.Tipo != "skin" || !ehSkin(l.Item.ID) {
+			continue
+		}
+		skins = append(skins, SkinPersonagem{ID: l.Item.ID, Nome: l.Item.Nome, Estilo: l.Item.Estilo})
+	}
+	return skins
+}
+
+// carregarSkinsDoJogador lê as skins possuídas. Falha devolve nenhuma: o personagem aparece
+// com o visual do estágio.
+func carregarSkinsDoJogador(dbClient *supabase.Client, userID string) []SkinPersonagem {
+	dados, _, err := dbClient.From("user_items").
+		Select("item_id,store_items(id,nome,estilo,tipo)", "", false).
+		Eq("user_id", userID).
+		Execute()
+	if err != nil {
+		return nil
+	}
+	return separarSkins(dados)
 }
 
 // EstagiosPadrao devolve os quatro estágios, do primeiro ao último. Os níveis acompanham
@@ -341,6 +432,7 @@ type contextoPersonagem struct {
 	estagios []EstagioRPG
 	cenario  string
 	aura     string
+	skins    []SkinPersonagem
 }
 
 // resposta monta o corpo da API a partir do que foi lido.
@@ -348,6 +440,11 @@ func (c contextoPersonagem) resposta() RespostaPersonagem {
 	r := montarRespostaPersonagem(*c.linha, c.xpTotal, c.ranks, c.estagios)
 	r.Cenario = c.cenario
 	r.Aura = c.aura
+	r.Skins = c.skins
+	if c.linha.VisualEquipado != nil && r.Progressao != nil {
+		visual := ResolverVisualComSkins(*c.linha.VisualEquipado, r.Progressao.Nivel, c.estagios, c.skins)
+		r.Visual = &visual
+	}
 	return r
 }
 
@@ -408,6 +505,7 @@ func carregarContextoPersonagem(dbClient *supabase.Client, userID string) (conte
 		estagios: carregarEstagiosRPG(dbClient),
 		cenario:  cenario,
 		aura:     aura,
+		skins:    carregarSkinsDoJogador(dbClient, userID),
 	}, nil
 }
 
@@ -450,12 +548,56 @@ func visuaisEquipadosPorUsuario(userIDs []string) map[string]string {
 	if json.Unmarshal(dados, &linhas) != nil {
 		return saida
 	}
+	skinsFixadas := map[string]bool{}
 	for _, l := range linhas {
 		if l.VisualEquipado != nil && *l.VisualEquipado != "" {
 			saida[l.UserID] = *l.VisualEquipado
+			if ehSkin(*l.VisualEquipado) {
+				skinsFixadas[*l.VisualEquipado] = true
+			}
 		}
 	}
+	if len(skinsFixadas) > 0 {
+		filtrarSkinsSemPosse(client, saida, skinsFixadas)
+	}
 	return saida
+}
+
+// filtrarSkinsSemPosse tira do mapa a skin que o membro já devolveu na Loja, para o retrato
+// não mostrar um traje que ele não tem mais. Com falha na leitura, tira todas as skins.
+func filtrarSkinsSemPosse(client *supabase.Client, visuais map[string]string, skins map[string]bool) {
+	uids := make([]string, 0, len(visuais))
+	ids := make([]string, 0, len(skins))
+	for uid, v := range visuais {
+		if ehSkin(v) {
+			uids = append(uids, uid)
+		}
+	}
+	for id := range skins {
+		ids = append(ids, id)
+	}
+	possui := map[string]bool{}
+	dados, _, err := client.From("user_items").
+		Select("user_id,item_id", "", false).
+		In("user_id", uids).
+		In("item_id", ids).
+		Execute()
+	if err == nil {
+		var linhas []struct {
+			UserID string `json:"user_id"`
+			ItemID string `json:"item_id"`
+		}
+		if json.Unmarshal(dados, &linhas) == nil {
+			for _, l := range linhas {
+				possui[l.UserID+"|"+l.ItemID] = true
+			}
+		}
+	}
+	for _, uid := range uids {
+		if !possui[uid+"|"+visuais[uid]] {
+			delete(visuais, uid)
+		}
+	}
 }
 
 // HandleGetPersonagem devolve o personagem do usuário autenticado, ou `existe: false`.
@@ -588,7 +730,7 @@ func (h *PersonagemHandler) HandleEquiparVisual(w http.ResponseWriter, r *http.R
 	}
 
 	nivel := CalcularNivelERank(ctx.xpTotal, ctx.ranks).Nivel
-	if err := ValidarEscolhaDeVisual(visual, nivel, ctx.estagios); err != nil {
+	if err := ValidarEscolhaDeVisualComSkins(visual, nivel, ctx.estagios, ctx.skins); err != nil {
 		responderErroJSON(w, http.StatusBadRequest, err.Error())
 		return
 	}

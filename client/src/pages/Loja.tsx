@@ -22,7 +22,15 @@ import {
 } from '../lib/cosmeticos'
 import { usePersonagem } from '../hooks/usePersonagem'
 import CamadaDaAura from '../components/personagem/CamadaDaAura'
-import { ORDEM_DOS_ESTAGIOS, PERSONAGEM_BASE_PADRAO, arteDoEstagio, visualEmUso } from '../lib/personagem'
+import {
+  EVENTO_PERSONAGEM_ATUALIZADO,
+  ORDEM_DOS_ESTAGIOS,
+  PERSONAGEM_BASE_PADRAO,
+  arteDoEstagio,
+  equiparVisual,
+  visualEmUso,
+} from '../lib/personagem'
+import { useToast } from '../contexts/ToastContext'
 
 function renderIconeItem(icone: string, raridade: string) {
   const cor = CORES_RARIDADE[raridade]?.texto || 'text-holo-3'
@@ -56,6 +64,28 @@ export default function Loja() {
   // A prévia do cenário mostra o personagem do jogador com o visual em uso; sem personagem,
   // o do primeiro estágio.
   const { dados: personagem } = usePersonagem()
+  const { showToast } = useToast()
+  const [vestindoId, setVestindoId] = useState<string | null>(null)
+  const baseDoPersonagem = personagem?.personagem?.personagem_base ?? PERSONAGEM_BASE_PADRAO
+
+  // Skin não ocupa slot: veste-se pela escolha de visual do personagem, que confere a posse.
+  const skinVestida = personagem?.visual && !personagem.visual.automatico ? personagem.visual.id : null
+  const estaEquipado = (item: ItemCosmeticoLoja) => (item.tipo === 'skin' ? item.id === skinVestida : item.equipado)
+  const trocarEquipado = async (item: ItemCosmeticoLoja, itemID: string | null) => {
+    if (item.tipo !== 'skin') {
+      equipar(item.tipo, itemID)
+      return
+    }
+    setVestindoId(item.id)
+    const r = await equiparVisual(itemID ?? '')
+    setVestindoId(null)
+    if (r.dados) {
+      window.dispatchEvent(new Event(EVENTO_PERSONAGEM_ATUALIZADO))
+      showToast(itemID ? `${item.nome} vestido no seu personagem.` : 'O personagem voltou ao visual do estágio.', 'success')
+      return
+    }
+    showToast(r.erro ?? 'Não foi possível vestir a skin agora.', 'error')
+  }
   const miniDoPersonagem = arteDoEstagio(
     personagem?.personagem?.personagem_base ?? PERSONAGEM_BASE_PADRAO,
     visualEmUso(personagem) ?? ORDEM_DOS_ESTAGIOS[0],
@@ -136,6 +166,7 @@ export default function Loja() {
           { id: 'emblema', rotulo: 'Emblemas' },
           { id: 'cenario', rotulo: 'Cenários' },
           { id: 'aura', rotulo: 'Auras' },
+          { id: 'skin', rotulo: 'Skins' },
           { id: 'expansao', rotulo: 'Melhorias' },
         ].map((f) => {
           const ativo = filtroTipo === f.id
@@ -186,13 +217,13 @@ export default function Loja() {
             const corRaridade = CORES_RARIDADE[item.raridade] || CORES_RARIDADE.comum
             const podeComprar = saldo >= item.preco
             const faltaAniCoins = Math.max(0, item.preco - saldo)
-            const emProcesso = comprandoId === item.id || equipandoId === item.id
+            const emProcesso = comprandoId === item.id || equipandoId === item.id || vestindoId === item.id
 
             return (
               <div
                 key={item.id}
                 className={`p-5 rounded-2xl bg-panel border transition-all flex flex-col justify-between gap-4 hover:shadow-xl ${corRaridade.border} ${
-                  item.equipado ? 'ring-2 ring-holo-3/60 bg-panel-2/40' : ''
+                  estaEquipado(item) ? 'ring-2 ring-holo-3/60 bg-panel-2/40' : ''
                 }`}
               >
                 <div>
@@ -291,6 +322,29 @@ export default function Loja() {
                       </div>
                     )}
 
+                    {item.tipo === 'skin' && (
+                      <div className="relative h-36 w-full overflow-hidden rounded-lg border border-line/60 bg-void">
+                        {(() => {
+                          const arteDaSkin = arteDoEstagio(baseDoPersonagem, item.id)
+                          return arteDaSkin ? (
+                            <img
+                              src={arteDaSkin.mini}
+                              width={256}
+                              height={384}
+                              alt=""
+                              loading="lazy"
+                              decoding="async"
+                              style={arteDaSkin.filtro ? { filter: arteDaSkin.filtro } : undefined}
+                              className="absolute -top-1 left-1/2 h-[150%] w-auto max-w-none -translate-x-1/2"
+                            />
+                          ) : null
+                        })()}
+                        <span className="absolute left-2 top-2 rounded-full bg-void/70 px-2 py-0.5 font-mono text-xs text-muted">
+                          Traje do personagem
+                        </span>
+                      </div>
+                    )}
+
                     {item.tipo === 'aura' && (
                       <div className="relative h-28 w-full overflow-hidden rounded-lg border border-line/60 bg-void">
                         <CamadaDaAura estilo={item.estilo} />
@@ -349,11 +403,11 @@ export default function Loja() {
                             <RotateCcw size={14} />
                           </button>
                         )}
-                        {item.equipado ? (
+                        {estaEquipado(item) ? (
                           <button
                             type="button"
                             disabled={emProcesso}
-                            onClick={() => equipar(item.tipo, null)}
+                            onClick={() => trocarEquipado(item, null)}
                             className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-full bg-green/20 border border-green/40 text-green font-mono text-xs font-bold hover:bg-coral/20 hover:text-coral hover:border-coral/40 transition-colors cursor-pointer"
                             title="Clique para desequipar"
                           >
@@ -363,10 +417,10 @@ export default function Loja() {
                           <button
                             type="button"
                             disabled={emProcesso}
-                            onClick={() => equipar(item.tipo, item.id)}
+                            onClick={() => trocarEquipado(item, item.id)}
                             className="inline-flex items-center gap-1.5 px-4 py-2 rounded-full bg-holo-1 text-void font-extrabold text-xs uppercase tracking-wider hover:opacity-95 transition-opacity cursor-pointer shadow-md"
                           >
-                            Equipar
+                            {item.tipo === 'skin' ? 'Vestir' : 'Equipar'}
                           </button>
                         )}
                       </div>

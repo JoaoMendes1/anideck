@@ -962,7 +962,7 @@ func (h *ComunidadeHandler) HandleRankingMembros(w http.ResponseWriter, r *http.
 				}
 				for i := range lista {
 					if visual, ok := handleDoFixado[lista[i].Handle]; ok {
-						lista[i].Estagio = ResolverVisual(visual, lista[i].Nivel, estagios).ID
+						lista[i].Estagio = VisualParaRetrato(visual, lista[i].Nivel, estagios)
 					}
 				}
 				var eqLinhas []struct {
@@ -1093,7 +1093,7 @@ func (h *ComunidadeHandler) HandlePerfilPublico(w http.ResponseWriter, r *http.R
 				p.Avatar = profs[0].Avatar
 			}
 			if visual, ok := visuaisEquipadosPorUsuario([]string{profs[0].UserID})[profs[0].UserID]; ok {
-				p.Estagio = ResolverVisual(visual, p.Nivel, estagiosDoPerfil).ID
+				p.Estagio = VisualParaRetrato(visual, p.Nivel, estagiosDoPerfil)
 			}
 			var eqLinhas []struct {
 				Slot         string `json:"slot"`

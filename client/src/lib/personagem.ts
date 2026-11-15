@@ -66,6 +66,8 @@ export interface RespostaPersonagem {
   // Estilo da aura equipada na Loja (chave de AURAS); ausente é sem aura.
   aura?: string
   estagios?: EstagioStatusRPG[]
+  // Skins compradas na Loja; o id de cada uma é um visual que pode ser vestido.
+  skins?: SkinPersonagem[]
 }
 
 // Disparado quando o personagem muda (despertar, troca de visual), para a barra superior
@@ -87,6 +89,30 @@ export interface ArteDoEstagio {
   mini: string
   // Recorte do rosto, 256 × 256, com fundo transparente: é o avatar do jogador.
   retrato: string
+  // Filtro CSS da arte provisória de skin. Toda <img> do personagem aplica este campo.
+  filtro?: string
+}
+
+export interface SkinPersonagem {
+  id: string
+  nome: string
+  estilo: string
+}
+
+// Skins com arte provisória: a ilustração de um estágio com um filtro de cor. Quando a
+// ilustração própria existir, ela entra em ARTES com o id da skin e este mapa perde a entrada.
+export const SKINS: Record<string, { estagio: string; filtro: string }> = {
+  // Tingimento da imagem inteira: girar o matiz mudaria a pele junto com a roupa.
+  skin_carmesim: { estagio: 'aventureiro', filtro: 'sepia(1) saturate(3) hue-rotate(-35deg) brightness(0.9)' },
+  skin_esmeralda: { estagio: 'aventureiro', filtro: 'sepia(1) saturate(2.5) hue-rotate(60deg) brightness(0.9)' },
+  skin_sombra: { estagio: 'veterano', filtro: 'grayscale(1) contrast(1.35) brightness(0.8)' },
+  skin_solar: { estagio: 'veterano', filtro: 'sepia(0.85) saturate(2.2) brightness(1.1)' },
+}
+
+/** Filtro CSS do visual, ou undefined quando o visual não é uma skin provisória. */
+export function filtroDoVisual(visualId?: string | null): string | undefined {
+  if (!visualId || !Object.hasOwn(SKINS, visualId)) return undefined
+  return SKINS[visualId].filtro
 }
 
 export type CatalogoDeArtes = Record<string, Partial<Record<string, ArteDoEstagio>>>
@@ -143,6 +169,13 @@ export function arteDoEstagio(
   artes: CatalogoDeArtes = ARTES,
 ): ArteDoEstagio | undefined {
   const doPersonagem = artes[personagemBase] ?? artes[PERSONAGEM_BASE_PADRAO] ?? {}
+
+  // Skin com ilustração própria vem do catálogo; com arte provisória, é o estágio com filtro.
+  if (!doPersonagem[estagioId] && Object.hasOwn(SKINS, estagioId)) {
+    const provisoria = SKINS[estagioId]
+    const base = arteDoEstagio(personagemBase, provisoria.estagio, artes)
+    return base ? { ...base, filtro: provisoria.filtro } : undefined
+  }
 
   const posicao = ORDEM_DOS_ESTAGIOS.indexOf(estagioId)
   if (posicao < 0) {

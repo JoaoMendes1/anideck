@@ -201,7 +201,9 @@ function FichaDoPersonagem({
   const fixado = dados.visual ? !dados.visual.automatico : false
   const mostrado = previa ?? emUso
   const emPrevia = previa !== null && previa !== emUso
-  const nomeDoMostrado = estagios.find((e) => e.id === mostrado)?.nome ?? estagio.nome
+  const skins = dados.skins ?? []
+  const nomeDoMostrado =
+    estagios.find((e) => e.id === mostrado)?.nome ?? skins.find((s) => s.id === mostrado)?.nome ?? estagio.nome
   const arte = arteDoEstagio(base, mostrado)
   // A luz do estágio fica por cima do cenário, para o personagem não se perder no fundo.
   const luz = LUZ_DO_ESTAGIO[mostrado] ?? LUZ_DO_ESTAGIO.aventureiro
@@ -251,6 +253,7 @@ function FichaDoPersonagem({
               alt={`${personagem.nome}, ${rotuloDaClasse(personagem.classe)}, com o visual ${nomeDoMostrado}`}
               decoding="async"
               fetchPriority="high"
+              style={arte.filtro ? { filter: arte.filtro } : undefined}
               className="absolute bottom-2 left-1/2 h-[96%] w-auto max-w-none -translate-x-1/2 object-contain"
             />
           )}
@@ -368,6 +371,57 @@ function FichaDoPersonagem({
                 )
               })}
             </ol>
+
+            {skins.length > 0 && (
+              <div className="flex flex-col gap-2">
+                <p className="m-0 font-mono text-xs font-semibold uppercase tracking-widest text-muted">Trajes</p>
+                <ul className="m-0 grid list-none grid-cols-4 gap-2.5 p-0">
+                  {skins.map((skin) => {
+                    const arteDaSkin = arteDoEstagio(base, skin.id)
+                    const selecionado = skin.id === mostrado
+                    return (
+                      <li key={skin.id} className="min-w-0">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setErroDoVisual('')
+                            setPrevia(skin.id === emUso ? null : skin.id)
+                          }}
+                          aria-pressed={selecionado}
+                          aria-label={`Ver o traje ${skin.nome}`}
+                          className="flex w-full min-w-0 cursor-pointer flex-col gap-1.5 rounded-xl text-left"
+                        >
+                          <span
+                            className={`relative block h-24 overflow-hidden rounded-xl border-2 bg-panel ${
+                              selecionado && emPrevia ? 'border-holo-3' : skin.id === emUso ? 'border-gold' : 'border-line'
+                            }`}
+                          >
+                            {arteDaSkin && (
+                              <img
+                                src={arteDaSkin.mini}
+                                width={256}
+                                height={384}
+                                alt=""
+                                loading="lazy"
+                                decoding="async"
+                                style={arteDaSkin.filtro ? { filter: arteDaSkin.filtro } : undefined}
+                                className="absolute -top-1.5 left-1/2 h-auto w-[150px] max-w-none -translate-x-1/2"
+                              />
+                            )}
+                            {skin.id === emUso && (
+                              <span className="absolute inset-x-0 bottom-0 bg-void/80 py-0.5 text-center font-mono text-xs font-semibold text-holo-3">
+                                em uso
+                              </span>
+                            )}
+                          </span>
+                          <span className="block truncate text-xs font-bold leading-tight text-text">{skin.nome}</span>
+                        </button>
+                      </li>
+                    )
+                  })}
+                </ul>
+              </div>
+            )}
 
             {emPrevia ? (
               <div className="flex flex-wrap items-center gap-2 rounded-2xl border border-holo-3/40 bg-panel p-3">

@@ -176,3 +176,30 @@ describe('Personagem - aura', () => {
     expect(palco.querySelector('[data-aura]')).toBeNull()
   })
 })
+
+describe('Personagem - skins', () => {
+  it('lista as skins possuídas e veste uma', async () => {
+    const comSkin = personagemNoNivel(12, { id: 'aventureiro', automatico: true })
+    comSkin.skins = [{ id: 'skin_carmesim', nome: 'Traje Carmesim', estilo: 'skin-carmesim' }]
+    const vestida = { ...comSkin, visual: { id: 'skin_carmesim', automatico: false } }
+    vi.mocked(obterPersonagem).mockResolvedValue(comSkin)
+    vi.mocked(equiparVisual).mockResolvedValue({ dados: vestida })
+    abrir()
+
+    fireEvent.click(await screen.findByRole('button', { name: 'Ver o traje Traje Carmesim' }))
+    expect(screen.getByText('Prévia · Traje Carmesim')).toBeTruthy()
+    const imagem = screen.getByRole('img', { name: /com o visual Traje Carmesim/ }) as HTMLImageElement
+    expect(imagem.style.filter).toContain('sepia')
+
+    fireEvent.click(screen.getByRole('button', { name: 'Usar este visual' }))
+    await screen.findByText(/Visual fixado em/)
+    expect(equiparVisual).toHaveBeenCalledWith('skin_carmesim')
+  })
+
+  it('sem skins, a fileira de trajes não aparece', async () => {
+    vi.mocked(obterPersonagem).mockResolvedValue(personagemNoNivel(12, { id: 'aventureiro', automatico: true }))
+    abrir()
+    await screen.findByText(/O visual acompanha o seu estágio/)
+    expect(screen.queryByText('Trajes')).toBeNull()
+  })
+})

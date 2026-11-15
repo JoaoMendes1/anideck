@@ -10,6 +10,8 @@ import {
   textoDoProximoEstagio,
   validarNomeDoPersonagem,
   visualEmUso,
+  SKINS,
+  filtroDoVisual,
   type CatalogoDeArtes,
 } from './personagem'
 
@@ -122,5 +124,34 @@ describe('personagem - visual em uso', () => {
     expect(visualEmUso({ existe: false })).toBeUndefined()
     expect(visualEmUso(null)).toBeUndefined()
     expect(visualEmUso(undefined)).toBeUndefined()
+  })
+})
+
+describe('personagem - skins provisórias', () => {
+  it('a skin usa a arte do estágio de base com o filtro', () => {
+    const arte = arteDoEstagio('espadachim_eter', 'skin_carmesim', catalogo)
+    expect(arte?.inteira).toBe('aventureiro.webp')
+    expect(arte?.filtro).toBe(SKINS.skin_carmesim.filtro)
+  })
+
+  it('skin com base sem arte própria usa a reserva do estágio', () => {
+    // O catálogo de teste não tem o Veterano: a skin de base Veterano cai no Aventureiro.
+    expect(arteDoEstagio('espadachim_eter', 'skin_sombra', catalogo)?.inteira).toBe('aventureiro.webp')
+  })
+
+  it('skin com ilustração própria no catálogo não leva filtro', () => {
+    const comArte: CatalogoDeArtes = { espadachim_eter: { ...catalogo.espadachim_eter, skin_carmesim: arte('carmesim') } }
+    const escolhida = arteDoEstagio('espadachim_eter', 'skin_carmesim', comArte)
+    expect(escolhida?.inteira).toBe('carmesim.webp')
+    expect(escolhida?.filtro).toBeUndefined()
+  })
+
+  it('estágio não leva filtro, e visual desconhecido também não', () => {
+    expect(arteDoEstagio('espadachim_eter', 'aventureiro', catalogo)?.filtro).toBeUndefined()
+    expect(filtroDoVisual('aventureiro')).toBeUndefined()
+    expect(filtroDoVisual('skin_que_nao_existe')).toBeUndefined()
+    expect(filtroDoVisual('constructor')).toBeUndefined()
+    expect(filtroDoVisual(undefined)).toBeUndefined()
+    expect(filtroDoVisual('skin_solar')).toBe(SKINS.skin_solar.filtro)
   })
 })

@@ -48,7 +48,7 @@ Staging sobe já na Fase 1, como projeto esqueleto — mesmo padrão do JVM Syst
 | 15 · Comunidade base | ✅ Concluída (08/11/2026, #154); falta abrir o beta |
 | 16 · Economia e cartas | ✅ Concluída (09/11/2026, #165); falta abrir o beta |
 | 17 · Comunidade viva | ✅ Concluída (13/11/2026, #179) |
-| 18 · O Despertar Isekai | 🚧 Em andamento — 18.1 Meu Personagem (#199, #200), 18.2a escolha de visual (#218), 18.2b cenários (#219), 18.2e auras (#220) , equipamentos com atributos (#221), expedições (#222) e invocação gratuita (#223) entregues; falta aplicar do `sql/071` ao `sql/073` |
+| 18 · O Despertar Isekai | 🚧 Em andamento — 18.1 Meu Personagem (#199, #200), 18.2a escolha de visual (#218), 18.2b cenários (#219), 18.2e auras (#220) , equipamentos com atributos (#221), expedições (#222), invocação gratuita (#223) e skins (#224) entregues; falta aplicar do `sql/071` ao `sql/074` |
 
 ---
 
@@ -778,7 +778,7 @@ experiência pequena e funcional de cada vez.
 - [ ] 18.2 Visuais e loja
   - [x] 18.2a Escolha de visual: o jogador fixa a aparência de um estágio já alcançado, com prévia antes de confirmar, ou deixa no automático. Coluna `visual_equipado`, rota `PUT /api/personagem/visual`, e o retrato da barra superior, de `/membros` e do perfil público seguem o visual em uso (#218)
   - [x] 18.2b Cenários de fundo da tela do personagem, comprados na Loja: tipo e slot `cenario`, quatro cenários desenhados em CSS (sem imagem), categoria e prévia na Loja com o personagem do jogador, e `GET /api/personagem` devolvendo o cenário equipado (#219)
-  - [ ] 18.2c Skins: visuais desbloqueados por compra ou evento, sobre a mesma coluna
+  - [x] 18.2c Skins: quatro trajes na Loja, vestidos pela mesma escolha de visual (posse conferida em `user_items`), com o filtro aplicado em todo lugar onde o personagem aparece; devolver a skin volta ao automático (#224). Arte provisória: estágio tingido por filtro CSS
   - [x] 18.2d Slots de equipamento: catálogo `rpg_itens`, inventário e slots próprios, kit inicial equipado na primeira visita, troca com ganho e perda de cada item, conferida no banco por posse, slot e nível (#221). Arte provisória: ícone por slot e cor por raridade
   - [x] 18.2e Auras do personagem, compradas na Loja: tipo e slot `aura`, três auras em CSS desenhadas atrás da ilustração (`CamadaDaAura`), paradas para quem pediu movimento reduzido, com categoria e prévia na Loja (#220)
 - [ ] 18.3 Progressão de RPG
@@ -789,7 +789,9 @@ experiência pequena e funcional de cada vez.
 - [ ] 18.6 Arena, cartas e invocação
   - [x] 18.6a Invocação gratuita: bilhetes ganhos só em expedições, invocar 1 ou 10, chances visíveis e iguais às do sorteio (`rpg_chances_invocacao`), garantia de épico ou melhor a cada 10, repetidos somam no inventário (#223). Sem pagamento por desenho: ECA Digital, art. 20
 
-**Pendência do dono:** aplicar `sql/071_rpg_equipamentos.sql`, `sql/072_rpg_batalhas.sql` e `sql/073_rpg_invocacao.sql` no Supabase, nessa ordem. Sem eles a tela do personagem continua abrindo, e expedições e invocação mostram "indisponíveis".
+**Pendência do dono:** aplicar do `sql/071` ao `sql/074` no Supabase, nessa ordem. Sem eles a tela do personagem continua abrindo, e expedições e invocação mostram "indisponíveis".
+
+**Arte pendente (o sistema já está pronto para recebê-la, sem mudar código de regra):** ilustração de cada skin (entra em `ARTES` com o id da skin e sai de `SKINS`), ícone ou ilustração de cada item de equipamento e de cada monstro, e a segunda personagem do elenco.
 
 ## 🔧 Manutenção pós-v1
 
