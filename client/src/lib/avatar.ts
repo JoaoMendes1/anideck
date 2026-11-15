@@ -16,7 +16,7 @@ export interface AvatarCustom {
 
 export const AVATAR_PADRAO: AvatarCustom = {
   base: 'redondo',
-  pele: '#fcd34d',
+  pele: '#f5d0b5',
   olhos: 'brilho',
   cor_olhos: '#06b6d4',
   boca: 'sorriso',
@@ -27,8 +27,8 @@ export const AVATAR_PADRAO: AvatarCustom = {
 }
 
 export const CORES_PELE = [
-  '#fde047', // anime clássico
-  '#fcd34d',
+  '#ffe3cf',
+  '#eebd98',
   '#fbcfe8',
   '#fed7aa',
   '#f5d0b5',

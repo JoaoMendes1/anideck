@@ -788,6 +788,11 @@ experiência pequena e funcional de cada vez.
 > numeração e não abrem escopo novo. Ficam registrados aqui em ordem cronológica inversa para
 > não sumirem: fase concluída não deve ser reaberta só para receber um conserto.
 
+### 15/11/2026 — Avatar montável redesenhado
+
+- [x] **Busto em estilo anime** no lugar do rosto geométrico (`AvatarMontavel`): olhos com íris, pupila e brilho, franja com reflexo, pescoço, ombros e gola na cor dos olhos, acessórios redesenhados. As opções e o formato salvo são os mesmos: avatar criado antes continua válido e só muda de traço.
+- [x] Paleta de pele com tons naturais (saem os dois amarelos); o padrão passa a ser um tom claro.
+
 ### 15/11/2026 — Meu Gosto como dashboard e redesenho da Início, Descobrir e Admin (#215)
 
 - [x] **Meu Gosto redesenhado** (`components/gosto/`): cabeçalho com o veredito, seis indicadores, ritmo semanal em gráfico de área, rosca de status com o total no centro, afinidade com a nota média de cada categoria, períodos do dia em blocos. Notas agrupadas por faixa (a coluna 8 cobre de 8,0 a 8,9) e anos em colunas que sempre cabem na largura: sem corte nem rolagem lateral no celular. O quadrante vira quatro listas abaixo de 640 px.
