@@ -788,6 +788,11 @@ experiência pequena e funcional de cada vez.
 > numeração e não abrem escopo novo. Ficam registrados aqui em ordem cronológica inversa para
 > não sumirem: fase concluída não deve ser reaberta só para receber um conserto.
 
+### 15/11/2026 — Palco do herói e orbes na Início (#206)
+
+- [x] **Palco do herói:** a arte do estágio atual do personagem, com aura e partículas; no desktop, coluna própria do rank com a insígnia grande, o título e o próximo rank. Sem personagem despertado, o palco mostra a insígnia e o convite para despertar.
+- [x] **Orbes de Vitalidade e Mana** (`OrbeVital`) e moeda de AniCoins (`OrbeMoeda`), no lugar dos cartões com barra.
+
 ### 15/11/2026 — Insígnias de rank, flâmula e selo de streak (#205)
 
 - [x] **Oito insígnias, de F a SS** (`InsigniaRank`), a partir do desenho trazido pelo dono: escudo, aletas, pontas de prata, asas, estrela, louros, coroa e halo prismático. Versão compacta abaixo de 48 px; animação só de 96 px para cima.

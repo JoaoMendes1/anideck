@@ -408,3 +408,16 @@ html[data-tema='estudio'] {
 @media (prefers-reduced-motion: reduce) {
   .insignia-halo, .insignia-halo-reverso, .insignia-aura, .insignia-brilho, .streak-chama { animation: none; }
 }
+
+/* Palco do herói e orbes da Início. */
+@keyframes palcoAura { 0%, 100% { opacity: 0.5; transform: scale(1); } 50% { opacity: 0.8; transform: scale(1.05); } }
+@keyframes palcoParticula { 0% { transform: translateY(0); opacity: 0; } 15% { opacity: 1; } 100% { transform: translateY(-200px); opacity: 0; } }
+@keyframes palcoRespira { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-5px); } }
+.palco-aura { animation: palcoAura 5s ease-in-out infinite; }
+.palco-particula { animation: palcoParticula 7s linear infinite; }
+.palco-respira { animation: palcoRespira 6s ease-in-out infinite; }
+.orbe-onda { animation: insigniaGira 22s linear infinite; }
+.orbe-onda-lenta { animation: insigniaGiraReverso 34s linear infinite; }
+@media (prefers-reduced-motion: reduce) {
+  .palco-aura, .palco-particula, .palco-respira, .orbe-onda, .orbe-onda-lenta { animation: none; }
+}
