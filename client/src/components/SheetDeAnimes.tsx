@@ -60,7 +60,7 @@ export default function SheetDeAnimes({ titulo, animes, carregando, onClose }: S
                                     score={anime.nota}
                                     gradientClass={gradienteDoCard(index)}
                                     statusBadge={
-                                        <span className={`select-none text-xs font-extrabold px-2 py-1 rounded-md uppercase tracking-wider border backdrop-blur-md truncate max-w-full ${tema.bg} ${tema.text} ${tema.border}`}>
+                                        <span className={`select-none text-xs font-bold px-1.5 py-0.5 rounded-md border backdrop-blur-md whitespace-nowrap ${tema.bg} ${tema.text} ${tema.border}`}>
                                             {anime.status}
                                         </span>
                                     }

@@ -156,38 +156,41 @@ export function AbaOlheiro({ onCurar }: Props) {
                       afinidade {s.score.toFixed(1)}
                     </span>
 
+                    {/* Um botão por linha: no celular os cartões têm metade da tela, e dois
+                        botões lado a lado quebravam o texto em duas linhas. */}
                     <div className="flex flex-col gap-1.5 mt-1">
-                      <div className="flex gap-1.5">
-                        <button
-                          onClick={() => { onCurar(s); remover(s.id) }}
-                          className="flex-1 text-xs font-bold py-1.5 rounded-full bg-gradient-to-r from-holo-1 to-holo-2 text-void hover:opacity-90 cursor-pointer transition-opacity"
-                        >
-                          Manual
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => enviarParaIA([s.mal_id], 'sinopse_tags')}
-                          disabled={enfileirandoIA}
-                          title="Curar Sinopse + Tags com IA (rápido via Groq)"
-                          className="flex-1 text-xs font-bold py-1.5 rounded-full bg-holo-1/15 border border-holo-1/40 text-holo-1 hover:bg-holo-1 hover:text-void cursor-pointer transition-colors disabled:opacity-50"
-                        >
-                          ✨ Sinopse/Tags
-                        </button>
-                      </div>
+                      <button
+                        type="button"
+                        onClick={() => { onCurar(s); remover(s.id) }}
+                        className="h-9 w-full text-xs font-bold rounded-lg bg-gradient-to-r from-holo-1 to-holo-2 text-void hover:opacity-90 cursor-pointer transition-opacity"
+                      >
+                        Curar à mão
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => enviarParaIA([s.mal_id], 'sinopse_tags')}
+                        disabled={enfileirandoIA}
+                        title="Curar Sinopse + Tags com IA (rápido via Groq)"
+                        className="h-9 w-full text-xs font-bold rounded-lg bg-holo-1/15 border border-holo-1/40 text-holo-1 hover:bg-holo-1 hover:text-void cursor-pointer transition-colors disabled:opacity-50"
+                      >
+                        IA: sinopse e tags
+                      </button>
                       <div className="flex gap-1.5">
                         <button
                           type="button"
                           onClick={() => enviarParaIA([s.mal_id], 'completo')}
                           disabled={enfileirandoIA}
                           title="Curar Tudo com IA (Sinopse, Tags e Episódios)"
-                          className="flex-1 text-xs font-bold py-1 rounded-full bg-panel border border-line text-muted hover:text-text hover:border-holo-2 cursor-pointer transition-colors disabled:opacity-50"
+                          className="h-9 flex-1 min-w-0 text-xs font-bold rounded-lg bg-panel border border-line text-muted hover:text-text hover:border-holo-2 cursor-pointer transition-colors disabled:opacity-50"
                         >
-                          🔎 Tudo (+ Eps)
+                          IA: tudo
                         </button>
                         <button
+                          type="button"
                           onClick={() => revisar(s.id, 'dispensado')}
                           title="Dispensar sugestão"
-                          className="px-2.5 text-xs font-bold py-1 rounded-full bg-panel border border-line text-muted hover:text-coral hover:border-coral/40 cursor-pointer transition-colors"
+                          aria-label="Dispensar sugestão"
+                          className="h-9 w-9 shrink-0 text-xs font-bold rounded-lg bg-panel border border-line text-muted hover:text-coral hover:border-coral/40 cursor-pointer transition-colors"
                         >
                           ✕
                         </button>

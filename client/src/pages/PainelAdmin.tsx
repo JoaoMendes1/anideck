@@ -939,7 +939,7 @@ export default function PainelAdmin() {
       <div className="bg-ambient"></div>
 
       <div className="sticky top-0 z-30 border-b border-line bg-void/95 backdrop-blur-md">
-        <div className="max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-8 py-3.5 flex items-center justify-between">
+        <div className="max-w-[1760px] mx-auto px-4 sm:px-6 lg:px-8 py-3.5 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <LogoMark className="w-8 h-8 hidden md:block" />
             <span className="font-anton text-lg bg-gradient-to-r from-holo-1 via-holo-2 to-holo-3 text-transparent bg-clip-text hidden md:block">
@@ -996,13 +996,44 @@ export default function PainelAdmin() {
         </div>
       </div>
 
-      <div className="max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-8 py-6 relative z-10">
+      <div className="max-w-[1760px] mx-auto px-4 sm:px-6 lg:px-8 py-6 relative z-10 xl:flex xl:items-start xl:gap-8">
+        {/* No monitor largo o menu fica ao lado, com todas as seções à vista; abaixo disso,
+            as abas em dois níveis no topo. */}
+        <aside aria-label="Seções do painel" className="hidden xl:block w-60 shrink-0 sticky top-24 self-start rounded-2xl border border-line bg-panel/80 p-3 select-none">
+          {GRUPOS_ADMIN.map(grupo => (
+            <div key={grupo.titulo} className="mb-4 last:mb-0">
+              <p className="px-3 mb-1.5 font-mono text-xs uppercase tracking-[0.2em] text-muted-2">{grupo.titulo}</p>
+              <ul className="m-0 p-0 list-none flex flex-col gap-0.5">
+                {grupo.itens.map(item => {
+                  const ativo = itemAtivo === item.id
+                  return (
+                    <li key={item.id}>
+                      <button
+                        type="button"
+                        onClick={() => irParaItem(item.id)}
+                        aria-current={ativo ? 'page' : undefined}
+                        className={`w-full text-left px-3 py-2 rounded-xl text-sm font-bold border transition-colors cursor-pointer ${
+                          ativo
+                            ? 'bg-gradient-to-r from-holo-2/25 to-transparent border-holo-2/50 text-text'
+                            : 'border-transparent text-muted hover:bg-panel-2 hover:text-text'
+                        }`}
+                      >
+                        {item.nome}
+                      </button>
+                    </li>
+                  )
+                })}
+              </ul>
+            </div>
+          ))}
+        </aside>
+
         {(() => {
           const grupoAtivo = GRUPOS_ADMIN.find(g => g.itens.some(i => i.id === itemAtivo)) ?? GRUPOS_ADMIN[0]
           return (
             <nav
               aria-label="Seções do painel"
-              className="mb-7 bg-panel border border-line rounded-2xl p-2 sm:p-2.5 shadow-lg select-none"
+              className="xl:hidden mb-7 bg-panel border border-line rounded-2xl p-2 sm:p-2.5 shadow-lg select-none"
             >
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-1.5 pb-2 mb-2 border-b border-line/70">
                 {GRUPOS_ADMIN.map(grupo => {
@@ -1053,7 +1084,7 @@ export default function PainelAdmin() {
           )
         })()}
 
-        <div className="min-w-0">
+        <div className="min-w-0 xl:flex-1">
         {/* Um erro numa aba fica nela: o menu do painel continua de pé para trocar de aba. */}
         <LimiteDeErro chave={itemAtivo}>
         {abaAtiva === 'curadoria' && (() => {

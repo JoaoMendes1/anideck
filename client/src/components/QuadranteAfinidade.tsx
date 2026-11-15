@@ -84,6 +84,7 @@ export default function QuadranteAfinidade({ generos, notaMedia, onSelectCategor
     const porHabito = pontos.filter(p => muito(p) && !acima(p))
     const paraExplorar = pontos.filter(p => !muito(p) && acima(p))
     const conforto = pontos.filter(p => muito(p) && acima(p))
+    const foraDoGosto = pontos.filter(p => !muito(p) && !acima(p))
 
     let insight = null
     if (porHabito.length > 0) {
@@ -181,7 +182,38 @@ export default function QuadranteAfinidade({ generos, notaMedia, onSelectCategor
 
             {/* Largura mínima e máxima: o texto do gráfico escala com ele; sem limites, fica ilegível
                 no celular e gigante no desktop. No celular o gráfico rola na horizontal. */}
-            <div className="overflow-x-auto custom-scrollbar">
+            {/* No celular o gráfico de dispersão não cabe sem cortar rótulo: as mesmas quatro
+                zonas viram listas. Do tablet para cima, o gráfico. */}
+            <div className="sm:hidden grid grid-cols-1 gap-2.5">
+                {([
+                    { nome: 'Zona de conforto', dica: 'vê muito e gosta', itens: conforto, cor: 'border-green/40 bg-green/5', titulo: 'text-green' },
+                    { nome: 'Vale explorar', dica: 'viu pouco e gostou', itens: paraExplorar, cor: 'border-holo-3/40 bg-holo-3/5', titulo: 'text-holo-3' },
+                    { nome: 'Assiste por hábito', dica: 'vê muito e gosta menos', itens: porHabito, cor: 'border-coral/40 bg-coral/5', titulo: 'text-coral' },
+                    { nome: 'Não é pra você', dica: 'viu pouco e gostou menos', itens: foraDoGosto, cor: 'border-line bg-panel-2/40', titulo: 'text-muted' },
+                ] as const).filter(z => z.itens.length > 0).map(z => (
+                    <div key={z.nome} className={`rounded-xl border p-3 ${z.cor}`}>
+                        <div className="flex items-baseline justify-between gap-2 mb-2">
+                            <b className={`text-sm ${z.titulo}`}>{z.nome}</b>
+                            <span className="font-mono text-xs text-muted-2">{z.dica}</span>
+                        </div>
+                        <div className="flex flex-wrap gap-1.5">
+                            {z.itens.map(p => (
+                                <button
+                                    key={p.genre}
+                                    type="button"
+                                    onClick={() => onSelectCategoria?.(p.genre)}
+                                    className="inline-flex items-center gap-1.5 rounded-full border border-line bg-void/40 px-2.5 py-1 text-xs font-bold cursor-pointer"
+                                >
+                                    {p.genre}
+                                    <span className="font-mono font-normal text-muted-2 tabular-nums">{p.total_watched} · {(p.media_nota_genero as number).toFixed(1)}</span>
+                                </button>
+                            ))}
+                        </div>
+                    </div>
+                ))}
+            </div>
+
+            <div className="hidden sm:block overflow-x-auto custom-scrollbar">
             <svg viewBox={`0 0 ${LARGURA} ${ALTURA}`} className="w-full min-w-[560px] max-w-[820px] mx-auto h-auto" role="img" aria-label="Volume assistido versus nota média por categoria">
                 {zonas.map(z => (
                     <g key={z.nome}>
@@ -262,7 +294,7 @@ export default function QuadranteAfinidade({ generos, notaMedia, onSelectCategor
             </svg>
             </div>
 
-            <p className="text-xs text-muted-2 mt-3">
+            <p className="hidden sm:block text-xs text-muted-2 mt-3">
                 Cada ponto é uma categoria. Quanto mais à direita, mais você assiste; quanto mais
                 acima, maior a nota que costuma dar. A linha dourada é a sua nota média geral.
             </p>

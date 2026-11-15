@@ -788,6 +788,14 @@ experiência pequena e funcional de cada vez.
 > numeração e não abrem escopo novo. Ficam registrados aqui em ordem cronológica inversa para
 > não sumirem: fase concluída não deve ser reaberta só para receber um conserto.
 
+### 15/11/2026 — Meu Gosto como dashboard e redesenho da Início, Descobrir e Admin (#215)
+
+- [x] **Meu Gosto redesenhado** (`components/gosto/`): cabeçalho com o veredito, seis indicadores, ritmo semanal em gráfico de área, rosca de status com o total no centro, afinidade com a nota média de cada categoria, períodos do dia em blocos. Notas agrupadas por faixa (a coluna 8 cobre de 8,0 a 8,9) e anos em colunas que sempre cabem na largura: sem corte nem rolagem lateral no celular. O quadrante vira quatro listas abaixo de 640 px.
+- [x] **Início:** palco dos destaques (`PalcoDestaques`, com arte, sinopse, tags e fila das próximas), painel "Gosto pouco explorado" no lugar de "O buraco no seu gosto" (`GostoPoucoExplorado`), "Sua semana" em grade e conteúdo na largura da tela, sem a coluna lateral.
+- [x] **Descobrir** preenchido antes da busca (`VitrineDescobrir`): atalhos, gêneros, escolhas da curadoria, demografias e temas.
+- [x] **Painel Admin com menu lateral** a partir de 1280 px; abaixo disso, as abas de antes. Botões dos cartões do Olheiro um por linha.
+- [x] Páginas principais e barra superior com o mesmo limite de largura (1760 px). Selo de status inteiro na lista de animes dos gráficos.
+
 ### 15/11/2026 — Foco de teclado e nome nos campos que faltavam
 
 - [x] **Um anel de foco só**, na cor do tema, em link, botão e aba (`:where(...):focus-visible` em `index.css`); a barra inferior do celular voltou a mostrar foco.

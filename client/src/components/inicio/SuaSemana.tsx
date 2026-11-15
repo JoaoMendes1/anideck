@@ -50,9 +50,9 @@ export default function SuaSemana({ semana, compacta = false }: { semana: DiaDaS
           {totalNaSemana === 0 ? 'Nenhum episódio do seu deck nos próximos 7 dias.' : `Nada do seu deck sai ${dia.rotulo === 'Hoje' ? 'hoje' : 'neste dia'}.`}
         </p>
       ) : (
-        <ul className="flex flex-col gap-2 m-0 p-0 list-none">
+        <ul className={`m-0 p-0 list-none ${compacta ? 'flex flex-col gap-2' : 'grid gap-2 md:grid-cols-2 2xl:grid-cols-3'}`}>
           {dia.estreias.map(e => (
-            <li key={e.anime.mal_id} className="flex items-center gap-3 rounded-xl p-2 -mx-1 hover:bg-panel-2 transition-colors">
+            <li key={e.anime.mal_id} className={`flex items-center gap-3 rounded-xl p-2 hover:bg-panel-2 transition-colors ${compacta ? '-mx-1' : 'border border-line/60 bg-panel-2/30'}`}>
               <Link to={`/anime/${e.anime.mal_id}`} className="shrink-0">
                 {e.anime.image_url ? (
                   <img src={miniatura(e.anime.image_url)} alt="" className={`${compacta ? 'w-10 h-14' : 'w-11 h-16'} rounded-lg object-cover border border-line`} />

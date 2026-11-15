@@ -4,7 +4,7 @@ import { chaveDoUsuario, lerDaMemoria, guardarNaMemoria } from '../lib/cacheDeTe
 import { usePosicaoDeLista } from '../lib/posicaoDeLista'
 import { Link } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
-import { AlertCircle, Flame, Trophy, Compass, Target, Clock } from 'lucide-react'
+import { Activity, AlertCircle, CalendarRange, ChartPie, ChartScatter, Clock, Compass, Flame, Heart, Hourglass, Layers, Star, Tags, Target, Trophy } from 'lucide-react'
 import { useRevealOnScroll } from '../hooks/useRevealOnScroll'
 import { useContagemAnimada } from '../hooks/useContagemAnimada'
 import QuadranteAfinidade from '../components/QuadranteAfinidade'
@@ -12,6 +12,13 @@ import SheetDeAnimes, { type AnimeDoGenero } from '../components/SheetDeAnimes'
 import { montarVeredito } from '../lib/veredito'
 import { rotulosDoCard } from '../lib/cardDeGosto'
 import CompartilharGosto from '../components/CompartilharGosto'
+import Painel from '../components/gosto/Painel'
+import Indicador from '../components/gosto/Indicador'
+import GraficoArea from '../components/gosto/GraficoArea'
+import GraficoColunas from '../components/gosto/GraficoColunas'
+import RoscaStatus from '../components/gosto/RoscaStatus'
+import PeriodosDoDia from '../components/gosto/PeriodosDoDia'
+import { agruparNotas, preencherAnos } from '../lib/graficos'
 
 interface StatsOverview {
   total_animes: number
@@ -153,7 +160,7 @@ export default function Estatisticas() {
 
   // Drill-down: qual recorte está aberto no Sheet. Guardar o tipo junto do valor deixa o
   // mesmo fluxo servir a gênero, ano, nota e status sem duplicar estado nem componente.
-  const [recorte, setRecorte] = useState<{ tipo: 'genero' | 'ano' | 'nota' | 'status'; valor: string } | null>(null)
+  const [recorte, setRecorte] = useState<{ tipo: 'genero' | 'ano' | 'nota' | 'status'; valor: string; notas?: number[] } | null>(null)
   const [animesDoRecorte, setAnimesDoRecorte] = useState<AnimeDoGenero[]>([])
   const [carregandoRecorte, setCarregandoRecorte] = useState(false)
   const [capasDosRecordes, setCapasDosRecordes] = useState<Record<number, string>>({})
@@ -248,15 +255,21 @@ export default function Estatisticas() {
           ? `/api/stats/genre?nome=${encodeURIComponent(recorte.valor)}`
           : recorte.tipo === 'ano'
           ? `/api/stats/year?ano=${encodeURIComponent(recorte.valor)}`
-          : recorte.tipo === 'nota'
-          ? `/api/stats/rating?nota=${encodeURIComponent(recorte.valor)}`
           : `/api/stats/status?status=${encodeURIComponent(recorte.valor)}`
 
-        const res = await fetch(url, {
-          headers: { 'Authorization': `Bearer ${session.access_token}` }
-        })
-        if (!res.ok) throw new Error('Falha ao carregar os animes')
-        const lista: AnimeDoGenero[] = await res.json()
+        const buscarLista = async (endereco: string): Promise<AnimeDoGenero[]> => {
+          const res = await fetch(endereco, {
+            headers: { 'Authorization': `Bearer ${session.access_token}` }
+          })
+          if (!res.ok) throw new Error('Falha ao carregar os animes')
+          return (await res.json()) || []
+        }
+
+        // A coluna de nota é uma faixa (8 = de 8,0 a 8,9) e o servidor responde por nota
+        // exata: uma busca por nota da faixa, juntadas aqui.
+        const lista = recorte.tipo === 'nota'
+          ? (await Promise.all((recorte.notas ?? [Number(recorte.valor)]).map(n => buscarLista(`/api/stats/rating?nota=${encodeURIComponent(String(n))}`)))).flat()
+          : await buscarLista(url)
 
         // As capas não vivem no nosso banco (regra de não armazenar catálogo), então vêm
         // da AniList num segundo passo — mesmo caminho que o Meu Deck já usa.
@@ -371,7 +384,6 @@ export default function Estatisticas() {
   // é o mínimo pra frase de insight não estar falando de uma tarde de cadastro em lote.
   const DIAS_MINIMOS_PADRAO = 10
   const padraoConfiavel = diasComAtividade >= DIAS_MINIMOS_PADRAO
-  const maxPeriodoTotal = Math.max(...periodoTotais.map(p => p.total), 1)
   const periodoDominante = periodoTotais.reduce((a, b) => (b.total > a.total ? b : a), periodoTotais[0])
 
   const formatHoras = (horas?: number) => {
@@ -416,37 +428,14 @@ export default function Estatisticas() {
     ? Math.max(...afinidadeAtiva.map(g => g.total_watched))
     : 1
 
-  // --- Matemática do Gráfico Donut (SVG) ---
-  const totalAnimes = overview?.total_animes || 1
-  const getPct = (val: number) => (val / totalAnimes) * 100
-
-  const pctAssistindo = getPct(overview?.assistindo || 0)
-  const pctEmDia = getPct(overview?.em_dia || 0)
-  const pctCompleto = getPct(overview?.completos || 0)
-  const pctDropado = getPct(overview?.dropados || 0)
-  const pctQuero = getPct(overview?.quero_assistir || 0)
-
-  const offEmDia = 25 - pctAssistindo
-  const offCompleto = offEmDia - pctEmDia
-  const offDropado = offCompleto - pctCompleto
-  const offQuero = offDropado - pctDropado
-
-  // Cada arco começa com comprimento 0 e cresce até a fatia real.
-  const arco = (pct: number) => (desenhado ? `${pct} ${100 - pct}` : `0 100`)
-
-  // --- Dados para os gráficos de barra ---
-  const activityRecente = activity.slice(-8)
-  const maxEpisodios = activityRecente.length > 0
-    ? Math.max(...activityRecente.map(a => a.episodios_assistidos), 1)
-    : 1
-
-  const maxRatingTotal = ratings.length > 0 ? Math.max(...ratings.map(r => r.total), 1) : 1
-
-  const maxYearTotal = years.length > 0 ? Math.max(...years.map(y => y.total), 1) : 1
-
-  // Escalona o atraso de cada barra dentro do mesmo gráfico: elas sobem em cascata da
-  // esquerda pra direita em vez de todas de uma vez, o que lê como um gráfico "montando".
-  const atrasoBarra = (indice: number) => ({ transitionDelay: `${indice * 45}ms` })
+  // --- Dados dos gráficos ---
+  const semanas = activity.slice(-12)
+  const faixasDeNota = agruparNotas(ratings)
+  const totalAvaliados = ratings.reduce((soma, r) => soma + r.total, 0)
+  const rotuloDaFaixa = (faixa: number) => (faixa >= 10 ? '10' : `${faixa} a ${faixa},9`)
+  const anos = preencherAnos(years)
+  const anoDominante = anos.length > 0 ? anos.reduce((a, b) => (b.total > a.total ? b : a), anos[0]) : null
+  const somaDosPeriodos = periodoTotais.reduce((soma, p) => soma + p.total, 0)
 
   // Anime esquecido: só vira alerta depois de uma semana parado. Antes disso é só uma pausa
   // normal, e cutucar alguém por não ter assistido ontem seria irritante, não útil.
@@ -468,420 +457,315 @@ export default function Estatisticas() {
 
   return (
     <div className="pb-20">
-      <div className="max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-10 pt-8 relative z-10">
+      <div className="max-w-[1680px] mx-auto px-4 sm:px-6 lg:px-10 pt-6 sm:pt-8 relative z-10">
 
-        <div ref={registrar} className="reveal mb-8">
-          <h1 className="font-anton text-[clamp(1.6rem,3.6vw,2.2rem)] uppercase mb-3">Meu Gosto</h1>
-          {veredito.pronto ? (
-            <>
-              <p className="text-text text-lg sm:text-xl leading-snug font-bold max-w-[640px]">{veredito.frase}</p>
-              <CompartilharGosto dados={{
-                frase: veredito.frase,
-                rotulos: rotulosDoCard(genres.map(g => ({ ...g, genre: traduzirGenero(g.genre) }))),
-                horas: Math.round((overview?.tempo_total_minutos || 0) / 60),
-                animes: animesConsiderados,
-              }} />
-            </>
-          ) : (
-            <p className="text-text text-lg sm:text-xl leading-snug font-bold max-w-[640px]">
-              Ainda estou te conhecendo. Com mais {veredito.faltam} {veredito.faltam === 1 ? 'anime' : 'animes'} no deck, eu te digo do que você gosta.
-            </p>
-          )}
-          <p className="text-muted text-sm mt-2">Tudo calculado a partir do seu próprio Deck.</p>
-        </div>
-
-        {/* Três colunas em qualquer largura: empilhados no mobile, esses cards empurravam
-            o resto da página pra baixo demais. Fonte e padding encolhem via sm:. */}
-        <div ref={registrar} className="reveal grid grid-cols-3 gap-2.5 sm:gap-4 mb-3 sm:mb-4" style={{ transitionDelay: '.05s' }}>
-          <div className="bg-gradient-to-br from-holo-1/10 to-holo-3/10 border border-holo-3/30 rounded-2xl p-3.5 sm:p-6">
-            <div className="font-mono text-xs text-muted-2 tracking-wider sm:tracking-widest mb-1.5 sm:mb-2 uppercase leading-tight">Tempo Assistido</div>
-            <div className="font-anton text-lg sm:text-3xl tabular-nums">{formatTime(Math.round(tempoAnimado))}</div>
-          </div>
-          <button
-            type="button"
-            onClick={() => favorito && setRecorte({ tipo: 'genero', valor: favorito.genre })}
-            disabled={!favorito}
-            className="bg-panel border border-line rounded-2xl p-3.5 sm:p-6 text-left transition-colors hover:border-holo-2 cursor-pointer disabled:cursor-default"
-            title={favorito ? `Ver seus animes de ${traduzirGenero(generoFavorito)}` : undefined}
-          >
-            <div className="font-mono text-xs text-muted-2 tracking-wider sm:tracking-widest mb-1.5 sm:mb-2 uppercase leading-tight">Gênero Favorito</div>
-            <div className="font-anton text-lg sm:text-3xl text-holo-2 truncate">{traduzirGenero(generoFavorito)}</div>
-          </button>
-          <div className="bg-panel border border-line rounded-2xl p-3.5 sm:p-6">
-            <div className="font-mono text-xs text-muted-2 tracking-wider sm:tracking-widest mb-1.5 sm:mb-2 uppercase leading-tight">Sua Nota Média</div>
-            <div className="font-anton text-lg sm:text-3xl text-gold tabular-nums">
-              {overview?.nota_media ? notaAnimada.toFixed(1) : 'N/A'}
-            </div>
-          </div>
-        </div>
-
-        {/* Streak: markup próprio em grid-cols-2 em vez do StatCard, que tem largura fixa
-            pensada pra lista com scroll horizontal e cortava na borda da tela no mobile. */}
-        <div ref={registrar} className="reveal grid grid-cols-2 lg:grid-cols-4 gap-2.5 sm:gap-4 mb-8" style={{ transitionDelay: '.1s' }}>
-          <div className="bg-panel border border-line border-t-[3px] border-t-coral rounded-[14px] p-4 sm:p-[18px]">
-            <div className="w-7 h-7 rounded-lg bg-coral/20 text-coral flex items-center justify-center mb-2">
-              <Flame size={18} />
-            </div>
-            <b className="block font-anton text-2xl mb-0.5 tabular-nums">{Math.round(streakAtualAnimado)}</b>
-            <span className="text-xs text-muted-2 font-bold uppercase tracking-wider">Streak Atual (dias)</span>
-          </div>
-          <div className="bg-panel border border-line border-t-[3px] border-t-gold rounded-[14px] p-4 sm:p-[18px]">
-            <div className="w-7 h-7 rounded-lg bg-gold/20 text-gold flex items-center justify-center mb-2">
-              <Trophy size={18} />
-            </div>
-            <b className="block font-anton text-2xl mb-0.5 tabular-nums">{Math.round(streakRecordeAnimado)}</b>
-            <span className="text-xs text-muted-2 font-bold uppercase tracking-wider">Recorde de Streak (dias)</span>
-          </div>
-
-          {/* Perfil de gosto — concentração do consumo nos dois rótulos mais assistidos.
-              É heurística assumida, não estatística: o texto explica o número que a gerou
-              pra não virar rótulo misterioso. */}
-          <div className="bg-panel border border-line border-t-[3px] border-t-holo-2 rounded-[14px] p-4 sm:p-[18px]">
-            <div className="w-7 h-7 rounded-lg bg-holo-2/20 text-holo-2 flex items-center justify-center mb-2">
-              <Compass size={18} />
-            </div>
-            {perfil.tipo ? (
-              <>
-                <b className="block font-anton text-xl sm:text-2xl mb-0.5 capitalize">{perfil.tipo}</b>
-                <span className="text-xs text-muted-2 font-bold uppercase tracking-wider">
-                  {perfil.concentracao.toFixed(0)}% em 2 categorias
-                </span>
-              </>
-            ) : (
-              <>
-                <b className="block font-anton text-xl sm:text-2xl mb-0.5 text-muted-2">—</b>
-                <span className="text-xs text-muted-2 font-bold uppercase tracking-wider">Perfil de gosto</span>
-              </>
-            )}
-          </div>
-
-          {/* Taxa de conclusão — enquadrada como curiosidade, nunca como cobrança.
-              Ninguém abre estatística do próprio hobby pra ser lembrado do que abandonou. */}
-          <div className="bg-panel border border-line border-t-[3px] border-t-green rounded-[14px] p-4 sm:p-[18px]">
-            <div className="w-7 h-7 rounded-lg bg-green/20 text-green flex items-center justify-center mb-2">
-              <Target size={18} />
-            </div>
-            {conclusao.valida ? (
-              <>
-                <b className="block font-anton text-xl sm:text-2xl mb-0.5 tabular-nums">{conclusao.taxa.toFixed(0)} de 10</b>
-                <span className="text-xs text-muted-2 font-bold uppercase tracking-wider">Você termina</span>
-              </>
-            ) : (
-              <>
-                <b className="block font-anton text-xl sm:text-2xl mb-0.5 text-muted-2">—</b>
-                <span className="text-xs text-muted-2 font-bold uppercase tracking-wider">Taxa de conclusão</span>
-              </>
-            )}
-          </div>
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-5 mb-5">
-          <div ref={registrar} className="reveal bg-panel border border-line rounded-2xl p-6">
-            <h2 className="font-anton uppercase text-[15px] mb-6">Distribuição por Status</h2>
-            <div className="flex items-center gap-6 flex-wrap">
-              <svg width="130" height="130" viewBox="0 0 42 42" className="-rotate-90">
-                <circle cx="21" cy="21" r="15.9" fill="transparent" stroke="var(--color-panel-2)" strokeWidth="6"></circle>
-                {pctAssistindo > 0 && <circle className="anim-donut" cx="21" cy="21" r="15.9" fill="transparent" stroke="var(--color-status-assistindo)" strokeWidth="6" strokeDasharray={arco(pctAssistindo)} strokeDashoffset="25" />}
-                {pctEmDia > 0 && <circle className="anim-donut" cx="21" cy="21" r="15.9" fill="transparent" stroke="var(--color-status-em-dia)" strokeWidth="6" strokeDasharray={arco(pctEmDia)} strokeDashoffset={offEmDia} />}
-                {pctCompleto > 0 && <circle className="anim-donut" cx="21" cy="21" r="15.9" fill="transparent" stroke="var(--color-status-completo)" strokeWidth="6" strokeDasharray={arco(pctCompleto)} strokeDashoffset={offCompleto} />}
-                {pctDropado > 0 && <circle className="anim-donut" cx="21" cy="21" r="15.9" fill="transparent" stroke="var(--color-status-dropado)" strokeWidth="6" strokeDasharray={arco(pctDropado)} strokeDashoffset={offDropado} />}
-                {pctQuero > 0 && <circle className="anim-donut" cx="21" cy="21" r="15.9" fill="transparent" stroke="var(--color-status-quero)" strokeWidth="6" strokeDasharray={arco(pctQuero)} strokeDashoffset={offQuero} />}
-              </svg>
-              <div className="flex flex-col gap-1.5 flex-1 min-w-[140px]">
-                {([
-                  { status: 'Assistindo', cor: 'bg-status-assistindo', pct: pctAssistindo, total: overview?.assistindo || 0 },
-                  { status: 'Em Dia', cor: 'bg-status-em-dia', pct: pctEmDia, total: overview?.em_dia || 0 },
-                  { status: 'Completo', cor: 'bg-status-completo', pct: pctCompleto, total: overview?.completos || 0 },
-                  { status: 'Dropado', cor: 'bg-status-dropado', pct: pctDropado, total: overview?.dropados || 0 },
-                  { status: 'Quero Assistir', cor: 'bg-status-quero', pct: pctQuero, total: overview?.quero_assistir || 0 },
-                ] as const).map(item => (
-                  <button
-                    key={item.status}
-                    type="button"
-                    onClick={() => setRecorte({ tipo: 'status', valor: item.status })}
-                    className="flex items-center gap-2 text-[12.5px] rounded-md -mx-1.5 px-1.5 py-1 transition-colors hover:bg-panel-2/70 cursor-pointer text-left"
-                    title={`Ver seus ${item.total} animes em "${item.status}"`}
+        {/* Cabeçalho: a conclusão primeiro; os gráficos abaixo são o apoio dela. */}
+        <header ref={registrar} className="reveal relative overflow-hidden rounded-3xl border border-line bg-panel/80 p-5 sm:p-8 mb-4 sm:mb-5">
+          <span aria-hidden className="pointer-events-none absolute -top-24 -left-16 w-72 h-72 rounded-full bg-holo-2 opacity-20 blur-3xl" />
+          <span aria-hidden className="pointer-events-none absolute -bottom-28 right-0 w-80 h-80 rounded-full bg-holo-3 opacity-10 blur-3xl" />
+          <div className="relative flex flex-col lg:flex-row lg:items-end lg:justify-between gap-5">
+            <div className="min-w-0">
+              <div className="flex flex-wrap items-center gap-2 mb-3">
+                <h1 className="font-mono text-xs uppercase tracking-[0.3em] text-holo-3 m-0">Meu Gosto</h1>
+                {perfil.tipo && (
+                  <span
+                    className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full border border-holo-2/40 bg-holo-2/10 text-xs font-bold capitalize"
+                    title={`${perfil.concentracao.toFixed(0)}% do que você assiste está em 2 categorias`}
                   >
-                    <span className={`w-2.5 h-2.5 rounded-sm ${item.cor}`}></span>
-                    <span>{item.status}</span>
-                    <span className="ml-auto font-mono text-xs text-muted-2 tabular-nums">{item.total}</span>
-                    <b className="font-mono tabular-nums min-w-[36px] text-right">{item.pct.toFixed(0)}%</b>
+                    <Compass size={12} className="text-holo-2" aria-hidden /> {perfil.tipo}
+                    <span className="font-mono font-normal text-muted-2 normal-case">· {perfil.concentracao.toFixed(0)}% em 2 categorias</span>
+                  </span>
+                )}
+              </div>
+              <p className="font-anton uppercase text-2xl sm:text-4xl leading-[1.08] max-w-[900px] m-0">
+                {veredito.pronto
+                  ? veredito.frase
+                  : `Ainda estou te conhecendo. Com mais ${veredito.faltam} ${veredito.faltam === 1 ? 'anime' : 'animes'} no deck, eu te digo do que você gosta.`}
+              </p>
+              <p className="text-muted text-sm mt-3 m-0">Tudo calculado a partir do seu próprio Deck. Toque em qualquer gráfico para ver os animes por trás do número.</p>
+            </div>
+            {veredito.pronto && (
+              <div className="shrink-0">
+                <CompartilharGosto dados={{
+                  frase: veredito.frase,
+                  rotulos: rotulosDoCard(genres.map(g => ({ ...g, genre: traduzirGenero(g.genre) }))),
+                  horas: Math.round((overview?.tempo_total_minutos || 0) / 60),
+                  animes: animesConsiderados,
+                }} />
+              </div>
+            )}
+          </div>
+        </header>
+
+        {/* Números de relance. */}
+        <div ref={registrar} className="reveal grid grid-cols-2 md:grid-cols-3 2xl:grid-cols-6 gap-2.5 sm:gap-4 mb-4 sm:mb-5">
+          <Indicador tom="ciano" rotulo="Tempo assistido" icone={<Hourglass size={15} aria-hidden />}
+            valor={formatTime(Math.round(tempoAnimado))}
+            contexto={`${Math.round((overview?.tempo_total_minutos || 0) / 60).toLocaleString('pt-BR')} horas no total`} />
+          <Indicador tom="roxo" rotulo="Animes vistos" icone={<Layers size={15} aria-hidden />}
+            valor={animesConsiderados}
+            contexto={`${overview?.completos || 0} completos`} />
+          <Indicador tom="ouro" rotulo="Nota média" icone={<Star size={15} aria-hidden />}
+            valor={overview?.nota_media ? notaAnimada.toFixed(1) : '—'}
+            contexto={totalAvaliados > 0 ? `em ${totalAvaliados} ${totalAvaliados === 1 ? 'avaliado' : 'avaliados'}` : 'nenhum avaliado ainda'} />
+          <Indicador tom="rosa" rotulo="Favorito" icone={<Heart size={15} aria-hidden />}
+            valor={<span className="text-xl sm:text-2xl">{traduzirGenero(generoFavorito)}</span>}
+            contexto={favorito ? `${favorito.total_watched} animes` : 'cadastre animes no Deck'} />
+          <Indicador tom="coral" rotulo="Sequência" icone={<Flame size={15} aria-hidden />}
+            valor={<>{Math.round(streakAtualAnimado)} <span className="font-mono text-xs font-normal text-muted-2">{streak.current === 1 ? 'dia' : 'dias'}</span></>}
+            contexto={`recorde: ${Math.round(streakRecordeAnimado)} ${streak.longest === 1 ? 'dia' : 'dias'}`} />
+          <Indicador tom="verde" rotulo="Você termina" icone={<Target size={15} aria-hidden />}
+            valor={conclusao.valida ? <>{conclusao.taxa.toFixed(0)} <span className="font-mono text-xs font-normal text-muted-2">de 10</span></> : '—'}
+            contexto={conclusao.valida ? 'dos animes que começa' : 'ainda sem base para medir'} />
+        </div>
+
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 sm:gap-5">
+          <Painel
+            ref={registrar}
+            className="lg:col-span-8"
+            titulo="Ritmo das últimas semanas"
+            icone={<Activity size={17} className="text-holo-3 shrink-0" aria-hidden />}
+            descricao="Episódios marcados como assistidos em cada semana"
+            acao={variacao.valida ? (
+              <span
+                className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full border font-mono text-xs font-bold tabular-nums ${variacao.pct >= 0 ? 'border-green/40 bg-green/10 text-green' : 'border-coral/40 bg-coral/10 text-coral'}`}
+                title="Últimas 4 semanas comparadas com as 4 anteriores"
+              >
+                {variacao.pct >= 0 ? '↑' : '↓'} {Math.abs(variacao.pct).toFixed(0)}%
+                <span className="hidden sm:inline font-normal text-muted">vs. 4 semanas antes</span>
+              </span>
+            ) : undefined}
+          >
+            {semanas.length === 0 ? (
+              <p className="text-sm text-muted-2">Marque episódios pra ver sua atividade por semana aqui.</p>
+            ) : (
+              <GraficoArea
+                pontos={semanas.map(a => ({ rotulo: formatWeekLabel(a.semana), valor: a.episodios_assistidos }))}
+                desenhado={desenhado}
+                unidade="episódios"
+                rotuloDoGrafico="Episódios assistidos por semana"
+              />
+            )}
+          </Painel>
+
+          <Painel
+            ref={registrar}
+            className="lg:col-span-4"
+            titulo="Seu deck por status"
+            icone={<ChartPie size={17} className="text-holo-1 shrink-0" aria-hidden />}
+          >
+            <RoscaStatus
+              desenhado={desenhado}
+              aoClicar={status => setRecorte({ tipo: 'status', valor: status })}
+              fatias={[
+                { status: 'Assistindo', total: overview?.assistindo || 0, cor: 'var(--color-status-assistindo)', classeCor: 'bg-status-assistindo' },
+                { status: 'Em Dia', total: overview?.em_dia || 0, cor: 'var(--color-status-em-dia)', classeCor: 'bg-status-em-dia' },
+                { status: 'Completo', total: overview?.completos || 0, cor: 'var(--color-status-completo)', classeCor: 'bg-status-completo' },
+                { status: 'Dropado', total: overview?.dropados || 0, cor: 'var(--color-status-dropado)', classeCor: 'bg-status-dropado' },
+                { status: 'Quero Assistir', total: overview?.quero_assistir || 0, cor: 'var(--color-status-quero)', classeCor: 'bg-status-quero' },
+              ]}
+            />
+          </Painel>
+
+          <Painel
+            ref={registrar}
+            className="lg:col-span-5"
+            titulo="O que você mais assiste"
+            icone={<Heart size={17} className="text-holo-1 shrink-0" aria-hidden />}
+            descricao="Barra: quantos animes. Selo: a nota média que você dá, em verde quando fica acima da sua média geral."
+            acao={
+              <div className="flex gap-1 p-1 rounded-full bg-panel-2/70 border border-line">
+                {([
+                  { valor: 'genero', label: 'Gêneros' },
+                  { valor: 'demografia', label: 'Demografias' },
+                ] as const).map(aba => (
+                  <button
+                    key={aba.valor}
+                    type="button"
+                    aria-pressed={abaAfinidade === aba.valor}
+                    onClick={() => setAbaAfinidade(aba.valor)}
+                    className={`select-none px-2.5 py-1 rounded-full text-xs font-bold transition-colors cursor-pointer ${abaAfinidade === aba.valor ? 'bg-gradient-to-r from-holo-1 to-holo-2 text-void' : 'text-muted hover:text-text'}`}
+                  >
+                    {aba.label}
                   </button>
                 ))}
               </div>
-            </div>
-            <p className="text-xs text-muted-2 mt-4 font-mono">Toque num status pra ver os animes</p>
-          </div>
-
-          <div ref={registrar} className="reveal bg-panel border border-line rounded-2xl p-6" style={{ transitionDelay: '.08s' }}>
-            <h2 className="font-anton uppercase text-[15px] mb-1">Afinidade</h2>
-            <p className="text-xs text-muted-2 mb-4">
-              Demografia é o mercado da obra (Isekai, Shounen); gênero é a narrativa (Ação, Drama)
-            </p>
-
-            <div className="flex gap-2 mb-5">
-              {([
-                { valor: 'genero', label: 'Gêneros' },
-                { valor: 'demografia', label: 'Demografias' },
-              ] as const).map(aba => (
-                <button
-                  key={aba.valor}
-                  type="button"
-                  onClick={() => setAbaAfinidade(aba.valor)}
-                  className={`select-none px-3 py-1.5 rounded-full text-xs font-bold transition-all duration-150 cursor-pointer border ${
-                    abaAfinidade === aba.valor
-                      ? 'bg-gradient-to-r from-holo-1 to-holo-2 text-void border-transparent'
-                      : 'bg-panel-2 border-line text-muted hover:border-holo-2 hover:text-text'
-                  }`}
-                >
-                  {aba.label}
-                </button>
-              ))}
-            </div>
-
+            }
+          >
             {afinidadeAtiva.length === 0 ? (
-              <p className="text-[12.5px] text-muted-2">
+              <p className="text-sm text-muted-2">
                 {abaAfinidade === 'demografia'
                   ? 'Nenhuma demografia identificada ainda nos seus animes.'
                   : 'Cadastre animes no seu Deck pra ver sua afinidade aqui.'}
               </p>
             ) : (
-              <div className="flex flex-col gap-3">
-                {afinidadeAtiva.slice(0, 5).map((g, i) => {
-                  const widthPct = (g.total_watched / maxGenreWatched) * 100
+              <ol className="flex-1 flex flex-col justify-between gap-1 m-0 p-0 list-none">
+                {afinidadeAtiva.slice(0, 10).map((g, i) => {
+                  const nota = g.media_nota_genero
+                  const acima = nota >= (overview?.nota_media || 0)
                   return (
-                    // Botão de verdade, não div com onClick: assim funciona por teclado e
-                    // leitor de tela anuncia que a linha faz alguma coisa.
-                    <button
-                      key={g.genre}
-                      type="button"
-                      onClick={() => setRecorte({ tipo: 'genero', valor: g.genre })}
-                      className="grid grid-cols-[90px_1fr_40px] gap-3 items-center text-left cursor-pointer rounded-md -mx-1 px-1 py-0.5 transition-colors hover:bg-panel-2/60 focus-visible:outline-2 focus-visible:outline-holo-3"
-                      title={`Ver seus animes de ${traduzirGenero(g.genre)}`}
-                    >
-                      <span className="text-[12.5px] font-bold truncate">{traduzirGenero(g.genre)}</span>
-                      <div className="h-2 bg-panel-2 rounded-full overflow-hidden">
-                        <div
-                          className="anim-crescer barra-hover h-full bg-gradient-to-r from-holo-1 to-holo-2 rounded-full"
-                          style={{ width: desenhado ? `${widthPct}%` : '0%', ...atrasoBarra(i) }}
-                        ></div>
-                      </div>
-                      <span className="font-mono text-xs text-muted-2 text-right tabular-nums">{g.total_watched}</span>
-                    </button>
-                  )
-                })}
-              </div>
-            )}
-
-            {afinidadeAtiva.length > 0 && (
-              <p className="text-xs text-muted-2 mt-4 font-mono">Toque numa categoria pra ver os animes</p>
-            )}
-          </div>
-        </div>
-
-        {/* Tags Temáticas — fora do ranking competitivo de propósito: elas descrevem
-            cenário e ferramenta da obra ("Escolar", "Magia"), não uma categoria que
-            disputa a atenção do usuário. Por isso viram badge, e não gráfico de barra. */}
-        {tagsTematicas.length > 0 && (
-          <div ref={registrar} className="reveal bg-panel border border-line rounded-2xl p-6 mb-5">
-            <h2 className="font-anton uppercase text-[15px] mb-1">Tags Temáticas</h2>
-            <p className="text-xs text-muted-2 mb-5">Elementos que mais aparecem nos seus animes — toque numa tag pra ver quais</p>
-            <div className="flex flex-wrap gap-2">
-              {tagsTematicas.slice(0, 14).map(t => (
-                <button
-                  key={t.genre}
-                  type="button"
-                  onClick={() => setRecorte({ tipo: 'genero', valor: t.genre })}
-                  className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-panel-2 border border-line text-xs font-bold transition-all duration-200 hover:border-holo-2 hover:text-holo-2 hover:-translate-y-0.5 cursor-pointer"
-                  title={`Ver seus ${t.total_watched} ${t.total_watched === 1 ? 'anime' : 'animes'} com ${traduzirGenero(t.genre)}`}
-                >
-                  {traduzirGenero(t.genre)}
-                  <b className="font-mono text-xs text-muted-2 tabular-nums">{t.total_watched}</b>
-                </button>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {/* Volume x Satisfação — a view já calculava os dois números, mas eles nunca tinham
-            sido cruzados. Responde "que gênero eu assisto muito mas não curto tanto?". */}
-        <div ref={registrar} className="reveal bg-panel border border-line rounded-2xl p-6 mb-5">
-          <h2 className="font-anton uppercase text-[15px] mb-1">Volume × Satisfação</h2>
-          <p className="text-xs text-muted-2 mb-6">Quanto você assiste de cada categoria, cruzado com a nota que costuma dar — toque num ponto pra ver os animes</p>
-          <QuadranteAfinidade
-            generos={[...demografias, ...generosNarrativos]}
-            notaMedia={overview?.nota_media || 0}
-            onSelectCategoria={(genre) => setRecorte({ tipo: 'genero', valor: genre })}
-          />
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-5 mb-5">
-          {/* Atividade por Semana */}
-          <div ref={registrar} className="reveal bg-panel border border-line rounded-2xl p-6">
-            <div className="flex items-start justify-between gap-3 mb-1">
-              <h2 className="font-anton uppercase text-[15px]">Atividade Recente</h2>
-              {variacao.valida && (
-                <span
-                  className={`shrink-0 font-mono text-xs font-bold px-2 py-1 rounded-md border tabular-nums ${
-                    variacao.pct >= 0
-                      ? 'text-green border-green/40 bg-green/10'
-                      : 'text-coral border-coral/40 bg-coral/10'
-                  }`}
-                  title="Últimas 4 semanas comparadas com as 4 anteriores"
-                >
-                  {variacao.pct >= 0 ? '↑' : '↓'} {Math.abs(variacao.pct).toFixed(0)}%
-                </span>
-              )}
-            </div>
-            <p className="text-xs text-muted-2 mb-6">
-              Episódios marcados como assistidos, por semana
-              {variacao.valida && ' — a variação compara as últimas 4 semanas com as 4 anteriores'}
-            </p>
-            {/* justify-center + max-w nas barras: com uma semana só de histórico, `flex-1`
-                sozinho esticava a única barra pra largura inteira do card e o gráfico virava
-                um retângulo gigante sem significado nenhum. Vale pros três gráficos de barra. */}
-            {activityRecente.length === 0 ? (
-              <p className="text-[12.5px] text-muted-2">Marque episódios pra ver sua atividade por semana aqui.</p>
-            ) : (
-              <div className="flex items-end justify-center gap-2 h-[140px]">
-                {activityRecente.map((a, i) => {
-                  const heightPct = (a.episodios_assistidos / maxEpisodios) * 100
-                  return (
-                    <div key={a.semana} className="flex-1 min-w-0 max-w-[64px] flex flex-col items-center gap-2 h-full justify-end">
-                      <span className="font-mono text-xs text-muted-2 whitespace-nowrap tabular-nums">{a.episodios_assistidos}</span>
-                      <div
-                        className="anim-crescer barra-hover w-full bg-gradient-to-t from-holo-3 to-holo-2 rounded-t-md min-h-[4px]"
-                        style={{ height: desenhado ? `${heightPct}%` : '0%', ...atrasoBarra(i) }}
-                      ></div>
-                      <span className="font-mono text-xs text-muted-2 text-center leading-tight">{formatWeekLabel(a.semana)}</span>
-                    </div>
-                  )
-                })}
-              </div>
-            )}
-          </div>
-
-          {/* Distribuição de Notas */}
-          <div ref={registrar} className="reveal bg-panel border border-line rounded-2xl p-6" style={{ transitionDelay: '.08s' }}>
-            <h2 className="font-anton uppercase text-[15px] mb-1">Distribuição de Notas</h2>
-            <p className="text-xs text-muted-2 mb-6">Quantos animes você avaliou com cada nota — toque numa barra pra ver quais</p>
-            {ratings.length === 0 ? (
-              <p className="text-[12.5px] text-muted-2">Avalie alguns animes pra ver o histograma aqui.</p>
-            ) : (
-              <>
-                <div className="flex items-end justify-center gap-2 h-[140px]">
-                  {ratings.map((r, i) => {
-                    const heightPct = (r.total / maxRatingTotal) * 100
-                    return (
+                    <li key={g.genre}>
                       <button
-                        key={r.nota}
                         type="button"
-                        onClick={() => setRecorte({ tipo: 'nota', valor: String(r.nota) })}
-                        className="flex-1 max-w-[64px] flex flex-col items-center gap-2 h-full justify-end cursor-pointer rounded-md transition-colors hover:bg-panel-2/60 focus-visible:outline-2 focus-visible:outline-holo-3"
-                        title={`Ver os ${r.total} ${r.total === 1 ? 'anime' : 'animes'} com nota ${r.nota}`}
+                        onClick={() => setRecorte({ tipo: 'genero', valor: g.genre })}
+                        title={`Ver seus animes de ${traduzirGenero(g.genre)}`}
+                        className="w-full grid grid-cols-[1.25rem_minmax(0,6.5rem)_1fr_2rem_3.25rem] sm:grid-cols-[1.25rem_minmax(0,8.5rem)_1fr_2rem_3.25rem] items-center gap-2.5 rounded-lg px-1.5 py-1.5 text-left transition-colors hover:bg-panel-2/70 cursor-pointer"
                       >
-                        <span className="font-mono text-xs text-muted-2 tabular-nums">{r.total}</span>
-                        <div
-                          className="anim-crescer barra-hover w-full bg-gold rounded-t-md min-h-[4px]"
-                          style={{ height: desenhado ? `${heightPct}%` : '0%', ...atrasoBarra(i) }}
-                        ></div>
-                        <span className="font-mono text-xs text-muted-2 tabular-nums">{r.nota}</span>
+                        <span className={`font-mono text-xs tabular-nums ${i === 0 ? 'text-holo-1 font-bold' : 'text-muted-2'}`}>{i + 1}</span>
+                        <span className="text-sm font-bold truncate">{traduzirGenero(g.genre)}</span>
+                        <span className="h-2.5 rounded-full bg-panel-2 overflow-hidden">
+                          <span
+                            className={`block h-full rounded-full bg-gradient-to-r from-holo-2 to-holo-1 origin-left transition-transform duration-700 ease-out motion-reduce:transition-none ${desenhado ? 'scale-x-100' : 'scale-x-0'}`}
+                            style={{ width: `${(g.total_watched / maxGenreWatched) * 100}%`, transitionDelay: `${i * 45}ms` }}
+                          />
+                        </span>
+                        <span className="font-mono text-xs text-muted tabular-nums text-right">{g.total_watched}</span>
+                        {nota > 0 ? (
+                          <span className={`inline-flex items-center justify-center gap-0.5 rounded-md px-1 py-0.5 font-mono text-xs font-bold tabular-nums ${acima ? 'bg-green/10 text-green' : 'bg-coral/10 text-coral'}`}>
+                            <Star size={10} aria-hidden /> {nota.toFixed(1)}
+                          </span>
+                        ) : (
+                          <span className="font-mono text-xs text-muted-2 text-center">—</span>
+                        )}
                       </button>
-                    )
-                  })}
-                </div>
-                <p className="text-center font-mono text-xs text-muted-2 mt-2">animes por nota</p>
-              </>
-            )}
-          </div>
-        </div>
-
-        <div ref={registrar} className="reveal bg-panel border border-line rounded-2xl p-6">
-          <h2 className="font-anton uppercase text-[15px] mb-1">Distribuição por Ano de Lançamento</h2>
-          <p className="text-xs text-muted-2 mb-6">Quantos animes assistidos por ano de estreia — toque numa barra pra ver quais</p>
-          {years.length === 0 ? (
-            <p className="text-[12.5px] text-muted-2">
-              Ainda não temos o ano de lançamento no cache dos seus animes — assim que isso for sincronizado, esse gráfico aparece aqui.
-            </p>
-          ) : (
-            <div
-              ref={(el) => { if (el) el.scrollLeft = el.scrollWidth }}
-              className="overflow-x-auto custom-scrollbar"
-            >
-            {/* w-max + min-w-full: centraliza quando cabe e, quando não cabe, começa na esquerda
-                para a rolagem alcançar o primeiro ano (justify-center direto no trilho rolável
-                deixa o início inalcançável). */}
-            <div className="flex items-end justify-center gap-2 h-[140px] w-max min-w-full">
-              {years.map((y, i) => {
-                const heightPct = (y.total / maxYearTotal) * 100
-                return (
-                  <button
-                    key={y.season_year}
-                    type="button"
-                    onClick={() => setRecorte({ tipo: 'ano', valor: String(y.season_year) })}
-                    className="min-w-[36px] max-w-[64px] flex-1 flex flex-col items-center gap-2 h-full justify-end cursor-pointer rounded-md transition-colors hover:bg-panel-2/60 focus-visible:outline-2 focus-visible:outline-holo-3"
-                    title={`Ver os ${y.total} ${y.total === 1 ? 'anime' : 'animes'} de ${y.season_year}`}
-                  >
-                    <span className="font-mono text-xs text-muted-2 tabular-nums">{y.total}</span>
-                    <div
-                      className="anim-crescer barra-hover w-full bg-gradient-to-t from-holo-1 to-holo-2 rounded-t-md min-h-[4px]"
-                      style={{ height: desenhado ? `${heightPct}%` : '0%', ...atrasoBarra(i) }}
-                    ></div>
-                    <span className="font-mono text-xs text-muted-2 tabular-nums">{y.season_year}</span>
-                  </button>
-                )
-              })}
-            </div>
-            </div>
-          )}
-        </div>
-
-        {/* Padrão de Horário */}
-        <div ref={registrar} className="reveal bg-panel border border-line rounded-2xl p-6 mt-5">
-          <h2 className="font-anton uppercase text-[15px] mb-1">Padrão de Horário</h2>
-          <p className="text-xs text-muted-2 mb-6">
-            {usandoSessoes
-              ? 'Em que período do dia você começa a assistir — contando sessões, não episódios soltos'
-              : 'Em que período do dia você mais assiste'}
-          </p>
-          {periodoTotais.every(p => p.total === 0) ? (
-            <p className="text-[12.5px] text-muted-2">Marque episódios pra ver seu padrão de horário aqui.</p>
-          ) : (
-            <>
-              {padraoConfiavel ? (
-                <p className="text-[13px] mb-5">
-                  Você costuma assistir mais de <b className="text-holo-3">{periodoDominante.icon} {periodoDominante.label.toLowerCase()}</b>.
-                </p>
-              ) : (
-                // Sem histórico suficiente a tela mostra os dados mas não afirma nada sobre
-                // hábito: `watched_at` grava quando o episódio foi MARCADO, e quem cadastrou
-                // o backlog de uma vez ainda não revelou padrão nenhum.
-                <p className="text-[13px] mb-5 text-muted">
-                  Continue registrando episódios pra desbloquear seu padrão de horário —
-                  <b className="text-muted-2 font-mono text-[12px]"> {diasComAtividade}/{DIAS_MINIMOS_PADRAO} dias</b> de atividade até agora.
-                </p>
-              )}
-              <div className="grid grid-cols-4 gap-3">
-                {periodoTotais.map((p, i) => {
-                  const heightPct = (p.total / maxPeriodoTotal) * 100
-                  const dominante = p.label === periodoDominante.label && p.total > 0
-                  return (
-                    <div key={p.label} className="flex flex-col items-center gap-2">
-                      <div className="w-full h-[80px] bg-panel-2 rounded-lg overflow-hidden flex items-end">
-                        <div
-                          className={`anim-crescer barra-hover w-full rounded-t-lg min-h-[4px] bg-gradient-to-t from-holo-1 to-holo-3 ${dominante && padraoConfiavel ? '' : 'opacity-45'}`}
-                          style={{ height: desenhado ? `${heightPct}%` : '0%', ...atrasoBarra(i) }}
-                        ></div>
-                      </div>
-                      <span className={`font-mono text-xs text-center ${dominante && padraoConfiavel ? 'text-holo-3' : 'text-muted-2'}`}>{p.label}</span>
-                      <span className="font-mono text-xs text-muted-2 tabular-nums">{p.total} {unidadePeriodo}</span>
-                    </div>
+                    </li>
                   )
                 })}
+              </ol>
+            )}
+          </Painel>
+
+          <Painel
+            ref={registrar}
+            className="lg:col-span-7"
+            titulo="Quanto você vê × quanto você gosta"
+            icone={<ChartScatter size={17} className="text-holo-3 shrink-0" aria-hidden />}
+            descricao="Cada categoria no lugar dela: o que é zona de conforto, o que é hábito e o que vale explorar"
+          >
+            <QuadranteAfinidade
+              generos={[...demografias, ...generosNarrativos]}
+              notaMedia={overview?.nota_media || 0}
+              onSelectCategoria={(genre) => setRecorte({ tipo: 'genero', valor: genre })}
+            />
+          </Painel>
+
+          <Painel
+            ref={registrar}
+            className="lg:col-span-5"
+            titulo="Como você dá nota"
+            icone={<Star size={17} className="text-gold shrink-0" aria-hidden />}
+            descricao="Animes avaliados em cada faixa: a coluna 8 reúne as notas de 8,0 a 8,9"
+          >
+            {faixasDeNota.length === 0 ? (
+              <p className="text-sm text-muted-2">Avalie alguns animes pra ver o histograma aqui.</p>
+            ) : (
+              <GraficoColunas
+                tom="ouro"
+                desenhado={desenhado}
+                rotuloDoGrafico="Animes avaliados por faixa de nota"
+                larguraDoRotulo={22}
+                aoClicar={chave => {
+                  const faixa = faixasDeNota.find(f => String(f.faixa) === chave)
+                  if (faixa) setRecorte({ tipo: 'nota', valor: chave, notas: faixa.notas })
+                }}
+                colunas={faixasDeNota.map(f => ({
+                  chave: String(f.faixa),
+                  rotulo: String(f.faixa),
+                  valor: f.total,
+                  descricao: `Ver os ${f.total} ${f.total === 1 ? 'anime' : 'animes'} com nota ${rotuloDaFaixa(f.faixa)}`,
+                }))}
+              />
+            )}
+          </Painel>
+
+          <Painel
+            ref={registrar}
+            className="lg:col-span-7"
+            titulo="De que época são seus animes"
+            icone={<CalendarRange size={17} className="text-holo-1 shrink-0" aria-hidden />}
+            descricao={anoDominante ? <>Animes do seu deck por ano de estreia. O ano mais presente é <b className="text-holo-1">{anoDominante.season_year}</b>, com {anoDominante.total}.</> : 'Animes do seu deck por ano de estreia'}
+          >
+            {anos.length === 0 ? (
+              <p className="text-sm text-muted-2">Os anos aparecem conforme os animes do seu Deck forem sincronizados com a AniList.</p>
+            ) : (
+              <GraficoColunas
+                tom="rosa"
+                desenhado={desenhado}
+                rotuloDoGrafico="Animes por ano de estreia"
+                larguraDoRotulo={44}
+                aoClicar={ano => setRecorte({ tipo: 'ano', valor: ano })}
+                colunas={anos.map(y => ({
+                  chave: String(y.season_year),
+                  rotulo: String(y.season_year),
+                  valor: y.total,
+                  descricao: `Ver os ${y.total} ${y.total === 1 ? 'anime' : 'animes'} de ${y.season_year}`,
+                }))}
+              />
+            )}
+          </Painel>
+
+          <Painel
+            ref={registrar}
+            className="lg:col-span-5"
+            titulo="Quando você assiste"
+            icone={<Clock size={17} className="text-holo-3 shrink-0" aria-hidden />}
+            descricao={
+              somaDosPeriodos === 0
+                ? undefined
+                : padraoConfiavel
+                ? <>Você costuma assistir mais de <b className="text-holo-3">{periodoDominante.label.toLowerCase()}</b>. Conta {usandoSessoes ? 'sessões, não episódios soltos' : 'episódios marcados'}.</>
+                : `Ainda é cedo pra dizer seu horário: preciso de ${DIAS_MINIMOS_PADRAO} dias com atividade e você tem ${diasComAtividade}.`
+            }
+          >
+            {somaDosPeriodos === 0 ? (
+              <p className="text-sm text-muted-2">Marque episódios pra ver seu padrão de horário aqui.</p>
+            ) : (
+              <PeriodosDoDia
+                periodos={periodoTotais}
+                dominante={periodoDominante.label}
+                confiavel={padraoConfiavel}
+                unidade={unidadePeriodo}
+                desenhado={desenhado}
+              />
+            )}
+          </Painel>
+
+          {/* Tags temáticas ficam fora do ranking de propósito: descrevem cenário e
+              ferramenta da obra ("Escolar", "Magia"), não um tipo de anime. */}
+          <Painel
+            ref={registrar}
+            className="lg:col-span-7"
+            titulo="Temas que se repetem"
+            icone={<Tags size={17} className="text-holo-2 shrink-0" aria-hidden />}
+            descricao="Elementos que mais aparecem nos seus animes. Quanto maior a etiqueta, mais vezes apareceu."
+          >
+            {tagsTematicas.length === 0 ? (
+              <p className="text-sm text-muted-2">Nenhum tema identificado ainda nos seus animes.</p>
+            ) : (
+              <div className="flex flex-wrap items-center gap-2">
+                {tagsTematicas.slice(0, 18).map((t, i) => (
+                  <button
+                    key={t.genre}
+                    type="button"
+                    onClick={() => setRecorte({ tipo: 'genero', valor: t.genre })}
+                    title={`Ver seus ${t.total_watched} ${t.total_watched === 1 ? 'anime' : 'animes'} com ${traduzirGenero(t.genre)}`}
+                    className={`inline-flex items-center gap-2 rounded-full border font-bold transition-colors cursor-pointer hover:border-holo-2 hover:text-holo-2 ${
+                      i < 3
+                        ? 'px-4 py-2 text-base border-holo-2/50 bg-holo-2/15'
+                        : i < 8
+                        ? 'px-3.5 py-1.5 text-sm border-line bg-panel-2'
+                        : 'px-3 py-1 text-xs border-line bg-panel-2/60 text-muted'
+                    }`}
+                  >
+                    {traduzirGenero(t.genre)}
+                    <b className="font-mono text-xs font-normal text-muted-2 tabular-nums">{t.total_watched}</b>
+                  </button>
+                ))}
               </div>
-            </>
-          )}
+            )}
+          </Painel>
         </div>
+
 
         {/* Anime esquecido — o único bloco acionável da página: não conta o que passou,
             aponta pra algo que dá pra fazer agora. Por isso o card inteiro é um link. */}
@@ -909,7 +793,8 @@ export default function Estatisticas() {
         )}
 
         {/* Recordes Pessoais */}
-        <div ref={registrar} className="reveal grid grid-cols-1 sm:grid-cols-3 gap-4 mt-5">
+        <h2 className="font-anton uppercase text-base sm:text-lg tracking-wide flex items-center gap-2 mt-8 mb-3"><Trophy size={17} className="text-gold" aria-hidden /> Recordes pessoais</h2>
+        <div ref={registrar} className="reveal grid grid-cols-1 sm:grid-cols-3 gap-4">
           {([
             {
               rotulo: 'Maior Maratona',
@@ -990,7 +875,7 @@ export default function Estatisticas() {
               : recorte.tipo === 'ano'
               ? `Seus animes de ${recorte.valor}`
               : recorte.tipo === 'nota'
-              ? `Seus animes com nota ${recorte.valor}`
+              ? `Seus animes com nota ${rotuloDaFaixa(Number(recorte.valor))}`
               : `Seus animes em "${recorte.valor}"`
             : null
         }

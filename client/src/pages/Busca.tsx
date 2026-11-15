@@ -12,6 +12,7 @@ import SearchResultCard from '../components/SearchResultCard'
 import FilterSheet from '../components/FilterSheet'
 import FilterChipGroup from '../components/FilterChipGroup'
 import AbasDescobrir from '../components/AbasDescobrir'
+import VitrineDescobrir from '../components/descobrir/VitrineDescobrir'
 import { gradienteDoCard } from '../lib/deckHelpers'
 import { invalidarCachesDoDeck } from '../lib/cacheDeTela'
 
@@ -326,7 +327,7 @@ export default function Busca() {
     }
 
     return (
-        <div className="w-full min-w-0 max-w-[1440px] mx-auto pt-16 px-4 sm:px-6 lg:px-10 pb-10">
+        <div className="w-full min-w-0 max-w-[1760px] mx-auto pt-6 px-4 sm:px-6 lg:px-10 pb-10">
             <AbasDescobrir />
 
             <div className="flex items-center gap-3 bg-panel border-2 border-holo-2 rounded-xl p-4 mb-4">
@@ -582,10 +583,13 @@ export default function Busca() {
             )}
 
             {!loading && !error && !hasSearched && (
-                <div className="text-center py-16 select-none">
-                    <h3 className="font-anton uppercase text-text text-xl mb-2">Descubra novos animes</h3>
-                    <p className="text-sm text-muted">Busque por título, selecione uma categoria ou filtre por temporada.</p>
-                </div>
+                <VitrineDescobrir
+                    rotulos={rotulos}
+                    ano={CURRENT_YEAR}
+                    aoEscolherRotulo={toggleRotulo}
+                    aoVerLancamentos={() => { setSelectedSort('TRENDING_DESC'); setSelectedStatus('RELEASING'); setPage(1) }}
+                    aoVerAno={() => { setSelectedSort('POPULARITY_DESC'); setSelectedYear(String(CURRENT_YEAR)); setPage(1) }}
+                />
             )}
         </div>
     )

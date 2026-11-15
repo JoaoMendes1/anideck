@@ -458,3 +458,16 @@ html[data-tema='estudio'] {
 @media (prefers-reduced-motion: reduce) {
   .palco-aura, .palco-particula, .palco-respira, .orbe-onda, .orbe-onda-lenta { animation: none; }
 }
+
+/* Palco dos destaques da Início: a arte e o texto entram com um fade curto a cada troca,
+   e a linha de baixo marca o tempo até a próxima. Só opacity e transform. */
+@keyframes palcoDestaqueEntra { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
+@keyframes palcoDestaqueFundo { from { opacity: 0; transform: scale(1.04); } to { opacity: .45; transform: none; } }
+@keyframes palcoDestaqueTempo { from { transform: scaleX(0); } to { transform: scaleX(1); } }
+.palco-destaque-texto { animation: palcoDestaqueEntra .5s ease both; }
+.palco-destaque-fundo { animation: palcoDestaqueFundo .8s ease both; }
+.palco-destaque-tempo { animation: palcoDestaqueTempo 8s linear both; }
+@media (prefers-reduced-motion: reduce) {
+  .palco-destaque-texto, .palco-destaque-fundo { animation: none; }
+  .palco-destaque-tempo { display: none; }
+}
