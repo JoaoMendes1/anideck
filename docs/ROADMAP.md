@@ -788,6 +788,11 @@ experiência pequena e funcional de cada vez.
 > numeração e não abrem escopo novo. Ficam registrados aqui em ordem cronológica inversa para
 > não sumirem: fase concluída não deve ser reaberta só para receber um conserto.
 
+### 15/11/2026 — Avatar vira o retrato do personagem
+
+- [x] **O avatar passa a ser o rosto do personagem do jogador**, recortado da ilustração do estágio atual (`retrato` em `ARTES`, 256 × 256), sobre o fundo e no formato escolhidos. O rosto montado por peças em SVG saiu: não chegava perto do traço das ilustrações. Em Configurações ficam só o tema do fundo e o formato.
+- [x] O formato salvo (`avatar_custom`) e a RPC são os mesmos; de um avatar antigo valem `fundo` e `base`, o resto é ignorado. Personagem novo no catálogo só precisa do arquivo de retrato.
+
 ### 15/11/2026 — Avatar montável redesenhado
 
 - [x] **Busto em estilo anime** no lugar do rosto geométrico (`AvatarMontavel`): olhos com íris, pupila e brilho, franja com reflexo, pescoço, ombros e gola na cor dos olhos, acessórios redesenhados. As opções e o formato salvo são os mesmos: avatar criado antes continua válido e só muda de traço.

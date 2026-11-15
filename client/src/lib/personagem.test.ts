@@ -12,7 +12,7 @@ import {
   type CatalogoDeArtes,
 } from './personagem'
 
-const arte = (nome: string) => ({ inteira: `${nome}.webp`, mini: `${nome}-mini.webp` })
+const arte = (nome: string) => ({ inteira: `${nome}.webp`, mini: `${nome}-mini.webp`, retrato: `${nome}-retrato.webp` })
 
 const catalogo: CatalogoDeArtes = {
   espadachim_eter: {

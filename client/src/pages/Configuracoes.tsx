@@ -12,18 +12,13 @@ import { useRotulos } from '../hooks/useRotulos'
 import { lerPreferenciasDeGosto, salvarPreferenciasDeGosto } from '../lib/preferenciasGosto'
 import { invalidarCachesDoDeck, removerDaMemoria, chaveDoUsuario } from '../lib/cacheDeTela'
 import AvatarMontavel from '../components/AvatarMontavel'
+import { usePersonagem } from '../hooks/usePersonagem'
+import { PERSONAGEM_BASE_PADRAO, arteDoEstagio } from '../lib/personagem'
 import {
   normalizarAvatar,
   salvarAvatarCustom,
   type AvatarCustom,
   AVATAR_PADRAO,
-  CORES_PELE,
-  CORES_CABELO,
-  CORES_OLHOS,
-  OPCOES_OLHOS,
-  OPCOES_BOCA,
-  OPCOES_CABELO,
-  OPCOES_ACESSORIO,
   OPCOES_FUNDO,
 } from '../lib/avatar'
 
@@ -112,6 +107,10 @@ export default function Configuracoes() {
     // Avatar montável em camadas (#192)
     const [avatarCustom, setAvatarCustom] = useState<AvatarCustom>(AVATAR_PADRAO)
     const [usaAvatarCustom, setUsaAvatarCustom] = useState(false)
+    const { dados: personagem } = usePersonagem()
+    const retratoDoPersonagem = personagem?.existe && personagem.estagio
+        ? arteDoEstagio(personagem.personagem?.personagem_base ?? PERSONAGEM_BASE_PADRAO, personagem.estagio.id)?.retrato
+        : undefined
     const [salvandoAvatar, setSalvandoAvatar] = useState(false)
 
     // Preferências de Gosto (#139)
@@ -599,7 +598,7 @@ export default function Configuracoes() {
                     <div className="flex flex-col sm:flex-row sm:items-center gap-4 pb-5 mb-5 border-b border-line">
                         <div className="relative w-16 h-16 rounded-full overflow-hidden shrink-0 border-2 border-line bg-gradient-to-br from-holo-2 to-holo-3 flex items-center justify-center text-void font-anton text-2xl shadow-inner">
                             {usaAvatarCustom ? (
-                                <AvatarMontavel avatar={avatarCustom} tamanho={64} />
+                                <AvatarMontavel avatar={avatarCustom} retrato={retratoDoPersonagem} tamanho={64} />
                             ) : avatarUrl ? (
                                 <img src={avatarUrl} alt="Avatar" className="w-full h-full object-cover" />
                             ) : (
@@ -732,8 +731,8 @@ export default function Configuracoes() {
                 </Card>
             </Secao>
 
-            {/* AVATAR MONTÁVEL EM CAMADAS (FASE 17.6, #192) */}
-            <Secao id="avatar" titulo="Avatar Customizado">
+            {/* Avatar: retrato do personagem, com fundo e formato à escolha. */}
+            <Secao id="avatar" titulo="Avatar do personagem">
                 <Card>
                     <div className="flex flex-col lg:flex-row gap-8">
                         {/* Preview e Ações */}
@@ -741,6 +740,7 @@ export default function Configuracoes() {
                             <div className="relative mb-4">
                                 <AvatarMontavel
                                     avatar={avatarCustom}
+                                    retrato={retratoDoPersonagem}
                                     tamanho={128}
                                     className="border-2 border-line/80 shadow-2xl"
                                 />
@@ -752,7 +752,7 @@ export default function Configuracoes() {
                             </div>
 
                             <p className="text-xs text-muted mb-4 max-w-[200px]">
-                                Avatar geométrico estilizado em camadas SVG leves e nítidas em qualquer tamanho.
+                                O rosto é o do seu personagem e evolui junto com ele. Você escolhe o fundo e o formato.
                             </p>
 
                             <div className="flex flex-col gap-2 w-full">
@@ -782,7 +782,7 @@ export default function Configuracoes() {
                                     onClick={() => setAvatarCustom({ ...AVATAR_PADRAO })}
                                     className="w-full py-1.5 px-3 rounded-xl border border-line/60 text-xs font-bold text-muted hover:text-text transition-colors flex items-center justify-center gap-1 cursor-pointer"
                                 >
-                                    <RotateCcw size={12} /> Redefinir Peças
+                                    <RotateCcw size={12} /> Redefinir
                                 </button>
                             </div>
                         </div>
@@ -813,8 +813,8 @@ export default function Configuracoes() {
                                 </div>
                             </div>
 
-                            {/* 2. Base e Pele */}
-                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            {/* 2. Formato */}
+                            <div>
                                 <div>
                                     <label className="block text-xs font-bold text-muted mb-2 uppercase tracking-wide">
                                         Formato da Base
@@ -835,145 +835,6 @@ export default function Configuracoes() {
                                             </button>
                                         ))}
                                     </div>
-                                </div>
-
-                                <div>
-                                    <label className="block text-xs font-bold text-muted mb-2 uppercase tracking-wide">
-                                        Tom de Pele
-                                    </label>
-                                    <div className="flex flex-wrap gap-2">
-                                        {CORES_PELE.map(c => (
-                                            <button
-                                                key={c}
-                                                type="button"
-                                                onClick={() => setAvatarCustom(prev => ({ ...prev, pele: c }))}
-                                                className={`w-7 h-7 rounded-full border-2 transition-transform ${
-                                                    avatarCustom.pele === c ? 'scale-110 border-holo-2 shadow' : 'border-line hover:scale-105'
-                                                }`}
-                                                style={{ backgroundColor: c }}
-                                            />
-                                        ))}
-                                    </div>
-                                </div>
-                            </div>
-
-                            {/* 3. Olhos e Cor */}
-                            <div>
-                                <label className="block text-xs font-bold text-muted mb-2 uppercase tracking-wide">
-                                    Olhos & Íris
-                                </label>
-                                <div className="flex flex-wrap gap-2 mb-3">
-                                    {OPCOES_OLHOS.map(o => (
-                                        <button
-                                            key={o.id}
-                                            type="button"
-                                            onClick={() => setAvatarCustom(prev => ({ ...prev, olhos: o.id }))}
-                                            className={`px-3 py-1.5 rounded-xl border text-xs font-medium transition-all ${
-                                                avatarCustom.olhos === o.id
-                                                    ? 'border-holo-2 bg-holo-2/15 text-holo-2'
-                                                    : 'border-line bg-panel-2 text-muted hover:text-text'
-                                            }`}
-                                        >
-                                            {o.rotulo}
-                                        </button>
-                                    ))}
-                                </div>
-                                <div className="flex items-center gap-2">
-                                    <span className="text-xs text-muted-2">Cor da íris:</span>
-                                    {CORES_OLHOS.map(c => (
-                                        <button
-                                            key={c}
-                                            type="button"
-                                            onClick={() => setAvatarCustom(prev => ({ ...prev, cor_olhos: c }))}
-                                            className={`w-5 h-5 rounded-full border transition-transform ${
-                                                avatarCustom.cor_olhos === c ? 'scale-125 border-holo-2 ring-2 ring-holo-2/30' : 'border-line/70'
-                                            }`}
-                                            style={{ backgroundColor: c }}
-                                        />
-                                    ))}
-                                </div>
-                            </div>
-
-                            {/* 4. Boca */}
-                            <div>
-                                <label className="block text-xs font-bold text-muted mb-2 uppercase tracking-wide">
-                                    Expressão da Boca
-                                </label>
-                                <div className="flex flex-wrap gap-2">
-                                    {OPCOES_BOCA.map(b => (
-                                        <button
-                                            key={b.id}
-                                            type="button"
-                                            onClick={() => setAvatarCustom(prev => ({ ...prev, boca: b.id }))}
-                                            className={`px-3 py-1.5 rounded-xl border text-xs font-medium transition-all ${
-                                                avatarCustom.boca === b.id
-                                                    ? 'border-holo-2 bg-holo-2/15 text-holo-2'
-                                                    : 'border-line bg-panel-2 text-muted hover:text-text'
-                                            }`}
-                                        >
-                                            {b.rotulo}
-                                        </button>
-                                    ))}
-                                </div>
-                            </div>
-
-                            {/* 5. Cabelo e Cor */}
-                            <div>
-                                <label className="block text-xs font-bold text-muted mb-2 uppercase tracking-wide">
-                                    Cabelo & Penteado
-                                </label>
-                                <div className="flex flex-wrap gap-2 mb-3">
-                                    {OPCOES_CABELO.map(c => (
-                                        <button
-                                            key={c.id}
-                                            type="button"
-                                            onClick={() => setAvatarCustom(prev => ({ ...prev, cabelo: c.id }))}
-                                            className={`px-3 py-1.5 rounded-xl border text-xs font-medium transition-all ${
-                                                avatarCustom.cabelo === c.id
-                                                    ? 'border-holo-2 bg-holo-2/15 text-holo-2'
-                                                    : 'border-line bg-panel-2 text-muted hover:text-text'
-                                            }`}
-                                        >
-                                            {c.rotulo}
-                                        </button>
-                                    ))}
-                                </div>
-                                <div className="flex items-center gap-2">
-                                    <span className="text-xs text-muted-2">Cor do cabelo:</span>
-                                    {CORES_CABELO.map(c => (
-                                        <button
-                                            key={c}
-                                            type="button"
-                                            onClick={() => setAvatarCustom(prev => ({ ...prev, cor_cabelo: c }))}
-                                            className={`w-5 h-5 rounded-full border transition-transform ${
-                                                avatarCustom.cor_cabelo === c ? 'scale-125 border-holo-2 ring-2 ring-holo-2/30' : 'border-line/70'
-                                            }`}
-                                            style={{ backgroundColor: c }}
-                                        />
-                                    ))}
-                                </div>
-                            </div>
-
-                            {/* 6. Acessório */}
-                            <div>
-                                <label className="block text-xs font-bold text-muted mb-2 uppercase tracking-wide">
-                                    Acessório Especial
-                                </label>
-                                <div className="flex flex-wrap gap-2">
-                                    {OPCOES_ACESSORIO.map(a => (
-                                        <button
-                                            key={a.id}
-                                            type="button"
-                                            onClick={() => setAvatarCustom(prev => ({ ...prev, acessorio: a.id }))}
-                                            className={`px-3 py-1.5 rounded-xl border text-xs font-medium transition-all ${
-                                                avatarCustom.acessorio === a.id
-                                                    ? 'border-gold bg-gold/15 text-gold'
-                                                    : 'border-line bg-panel-2 text-muted hover:text-text'
-                                            }`}
-                                        >
-                                            {a.rotulo}
-                                        </button>
-                                    ))}
                                 </div>
                             </div>
                         </div>
