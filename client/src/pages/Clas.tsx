@@ -31,6 +31,7 @@ import {
   type ClaSummary,
   type MeuClaData
 } from '../lib/clas'
+import CampoNumerico from '../components/CampoNumerico'
 
 export default function Clas() {
   const { session } = useSessao()
@@ -288,6 +289,7 @@ export default function Clas() {
       <form onSubmit={handleBuscar} className="mb-8 relative max-w-md">
         <input
           type="text"
+          aria-label="Buscar clã por nome ou tag"
           value={busca}
           onChange={(e) => setBusca(e.target.value)}
           placeholder="Buscar por nome ou tag [TAG]..."
@@ -425,10 +427,11 @@ export default function Clas() {
 
             <form onSubmit={handleCriar} className="space-y-4">
               <div>
-                <label className="block text-xs font-bold uppercase text-muted mb-1.5">
+                <label htmlFor="clas-nome-do-cla" className="block text-xs font-bold uppercase text-muted mb-1.5">
                   Nome do Clã (3 a 30 caracteres)
                 </label>
                 <input
+                  id="clas-nome-do-cla"
                   type="text"
                   required
                   value={nome}
@@ -441,10 +444,11 @@ export default function Clas() {
 
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-xs font-bold uppercase text-muted mb-1.5">
+                  <label htmlFor="clas-tag-do-cla" className="block text-xs font-bold uppercase text-muted mb-1.5">
                     Tag do Clã (2 a 4 letras)
                   </label>
                   <input
+                    id="clas-tag-do-cla"
                     type="text"
                     required
                     value={tag}
@@ -456,15 +460,15 @@ export default function Clas() {
                 </div>
 
                 <div>
-                  <label className="block text-xs font-bold uppercase text-muted mb-1.5">
+                  <label htmlFor="clas-nivel-minimo-do-membro" className="block text-xs font-bold uppercase text-muted mb-1.5">
                     Nível Mínimo do Membro
                   </label>
-                  <input
-                    type="number"
+                  <CampoNumerico
+                    id="clas-nivel-minimo-do-membro"
                     min={1}
                     max={100}
                     value={nivelMinimo}
-                    onChange={(e) => setNivelMinimo(Number(e.target.value))}
+                    aoMudar={(valor) => setNivelMinimo(valor)}
                     className="w-full px-4 py-2.5 rounded-xl bg-void border border-line text-sm focus:border-holo-3 focus:outline-none"
                   />
                 </div>
@@ -524,10 +528,11 @@ export default function Clas() {
               </div>
 
               <div>
-                <label className="block text-xs font-bold uppercase text-muted mb-1.5">
+                <label htmlFor="clas-descricao-ou-manifesto" className="block text-xs font-bold uppercase text-muted mb-1.5">
                   Descrição ou Manifesto (Opcional)
                 </label>
                 <textarea
+                  id="clas-descricao-ou-manifesto"
                   rows={2}
                   value={descricao}
                   onChange={(e) => setDescricao(e.target.value)}

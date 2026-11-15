@@ -159,8 +159,9 @@ export default function Auth() {
           <form onSubmit={handleAuth} className="flex flex-col gap-4">
             {!isLogin && (
               <div>
-                <label className="block text-xs font-bold text-muted mb-2">Nome</label>
+                <label htmlFor="auth-nome" className="block text-xs font-bold text-muted mb-2">Nome</label>
                 <input
+                  id="auth-nome"
                   type="text"
                   value={name}
                   onChange={(e) => setName(e.target.value)}
@@ -172,8 +173,9 @@ export default function Auth() {
             )}
 
             <div>
-              <label className="block text-xs font-bold text-muted mb-2">E-mail</label>
+              <label htmlFor="auth-e-mail" className="block text-xs font-bold text-muted mb-2">E-mail</label>
               <input
+                id="auth-e-mail"
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
@@ -184,8 +186,9 @@ export default function Auth() {
             </div>
 
             <div>
-              <label className="block text-xs font-bold text-muted mb-2">Senha</label>
+              <label htmlFor="auth-senha" className="block text-xs font-bold text-muted mb-2">Senha</label>
               <input
+                id="auth-senha"
                 type="password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}

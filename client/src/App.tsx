@@ -1,10 +1,11 @@
 import { lazy, Suspense } from 'react'
-import { Routes, Route, Navigate } from 'react-router-dom'
+import { Routes, Route, Navigate, useLocation } from 'react-router-dom'
 import MeuDeck from './pages/MeuDeck.tsx'
 import Landing from './pages/Landing'
 import RotaProtegida from './components/RotaProtegida'
 import Layout from './components/Layout'
 import CarregandoPagina from './components/CarregandoPagina'
+import LimiteDeErro from './components/LimiteDeErro'
 import { ToastProvider } from './contexts/ToastContext'
 import { SessaoProvider, useSessao } from './contexts/SessaoContext'
 
@@ -47,9 +48,13 @@ function RaizDoSite() {
 }
 
 function App() {
+  const { pathname } = useLocation()
   return (
     <SessaoProvider>
       <ToastProvider>
+        {/* Limite de erro das rotas sem Navbar (login, admin, retrospectiva) e do próprio
+            Layout. As páginas de dentro do Layout têm o delas, que mantém o menu de pé. */}
+        <LimiteDeErro chave={pathname}>
         {/* Este Suspense cobre as rotas sem Navbar (login e admin). As de dentro do
             Layout têm o próprio, em volta do <Outlet />, para a Navbar não piscar. */}
         <Suspense fallback={<CarregandoPagina />}>
@@ -84,6 +89,7 @@ function App() {
             <Route path="/u/:handle/wrapped/:ano" element={<Wrapped />} />
           </Routes>
         </Suspense>
+        </LimiteDeErro>
       </ToastProvider>
     </SessaoProvider>
   )

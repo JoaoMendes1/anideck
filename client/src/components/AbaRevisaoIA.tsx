@@ -387,12 +387,12 @@ export default function AbaRevisaoIA({ curados = [] }: Props) {
       <section className="bg-panel border border-line rounded-2xl p-4 sm:p-5">
         <h2 className="font-anton uppercase text-[15px] mb-3">Enfileirar</h2>
         <div className="flex flex-col sm:flex-row gap-3">
-          <select className={entrada} value={tipoNovo} onChange={e => setTipoNovo(e.target.value as Tipo | 'tudo')}>
+          <select className={entrada} aria-label="Tipo de revisão" value={tipoNovo} onChange={e => setTipoNovo(e.target.value as Tipo | 'tudo')}>
             <option value="sinopse_tags">{NOME_TIPO.sinopse_tags}</option>
             <option value="episodios">{NOME_TIPO.episodios}</option>
             <option value="tudo">Tudo (sinopse, tags e episódios)</option>
           </select>
-          <input className={`${entrada} flex-1`} placeholder="Buscar anime do catálogo pelo título" value={busca} onChange={e => setBusca(e.target.value)} />
+          <input className={`${entrada} flex-1`} placeholder="Buscar anime do catálogo pelo título" aria-label="Buscar anime do catálogo" value={busca} onChange={e => setBusca(e.target.value)} />
         </div>
         {sugestoes.length > 0 && (
           <div className="flex flex-wrap gap-2 mt-3">

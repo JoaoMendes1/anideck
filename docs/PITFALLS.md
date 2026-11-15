@@ -924,6 +924,27 @@ teste de componente em `client/src/contexts/ToastContext.test.tsx`.
 
 ---
 
+## 32. 🔢 `<input type="number">` ligado a estado numérico vira 0 ao apagar
+
+**Achado (auditoria de 14/11/2026, #212):** 23 campos do Painel Admin e da criação de clã faziam
+`onChange={e => setX(Number(e.target.value))}` com `value={x}`. Ao apagar o conteúdo para digitar
+outro valor, `e.target.value` é `''`, `Number('')` é `0`, e o campo passava a mostrar `0`: quem
+queria trocar `100` por `250` acabava digitando `0250`, ou salvava `0` sem perceber.
+
+**O que torna isso silencioso:** nada falha. O TypeScript aceita, o campo continua "funcionando" e
+o valor errado (`0` em teto diário, custo de carta, XP por episódio) é um número válido para o
+servidor.
+
+Corrigido em 15/11/2026 com `client/src/components/CampoNumerico.tsx`: o texto digitado fica num
+estado à parte e o valor só é avisado quando é número dentro dos limites; ao sair do campo, vazio
+volta ao último valor aceito.
+
+> **Pergunta obrigatória:** este campo de número aguenta ficar vazio enquanto o usuário digita?
+> Se o estado é `number`, use `CampoNumerico`; `Number(e.target.value)` direto no `onChange` só
+> serve quando o estado guarda a string.
+
+---
+
 ## 🧭 Como manter este arquivo
 
 - Toda vez que um bug **silencioso** chegar a produção (não quebrou, só devolveu dado errado),

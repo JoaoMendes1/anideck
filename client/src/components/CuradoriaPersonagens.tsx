@@ -83,8 +83,9 @@ export default function CuradoriaPersonagens({
 
       <div className={`flex flex-col sm:flex-row sm:items-end gap-3 mb-4 p-3 rounded-lg border transition-colors ${editIndex !== null ? 'bg-holo-3/5 border-holo-3' : 'bg-panel border-line'}`}>
         <div className="flex-1 min-w-0">
-          <label className="block text-[10px] mb-1 font-bold text-muted">Nome</label>
+          <label htmlFor="curadoria-personagens-nome" className="block text-[10px] mb-1 font-bold text-muted">Nome</label>
           <input
+            id="curadoria-personagens-nome"
             type="text"
             value={charName}
             onChange={(e) => setCharName(e.target.value)}

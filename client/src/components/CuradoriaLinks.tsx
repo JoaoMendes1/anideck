@@ -115,8 +115,9 @@ export default function CuradoriaLinks({
 
         <div className="flex flex-col sm:flex-row sm:items-end gap-3">
           <div className="sm:w-44 shrink-0">
-            <label className="block text-[10px] mb-1 font-bold text-muted">Plataforma</label>
+            <label htmlFor="curadoria-links-plataforma" className="block text-[10px] mb-1 font-bold text-muted">Plataforma</label>
             <input
+              id="curadoria-links-plataforma"
               type="text"
               value={plataforma}
               onChange={(e) => setPlataforma(e.target.value)}
@@ -126,8 +127,9 @@ export default function CuradoriaLinks({
           </div>
 
           <div className="flex-1 min-w-0">
-            <label className="block text-[10px] mb-1 font-bold text-muted">Link</label>
+            <label htmlFor="curadoria-links-link" className="block text-[10px] mb-1 font-bold text-muted">Link</label>
             <input
+              id="curadoria-links-link"
               type="url"
               value={url}
               onChange={(e) => setUrl(e.target.value)}

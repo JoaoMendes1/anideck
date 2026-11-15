@@ -5,6 +5,7 @@ import { useEffect, useState } from 'react'
 import { Sparkles } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import { useToast } from '../contexts/ToastContext'
+import CampoNumerico from './CampoNumerico'
 
 interface ConfigFila {
   modo: 'revisao' | 'automatico'
@@ -79,13 +80,13 @@ export default function SecaoCuradoriaIA() {
               </select>
             </label>
             <label className="flex flex-col gap-1 text-xs text-muted">Animes por ciclo
-              <input className={entrada} type="number" min={1} max={20} value={config.lote} onChange={e => mudar('lote', Number(e.target.value))} />
+              <CampoNumerico className={entrada} min={1} max={20} value={config.lote} aoMudar={(valor) => mudar('lote', valor)} />
             </label>
             <label className="flex flex-col gap-1 text-xs text-muted">Intervalo (s)
-              <input className={entrada} type="number" min={15} max={3600} value={config.intervalo} onChange={e => mudar('intervalo', Number(e.target.value))} />
+              <CampoNumerico className={entrada} min={15} max={3600} value={config.intervalo} aoMudar={(valor) => mudar('intervalo', valor)} />
             </label>
             <label className="flex flex-col gap-1 text-xs text-muted">Episódios por pesquisa
-              <input className={entrada} type="number" min={1} max={24} value={config.episodios_por_lote} onChange={e => mudar('episodios_por_lote', Number(e.target.value))} />
+              <CampoNumerico className={entrada} min={1} max={24} value={config.episodios_por_lote} aoMudar={(valor) => mudar('episodios_por_lote', valor)} />
             </label>
           </div>
           <p className="text-[12px] text-muted-2">

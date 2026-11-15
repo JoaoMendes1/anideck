@@ -3,6 +3,7 @@ import { Save, ShieldAlert, Plus, Trash2, Power, Award, Users } from 'lucide-rea
 import { supabase } from '../lib/supabase'
 import { useToast } from '../contexts/ToastContext'
 import type { EconomiaGuilda, FaixaRank } from '../lib/guilda'
+import CampoNumerico from './CampoNumerico'
 
 interface InsigniaConfigAdmin {
   id: string
@@ -182,13 +183,12 @@ export default function AbaGuilda() {
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             <label className="flex flex-col gap-1.5 text-xs font-bold text-muted">
               XP base por episódio
-              <input
-                type="number"
+              <CampoNumerico
                 min={1}
                 max={500}
                 value={economia.xp_base_episodio}
-                onChange={(e) =>
-                  setEconomia((prev) => ({ ...prev, xp_base_episodio: Number(e.target.value) }))
+                aoMudar={(valor) =>
+                  setEconomia((prev) => ({ ...prev, xp_base_episodio: valor }))
                 }
                 className="px-3 py-2 rounded-xl bg-panel-2 border border-line text-text font-mono text-sm"
               />
@@ -196,13 +196,12 @@ export default function AbaGuilda() {
 
             <label className="flex flex-col gap-1.5 text-xs font-bold text-muted">
               Bônus cedo (até 7d)
-              <input
-                type="number"
+              <CampoNumerico
                 min={0}
                 max={500}
                 value={economia.bonus_cedo}
-                onChange={(e) =>
-                  setEconomia((prev) => ({ ...prev, bonus_cedo: Number(e.target.value) }))
+                aoMudar={(valor) =>
+                  setEconomia((prev) => ({ ...prev, bonus_cedo: valor }))
                 }
                 className="px-3 py-2 rounded-xl bg-panel-2 border border-line text-text font-mono text-sm"
               />
@@ -210,13 +209,12 @@ export default function AbaGuilda() {
 
             <label className="flex flex-col gap-1.5 text-xs font-bold text-muted">
               Teto diário de XP
-              <input
-                type="number"
+              <CampoNumerico
                 min={10}
                 max={5000}
                 value={economia.teto_diario}
-                onChange={(e) =>
-                  setEconomia((prev) => ({ ...prev, teto_diario: Number(e.target.value) }))
+                aoMudar={(valor) =>
+                  setEconomia((prev) => ({ ...prev, teto_diario: valor }))
                 }
                 className="px-3 py-2 rounded-xl bg-panel-2 border border-line text-text font-mono text-sm"
               />
@@ -224,14 +222,13 @@ export default function AbaGuilda() {
 
             <label className="flex flex-col gap-1.5 text-xs font-bold text-muted">
               Fator 3º ao 5º ep (0–1)
-              <input
-                type="number"
-                step="0.05"
+              <CampoNumerico
+                step={0.05}
                 min={0.05}
                 max={1}
                 value={economia.fator_3_a_5}
-                onChange={(e) =>
-                  setEconomia((prev) => ({ ...prev, fator_3_a_5: Number(e.target.value) }))
+                aoMudar={(valor) =>
+                  setEconomia((prev) => ({ ...prev, fator_3_a_5: valor }))
                 }
                 className="px-3 py-2 rounded-xl bg-panel-2 border border-line text-text font-mono text-sm"
               />
@@ -239,14 +236,13 @@ export default function AbaGuilda() {
 
             <label className="flex flex-col gap-1.5 text-xs font-bold text-muted">
               Fator 6º+ ep (0–1)
-              <input
-                type="number"
-                step="0.05"
+              <CampoNumerico
+                step={0.05}
                 min={0.05}
                 max={1}
                 value={economia.fator_6_mais}
-                onChange={(e) =>
-                  setEconomia((prev) => ({ ...prev, fator_6_mais: Number(e.target.value) }))
+                aoMudar={(valor) =>
+                  setEconomia((prev) => ({ ...prev, fator_6_mais: valor }))
                 }
                 className="px-3 py-2 rounded-xl bg-panel-2 border border-line text-text font-mono text-sm"
               />
@@ -254,14 +250,13 @@ export default function AbaGuilda() {
 
             <label className="flex flex-col gap-1.5 text-xs font-bold text-muted">
               Multiplicador de evento
-              <input
-                type="number"
-                step="0.5"
+              <CampoNumerico
+                step={0.5}
                 min={1}
                 max={5}
                 value={economia.evento_multiplicador}
-                onChange={(e) =>
-                  setEconomia((prev) => ({ ...prev, evento_multiplicador: Number(e.target.value) }))
+                aoMudar={(valor) =>
+                  setEconomia((prev) => ({ ...prev, evento_multiplicador: valor }))
                 }
                 className="px-3 py-2 rounded-xl bg-panel-2 border border-line text-text font-mono text-sm"
               />
@@ -320,6 +315,7 @@ export default function AbaGuilda() {
                 <input
                   type="text"
                   maxLength={4}
+                  aria-label={`Letra do rank ${idx + 1}`}
                   value={r.rank}
                   onChange={(e) => {
                     const val = e.target.value.toUpperCase()
@@ -330,6 +326,7 @@ export default function AbaGuilda() {
                 <input
                   type="text"
                   maxLength={40}
+                  aria-label={`Título do rank ${r.rank}`}
                   value={r.titulo}
                   onChange={(e) => {
                     const val = e.target.value
@@ -339,14 +336,14 @@ export default function AbaGuilda() {
                 />
                 <div className="flex items-center gap-1 font-mono text-[11px] text-muted">
                   <span>Nv</span>
-                  <input
-                    type="number"
+                  <CampoNumerico semBotoes
                     min={1}
                     max={500}
                     disabled={idx === 0}
+                    aria-label={`Nível mínimo do rank ${r.rank}`}
                     value={r.nivel_minimo}
-                    onChange={(e) => {
-                      const val = Number(e.target.value)
+                    aoMudar={(valor) => {
+                      const val = valor
                       setRanks((prev) =>
                         prev.map((item, i) => (i === idx ? { ...item, nivel_minimo: val } : item)),
                       )
@@ -391,6 +388,7 @@ export default function AbaGuilda() {
                   <input
                     type="text"
                     maxLength={4}
+                    aria-label={`Ícone da insígnia ${idx + 1}`}
                     value={ins.icone}
                     onChange={(e) => {
                       const val = e.target.value
@@ -404,6 +402,7 @@ export default function AbaGuilda() {
                   <input
                     type="text"
                     maxLength={24}
+                    aria-label={`Identificador da insígnia ${idx + 1}`}
                     value={ins.id}
                     onChange={(e) => {
                       const val = e.target.value
@@ -417,6 +416,7 @@ export default function AbaGuilda() {
                   <input
                     type="text"
                     maxLength={40}
+                    aria-label={`Nome da insígnia ${idx + 1}`}
                     value={ins.nome}
                     onChange={(e) => {
                       const val = e.target.value
@@ -441,6 +441,7 @@ export default function AbaGuilda() {
                   <input
                     type="text"
                     maxLength={80}
+                    aria-label={`Descrição da insígnia ${idx + 1}`}
                     value={ins.descricao}
                     onChange={(e) => {
                       const val = e.target.value
@@ -453,6 +454,7 @@ export default function AbaGuilda() {
                   />
 
                   <select
+                    aria-label={`Regra da insígnia ${idx + 1}`}
                     value={ins.regra}
                     onChange={(e) => {
                       const val = e.target.value
@@ -469,13 +471,13 @@ export default function AbaGuilda() {
                     ))}
                   </select>
 
-                  <input
-                    type="number"
+                  <CampoNumerico semBotoes
                     min={1}
                     max={10000}
+                    aria-label={`Meta da insígnia ${idx + 1}`}
                     value={ins.meta}
-                    onChange={(e) => {
-                      const val = Number(e.target.value)
+                    aoMudar={(valor) => {
+                      const val = valor
                       setInsignias((prev) =>
                         prev.map((item, i) => (i === idx ? { ...item, meta: val } : item)),
                       )
@@ -485,6 +487,7 @@ export default function AbaGuilda() {
                   />
 
                   <select
+                    aria-label={`Estilo da insígnia ${idx + 1}`}
                     value={ins.estilo}
                     onChange={(e) => {
                       const val = e.target.value

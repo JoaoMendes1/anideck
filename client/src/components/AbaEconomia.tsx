@@ -5,6 +5,7 @@ import { Save, ShieldCheck, Activity, RefreshCw, X, User, Coins } from 'lucide-r
 import { supabase } from '../lib/supabase'
 import { useToast } from '../contexts/ToastContext'
 import IconeAniCoin from './IconeAniCoin'
+import CampoNumerico from './CampoNumerico'
 
 interface RegrasEconomia {
   ativo: boolean
@@ -443,15 +444,15 @@ export default function AbaEconomia() {
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
-                <label className="block font-mono text-[11px] text-muted uppercase mb-1">
+                <label htmlFor="aba-economia-missao-diaria" className="block font-mono text-[11px] text-muted uppercase mb-1">
                   Missão diária (₳)
                 </label>
-                <input
-                  type="number"
-                  min="1"
+                <CampoNumerico
+                  id="aba-economia-missao-diaria"
+                  min={1}
                   value={regras.ganho_missao_diaria || regras.cristais_por_missao_diaria || 15}
-                  onChange={(e) => {
-                    const v = Number(e.target.value)
+                  aoMudar={(valor) => {
+                    const v = valor
                     setRegras({ ...regras, ganho_missao_diaria: v, cristais_por_missao_diaria: v })
                   }}
                   className="w-full bg-panel-2 border border-line rounded-xl px-3 py-2 text-sm text-text outline-none focus:border-holo-3 font-mono"
@@ -460,42 +461,42 @@ export default function AbaEconomia() {
               </div>
 
               <div>
-                <label className="block font-mono text-[11px] text-muted uppercase mb-1">
+                <label htmlFor="aba-economia-teto-diario" className="block font-mono text-[11px] text-muted uppercase mb-1">
                   Teto diário (₳)
                 </label>
-                <input
-                  type="number"
-                  min="1"
+                <CampoNumerico
+                  id="aba-economia-teto-diario"
+                  min={1}
                   value={regras.teto_diario_cristais}
-                  onChange={(e) => setRegras({ ...regras, teto_diario_cristais: Number(e.target.value) })}
+                  aoMudar={(valor) => setRegras({ ...regras, teto_diario_cristais: valor })}
                   className="w-full bg-panel-2 border border-line rounded-xl px-3 py-2 text-sm text-text outline-none focus:border-holo-3 font-mono"
                   required
                 />
               </div>
 
               <div>
-                <label className="block font-mono text-[11px] text-muted uppercase mb-1">
+                <label htmlFor="aba-economia-custo-base-de-carta" className="block font-mono text-[11px] text-muted uppercase mb-1">
                   Custo base de Carta (₳)
                 </label>
-                <input
-                  type="number"
-                  min="1"
+                <CampoNumerico
+                  id="aba-economia-custo-base-de-carta"
+                  min={1}
                   value={regras.custo_padrao_carta}
-                  onChange={(e) => setRegras({ ...regras, custo_padrao_carta: Number(e.target.value) })}
+                  aoMudar={(valor) => setRegras({ ...regras, custo_padrao_carta: valor })}
                   className="w-full bg-panel-2 border border-line rounded-xl px-3 py-2 text-sm text-text outline-none focus:border-holo-3 font-mono"
                   required
                 />
               </div>
 
               <div>
-                <label className="block font-mono text-[11px] text-muted uppercase mb-1">
+                <label htmlFor="aba-economia-custo-base-de-cosmetico" className="block font-mono text-[11px] text-muted uppercase mb-1">
                   Custo base de Cosmético (₳)
                 </label>
-                <input
-                  type="number"
-                  min="1"
+                <CampoNumerico
+                  id="aba-economia-custo-base-de-cosmetico"
+                  min={1}
                   value={regras.custo_padrao_cosmetico}
-                  onChange={(e) => setRegras({ ...regras, custo_padrao_cosmetico: Number(e.target.value) })}
+                  aoMudar={(valor) => setRegras({ ...regras, custo_padrao_cosmetico: valor })}
                   className="w-full bg-panel-2 border border-line rounded-xl px-3 py-2 text-sm text-text outline-none focus:border-holo-3 font-mono"
                   required
                 />
@@ -519,15 +520,15 @@ export default function AbaEconomia() {
               </label>
 
               <div>
-                <label className="block font-mono text-[11px] text-muted uppercase mb-1">
+                <label htmlFor="aba-economia-taxa-de-retencao-do" className="block font-mono text-[11px] text-muted uppercase mb-1">
                   Taxa de Retenção do Caixa ({regras.taxa_retencao_devolucao_pct ?? 30}%)
                 </label>
-                <input
-                  type="number"
-                  min="0"
-                  max="90"
+                <CampoNumerico
+                  id="aba-economia-taxa-de-retencao-do"
+                  min={0}
+                  max={90}
                   value={regras.taxa_retencao_devolucao_pct ?? 30}
-                  onChange={(e) => setRegras({ ...regras, taxa_retencao_devolucao_pct: Number(e.target.value) })}
+                  aoMudar={(valor) => setRegras({ ...regras, taxa_retencao_devolucao_pct: valor })}
                   className="w-full bg-panel-2 border border-line rounded-xl px-3 py-2 text-sm text-text outline-none focus:border-holo-3 font-mono"
                   required
                 />
@@ -566,11 +567,12 @@ export default function AbaEconomia() {
 
           <form onSubmit={handleAjusteManual} className="flex flex-col gap-3">
             <div>
-              <label className="block font-mono text-[11px] text-muted uppercase mb-1">
+              <label htmlFor="aba-economia-usuario" className="block font-mono text-[11px] text-muted uppercase mb-1">
                 Usuário (@handle ou UUID)
               </label>
               <div className="relative">
                 <input
+                  id="aba-economia-usuario"
                   type="text"
                   value={ajusteBusca}
                   onChange={(e) => {
@@ -634,10 +636,11 @@ export default function AbaEconomia() {
             </div>
 
             <div>
-              <label className="block font-mono text-[11px] text-muted uppercase mb-1">
+              <label htmlFor="aba-economia-quantidade" className="block font-mono text-[11px] text-muted uppercase mb-1">
                 Quantidade (+ para crédito, - para débito)
               </label>
               <input
+                id="aba-economia-quantidade"
                 type="number"
                 value={ajusteQuantidade}
                 onChange={(e) => setAjusteQuantidade(e.target.value === '' ? '' : Number(e.target.value))}
@@ -648,10 +651,11 @@ export default function AbaEconomia() {
             </div>
 
             <div>
-              <label className="block font-mono text-[11px] text-muted uppercase mb-1">
+              <label htmlFor="aba-economia-motivo-obrigatorio" className="block font-mono text-[11px] text-muted uppercase mb-1">
                 Motivo Obrigatório
               </label>
               <input
+                id="aba-economia-motivo-obrigatorio"
                 type="text"
                 value={ajusteMotivo}
                 onChange={(e) => setAjusteMotivo(e.target.value)}
@@ -699,10 +703,11 @@ export default function AbaEconomia() {
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <label className="block font-mono text-[10.5px] uppercase text-muted-2 mb-1.5">
+              <label htmlFor="aba-economia-link-de-apoio-externo" className="block font-mono text-[10.5px] uppercase text-muted-2 mb-1.5">
                 Link de Apoio Externo (Apoia.se, Catarse, Livepix etc.)
               </label>
               <input
+                id="aba-economia-link-de-apoio-externo"
                 type="url"
                 value={apoiadorConfig.link}
                 onChange={(e) => setApoiadorConfig((prev) => ({ ...prev, link: e.target.value }))}
@@ -712,10 +717,11 @@ export default function AbaEconomia() {
             </div>
 
             <div>
-              <label className="block font-mono text-[10.5px] uppercase text-muted-2 mb-1.5">
+              <label htmlFor="aba-economia-chave-pix-de-apoio" className="block font-mono text-[10.5px] uppercase text-muted-2 mb-1.5">
                 Chave Pix de Apoio (opcional)
               </label>
               <input
+                id="aba-economia-chave-pix-de-apoio"
                 type="text"
                 value={apoiadorConfig.chave_pix}
                 onChange={(e) => setApoiadorConfig((prev) => ({ ...prev, chave_pix: e.target.value }))}
@@ -726,10 +732,11 @@ export default function AbaEconomia() {
           </div>
 
           <div>
-            <label className="block font-mono text-[10.5px] uppercase text-muted-2 mb-1.5">
+            <label htmlFor="aba-economia-mensagem-de-chamada-para" className="block font-mono text-[10.5px] uppercase text-muted-2 mb-1.5">
               Mensagem de Chamada para Apoio
             </label>
             <textarea
+              id="aba-economia-mensagem-de-chamada-para"
               rows={2}
               value={apoiadorConfig.mensagem}
               onChange={(e) => setApoiadorConfig((prev) => ({ ...prev, mensagem: e.target.value }))}
@@ -849,10 +856,11 @@ export default function AbaEconomia() {
 
             <form onSubmit={handleSacarCaixa} className="flex flex-col gap-3.5">
               <div>
-                <label className="block font-mono text-[11px] text-muted uppercase mb-1">
+                <label htmlFor="aba-economia-destinatario" className="block font-mono text-[11px] text-muted uppercase mb-1">
                   Destinatário (@handle, UUID ou deixe em branco para você)
                 </label>
                 <input
+                  id="aba-economia-destinatario"
                   type="text"
                   value={saqueDestinatario}
                   onChange={(e) => setSaqueDestinatario(e.target.value)}
@@ -862,10 +870,11 @@ export default function AbaEconomia() {
               </div>
 
               <div>
-                <label className="block font-mono text-[11px] text-muted uppercase mb-1">
+                <label htmlFor="aba-economia-quantidade-2" className="block font-mono text-[11px] text-muted uppercase mb-1">
                   Quantidade (Disponível no Caixa: {saldoCaixaLoja.toLocaleString('pt-BR')} ₳)
                 </label>
                 <input
+                  id="aba-economia-quantidade-2"
                   type="number"
                   min="1"
                   max={saldoCaixaLoja}
@@ -878,10 +887,11 @@ export default function AbaEconomia() {
               </div>
 
               <div>
-                <label className="block font-mono text-[11px] text-muted uppercase mb-1">
+                <label htmlFor="aba-economia-motivo-do-saque" className="block font-mono text-[11px] text-muted uppercase mb-1">
                   Motivo do Saque
                 </label>
                 <input
+                  id="aba-economia-motivo-do-saque"
                   type="text"
                   value={saqueMotivo}
                   onChange={(e) => setSaqueMotivo(e.target.value)}

@@ -372,7 +372,7 @@ export default function SalaEstreia() {
                   {m.autor_cla_tag && <TagCla tag={m.autor_cla_tag} />}
 
                   {m.destaque && (
-                    <span className="flex items-center gap-0.5 px-1.5 py-0.2 rounded-full bg-gold/15 border border-gold/30 text-gold text-[9.5px] font-mono font-bold">
+                    <span className="flex items-center gap-0.5 px-1.5 py-px rounded-full bg-gold/15 border border-gold/30 text-gold text-[9.5px] font-mono font-bold">
                       <Flame size={10} /> Destaque
                     </span>
                   )}
@@ -511,10 +511,11 @@ export default function SalaEstreia() {
               &quot;{msgDenunciar.conteudo}&quot;
             </div>
 
-            <label className="block text-xs font-bold text-text uppercase tracking-wider mb-1.5">
+            <label htmlFor="sala-estreia-motivo-da-denuncia" className="block text-xs font-bold text-text uppercase tracking-wider mb-1.5">
               Motivo da denúncia
             </label>
             <textarea
+              id="sala-estreia-motivo-da-denuncia"
               value={motivoDenuncia}
               onChange={e => setMotivoDenuncia(e.target.value)}
               placeholder="Ex.: Conteúdo ofensivo, assédio, spam ou spoiler maldoso de episódio futuro..."

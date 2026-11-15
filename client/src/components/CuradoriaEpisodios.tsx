@@ -260,10 +260,11 @@ export default function CuradoriaEpisodios({
 
       <div className={`flex flex-col sm:flex-row sm:items-end gap-3 mb-4 p-3 rounded-lg border transition-colors ${emEdicao ? 'bg-holo-3/5 border-holo-3' : 'bg-panel border-line'}`}>
         <div className="sm:w-20 shrink-0">
-          <label className="block text-[10px] mb-1 font-bold text-muted">
+          <label htmlFor="curadoria-episodios-no" className="block text-[10px] mb-1 font-bold text-muted">
             {emEdicao ? <span className="inline-flex items-center gap-1">Nº <Lock size={9} /></span> : 'Nº'}
           </label>
           <input
+            id="curadoria-episodios-no"
             type="number"
             min="1"
             step="1"
@@ -275,8 +276,9 @@ export default function CuradoriaEpisodios({
         </div>
 
         <div className="flex-1 min-w-0">
-          <label className="block text-[10px] mb-1 font-bold text-muted">Título</label>
+          <label htmlFor="curadoria-episodios-titulo" className="block text-[10px] mb-1 font-bold text-muted">Título</label>
           <input
+            id="curadoria-episodios-titulo"
             type="text"
             value={titulo}
             onChange={(e) => setTitulo(e.target.value)}
@@ -313,8 +315,9 @@ export default function CuradoriaEpisodios({
 
         <div className="flex items-end gap-2">
           <div className="flex-1 sm:flex-none">
-            <label className="block text-[10px] mb-1 font-bold text-muted">Exibição (data e hora)</label>
+            <label htmlFor="curadoria-episodios-exibicao" className="block text-[10px] mb-1 font-bold text-muted">Exibição (data e hora)</label>
             <input
+              id="curadoria-episodios-exibicao"
               type="datetime-local"
               value={dataExibicao}
               onChange={(e) => setDataExibicao(e.target.value)}

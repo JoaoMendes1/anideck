@@ -788,6 +788,13 @@ experiência pequena e funcional de cada vez.
 > numeração e não abrem escopo novo. Ficam registrados aqui em ordem cronológica inversa para
 > não sumirem: fase concluída não deve ser reaberta só para receber um conserto.
 
+### 15/11/2026 — Campo numérico, confirmações do app e rótulos nos formulários (#212)
+
+- [x] **`CampoNumerico`** no lugar de 23 campos `type="number"` (Admin e criação de clã): apagar o conteúdo não vira mais `0` no meio da digitação. Ver PITFALLS, item 32.
+- [x] **`DialogoConfirmacao` e `useConfirmacao`** no lugar dos `confirm` do navegador (clã e Moderação), e formulário de renomear clã no lugar dos dois `prompt`, com os mesmos limites do banco.
+- [x] **Rótulos ligados aos campos:** 43 `<label>` com `htmlFor`, e `aria-label` nos campos do Admin que não tinham nome. `Sheet` fechado fica `inert` (fora do Tab e do leitor de tela).
+- [x] **`LimiteDeErro`** também em volta de cada aba do Admin e das rotas sem Navbar (login, admin, retrospectiva).
+
 ### 15/11/2026 — Prazos no servidor e limites nas rotas públicas (#211)
 
 - [x] **Servidor HTTP com prazos** de leitura, escrita e ociosidade, e **encerramento gracioso** no SIGTERM do deploy. Prazo de resposta de 100 s no transporte padrão, que é por onde passam as chamadas ao Supabase.

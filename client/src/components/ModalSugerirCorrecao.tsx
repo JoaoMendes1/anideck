@@ -58,7 +58,7 @@ export default function ModalSugerirCorrecao({ aberto, onFechar, malId, tituloAn
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-void/80 backdrop-blur-sm animate-fadeIn">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-void/80 backdrop-blur-sm animate-fade-in">
       <div className="w-full max-w-lg p-6 rounded-3xl bg-panel border border-line shadow-2xl relative">
         <button
           type="button"
@@ -114,8 +114,9 @@ export default function ModalSugerirCorrecao({ aberto, onFechar, malId, tituloAn
 
           {campo === 'titulo_episodio' && (
             <div>
-              <label className="block text-xs font-bold text-text mb-1">Número do Episódio</label>
+              <label htmlFor="modal-sugerir-correcao-numero-do-episodio" className="block text-xs font-bold text-text mb-1">Número do Episódio</label>
               <input
+                id="modal-sugerir-correcao-numero-do-episodio"
                 type="number"
                 min={1}
                 value={episodioNumero}
@@ -161,10 +162,11 @@ export default function ModalSugerirCorrecao({ aberto, onFechar, malId, tituloAn
           </div>
 
           <div>
-            <label className="block text-xs font-bold text-text mb-1">
+            <label htmlFor="modal-sugerir-correcao-fonte-motivo-da-correcao" className="block text-xs font-bold text-text mb-1">
               Fonte / Motivo da correção <span className="text-muted font-normal">(opcional)</span>
             </label>
             <input
+              id="modal-sugerir-correcao-fonte-motivo-da-correcao"
               type="text"
               value={motivo}
               onChange={e => setMotivo(e.target.value)}

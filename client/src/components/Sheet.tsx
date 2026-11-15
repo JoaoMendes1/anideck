@@ -22,6 +22,9 @@ export default function Sheet({ isOpen, onClose, title, children, maxWidthClass 
     // coisa da página, incluindo o BottomNav (z-50).
     return createPortal(
         <div
+            // `inert` tira o painel fechado do Tab, do clique e do leitor de tela. Sem isso,
+            // os botões de um painel invisível continuavam recebendo foco.
+            inert={!isOpen}
             className={`fixed inset-0 z-[100] flex items-end justify-center md:items-center transition-opacity duration-300 select-none ${
                 isOpen ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'
             }`}

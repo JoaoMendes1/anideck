@@ -20,6 +20,7 @@ import {
 } from 'lucide-react'
 import { useSessao } from '../contexts/SessaoContext'
 import { useToast } from '../contexts/ToastContext'
+import { useConfirmacao } from '../hooks/useConfirmacao'
 import CardDesafioCla from '../components/clas/CardDesafioCla'
 import {
   obterClaPorTag,
@@ -42,6 +43,7 @@ export default function ClaDetalhe() {
   const { tag } = useParams<{ tag: string }>()
   const { session } = useSessao()
   const { toast } = useToast()
+  const { confirmar, dialogo: dialogoDeConfirmacao } = useConfirmacao()
   const navigate = useNavigate()
 
   const [cla, setCla] = useState<IClaDetalhe | null>(null)
@@ -160,7 +162,13 @@ export default function ClaDetalhe() {
   }
 
   const handleExpulsar = async (targetUser: ClaMembro) => {
-    if (!confirm(`Deseja realmente expulsar ${targetUser.nome} (@${targetUser.handle}) do clã?`)) return
+    const confirmou = await confirmar({
+      titulo: 'Expulsar do clã',
+      mensagem: `${targetUser.nome} (@${targetUser.handle}) sai do clã agora. Para voltar, precisa pedir entrada de novo.`,
+      rotuloConfirmar: 'Expulsar',
+      perigoso: true,
+    })
+    if (!confirmou) return
     try {
       await expulsarMembro(cla.id, targetUser.user_id)
       toast.success(`${targetUser.nome} foi removido do clã.`)
@@ -172,7 +180,13 @@ export default function ClaDetalhe() {
   }
 
   const handleTransferirLideranca = async (targetUser: ClaMembro) => {
-    if (!confirm(`Tem certeza que deseja transferir a liderança para ${targetUser.nome}? Você passará a ser vice-líder.`)) return
+    const confirmou = await confirmar({
+      titulo: 'Transferir a liderança',
+      mensagem: `${targetUser.nome} passa a liderar o clã e você vira vice-líder. Só quem lidera consegue desfazer isso.`,
+      rotuloConfirmar: 'Transferir',
+      perigoso: true,
+    })
+    if (!confirmou) return
     try {
       await transferirLideranca(cla.id, targetUser.user_id)
       toast.success(`Liderança transferida para ${targetUser.nome}!`)
@@ -459,10 +473,11 @@ export default function ClaDetalhe() {
 
             <form onSubmit={handleConvidar} className="space-y-4">
               <div>
-                <label className="block text-xs font-bold uppercase text-muted mb-1.5">
+                <label htmlFor="cla-detalhe-id-do-usuario" className="block text-xs font-bold uppercase text-muted mb-1.5">
                   ID do Usuário (UUID)
                 </label>
                 <input
+                  id="cla-detalhe-id-do-usuario"
                   type="text"
                   required
                   placeholder="00000000-0000-0000-0000-000000000000"
@@ -548,10 +563,11 @@ export default function ClaDetalhe() {
 
             <form onSubmit={handleDenunciar} className="space-y-4">
               <div>
-                <label className="block text-xs font-bold uppercase text-muted mb-1.5">
+                <label htmlFor="cla-detalhe-motivo-da-denuncia" className="block text-xs font-bold uppercase text-muted mb-1.5">
                   Motivo da Denúncia
                 </label>
                 <textarea
+                  id="cla-detalhe-motivo-da-denuncia"
                   required
                   rows={3}
                   value={motivoDenuncia}
@@ -581,6 +597,8 @@ export default function ClaDetalhe() {
           </div>
         </div>
       )}
+
+      {dialogoDeConfirmacao}
     </div>
   )
 }

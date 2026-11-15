@@ -396,6 +396,7 @@ export function AbaControle({
                 <div className="flex gap-2 items-center">
                   <input
                     type="number" min={1} step={50}
+                    aria-label="Peso do ranking"
                     value={pesoExibido}
                     onChange={e => setPesoInput(e.target.value)}
                     disabled={carregando}
@@ -454,6 +455,7 @@ export function AbaControle({
                   <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-2" />
                   <input
                     type="text"
+                    aria-label="Buscar rótulo"
                     value={busca}
                     onChange={e => setBusca(e.target.value)}
                     placeholder="Buscar rótulo…"
@@ -479,6 +481,7 @@ export function AbaControle({
                   <div className="grid gap-2 sm:grid-cols-[1fr_1fr_auto] items-center">
                     <input
                       type="text"
+                      aria-label="Texto de entrada do rótulo"
                       value={novoRaw}
                       onChange={e => setNovoRaw(e.target.value)}
                       placeholder="Texto de entrada"
@@ -486,12 +489,14 @@ export function AbaControle({
                     />
                     <input
                       type="text"
+                      aria-label="Nome do rótulo na tela"
                       value={novoDisplay}
                       onChange={e => setNovoDisplay(e.target.value)}
                       placeholder={novoRaw.trim() || 'Nome na tela'}
                       className="bg-panel border border-line rounded-lg px-3 py-2 text-[13px] outline-none focus:border-holo-2"
                     />
                     <select
+                      aria-label="Camada do rótulo"
                       value={novaCamada}
                       onChange={e => setNovaCamada(e.target.value as Camada)}
                       className="bg-panel border border-line rounded-lg px-2 py-2 text-[13px] outline-none text-text"
@@ -503,6 +508,7 @@ export function AbaControle({
                   <div className="mt-2">
                     <input
                       type="text"
+                      aria-label="Sinônimo do rótulo"
                       value={novoSinonimo}
                       onChange={e => setNovoSinonimo(e.target.value)}
                       placeholder="Sinônimo — o nome em inglês da AniList (opcional)"
@@ -638,6 +644,7 @@ export function AbaControle({
                 <div className="flex flex-wrap gap-2">
                   <div className="relative flex-1 min-w-[180px]">
                     <select
+                      aria-label="Rótulo para o Olheiro"
                       value={novoRotuloOlheiro}
                       onChange={e => setNovoRotuloOlheiro(e.target.value)}
                       className="w-full appearance-none bg-panel border border-line rounded-lg pl-3 pr-9 py-2.5 text-sm text-text outline-none focus:border-holo-2 cursor-pointer"
@@ -832,6 +839,7 @@ export function AbaControle({
                                   </p>
                                   <input
                                     type="text"
+                                    aria-label="Rótulo de destino"
                                     value={destinoRenomear}
                                     onChange={e => setDestinoRenomear(e.target.value)}
                                     placeholder="Buscar rótulo de destino…"

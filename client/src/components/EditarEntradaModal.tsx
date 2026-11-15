@@ -309,8 +309,9 @@ export default function EditarEntradaModal({ entrada, onFechar, onSalvar, onExcl
                             className="w-full bg-panel-2 border border-line rounded-xl px-4 py-3 text-sm mb-4 outline-none focus:border-holo-3 transition-colors"
                         />
 
-                        <label className="block text-[11px] font-bold text-muted uppercase tracking-wide mb-2 select-none">Anotação</label>
+                        <label htmlFor="editar-entrada-modal-anotacao" className="block text-[11px] font-bold text-muted uppercase tracking-wide mb-2 select-none">Anotação</label>
                         <textarea
+                            id="editar-entrada-modal-anotacao"
                             value={anotacao}
                             onChange={(e) => setAnotacao(e.target.value)}
                             placeholder="O que achou deste anime?"

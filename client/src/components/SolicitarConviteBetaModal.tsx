@@ -125,10 +125,11 @@ export default function SolicitarConviteBetaModal({
 
             <form onSubmit={enviarSolicitacao} className="space-y-4">
               <div>
-                <label className="block text-xs font-bold text-muted mb-1.5">
+                <label htmlFor="solicitar-convite-beta-modal-seu-nome" className="block text-xs font-bold text-muted mb-1.5">
                   Seu nome
                 </label>
                 <input
+                  id="solicitar-convite-beta-modal-seu-nome"
                   type="text"
                   value={nome}
                   onChange={e => setNome(e.target.value)}
@@ -140,10 +141,11 @@ export default function SolicitarConviteBetaModal({
               </div>
 
               <div>
-                <label className="block text-xs font-bold text-muted mb-1.5">
+                <label htmlFor="solicitar-convite-beta-modal-seu-melhor-e-mail" className="block text-xs font-bold text-muted mb-1.5">
                   Seu melhor e-mail
                 </label>
                 <input
+                  id="solicitar-convite-beta-modal-seu-melhor-e-mail"
                   type="email"
                   value={email}
                   onChange={e => setEmail(e.target.value)}

@@ -23,6 +23,8 @@ import AbaGuilda from '../components/AbaGuilda'
 import AbaModeracao from '../components/AbaModeracao'
 import AbaEconomia from '../components/AbaEconomia'
 import type { SugestaoPendente } from '../hooks/useOlheiro'
+import CampoNumerico from '../components/CampoNumerico'
+import LimiteDeErro from '../components/LimiteDeErro'
 
 // Uma query serve os dois caminhos: busca por nome (search) e importação
 // direta pelo ID do Olheiro (idMal). A AniList ignora variável que chega
@@ -1052,6 +1054,8 @@ export default function PainelAdmin() {
         })()}
 
         <div className="min-w-0">
+        {/* Um erro numa aba fica nela: o menu do painel continua de pé para trocar de aba. */}
+        <LimiteDeErro chave={itemAtivo}>
         {abaAtiva === 'curadoria' && (() => {
           const semEps = destaques.filter(d => totalEpisodiosCurado(d) === 0 && !ehObraEmBreve(d))
           const emBreve = destaques.filter(d => ehObraEmBreve(d))
@@ -1276,10 +1280,11 @@ export default function PainelAdmin() {
                   {(previewTitulo || modoManual) && (
                     <div className="border-t border-dashed border-line pt-6 mt-4 space-y-6 animate-in fade-in duration-300">
                       <div>
-                        <label className="block text-xs font-bold text-muted mb-2 uppercase">
+                        <label htmlFor="painel-admin-mal-id" className="block text-xs font-bold text-muted mb-2 uppercase">
                           MAL ID {editId && <span className="text-muted-2 normal-case">(travado)</span>}
                         </label>
                         <input
+                          id="painel-admin-mal-id"
                           type="number"
                           min={1}
                           value={malId ?? ''}
@@ -1297,8 +1302,9 @@ export default function PainelAdmin() {
 
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div>
-                          <label className="block text-xs font-bold text-muted mb-2 uppercase">Título Customizado</label>
+                          <label htmlFor="painel-admin-titulo-customizado" className="block text-xs font-bold text-muted mb-2 uppercase">Título Customizado</label>
                           <input
+                            id="painel-admin-titulo-customizado"
                             type="text"
                             value={titulo}
                             onChange={(e) => setTitulo(e.target.value)}
@@ -1415,8 +1421,9 @@ export default function PainelAdmin() {
 
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
                           <div>
-                            <label className="block text-[10px] mb-1 font-bold text-muted">Estreia do episódio 1 (data e hora)</label>
+                            <label htmlFor="painel-admin-estreia-do-episodio-1" className="block text-[10px] mb-1 font-bold text-muted">Estreia do episódio 1 (data e hora)</label>
                             <input
+                              id="painel-admin-estreia-do-episodio-1"
                               type="datetime-local"
                               value={estreia}
                               onChange={(e) => setEstreia(e.target.value)}
@@ -1429,8 +1436,9 @@ export default function PainelAdmin() {
                           </div>
 
                           <div>
-                            <label className="block text-[10px] mb-1 font-bold text-muted">Duração do episódio (min)</label>
+                            <label htmlFor="painel-admin-duracao-do-episodio" className="block text-[10px] mb-1 font-bold text-muted">Duração do episódio (min)</label>
                             <input
+                              id="painel-admin-duracao-do-episodio"
                               type="number"
                               min="1"
                               step="1"
@@ -1510,6 +1518,7 @@ export default function PainelAdmin() {
 
                         <textarea
                           ref={textareaRef}
+                          aria-label="Sinopse"
                           value={sinopse}
                           onChange={handleSinopseChange}
                           disabled={gerandoIA}
@@ -1519,11 +1528,10 @@ export default function PainelAdmin() {
 
                       <div className="sticky bottom-0 z-20 -mx-4 px-4 sm:-mx-6 sm:px-6 py-3.5 bg-panel/95 backdrop-blur-md flex flex-col-reverse sm:flex-row sm:items-center justify-between gap-3 border-t border-line rounded-b-2xl">
                         <div className="flex items-center gap-3">
-                          <label className="text-xs font-bold text-muted uppercase shrink-0">Ordem Home:</label>
-                          <input
-                            type="number"
+                          <label htmlFor="painel-admin-ordem-home" className="text-xs font-bold text-muted uppercase shrink-0">Ordem Home:</label>
+                          <CampoNumerico id="painel-admin-ordem-home" semBotoes
                             value={ordem}
-                            onChange={(e) => setOrdem(Number(e.target.value))}
+                            aoMudar={(valor) => setOrdem(valor)}
                             className="w-20 bg-panel-2 border border-line rounded-xl px-3 py-2 text-sm outline-none"
                           />
                         </div>
@@ -1540,6 +1548,7 @@ export default function PainelAdmin() {
               )}
             </div>
           </div>)}
+        </LimiteDeErro>
         </div>
       </div>
 

@@ -129,9 +129,9 @@ export default function AbaTrilhas() {
               </div>
             </div>
 
-            <input className={entrada} placeholder="Nome (ex.: Fantasia que dói)" maxLength={LIMITE_NOME} value={t.nome} onChange={e => atualizar(t.id, { nome: e.target.value })} />
-            <input className={entrada} placeholder="Subtítulo" maxLength={LIMITE_SUBTITULO} value={t.subtitulo} onChange={e => atualizar(t.id, { subtitulo: e.target.value })} />
-            <textarea className={`${entrada} min-h-[70px]`} placeholder="Nota do curador" maxLength={LIMITE_NOTA} value={t.nota} onChange={e => atualizar(t.id, { nota: e.target.value })} />
+            <input className={entrada} placeholder="Nome (ex.: Fantasia que dói)" maxLength={LIMITE_NOME} aria-label="Nome da trilha" value={t.nome} onChange={e => atualizar(t.id, { nome: e.target.value })} />
+            <input className={entrada} placeholder="Subtítulo" maxLength={LIMITE_SUBTITULO} aria-label="Subtítulo da trilha" value={t.subtitulo} onChange={e => atualizar(t.id, { subtitulo: e.target.value })} />
+            <textarea className={`${entrada} min-h-[70px]`} placeholder="Nota do curador" maxLength={LIMITE_NOTA} aria-label="Nota do curador" value={t.nota} onChange={e => atualizar(t.id, { nota: e.target.value })} />
 
             <ol className="flex flex-col gap-1.5">
               {t.mal_ids.map((id, pos) => (
@@ -149,6 +149,7 @@ export default function AbaTrilhas() {
               <input
                 className={entrada}
                 placeholder="Adicionar anime do catálogo: digite o título"
+                aria-label="Adicionar anime à trilha"
                 value={busca[t.id] ?? ''}
                 onChange={e => setBusca(prev => ({ ...prev, [t.id]: e.target.value }))}
               />

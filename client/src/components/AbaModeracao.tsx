@@ -1,13 +1,16 @@
 // client/src/components/AbaModeracao.tsx
 // Painel Admin › Comunidade › Moderação: fila de comentários denunciados, resumo da
 // atividade e regras da Mana, da Vitalidade e do Modo Descanso.
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useState, type FormEvent } from 'react'
 import { Link } from 'react-router-dom'
 import { Check, EyeOff, Eye, Trash2, Save, ShieldCheck, Flag, Trophy, Gift, Crown, AlertCircle } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import { useToast } from '../contexts/ToastContext'
 import { MOTIVOS_DENUNCIA, tempoRelativo, type RegrasComunidade, REGRAS_COMUNIDADE_PADRAO } from '../lib/comunidade'
 import { type RegrasConvites, REGRAS_CONVITES_PADRAO } from '../lib/convites'
+import CampoNumerico from './CampoNumerico'
+import Sheet from './Sheet'
+import { useConfirmacao } from '../hooks/useConfirmacao'
 
 interface ItemModeracao {
   comentario: {
@@ -69,6 +72,12 @@ async function cabecalho(): Promise<Record<string, string>> {
 
 export default function AbaModeracao() {
   const { showToast } = useToast()
+  const { confirmar, dialogo: dialogoDeConfirmacao } = useConfirmacao()
+  // Clã com o formulário de renomear aberto, e o que foi digitado nele.
+  const [claParaRenomear, setClaParaRenomear] = useState<DenunciaCla | null>(null)
+  const [novoNome, setNovoNome] = useState('')
+  const [novaTag, setNovaTag] = useState('')
+  const [renomeando, setRenomeando] = useState(false)
   const [fila, setFila] = useState<ItemModeracao[] | null>(null)
   const [denunciasClas, setDenunciasClas] = useState<DenunciaCla[]>([])
   const [resumo, setResumo] = useState<Resumo | null>(null)
@@ -140,7 +149,13 @@ export default function AbaModeracao() {
   }, [])
 
   const dissolverCla = async (claId: string, motivo: string) => {
-    if (!confirm('Deseja realmente dissolver este clã? Todos os membros serão removidos e o clã será desativado.')) return
+    const confirmou = await confirmar({
+      titulo: 'Dissolver o clã',
+      mensagem: 'Todos os membros são removidos e o clã é desativado. Não tem como desfazer por aqui.',
+      rotuloConfirmar: 'Dissolver',
+      perigoso: true,
+    })
+    if (!confirmou) return
     try {
       const auth = await cabecalho()
       const res = await fetch(`/api/admin/clas/${claId}/dissolver`, {
@@ -156,12 +171,23 @@ export default function AbaModeracao() {
     }
   }
 
-  const renomearCla = async (claId: string) => {
-    const novoNome = prompt('Digite o novo nome para o clã:')
-    if (!novoNome) return
-    const novaTag = prompt('Digite a nova tag (2 a 4 letras):')
-    if (!novaTag) return
+  const abrirRenomear = (denuncia: DenunciaCla) => {
+    setNovoNome(denuncia.cla_nome)
+    setNovaTag(denuncia.cla_tag)
+    setClaParaRenomear(denuncia)
+  }
 
+  // Mesmos limites que o banco cobra na criação do clã: nome de 3 a 30, tag de 2 a 4.
+  const tamanhoDoNome = novoNome.trim().length
+  const tamanhoDaTag = novaTag.trim().length
+  const nomeValido = tamanhoDoNome >= 3 && tamanhoDoNome <= 30
+  const tagValida = tamanhoDaTag >= 2 && tamanhoDaTag <= 4
+
+  const renomearCla = async (e: FormEvent) => {
+    e.preventDefault()
+    if (!claParaRenomear || !nomeValido || !tagValida) return
+    const claId = claParaRenomear.cla_id
+    setRenomeando(true)
     try {
       const auth = await cabecalho()
       const res = await fetch(`/api/admin/clas/${claId}/renomear`, {
@@ -169,11 +195,14 @@ export default function AbaModeracao() {
         headers: { ...auth, 'Content-Type': 'application/json' },
         body: JSON.stringify({ novo_nome: novoNome.trim(), nova_tag: novaTag.trim().toUpperCase() }),
       })
-      if (!res.ok) throw new Error('Falha ao renomear clã')
+      if (!res.ok) throw new Error((await res.text()).trim() || 'Falha ao renomear clã')
       showToast('Clã renomeado com sucesso.')
       setDenunciasClas(d => d.filter(item => item.cla_id !== claId))
+      setClaParaRenomear(null)
     } catch (e: unknown) {
       showToast(e instanceof Error ? e.message : 'Erro ao renomear clã.', 'error')
+    } finally {
+      setRenomeando(false)
     }
   }
 
@@ -245,7 +274,12 @@ export default function AbaModeracao() {
   }
 
   const fecharDesafiosSemana = async () => {
-    if (!confirm('Deseja consolidar e fechar a semana dos desafios de clã agora, distribuindo as recompensas devidas?')) return
+    const confirmou = await confirmar({
+      titulo: 'Fechar a semana dos desafios',
+      mensagem: 'A semana dos desafios de clã é consolidada agora e as recompensas devidas são distribuídas.',
+      rotuloConfirmar: 'Fechar a semana',
+    })
+    if (!confirmou) return
     setFechandoDesafios(true)
     try {
       const auth = await cabecalho()
@@ -265,7 +299,12 @@ export default function AbaModeracao() {
   }
 
   const fecharTemporadaClas = async () => {
-    if (!confirm('Deseja consolidar e fechar a temporada da Liga de Clãs agora? Cosméticos exclusivos e AniCoins serão concedidos aos membros dos clãs no Top 3.')) return
+    const confirmou = await confirmar({
+      titulo: 'Fechar a temporada da Liga de Clãs',
+      mensagem: 'A temporada é consolidada agora. Os membros dos clãs no Top 3 recebem os cosméticos exclusivos e os AniCoins.',
+      rotuloConfirmar: 'Fechar a temporada',
+    })
+    if (!confirmou) return
     setFechandoTemporada(true)
     try {
       const auth = await cabecalho()
@@ -390,11 +429,10 @@ export default function AbaModeracao() {
                 <label key={c.chave} className="block p-3 rounded-xl bg-panel-2 border border-line min-w-0">
                   <span className="block text-[12px] font-bold text-text">{c.rotulo}</span>
                   <span className="block text-[11px] text-muted-2 mb-2">{c.ajuda}</span>
-                  <input
-                    type="number"
+                  <CampoNumerico
                     min={0}
                     value={regras[c.chave]}
-                    onChange={e => setRegras({ ...regras, [c.chave]: Number(e.target.value) })}
+                    aoMudar={(valor) => setRegras({ ...regras, [c.chave]: valor })}
                     className="w-full min-w-0 bg-panel border border-line rounded-lg px-3 py-2 text-sm font-mono outline-none focus:border-holo-3"
                   />
                 </label>
@@ -451,11 +489,10 @@ export default function AbaModeracao() {
               <label className="block p-3 rounded-xl bg-panel-2 border border-line min-w-0">
                 <span className="block text-[12px] font-bold text-text">AniCoins para quem convida</span>
                 <span className="block text-[11px] text-muted-2 mb-2">Moedas creditadas a cada amigo cadastrado.</span>
-                <input
-                  type="number"
+                <CampoNumerico
                   min={0}
                   value={regrasConvites.anicoins_anfitriao}
-                  onChange={e => setRegrasConvites({ ...regrasConvites, anicoins_anfitriao: Number(e.target.value) })}
+                  aoMudar={(valor) => setRegrasConvites({ ...regrasConvites, anicoins_anfitriao: valor })}
                   className="w-full min-w-0 bg-panel border border-line rounded-lg px-3 py-2 text-sm font-mono outline-none focus:border-holo-3"
                 />
               </label>
@@ -463,11 +500,10 @@ export default function AbaModeracao() {
               <label className="block p-3 rounded-xl bg-panel-2 border border-line min-w-0">
                 <span className="block text-[12px] font-bold text-text">XP para quem convida</span>
                 <span className="block text-[11px] text-muted-2 mb-2">Pontos adicionados à progressão de Guilda.</span>
-                <input
-                  type="number"
+                <CampoNumerico
                   min={0}
                   value={regrasConvites.xp_anfitriao}
-                  onChange={e => setRegrasConvites({ ...regrasConvites, xp_anfitriao: Number(e.target.value) })}
+                  aoMudar={(valor) => setRegrasConvites({ ...regrasConvites, xp_anfitriao: valor })}
                   className="w-full min-w-0 bg-panel border border-line rounded-lg px-3 py-2 text-sm font-mono outline-none focus:border-holo-3"
                 />
               </label>
@@ -475,11 +511,10 @@ export default function AbaModeracao() {
               <label className="block p-3 rounded-xl bg-panel-2 border border-line min-w-0">
                 <span className="block text-[12px] font-bold text-text">AniCoins Convidado (Comum)</span>
                 <span className="block text-[11px] text-muted-2 mb-2">Bônus de boas-vindas por link comum.</span>
-                <input
-                  type="number"
+                <CampoNumerico
                   min={0}
                   value={regrasConvites.anicoins_convidado}
-                  onChange={e => setRegrasConvites({ ...regrasConvites, anicoins_convidado: Number(e.target.value) })}
+                  aoMudar={(valor) => setRegrasConvites({ ...regrasConvites, anicoins_convidado: valor })}
                   className="w-full min-w-0 bg-panel border border-line rounded-lg px-3 py-2 text-sm font-mono outline-none focus:border-holo-3"
                 />
               </label>
@@ -489,11 +524,10 @@ export default function AbaModeracao() {
                   <Crown size={13} /> AniCoins Convidado (Fundador VIP)
                 </span>
                 <span className="block text-[11px] text-muted-2 mb-2">Bônus especial para quem entrar pelo seu link.</span>
-                <input
-                  type="number"
+                <CampoNumerico
                   min={0}
                   value={regrasConvites.anicoins_convidado_admin}
-                  onChange={e => setRegrasConvites({ ...regrasConvites, anicoins_convidado_admin: Number(e.target.value) })}
+                  aoMudar={(valor) => setRegrasConvites({ ...regrasConvites, anicoins_convidado_admin: valor })}
                   className="w-full min-w-0 bg-panel border border-gold/40 rounded-lg px-3 py-2 text-sm font-mono outline-none focus:border-gold text-gold font-bold"
                 />
               </label>
@@ -583,7 +617,7 @@ export default function AbaModeracao() {
                 <div className="flex items-center gap-2 shrink-0">
                   <button
                     type="button"
-                    onClick={() => renomearCla(d.cla_id)}
+                    onClick={() => abrirRenomear(d)}
                     className="px-3 py-1.5 rounded-lg bg-panel border border-line hover:border-holo-3 text-xs font-bold transition-colors cursor-pointer"
                   >
                     Renomear
@@ -601,6 +635,49 @@ export default function AbaModeracao() {
           </div>
         )}
       </section>
+
+      <Sheet isOpen={claParaRenomear !== null} onClose={() => setClaParaRenomear(null)} title="Renomear o clã">
+        <form onSubmit={renomearCla} className="flex flex-col gap-4 select-text">
+          <label className="flex flex-col gap-1.5 text-xs font-bold text-muted">
+            Novo nome (3 a 30 caracteres)
+            <input
+              type="text"
+              value={novoNome}
+              onChange={e => setNovoNome(e.target.value)}
+              maxLength={30}
+              className="bg-panel-2 border border-line rounded-xl px-3 py-2.5 text-sm text-text font-normal outline-none focus:border-holo-3"
+            />
+          </label>
+          <label className="flex flex-col gap-1.5 text-xs font-bold text-muted">
+            Nova tag (2 a 4 caracteres)
+            <input
+              type="text"
+              value={novaTag}
+              onChange={e => setNovaTag(e.target.value.toUpperCase())}
+              maxLength={4}
+              className="bg-panel-2 border border-line rounded-xl px-3 py-2.5 text-sm text-text font-mono uppercase outline-none focus:border-holo-3"
+            />
+          </label>
+          <div className="flex flex-col-reverse sm:flex-row sm:justify-end gap-2.5 mt-2">
+            <button
+              type="button"
+              onClick={() => setClaParaRenomear(null)}
+              className="min-h-11 px-5 rounded-xl border border-line bg-panel-2 text-sm font-bold text-text hover:border-line-hover transition-colors cursor-pointer"
+            >
+              Cancelar
+            </button>
+            <button
+              type="submit"
+              disabled={!nomeValido || !tagValida || renomeando}
+              className="min-h-11 px-5 rounded-xl border border-holo-3/50 bg-holo-3/15 text-holo-3 text-sm font-bold hover:bg-holo-3 hover:text-void transition-colors cursor-pointer disabled:opacity-50 disabled:pointer-events-none"
+            >
+              {renomeando ? 'Salvando…' : 'Renomear'}
+            </button>
+          </div>
+        </form>
+      </Sheet>
+
+      {dialogoDeConfirmacao}
     </div>
   )
 }

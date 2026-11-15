@@ -1259,8 +1259,9 @@ export default function Configuracoes() {
 
                 {temSenha && (
                     <Card className="mb-4">
-                        <label className="block text-[11px] font-bold text-muted mb-2 uppercase tracking-wide">Senha atual</label>
+                        <label htmlFor="configuracoes-senha-atual" className="block text-[11px] font-bold text-muted mb-2 uppercase tracking-wide">Senha atual</label>
                         <input
+                            id="configuracoes-senha-atual"
                             type="password"
                             value={senhaAtual}
                             onChange={(e) => setSenhaAtual(e.target.value)}
@@ -1268,8 +1269,9 @@ export default function Configuracoes() {
                             className="w-full bg-panel-2 border border-line rounded-xl px-4 py-3 text-sm outline-none"
                         />
 
-                        <label className="block text-[11px] font-bold text-muted mb-2 mt-4 uppercase tracking-wide">Nova senha</label>
+                        <label htmlFor="configuracoes-nova-senha" className="block text-[11px] font-bold text-muted mb-2 mt-4 uppercase tracking-wide">Nova senha</label>
                         <input
+                            id="configuracoes-nova-senha"
                             type="password"
                             value={novaSenha}
                             onChange={(e) => setNovaSenha(e.target.value)}
@@ -1314,10 +1316,11 @@ export default function Configuracoes() {
                         <div className="space-y-3">
                                                       {temSenha ? (
                                 <div>
-                                    <label className="block text-[11px] font-bold text-muted mb-2 uppercase tracking-wide">
+                                    <label htmlFor="configuracoes-sua-senha" className="block text-[11px] font-bold text-muted mb-2 uppercase tracking-wide">
                                         Sua senha
                                     </label>
                                     <input
+                                        id="configuracoes-sua-senha"
                                         type="password"
                                         value={senhaExclusao}
                                         onChange={(e) => setSenhaExclusao(e.target.value)}
@@ -1344,10 +1347,11 @@ export default function Configuracoes() {
                             )}
 
                             <div>
-                                <label className="block text-[11px] font-bold text-muted mb-2 uppercase tracking-wide">
+                                <label htmlFor="configuracoes-digite-excluir-para-confirmar" className="block text-[11px] font-bold text-muted mb-2 uppercase tracking-wide">
                                     Digite <span className="text-coral">EXCLUIR</span> para confirmar
                                 </label>
                                 <input
+                                    id="configuracoes-digite-excluir-para-confirmar"
                                     type="text"
                                     value={confirmacao}
                                     onChange={(e) => setConfirmacao(e.target.value)}
