@@ -62,6 +62,12 @@ Cada indicador tem uma cor só, em qualquer tela e em qualquer tema: **XP** `gol
 
 Texto de interface não desce de 12 px (`text-xs`).
 
+### Status do deck nos gráficos
+
+`status-assistindo`, `status-em-dia`, `status-completo`, `status-dropado` e `status-quero`
+são fixos em todos os temas. Gráfico e legenda usam o mesmo token: com os `holo-*`, que mudam
+de tema e às vezes coincidem entre si, a legenda divergia da fatia.
+
 ### Insígnias de rank
 
 Cada rank tem um brasão próprio (`client/src/components/hud/InsigniaRank.tsx`) e uma cor

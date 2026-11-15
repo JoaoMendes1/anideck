@@ -21,6 +21,12 @@
   --color-green: #a0ff78;
   --color-coral: #FF5C6C;
   --color-mana: #4DA3FF;
+  /* Status do deck nos gráficos: fixos em todos os temas, para legenda e fatia nunca divergirem. */
+  --color-status-assistindo: #3FE0F0;
+  --color-status-em-dia: #A0FF78;
+  --color-status-completo: #FFC542;
+  --color-status-dropado: #7C70A8;
+  --color-status-quero: #FF4FD8;
 
   /* Fontes mapeadas para usarmos classes como font-anton */
   --font-manrope: 'Manrope', sans-serif;

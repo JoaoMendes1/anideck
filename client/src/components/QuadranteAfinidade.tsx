@@ -179,7 +179,10 @@ export default function QuadranteAfinidade({ generos, notaMedia, onSelectCategor
         <div>
             {insight && <p className="text-[13px] mb-5 leading-relaxed">{insight}</p>}
 
-            <svg viewBox={`0 0 ${LARGURA} ${ALTURA}`} className="w-full h-auto" role="img" aria-label="Volume assistido versus nota média por categoria">
+            {/* Largura mínima e máxima: o texto do gráfico escala com ele; sem limites, fica ilegível
+                no celular e gigante no desktop. No celular o gráfico rola na horizontal. */}
+            <div className="overflow-x-auto custom-scrollbar">
+            <svg viewBox={`0 0 ${LARGURA} ${ALTURA}`} className="w-full min-w-[560px] max-w-[820px] mx-auto h-auto" role="img" aria-label="Volume assistido versus nota média por categoria">
                 {zonas.map(z => (
                     <g key={z.nome}>
                         {/* Larguras podem ficar negativas se a divisória encostar na borda;
@@ -257,8 +260,9 @@ export default function QuadranteAfinidade({ generos, notaMedia, onSelectCategor
                     )
                 })}
             </svg>
+            </div>
 
-            <p className="text-[10.5px] text-muted-2 mt-3">
+            <p className="text-xs text-muted-2 mt-3">
                 Cada ponto é uma categoria. Quanto mais à direita, mais você assiste; quanto mais
                 acima, maior a nota que costuma dar. A linha dourada é a sua nota média geral.
             </p>

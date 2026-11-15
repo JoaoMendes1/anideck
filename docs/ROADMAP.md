@@ -788,6 +788,11 @@ experiência pequena e funcional de cada vez.
 > numeração e não abrem escopo novo. Ficam registrados aqui em ordem cronológica inversa para
 > não sumirem: fase concluída não deve ser reaberta só para receber um conserto.
 
+### 15/11/2026 — Meu Gosto legível: legenda fiel, anos alcançáveis e piso de 12 px (#208)
+
+- [x] **Status com cor fixa em todos os temas** (tokens `status-*`): a fatia do donut e a legenda passam a usar a mesma cor.
+- [x] **Gráfico por ano** com rolagem que alcança o primeiro ano e abre nos mais recentes; **quadrante** com largura mínima e máxima; textos da tela com piso de 12 px.
+
 ### 15/11/2026 — Menu lateral no desktop (#207)
 
 - [x] **`MenuLateral` para quem está logado, de 1280 px para cima:** trilho de ícones até 1536 px e, daí em diante, aberto com rótulos e botão de recolher (preferência guardada no navegador). Grupos Jornada, Guilda e Gestão, e cartão do jogador no rodapé.

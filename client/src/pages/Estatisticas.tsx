@@ -494,7 +494,7 @@ export default function Estatisticas() {
             o resto da página pra baixo demais. Fonte e padding encolhem via sm:. */}
         <div ref={registrar} className="reveal grid grid-cols-3 gap-2.5 sm:gap-4 mb-3 sm:mb-4" style={{ transitionDelay: '.05s' }}>
           <div className="bg-gradient-to-br from-holo-1/10 to-holo-3/10 border border-holo-3/30 rounded-2xl p-3.5 sm:p-6">
-            <div className="font-mono text-[8.5px] sm:text-[10.5px] text-muted-2 tracking-wider sm:tracking-widest mb-1.5 sm:mb-2 uppercase leading-tight">Tempo Assistido</div>
+            <div className="font-mono text-xs sm:text-xs text-muted-2 tracking-wider sm:tracking-widest mb-1.5 sm:mb-2 uppercase leading-tight">Tempo Assistido</div>
             <div className="font-anton text-lg sm:text-3xl tabular-nums">{formatTime(Math.round(tempoAnimado))}</div>
           </div>
           <button
@@ -504,11 +504,11 @@ export default function Estatisticas() {
             className="bg-panel border border-line rounded-2xl p-3.5 sm:p-6 text-left transition-colors hover:border-holo-2 cursor-pointer disabled:cursor-default"
             title={favorito ? `Ver seus animes de ${traduzirGenero(generoFavorito)}` : undefined}
           >
-            <div className="font-mono text-[8.5px] sm:text-[10.5px] text-muted-2 tracking-wider sm:tracking-widest mb-1.5 sm:mb-2 uppercase leading-tight">Gênero Favorito</div>
+            <div className="font-mono text-xs sm:text-xs text-muted-2 tracking-wider sm:tracking-widest mb-1.5 sm:mb-2 uppercase leading-tight">Gênero Favorito</div>
             <div className="font-anton text-lg sm:text-3xl text-holo-2 truncate">{traduzirGenero(generoFavorito)}</div>
           </button>
           <div className="bg-panel border border-line rounded-2xl p-3.5 sm:p-6">
-            <div className="font-mono text-[8.5px] sm:text-[10.5px] text-muted-2 tracking-wider sm:tracking-widest mb-1.5 sm:mb-2 uppercase leading-tight">Sua Nota Média</div>
+            <div className="font-mono text-xs sm:text-xs text-muted-2 tracking-wider sm:tracking-widest mb-1.5 sm:mb-2 uppercase leading-tight">Sua Nota Média</div>
             <div className="font-anton text-lg sm:text-3xl text-gold tabular-nums">
               {overview?.nota_media ? notaAnimada.toFixed(1) : 'N/A'}
             </div>
@@ -523,14 +523,14 @@ export default function Estatisticas() {
               <Flame size={18} />
             </div>
             <b className="block font-anton text-2xl mb-0.5 tabular-nums">{Math.round(streakAtualAnimado)}</b>
-            <span className="text-[10px] sm:text-[11px] text-muted-2 font-bold uppercase tracking-wider">Streak Atual (dias)</span>
+            <span className="text-xs sm:text-xs text-muted-2 font-bold uppercase tracking-wider">Streak Atual (dias)</span>
           </div>
           <div className="bg-panel border border-line border-t-[3px] border-t-gold rounded-[14px] p-4 sm:p-[18px]">
             <div className="w-7 h-7 rounded-lg bg-gold/20 text-gold flex items-center justify-center mb-2">
               <Trophy size={18} />
             </div>
             <b className="block font-anton text-2xl mb-0.5 tabular-nums">{Math.round(streakRecordeAnimado)}</b>
-            <span className="text-[10px] sm:text-[11px] text-muted-2 font-bold uppercase tracking-wider">Recorde de Streak (dias)</span>
+            <span className="text-xs sm:text-xs text-muted-2 font-bold uppercase tracking-wider">Recorde de Streak (dias)</span>
           </div>
 
           {/* Perfil de gosto — concentração do consumo nos dois rótulos mais assistidos.
@@ -543,14 +543,14 @@ export default function Estatisticas() {
             {perfil.tipo ? (
               <>
                 <b className="block font-anton text-xl sm:text-2xl mb-0.5 capitalize">{perfil.tipo}</b>
-                <span className="text-[10px] sm:text-[11px] text-muted-2 font-bold uppercase tracking-wider">
+                <span className="text-xs sm:text-xs text-muted-2 font-bold uppercase tracking-wider">
                   {perfil.concentracao.toFixed(0)}% em 2 categorias
                 </span>
               </>
             ) : (
               <>
                 <b className="block font-anton text-xl sm:text-2xl mb-0.5 text-muted-2">—</b>
-                <span className="text-[10px] sm:text-[11px] text-muted-2 font-bold uppercase tracking-wider">Perfil de gosto</span>
+                <span className="text-xs sm:text-xs text-muted-2 font-bold uppercase tracking-wider">Perfil de gosto</span>
               </>
             )}
           </div>
@@ -564,12 +564,12 @@ export default function Estatisticas() {
             {conclusao.valida ? (
               <>
                 <b className="block font-anton text-xl sm:text-2xl mb-0.5 tabular-nums">{conclusao.taxa.toFixed(0)} de 10</b>
-                <span className="text-[10px] sm:text-[11px] text-muted-2 font-bold uppercase tracking-wider">Você termina</span>
+                <span className="text-xs sm:text-xs text-muted-2 font-bold uppercase tracking-wider">Você termina</span>
               </>
             ) : (
               <>
                 <b className="block font-anton text-xl sm:text-2xl mb-0.5 text-muted-2">—</b>
-                <span className="text-[10px] sm:text-[11px] text-muted-2 font-bold uppercase tracking-wider">Taxa de conclusão</span>
+                <span className="text-xs sm:text-xs text-muted-2 font-bold uppercase tracking-wider">Taxa de conclusão</span>
               </>
             )}
           </div>
@@ -580,20 +580,20 @@ export default function Estatisticas() {
             <h2 className="font-anton uppercase text-[15px] mb-6">Distribuição por Status</h2>
             <div className="flex items-center gap-6 flex-wrap">
               <svg width="130" height="130" viewBox="0 0 42 42" className="-rotate-90">
-                <circle cx="21" cy="21" r="15.9" fill="transparent" stroke="#181330" strokeWidth="6"></circle>
-                {pctAssistindo > 0 && <circle className="anim-donut" cx="21" cy="21" r="15.9" fill="transparent" stroke="#3FE0F0" strokeWidth="6" strokeDasharray={arco(pctAssistindo)} strokeDashoffset="25" />}
-                {pctEmDia > 0 && <circle className="anim-donut" cx="21" cy="21" r="15.9" fill="transparent" stroke="#a0ff78" strokeWidth="6" strokeDasharray={arco(pctEmDia)} strokeDashoffset={offEmDia} />}
-                {pctCompleto > 0 && <circle className="anim-donut" cx="21" cy="21" r="15.9" fill="transparent" stroke="#FFC542" strokeWidth="6" strokeDasharray={arco(pctCompleto)} strokeDashoffset={offCompleto} />}
-                {pctDropado > 0 && <circle className="anim-donut" cx="21" cy="21" r="15.9" fill="transparent" stroke="#6B5F94" strokeWidth="6" strokeDasharray={arco(pctDropado)} strokeDashoffset={offDropado} />}
-                {pctQuero > 0 && <circle className="anim-donut" cx="21" cy="21" r="15.9" fill="transparent" stroke="#FF4FD8" strokeWidth="6" strokeDasharray={arco(pctQuero)} strokeDashoffset={offQuero} />}
+                <circle cx="21" cy="21" r="15.9" fill="transparent" stroke="var(--color-panel-2)" strokeWidth="6"></circle>
+                {pctAssistindo > 0 && <circle className="anim-donut" cx="21" cy="21" r="15.9" fill="transparent" stroke="var(--color-status-assistindo)" strokeWidth="6" strokeDasharray={arco(pctAssistindo)} strokeDashoffset="25" />}
+                {pctEmDia > 0 && <circle className="anim-donut" cx="21" cy="21" r="15.9" fill="transparent" stroke="var(--color-status-em-dia)" strokeWidth="6" strokeDasharray={arco(pctEmDia)} strokeDashoffset={offEmDia} />}
+                {pctCompleto > 0 && <circle className="anim-donut" cx="21" cy="21" r="15.9" fill="transparent" stroke="var(--color-status-completo)" strokeWidth="6" strokeDasharray={arco(pctCompleto)} strokeDashoffset={offCompleto} />}
+                {pctDropado > 0 && <circle className="anim-donut" cx="21" cy="21" r="15.9" fill="transparent" stroke="var(--color-status-dropado)" strokeWidth="6" strokeDasharray={arco(pctDropado)} strokeDashoffset={offDropado} />}
+                {pctQuero > 0 && <circle className="anim-donut" cx="21" cy="21" r="15.9" fill="transparent" stroke="var(--color-status-quero)" strokeWidth="6" strokeDasharray={arco(pctQuero)} strokeDashoffset={offQuero} />}
               </svg>
               <div className="flex flex-col gap-1.5 flex-1 min-w-[140px]">
                 {([
-                  { status: 'Assistindo', cor: 'bg-holo-3', pct: pctAssistindo, total: overview?.assistindo || 0 },
-                  { status: 'Em Dia', cor: 'bg-green', pct: pctEmDia, total: overview?.em_dia || 0 },
-                  { status: 'Completo', cor: 'bg-gold', pct: pctCompleto, total: overview?.completos || 0 },
-                  { status: 'Dropado', cor: 'bg-muted-2', pct: pctDropado, total: overview?.dropados || 0 },
-                  { status: 'Quero Assistir', cor: 'bg-holo-1', pct: pctQuero, total: overview?.quero_assistir || 0 },
+                  { status: 'Assistindo', cor: 'bg-status-assistindo', pct: pctAssistindo, total: overview?.assistindo || 0 },
+                  { status: 'Em Dia', cor: 'bg-status-em-dia', pct: pctEmDia, total: overview?.em_dia || 0 },
+                  { status: 'Completo', cor: 'bg-status-completo', pct: pctCompleto, total: overview?.completos || 0 },
+                  { status: 'Dropado', cor: 'bg-status-dropado', pct: pctDropado, total: overview?.dropados || 0 },
+                  { status: 'Quero Assistir', cor: 'bg-status-quero', pct: pctQuero, total: overview?.quero_assistir || 0 },
                 ] as const).map(item => (
                   <button
                     key={item.status}
@@ -604,18 +604,18 @@ export default function Estatisticas() {
                   >
                     <span className={`w-2.5 h-2.5 rounded-sm ${item.cor}`}></span>
                     <span>{item.status}</span>
-                    <span className="ml-auto font-mono text-[11px] text-muted-2 tabular-nums">{item.total}</span>
+                    <span className="ml-auto font-mono text-xs text-muted-2 tabular-nums">{item.total}</span>
                     <b className="font-mono tabular-nums min-w-[36px] text-right">{item.pct.toFixed(0)}%</b>
                   </button>
                 ))}
               </div>
             </div>
-            <p className="text-[10px] text-muted-2 mt-4 font-mono">Toque num status pra ver os animes</p>
+            <p className="text-xs text-muted-2 mt-4 font-mono">Toque num status pra ver os animes</p>
           </div>
 
           <div ref={registrar} className="reveal bg-panel border border-line rounded-2xl p-6" style={{ transitionDelay: '.08s' }}>
             <h2 className="font-anton uppercase text-[15px] mb-1">Afinidade</h2>
-            <p className="text-[11px] text-muted-2 mb-4">
+            <p className="text-xs text-muted-2 mb-4">
               Demografia é o mercado da obra (Isekai, Shounen); gênero é a narrativa (Ação, Drama)
             </p>
 
@@ -628,7 +628,7 @@ export default function Estatisticas() {
                   key={aba.valor}
                   type="button"
                   onClick={() => setAbaAfinidade(aba.valor)}
-                  className={`select-none px-3 py-1.5 rounded-full text-[11px] font-bold transition-all duration-150 cursor-pointer border ${
+                  className={`select-none px-3 py-1.5 rounded-full text-xs font-bold transition-all duration-150 cursor-pointer border ${
                     abaAfinidade === aba.valor
                       ? 'bg-gradient-to-r from-holo-1 to-holo-2 text-void border-transparent'
                       : 'bg-panel-2 border-line text-muted hover:border-holo-2 hover:text-text'
@@ -666,7 +666,7 @@ export default function Estatisticas() {
                           style={{ width: desenhado ? `${widthPct}%` : '0%', ...atrasoBarra(i) }}
                         ></div>
                       </div>
-                      <span className="font-mono text-[11px] text-muted-2 text-right tabular-nums">{g.total_watched}</span>
+                      <span className="font-mono text-xs text-muted-2 text-right tabular-nums">{g.total_watched}</span>
                     </button>
                   )
                 })}
@@ -674,7 +674,7 @@ export default function Estatisticas() {
             )}
 
             {afinidadeAtiva.length > 0 && (
-              <p className="text-[10px] text-muted-2 mt-4 font-mono">Toque numa categoria pra ver os animes</p>
+              <p className="text-xs text-muted-2 mt-4 font-mono">Toque numa categoria pra ver os animes</p>
             )}
           </div>
         </div>
@@ -685,18 +685,18 @@ export default function Estatisticas() {
         {tagsTematicas.length > 0 && (
           <div ref={registrar} className="reveal bg-panel border border-line rounded-2xl p-6 mb-5">
             <h2 className="font-anton uppercase text-[15px] mb-1">Tags Temáticas</h2>
-            <p className="text-[11px] text-muted-2 mb-5">Elementos que mais aparecem nos seus animes — toque numa tag pra ver quais</p>
+            <p className="text-xs text-muted-2 mb-5">Elementos que mais aparecem nos seus animes — toque numa tag pra ver quais</p>
             <div className="flex flex-wrap gap-2">
               {tagsTematicas.slice(0, 14).map(t => (
                 <button
                   key={t.genre}
                   type="button"
                   onClick={() => setRecorte({ tipo: 'genero', valor: t.genre })}
-                  className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-panel-2 border border-line text-[11.5px] font-bold transition-all duration-200 hover:border-holo-2 hover:text-holo-2 hover:-translate-y-0.5 cursor-pointer"
+                  className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-panel-2 border border-line text-xs font-bold transition-all duration-200 hover:border-holo-2 hover:text-holo-2 hover:-translate-y-0.5 cursor-pointer"
                   title={`Ver seus ${t.total_watched} ${t.total_watched === 1 ? 'anime' : 'animes'} com ${traduzirGenero(t.genre)}`}
                 >
                   {traduzirGenero(t.genre)}
-                  <b className="font-mono text-[10px] text-muted-2 tabular-nums">{t.total_watched}</b>
+                  <b className="font-mono text-xs text-muted-2 tabular-nums">{t.total_watched}</b>
                 </button>
               ))}
             </div>
@@ -707,7 +707,7 @@ export default function Estatisticas() {
             sido cruzados. Responde "que gênero eu assisto muito mas não curto tanto?". */}
         <div ref={registrar} className="reveal bg-panel border border-line rounded-2xl p-6 mb-5">
           <h2 className="font-anton uppercase text-[15px] mb-1">Volume × Satisfação</h2>
-          <p className="text-[11px] text-muted-2 mb-6">Quanto você assiste de cada categoria, cruzado com a nota que costuma dar — toque num ponto pra ver os animes</p>
+          <p className="text-xs text-muted-2 mb-6">Quanto você assiste de cada categoria, cruzado com a nota que costuma dar — toque num ponto pra ver os animes</p>
           <QuadranteAfinidade
             generos={[...demografias, ...generosNarrativos]}
             notaMedia={overview?.nota_media || 0}
@@ -722,7 +722,7 @@ export default function Estatisticas() {
               <h2 className="font-anton uppercase text-[15px]">Atividade Recente</h2>
               {variacao.valida && (
                 <span
-                  className={`shrink-0 font-mono text-[10.5px] font-bold px-2 py-1 rounded-md border tabular-nums ${
+                  className={`shrink-0 font-mono text-xs font-bold px-2 py-1 rounded-md border tabular-nums ${
                     variacao.pct >= 0
                       ? 'text-green border-green/40 bg-green/10'
                       : 'text-coral border-coral/40 bg-coral/10'
@@ -733,7 +733,7 @@ export default function Estatisticas() {
                 </span>
               )}
             </div>
-            <p className="text-[11px] text-muted-2 mb-6">
+            <p className="text-xs text-muted-2 mb-6">
               Episódios marcados como assistidos, por semana
               {variacao.valida && ' — a variação compara as últimas 4 semanas com as 4 anteriores'}
             </p>
@@ -747,13 +747,13 @@ export default function Estatisticas() {
                 {activityRecente.map((a, i) => {
                   const heightPct = (a.episodios_assistidos / maxEpisodios) * 100
                   return (
-                    <div key={a.semana} className="flex-1 max-w-[64px] flex flex-col items-center gap-2 h-full justify-end">
-                      <span className="font-mono text-[10px] text-muted-2 whitespace-nowrap tabular-nums">{a.episodios_assistidos}</span>
+                    <div key={a.semana} className="flex-1 min-w-0 max-w-[64px] flex flex-col items-center gap-2 h-full justify-end">
+                      <span className="font-mono text-xs text-muted-2 whitespace-nowrap tabular-nums">{a.episodios_assistidos}</span>
                       <div
                         className="anim-crescer barra-hover w-full bg-gradient-to-t from-holo-3 to-holo-2 rounded-t-md min-h-[4px]"
                         style={{ height: desenhado ? `${heightPct}%` : '0%', ...atrasoBarra(i) }}
                       ></div>
-                      <span className="font-mono text-[9.5px] text-muted-2 whitespace-nowrap">{formatWeekLabel(a.semana)}</span>
+                      <span className="font-mono text-xs text-muted-2 text-center leading-tight">{formatWeekLabel(a.semana)}</span>
                     </div>
                   )
                 })}
@@ -764,7 +764,7 @@ export default function Estatisticas() {
           {/* Distribuição de Notas */}
           <div ref={registrar} className="reveal bg-panel border border-line rounded-2xl p-6" style={{ transitionDelay: '.08s' }}>
             <h2 className="font-anton uppercase text-[15px] mb-1">Distribuição de Notas</h2>
-            <p className="text-[11px] text-muted-2 mb-6">Quantos animes você avaliou com cada nota — toque numa barra pra ver quais</p>
+            <p className="text-xs text-muted-2 mb-6">Quantos animes você avaliou com cada nota — toque numa barra pra ver quais</p>
             {ratings.length === 0 ? (
               <p className="text-[12.5px] text-muted-2">Avalie alguns animes pra ver o histograma aqui.</p>
             ) : (
@@ -780,17 +780,17 @@ export default function Estatisticas() {
                         className="flex-1 max-w-[64px] flex flex-col items-center gap-2 h-full justify-end cursor-pointer rounded-md transition-colors hover:bg-panel-2/60 focus-visible:outline-2 focus-visible:outline-holo-3"
                         title={`Ver os ${r.total} ${r.total === 1 ? 'anime' : 'animes'} com nota ${r.nota}`}
                       >
-                        <span className="font-mono text-[10px] text-muted-2 tabular-nums">{r.total}</span>
+                        <span className="font-mono text-xs text-muted-2 tabular-nums">{r.total}</span>
                         <div
                           className="anim-crescer barra-hover w-full bg-gold rounded-t-md min-h-[4px]"
                           style={{ height: desenhado ? `${heightPct}%` : '0%', ...atrasoBarra(i) }}
                         ></div>
-                        <span className="font-mono text-[9.5px] text-muted-2 tabular-nums">{r.nota}</span>
+                        <span className="font-mono text-xs text-muted-2 tabular-nums">{r.nota}</span>
                       </button>
                     )
                   })}
                 </div>
-                <p className="text-center font-mono text-[9.5px] text-muted-2 mt-2">animes por nota</p>
+                <p className="text-center font-mono text-xs text-muted-2 mt-2">animes por nota</p>
               </>
             )}
           </div>
@@ -798,13 +798,20 @@ export default function Estatisticas() {
 
         <div ref={registrar} className="reveal bg-panel border border-line rounded-2xl p-6">
           <h2 className="font-anton uppercase text-[15px] mb-1">Distribuição por Ano de Lançamento</h2>
-          <p className="text-[11px] text-muted-2 mb-6">Quantos animes assistidos por ano de estreia — toque numa barra pra ver quais</p>
+          <p className="text-xs text-muted-2 mb-6">Quantos animes assistidos por ano de estreia — toque numa barra pra ver quais</p>
           {years.length === 0 ? (
             <p className="text-[12.5px] text-muted-2">
               Ainda não temos o ano de lançamento no cache dos seus animes — assim que isso for sincronizado, esse gráfico aparece aqui.
             </p>
           ) : (
-            <div className="flex items-end justify-center gap-2 h-[140px] overflow-x-auto custom-scrollbar">
+            <div
+              ref={(el) => { if (el) el.scrollLeft = el.scrollWidth }}
+              className="overflow-x-auto custom-scrollbar"
+            >
+            {/* w-max + min-w-full: centraliza quando cabe e, quando não cabe, começa na esquerda
+                para a rolagem alcançar o primeiro ano (justify-center direto no trilho rolável
+                deixa o início inalcançável). */}
+            <div className="flex items-end justify-center gap-2 h-[140px] w-max min-w-full">
               {years.map((y, i) => {
                 const heightPct = (y.total / maxYearTotal) * 100
                 return (
@@ -815,15 +822,16 @@ export default function Estatisticas() {
                     className="min-w-[36px] max-w-[64px] flex-1 flex flex-col items-center gap-2 h-full justify-end cursor-pointer rounded-md transition-colors hover:bg-panel-2/60 focus-visible:outline-2 focus-visible:outline-holo-3"
                     title={`Ver os ${y.total} ${y.total === 1 ? 'anime' : 'animes'} de ${y.season_year}`}
                   >
-                    <span className="font-mono text-[10px] text-muted-2 tabular-nums">{y.total}</span>
+                    <span className="font-mono text-xs text-muted-2 tabular-nums">{y.total}</span>
                     <div
                       className="anim-crescer barra-hover w-full bg-gradient-to-t from-holo-1 to-holo-2 rounded-t-md min-h-[4px]"
                       style={{ height: desenhado ? `${heightPct}%` : '0%', ...atrasoBarra(i) }}
                     ></div>
-                    <span className="font-mono text-[9.5px] text-muted-2 tabular-nums">{y.season_year}</span>
+                    <span className="font-mono text-xs text-muted-2 tabular-nums">{y.season_year}</span>
                   </button>
                 )
               })}
+            </div>
             </div>
           )}
         </div>
@@ -831,7 +839,7 @@ export default function Estatisticas() {
         {/* Padrão de Horário */}
         <div ref={registrar} className="reveal bg-panel border border-line rounded-2xl p-6 mt-5">
           <h2 className="font-anton uppercase text-[15px] mb-1">Padrão de Horário</h2>
-          <p className="text-[11px] text-muted-2 mb-6">
+          <p className="text-xs text-muted-2 mb-6">
             {usandoSessoes
               ? 'Em que período do dia você começa a assistir — contando sessões, não episódios soltos'
               : 'Em que período do dia você mais assiste'}
@@ -865,8 +873,8 @@ export default function Estatisticas() {
                           style={{ height: desenhado ? `${heightPct}%` : '0%', ...atrasoBarra(i) }}
                         ></div>
                       </div>
-                      <span className={`font-mono text-[10px] text-center ${dominante && padraoConfiavel ? 'text-holo-3' : 'text-muted-2'}`}>{p.label}</span>
-                      <span className="font-mono text-[9.5px] text-muted-2 tabular-nums">{p.total} {unidadePeriodo}</span>
+                      <span className={`font-mono text-xs text-center ${dominante && padraoConfiavel ? 'text-holo-3' : 'text-muted-2'}`}>{p.label}</span>
+                      <span className="font-mono text-xs text-muted-2 tabular-nums">{p.total} {unidadePeriodo}</span>
                     </div>
                   )
                 })}
@@ -888,7 +896,7 @@ export default function Estatisticas() {
                   <Clock size={18} />
                 </div>
                 <div className="min-w-0">
-                  <div className="font-mono text-[10.5px] text-coral tracking-widest mb-1.5 uppercase">Parado há {diasParado} dias</div>
+                  <div className="font-mono text-xs text-coral tracking-widest mb-1.5 uppercase">Parado há {diasParado} dias</div>
                   <div className="font-anton text-lg leading-tight line-clamp-2 mb-1">{esquecido.title}</div>
                   <div className="text-[12px] text-muted tabular-nums">
                     Você viu {esquecido.episodios_assistidos}
@@ -930,7 +938,7 @@ export default function Estatisticas() {
             const capa = card.dados?.image_url || (card.dados?.mal_id ? capasDosRecordes[card.dados.mal_id] : undefined)
             const conteudo = (
               <>
-                <div className="font-mono text-[10.5px] text-muted-2 tracking-widest mb-2.5 uppercase">{card.rotulo}</div>
+                <div className="font-mono text-xs text-muted-2 tracking-widest mb-2.5 uppercase">{card.rotulo}</div>
                 {card.dados ? (
                   <div className="flex items-center gap-3.5">
                     {capa && (
