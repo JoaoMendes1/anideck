@@ -788,6 +788,11 @@ experiência pequena e funcional de cada vez.
 > numeração e não abrem escopo novo. Ficam registrados aqui em ordem cronológica inversa para
 > não sumirem: fase concluída não deve ser reaberta só para receber um conserto.
 
+### 15/11/2026 — Coluna da semana de volta na Início
+
+- [x] **Coluna lateral com "Sua semana" restaurada** a partir de 1280 px, como era antes do #215: sem ela a agenda esticava na largura toda. O palco de destaques passa a caber na coluna principal, com a fila das próximas embaixo.
+- [x] Páginas de uso diário de volta ao limite de 1440 px; só o Painel Admin, que ganhou o menu lateral, fica mais largo.
+
 ### 15/11/2026 — Pódio no ranking e notificações mais limpas (#217)
 
 - [x] **Pódio** com os três primeiros do ranking global (`PodioRanking`), só sem filtro: com filtro, o 1º da lista não é o 1º do AniDeck. O resto em duas colunas a partir de 1536 px.

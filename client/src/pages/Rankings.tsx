@@ -278,7 +278,7 @@ export default function Rankings() {
 
     return (
         <div className="pb-20">
-            <div className="max-w-[1760px] mx-auto px-4 sm:px-6 lg:px-10 pt-10">
+            <div className="max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-10 pt-10">
                 <AbasDescobrir />
 
                 {/* --- SELETOR DE MODO DO RANKING --- */}

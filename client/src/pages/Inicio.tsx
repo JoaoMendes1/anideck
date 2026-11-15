@@ -439,7 +439,7 @@ export default function Inicio() {
   }
 
   return (
-    <div className="w-full min-w-0 max-w-[1760px] mx-auto px-4 sm:px-6 lg:px-10 pt-6 pb-24">
+    <div className="w-full min-w-0 max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-10 pt-6 pb-24">
       {/* HUD Gamificado do Jogador (Mobile & Desktop) */}
       <PlayerHudInicio
         nome={nome}
@@ -556,6 +556,8 @@ export default function Inicio() {
         </section>
       )}
 
+      {/* No monitor largo, o conteúdo ganha uma coluna lateral com a semana. */}
+      <div className="xl:grid xl:grid-cols-[minmax(0,1fr)_340px] xl:gap-10 xl:items-start">
       <div className="min-w-0">
       <CardChefao className="mb-6" />
       <CardDesafioClaInicio />
@@ -721,7 +723,7 @@ export default function Inicio() {
       )}
 
       {!carregando && !deckVazio && (
-        <div>
+        <div className="xl:hidden">
           <Secao
             titulo="Sua semana"
             subtitulo="O que sai do seu deck nos próximos 7 dias, no seu horário"
@@ -789,6 +791,25 @@ export default function Inicio() {
         </Secao>
       )}
 
+      </div>
+
+      {!deckVazio && (
+        <aside className="hidden xl:flex flex-col gap-6 sticky top-24">
+          {!carregando && (
+            <div>
+              <div className="flex items-center justify-between mb-3 select-none">
+                <h2 className="font-anton text-[16px] uppercase m-0 flex items-center gap-2 tracking-wide">
+                  <CalendarDays size={15} className="text-holo-3" /> Sua semana
+                </h2>
+                <Link to="/calendario" className="font-mono text-xs text-muted-2 uppercase tracking-widest hover:text-holo-3">
+                  Agenda →
+                </Link>
+              </div>
+              <SuaSemana semana={semana} compacta />
+            </div>
+          )}
+        </aside>
+      )}
       </div>
 
       <OnboardingGostoModal

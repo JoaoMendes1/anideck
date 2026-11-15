@@ -71,7 +71,7 @@ export default function Guilda() {
 
   if (carregando && !dados) {
     return (
-      <div className="w-full max-w-[1760px] mx-auto px-4 sm:px-6 lg:px-10 pt-8 pb-24">
+      <div className="w-full max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-10 pt-8 pb-24">
         <div className="h-40 rounded-2xl bg-panel border border-line animate-pulse mb-6" />
         <div className="grid grid-cols-1 lg:grid-cols-[1fr_380px] gap-6">
           <div className="h-96 rounded-2xl bg-panel border border-line animate-pulse" />
@@ -83,7 +83,7 @@ export default function Guilda() {
 
   if (erro || !dados) {
     return (
-      <div className="w-full max-w-[1760px] mx-auto px-4 sm:px-6 lg:px-10 pt-12 pb-24 text-center">
+      <div className="w-full max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-10 pt-12 pb-24 text-center">
         <div className="max-w-md mx-auto p-6 rounded-2xl bg-panel border border-line">
           <h1 className="font-anton text-2xl uppercase mb-2">Guilda indisponível no momento</h1>
           <p className="text-sm text-muted mb-4">
@@ -104,7 +104,7 @@ export default function Guilda() {
   const totalDesbloqueadas = insignias.filter((i) => i.desbloqueada).length
 
   return (
-    <div className="w-full min-w-0 max-w-[1760px] mx-auto px-4 sm:px-6 lg:px-10 pt-6 pb-24">
+    <div className="w-full min-w-0 max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-10 pt-6 pb-24">
       <header className="mb-6 select-none">
         <p className="font-mono text-xs text-muted-2 uppercase tracking-widest mb-1">
           // guilda do anideck · progressão & credibilidade

@@ -66,7 +66,7 @@ export default function Loja() {
   }, [itens])
 
   return (
-    <div className="w-full min-w-0 max-w-[1760px] mx-auto px-4 sm:px-6 lg:px-10 pt-6 pb-24">
+    <div className="w-full min-w-0 max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-10 pt-6 pb-24">
       {/* CABEÇALHO DA LOJA */}
       <header className="mb-8 rounded-3xl border border-line bg-gradient-to-br from-panel via-panel to-panel-2 p-6 sm:p-8 relative overflow-hidden shadow-2xl">
         <div className="absolute -right-10 -bottom-10 w-64 h-64 bg-holo-3/10 rounded-full blur-3xl pointer-events-none" />

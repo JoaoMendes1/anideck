@@ -327,7 +327,7 @@ export default function Busca() {
     }
 
     return (
-        <div className="w-full min-w-0 max-w-[1760px] mx-auto pt-6 px-4 sm:px-6 lg:px-10 pb-10">
+        <div className="w-full min-w-0 max-w-[1440px] mx-auto pt-6 px-4 sm:px-6 lg:px-10 pb-10">
             <AbasDescobrir />
 
             <div className="flex items-center gap-3 bg-panel border-2 border-holo-2 rounded-xl p-4 mb-4">

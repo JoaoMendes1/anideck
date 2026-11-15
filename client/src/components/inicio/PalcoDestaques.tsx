@@ -84,7 +84,7 @@ export default function PalcoDestaques() {
         )}
       </div>
 
-      <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_340px]">
+      <div className="grid gap-4">
         <div className="relative overflow-hidden rounded-3xl border border-line bg-panel min-h-[380px] sm:min-h-[420px] flex items-end">
           {fundo && (
             <img key={fundo} src={fundo} alt="" className="palco-destaque-fundo absolute inset-0 w-full h-full object-cover opacity-45" />
@@ -132,11 +132,11 @@ export default function PalcoDestaques() {
         </div>
 
         {fila.length > 0 && (
-          <ol className="m-0 p-0 list-none flex xl:flex-col gap-2.5 overflow-x-auto xl:overflow-visible custom-scrollbar pb-2 xl:pb-0">
+          <ol className="m-0 p-0 list-none flex gap-2.5 overflow-x-auto custom-scrollbar pb-2">
             {fila.map((posicao, k) => {
               const obra = destaques[posicao]
               return (
-                <li key={obra.mal_id} className="shrink-0 w-64 xl:w-auto xl:flex-1 xl:min-h-0">
+                <li key={obra.mal_id} className="shrink-0 w-64 2xl:w-auto 2xl:flex-1 2xl:min-w-0">
                   <button
                     type="button"
                     onClick={() => setIndice(posicao)}
