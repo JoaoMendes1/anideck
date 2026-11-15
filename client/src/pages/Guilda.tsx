@@ -199,7 +199,7 @@ export default function Guilda() {
           {/* CHEFÃO DA TEMPORADA (Fase 17.3, #185) */}
           <CardChefao />
 
-          {/* SELETOR DE CLASSE E TÍTULOS (Fase 17.4, #186, #189) */}
+          {/* Seletor de classe e títulos */}
           <SeletorClasse
             classeAtual={estadoComu?.perfil.classe || 'bardo'}
             tituloAtual={estadoComu?.perfil.titulo_ativo || 'Aventureiro Iniciante'}
@@ -213,7 +213,7 @@ export default function Guilda() {
             }}
           />
 
-          {/* PREVISÕES DA COMUNIDADE COM APOSTAS DE MANA (Fase 17.4, #187) */}
+          {/* Previsões da comunidade com apostas de Mana */}
           <CardPrevisoes />
 
           {/* MISSÕES DIÁRIAS (Fase 16, #168) */}

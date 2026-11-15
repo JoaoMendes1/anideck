@@ -153,7 +153,7 @@ export default function Clas() {
         <div>
           <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-holo-3/10 border border-holo-3/30 text-holo-3 text-xs font-bold tracking-wider uppercase mb-3">
             <Users size={14} />
-            <span>Comunidade Viva · Fase 17</span>
+            <span>Comunidade Viva</span>
           </div>
           <h1 className="text-3xl sm:text-4xl lg:text-5xl font-black font-anton tracking-wide">
             CLÃS <span className="text-holo">&</span> ALIANÇAS

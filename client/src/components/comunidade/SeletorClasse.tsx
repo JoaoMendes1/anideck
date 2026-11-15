@@ -71,7 +71,7 @@ export default function SeletorClasse({
         <div className="flex items-center justify-between gap-2 mb-3">
           <div>
             <span className="font-mono text-xs text-muted-2 uppercase tracking-widest block">
-              // vocação de rpg (fase 17.4)
+              // vocação de rpg
             </span>
             <h3 className="font-anton text-lg uppercase text-text m-0">Sua Classe na Guilda</h3>
           </div>

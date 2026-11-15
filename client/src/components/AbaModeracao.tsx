@@ -443,7 +443,7 @@ export default function AbaModeracao() {
             <div className="p-4 rounded-xl bg-panel-2 border border-line flex items-center justify-between gap-4 mt-3">
               <div>
                 <span className="font-bold text-sm text-text block">
-                  Previsões Comunitárias com Mana (#187)
+                  Previsões Comunitárias com Mana
                 </span>
                 <span className="text-xs text-muted block">
                   {regras.previsoes_ativas
@@ -475,7 +475,7 @@ export default function AbaModeracao() {
       <section className="p-5 rounded-2xl bg-panel border border-line min-w-0">
         <div className="flex items-center gap-2 mb-1">
           <Gift size={18} className="text-gold" />
-          <h2 className="font-anton text-lg uppercase m-0">Convites & Recrutamento (Fase 17.5b)</h2>
+          <h2 className="font-anton text-lg uppercase m-0">Convites & Recrutamento</h2>
         </div>
         <p className="text-[12.5px] text-muted mt-0 mb-4">
           Ajuste os valores de incentivo em AniCoins (₳) e XP para membros que convidam amigos e o pacote de boas-vindas VIP concedido pelo Fundador.

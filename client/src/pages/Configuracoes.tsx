@@ -104,7 +104,7 @@ export default function Configuracoes() {
     const [erro, setErro] = useState<string | null>(null)
     const [faqAberta, setFaqAberta] = useState<number | null>(0)
 
-    // Avatar montável em camadas (#192)
+    // Avatar: fundo e formato do retrato do personagem
     const [avatarCustom, setAvatarCustom] = useState<AvatarCustom>(AVATAR_PADRAO)
     const [usaAvatarCustom, setUsaAvatarCustom] = useState(false)
     const { dados: personagem } = usePersonagem()
@@ -113,12 +113,12 @@ export default function Configuracoes() {
         : undefined
     const [salvandoAvatar, setSalvandoAvatar] = useState(false)
 
-    // Preferências de Gosto (#139)
+    // Preferências de gosto
     const [generosFavoritos, setGenerosFavoritos] = useState<string[]>([])
     const [generosBloqueados, setGenerosBloqueados] = useState<string[]>([])
     const [salvandoGosto, setSalvandoGosto] = useState(false)
 
-    // Importador MyAnimeList (#140)
+    // Importador do MyAnimeList
     const [xmlConteudo, setXmlConteudo] = useState<string>('')
     const [nomeArquivoMal, setNomeArquivoMal] = useState<string>('')
     const [previaMal, setPreviaMal] = useState<{
