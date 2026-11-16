@@ -7,7 +7,7 @@ import DeckCard from '../components/DeckCard'
 import type { AnimeDaApi } from '../types/anime'
 import DeckSkeleton from '../components/DeckSkeleton'
 import StatCard from '../components/StatCard'
-import { Play, CheckCircle2, Bookmark, MonitorPlay, Star, XCircle, AlertCircle, Clock } from 'lucide-react'
+import { Play, CheckCircle2, Bookmark, MonitorPlay, Star, XCircle, AlertCircle, Clock, Search, X, ArrowUpDown } from 'lucide-react'
 import type { AiringInfo } from '../lib/deckHelpers'
 import { gradienteDoCard, reconciliarStatusDeck } from '../lib/deckHelpers'
 import { usePosicaoDeLista } from '../lib/posicaoDeLista'
@@ -39,6 +39,8 @@ interface HydratedAnime {
 
 const FILTER_TABS = ['Todos', 'Assistindo', 'Em Dia', 'Completo', 'Quero Assistir', 'Dropado']
 
+type OrdenacaoDeck = 'favoritos' | 'nota' | 'titulo'
+
 interface DeckEmMemoria {
     entradas: Entrada[]
     animesData: Record<number, HydratedAnime>
@@ -60,6 +62,8 @@ export default function MeuDeck() {
     const [editando, setEditando] = useState<Entrada | null>(null)
     const [totalEpisodiosEditando, setTotalEpisodiosEditando] = useState(0)
     const [filtroAtivo, setFiltroAtivo] = useState('Todos')
+    const [buscaTitulo, setBuscaTitulo] = useState('')
+    const [ordenacao, setOrdenacao] = useState<OrdenacaoDeck>('favoritos')
     const [userName, setUserName] = useState(emMemoria?.userName ?? 'Usuário')
     const { reportarFalha, reportarSucesso } = useCatalogoStatus()
 
@@ -258,15 +262,33 @@ export default function MeuDeck() {
         return counts
     }, [entradas])
 
-    const entradasFiltradas = entradas.filter(e => filtroAtivo === 'Todos' || e.status === filtroAtivo)
+    const entradasFiltradas = useMemo(() => {
+        const termo = buscaTitulo.trim().toLowerCase()
+        return entradas.filter(e => {
+            if (filtroAtivo !== 'Todos' && e.status !== filtroAtivo) return false
+            if (!termo) return true
+            const titulo = (animesData[e.mal_id]?.title || '').toLowerCase()
+            return titulo.includes(termo) || String(e.mal_id).includes(termo)
+        })
+    }, [entradas, filtroAtivo, buscaTitulo, animesData])
 
     const entradasOrdenadas = useMemo(() => {
         return [...entradasFiltradas].sort((a, b) => {
-            if (a.is_favorite && !b.is_favorite) return -1;
-            if (!a.is_favorite && b.is_favorite) return 1;
-            return 0;
+            if (ordenacao === 'nota') {
+                const notaA = a.nota ?? -1
+                const notaB = b.nota ?? -1
+                if (notaB !== notaA) return notaB - notaA
+            } else if (ordenacao === 'titulo') {
+                const tituloA = animesData[a.mal_id]?.title || ''
+                const tituloB = animesData[b.mal_id]?.title || ''
+                const cmp = tituloA.localeCompare(tituloB, 'pt-BR', { sensitivity: 'base' })
+                if (cmp !== 0) return cmp
+            }
+            if (a.is_favorite && !b.is_favorite) return -1
+            if (!a.is_favorite && b.is_favorite) return 1
+            return 0
         })
-    }, [entradasFiltradas])
+    }, [entradasFiltradas, ordenacao, animesData])
 
     if (loading) {
         return (
@@ -276,8 +298,8 @@ export default function MeuDeck() {
                         <div className="h-7 w-64 max-w-full rounded-full shimmer" />
                         <div className="h-4 w-48 rounded-full shimmer" />
                     </div>
-                    <div className="flex md:grid md:grid-cols-5 gap-3.5 mb-10 overflow-hidden">
-                        {Array.from({ length: 5 }).map((_, i) => (
+                    <div className="flex md:grid md:grid-cols-6 gap-3.5 mb-10 overflow-hidden">
+                        {Array.from({ length: 6 }).map((_, i) => (
                             <div key={i} className="shrink-0 w-[132px] md:w-auto h-[92px] rounded-[14px] shimmer" />
                         ))}
                     </div>
@@ -315,7 +337,7 @@ export default function MeuDeck() {
                     </Link>
                 </div>
 
-                <div className="flex md:grid md:grid-cols-6 gap-3.5 mb-10 select-none overflow-x-auto md:overflow-visible scrollbar-hide snap-x snap-mandatory -mx-5 px-5 scroll-px-5 md:mx-0 md:px-0 md:scroll-px-0">
+                <div className="flex md:grid md:grid-cols-6 gap-3.5 mb-10 select-none overflow-x-auto md:overflow-visible scrollbar-hide snap-x snap-mandatory -mx-4 px-4 scroll-px-4 sm:-mx-6 sm:px-6 sm:scroll-px-6 md:mx-0 md:px-0 md:scroll-px-0">
                     <StatCard icon={<MonitorPlay size={14} />} value={stats.assistindo} label="Assistindo" accentColor="holo-3" active={filtroAtivo === 'Assistindo'} onClick={() => alternarFiltroPorCard('Assistindo')} />
                     <StatCard icon={<Bookmark size={14} />} value={stats.emDia} label="Em Dia" accentColor="green" active={filtroAtivo === 'Em Dia'} onClick={() => alternarFiltroPorCard('Em Dia')} />
                     <StatCard icon={<Clock size={14} />} value={stats.queroAssistir} label="Quero Assistir" accentColor="holo-1" active={filtroAtivo === 'Quero Assistir'} onClick={() => alternarFiltroPorCard('Quero Assistir')} />
@@ -324,12 +346,51 @@ export default function MeuDeck() {
                     <StatCard icon={<Star size={14} />} value={stats.notaMedia} label="Sua Nota Média" accentColor="holo-1" />
                 </div>
 
-                <div className="flex items-center justify-between mb-5 select-none">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4 select-none">
                     <h2 className="font-anton text-[17px] uppercase m-0">Meu Deck</h2>
+                    {entradas.length > 0 && (
+                        <div className="flex items-center gap-2 w-full sm:w-auto">
+                            <div className="relative flex-1 sm:w-56">
+                                <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-2 pointer-events-none" />
+                                <input
+                                    type="search"
+                                    value={buscaTitulo}
+                                    onChange={(e) => setBuscaTitulo(e.target.value)}
+                                    placeholder="Filtrar no deck..."
+                                    aria-label="Filtrar animes do deck por título"
+                                    className="w-full bg-panel border border-line rounded-full pl-8 pr-8 py-1.5 text-xs text-text placeholder:text-muted-2 outline-none focus:border-holo-3 transition-colors"
+                                />
+                                {buscaTitulo && (
+                                    <button
+                                        type="button"
+                                        onClick={() => setBuscaTitulo('')}
+                                        aria-label="Limpar busca"
+                                        className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-2 hover:text-text cursor-pointer"
+                                    >
+                                        <X size={13} />
+                                    </button>
+                                )}
+                            </div>
+                            <label className="inline-flex items-center gap-1.5 bg-panel border border-line rounded-full px-3 py-1.5 text-xs text-muted shrink-0 focus-within:border-holo-3 transition-colors">
+                                <ArrowUpDown size={12} className="text-muted-2 shrink-0" />
+                                <span className="sr-only">Ordenar deck</span>
+                                <select
+                                    value={ordenacao}
+                                    onChange={(e) => setOrdenacao(e.target.value as OrdenacaoDeck)}
+                                    aria-label="Ordenar deck"
+                                    className="bg-transparent text-xs font-bold text-text outline-none cursor-pointer"
+                                >
+                                    <option value="favoritos" className="bg-panel text-text">Favoritos</option>
+                                    <option value="nota" className="bg-panel text-text">Maior nota</option>
+                                    <option value="titulo" className="bg-panel text-text">Título (A–Z)</option>
+                                </select>
+                            </label>
+                        </div>
+                    )}
                 </div>
 
                 {/* Abas com contadores numéricos integrados */}
-                <div className="flex overflow-x-auto md:flex-wrap md:overflow-visible scrollbar-hide gap-2 mb-7 select-none -mx-5 px-5 md:mx-0 md:px-0">
+                <div className="flex overflow-x-auto md:flex-wrap md:overflow-visible scrollbar-hide gap-2 mb-7 select-none -mx-4 px-4 sm:-mx-6 sm:px-6 md:mx-0 md:px-0">
                     {FILTER_TABS.map(tab => {
                         const totalAba = contadoresPorAba[tab] ?? 0
                         const ativa = filtroAtivo === tab
@@ -360,7 +421,20 @@ export default function MeuDeck() {
                     <div className="text-center py-16 bg-panel border border-line rounded-2xl select-none">
                         <Bookmark className="mx-auto mb-4 text-muted-2" size={32} />
                         <h3 className="font-anton uppercase text-text text-lg mb-1">Lista Vazia</h3>
-                        <p className="text-sm text-muted">Nenhum anime encontrado com este status.</p>
+                        <p className="text-sm text-muted">
+                            {buscaTitulo.trim()
+                                ? `Nenhum anime encontrado para "${buscaTitulo.trim()}".`
+                                : 'Nenhum anime encontrado com este status.'}
+                        </p>
+                        {(buscaTitulo.trim() !== '' || filtroAtivo !== 'Todos') && (
+                            <button
+                                type="button"
+                                onClick={() => { setBuscaTitulo(''); setFiltroAtivo('Todos') }}
+                                className="mt-4 inline-flex items-center gap-1.5 px-4 py-2 rounded-full border border-line bg-panel-2 text-xs font-bold text-text hover:border-holo-3 cursor-pointer transition-colors"
+                            >
+                                Limpar filtros
+                            </button>
+                        )}
                     </div>
                 ) : (
                     <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3.5 sm:gap-5">

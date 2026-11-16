@@ -1092,70 +1092,72 @@ export default function PainelAdmin() {
           const emBreve = destaques.filter(d => ehObraEmBreve(d))
           return (
             <div className={`mb-6 min-w-0 ${formularioAberto ? 'hidden lg:block' : 'block'}`}>
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                <div>
-                  <div className="flex items-center gap-2.5">
-                    <h1 className="font-anton text-3xl uppercase m-0">Obras curadas</h1>
-                    <span className="font-mono text-xs bg-panel border border-line px-2.5 py-0.5 rounded-full text-muted">
-                      {destaques.length}
-                    </span>
-                  </div>
-                  <p className="text-muted text-sm mt-1">Sinopse, tags, episódios, capas e personagens de cada obra do catálogo. Marque como destaque para aparecer na vitrine.</p>
+              <div>
+                <div className="flex items-center gap-2.5">
+                  <h1 className="font-anton text-3xl uppercase m-0">Obras curadas</h1>
+                  <span className="font-mono text-xs bg-panel border border-line px-2.5 py-0.5 rounded-full text-muted">
+                    {destaques.length}
+                  </span>
                 </div>
-                {semEps.length > 0 && (
-                  <div className="flex flex-wrap items-center gap-2.5 bg-gold/10 border border-gold/40 text-gold px-4 py-2.5 rounded-xl text-xs font-bold">
-                    <span>⚠ {semEps.length} anime(s) curado(s) sem episódios</span>
-                    <button
-                      type="button"
-                      onClick={importarTodosSemEpisodios}
-                      disabled={importandoLote}
-                      className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-holo-2 text-void font-extrabold hover:opacity-90 cursor-pointer transition-opacity shrink-0 disabled:opacity-50"
-                      title="Importa episódios da AniList para todas as obras da lista"
-                    >
-                      {importandoLote ? (
-                        <>
-                          <Loader2 size={12} className="animate-spin" />
-                          Importando...
-                        </>
-                      ) : (
-                        <>
-                          <Zap size={12} />
-                          Importar da AniList ({semEps.length})
-                        </>
-                      )}
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => editarDestaque(semEps[0])}
-                      className="px-3 py-1 rounded-full bg-gold text-void font-extrabold hover:opacity-90 cursor-pointer transition-opacity shrink-0"
-                    >
-                      Editar 1º da fila
-                    </button>
-                  </div>
-                )}
-                {emBreve.length > 0 && (
-                  <div className="flex flex-wrap items-center gap-2 bg-holo-3/10 border border-holo-3/30 text-holo-3 px-3.5 py-2.5 rounded-xl text-xs font-medium">
-                    <span className="font-bold flex items-center gap-1.5 shrink-0">
-                      <Clock size={13} className="text-holo-3" />
-                      {emBreve.length} em breve (anunciados):
-                    </span>
-                    <div className="flex flex-wrap items-center gap-1.5">
-                      {emBreve.map(d => (
-                        <button
-                          key={d.mal_id}
-                          type="button"
-                          onClick={() => editarDestaque(d)}
-                          className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-lg bg-holo-3/15 hover:bg-holo-3/25 border border-holo-3/30 text-holo-3 font-semibold text-xs cursor-pointer transition-colors"
-                          title={`Editar curadoria de ${d.custom_title || d.mal_id}`}
-                        >
-                          <span className="truncate max-w-[200px]">{d.custom_title || `MAL ID ${d.mal_id}`}</span>
-                          <span className="opacity-70 text-xs">✎</span>
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                )}
+                <p className="text-muted text-sm mt-1">Sinopse, tags, episódios, capas e personagens de cada obra do catálogo. Marque como destaque para aparecer na vitrine.</p>
               </div>
+              {(semEps.length > 0 || emBreve.length > 0) && (
+                <div className="flex flex-wrap items-center gap-3 mt-3">
+                  {semEps.length > 0 && (
+                    <div className="flex flex-wrap items-center gap-2.5 bg-gold/10 border border-gold/40 text-gold px-4 py-2.5 rounded-xl text-xs font-bold">
+                      <span>⚠ {semEps.length} anime(s) curado(s) sem episódios</span>
+                      <button
+                        type="button"
+                        onClick={importarTodosSemEpisodios}
+                        disabled={importandoLote}
+                        className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-holo-2 text-void font-extrabold hover:opacity-90 cursor-pointer transition-opacity shrink-0 disabled:opacity-50"
+                        title="Importa episódios da AniList para todas as obras da lista"
+                      >
+                        {importandoLote ? (
+                          <>
+                            <Loader2 size={12} className="animate-spin" />
+                            Importando...
+                          </>
+                        ) : (
+                          <>
+                            <Zap size={12} />
+                            Importar da AniList ({semEps.length})
+                          </>
+                        )}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => editarDestaque(semEps[0])}
+                        className="px-3 py-1 rounded-full bg-gold text-void font-extrabold hover:opacity-90 cursor-pointer transition-opacity shrink-0"
+                      >
+                        Editar 1º da fila
+                      </button>
+                    </div>
+                  )}
+                  {emBreve.length > 0 && (
+                    <div className="flex flex-wrap items-center gap-2 bg-holo-3/10 border border-holo-3/30 text-holo-3 px-3.5 py-2.5 rounded-xl text-xs font-medium">
+                      <span className="font-bold flex items-center gap-1.5 shrink-0">
+                        <Clock size={13} className="text-holo-3" />
+                        {emBreve.length} em breve (anunciados):
+                      </span>
+                      <div className="flex flex-wrap items-center gap-1.5">
+                        {emBreve.map(d => (
+                          <button
+                            key={d.mal_id}
+                            type="button"
+                            onClick={() => editarDestaque(d)}
+                            className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-lg bg-holo-3/15 hover:bg-holo-3/25 border border-holo-3/30 text-holo-3 font-semibold text-xs cursor-pointer transition-colors"
+                            title={`Editar curadoria de ${d.custom_title || d.mal_id}`}
+                          >
+                            <span className="truncate max-w-[200px]">{d.custom_title || `MAL ID ${d.mal_id}`}</span>
+                            <span className="opacity-70 text-xs">✎</span>
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
           )
         })()}
@@ -1316,13 +1318,16 @@ export default function PainelAdmin() {
                         </label>
                         <input
                           id="painel-admin-mal-id"
-                          type="number"
-                          min={1}
+                          type="text"
+                          inputMode="numeric"
                           value={malId ?? ''}
-                          onChange={(e) => setMalId(e.target.value ? Number(e.target.value) : null)}
+                          onChange={(e) => {
+                            const limpo = e.target.value.replace(/\D/g, '')
+                            setMalId(limpo ? Number(limpo) : null)
+                          }}
                           disabled={!!editId}
                           placeholder="Ex: 52991 — busque no myanimelist.net"
-                          className="w-full bg-panel-2 border border-line rounded-xl px-4 py-2 text-sm outline-none focus:border-holo-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                          className="w-full bg-panel-2 border border-line rounded-xl px-4 py-2 text-sm outline-none focus:border-holo-2 disabled:opacity-50 disabled:cursor-not-allowed tabular-nums"
                         />
                         <p className="text-xs text-muted-2 mt-1.5">
                           {editId
@@ -1461,8 +1466,7 @@ export default function PainelAdmin() {
                               className="w-full bg-panel border border-line rounded px-2 py-1.5 text-xs outline-none focus:border-holo-2 text-text"
                             />
                             <p className="text-xs text-muted-2 mt-1">
-                              No <strong>seu</strong> horário — a conversão é automática. É a hora que permite calcular a contagem regressiva sem a AniList.
-                              calcular a contagem regressiva sem a AniList. Preenchido sozinho quando você salva o episódio 1 com data.
+                              No <strong>seu</strong> horário — a conversão é automática. É a hora que permite calcular a contagem regressiva sem a AniList. Preenchido sozinho quando você salva o episódio 1 com data.
                             </p>
                           </div>
 
@@ -1470,11 +1474,10 @@ export default function PainelAdmin() {
                             <label htmlFor="painel-admin-duracao-do-episodio" className="block text-xs mb-1 font-bold text-muted">Duração do episódio (min)</label>
                             <input
                               id="painel-admin-duracao-do-episodio"
-                              type="number"
-                              min="1"
-                              step="1"
+                              type="text"
+                              inputMode="numeric"
                               value={duracao}
-                              onChange={(e) => setDuracao(e.target.value)}
+                              onChange={(e) => setDuracao(e.target.value.replace(/\D/g, ''))}
                               placeholder="24"
                               className="w-full bg-panel border border-line rounded px-2 py-1.5 text-xs outline-none focus:border-holo-2 text-text tabular-nums"
                             />

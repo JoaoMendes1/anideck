@@ -8,6 +8,7 @@ import { useControle, type RotuloOrfao, type TagOlheiro } from '../hooks/useCont
 import { useTaxonomia, normalizar, CAMADAS, type Camada } from '../hooks/useTaxonomia'
 import { useToast } from '../contexts/ToastContext'
 import SecaoCuradoriaIA from './SecaoCuradoriaIA'
+import CampoNumerico from './CampoNumerico'
 
 type Props = {
   apiHealth: 'OK' | 'WARNING' | 'OFFLINE'
@@ -394,13 +395,14 @@ export function AbaControle({
                   </span>
                 </div>
                 <div className="flex gap-2 items-center">
-                  <input
-                    type="number" min={1} step={50}
+                  <CampoNumerico
+                    min={1}
+                    step={50}
                     aria-label="Peso do ranking"
-                    value={pesoExibido}
-                    onChange={e => setPesoInput(e.target.value)}
+                    value={Number(pesoExibido) || (ranking?.peso_padrao ?? 350)}
+                    aoMudar={(v) => setPesoInput(String(v))}
                     disabled={carregando}
-                    className="w-24 bg-panel-2 border border-line rounded-xl px-3 py-2 text-sm outline-none focus:border-holo-2 transition-colors"
+                    className="w-36 bg-panel-2 border border-line rounded-xl px-3 py-2 text-sm outline-none focus:border-holo-2 transition-colors"
                   />
                   <button
                     type="button"

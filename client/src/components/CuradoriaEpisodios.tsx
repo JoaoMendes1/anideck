@@ -225,12 +225,10 @@ export default function CuradoriaEpisodios({
 
         <div className="flex items-center gap-2">
           <input
-            type="number"
-            min="1"
-            max={MAX_EPISODIOS_GERADOS}
-            step="1"
+            type="text"
+            inputMode="numeric"
             value={totalParaGerar}
-            onChange={(e) => setTotalParaGerar(e.target.value)}
+            onChange={(e) => setTotalParaGerar(e.target.value.replace(/\D/g, ''))}
             placeholder="12"
             aria-label="Quantidade de episódios a gerar"
             className="w-16 bg-panel-2 border border-line rounded px-2 py-1.5 text-xs outline-none focus:border-holo-2 text-text tabular-nums"
@@ -265,12 +263,11 @@ export default function CuradoriaEpisodios({
           </label>
           <input
             id="curadoria-episodios-no"
-            type="number"
-            min="1"
-            step="1"
+            type="text"
+            inputMode="numeric"
             value={numero}
             disabled={emEdicao}
-            onChange={(e) => setNumero(e.target.value)}
+            onChange={(e) => setNumero(e.target.value.replace(/\D/g, ''))}
             className="w-full bg-panel-2 border border-line rounded px-2 py-1.5 text-xs outline-none focus:border-holo-2 text-text disabled:opacity-50 disabled:cursor-not-allowed tabular-nums"
           />
         </div>

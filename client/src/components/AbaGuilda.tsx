@@ -384,7 +384,7 @@ export default function AbaGuilda() {
                 key={`${ins.id}-${idx}`}
                 className="p-3.5 rounded-xl bg-panel-2 border border-line flex flex-col gap-2.5"
               >
-                <div className="grid grid-cols-[52px_120px_1fr_auto] gap-2 items-center">
+                <div className="grid grid-cols-[48px_1fr_auto] sm:grid-cols-[52px_120px_1fr_auto] gap-2 items-center">
                   <input
                     type="text"
                     maxLength={4}
@@ -410,7 +410,7 @@ export default function AbaGuilda() {
                         prev.map((item, i) => (i === idx ? { ...item, id: val } : item)),
                       )
                     }}
-                    className="px-2.5 py-1.5 rounded-lg bg-panel border border-line font-mono text-xs text-muted"
+                    className="min-w-0 px-2.5 py-1.5 rounded-lg bg-panel border border-line font-mono text-xs text-muted"
                     placeholder="id_unico"
                   />
                   <input
@@ -424,7 +424,7 @@ export default function AbaGuilda() {
                         prev.map((item, i) => (i === idx ? { ...item, nome: val } : item)),
                       )
                     }}
-                    className="min-w-0 w-full px-3 py-1.5 rounded-lg bg-panel border border-line text-xs font-bold text-text"
+                    className="col-span-3 sm:col-span-1 order-last sm:order-none min-w-0 w-full px-3 py-1.5 rounded-lg bg-panel border border-line text-xs font-bold text-text"
                     placeholder="Nome da carta"
                   />
                   <button

@@ -1,9 +1,11 @@
 import { useState } from 'react'
 import { createPortal } from 'react-dom'
+import { Minus, Plus } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import { useToast } from '../contexts/ToastContext'
 import Sheet from './Sheet'
 import { invalidarCachesDoDeck } from '../lib/cacheDeTela'
+import { darPasso, limitar } from '../lib/campoNumerico'
 
 interface Entrada {
     id?: string
@@ -291,24 +293,63 @@ export default function EditarEntradaModal({ entrada, onFechar, onSalvar, onExcl
                         </div>
 
                         <div className="flex justify-between items-center mb-2">
-                            <label className="block text-xs font-bold text-muted uppercase tracking-wide select-none">Nota (0-10)</label>
+                            <label htmlFor="editar-entrada-modal-nota" className="block text-xs font-bold text-muted uppercase tracking-wide select-none">Nota (0-10)</label>
                             {nota !== '' && (
                                 <button type="button" onClick={() => setNota('')} title="Limpar nota" className="select-none text-xs font-bold text-coral hover:text-coral/80 uppercase cursor-pointer">
                                     Limpar
                                 </button>
                             )}
                         </div>
-                        <input
-                            type="number"
-                            min="0"
-                            max="10"
-                            step="0.1"
-                            aria-label="Sua nota, de 0 a 10"
-                            value={nota}
-                            onChange={(e) => setNota(e.target.value)}
-                            placeholder="Sem nota"
-                            className="w-full bg-panel-2 border border-line rounded-xl px-4 py-3 text-sm mb-4 outline-none focus:border-holo-3 transition-colors"
-                        />
+                        <div className="flex items-center gap-1.5 w-full bg-panel-2 border border-line rounded-xl px-4 py-2.5 mb-4 focus-within:border-holo-3 transition-colors">
+                            <input
+                                id="editar-entrada-modal-nota"
+                                type="text"
+                                inputMode="decimal"
+                                autoComplete="off"
+                                aria-label="Sua nota, de 0 a 10"
+                                value={nota}
+                                onChange={(e) => setNota(e.target.value)}
+                                onBlur={() => {
+                                    if (nota.trim() === '') return
+                                    const n = Number(nota.trim().replace(',', '.'))
+                                    if (!Number.isFinite(n)) {
+                                        setNota('')
+                                        return
+                                    }
+                                    setNota(String(limitar(Number(n.toFixed(1)), 0, 10)))
+                                }}
+                                placeholder="Sem nota"
+                                className="flex-1 min-w-0 bg-transparent text-sm text-text outline-none tabular-nums placeholder:text-muted-2"
+                            />
+                            <button
+                                type="button"
+                                tabIndex={-1}
+                                aria-hidden="true"
+                                title="Diminuir 0,5"
+                                onClick={() => {
+                                    const atual = nota.trim() === '' ? 5 : Number(nota.replace(',', '.'))
+                                    const base = Number.isFinite(atual) ? atual : 5
+                                    setNota(String(darPasso(base, -1, 0.5, 0, 10)))
+                                }}
+                                className="w-7 h-7 shrink-0 grid place-items-center rounded-lg border border-line bg-void/50 text-muted transition-colors hover:text-text hover:border-holo-2 cursor-pointer"
+                            >
+                                <Minus size={13} aria-hidden />
+                            </button>
+                            <button
+                                type="button"
+                                tabIndex={-1}
+                                aria-hidden="true"
+                                title="Aumentar 0,5"
+                                onClick={() => {
+                                    const atual = nota.trim() === '' ? 5 : Number(nota.replace(',', '.'))
+                                    const base = Number.isFinite(atual) ? atual : 5
+                                    setNota(String(darPasso(base, 1, 0.5, 0, 10)))
+                                }}
+                                className="w-7 h-7 shrink-0 grid place-items-center rounded-lg border border-line bg-void/50 text-muted transition-colors hover:text-text hover:border-holo-2 cursor-pointer"
+                            >
+                                <Plus size={13} aria-hidden />
+                            </button>
+                        </div>
 
                         <label htmlFor="editar-entrada-modal-anotacao" className="block text-xs font-bold text-muted uppercase tracking-wide mb-2 select-none">Anotação</label>
                         <textarea

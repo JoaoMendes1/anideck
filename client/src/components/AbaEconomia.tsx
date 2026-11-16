@@ -639,14 +639,15 @@ export default function AbaEconomia() {
               <label htmlFor="aba-economia-quantidade" className="block font-mono text-xs text-muted uppercase mb-1">
                 Quantidade (+ para crédito, - para débito)
               </label>
-              <input
+              <CampoNumerico
                 id="aba-economia-quantidade"
-                type="number"
-                value={ajusteQuantidade}
-                onChange={(e) => setAjusteQuantidade(e.target.value === '' ? '' : Number(e.target.value))}
+                min={-100000}
+                max={100000}
+                step={10}
+                value={typeof ajusteQuantidade === 'number' ? ajusteQuantidade : 0}
+                aoMudar={(v) => setAjusteQuantidade(v)}
                 placeholder="Ex: 50 ou -30"
                 className="w-full bg-panel-2 border border-line rounded-xl px-3 py-2 text-sm text-text outline-none focus:border-holo-3 font-mono"
-                required
               />
             </div>
 
@@ -873,16 +874,15 @@ export default function AbaEconomia() {
                 <label htmlFor="aba-economia-quantidade-2" className="block font-mono text-xs text-muted uppercase mb-1">
                   Quantidade (Disponível no Caixa: {saldoCaixaLoja.toLocaleString('pt-BR')} ₳)
                 </label>
-                <input
+                <CampoNumerico
                   id="aba-economia-quantidade-2"
-                  type="number"
-                  min="1"
-                  max={saldoCaixaLoja}
-                  value={saqueQuantidade}
-                  onChange={(e) => setSaqueQuantidade(e.target.value === '' ? '' : Number(e.target.value))}
+                  min={1}
+                  max={Math.max(1, saldoCaixaLoja)}
+                  step={10}
+                  value={typeof saqueQuantidade === 'number' ? saqueQuantidade : 0}
+                  aoMudar={(v) => setSaqueQuantidade(v)}
                   placeholder="Ex: 100"
                   className="w-full bg-panel-2 border border-line rounded-xl px-3 py-2 text-xs text-text outline-none focus:border-gold font-mono"
-                  required
                 />
               </div>
 

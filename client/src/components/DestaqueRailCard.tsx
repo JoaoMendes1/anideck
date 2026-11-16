@@ -38,7 +38,7 @@ export default function DestaqueRailCard({ anime, gradClass, selected, onSelect,
         ) : (
           <span className="text-xs text-muted-2 font-bold uppercase text-center leading-tight px-1">Sem Capa</span>
         )}
-        <span className="absolute bottom-0 left-0 right-0 bg-void/90 text-xs font-mono font-bold text-holo-3 text-center py-0.5">
+        <span className="absolute bottom-0 left-0 right-0 bg-void/90 text-xs leading-none font-mono font-bold text-holo-3 text-center py-0.5">
           #{anime.order_index}
         </span>
       </div>
@@ -62,7 +62,7 @@ export default function DestaqueRailCard({ anime, gradClass, selected, onSelect,
           }
         }}
         aria-label={`Remover ${anime.custom_title}`}
-        className="shrink-0 w-8 h-8 rounded-lg text-muted hover:text-coral hover:bg-coral/10 transition-colors cursor-pointer flex items-center justify-center opacity-0 group-hover:opacity-100 focus:opacity-100"
+        className="shrink-0 w-8 h-8 rounded-lg text-muted hover:text-coral hover:bg-coral/10 transition-colors cursor-pointer flex items-center justify-center opacity-100 lg:opacity-0 lg:group-hover:opacity-100 focus:opacity-100"
       >
         <Trash2 size={14} />
       </span>

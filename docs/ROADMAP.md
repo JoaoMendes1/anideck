@@ -802,6 +802,12 @@ experiência pequena e funcional de cada vez.
 > numeração e não abrem escopo novo. Ficam registrados aqui em ordem cronológica inversa para
 > não sumirem: fase concluída não deve ser reaberta só para receber um conserto.
 
+### 16/11/2026 — Tags e selos compactos no Meu Deck mobile, busca/ordenação e ajustes no Painel Admin (#235)
+
+- [x] **Tags e selos de `AnimeCard` e `DeckCard` no celular:** respeitando o piso de `text-xs` (12 px) do `DESIGN_TOKENS.md`, o rodapé do pôster passa a exibir 1 tag de gênero no celular e até 2 a partir de `sm:` sem quebra de linha (`leading-none`), e os selos de topo (`statusBadge`, `Novo EP`/`Hoje`/`Amanhã`, `#ranking`) ganham espaçamento compacto para não encobrir a arte.
+- [x] **Busca por título, ordenação e nota com passo em `MeuDeck.tsx` e `EditarEntradaModal.tsx`:** adicionados filtro textual e ordenação (`Favoritos`, `Maior nota`, `Título A–Z`), margens horizontais alinhadas ao container em 360 px e controles de passo (`-0,5` / `+0,5`) para a nota pessoal.
+- [x] **Painel Admin (`PainelAdmin.tsx`, `AbaControle.tsx`, `AbaGuilda.tsx`, `AbaEconomia.tsx`, `CuradoriaEpisodios.tsx`, `DestaqueRailCard.tsx`):** corrigida frase duplicada no texto da estreia do Episódio 1, empilhados os avisos `semEps`/`emBreve` abaixo do cabeçalho de Obras Curadas, padronizados os campos numéricos com `CampoNumerico`/`inputMode="numeric"`, tornada responsiva a grade de insígnias em 360 px e exposto o botão de excluir destaque em telas de toque.
+
 ### 16/11/2026 — Vitalidade e Mana crescem com o nível do jogador (#234)
 
 - [x] **Teto de Mana e de Vitalidade por nível (`sql/079` e `comunidade_regras.go`):** `mana_maxima(uuid)` soma `mp_max + mp_por_nivel * (nivel - 1)` até `mp_max_teto` (padrão `50 + 1*(nivel-1)` até `120`, configuráveis na aba Moderação do Painel Admin) e `mana_atual(uuid)` escala a recarga diária proporcionalmente para manter o tempo de recarga cheia (~4 dias). A Vitalidade mantém a constância de `0..100%` para as regras de bônus e escala o teto exibido em `min(400, 100 + 5 * (nivel - 1))` (ex.: `170/170` e `64/64` no nível 15).
