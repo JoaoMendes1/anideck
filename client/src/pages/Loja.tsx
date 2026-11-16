@@ -108,96 +108,124 @@ export default function Loja() {
 
   return (
     <div className="w-full min-w-0 max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-10 pt-6 pb-24">
-      {/* CABEÇALHO DA LOJA */}
-      <header className="mb-8 rounded-3xl border border-line bg-gradient-to-br from-panel via-panel to-panel-2 p-6 sm:p-8 relative overflow-hidden shadow-2xl">
-        <div className="absolute -right-10 -bottom-10 w-64 h-64 bg-holo-3/10 rounded-full blur-3xl pointer-events-none" />
-        <div className="absolute -left-10 -top-10 w-64 h-64 bg-gold/10 rounded-full blur-3xl pointer-events-none" />
+      {/* CABEÇALHO COMPACTO DA LOJA */}
+      <header className="mb-5 rounded-2xl border border-line bg-panel px-4 py-3 sm:px-5 sm:py-3.5">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-2.5 md:gap-4">
+          {/* Esquerda: Título (e no celular, saldo + ícone de Apoiador na mesma linha) */}
+          <div className="min-w-0">
+            <div className="flex items-center justify-between gap-3">
+              <h1 className="font-anton text-2xl sm:text-3xl uppercase tracking-wide m-0 text-text leading-none">
+                Loja
+              </h1>
 
-        <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
-          <div className="max-w-2xl">
-            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-holo-3/15 border border-holo-3/30 text-holo-3 font-mono text-xs font-bold uppercase tracking-widest mb-3">
-              <Sparkles size={12} /> Bazar Comunitário
+              {/* Ações compactas no celular (título e saldo na mesma linha, Apoiador como ícone) */}
+              <div className="flex md:hidden items-center gap-2 shrink-0">
+                <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-panel-2 border border-line font-mono text-xs font-bold text-text">
+                  <IconeAniCoin size={14} />
+                  <span className="text-holo-3">{saldo.toLocaleString('pt-BR')}</span>
+                  <span className="text-muted">₳</span>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setModalApoiadorAberto(true)}
+                  aria-label="Seja um Apoiador"
+                  title="Seja um Apoiador"
+                  className="p-2 rounded-xl bg-holo-1/15 text-holo-1 border border-holo-1/30 hover:bg-holo-1/25 transition-colors cursor-pointer"
+                >
+                  <Heart size={14} className="fill-holo-1/30" />
+                </button>
+              </div>
             </div>
-            <h1 className="font-anton text-3xl sm:text-4xl lg:text-5xl uppercase tracking-wide m-0 text-text leading-tight">
-              Loja Cosmética
-            </h1>
-            <p className="text-sm text-muted mt-2 mb-0 leading-relaxed">
-              Destaque seu perfil, personalize molduras e ostente títulos exclusivos na comunidade com suas AniCoins.
-              <span className="block text-muted-2 text-xs mt-1">
-                Cosméticos são puramente visuais e nunca alteram XP, Rank nem notas do ranking.
-              </span>
+
+            <p className="text-xs text-muted-2 mt-1 mb-0 leading-snug">
+              Cosméticos são puramente visuais e nunca alteram XP, Rank nem notas.
             </p>
           </div>
 
-          {/* CARD DE SALDO & MISSÕES */}
-          <div className="shrink-0 p-4 sm:p-5 rounded-2xl bg-panel-2/90 border border-line flex flex-col gap-3 min-w-[240px]">
-            <div className="flex items-center justify-between">
-              <span className="font-mono text-xs text-muted-2 uppercase tracking-widest flex items-center gap-1.5">
-                <IconeAniCoin size={14} /> Sua Carteira
-              </span>
-              <Link
-                to="/#missoes-diarias-card"
-                className="font-mono text-xs text-holo-2 hover:underline flex items-center gap-1 font-bold"
-              >
-                + AniCoins <ArrowRight size={11} />
-              </Link>
-            </div>
-            <div className="flex items-baseline gap-2">
-              <span className="font-anton text-3xl sm:text-4xl text-holo-3 tracking-wide">
+          {/* Direita no desktop: chip de saldo + link Ganhar AniCoins + botão Seja um Apoiador */}
+          <div className="hidden md:flex items-center gap-3 shrink-0">
+            <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-xl bg-panel-2 border border-line">
+              <IconeAniCoin size={15} />
+              <span className="font-anton text-lg text-holo-3 tracking-wide leading-none">
                 {saldo.toLocaleString('pt-BR')}
               </span>
-              <span className="font-mono text-sm font-bold text-muted">₳ AniCoins</span>
+              <span className="font-mono text-xs font-bold text-muted">₳ AniCoins</span>
             </div>
-            <p className="text-xs text-muted-2 m-0 border-t border-line/60 pt-2">
-              Ganhe mais moedas completando as 3 missões do dia na Início.
-            </p>
+
+            <Link
+              to="/#missoes-diarias-card"
+              className="px-3 py-1.5 rounded-xl bg-panel-2 border border-line font-mono text-xs font-bold text-holo-2 hover:border-holo-2/50 hover:underline inline-flex items-center gap-1 transition-colors"
+            >
+              <span>Ganhar AniCoins</span>
+              <ArrowRight size={12} />
+            </Link>
+
+            <button
+              type="button"
+              onClick={() => setModalApoiadorAberto(true)}
+              className="px-3.5 py-1.5 rounded-xl font-mono text-xs font-bold bg-holo-1/15 text-holo-1 border border-holo-1/30 hover:bg-holo-1/25 transition-colors inline-flex items-center gap-1.5 cursor-pointer"
+            >
+              <Heart size={13} className="fill-holo-1/30" />
+              <span>Seja um Apoiador</span>
+            </button>
+          </div>
+
+          {/* Link complementar de Ganhar AniCoins no celular */}
+          <div className="flex md:hidden items-center justify-end">
+            <Link
+              to="/#missoes-diarias-card"
+              className="font-mono text-xs font-bold text-holo-2 hover:underline inline-flex items-center gap-1"
+            >
+              <span>Ganhar AniCoins</span>
+              <ArrowRight size={11} />
+            </Link>
           </div>
         </div>
       </header>
 
       {/* FILTROS DE CATEGORIA */}
-      <div className="flex items-center gap-2 overflow-x-auto pb-3 mb-6 scrollbar-none select-none">
-        {[
-          { id: 'todos', rotulo: 'Todos os Itens' },
-          { id: 'temporada', rotulo: '⚡ Temporada 1' },
-          { id: 'moldura', rotulo: 'Molduras' },
-          { id: 'tema_perfil', rotulo: 'Temas' },
-          { id: 'cor_nome', rotulo: 'Cores de Nome' },
-          { id: 'emblema', rotulo: 'Emblemas' },
-          { id: 'cenario', rotulo: 'Cenários' },
-          { id: 'aura', rotulo: 'Auras' },
-          { id: 'skin', rotulo: 'Skins' },
-          { id: 'expansao', rotulo: 'Melhorias' },
-        ].map((f) => {
-          const ativo = filtroTipo === f.id
-          const qtd = contadores[f.id] || 0
-          return (
-            <button
-              key={f.id}
-              type="button"
-              onClick={() => setFiltroTipo(f.id)}
-              className={`px-4 py-2 rounded-full font-mono text-xs font-bold whitespace-nowrap transition-all cursor-pointer flex items-center gap-2 ${
-                ativo
-                  ? 'bg-holo-1 text-void shadow-md scale-102'
-                  : 'bg-panel border border-line text-muted hover:text-text hover:border-holo-2'
-              }`}
-            >
-              <span>{f.rotulo}</span>
-              <span className={`text-xs px-1.5 py-px rounded-full ${ativo ? 'bg-void/25 text-void' : 'bg-panel-2 text-muted-2'}`}>
-                {qtd}
-              </span>
-            </button>
-          )
-        })}
-
-        <button
-          type="button"
-          onClick={() => setModalApoiadorAberto(true)}
-          className="ml-auto shrink-0 px-4 py-2 rounded-full font-mono text-xs font-bold bg-holo-1/15 text-holo-1 border border-holo-1/30 hover:bg-holo-1/25 transition-all flex items-center gap-1.5 cursor-pointer"
-        >
-          <Heart size={14} className="fill-holo-1/30" />
-          <span>Seja um Apoiador</span>
-        </button>
+      <div className="relative mb-6">
+        <div className="flex items-center gap-2 overflow-x-auto md:overflow-visible md:flex-wrap pb-2 md:pb-0 pr-8 md:pr-0 snap-x snap-mandatory scrollbar-none select-none">
+          {[
+            { id: 'todos', rotulo: 'Todos os Itens' },
+            { id: 'temporada', rotulo: '⚡ Temporada 1' },
+            { id: 'moldura', rotulo: 'Molduras' },
+            { id: 'tema_perfil', rotulo: 'Temas' },
+            { id: 'cor_nome', rotulo: 'Cores de Nome' },
+            { id: 'emblema', rotulo: 'Emblemas' },
+            { id: 'cenario', rotulo: 'Cenários' },
+            { id: 'aura', rotulo: 'Auras' },
+            { id: 'skin', rotulo: 'Skins' },
+            { id: 'expansao', rotulo: 'Melhorias' },
+          ]
+            .filter((f) => f.id === 'todos' || (contadores[f.id] || 0) > 0)
+            .map((f) => {
+              const ativo = filtroTipo === f.id
+              const qtd = contadores[f.id] || 0
+              return (
+                <button
+                  key={f.id}
+                  type="button"
+                  onClick={() => setFiltroTipo(f.id)}
+                  className={`snap-start shrink-0 px-3.5 py-1.5 rounded-full font-mono text-xs font-bold whitespace-nowrap transition-all cursor-pointer flex items-center gap-2 ${
+                    ativo
+                      ? 'bg-holo-1 text-void shadow-sm'
+                      : 'bg-panel border border-line text-muted hover:text-text hover:border-holo-2'
+                  }`}
+                >
+                  <span>{f.rotulo}</span>
+                  <span className={`text-xs px-1.5 py-px rounded-full ${ativo ? 'bg-void/25 text-void' : 'bg-panel-2 text-muted-2'}`}>
+                    {qtd}
+                  </span>
+                </button>
+              )
+            })}
+        </div>
+        {/* Degradê lateral no celular indicando que há mais categorias para rolar */}
+        <div
+          aria-hidden="true"
+          className="pointer-events-none absolute inset-y-0 right-0 w-10 bg-gradient-to-l from-bg to-transparent md:hidden"
+        />
       </div>
 
       {/* CATÁLOGO DE ITENS */}

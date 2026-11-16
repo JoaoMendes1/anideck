@@ -802,6 +802,11 @@ experiência pequena e funcional de cada vez.
 > numeração e não abrem escopo novo. Ficam registrados aqui em ordem cronológica inversa para
 > não sumirem: fase concluída não deve ser reaberta só para receber um conserto.
 
+### 16/11/2026 — Loja com cabeçalho compacto e barra de categorias sem corte (#230)
+
+- [x] **Cabeçalho numa linha no desktop (~72 px):** título **"Loja"**, regra de cosméticos, chip de saldo, link "Ganhar AniCoins" e botão "Seja um Apoiador" (no celular, título e saldo na mesma linha e Apoiador como ícone).
+- [x] **Barra de categorias visível inteira no desktop:** `md:flex-wrap` sem rolagem horizontal em telas médias e grandes, `snap-x` com degradê na borda direita no celular, e categorias com contador `0` ocultadas (exceto "Todos os Itens").
+
 ### 16/11/2026 — Coleção de cartas volta a mostrar título e capa (#228)
 
 - [x] **Colunas reais no `Select` do PostgREST:** `enriquecerCartasComMetadados` (`cartas.go`) e `rankings_comunidade.go` pediam `images` em `anime_metadata_cache` e `custom_cover_url` em `curated_animes`, colunas que não existem no schema (item 33 do `PITFALLS.md`). Passaram a pedir `mal_id,title` e `mal_id,custom_title,custom_cover_image`, registrando erro no log em vez de ignorá-lo.
