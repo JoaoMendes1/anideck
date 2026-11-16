@@ -240,4 +240,48 @@ describe('Personagem - skins', () => {
     abrir()
     await waitFor(() => expect(obterEquipamentos).toHaveBeenCalledTimes(1))
   })
+
+  it('alterna entre as abas Status, Atributos e Habilidades e respeita ?aba= na URL', async () => {
+    const equipamento = {
+      nivel: 12,
+      base: { vida: 320, ataque: 43, defesa: 27, poder: 172 },
+      atributos: { vida: 320, ataque: 47, defesa: 27, poder: 180, magia: 20, eter: 14, velocidade: 15, critico_por_mil: 70, dano_critico: 155, esquiva_por_mil: 30, sorte_item: 1 },
+      primarios_base: { forca: 16, inteligencia: 8, constituicao: 16, agilidade: 10, destreza: 10, sorte: 7 },
+      pontos: { forca: 0, inteligencia: 0, constituicao: 0, agilidade: 0, destreza: 0, sorte: 0 },
+      pontos_disponiveis: 6,
+      slots: [
+        { slot: 'arma' as const },
+        { slot: 'armadura' as const },
+        { slot: 'capa' as const },
+        { slot: 'botas' as const },
+        { slot: 'joia' as const },
+      ],
+      inventario: [],
+      habilidades: [
+        { id: 'despertar_do_eter', nome: 'Despertar do Éter', descricao: 'Uma vez por luta...', tipo: 'unica' as const, nivel_minimo: 5, custo_eter: 0, recarga: 0, desbloqueada: true },
+        { id: 'golpe_firme', nome: 'Golpe Firme', descricao: '1,5x', tipo: 'comum' as const, nivel_minimo: 1, custo_eter: 8, recarga: 0, desbloqueada: true },
+      ],
+    }
+    vi.mocked(obterPersonagem).mockResolvedValue({ ...personagemNoNivel(12, { id: 'aventureiro', automatico: true }), equipamento })
+
+    render(
+      <MemoryRouter initialEntries={['/personagem?aba=atributos']}>
+        <Personagem />
+      </MemoryRouter>,
+    )
+
+    // Abre direto na aba Atributos pela URL (?aba=atributos)
+    await screen.findByText('6 pontos livres')
+    expect(screen.getByRole('tab', { name: /Atributos/ }).getAttribute('aria-selected')).toBe('true')
+
+    // Troca para Habilidades
+    fireEvent.click(screen.getByRole('tab', { name: 'Habilidades' }))
+    expect(await screen.findByText('Despertar do Éter')).toBeTruthy()
+    expect(screen.getByRole('tab', { name: 'Habilidades' }).getAttribute('aria-selected')).toBe('true')
+
+    // Troca para Status
+    fireEvent.click(screen.getByRole('tab', { name: 'Status' }))
+    expect(await screen.findByText('Poder 180')).toBeTruthy()
+    expect(screen.getByRole('tab', { name: 'Status' }).getAttribute('aria-selected')).toBe('true')
+  })
 })

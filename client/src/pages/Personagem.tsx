@@ -5,7 +5,7 @@
 // Mobile-first: no celular a arte vem em cima e a ficha embaixo; a partir de `lg` as duas
 // ficam lado a lado. Nível, XP e rank são os da Guilda: o personagem não tem XP próprio.
 import { useCallback, useEffect, useState, type FormEvent } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useSearchParams } from 'react-router-dom'
 import { ChevronLeft, Image, Lock, Orbit, Sparkles, Sword, Swords } from 'lucide-react'
 import { obterFundoDoCenario } from '../lib/cosmeticos'
 import CamadaDaAura from '../components/personagem/CamadaDaAura'
@@ -185,6 +185,13 @@ function TelaDespertar({ aoDespertar }: { aoDespertar: (dados: RespostaPersonage
   )
 }
 
+type AbaCombate = 'status' | 'atributos' | 'habilidades'
+
+function lerAbaDaUrl(valor: string | null): AbaCombate {
+  if (valor === 'atributos' || valor === 'habilidades') return valor
+  return 'status'
+}
+
 function FichaDoPersonagem({
   dados,
   aoAtualizar,
@@ -196,6 +203,24 @@ function FichaDoPersonagem({
   equipamento: EstadoEquipamento | null | undefined
   aoAtualizarEquipamento: (estado: EstadoEquipamento) => void
 }) {
+  const [searchParams, setSearchParams] = useSearchParams()
+  const abaAtiva = lerAbaDaUrl(searchParams.get('aba'))
+
+  const selecionarAba = (novaAba: AbaCombate) => {
+    setSearchParams(
+      (atual) => {
+        const proximo = new URLSearchParams(atual)
+        if (novaAba === 'status') {
+          proximo.delete('aba')
+        } else {
+          proximo.set('aba', novaAba)
+        }
+        return proximo
+      },
+      { replace: true },
+    )
+  }
+
   // Visual que o jogador está só experimentando; null mostra o que está em uso.
   const [previa, setPrevia] = useState<string | null>(null)
   const [slotAberto, setSlotAberto] = useState<SlotId | null>(null)
@@ -222,6 +247,16 @@ function FichaDoPersonagem({
   const cenario = obterFundoDoCenario(dados.cenario)
   const progressoPct = Math.min(100, Math.max(0, progressao.progresso_pct))
 
+  const pontosUsados = equipamento?.pontos
+    ? equipamento.pontos.forca +
+      equipamento.pontos.inteligencia +
+      equipamento.pontos.constituicao +
+      equipamento.pontos.agilidade +
+      equipamento.pontos.destreza +
+      equipamento.pontos.sorte
+    : 0
+  const pontosLivres = Math.max(0, (equipamento?.pontos_disponiveis ?? 0) - pontosUsados)
+
   const trocarVisual = async (visual: string) => {
     if (salvando) return
     setErroDoVisual('')
@@ -241,10 +276,11 @@ function FichaDoPersonagem({
   return (
     <div className={CONTAINER}>
       <Cabecalho />
+      {/* LINHA 1: Arte à esquerda e Identidade/Jornada/Progressão/Aventura à direita */}
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,1fr)_420px] lg:items-start">
         <section
           aria-label="Arte do personagem"
-          className="relative h-[min(62vh,520px)] overflow-hidden rounded-2xl border border-line bg-void lg:sticky lg:top-6 lg:h-[680px]"
+          className="relative h-[min(62vh,520px)] overflow-hidden rounded-2xl border border-line bg-void lg:h-[680px]"
           data-cenario={cenario ? dados.cenario : 'padrao'}
           style={{ backgroundImage: cenario ? `${luz}, ${cenario}` : luz }}
         >
@@ -552,10 +588,74 @@ function FichaDoPersonagem({
               <span aria-hidden="true" className="text-muted">→</span>
             </Link>
           </nav>
+        </div>
+      </div>
 
-          <PainelEquipamentos estado={equipamento} />
-          {equipamento && <PainelAtributos estado={equipamento} aoAtualizar={aoAtualizarEquipamento} />}
-          {equipamento && <LivroDeHabilidades habilidades={equipamento.habilidades} />}
+      {/* LINHA 2: Largura toda, com controle segmentado de abas (Status, Atributos, Habilidades) */}
+      <div className="mt-6 flex flex-col gap-4 rounded-2xl border border-line bg-panel-2/40 p-4 sm:p-5">
+        <div
+          role="tablist"
+          aria-label="Seções de combate do personagem"
+          className="inline-flex w-full sm:w-auto self-start rounded-xl border border-line bg-panel p-1 gap-1"
+        >
+          <button
+            type="button"
+            role="tab"
+            aria-selected={abaAtiva === 'status'}
+            onClick={() => selecionarAba('status')}
+            className={`flex-1 sm:flex-initial px-4 py-2 rounded-lg font-mono text-xs font-bold transition-colors cursor-pointer ${
+              abaAtiva === 'status' ? 'bg-holo-1 text-void' : 'text-muted hover:text-text'
+            }`}
+          >
+            Status
+          </button>
+          <button
+            type="button"
+            role="tab"
+            aria-selected={abaAtiva === 'atributos'}
+            onClick={() => selecionarAba('atributos')}
+            className={`flex-1 sm:flex-initial inline-flex items-center justify-center gap-1.5 px-4 py-2 rounded-lg font-mono text-xs font-bold transition-colors cursor-pointer ${
+              abaAtiva === 'atributos' ? 'bg-holo-1 text-void' : 'text-muted hover:text-text'
+            }`}
+          >
+            <span>Atributos</span>
+            {pontosLivres > 0 && (
+              <span
+                className={`px-1.5 py-px rounded-full text-xs ${
+                  abaAtiva === 'atributos' ? 'bg-void/25 text-void' : 'bg-gold/20 text-gold'
+                }`}
+              >
+                +{pontosLivres}
+              </span>
+            )}
+          </button>
+          <button
+            type="button"
+            role="tab"
+            aria-selected={abaAtiva === 'habilidades'}
+            onClick={() => selecionarAba('habilidades')}
+            className={`flex-1 sm:flex-initial px-4 py-2 rounded-lg font-mono text-xs font-bold transition-colors cursor-pointer ${
+              abaAtiva === 'habilidades' ? 'bg-holo-1 text-void' : 'text-muted hover:text-text'
+            }`}
+          >
+            Habilidades
+          </button>
+        </div>
+
+        <div role="tabpanel">
+          {abaAtiva === 'status' && <PainelEquipamentos estado={equipamento} />}
+          {abaAtiva === 'atributos' &&
+            (equipamento ? (
+              <PainelAtributos estado={equipamento} aoAtualizar={aoAtualizarEquipamento} />
+            ) : (
+              <PainelEquipamentos estado={equipamento} />
+            ))}
+          {abaAtiva === 'habilidades' &&
+            (equipamento ? (
+              <LivroDeHabilidades habilidades={equipamento.habilidades} />
+            ) : (
+              <PainelEquipamentos estado={equipamento} />
+            ))}
         </div>
       </div>
     </div>

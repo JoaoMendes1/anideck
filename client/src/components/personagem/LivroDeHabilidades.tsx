@@ -31,12 +31,17 @@ export default function LivroDeHabilidades({ habilidades }: { habilidades: Habil
         </span>
       </div>
 
-      <ul className="m-0 flex list-none flex-col gap-2 p-0">
+      <ul className="m-0 grid list-none grid-cols-1 gap-2.5 p-0 lg:grid-cols-3">
         {habilidades.map((h) => {
           const unica = h.tipo === 'unica'
           if (!h.desbloqueada) {
             return (
-              <li key={h.id} className="flex items-center gap-3 rounded-xl border border-dashed border-line px-3 py-2.5 text-muted">
+              <li
+                key={h.id}
+                className={`flex items-center gap-3 rounded-xl border border-dashed border-line px-3.5 py-3 text-muted ${
+                  unica ? 'lg:col-span-2' : ''
+                }`}
+              >
                 <Lock size={16} className="shrink-0" aria-hidden="true" />
                 <div className="min-w-0 flex-1">
                   <p className="m-0 text-sm font-bold">{h.nome}</p>
@@ -49,15 +54,15 @@ export default function LivroDeHabilidades({ habilidades }: { habilidades: Habil
           return (
             <li
               key={h.id}
-              className={`flex flex-col gap-1 rounded-xl border px-3 py-2.5 ${
-                unica ? 'border-gold/60 bg-gold/10' : 'border-line bg-panel'
+              className={`flex flex-col justify-between gap-1.5 rounded-xl border px-3.5 py-3 ${
+                unica ? 'border-gold/60 bg-gold/10 lg:col-span-2' : 'border-line bg-panel'
               }`}
             >
               <div className="flex items-center gap-2">
                 {unica && <Sparkles size={15} className="shrink-0 text-gold" aria-hidden="true" />}
                 <p className={`m-0 min-w-0 flex-1 text-sm font-bold ${unica ? 'text-gold' : 'text-text'}`}>{h.nome}</p>
                 {unica && (
-                  <span className="shrink-0 rounded-full border border-gold/60 px-2 py-0.5 font-mono text-[11px] font-semibold uppercase tracking-wider text-gold">
+                  <span className="shrink-0 rounded-full border border-gold/60 px-2 py-0.5 font-mono text-xs font-semibold uppercase tracking-wider text-gold">
                     Única
                   </span>
                 )}

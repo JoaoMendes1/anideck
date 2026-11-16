@@ -64,32 +64,33 @@ export default function PainelEquipamentos({
         </span>
       </div>
 
-      <dl className="m-0 grid grid-cols-3 gap-2.5">
-        {linhasDeAtributo.map(({ chave, rotulo, Icone, valor, bonus, cor }) => (
-          <div key={chave} className="flex min-w-0 flex-col gap-1 rounded-xl border border-line bg-panel p-3">
-            <dt className="flex items-center gap-1.5 text-xs font-semibold text-muted">
-              <Icone size={13} className={cor} aria-hidden="true" />
-              {rotulo}
-            </dt>
-            <dd className="m-0 font-anton text-2xl leading-none">{valor}</dd>
-            <span className="font-mono text-xs text-muted">{bonus > 0 ? `+${bonus} itens` : 'base'}</span>
-          </div>
-        ))}
-      </dl>
-
-      {secundarios.length > 0 && (
-        <dl className="m-0 grid grid-cols-2 gap-x-4 gap-y-1.5 rounded-xl border border-line bg-panel p-3 sm:grid-cols-3">
-          {secundarios.map(({ rotulo, valor }) => (
-            <div key={rotulo} className="flex min-w-0 items-baseline justify-between gap-2">
-              <dt className="truncate text-xs text-muted">{rotulo}</dt>
-              <dd className="m-0 font-mono text-sm font-semibold text-text">{valor}</dd>
+      <div className="grid grid-cols-1 gap-3 lg:grid-cols-2 lg:items-stretch">
+        <dl className="m-0 grid grid-cols-3 gap-2.5">
+          {linhasDeAtributo.map(({ chave, rotulo, Icone, valor, bonus, cor }) => (
+            <div key={chave} className="flex min-w-0 flex-col justify-between gap-1 rounded-xl border border-line bg-panel p-3.5">
+              <dt className="flex items-center gap-1.5 text-xs font-semibold text-muted">
+                <Icone size={13} className={cor} aria-hidden="true" />
+                {rotulo}
+              </dt>
+              <dd className="m-0 font-anton text-2xl sm:text-3xl leading-none">{valor}</dd>
+              <span className="font-mono text-xs text-muted">{bonus > 0 ? `+${bonus} itens` : 'base'}</span>
             </div>
           ))}
         </dl>
-      )}
+
+        {secundarios.length > 0 && (
+          <dl className="m-0 grid grid-cols-2 gap-x-5 gap-y-2 rounded-xl border border-line bg-panel p-3.5 sm:grid-cols-3 lg:content-center">
+            {secundarios.map(({ rotulo, valor }) => (
+              <div key={rotulo} className="flex min-w-0 items-baseline justify-between gap-2">
+                <dt className="truncate text-xs text-muted">{rotulo}</dt>
+                <dd className="m-0 font-mono text-sm font-semibold text-text">{valor}</dd>
+              </div>
+            ))}
+          </dl>
+        )}
+      </div>
 
       <p className="m-0 text-xs text-muted">Toque num slot sobre o personagem para trocar o item.</p>
-
     </section>
   )
 }

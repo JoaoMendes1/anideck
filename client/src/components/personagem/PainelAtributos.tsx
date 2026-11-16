@@ -80,86 +80,96 @@ export default function PainelAtributos({
         <h2 id="titulo-dos-atributos" className={ROTULO_DE_SECAO}>
           Atributos
         </h2>
-        <span
-          className={`rounded-full border px-2.5 py-0.5 font-mono text-xs font-semibold ${
-            livres > 0 ? 'border-gold/60 text-gold' : 'border-line text-muted'
-          }`}
-        >
-          {livres === 1 ? '1 ponto livre' : `${livres} pontos livres`}
-        </span>
       </div>
 
-      {disponiveis === 0 && (
-        <p className="m-0 text-xs text-muted">O primeiro ponto chega no nível 2, e depois um a cada dois níveis.</p>
-      )}
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-[minmax(0,1fr)_280px] lg:items-start">
+        <ul className="m-0 grid list-none grid-cols-1 gap-2 p-0 md:grid-cols-2">
+          {PRIMARIOS_RPG.map(({ id, rotulo, efeito }) => {
+            const { Icone, cor } = ICONE[id]
+            const pontos = rascunho[id]
+            return (
+              <li key={id} className="flex items-center gap-3 rounded-xl border border-line bg-panel py-2 pl-3 pr-2">
+                <Icone size={18} className={`shrink-0 ${cor}`} aria-hidden="true" />
+                <div className="min-w-0 flex-1">
+                  <p className="m-0 text-sm font-bold text-text">{rotulo}</p>
+                  <p className="m-0 text-xs leading-snug text-muted">{efeito}</p>
+                </div>
+                <span className="w-12 text-right font-anton text-xl leading-none" aria-label={`${rotulo}: ${base[id] + pontos}`}>
+                  {base[id] + pontos}
+                  {pontos > 0 && <span className="block font-mono text-xs font-normal text-gold">+{pontos}</span>}
+                </span>
+                <button
+                  type="button"
+                  onClick={() => ajustar(id, -1)}
+                  disabled={pontos === 0 || salvando}
+                  aria-label={`Tirar um ponto de ${rotulo}`}
+                  className={BOTAO}
+                >
+                  <Minus size={16} aria-hidden="true" />
+                </button>
+                <button
+                  type="button"
+                  onClick={() => ajustar(id, 1)}
+                  disabled={livres <= 0 || salvando}
+                  aria-label={`Pôr um ponto em ${rotulo}`}
+                  className={BOTAO}
+                >
+                  <Plus size={16} aria-hidden="true" />
+                </button>
+              </li>
+            )
+          })}
+        </ul>
 
-      <ul className="m-0 flex list-none flex-col gap-2 p-0">
-        {PRIMARIOS_RPG.map(({ id, rotulo, efeito }) => {
-          const { Icone, cor } = ICONE[id]
-          const pontos = rascunho[id]
-          return (
-            <li key={id} className="flex items-center gap-3 rounded-xl border border-line bg-panel py-1.5 pl-3 pr-1.5">
-              <Icone size={18} className={`shrink-0 ${cor}`} aria-hidden="true" />
-              <div className="min-w-0 flex-1">
-                <p className="m-0 text-sm font-bold text-text">{rotulo}</p>
-                <p className="m-0 text-xs leading-snug text-muted">{efeito}</p>
-              </div>
-              <span className="w-12 text-right font-anton text-xl leading-none" aria-label={`${rotulo}: ${base[id] + pontos}`}>
-                {base[id] + pontos}
-                {pontos > 0 && <span className="block font-mono text-[11px] font-normal text-gold">+{pontos}</span>}
-              </span>
+        <aside className="flex flex-col gap-3 rounded-xl border border-line bg-panel p-4">
+          <div className="flex items-center justify-between gap-2">
+            <span className="font-mono text-xs font-semibold uppercase tracking-wider text-muted">Distribuição</span>
+            <span
+              className={`rounded-full border px-2.5 py-0.5 font-mono text-xs font-semibold ${
+                livres > 0 ? 'border-gold/60 text-gold' : 'border-line text-muted'
+              }`}
+            >
+              {livres === 1 ? '1 ponto livre' : `${livres} pontos livres`}
+            </span>
+          </div>
+
+          <p className="m-0 text-xs leading-relaxed text-muted">
+            {disponiveis === 0
+              ? 'O primeiro ponto chega no nível 2, e depois um a cada dois níveis.'
+              : `Você tem ${disponiveis} ${disponiveis === 1 ? 'ponto disponível' : 'pontos disponíveis'} pelo nível ${estado.nivel}. Redistribuir é livre.`}
+          </p>
+
+          {mudou && (
+            <div className="flex flex-wrap items-center gap-2 pt-1">
               <button
                 type="button"
-                onClick={() => ajustar(id, -1)}
-                disabled={pontos === 0 || salvando}
-                aria-label={`Tirar um ponto de ${rotulo}`}
-                className={BOTAO}
+                onClick={salvar}
+                disabled={salvando || livres < 0}
+                className="h-11 flex-1 cursor-pointer rounded-full bg-gradient-to-r from-holo-1 to-holo-3 px-5 text-xs font-extrabold text-void disabled:cursor-wait disabled:opacity-60"
               >
-                <Minus size={16} aria-hidden="true" />
+                {salvando ? 'Salvando…' : 'Salvar pontos'}
               </button>
               <button
                 type="button"
-                onClick={() => ajustar(id, 1)}
-                disabled={livres <= 0 || salvando}
-                aria-label={`Pôr um ponto em ${rotulo}`}
-                className={BOTAO}
+                onClick={() => {
+                  setErro('')
+                  setRascunho(salvos)
+                }}
+                disabled={salvando}
+                className="h-11 cursor-pointer rounded-full border border-line px-5 text-xs font-bold text-muted hover:text-text"
               >
-                <Plus size={16} aria-hidden="true" />
+                Desfazer
               </button>
-            </li>
-          )
-        })}
-      </ul>
+            </div>
+          )}
 
-      {mudou && (
-        <div className="flex flex-wrap items-center gap-2">
-          <button
-            type="button"
-            onClick={salvar}
-            disabled={salvando || livres < 0}
-            className="h-11 flex-1 cursor-pointer rounded-full bg-gradient-to-r from-holo-1 to-holo-3 px-5 text-xs font-extrabold text-void disabled:cursor-wait disabled:opacity-60"
-          >
-            {salvando ? 'Salvando…' : 'Salvar pontos'}
-          </button>
-          <button
-            type="button"
-            onClick={() => {
-              setErro('')
-              setRascunho(salvos)
-            }}
-            disabled={salvando}
-            className="h-11 cursor-pointer rounded-full border border-line px-5 text-xs font-bold text-muted hover:text-text"
-          >
-            Desfazer
-          </button>
-        </div>
-      )}
-
-      {erro && (
-        <p role="alert" className="m-0 text-xs font-bold text-coral">
-          {erro}
-        </p>
-      )}
+          {erro && (
+            <p role="alert" className="m-0 text-xs font-bold text-coral">
+              {erro}
+            </p>
+          )}
+        </aside>
+      </div>
     </section>
   )
 }

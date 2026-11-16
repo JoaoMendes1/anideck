@@ -802,6 +802,10 @@ experiência pequena e funcional de cada vez.
 > numeração e não abrem escopo novo. Ficam registrados aqui em ordem cronológica inversa para
 > não sumirem: fase concluída não deve ser reaberta só para receber um conserto.
 
+### 16/11/2026 — Tela do personagem em duas linhas e painel de combate em abas (#231)
+
+- [x] **Linha 1 com arte e identidade; Linha 2 na largura toda com abas (`?aba=`):** a coluna direita ao lado da arte passa a trazer só nome, classe/elemento, Jornada e visual, Progressão e atalhos de Aventura (sem `lg:sticky` na arte). Abaixo das duas colunas entra o controle segmentado com **Status** (Vida, Ataque e Defesa ao lado dos derivados no desktop), **Atributos** (seis primários em duas colunas e resumo lateral de pontos livres, Salvar e Desfazer) e **Habilidades** (grade de 3 colunas no desktop, com a única ocupando 2).
+
 ### 16/11/2026 — Loja com cabeçalho compacto e barra de categorias sem corte (#230)
 
 - [x] **Cabeçalho numa linha no desktop (~72 px):** título **"Loja"**, regra de cosméticos, chip de saldo, link "Ganhar AniCoins" e botão "Seja um Apoiador" (no celular, título e saldo na mesma linha e Apoiador como ícone).
