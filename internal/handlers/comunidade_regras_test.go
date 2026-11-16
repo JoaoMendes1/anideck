@@ -73,6 +73,8 @@ func TestValidarRegrasComunidade(t *testing.T) {
 	}
 	ruins := map[string]func(r *RegrasComunidade){
 		"mana máxima":     func(r *RegrasComunidade) { r.MPMax = 0 },
+		"mana por nível":  func(r *RegrasComunidade) { r.MPPorNivel = -1 },
+		"teto menor base": func(r *RegrasComunidade) { r.MPMaxTeto = 40 },
 		"recarga":         func(r *RegrasComunidade) { r.MPRegenDia = 999 },
 		"custo":           func(r *RegrasComunidade) { r.MPCustoComentario = -1 },
 		"janela":          func(r *RegrasComunidade) { r.HPJanelaDias = 3 },
@@ -86,6 +88,34 @@ func TestValidarRegrasComunidade(t *testing.T) {
 		if validarRegrasComunidade(r) == "" {
 			t.Errorf("%s: deveria recusar", nome)
 		}
+	}
+}
+
+func TestCalcularManaEHPMaximoPorNivel(t *testing.T) {
+	r := RegrasComunidadePadrao()
+
+	// Nível 1: base 50 MP e 100 HP.
+	if mp := CalcularManaMaxima(1, r); mp != 50 {
+		t.Fatalf("nível 1 MP: esperava 50, recebeu %d", mp)
+	}
+	if hp := CalcularHPMaximo(1); hp != 100 {
+		t.Fatalf("nível 1 HP: esperava 100, recebeu %d", hp)
+	}
+
+	// Nível 15: 50 + 1*(15-1) = 64 MP; 100 + 5*(15-1) = 170 HP.
+	if mp := CalcularManaMaxima(15, r); mp != 64 {
+		t.Fatalf("nível 15 MP: esperava 64, recebeu %d", mp)
+	}
+	if hp := CalcularHPMaximo(15); hp != 170 {
+		t.Fatalf("nível 15 HP: esperava 170, recebeu %d", hp)
+	}
+
+	// Acima do teto: 120 MP e 400 HP.
+	if mp := CalcularManaMaxima(90, r); mp != 120 {
+		t.Fatalf("teto MP: esperava 120, recebeu %d", mp)
+	}
+	if hp := CalcularHPMaximo(90); hp != 400 {
+		t.Fatalf("teto HP: esperava 400, recebeu %d", hp)
 	}
 }
 

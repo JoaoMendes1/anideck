@@ -792,7 +792,7 @@ experiência pequena e funcional de cada vez.
 - [ ] 18.6 Arena, cartas e invocação
   - [x] 18.6a Invocação gratuita: bilhetes ganhos só em expedições, invocar 1 ou 10, chances visíveis e iguais às do sorteio (`rpg_chances_invocacao`), garantia de épico ou melhor a cada 10, repetidos somam no inventário (#223). Sem pagamento por desenho: ECA Digital, art. 20
 
-**Pendência do dono:** aplicar o `sql/078_rpg_reforco_monstros.sql` (#229) no Supabase. Do `071` ao `077` foram aplicados até 16/11/2026.
+**Pendência do dono:** aplicar `sql/078_rpg_reforco_monstros.sql` (#229) e `sql/079_vitalidade_mana_por_nivel.sql` (#234) no Supabase. Do `071` ao `077` foram aplicados até 16/11/2026.
 
 **Arte pendente (o sistema já está pronto para recebê-la, sem mudar código de regra):** ilustração de cada skin (entra em `ARTES` com o id da skin e sai de `SKINS`), ícone ou ilustração de cada item de equipamento e de cada monstro, e a segunda personagem do elenco.
 
@@ -801,6 +801,11 @@ experiência pequena e funcional de cada vez.
 > Correção e ajuste feitos depois do escopo da v1 fechar. **Não são fases** — não seguem a
 > numeração e não abrem escopo novo. Ficam registrados aqui em ordem cronológica inversa para
 > não sumirem: fase concluída não deve ser reaberta só para receber um conserto.
+
+### 16/11/2026 — Vitalidade e Mana crescem com o nível do jogador (#234)
+
+- [x] **Teto de Mana e de Vitalidade por nível (`sql/079` e `comunidade_regras.go`):** `mana_maxima(uuid)` soma `mp_max + mp_por_nivel * (nivel - 1)` até `mp_max_teto` (padrão `50 + 1*(nivel-1)` até `120`, configuráveis na aba Moderação do Painel Admin) e `mana_atual(uuid)` escala a recarga diária proporcionalmente para manter o tempo de recarga cheia (~4 dias). A Vitalidade mantém a constância de `0..100%` para as regras de bônus e escala o teto exibido em `min(400, 100 + 5 * (nivel - 1))` (ex.: `170/170` e `64/64` no nível 15).
+- [x] **Orbes, barras, pílula da Navbar e perfil público:** `OrbeVital`, `BarrasVitais`, `PilulaGuilda`, `PlayerHudInicio`, `CartaoVitais` e `PerfilMembro` exibem os valores escalados pelo nível, ajustando o diâmetro do orbe na Início para comportar números de três dígitos.
 
 ### 16/11/2026 — Paginação e data com hora no extrato de XP da Guilda (#233)
 

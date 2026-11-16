@@ -12,7 +12,13 @@ import {
   totalDeReacoes,
   ultimoEpisodioDisponivel,
   validarHandle,
+  calcularManaMaximaJogador,
+  calcularHPMaximoJogador,
+  obterMPMaxDoEstado,
+  obterHPEscaladoDoEstado,
   type ContagemEpisodio,
+  type RegrasComunidade,
+  type EstadoComunidade,
 } from './comunidade'
 
 describe('validarHandle', () => {
@@ -112,6 +118,68 @@ describe('totalDeReacoes e faixaDoHP', () => {
     expect(faixaDoHP(100)).toBe('cheio')
     expect(faixaDoHP(60)).toBe('bom')
     expect(faixaDoHP(20)).toBe('baixo')
+  })
+})
+
+describe('Vitalidade e Mana por nível', () => {
+  const regrasPadrao: RegrasComunidade = {
+    mp_max: 50,
+    mp_por_nivel: 1,
+    mp_max_teto: 120,
+    mp_custo_comentario: 5,
+    mp_regen_dia: 20,
+    hp_janela_dias: 14,
+    hp_dias_para_cheio: 7,
+    hp_piso: 20,
+    descanso_max_dias: 14,
+    previsoes_ativas: true,
+  }
+
+  it('calcula MP máximo e HP máximo nos níveis 1, 15 e 90 (com teto)', () => {
+    expect(calcularManaMaximaJogador(1, regrasPadrao)).toBe(50)
+    expect(calcularManaMaximaJogador(15, regrasPadrao)).toBe(64)
+    expect(calcularManaMaximaJogador(90, regrasPadrao)).toBe(120)
+
+    expect(calcularHPMaximoJogador(1)).toBe(100)
+    expect(calcularHPMaximoJogador(15)).toBe(170)
+    expect(calcularHPMaximoJogador(90)).toBe(400)
+  })
+
+  it('usa o teto vindo do backend ou calcula pelo nível na ausência dele', () => {
+    const estadoSemCampos: EstadoComunidade = {
+      perfil: {
+        existe: false,
+        handle: '',
+        nome: '',
+        bio: '',
+        vitrine: [],
+        publico: false,
+        descanso_inicio: '',
+        descanso_fim: '',
+      },
+      hp: 80,
+      mana: 50,
+      em_descanso: false,
+      regras: regrasPadrao,
+    }
+    expect(obterMPMaxDoEstado(estadoSemCampos, 15)).toBe(64)
+    expect(obterHPEscaladoDoEstado(estadoSemCampos, 15)).toEqual({
+      atual: 136,
+      maximo: 170,
+      pct: 80,
+    })
+
+    const estadoComBackend: EstadoComunidade = {
+      ...estadoSemCampos,
+      mp_max_jogador: 64,
+      hp_max_jogador: 170,
+    }
+    expect(obterMPMaxDoEstado(estadoComBackend, 1)).toBe(64)
+    expect(obterHPEscaladoDoEstado(estadoComBackend, 1)).toEqual({
+      atual: 136,
+      maximo: 170,
+      pct: 80,
+    })
   })
 })
 

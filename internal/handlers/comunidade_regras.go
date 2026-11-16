@@ -17,6 +17,8 @@ import (
 // custo da Mana cobrado no INSERT e o mostrado na tela vêm da mesma fonte.
 type RegrasComunidade struct {
 	MPMax             int  `json:"mp_max"`
+	MPPorNivel        int  `json:"mp_por_nivel"`
+	MPMaxTeto         int  `json:"mp_max_teto"`
 	MPRegenDia        int  `json:"mp_regen_dia"`
 	MPCustoComentario int  `json:"mp_custo_comentario"`
 	HPJanelaDias      int  `json:"hp_janela_dias"`
@@ -28,10 +30,12 @@ type RegrasComunidade struct {
 
 const chaveRegrasComunidade = "comunidade_regras"
 
-// RegrasComunidadePadrao espelha o valor inicial gravado pelo sql/041 e sql/062.
+// RegrasComunidadePadrao espelha o valor inicial gravado pelo sql/041, sql/062 e sql/079.
 func RegrasComunidadePadrao() RegrasComunidade {
 	return RegrasComunidade{
 		MPMax:             50,
+		MPPorNivel:        1,
+		MPMaxTeto:         120,
 		MPRegenDia:        20,
 		MPCustoComentario: 5,
 		HPJanelaDias:      14,
@@ -42,11 +46,53 @@ func RegrasComunidadePadrao() RegrasComunidade {
 	}
 }
 
+// CalcularManaMaxima devolve a Mana máxima do jogador para o nível atual,
+// crescendo a partir de MPMax até MPMaxTeto (sql/079).
+func CalcularManaMaxima(nivel int, r RegrasComunidade) int {
+	base := r.MPMax
+	if base < 1 {
+		base = 50
+	}
+	porNivel := r.MPPorNivel
+	if porNivel < 0 {
+		porNivel = 0
+	}
+	teto := r.MPMaxTeto
+	if teto < base {
+		teto = base
+	}
+	if nivel < 1 {
+		nivel = 1
+	}
+	total := base + porNivel*(nivel-1)
+	if total > teto {
+		return teto
+	}
+	return total
+}
+
+// CalcularHPMaximo devolve o teto de Vitalidade do jogador para o nível atual
+// (100 no nível 1, +5 por nível até o teto de 400).
+func CalcularHPMaximo(nivel int) int {
+	if nivel < 1 {
+		nivel = 1
+	}
+	total := 100 + 5*(nivel-1)
+	if total > 400 {
+		return 400
+	}
+	return total
+}
+
 // validarRegrasComunidade devolve a mensagem de recusa, ou vazio quando as regras valem.
 func validarRegrasComunidade(r RegrasComunidade) string {
 	switch {
 	case r.MPMax < 5 || r.MPMax > 500:
 		return "A Mana máxima vai de 5 a 500."
+	case r.MPPorNivel < 0 || r.MPPorNivel > 20:
+		return "A Mana por nível vai de 0 a 20."
+	case r.MPMaxTeto < r.MPMax || r.MPMaxTeto > 1000:
+		return "O teto de Mana máxima vai da Mana base até 1000."
 	case r.MPRegenDia < 1 || r.MPRegenDia > r.MPMax:
 		return "A recarga diária vai de 1 até a Mana máxima."
 	case r.MPCustoComentario < 0 || r.MPCustoComentario > r.MPMax:
@@ -81,7 +127,13 @@ func lerRegrasComunidade(client *supabase.Client) RegrasComunidade {
 		return regras
 	}
 	lidas := RegrasComunidadePadrao()
-	if json.Unmarshal([]byte(linhas[0].Value), &lidas) != nil || validarRegrasComunidade(lidas) != "" {
+	if json.Unmarshal([]byte(linhas[0].Value), &lidas) != nil {
+		return regras
+	}
+	if lidas.MPMaxTeto < lidas.MPMax {
+		lidas.MPMaxTeto = lidas.MPMax
+	}
+	if validarRegrasComunidade(lidas) != "" {
 		return regras
 	}
 	return lidas

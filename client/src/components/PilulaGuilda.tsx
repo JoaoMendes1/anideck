@@ -8,6 +8,7 @@ import { Droplet, Heart, Sparkles, Users, X, ShoppingBag } from 'lucide-react'
 import IconeAniCoin from './IconeAniCoin'
 
 import { avisosDaMudanca, type AvisoDoHud, type FotoDoJogador } from '../lib/hud'
+import { obterHPEscaladoDoEstado, obterMPMaxDoEstado } from '../lib/comunidade'
 import { useResumoGuilda } from '../hooks/useResumoGuilda'
 import { useComunidade } from '../hooks/useComunidade'
 import { useCarteira } from '../hooks/useCarteira'
@@ -38,8 +39,12 @@ export default function PilulaGuilda() {
   const proximoId = useRef(0)
   const { pathname } = useLocation()
 
-  const hp = estado ? estado.hp : null
+  const nivel = status?.nivel ?? 1
+  const hpEscalado = estado ? obterHPEscaladoDoEstado(estado, nivel) : null
+  const hp = hpEscalado ? hpEscalado.atual : null
+  const hpMax = hpEscalado ? hpEscalado.maximo : 100
   const mp = estado ? Math.floor(estado.mana) : null
+  const mpMax = estado ? obterMPMaxDoEstado(estado, nivel) : 50
 
   // Compara com a última foto e solta os avisos do que mudou. A primeira leitura só
   // registra a foto: carregar a página não é ganho.
@@ -82,8 +87,8 @@ export default function PilulaGuilda() {
 
   const resumoTitulo = [
     `Rank ${status.rank} · Nível ${status.nivel} (${status.xp_no_nivel}/${status.xp_para_proximo} XP)`,
-    hp !== null ? `Vitalidade ${hp}/100` : '',
-    mp !== null && estado ? `Mana ${mp}/${estado.regras.mp_max}` : '',
+    hp !== null ? `Vitalidade ${hp}/${hpMax}` : '',
+    mp !== null && estado ? `Mana ${mp}/${mpMax}` : '',
     `${saldo.toLocaleString('pt-BR')} AniCoins`,
   ]
     .filter(Boolean)
@@ -112,7 +117,7 @@ export default function PilulaGuilda() {
           {estado && (
             <span className="flex gap-1 lg:hidden">
               <BarraVital tipo="hp" pct={estado.hp} className="h-1 flex-1" />
-              <BarraVital tipo="mp" pct={(estado.mana / estado.regras.mp_max) * 100} className="h-1 flex-1" />
+              <BarraVital tipo="mp" pct={mpMax > 0 ? (estado.mana / mpMax) * 100 : 0} className="h-1 flex-1" />
             </span>
           )}
         </span>
@@ -120,7 +125,7 @@ export default function PilulaGuilda() {
         {estado && (
           <span className="hidden lg:flex items-center gap-2.5 pl-2.5 border-l border-line font-mono text-xs font-bold tabular-nums">
             <span className="inline-flex items-center gap-1 text-coral">
-              <Heart size={13} className="fill-coral/25" aria-hidden /> {estado.hp}
+              <Heart size={13} className="fill-coral/25" aria-hidden /> {hp}
             </span>
             <span className="inline-flex items-center gap-1 text-mana">
               <Droplet size={13} className="fill-mana/25" aria-hidden /> {mp}
@@ -196,7 +201,7 @@ export default function PilulaGuilda() {
           </Link>
 
           {estado ? (
-            <BarrasVitais estado={estado} />
+            <BarrasVitais estado={estado} nivel={status.nivel} />
           ) : (
             <p className="text-[12px] text-muted-2 m-0">Vitalidade e Mana aparecem quando a comunidade estiver disponível.</p>
           )}

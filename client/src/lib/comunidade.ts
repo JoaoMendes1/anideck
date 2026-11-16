@@ -6,6 +6,8 @@ import type { ClasseRPG } from './previsoes'
 
 export interface RegrasComunidade {
   mp_max: number
+  mp_por_nivel?: number
+  mp_max_teto?: number
   mp_regen_dia: number
   mp_custo_comentario: number
   hp_janela_dias: number
@@ -17,6 +19,8 @@ export interface RegrasComunidade {
 
 export const REGRAS_COMUNIDADE_PADRAO: RegrasComunidade = {
   mp_max: 50,
+  mp_por_nivel: 1,
+  mp_max_teto: 120,
   mp_regen_dia: 20,
   mp_custo_comentario: 5,
   hp_janela_dias: 14,
@@ -44,8 +48,47 @@ export interface EstadoComunidade {
   perfil: PerfilProprio
   mana: number
   hp: number
+  mp_max_jogador?: number
+  hp_max_jogador?: number
   regras: RegrasComunidade
   em_descanso: boolean
+}
+
+/** Calcula a Mana máxima do jogador a partir do nível e das regras (sql/079). */
+export function calcularManaMaximaJogador(nivel: number, regras: RegrasComunidade): number {
+  const base = Math.max(1, regras.mp_max || 50)
+  const porNivel = Math.max(0, regras.mp_por_nivel ?? 1)
+  const teto = Math.max(base, regras.mp_max_teto ?? 120)
+  const nv = Math.max(1, Math.floor(nivel || 1))
+  return Math.min(teto, base + porNivel * (nv - 1))
+}
+
+/** Calcula o teto de Vitalidade do jogador para o nível atual (100 + 5*(nivel-1), até 400). */
+export function calcularHPMaximoJogador(nivel: number): number {
+  const nv = Math.max(1, Math.floor(nivel || 1))
+  return Math.min(400, 100 + 5 * (nv - 1))
+}
+
+/** Resolve o teto de Mana do estado, com fallback para o nível ou mp_max da regra. */
+export function obterMPMaxDoEstado(estado: EstadoComunidade, nivel = 1): number {
+  if (estado.mp_max_jogador && estado.mp_max_jogador > 0) {
+    return estado.mp_max_jogador
+  }
+  return calcularManaMaximaJogador(nivel, estado.regras)
+}
+
+/** Resolve a Vitalidade escalada (atual e máxima) mantendo estado.hp como 0..100%. */
+export function obterHPEscaladoDoEstado(
+  estado: EstadoComunidade,
+  nivel = 1,
+): { atual: number; maximo: number; pct: number } {
+  const maximo =
+    estado.hp_max_jogador && estado.hp_max_jogador > 0
+      ? estado.hp_max_jogador
+      : calcularHPMaximoJogador(nivel)
+  const pct = Math.min(100, Math.max(0, estado.hp))
+  const atual = Math.round((pct * maximo) / 100)
+  return { atual, maximo, pct }
 }
 
 export interface ContagemEpisodio {

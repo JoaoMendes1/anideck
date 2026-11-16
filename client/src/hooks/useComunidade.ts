@@ -11,7 +11,7 @@ import { useSessao } from '../contexts/SessaoContext'
 import { chaveDoUsuario, guardarNaMemoria, lerDaMemoria } from '../lib/cacheDeTela'
 import { VALIDADE_NA_MONTAGEM, buscarUmaVez } from '../lib/buscaCompartilhada'
 import { manaNaTela, taxaRegenEfetiva } from '../lib/hud'
-import type { EstadoComunidade } from '../lib/comunidade'
+import { obterMPMaxDoEstado, type EstadoComunidade } from '../lib/comunidade'
 
 export const EVENTO_COMUNIDADE = 'anideck:comunidade-atualizada'
 
@@ -85,7 +85,8 @@ export function useComunidade() {
     }
   }, [token, buscar, recarregar, aplicar])
 
-  const manaCheia = !guardado || guardado.estado.mana >= guardado.estado.regras.mp_max
+  const mpMaxGuardado = guardado ? obterMPMaxDoEstado(guardado.estado) : 0
+  const manaCheia = !guardado || guardado.estado.mana >= mpMaxGuardado
   useEffect(() => {
     if (manaCheia) return
     const id = window.setInterval(() => setAgora(Date.now()), TIQUE_DA_MANA)
@@ -95,8 +96,11 @@ export function useComunidade() {
   const estado = useMemo<EstadoComunidade | null>(() => {
     if (!guardado) return null
     const { estado: e, em } = guardado
-    const taxa = taxaRegenEfetiva(e.regras.mp_regen_dia, e.hp)
-    return { ...e, mana: manaNaTela(e.mana, e.regras.mp_max, taxa, em, agora) }
+    const mpMax = obterMPMaxDoEstado(e)
+    const baseMp = Math.max(1, e.regras.mp_max || 50)
+    const regenBaseJogador = e.regras.mp_regen_dia * (mpMax / baseMp)
+    const taxa = taxaRegenEfetiva(regenBaseJogador, e.hp)
+    return { ...e, mana: manaNaTela(e.mana, mpMax, taxa, em, agora) }
   }, [guardado, agora])
 
   return { estado: session ? estado : null, indisponivel, recarregar }

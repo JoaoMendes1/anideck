@@ -53,11 +53,22 @@ type Acao = 'ocultar' | 'reexibir' | 'apagar' | 'dispensar'
 
 const ROTULO_MOTIVO: Record<string, string> = Object.fromEntries(MOTIVOS_DENUNCIA.map(m => [m.id, m.rotulo]))
 
-type ChaveRegraNumerica = 'mp_max' | 'mp_regen_dia' | 'mp_custo_comentario' | 'hp_janela_dias' | 'hp_dias_para_cheio' | 'hp_piso' | 'descanso_max_dias'
+type ChaveRegraNumerica =
+  | 'mp_max'
+  | 'mp_por_nivel'
+  | 'mp_max_teto'
+  | 'mp_regen_dia'
+  | 'mp_custo_comentario'
+  | 'hp_janela_dias'
+  | 'hp_dias_para_cheio'
+  | 'hp_piso'
+  | 'descanso_max_dias'
 
 const CAMPOS_REGRAS: { chave: ChaveRegraNumerica; rotulo: string; ajuda: string }[] = [
-  { chave: 'mp_max', rotulo: 'Mana máxima', ajuda: 'Teto da barra azul.' },
-  { chave: 'mp_regen_dia', rotulo: 'Recarga por dia', ajuda: 'Contínua ao longo do dia.' },
+  { chave: 'mp_max', rotulo: 'Mana máxima (Nível 1)', ajuda: 'Base da barra azul no nível 1.' },
+  { chave: 'mp_por_nivel', rotulo: 'Mana por nível', ajuda: 'Quanto o teto sobe por nível (+1 padrão).' },
+  { chave: 'mp_max_teto', rotulo: 'Teto de Mana máxima', ajuda: 'Limite máximo com o nível (120 padrão).' },
+  { chave: 'mp_regen_dia', rotulo: 'Recarga por dia', ajuda: 'Contínua ao longo do dia (escala com o nível).' },
   { chave: 'mp_custo_comentario', rotulo: 'Custo do comentário', ajuda: '0 desliga o custo.' },
   { chave: 'hp_janela_dias', rotulo: 'Janela da Vitalidade (dias)', ajuda: 'Quantos dias para trás contam.' },
   { chave: 'hp_dias_para_cheio', rotulo: 'Dias ativos para encher', ajuda: 'Dentro da janela.' },
@@ -431,7 +442,7 @@ export default function AbaModeracao() {
                   <span className="block text-xs text-muted-2 mb-2">{c.ajuda}</span>
                   <CampoNumerico
                     min={0}
-                    value={regras[c.chave]}
+                    value={regras[c.chave] ?? 0}
                     aoMudar={(valor) => setRegras({ ...regras, [c.chave]: valor })}
                     className="w-full min-w-0 bg-panel border border-line rounded-lg px-3 py-2 text-sm font-mono outline-none focus:border-holo-3"
                   />

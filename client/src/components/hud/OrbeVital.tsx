@@ -63,10 +63,10 @@ export default function OrbeVital({ tipo, pct, valor, maximo, rotulo, detalhe, p
         />
         <span aria-hidden className="absolute left-[22%] top-[14%] w-[26%] h-[15%] rounded-full bg-white/30 blur-[2px]" />
         <span
-          className="absolute inset-0 grid place-items-center font-anton leading-none text-text [text-shadow:0_2px_8px_rgba(0,0,0,.6)] tabular-nums"
-          style={{ fontSize: Math.round(tamanho * 0.3) }}
+          className="absolute inset-0 flex flex-col items-center justify-center font-anton leading-none text-text [text-shadow:0_2px_8px_rgba(0,0,0,.6)] tabular-nums"
         >
-          {valor}
+          <span style={{ fontSize: Math.round(tamanho * 0.28) }}>{valor}</span>
+          <span className="font-mono text-xs text-white/75 font-bold">/{maximo}</span>
         </span>
       </span>
       <span className={`text-xs font-extrabold ${cor.rotulo}`}>{rotulo}</span>

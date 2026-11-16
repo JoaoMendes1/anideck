@@ -3,10 +3,12 @@
 import { Link } from 'react-router-dom'
 import { Users } from 'lucide-react'
 import { useComunidade } from '../../hooks/useComunidade'
+import { useResumoGuilda } from '../../hooks/useResumoGuilda'
 import BarrasVitais from './BarrasVitais'
 
 export default function CartaoVitais() {
   const { estado } = useComunidade()
+  const status = useResumoGuilda()
   if (!estado) return null
   const { perfil } = estado
 
@@ -24,7 +26,7 @@ export default function CartaoVitais() {
         )}
       </div>
 
-      <BarrasVitais estado={estado} />
+      <BarrasVitais estado={estado} nivel={status?.nivel} />
 
       <p className="font-mono text-xs text-muted-2 mt-4 mb-0 leading-relaxed">
         A Vitalidade mede os últimos {estado.regras.hp_janela_dias} dias e nunca tira XP nem rank. Ficou parado? Ela cai devagar e

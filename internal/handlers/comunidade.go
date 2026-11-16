@@ -86,11 +86,13 @@ type perfilProprio struct {
 }
 
 type estadoComunidade struct {
-	Perfil  perfilProprio    `json:"perfil"`
-	Mana    float64          `json:"mana"`
-	HP      int              `json:"hp"`
-	Regras  RegrasComunidade `json:"regras"`
-	EmPausa bool             `json:"em_descanso"`
+	Perfil       perfilProprio    `json:"perfil"`
+	Mana         float64          `json:"mana"`
+	HP           int              `json:"hp"`
+	MPMaxJogador int              `json:"mp_max_jogador"`
+	HPMaxJogador int              `json:"hp_max_jogador"`
+	Regras       RegrasComunidade `json:"regras"`
+	EmPausa      bool             `json:"em_descanso"`
 }
 
 func lerPerfilProprio(client *supabase.Client, userID string) (perfilProprio, error) {
@@ -156,13 +158,24 @@ func lerDiasAtivos(client *supabase.Client) []string {
 	return dias
 }
 
+func lerNivelUsuario(client *supabase.Client, userID string) int {
+	if client == nil || userID == "" {
+		return 1
+	}
+	bruto := strings.TrimSpace(client.Rpc("calcular_nivel_usuario", "", map[string]interface{}{"p_user_id": userID}))
+	if v, err := strconv.Atoi(bruto); err == nil && v >= 1 {
+		return v
+	}
+	return 1
+}
+
 // lerMinhaMana chama a função do banco, que já aplica a recarga desde o último gasto. Vai
 // com a fração (duas casas): a tela continua a recarga a partir dela, sem pular um ponto.
-func lerMinhaMana(client *supabase.Client, regras RegrasComunidade) float64 {
+func lerMinhaMana(client *supabase.Client, mpMaxJogador int) float64 {
 	bruto := strings.TrimSpace(client.Rpc("minha_mana", "", map[string]interface{}{}))
 	if bruto == "" || bruto == "null" {
-		// Sem perfil ainda: a Mana nasce cheia na criação.
-		return float64(regras.MPMax)
+		// Sem perfil ainda: a Mana nasce cheia na criação, respeitando o teto do nível do jogador.
+		return float64(mpMaxJogador)
 	}
 	valor, err := strconv.ParseFloat(bruto, 64)
 	if err != nil {
@@ -190,14 +203,19 @@ func (h *ComunidadeHandler) montarEstado(client *supabase.Client, userID string)
 	if err != nil {
 		return estadoComunidade{}, err
 	}
+	nivel := lerNivelUsuario(client, userID)
+	mpMaxJogador := CalcularManaMaxima(nivel, regras)
+	hpMaxJogador := CalcularHPMaximo(nivel)
 	hoje := time.Now().In(fusoGuilda)
 	hojeTexto := hoje.Format("2006-01-02")
 	return estadoComunidade{
-		Perfil:  perfil,
-		Mana:    lerMinhaMana(client, regras),
-		HP:      lerMinhaVitalidade(client, perfil, hoje, regras),
-		Regras:  regras,
-		EmPausa: perfil.DescansoFim != "" && perfil.DescansoInicio <= hojeTexto && hojeTexto <= perfil.DescansoFim,
+		Perfil:       perfil,
+		Mana:         lerMinhaMana(client, mpMaxJogador),
+		HP:           lerMinhaVitalidade(client, perfil, hoje, regras),
+		MPMaxJogador: mpMaxJogador,
+		HPMaxJogador: hpMaxJogador,
+		Regras:       regras,
+		EmPausa:      perfil.DescansoFim != "" && perfil.DescansoInicio <= hojeTexto && hojeTexto <= perfil.DescansoFim,
 	}, nil
 }
 

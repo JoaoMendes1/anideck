@@ -12,6 +12,7 @@ import OrbeVital, { OrbeMoeda } from '../hud/OrbeVital'
 import SeloStreak from '../hud/SeloStreak'
 import { useResumoGuilda } from '../../hooks/useResumoGuilda'
 import { useComunidade } from '../../hooks/useComunidade'
+import { obterHPEscaladoDoEstado, obterMPMaxDoEstado } from '../../lib/comunidade'
 import { useCarteira } from '../../hooks/useCarteira'
 import { useMissoesHoje } from '../../hooks/useMissoesHoje'
 import { usePersonagem } from '../../hooks/usePersonagem'
@@ -62,8 +63,9 @@ export default function PlayerHudInicio({ nome, dataHoje, aoAbrirGosto }: Props)
   const classe = heroi?.personagem
     ? `${rotuloDaClasse(heroi.personagem.classe)} do ${rotuloDoElemento(heroi.personagem.elemento)}`
     : ''
+  const hpEscalado = estado ? obterHPEscaladoDoEstado(estado, status.nivel) : { atual: 0, maximo: 100, pct: 0 }
   const mana = estado ? Math.floor(estado.mana) : 0
-  const mpMax = estado?.regras.mp_max ?? 0
+  const mpMax = estado ? obterMPMaxDoEstado(estado, status.nivel) : 0
   const faltam = Math.max(0, status.xp_para_proximo - status.xp_no_nivel)
   const questsProntas = total > 0 && concluidas === total && !todasResgatadas
 
@@ -204,9 +206,9 @@ export default function PlayerHudInicio({ nome, dataHoje, aoAbrirGosto }: Props)
                 <>
                   <OrbeVital
                     tipo="hp"
-                    pct={estado.hp}
-                    valor={estado.hp}
-                    maximo={100}
+                    pct={hpEscalado.pct}
+                    valor={hpEscalado.atual}
+                    maximo={hpEscalado.maximo}
                     rotulo="Vitalidade"
                     detalhe={estado.hp >= 80 ? <span className="text-green font-bold">Bônus de XP</span> : 'Assista para recuperar'}
                     para="/guilda"
