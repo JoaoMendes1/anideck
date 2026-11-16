@@ -11,6 +11,7 @@ import { obterFundoDoCenario } from '../lib/cosmeticos'
 import CamadaDaAura from '../components/personagem/CamadaDaAura'
 import PainelEquipamentos from '../components/personagem/PainelEquipamentos'
 import SlotsDoPersonagem from '../components/personagem/SlotsDoPersonagem'
+import EscolhaDeItem from '../components/personagem/EscolhaDeItem'
 import PainelAtributos from '../components/personagem/PainelAtributos'
 import LivroDeHabilidades from '../components/personagem/LivroDeHabilidades'
 import { obterEquipamentos, type EstadoEquipamento, type SlotId } from '../lib/rpg'
@@ -198,6 +199,8 @@ function FichaDoPersonagem({
   // Visual que o jogador está só experimentando; null mostra o que está em uso.
   const [previa, setPrevia] = useState<string | null>(null)
   const [slotAberto, setSlotAberto] = useState<SlotId | null>(null)
+  // Estável, para o Esc da lista não ser religado a cada render.
+  const fecharSlot = useCallback(() => setSlotAberto(null), [])
   const [salvando, setSalvando] = useState(false)
   const [erroDoVisual, setErroDoVisual] = useState('')
 
@@ -271,6 +274,9 @@ function FichaDoPersonagem({
             slotAberto={slotAberto}
             aoEscolher={(slot) => setSlotAberto((atual) => (atual === slot ? null : slot))}
           />
+          {equipamento && slotAberto && (
+            <EscolhaDeItem estado={equipamento} slot={slotAberto} aoFechar={fecharSlot} aoAtualizar={aoAtualizarEquipamento} />
+          )}
           <span className="absolute left-4 top-4 rounded-full border border-gold bg-void/70 px-3 py-1.5 font-mono text-xs font-semibold tracking-wider text-gold">
             RANK {progressao.rank}
           </span>
@@ -547,12 +553,7 @@ function FichaDoPersonagem({
             </Link>
           </nav>
 
-          <PainelEquipamentos
-            estado={equipamento}
-            slotAberto={slotAberto}
-            aoFecharSlot={() => setSlotAberto(null)}
-            aoAtualizar={aoAtualizarEquipamento}
-          />
+          <PainelEquipamentos estado={equipamento} />
           {equipamento && <PainelAtributos estado={equipamento} aoAtualizar={aoAtualizarEquipamento} />}
           {equipamento && <LivroDeHabilidades habilidades={equipamento.habilidades} />}
         </div>

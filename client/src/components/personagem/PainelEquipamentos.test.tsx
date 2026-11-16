@@ -11,16 +11,18 @@ vi.mock('../../lib/rpg', async (original) => {
 
 import PainelEquipamentos from './PainelEquipamentos'
 import SlotsDoPersonagem from './SlotsDoPersonagem'
+import EscolhaDeItem from './EscolhaDeItem'
 import { ESTILO_DA_RARIDADE, equiparItemRPG } from '../../lib/rpg'
 
-// Monta os slots e o painel como a página: o estado fica fora dos dois.
+// Monta os slots, a lista e o painel como a página: o estado fica fora deles.
 function Tela({ inicial }: { inicial: EstadoEquipamento | null | undefined }) {
   const [estado, setEstado] = useState(inicial)
   const [aberto, setAberto] = useState<SlotId | null>(null)
   return (
     <>
       <SlotsDoPersonagem estado={estado} slotAberto={aberto} aoEscolher={(s) => setAberto((a) => (a === s ? null : s))} />
-      <PainelEquipamentos estado={estado} slotAberto={aberto} aoFecharSlot={() => setAberto(null)} aoAtualizar={setEstado} />
+      {estado && aberto && <EscolhaDeItem estado={estado} slot={aberto} aoFechar={() => setAberto(null)} aoAtualizar={setEstado} />}
+      <PainelEquipamentos estado={estado} />
     </>
   )
 }
@@ -110,4 +112,21 @@ describe('PainelEquipamentos', () => {
     expect(arma.className).not.toContain('border-dashed')
     expect(botas.className).toContain('border-dashed')
   })
+
+  it('a lista abre por cima, sem rolar a página, e fecha no Esc e no toque fora', () => {
+    const rolar = vi.fn()
+    Element.prototype.scrollIntoView = rolar
+    render(<Tela inicial={estado()} />)
+
+    fireEvent.click(screen.getByRole('button', { name: 'Arma: Espada de Ferro. Trocar' }))
+    expect(screen.getByRole('dialog', { name: 'Itens de Arma' })).toBeTruthy()
+    expect(rolar).not.toHaveBeenCalled()
+    fireEvent.keyDown(window, { key: 'Escape' })
+    expect(screen.queryByRole('dialog')).toBeNull()
+
+    fireEvent.click(screen.getByRole('button', { name: 'Arma: Espada de Ferro. Trocar' }))
+    fireEvent.click(screen.getAllByRole('button', { name: 'Fechar a lista de itens' })[0])
+    expect(screen.queryByRole('dialog')).toBeNull()
+  })
 })
+

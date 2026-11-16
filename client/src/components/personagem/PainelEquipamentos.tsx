@@ -1,71 +1,17 @@
 // client/src/components/personagem/PainelEquipamentos.tsx
-// Atributos e a troca de item, na tela do personagem.
-//
-// O estado vem da página, que o recebe na mesma chamada do personagem; os slots ficam sobre a
-// arte (SlotsDoPersonagem). Este painel mostra os números e, com um slot aberto, a lista dos
-// itens daquele slot com o ganho ou a perda de cada troca. A troca é conferida e gravada no
-// servidor.
-import { useEffect, useRef, useState } from 'react'
-import { Lock, Shield, Swords, Heart, Zap, X } from 'lucide-react'
-import {
-  SLOTS_RPG,
-  diferencaDaTroca,
-  equiparItemRPG,
-  estiloDaRaridade,
-  porMilEmPorcento,
-  resumoDoItem,
-  type EstadoEquipamento,
-  type SlotId,
-} from '../../lib/rpg'
+// Status de combate na tela do personagem: Vida, Ataque e Defesa com o ganho dos itens e o
+// resto dos derivados. A troca de item abre sobre a arte (EscolhaDeItem), no lugar do slot.
+import { Shield, Swords, Heart, Zap } from 'lucide-react'
+import { porMilEmPorcento, type EstadoEquipamento } from '../../lib/rpg'
 
 const ROTULO_DE_SECAO = 'font-mono text-xs font-semibold uppercase tracking-widest text-muted m-0'
 
-function Diferenca({ valor, rotulo }: { valor: number; rotulo: string }) {
-  if (valor === 0) return null
-  return (
-    <span className={valor > 0 ? 'text-green' : 'text-coral'}>
-      {valor > 0 ? '+' : ''}
-      {valor} {rotulo}
-    </span>
-  )
-}
-
 export default function PainelEquipamentos({
   estado,
-  slotAberto,
-  aoFecharSlot,
-  aoAtualizar,
 }: {
   /** undefined: ainda carregando; null: o servidor não respondeu. */
   estado: EstadoEquipamento | null | undefined
-  slotAberto: SlotId | null
-  aoFecharSlot: () => void
-  aoAtualizar: (estado: EstadoEquipamento) => void
 }) {
-  const [salvando, setSalvando] = useState(false)
-  const [erro, setErro] = useState('')
-  const listaRef = useRef<HTMLDivElement>(null)
-
-  // No celular a lista fica abaixo da arte: ao abrir um slot, ela é trazida para a tela.
-  useEffect(() => {
-    setErro('')
-    if (slotAberto) listaRef.current?.scrollIntoView?.({ block: 'nearest', behavior: 'smooth' })
-  }, [slotAberto])
-
-  const trocar = async (slot: SlotId, itemId: string) => {
-    if (salvando) return
-    setErro('')
-    setSalvando(true)
-    const resultado = await equiparItemRPG(slot, itemId)
-    setSalvando(false)
-    if (resultado.dados) {
-      aoAtualizar(resultado.dados)
-      aoFecharSlot()
-      return
-    }
-    setErro(resultado.erro ?? 'Não foi possível trocar o equipamento agora.')
-  }
-
   if (estado === undefined) {
     return <div className="h-40 animate-pulse rounded-2xl border border-line bg-panel" />
   }
@@ -85,9 +31,6 @@ export default function PainelEquipamentos({
   }
 
   const { atributos, base } = estado
-  const itemNoSlot = (slot: SlotId) => estado.slots.find((s) => s.slot === slot)?.item
-  const opcoes = slotAberto ? estado.inventario.filter((i) => i.slot === slotAberto) : []
-  const rotuloAberto = SLOTS_RPG.find((s) => s.id === slotAberto)?.rotulo ?? ''
 
   const linhasDeAtributo = [
     { chave: 'vida', rotulo: 'Vida', Icone: Heart, valor: atributos.vida, bonus: atributos.vida - base.vida, cor: 'text-coral' },
@@ -145,87 +88,8 @@ export default function PainelEquipamentos({
         </dl>
       )}
 
-      <p className="m-0 text-xs text-muted">Toque num slot ao lado do personagem para trocar o item.</p>
+      <p className="m-0 text-xs text-muted">Toque num slot sobre o personagem para trocar o item.</p>
 
-      {slotAberto && (
-        <div ref={listaRef} className="flex scroll-mt-4 flex-col gap-2 rounded-2xl border border-holo-3/40 bg-panel p-3">
-          <div className="flex items-center justify-between gap-2">
-            <p className="m-0 text-xs font-bold text-text">{rotuloAberto}</p>
-            <button
-              type="button"
-              onClick={aoFecharSlot}
-              aria-label="Fechar a lista de itens"
-              className="flex h-11 w-11 cursor-pointer items-center justify-center rounded-full text-muted hover:text-text"
-            >
-              <X size={16} aria-hidden="true" />
-            </button>
-          </div>
-
-          {opcoes.length === 0 ? (
-            <p className="m-0 text-xs text-muted">
-              Você ainda não tem itens para este slot. Eles vêm de batalhas e da invocação.
-            </p>
-          ) : (
-            <ul className="m-0 flex list-none flex-col gap-2 p-0">
-              {opcoes.map((item) => {
-                const estilo = estiloDaRaridade(item.raridade)
-                const dif = diferencaDaTroca(itemNoSlot(slotAberto), item)
-                return (
-                  <li
-                    key={item.id}
-                    className={`flex flex-wrap items-center gap-2 rounded-xl border p-2.5 ${estilo.borda} ${estilo.fundo}`}
-                  >
-                    <div className="min-w-0 flex-1 basis-40">
-                      <p className={`m-0 truncate text-sm font-bold ${estilo.texto}`}>
-                        {item.nome}
-                        {item.quantidade > 1 && <span className="ml-1 font-mono text-xs text-muted">×{item.quantidade}</span>}
-                      </p>
-                      <p className="m-0 text-xs text-muted">
-                        {estilo.rotulo} · {resumoDoItem(item)}
-                      </p>
-                      {!item.equipado && (
-                        <p className="m-0 flex flex-wrap gap-x-2 font-mono text-xs">
-                          <Diferenca valor={dif.vida} rotulo="Vida" />
-                          <Diferenca valor={dif.ataque} rotulo="Ataque" />
-                          <Diferenca valor={dif.defesa} rotulo="Defesa" />
-                        </p>
-                      )}
-                    </div>
-                    {item.bloqueado ? (
-                      <span className="inline-flex items-center gap-1 font-mono text-xs text-muted">
-                        <Lock size={12} aria-hidden="true" /> nível {item.nivel_minimo}
-                      </span>
-                    ) : item.equipado ? (
-                      <button
-                        type="button"
-                        onClick={() => trocar(slotAberto, '')}
-                        disabled={salvando}
-                        className="h-11 cursor-pointer rounded-full border border-line px-4 text-xs font-bold text-muted hover:text-text disabled:cursor-wait disabled:opacity-60"
-                      >
-                        Remover
-                      </button>
-                    ) : (
-                      <button
-                        type="button"
-                        onClick={() => trocar(slotAberto, item.id)}
-                        disabled={salvando}
-                        className="h-11 cursor-pointer rounded-full bg-gradient-to-r from-holo-1 to-holo-3 px-4 text-xs font-extrabold text-void disabled:cursor-wait disabled:opacity-60"
-                      >
-                        Equipar
-                      </button>
-                    )}
-                  </li>
-                )
-              })}
-            </ul>
-          )}
-          {erro && (
-            <p role="alert" className="m-0 text-xs font-bold text-coral">
-              {erro}
-            </p>
-          )}
-        </div>
-      )}
     </section>
   )
 }

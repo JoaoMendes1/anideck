@@ -36,6 +36,7 @@ export default function SlotsDoPersonagem({
           <li key={id}>
             <button
               type="button"
+              data-slot-rpg={id}
               onClick={() => aoEscolher(id)}
               aria-expanded={aberto}
               aria-label={item ? `${rotulo}: ${item.nome}. Trocar` : `${rotulo}: vazio. Equipar`}
