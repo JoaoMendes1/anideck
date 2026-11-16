@@ -1,5 +1,10 @@
 import { describe, it, expect } from 'vitest'
-import { obterEstiloRank, obterClasseCartaInsignia, ehMotivoReduzido } from './guilda'
+import {
+  obterEstiloRank,
+  obterClasseCartaInsignia,
+  ehMotivoReduzido,
+  formatarInstanteExtratoGuilda,
+} from './guilda'
 
 describe('utilitários visuais da Guilda', () => {
   it('devolve estilo padrão F para rank desconhecido e estilo específico para C e SS', () => {
@@ -47,5 +52,13 @@ describe('utilitários visuais da Guilda', () => {
     expect(ehMotivoReduzido('antes do próximo sair · +10')).toBe(false)
     expect(ehMotivoReduzido('retorno decrescente · 75%')).toBe(true)
     expect(ehMotivoReduzido('teto diário atingido')).toBe(true)
+  })
+
+  it('formata o instante do extrato de XP no fuso de Brasília', () => {
+    // 2026-11-16T03:12:00Z = 16/11 às 00:12 em America/Sao_Paulo (UTC-3)
+    expect(formatarInstanteExtratoGuilda('2026-11-16T03:12:00Z', false)).toBe('16/11 às 00:12')
+    expect(formatarInstanteExtratoGuilda('2026-11-16T03:12:00Z', true)).toBe('hoje às 00:12')
+    expect(formatarInstanteExtratoGuilda('', true)).toBe('hoje')
+    expect(formatarInstanteExtratoGuilda('', false)).toBe('')
   })
 })

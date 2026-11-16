@@ -186,6 +186,7 @@ func main() {
 		protegido.Get("/api/stats/status", statsHandler.HandleGetStatusAnimes)
 
 		protegido.Get("/api/guilda/resumo", guildaHandler.HandleResumoGuilda)
+		protegido.Get("/api/guilda/extrato", guildaHandler.HandleExtratoGuilda)
 		protegido.Get("/api/guilda", guildaHandler.HandleGetGuilda)
 		protegido.Get("/api/personagem", personagemHandler.HandleGetPersonagem)
 		protegido.Post("/api/personagem", personagemHandler.HandleDespertarPersonagem)

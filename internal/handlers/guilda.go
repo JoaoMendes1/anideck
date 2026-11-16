@@ -831,16 +831,58 @@ func (h *GuildaHandler) HandleGetGuilda(w http.ResponseWriter, r *http.Request) 
 		NivelAtual:    status.Nivel,
 	}, catalogoInsignias)
 
-	// Monta os 25 itens mais recentes do extrato com títulos resolvidos pela curadoria/cache.
-	limiteExtrato := 25
+	// Monta a primeira página (20 itens mais recentes) do extrato com títulos resolvidos pela curadoria/cache.
+	limiteExtrato := tamanhoPaginaExtratoGuilda
 	if len(linhasLedger) < limiteExtrato {
 		limiteExtrato = len(linhasLedger)
 	}
 	recorteLedger := linhasLedger[:limiteExtrato]
 	titulos := resolverTitulosLedger(dbClient, recorteLedger, curados)
+	extrato := montarItensLedgerGuilda(recorteLedger, titulos, inicioDia)
 
-	extrato := make([]ItemLedgerGuilda, 0, len(recorteLedger))
-	for _, l := range recorteLedger {
+	resposta := map[string]interface{}{
+		"status":                status,
+		"economia":              economia,
+		"ranks":                 ranks,
+		"extrato":               extrato,
+		"extrato_total":         len(linhasLedger),
+		"extrato_total_paginas": calcularTotalPaginasExtrato(len(linhasLedger), tamanhoPaginaExtratoGuilda),
+		"especialistas":         especialistas,
+		"insignias":             insignias,
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	_ = json.NewEncoder(w).Encode(resposta)
+}
+
+const tamanhoPaginaExtratoGuilda = 20
+
+// RespostaExtratoGuilda representa uma página do histórico de XP na tela da Guilda.
+type RespostaExtratoGuilda struct {
+	Itens        []ItemLedgerGuilda `json:"itens"`
+	Pagina       int                `json:"pagina"`
+	TotalPaginas int                `json:"total_paginas"`
+	Total        int                `json:"total"`
+}
+
+func normalizarPaginaExtrato(valor string) int {
+	p, err := strconv.Atoi(strings.TrimSpace(valor))
+	if err != nil || p < 1 {
+		return 1
+	}
+	return p
+}
+
+func calcularTotalPaginasExtrato(total int, porPagina int) int {
+	if porPagina <= 0 || total <= 0 {
+		return 1
+	}
+	return (total + porPagina - 1) / porPagina
+}
+
+func montarItensLedgerGuilda(linhas []linhaLedgerBanco, titulos map[int]string, inicioDia time.Time) []ItemLedgerGuilda {
+	extrato := make([]ItemLedgerGuilda, 0, len(linhas))
+	for _, l := range linhas {
 		deHoje := false
 		if t, errT := time.Parse(time.RFC3339, l.EarnedAt); errT == nil && !t.Before(inicioDia) {
 			deHoje = true
@@ -859,18 +901,66 @@ func (h *GuildaHandler) HandleGetGuilda(w http.ResponseWriter, r *http.Request) 
 			DeHoje:        deHoje,
 		})
 	}
+	return extrato
+}
 
-	resposta := map[string]interface{}{
-		"status":        status,
-		"economia":      economia,
-		"ranks":         ranks,
-		"extrato":       extrato,
-		"especialistas": especialistas,
-		"insignias":     insignias,
+// HandleExtratoGuilda devolve uma página de 20 linhas do extrato de XP do usuário autenticado.
+func (h *GuildaHandler) HandleExtratoGuilda(w http.ResponseWriter, r *http.Request) {
+	userID, ok := r.Context().Value(middleware.UserIDKey).(string)
+	token, tokenOk := r.Context().Value(middleware.TokenKey).(string)
+	if !ok || !tokenOk || userID == "" {
+		http.Error(w, "Não autenticado", http.StatusUnauthorized)
+		return
 	}
 
+	pagina := normalizarPaginaExtrato(r.URL.Query().Get("pagina"))
+
+	dbClient, err := database.ClientWithToken(token)
+	if err != nil {
+		http.Error(w, "Erro interno de conexão", http.StatusInternalServerError)
+		return
+	}
+
+	de := (pagina - 1) * tamanhoPaginaExtratoGuilda
+	ate := de + tamanhoPaginaExtratoGuilda - 1
+
+	dadosBytes, totalCount, errLedger := dbClient.From("xp_ledger").
+		Select("mal_id,episode_number,xp_earned,reason,earned_at", "exact", false).
+		Eq("user_id", userID).
+		Order("earned_at", &postgrest.OrderOpts{Ascending: false}).
+		Range(de, ate, "").
+		Execute()
+	if errLedger != nil {
+		log.Printf("[GUILDA] Falha ao paginar xp_ledger (user=%s, pagina=%d): %v", userID, pagina, errLedger)
+		http.Error(w, "Falha ao carregar extrato de XP", http.StatusInternalServerError)
+		return
+	}
+
+	var linhas []linhaLedgerBanco
+	if len(dadosBytes) > 0 {
+		if errU := json.Unmarshal(dadosBytes, &linhas); errU != nil {
+			log.Printf("[GUILDA] Falha ao decodificar xp_ledger (user=%s, pagina=%d): %v", userID, pagina, errU)
+		}
+	}
+
+	curados := CarregarCuradoria(dbClient)
+	titulos := resolverTitulosLedger(dbClient, linhas, curados)
+	inicioDia := inicioDoDiaBrasilia(time.Now().UTC())
+	itens := montarItensLedgerGuilda(linhas, titulos, inicioDia)
+
+	total := int(totalCount)
+	if total < len(itens) {
+		total = len(itens)
+	}
+	totalPaginas := calcularTotalPaginasExtrato(total, tamanhoPaginaExtratoGuilda)
+
 	w.Header().Set("Content-Type", "application/json")
-	_ = json.NewEncoder(w).Encode(resposta)
+	_ = json.NewEncoder(w).Encode(RespostaExtratoGuilda{
+		Itens:        itens,
+		Pagina:       pagina,
+		TotalPaginas: totalPaginas,
+		Total:        total,
+	})
 }
 
 func resolverTitulosLedger(dbClient *supabase.Client, itens []linhaLedgerBanco, curados map[int]models.CuratedAnime) map[int]string {

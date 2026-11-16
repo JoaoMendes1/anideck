@@ -74,13 +74,45 @@ export interface ItemLedgerGuilda {
   de_hoje: boolean
 }
 
+export const EXTRATO_POR_PAGINA = 20
+
+export interface RespostaExtratoGuilda {
+  itens: ItemLedgerGuilda[]
+  pagina: number
+  total_paginas: number
+  total: number
+}
+
 export interface DadosDaGuilda {
   status: StatusNivelGuilda
   economia: EconomiaGuilda
   ranks: FaixaRank[]
   extrato: ItemLedgerGuilda[]
+  extrato_total?: number
+  extrato_total_paginas?: number
   especialistas: EspecialistaGenero[]
   insignias: InsigniaStatus[]
+}
+
+// Formata o instante de uma entrada do xp_ledger no fuso de Brasília (Item 3 do PITFALLS.md).
+export function formatarInstanteExtratoGuilda(iso: string, deHoje: boolean): string {
+  if (!iso) return deHoje ? 'hoje' : ''
+  const d = new Date(iso)
+  if (Number.isNaN(d.getTime())) return deHoje ? 'hoje' : ''
+  const hora = d.toLocaleTimeString('pt-BR', {
+    timeZone: 'America/Sao_Paulo',
+    hour: '2-digit',
+    minute: '2-digit',
+  })
+  if (deHoje) {
+    return `hoje às ${hora}`
+  }
+  const data = d.toLocaleDateString('pt-BR', {
+    timeZone: 'America/Sao_Paulo',
+    day: '2-digit',
+    month: '2-digit',
+  })
+  return `${data} às ${hora}`
 }
 
 export interface EstiloVisualRank {

@@ -178,6 +178,50 @@ func TestGuildaHandlers_SemAutenticacao(t *testing.T) {
 	if w2.Code != http.StatusUnauthorized {
 		t.Fatalf("HandleGetGuilda sem auth: esperava 401, recebeu %d", w2.Code)
 	}
+
+	req3 := httptest.NewRequest(http.MethodGet, "/api/guilda/extrato?pagina=2", nil)
+	w3 := httptest.NewRecorder()
+	h.HandleExtratoGuilda(w3, req3)
+	if w3.Code != http.StatusUnauthorized {
+		t.Fatalf("HandleExtratoGuilda sem auth: esperava 401, recebeu %d", w3.Code)
+	}
+}
+
+func TestPaginacaoExtratoGuilda(t *testing.T) {
+	casosPagina := []struct {
+		entrada  string
+		esperado int
+	}{
+		{"", 1},
+		{"0", 1},
+		{"-3", 1},
+		{"abc", 1},
+		{"1", 1},
+		{" 3 ", 3},
+	}
+	for _, tc := range casosPagina {
+		if got := normalizarPaginaExtrato(tc.entrada); got != tc.esperado {
+			t.Fatalf("normalizarPaginaExtrato(%q) = %d, esperava %d", tc.entrada, got, tc.esperado)
+		}
+	}
+
+	casosTotal := []struct {
+		total     int
+		porPagina int
+		esperado  int
+	}{
+		{0, 20, 1},
+		{1, 20, 1},
+		{20, 20, 1},
+		{21, 20, 2},
+		{40, 20, 2},
+		{45, 20, 3},
+	}
+	for _, tc := range casosTotal {
+		if got := calcularTotalPaginasExtrato(tc.total, tc.porPagina); got != tc.esperado {
+			t.Fatalf("calcularTotalPaginasExtrato(%d, %d) = %d, esperava %d", tc.total, tc.porPagina, got, tc.esperado)
+		}
+	}
 }
 
 func TestValidacoesAdminGuilda(t *testing.T) {

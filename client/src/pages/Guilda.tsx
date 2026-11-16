@@ -16,13 +16,17 @@ import SeletorClasse from '../components/comunidade/SeletorClasse'
 import CardPrevisoes from '../components/previsoes/CardPrevisoes'
 import CardConviteAmigos from '../components/comunidade/CardConviteAmigos'
 import SecaoColecaoCartas from '../components/comunidade/SecaoColecaoCartas'
+import Paginacao from '../components/ui/Paginacao'
 import { useCartas } from '../hooks/useCartas'
 import { chaveDoUsuario, lerDaMemoria, guardarNaMemoria } from '../lib/cacheDeTela'
 import {
   obterEstiloRank,
   obterClasseCartaInsignia,
   ehMotivoReduzido,
+  formatarInstanteExtratoGuilda,
+  EXTRATO_POR_PAGINA,
   type DadosDaGuilda,
+  type RespostaExtratoGuilda,
 } from '../lib/guilda'
 
 export default function Guilda() {
@@ -34,6 +38,9 @@ export default function Guilda() {
   const [carregando, setCarregando] = useState(!emMemoria)
   const [erro, setErro] = useState(false)
   const [abaLivroRazao, setAbaLivroRazao] = useState<'xp' | 'cristais'>('xp')
+  const [paginaExtrato, setPaginaExtrato] = useState(1)
+  const [extratoPaginado, setExtratoPaginado] = useState<RespostaExtratoGuilda | null>(null)
+  const [carregandoExtrato, setCarregandoExtrato] = useState(false)
   const [modalTransferirAberto, setModalTransferirAberto] = useState(false)
   const { saldo: saldoCristais, movimentos: movimentosCristais, recarregar: recarregarCarteira } = useCarteira()
   const { estado: estadoComu, recarregar: recarregarComunidade } = useComunidade()
@@ -68,6 +75,34 @@ export default function Guilda() {
       ativo = false
     }
   }, [session?.access_token, chave, userId, emMemoria])
+
+  useEffect(() => {
+    if (!session?.access_token) return
+    let ativo = true
+
+    const carregarExtrato = async () => {
+      setCarregandoExtrato(true)
+      try {
+        const res = await fetch(`/api/guilda/extrato?pagina=${paginaExtrato}`, {
+          headers: { Authorization: `Bearer ${session.access_token}` },
+        })
+        if (!res.ok) return
+        const json = (await res.json()) as RespostaExtratoGuilda
+        if (ativo && Array.isArray(json.itens)) {
+          setExtratoPaginado(json)
+        }
+      } catch {
+        // Em caso de falha transitória, mantém os dados iniciais já carregados.
+      } finally {
+        if (ativo) setCarregandoExtrato(false)
+      }
+    }
+
+    carregarExtrato()
+    return () => {
+      ativo = false
+    }
+  }, [session?.access_token, paginaExtrato])
 
   if (carregando && !dados) {
     return (
@@ -267,51 +302,85 @@ export default function Guilda() {
                   </span>
                 </div>
 
-                {extrato.length === 0 ? (
-                  <div className="p-5 rounded-xl bg-panel-2 border border-line text-center">
-                    <p className="text-sm text-muted m-0">
-                      Nenhum episódio com XP registrado ainda. Marque episódios assistidos no seu Deck ou
-                      na página de uma obra para iniciar sua jornada!
-                    </p>
-                  </div>
-                ) : (
-                  <div className="divide-y divide-line">
-                    {extrato.map((item) => {
-                      const reduzido = ehMotivoReduzido(item.reason)
-                      return (
-                        <div
-                          key={`${item.mal_id}-${item.episode_number}`}
-                          className="py-2.5 flex items-center justify-between gap-3 text-xs sm:text-sm"
-                        >
-                          <div className="min-w-0">
-                            <Link
-                              to={`/anime/${item.mal_id}`}
-                              className="font-bold text-text hover:text-holo-3 transition-colors line-clamp-1"
+                {(() => {
+                  const itensExtrato = extratoPaginado?.itens ?? extrato.slice(0, EXTRATO_POR_PAGINA)
+                  const totalItensExtrato =
+                    extratoPaginado?.total ?? dados.extrato_total ?? extrato.length
+                  const totalPaginasExtrato =
+                    extratoPaginado?.total_paginas ??
+                    dados.extrato_total_paginas ??
+                    Math.max(1, Math.ceil(totalItensExtrato / EXTRATO_POR_PAGINA))
+                  const paginaAtualExtrato = extratoPaginado?.pagina ?? paginaExtrato
+
+                  if (itensExtrato.length === 0 && !carregandoExtrato) {
+                    return (
+                      <div className="p-5 rounded-xl bg-panel-2 border border-line text-center">
+                        <p className="text-sm text-muted m-0">
+                          Nenhum episódio com XP registrado ainda. Marque episódios assistidos no seu Deck ou
+                          na página de uma obra para iniciar sua jornada!
+                        </p>
+                      </div>
+                    )
+                  }
+
+                  return (
+                    <>
+                      <div className={`divide-y divide-line transition-opacity ${carregandoExtrato ? 'opacity-60' : ''}`}>
+                        {itensExtrato.map((item) => {
+                          const reduzido = ehMotivoReduzido(item.reason)
+                          const instanteFormatado = formatarInstanteExtratoGuilda(item.earned_at, item.de_hoje)
+                          return (
+                            <div
+                              key={`${item.mal_id}-${item.episode_number}-${item.earned_at}`}
+                              className="py-2.5 flex items-center justify-between gap-3 text-xs sm:text-sm"
                             >
-                              {item.titulo_anime} · <span className="font-mono">ep {item.episode_number}</span>
-                            </Link>
-                            <div className="font-mono text-xs text-muted-2 mt-0.5 flex flex-wrap items-center gap-2">
-                              <span>{item.reason}</span>
-                              {item.reason.toLowerCase().includes('vitalidade') && (
-                                <span className="px-1.5 py-px rounded bg-green/15 text-green font-bold">bônus vitalidade</span>
-                              )}
-                              {item.de_hoje && (
-                                <span className="px-1.5 py-px rounded bg-holo-3/15 text-holo-3">hoje</span>
-                              )}
+                              <div className="min-w-0">
+                                <Link
+                                  to={`/anime/${item.mal_id}`}
+                                  className="font-bold text-text hover:text-holo-3 transition-colors line-clamp-1"
+                                >
+                                  {item.titulo_anime} · <span className="font-mono">ep {item.episode_number}</span>
+                                </Link>
+                                <div className="font-mono text-xs text-muted-2 mt-0.5 flex flex-wrap items-center gap-2">
+                                  <span>{item.reason}</span>
+                                  {item.reason.toLowerCase().includes('vitalidade') && (
+                                    <span className="px-1.5 py-px rounded bg-green/15 text-green font-bold">bônus vitalidade</span>
+                                  )}
+                                  {instanteFormatado && (
+                                    <span
+                                      className={
+                                        item.de_hoje
+                                          ? 'px-1.5 py-px rounded bg-holo-3/15 text-holo-3'
+                                          : 'text-muted-2'
+                                      }
+                                    >
+                                      {instanteFormatado}
+                                    </span>
+                                  )}
+                                </div>
+                              </div>
+                              <span
+                                className={`font-mono font-bold text-xs sm:text-sm shrink-0 ${
+                                  reduzido ? 'text-gold' : 'text-green'
+                                }`}
+                              >
+                                +{item.xp_earned} XP
+                              </span>
                             </div>
-                          </div>
-                          <span
-                            className={`font-mono font-bold text-xs sm:text-sm shrink-0 ${
-                              reduzido ? 'text-gold' : 'text-green'
-                            }`}
-                          >
-                            +{item.xp_earned} XP
-                          </span>
-                        </div>
-                      )
-                    })}
-                  </div>
-                )}
+                          )
+                        })}
+                      </div>
+
+                      <Paginacao
+                        pagina={paginaAtualExtrato}
+                        totalPaginas={totalPaginasExtrato}
+                        totalItens={totalItensExtrato}
+                        porPagina={EXTRATO_POR_PAGINA}
+                        aoMudar={setPaginaExtrato}
+                      />
+                    </>
+                  )
+                })()}
 
                 <p className="font-mono text-xs text-muted-2 mt-4 mb-0 leading-relaxed">
                   Cada linha guarda quanto valeu <b className="text-text">na hora</b>. Desmarcar um

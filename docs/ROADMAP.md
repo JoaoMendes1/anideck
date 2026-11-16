@@ -802,6 +802,11 @@ experiência pequena e funcional de cada vez.
 > numeração e não abrem escopo novo. Ficam registrados aqui em ordem cronológica inversa para
 > não sumirem: fase concluída não deve ser reaberta só para receber um conserto.
 
+### 16/11/2026 — Paginação e data com hora no extrato de XP da Guilda (#233)
+
+- [x] **Rota `GET /api/guilda/extrato?pagina=N`:** paginação de 20 itens por página com contagem `"exact"` no `xp_ledger` ordenada por `earned_at DESC` e resolução de títulos pela curadoria/cache (`guilda.go`).
+- [x] **Data e hora no fuso de Brasília e paginação em `Guilda.tsx`:** cada entrada do extrato de XP exibe `"DD/MM às HH:MM"` (ou `"hoje às HH:MM"`) em `America/Sao_Paulo` e navega entre páginas com `Paginacao.tsx`.
+
 ### 16/11/2026 — Paginação, ordenação e data com hora na Coleção de Cartas (#232)
 
 - [x] **Paginação de 24 cartas por página (`?cartas=`) e seletor de ordenação:** criado o componente reutilizável `Paginacao.tsx`, integrado à `SecaoColecaoCartas` com ordenação por Recentes, Nota ou Raridade, reiniciando para a página 1 ao filtrar ou buscar.
