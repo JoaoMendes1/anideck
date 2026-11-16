@@ -73,3 +73,22 @@ export const ESTILOS_RARIDADE_CARTA: Record<
 
 export const CLASSE_FOIL =
   'relative overflow-hidden ring-2 ring-amber-400/70 shadow-[0_0_25px_rgba(251,191,36,0.4)] before:absolute before:inset-0 before:bg-gradient-to-tr before:from-transparent before:via-white/20 before:to-transparent before:pointer-events-none before:z-10'
+
+export function formatarDataColecao(iso: string): string {
+  const d = new Date(iso)
+  if (Number.isNaN(d.getTime())) return ''
+  const data = d.toLocaleDateString('pt-BR', {
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric',
+    timeZone: 'America/Sao_Paulo',
+  })
+  const hora = d.toLocaleTimeString('pt-BR', {
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: false,
+    timeZone: 'America/Sao_Paulo',
+  })
+  return `${data} às ${hora}`
+}
+

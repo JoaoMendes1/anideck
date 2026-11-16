@@ -1,11 +1,21 @@
 // client/src/components/comunidade/SecaoColecaoCartas.tsx
-// Seção da Coleção de Cartas colecionadas pelo usuário ou visualizadas em perfis públicos (Fase 16, #172).
+// Seção da Coleção de Cartas colecionadas pelo usuário ou visualizadas em perfis públicos (Fase 16, #172, #232).
 import { useState, useMemo, useEffect, useRef } from 'react'
-import { Sparkles, Star, Search, Flame, Layers } from 'lucide-react'
+import { useSearchParams } from 'react-router-dom'
+import { Sparkles, Star, Search, Flame, Layers, ArrowUpDown } from 'lucide-react'
 import CardCartaColecao from './CardCartaColecao'
+import Paginacao from '../ui/Paginacao'
 import type { CartaColecao } from '../../lib/cartas'
 
-const LIMITE_LOTE_CAPAS = 24
+const CARTAS_POR_PAGINA = 24
+
+type OrdemCarta = 'recentes' | 'nota' | 'raridade'
+
+const PESO_RARIDADE: Record<string, number> = {
+  rarissima: 3,
+  rara: 2,
+  comum: 1,
+}
 
 interface AnimeBulkItem {
   mal_id: number
@@ -28,10 +38,30 @@ export default function SecaoColecaoCartas({
   titulo = 'Coleção de Cartas',
   descricao = 'Cada anime que você completa vira uma carta exclusiva. Obras com nota 10 recebem acabamento Foil e animes acompanhados em dia ganham o selo Estreia.',
 }: Props) {
+  const [searchParams, setSearchParams] = useSearchParams()
   const [filtro, setFiltro] = useState<'todas' | 'foil' | 'estreia' | 'rarissima'>('todas')
   const [busca, setBusca] = useState('')
+  const [ordem, setOrdem] = useState<OrdemCarta>('recentes')
   const [capasLote, setCapasLote] = useState<Record<number, { imagem_url: string; titulo?: string }>>({})
   const idsConsultadosRef = useRef<Set<number>>(new Set())
+
+  const paginaUrl = Number.parseInt(searchParams.get('cartas') || '1', 10)
+  const paginaBruta = Number.isFinite(paginaUrl) && paginaUrl >= 1 ? paginaUrl : 1
+
+  const mudarPagina = (novaPagina: number) => {
+    setSearchParams(
+      (atual) => {
+        const proximo = new URLSearchParams(atual)
+        if (novaPagina <= 1) {
+          proximo.delete('cartas')
+        } else {
+          proximo.set('cartas', String(novaPagina))
+        }
+        return proximo
+      },
+      { replace: true },
+    )
+  }
 
   const totalFoil = useMemo(() => cartas.filter((c) => c.is_foil).length, [cartas])
   const totalEstreia = useMemo(() => cartas.filter((c) => c.estreia).length, [cartas])
@@ -51,7 +81,7 @@ export default function SecaoColecaoCartas({
   }, [cartas, capasLote])
 
   const cartasFiltradas = useMemo(() => {
-    return cartasHidratadas.filter((c) => {
+    const filtradas = cartasHidratadas.filter((c) => {
       if (filtro === 'foil' && !c.is_foil) return false
       if (filtro === 'estreia' && !c.estreia) return false
       if (filtro === 'rarissima' && c.raridade !== 'rarissima') return false
@@ -61,11 +91,31 @@ export default function SecaoColecaoCartas({
       }
       return true
     })
-  }, [cartasHidratadas, filtro, busca])
+
+    const copia = [...filtradas]
+    copia.sort((a, b) => {
+      if (ordem === 'nota') {
+        if (b.nota !== a.nota) return b.nota - a.nota
+      } else if (ordem === 'raridade') {
+        const pa = PESO_RARIDADE[a.raridade] || 0
+        const pb = PESO_RARIDADE[b.raridade] || 0
+        if (pb !== pa) return pb - pa
+      }
+      return new Date(b.obtida_em).getTime() - new Date(a.obtida_em).getTime()
+    })
+    return copia
+  }, [cartasHidratadas, filtro, busca, ordem])
+
+  const totalPaginas = Math.max(1, Math.ceil(cartasFiltradas.length / CARTAS_POR_PAGINA))
+  const paginaSegura = Math.min(paginaBruta, totalPaginas)
+
+  const cartasDaPagina = useMemo(() => {
+    const inicio = (paginaSegura - 1) * CARTAS_POR_PAGINA
+    return cartasFiltradas.slice(inicio, inicio + CARTAS_POR_PAGINA)
+  }, [cartasFiltradas, paginaSegura])
 
   useEffect(() => {
-    const visiveisSemCapa = cartasFiltradas
-      .slice(0, LIMITE_LOTE_CAPAS)
+    const visiveisSemCapa = cartasDaPagina
       .filter((c) => !c.imagem_url && !idsConsultadosRef.current.has(c.mal_id))
       .map((c) => c.mal_id)
 
@@ -101,8 +151,7 @@ export default function SecaoColecaoCartas({
     return () => {
       cancelado = true
     }
-  }, [cartasFiltradas])
-
+  }, [cartasDaPagina])
 
   return (
     <section className="p-5 sm:p-6 rounded-2xl bg-panel border border-line">
@@ -144,13 +193,16 @@ export default function SecaoColecaoCartas({
         </div>
       </div>
 
-      {/* FILTROS E BUSCA */}
-      <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 mb-5">
+      {/* FILTROS, ORDENAÇÃO E BUSCA */}
+      <div className="flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-3 mb-5">
         {/* Chips de filtro */}
         <div className="flex items-center gap-1.5 p-1 rounded-xl bg-panel-2 border border-line overflow-x-auto scrollbar-hide">
           <button
             type="button"
-            onClick={() => setFiltro('todas')}
+            onClick={() => {
+              setFiltro('todas')
+              mudarPagina(1)
+            }}
             className={`px-3 py-1 rounded-lg font-mono text-xs font-bold transition-colors cursor-pointer shrink-0 ${
               filtro === 'todas'
                 ? 'bg-holo-1 text-void'
@@ -162,7 +214,10 @@ export default function SecaoColecaoCartas({
 
           <button
             type="button"
-            onClick={() => setFiltro('foil')}
+            onClick={() => {
+              setFiltro('foil')
+              mudarPagina(1)
+            }}
             className={`inline-flex items-center gap-1 px-3 py-1 rounded-lg font-mono text-xs font-bold transition-colors cursor-pointer shrink-0 ${
               filtro === 'foil'
                 ? 'bg-amber-400 text-void'
@@ -175,7 +230,10 @@ export default function SecaoColecaoCartas({
 
           <button
             type="button"
-            onClick={() => setFiltro('estreia')}
+            onClick={() => {
+              setFiltro('estreia')
+              mudarPagina(1)
+            }}
             className={`inline-flex items-center gap-1 px-3 py-1 rounded-lg font-mono text-xs font-bold transition-colors cursor-pointer shrink-0 ${
               filtro === 'estreia'
                 ? 'bg-rose-500 text-void'
@@ -188,7 +246,10 @@ export default function SecaoColecaoCartas({
 
           <button
             type="button"
-            onClick={() => setFiltro('rarissima')}
+            onClick={() => {
+              setFiltro('rarissima')
+              mudarPagina(1)
+            }}
             className={`inline-flex items-center gap-1 px-3 py-1 rounded-lg font-mono text-xs font-bold transition-colors cursor-pointer shrink-0 ${
               filtro === 'rarissima'
                 ? 'bg-purple-500 text-void'
@@ -200,17 +261,44 @@ export default function SecaoColecaoCartas({
           </button>
         </div>
 
-        {/* Campo de Busca rápida */}
-        <div className="relative min-w-[220px]">
-          <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted" />
-          <input
-            type="text"
-            aria-label="Buscar carta por anime"
-            value={busca}
-            onChange={(e) => setBusca(e.target.value)}
-            placeholder="Buscar por anime..."
-            className="w-full pl-8 pr-3 py-1.5 rounded-xl bg-panel-2 border border-line text-xs font-bold text-text focus:outline-none focus:border-holo-3 transition-colors"
-          />
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5">
+          {/* Seletor de ordenação */}
+          <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-panel-2 border border-line">
+            <ArrowUpDown size={13} className="text-muted shrink-0" aria-hidden="true" />
+            <label htmlFor="ordem-cartas-colecao" className="font-mono text-xs text-muted shrink-0">
+              Ordenar:
+            </label>
+            <select
+              id="ordem-cartas-colecao"
+              aria-label="Ordenar cartas"
+              value={ordem}
+              onChange={(e) => {
+                setOrdem(e.target.value as OrdemCarta)
+                mudarPagina(1)
+              }}
+              className="bg-transparent font-mono text-xs font-bold text-text focus:outline-none cursor-pointer"
+            >
+              <option value="recentes" className="bg-panel text-text">Recentes</option>
+              <option value="nota" className="bg-panel text-text">Nota</option>
+              <option value="raridade" className="bg-panel text-text">Raridade</option>
+            </select>
+          </div>
+
+          {/* Campo de Busca rápida */}
+          <div className="relative min-w-[220px]">
+            <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted" />
+            <input
+              type="text"
+              aria-label="Buscar carta por anime"
+              value={busca}
+              onChange={(e) => {
+                setBusca(e.target.value)
+                mudarPagina(1)
+              }}
+              placeholder="Buscar por anime..."
+              className="w-full pl-8 pr-3 py-1.5 rounded-xl bg-panel-2 border border-line text-xs font-bold text-text focus:outline-none focus:border-holo-3 transition-colors"
+            />
+          </div>
         </div>
       </div>
 
@@ -224,12 +312,23 @@ export default function SecaoColecaoCartas({
           </p>
         </div>
       ) : (
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3 sm:gap-4">
-          {cartasFiltradas.map((carta) => (
-            <CardCartaColecao key={carta.id} carta={carta} />
-          ))}
-        </div>
+        <>
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3 sm:gap-4">
+            {cartasDaPagina.map((carta) => (
+              <CardCartaColecao key={carta.id} carta={carta} />
+            ))}
+          </div>
+
+          <Paginacao
+            pagina={paginaSegura}
+            totalPaginas={totalPaginas}
+            totalItens={cartasFiltradas.length}
+            porPagina={CARTAS_POR_PAGINA}
+            aoMudar={mudarPagina}
+          />
+        </>
       )}
     </section>
   )
 }
+

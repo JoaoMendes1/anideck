@@ -7,6 +7,7 @@ import {
   type CartaColecao,
   ESTILOS_RARIDADE_CARTA,
   CLASSE_FOIL,
+  formatarDataColecao,
 } from '../../lib/cartas'
 
 interface Props {
@@ -85,7 +86,7 @@ export default function CardCartaColecao({ carta }: Props) {
           {carta.titulo}
         </h4>
         <span className="font-mono text-xs text-muted-2 mt-1.5 block">
-          Colecionada em {new Date(carta.obtida_em).toLocaleDateString('pt-BR')}
+          Colecionada em {formatarDataColecao(carta.obtida_em)}
         </span>
       </div>
     </Link>
