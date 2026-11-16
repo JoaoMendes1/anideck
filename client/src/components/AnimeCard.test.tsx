@@ -29,7 +29,7 @@ describe('AnimeCard e DeckCard', () => {
         const tag2 = screen.getByText('Fantasia')
         expect(tag1.className).toContain('inline-block')
         expect(tag1.className).not.toContain('hidden sm:inline-block')
-        expect(tag1.className).toContain('leading-none')
+        expect(tag1.className).toContain('text-[8.5px]')
 
         expect(tag2.className).toContain('hidden sm:inline-block')
         expect(screen.queryByText('Drama')).toBeNull()

@@ -80,8 +80,9 @@ fora da paleta dos temas, por ser cor semântica de "chama".
 
 **Piso de 12 px:** nenhum texto de interface usa tamanho arbitrário abaixo de `text-xs`
 (`text-[10px]`, `text-[11px]` e parecidos não entram). Quando o texto não couber, o que muda é
-o rótulo ou o espaço em volta, nunca o tamanho. Exceção: texto dentro de SVG, medido na unidade
-do desenho.
+o rótulo ou o espaço em volta, nunca o tamanho. Exceções: texto dentro de SVG (medido na unidade
+do desenho) e os micro-selos sobre a capa dos pôsteres em grade (`AnimeCard` / `DeckCard`,
+`8.5px–10.5px`), onde `12px` encobre a arte no celular.
 
 | Uso | Fonte | Peso |
 |---|---|---|

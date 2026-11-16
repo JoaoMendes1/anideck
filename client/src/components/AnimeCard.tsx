@@ -112,40 +112,40 @@ export default function AnimeCard({
                 Lighthouse. As faixas escuras em degradê acima já garantem a leitura. */}
 
             {/* Badges superiores */}
-            <div className="absolute top-2 left-2 right-10 sm:top-2.5 sm:left-2.5 sm:right-11 z-20 flex flex-col gap-1 items-start pointer-events-none">
+            <div className="absolute top-2.5 left-2.5 right-11 z-20 flex flex-col gap-1 items-start pointer-events-none">
                 {statusBadge}
                 {extraBadges}
                 {temRanking && (
-                    <div title={`#${ranking} no ranking geral da AniList`} className="inline-flex items-center gap-1 font-anton text-xs leading-none px-1.5 py-1 rounded-md bg-void/85 text-holo-3 border border-holo-3/40 shadow-[0_0_8px_rgba(63,224,240,0.25)]">
-                        <span className="text-xs leading-none">🏆</span>#{ranking}
+                    <div title={`#${ranking} no ranking geral da AniList`} className="flex items-center gap-1 font-anton text-[9.5px] px-1.5 py-0.5 rounded-md bg-void/80 text-holo-3 border border-holo-3/40 shadow-[0_0_8px_rgba(63,224,240,0.25)]">
+                        <span className="text-[8.5px] leading-none">🏆</span>#{ranking}
                     </div>
                 )}
             </div>
 
             {/* Botão de ação (editar) */}
             {topRightAction && (
-                <div className="absolute top-2 right-2 sm:top-2.5 sm:right-2.5 z-30">
+                <div className="absolute top-2.5 right-2.5 z-30">
                     {topRightAction}
                 </div>
             )}
 
-            {/* Rodapé interno do pôster: Tags e Nota em linha única */}
-            <div className="absolute bottom-2 inset-x-2 sm:bottom-2.5 sm:inset-x-2.5 z-20 flex items-center justify-between gap-1.5 pointer-events-none select-none">
+            {/* Rodapé interno do pôster: Tags e Nota */}
+            <div className="absolute bottom-2.5 inset-x-2.5 z-20 flex items-center justify-between gap-1.5 pointer-events-none select-none">
                 <div className="flex items-center gap-1 min-w-0 overflow-hidden">
                     {listaGeneros.map((g, idx) => (
                         <span
                             key={g}
-                            className={`${idx > 0 ? 'hidden sm:inline-block' : 'inline-block'} text-xs leading-none font-bold px-1.5 py-1 rounded-md border truncate max-w-[96px] sm:max-w-[84px] ${getCategoryTheme(g)}`}
+                            className={`${idx > 0 ? 'hidden sm:inline-block' : 'inline-block'} text-[8.5px] sm:text-[9px] leading-tight font-bold px-1.5 py-0.5 rounded border truncate max-w-[92px] ${getCategoryTheme(g)}`}
                         >
                             {g}
                         </span>
                     ))}
                 </div>
 
-                <div className={`shrink-0 font-anton text-xs leading-none px-1.5 py-1 rounded-md border ${
+                <div className={`shrink-0 font-anton text-[10px] px-1.5 py-0.5 rounded-md border ${
                     temNota
-                        ? 'bg-void/85 text-gold border-gold/50 shadow-[0_0_8px_rgba(255,197,66,0.3)]'
-                        : 'bg-void/85 text-muted-2 border-line'
+                        ? 'bg-void/80 text-gold border-gold/50 shadow-[0_0_8px_rgba(255,197,66,0.3)]'
+                        : 'bg-void/80 text-muted-2 border-line'
                 }`}>
                     {temNota ? `★ ${score}` : 'S/N'}
                 </div>
@@ -182,7 +182,7 @@ export default function AnimeCard({
                 </Link>
 
                 {/* Ano e Próximo Episódio rigorosamente alinhados */}
-                <div className="flex items-center gap-1.5 font-mono text-xs text-muted-2 font-semibold truncate">
+                <div className="flex items-center gap-1.5 font-mono text-[10.5px] text-muted-2 font-semibold truncate">
                     {year && <span>{year}</span>}
                     {year && proximoEpTexto && <span className="opacity-40">•</span>}
                     {proximoEpTexto && (
