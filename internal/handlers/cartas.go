@@ -69,15 +69,7 @@ func (h *CartasHandler) HandleMinhasCartas(w http.ResponseWriter, r *http.Reques
 		return
 	}
 
-	var rawCards []struct {
-		ID       string    `json:"id"`
-		MalID    int       `json:"mal_id"`
-		Raridade string    `json:"raridade"`
-		IsFoil   bool      `json:"is_foil"`
-		Estreia  bool      `json:"estreia"`
-		Nota     float64   `json:"nota"`
-		ObtidaEm time.Time `json:"obtida_em"`
-	}
+	var rawCards []linhaCartaBanco
 
 	data, _, err := client.From("user_cards").
 		Select("id,mal_id,raridade,is_foil,estreia,nota,obtida_em", "", false).
@@ -135,15 +127,7 @@ func (h *CartasHandler) HandleCartasDoMembro(w http.ResponseWriter, r *http.Requ
 		return
 	}
 
-	var rawCards []struct {
-		ID       string    `json:"id"`
-		MalID    int       `json:"mal_id"`
-		Raridade string    `json:"raridade"`
-		IsFoil   bool      `json:"is_foil"`
-		Estreia  bool      `json:"estreia"`
-		Nota     float64   `json:"nota"`
-		ObtidaEm time.Time `json:"obtida_em"`
-	}
+	var rawCards []linhaCartaBanco
 
 	data, _, err := database.Client.From("user_cards").
 		Select("id,mal_id,raridade,is_foil,estreia,nota,obtida_em", "", false).
@@ -380,8 +364,7 @@ func (h *CartasHandler) HandlePersonagensDoMembro(w http.ResponseWriter, r *http
 	})
 }
 
-// enriquecerCartasComMetadados busca títulos e imagens de animes no cache e curadoria.
-func enriquecerCartasComMetadados(rawCards []struct {
+type linhaCartaBanco struct {
 	ID       string    `json:"id"`
 	MalID    int       `json:"mal_id"`
 	Raridade string    `json:"raridade"`
@@ -389,7 +372,21 @@ func enriquecerCartasComMetadados(rawCards []struct {
 	Estreia  bool      `json:"estreia"`
 	Nota     float64   `json:"nota"`
 	ObtidaEm time.Time `json:"obtida_em"`
-}) []CartaAnime {
+}
+
+type metaCacheCarta struct {
+	MalID int    `json:"mal_id"`
+	Title string `json:"title"`
+}
+
+type metaCuradaCarta struct {
+	MalID            int    `json:"mal_id"`
+	CustomTitle      string `json:"custom_title"`
+	CustomCoverImage string `json:"custom_cover_image"`
+}
+
+// enriquecerCartasComMetadados busca títulos e imagens de animes no cache e curadoria.
+func enriquecerCartasComMetadados(rawCards []linhaCartaBanco) []CartaAnime {
 	if len(rawCards) == 0 {
 		return []CartaAnime{}
 	}
@@ -399,46 +396,47 @@ func enriquecerCartasComMetadados(rawCards []struct {
 		ids[i] = strconv.Itoa(c.MalID)
 	}
 
-	type MetaCache struct {
-		MalID  int    `json:"mal_id"`
-		Title  string `json:"title"`
-		Images struct {
-			JPG struct {
-				ImageURL string `json:"image_url"`
-			} `json:"jpg"`
-		} `json:"images"`
-	}
-
-	metas := map[int]MetaCache{}
+	metas := map[int]metaCacheCarta{}
 	if dataM, _, errM := database.Client.From("anime_metadata_cache").
-		Select("mal_id,title,images", "", false).
+		Select("mal_id,title", "", false).
 		In("mal_id", ids).
-		Execute(); errM == nil {
-		var lista []MetaCache
-		if json.Unmarshal(dataM, &lista) == nil {
+		Execute(); errM != nil {
+		log.Printf("[Cartas] Erro ao consultar anime_metadata_cache: %v", errM)
+	} else {
+		var lista []metaCacheCarta
+		if errU := json.Unmarshal(dataM, &lista); errU != nil {
+			log.Printf("[Cartas] Erro ao decodificar anime_metadata_cache: %v", errU)
+		} else {
 			for _, m := range lista {
 				metas[m.MalID] = m
 			}
 		}
 	}
 
-	// Curadoria
-	type MetaCurada struct {
-		MalID          int    `json:"mal_id"`
-		CustomTitle    string `json:"custom_title"`
-		CustomCoverURL string `json:"custom_cover_url"`
-	}
-	curadas := map[int]MetaCurada{}
+	curadas := map[int]metaCuradaCarta{}
 	if dataC, _, errC := database.Client.From("curated_animes").
-		Select("mal_id,custom_title,custom_cover_url", "", false).
+		Select("mal_id,custom_title,custom_cover_image", "", false).
 		In("mal_id", ids).
-		Execute(); errC == nil {
-		var lista []MetaCurada
-		if json.Unmarshal(dataC, &lista) == nil {
+		Execute(); errC != nil {
+		log.Printf("[Cartas] Erro ao consultar curated_animes: %v", errC)
+	} else {
+		var lista []metaCuradaCarta
+		if errU := json.Unmarshal(dataC, &lista); errU != nil {
+			log.Printf("[Cartas] Erro ao decodificar curated_animes: %v", errU)
+		} else {
 			for _, c := range lista {
 				curadas[c.MalID] = c
 			}
 		}
+	}
+
+	return mesclarMetadadosCartas(rawCards, metas, curadas)
+}
+
+// mesclarMetadadosCartas aplica a precedência curadoria → cache → fallback "Anime #id".
+func mesclarMetadadosCartas(rawCards []linhaCartaBanco, metas map[int]metaCacheCarta, curadas map[int]metaCuradaCarta) []CartaAnime {
+	if len(rawCards) == 0 {
+		return []CartaAnime{}
 	}
 
 	resultado := make([]CartaAnime, len(rawCards))
@@ -446,19 +444,16 @@ func enriquecerCartasComMetadados(rawCards []struct {
 		titulo := fmt.Sprintf("Anime #%d", c.MalID)
 		imagem := ""
 
-		if m, ok := metas[c.MalID]; ok {
-			if m.Title != "" {
-				titulo = m.Title
-			}
-			imagem = m.Images.JPG.ImageURL
+		if m, ok := metas[c.MalID]; ok && m.Title != "" {
+			titulo = m.Title
 		}
 
 		if cur, ok := curadas[c.MalID]; ok {
 			if cur.CustomTitle != "" {
 				titulo = cur.CustomTitle
 			}
-			if cur.CustomCoverURL != "" {
-				imagem = cur.CustomCoverURL
+			if cur.CustomCoverImage != "" {
+				imagem = cur.CustomCoverImage
 			}
 		}
 

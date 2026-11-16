@@ -1,9 +1,21 @@
 // client/src/components/comunidade/SecaoColecaoCartas.tsx
 // Seção da Coleção de Cartas colecionadas pelo usuário ou visualizadas em perfis públicos (Fase 16, #172).
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect, useRef } from 'react'
 import { Sparkles, Star, Search, Flame, Layers } from 'lucide-react'
 import CardCartaColecao from './CardCartaColecao'
 import type { CartaColecao } from '../../lib/cartas'
+
+const LIMITE_LOTE_CAPAS = 24
+
+interface AnimeBulkItem {
+  mal_id: number
+  title?: string
+  images?: {
+    jpg?: {
+      image_url?: string
+    }
+  }
+}
 
 interface Props {
   cartas: CartaColecao[]
@@ -18,13 +30,28 @@ export default function SecaoColecaoCartas({
 }: Props) {
   const [filtro, setFiltro] = useState<'todas' | 'foil' | 'estreia' | 'rarissima'>('todas')
   const [busca, setBusca] = useState('')
+  const [capasLote, setCapasLote] = useState<Record<number, { imagem_url: string; titulo?: string }>>({})
+  const idsConsultadosRef = useRef<Set<number>>(new Set())
 
   const totalFoil = useMemo(() => cartas.filter((c) => c.is_foil).length, [cartas])
   const totalEstreia = useMemo(() => cartas.filter((c) => c.estreia).length, [cartas])
   const totalRarissimas = useMemo(() => cartas.filter((c) => c.raridade === 'rarissima').length, [cartas])
 
+  const cartasHidratadas = useMemo(() => {
+    return cartas.map((c) => {
+      const extra = capasLote[c.mal_id]
+      if (!extra) return c
+      const usaTituloFallback = !c.titulo || c.titulo === `Anime #${c.mal_id}`
+      return {
+        ...c,
+        imagem_url: c.imagem_url || extra.imagem_url,
+        titulo: usaTituloFallback && extra.titulo ? extra.titulo : c.titulo,
+      }
+    })
+  }, [cartas, capasLote])
+
   const cartasFiltradas = useMemo(() => {
-    return cartas.filter((c) => {
+    return cartasHidratadas.filter((c) => {
       if (filtro === 'foil' && !c.is_foil) return false
       if (filtro === 'estreia' && !c.estreia) return false
       if (filtro === 'rarissima' && c.raridade !== 'rarissima') return false
@@ -34,7 +61,48 @@ export default function SecaoColecaoCartas({
       }
       return true
     })
-  }, [cartas, filtro, busca])
+  }, [cartasHidratadas, filtro, busca])
+
+  useEffect(() => {
+    const visiveisSemCapa = cartasFiltradas
+      .slice(0, LIMITE_LOTE_CAPAS)
+      .filter((c) => !c.imagem_url && !idsConsultadosRef.current.has(c.mal_id))
+      .map((c) => c.mal_id)
+
+    const idsUnicos = Array.from(new Set(visiveisSemCapa))
+    if (idsUnicos.length === 0) return
+
+    idsUnicos.forEach((id) => idsConsultadosRef.current.add(id))
+    let cancelado = false
+
+    fetch('/api/anime/bulk', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ ids: idsUnicos }),
+    })
+      .then((res) => (res.ok ? res.json() : null))
+      .then((json) => {
+        if (cancelado || !json || !Array.isArray(json.data)) return
+        const novos: Record<number, { imagem_url: string; titulo?: string }> = {}
+        for (const item of json.data as AnimeBulkItem[]) {
+          const url = item.images?.jpg?.image_url || ''
+          if (item.mal_id && (url || item.title)) {
+            novos[item.mal_id] = { imagem_url: url, titulo: item.title }
+          }
+        }
+        if (Object.keys(novos).length > 0) {
+          setCapasLote((atual) => ({ ...atual, ...novos }))
+        }
+      })
+      .catch(() => {
+        // Mantém fallback com inicial se o lote falhar
+      })
+
+    return () => {
+      cancelado = true
+    }
+  }, [cartasFiltradas])
+
 
   return (
     <section className="p-5 sm:p-6 rounded-2xl bg-panel border border-line">

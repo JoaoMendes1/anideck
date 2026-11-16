@@ -307,21 +307,42 @@ func (h *RankingsComunidadeHandler) HandleClimaTemporada(w http.ResponseWriter, 
 
 		metas := map[int]struct{ Title, Image string }{}
 		var caches []struct {
-			MalID  int    `json:"mal_id"`
-			Title  string `json:"title"`
-			Images struct {
-				JPG struct {
-					ImageURL string `json:"image_url"`
-				} `json:"jpg"`
-			} `json:"images"`
+			MalID int    `json:"mal_id"`
+			Title string `json:"title"`
 		}
 		if dataC, _, errC := database.Client.From("anime_metadata_cache").
-			Select("mal_id,title,images", "", false).
+			Select("mal_id,title", "", false).
 			In("mal_id", malIDs).
-			Execute(); errC == nil {
+			Execute(); errC != nil {
+			log.Printf("[Rankings] Erro ao consultar anime_metadata_cache: %v", errC)
+		} else {
 			_ = json.Unmarshal(dataC, &caches)
 			for _, c := range caches {
-				metas[c.MalID] = struct{ Title, Image string }{Title: c.Title, Image: c.Images.JPG.ImageURL}
+				metas[c.MalID] = struct{ Title, Image string }{Title: c.Title}
+			}
+		}
+
+		var curadas []struct {
+			MalID            int    `json:"mal_id"`
+			CustomTitle      string `json:"custom_title"`
+			CustomCoverImage string `json:"custom_cover_image"`
+		}
+		if dataCur, _, errCur := database.Client.From("curated_animes").
+			Select("mal_id,custom_title,custom_cover_image", "", false).
+			In("mal_id", malIDs).
+			Execute(); errCur != nil {
+			log.Printf("[Rankings] Erro ao consultar curated_animes: %v", errCur)
+		} else {
+			_ = json.Unmarshal(dataCur, &curadas)
+			for _, cur := range curadas {
+				atual := metas[cur.MalID]
+				if cur.CustomTitle != "" {
+					atual.Title = cur.CustomTitle
+				}
+				if cur.CustomCoverImage != "" {
+					atual.Image = cur.CustomCoverImage
+				}
+				metas[cur.MalID] = atual
 			}
 		}
 

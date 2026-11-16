@@ -802,6 +802,11 @@ experiência pequena e funcional de cada vez.
 > numeração e não abrem escopo novo. Ficam registrados aqui em ordem cronológica inversa para
 > não sumirem: fase concluída não deve ser reaberta só para receber um conserto.
 
+### 16/11/2026 — Coleção de cartas volta a mostrar título e capa (#228)
+
+- [x] **Colunas reais no `Select` do PostgREST:** `enriquecerCartasComMetadados` (`cartas.go`) e `rankings_comunidade.go` pediam `images` em `anime_metadata_cache` e `custom_cover_url` em `curated_animes`, colunas que não existem no schema (item 33 do `PITFALLS.md`). Passaram a pedir `mal_id,title` e `mal_id,custom_title,custom_cover_image`, registrando erro no log em vez de ignorá-lo.
+- [x] **Capas em lote para obras fora da curadoria:** a `SecaoColecaoCartas` busca as capas das cartas visíveis sem imagem (até 24 por vez) em `POST /api/anime/bulk`, seguindo a cadeia curadoria → cache → AniList.
+
 ### 15/11/2026 — Coluna da semana de volta na Início
 
 - [x] **Coluna lateral com "Sua semana" restaurada** a partir de 1280 px, como era antes do #215: sem ela a agenda esticava na largura toda. O palco de destaques passa a caber na coluna principal, com a fila das próximas embaixo.

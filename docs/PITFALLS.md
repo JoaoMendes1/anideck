@@ -945,6 +945,35 @@ volta ao último valor aceito.
 
 ---
 
+## 33. 🃏 `Select` com coluna inexistente no PostgREST devolve erro, e erro ignorado vira lista vazia: carta sem título
+
+**Incidente (16/11/2026, #228):** a Coleção de Cartas (na Guilda e no perfil público) mostrava
+todas as cartas como `"Anime #54852"` e a inicial `"A"` no lugar da capa, mesmo para obras
+curadas e obras presentes no cache de metadados.
+
+**Causa:** `enriquecerCartasComMetadados` (`internal/handlers/cartas.go`) consultava
+`Select("mal_id,title,images", ...)` em `anime_metadata_cache` (que não tem coluna `images`) e
+`Select("mal_id,custom_title,custom_cover_url", ...)` em `curated_animes` (a coluna real é
+`custom_cover_image`). O mesmo `Select("mal_id,title,images", ...)` aparecia em
+`internal/handlers/rankings_comunidade.go`. No PostgREST, pedir uma coluna que não existe falha a
+consulta inteira; como o erro era ignorado (`if ...; err == nil`), os mapas de cache e curadoria
+ficavam vazios sem nenhum aviso no log, e todas as cartas caíam no fallback `"Anime #%d"` sem
+imagem.
+
+**Correção:**
+1. Ajustadas as colunas do `Select` para bater com `sql/snapshot_schema.sql` (`mal_id,title` no
+   cache e `mal_id,custom_title,custom_cover_image` na curadoria), registrando no log qualquer
+   erro das consultas.
+2. Para cartas de obras não curadas (já que o cache não guarda capa), a `SecaoColecaoCartas.tsx`
+   passou a buscar as capas do lote visível (até 24 por vez) via `POST /api/anime/bulk`, seguindo
+   a cadeia curadoria → cache → AniList usada pelo Deck.
+
+> **Pergunta obrigatória:** toda coluna do `Select` existe no snapshot (`sql/snapshot_schema.sql`)?
+> E se o PostgREST devolver erro nessa consulta secundária, ele aparece no log em vez de virar
+> mapa vazio em silêncio?
+
+---
+
 ## 🧭 Como manter este arquivo
 
 - Toda vez que um bug **silencioso** chegar a produção (não quebrou, só devolveu dado errado),
