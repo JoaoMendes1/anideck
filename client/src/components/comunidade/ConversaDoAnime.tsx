@@ -8,6 +8,7 @@ import { Lock, MessageCircle, Heart, Flag, Trash2, Ban, ChevronLeft, ChevronRigh
 import { useSessao } from '../../contexts/SessaoContext'
 import { useToast } from '../../contexts/ToastContext'
 import { useComunidade, avisarComunidadeAtualizada } from '../../hooks/useComunidade'
+import { invalidarCachesDoDeck } from '../../lib/cacheDeTela'
 import SeloEquipe from './SeloEquipe'
 import TagCla from '../TagCla'
 import { obterClasseMoldura, obterClasseCorNome, renderizarEmblema } from '../../lib/cosmeticos'
@@ -186,6 +187,7 @@ export default function ConversaDoAnime({ malId, totalEpisodes, proximoAoAr, ass
     try {
       const res = await fetch(`/api/entries/${malId}/episodes/${n}`, { method: 'POST', headers: autorizacao })
       if (!res.ok) throw new Error()
+      invalidarCachesDoDeck(session?.user.id)
       window.dispatchEvent(new CustomEvent('anideck:episodio-atualizado', { detail: { malId, episodeNumber: n, watched: true } }))
     } catch {
       showToast('Não foi possível marcar o episódio.', 'error')

@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom'
 import { Check, Play, Lock, ChevronDown, AlertTriangle, Clock } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import { useToast } from '../contexts/ToastContext'
+import { invalidarCachesDoDeck } from '../lib/cacheDeTela'
 import { obterTextoDiaLancamento } from '../lib/deckHelpers'
 
 interface StreamingEpisode {
@@ -112,6 +113,7 @@ export default function EpisodeGrid({ malId, totalEpisodes, streamingEpisodes = 
           // Resposta sem corpo JSON continua válida.
         }
       }
+      invalidarCachesDoDeck(session.user.id)
       window.dispatchEvent(
         new CustomEvent('anideck:episodio-atualizado', {
           detail: { malId, episodeNumber, watched: !isWatched },

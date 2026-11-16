@@ -71,8 +71,10 @@ export default function Guilda() {
     }
 
     carregar()
+    window.addEventListener('anideck:episodio-atualizado', carregar)
     return () => {
       ativo = false
+      window.removeEventListener('anideck:episodio-atualizado', carregar)
     }
   }, [session?.access_token, chave, userId, emMemoria])
 
@@ -99,8 +101,10 @@ export default function Guilda() {
     }
 
     carregarExtrato()
+    window.addEventListener('anideck:episodio-atualizado', carregarExtrato)
     return () => {
       ativo = false
+      window.removeEventListener('anideck:episodio-atualizado', carregarExtrato)
     }
   }, [session?.access_token, paginaExtrato])
 

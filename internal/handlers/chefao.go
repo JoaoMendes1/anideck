@@ -105,6 +105,7 @@ func (h *ChefaoHandler) HandleObterChefaoAtual(w http.ResponseWriter, r *http.Re
 	}
 
 	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("Cache-Control", "no-store")
 	w.Write([]byte(raw))
 }
 
@@ -144,7 +145,7 @@ func (h *ChefaoHandler) HandleAdminCriarOuEditarChefao(w http.ResponseWriter, r 
 	}
 
 	data, _, err := client.From("chefoes").
-		Insert(dados, true, "", "representation", "temporada").
+		Insert(dados, true, "temporada", "representation", "").
 		Single().
 		Execute()
 	if err != nil {

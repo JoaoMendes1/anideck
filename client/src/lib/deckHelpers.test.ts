@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { reconciliarStatusDeck, getAiringBadge } from './deckHelpers'
+import { reconciliarStatusDeck, getAiringBadge, obterTextoProximoEp } from './deckHelpers'
 
 describe('reconciliarStatusDeck', () => {
   it('transiciona Em Dia para Assistindo quando há novos episódios lançados', () => {
@@ -68,3 +68,26 @@ describe('getAiringBadge', () => {
     expect(badge.acabouDeLancar).toBe(true)
   })
 })
+
+describe('obterTextoProximoEp', () => {
+  it('exibe "hoje" quando o lançamento é no mesmo dia civil local', () => {
+    const agora = new Date(2026, 10, 16, 14, 0, 0) // 16/11/2026 14:00 local
+    const lancamento = new Date(2026, 10, 16, 19, 0, 0) // 16/11/2026 19:00 local (+5h)
+    const texto = obterTextoProximoEp(
+      { episode: 6, airingAt: Math.floor(lancamento.getTime() / 1000) },
+      Math.floor(agora.getTime() / 1000),
+    )
+    expect(texto).toBe('EP 6 hoje (~5h)')
+  })
+
+  it('exibe "amanhã" mesmo faltando menos de 24h quando o lançamento já cai no dia civil seguinte', () => {
+    const agora = new Date(2026, 10, 16, 17, 0, 0) // 16/11/2026 17:00 local
+    const lancamento = new Date(2026, 10, 17, 11, 0, 0) // 17/11/2026 11:00 local (+18h, dia seguinte)
+    const texto = obterTextoProximoEp(
+      { episode: 6, airingAt: Math.floor(lancamento.getTime() / 1000) },
+      Math.floor(agora.getTime() / 1000),
+    )
+    expect(texto).toBe('EP 6 amanhã (~18h)')
+  })
+})
+

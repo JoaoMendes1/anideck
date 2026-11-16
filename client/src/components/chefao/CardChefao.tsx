@@ -29,19 +29,25 @@ export default function CardChefao({ chefao: chefaoProp, className = '' }: Props
     }
 
     let ativo = true
-    obterStatusChefao()
-      .then((dados) => {
-        if (ativo) setChefaoLocal(dados)
-      })
-      .catch(() => {
-        if (ativo) setChefaoLocal(null)
-      })
-      .finally(() => {
-        if (ativo) setCarregando(false)
-      })
+    const recarregar = () => {
+      obterStatusChefao()
+        .then((dados) => {
+          if (ativo && dados) setChefaoLocal(dados)
+        })
+        .catch(() => {
+          // Mantém o estado anterior em caso de falha transitória.
+        })
+        .finally(() => {
+          if (ativo) setCarregando(false)
+        })
+    }
+
+    recarregar()
+    window.addEventListener('anideck:episodio-atualizado', recarregar)
 
     return () => {
       ativo = false
+      window.removeEventListener('anideck:episodio-atualizado', recarregar)
     }
   }, [chefaoProp])
 

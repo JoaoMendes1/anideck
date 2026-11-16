@@ -607,7 +607,7 @@ func RegistrarXPEpisodio(dbClient *supabase.Client, userID string, malID, episod
 		"earned_at":      agora.Format(time.RFC3339),
 	}
 
-	if _, _, errIns := dbClient.From("xp_ledger").Insert(novaLinha, true, "", "", "user_id,mal_id,episode_number").Execute(); errIns != nil {
+	if _, _, errIns := dbClient.From("xp_ledger").Insert(novaLinha, true, "user_id,mal_id,episode_number", "minimal", "").Execute(); errIns != nil {
 		log.Printf("[GUILDA XP] Falha ao gravar xp_ledger (user=%s, mal_id=%d, ep=%d): %v", userID, malID, episodeNumber, errIns)
 		return 0, ""
 	}

@@ -32,22 +32,27 @@ export default function Chefao() {
 
   useEffect(() => {
     let ativo = true
-    async function carregar() {
+    async function carregar(silencioso = false) {
       try {
-        setCarregando(true)
+        if (!silencioso) setCarregando(true)
         const dados = await obterStatusChefao()
-        if (ativo) setChefao(dados)
+        if (ativo && dados) setChefao(dados)
       } catch {
         // Falha silenciosa
       } finally {
-        if (ativo) setCarregando(false)
+        if (ativo && !silencioso) setCarregando(false)
       }
     }
-    carregar()
+    carregar(false)
+    const aoAtualizarEpisodio = () => {
+      carregar(true)
+    }
+    window.addEventListener('anideck:episodio-atualizado', aoAtualizarEpisodio)
     return () => {
       ativo = false
+      window.removeEventListener('anideck:episodio-atualizado', aoAtualizarEpisodio)
     }
-  }, [])
+  }, [session?.access_token])
 
   if (carregando) {
     return (
@@ -84,7 +89,9 @@ export default function Chefao() {
   const estiloBarra = obterClasseBarraHP(porcentagem)
   const danoMinimo = chefao.dano_minimo ?? 50
   const meuDano = chefao.meu_dano ?? 0
+  const danoTotal = chefao.dano_total ?? 0
   const progressoMinimo = Math.min(100, Math.round((meuDano / danoMinimo) * 100))
+  const participacaoRaidPct = danoTotal > 0 ? Math.min(100, Math.round((meuDano / danoTotal) * 1000) / 10) : 0
 
   return (
     <div className="min-h-screen pt-24 pb-20 px-4 max-w-4xl mx-auto">
@@ -221,10 +228,17 @@ export default function Chefao() {
                   />
                 </div>
 
+                {chefao.elegivel_recompensa && (
+                  <div className="flex items-center justify-between text-xs font-mono text-muted-2 mt-1.5">
+                    <span>Meta mínima: {danoMinimo.toLocaleString('pt-BR')} HP</span>
+                    <span>{participacaoRaidPct}% do dano da raid</span>
+                  </div>
+                )}
+
                 <p className="text-xs text-muted leading-relaxed mt-3 mb-0">
                   {chefao.elegivel_recompensa ? (
                     <span className="text-gold font-bold">
-                      Parabéns! Você atingiu o requisito mínimo de dano e receberá a recompensa quando o Chefão for derrotado.
+                      Meta mínima superada! Todo novo XP ganho hoje continua causando dano direto no chefão.
                     </span>
                   ) : (
                     <span>

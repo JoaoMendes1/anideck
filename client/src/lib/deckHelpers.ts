@@ -125,6 +125,45 @@ export function obterTextoDiaLancamento(opcoes: {
 }
 
 /**
+ * Formata o subtítulo de próximo episódio nos cards usando a mesma diferença de dia civil
+ * no fuso local que getAiringBadge, evitando exibir "hoje" quando faltam menos de 24h mas
+ * o lançamento já cai no dia civil de amanhã.
+ */
+export function obterTextoProximoEp(
+    info?: { airingAt: number; episode: number },
+    agoraSegundos: number = Date.now() / 1000,
+): string | null {
+    if (!info?.airingAt || !info?.episode) return null
+
+    const diaSemanal = obterTextoDiaLancamento({ nextAiringEpisode: info })
+    const segundosRestantes = info.airingAt - agoraSegundos
+    if (segundosRestantes <= 0) return diaSemanal
+
+    const dataEpisodio = new Date(info.airingAt * 1000)
+    dataEpisodio.setHours(0, 0, 0, 0)
+
+    const dataHoje = new Date(agoraSegundos * 1000)
+    dataHoje.setHours(0, 0, 0, 0)
+
+    const diffDays = Math.round((dataEpisodio.getTime() - dataHoje.getTime()) / (1000 * 60 * 60 * 24))
+    const horas = Math.floor(segundosRestantes / 3600)
+
+    if (diffDays === 0) {
+        return `EP ${info.episode} hoje${horas > 0 ? ` (~${horas}h)` : ''}`
+    }
+    if (diffDays === 1) {
+        return `EP ${info.episode} amanhã${horas > 0 && horas < 24 ? ` (~${horas}h)` : ''}`
+    }
+    if (diaSemanal) return `EP ${info.episode} • ${diaSemanal}`
+    if (diffDays > 1 && diffDays < 7) return `EP ${info.episode} em ${diffDays}d`
+
+    const data = new Date(info.airingAt * 1000)
+    const diaMes = data.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' })
+    return `EP ${info.episode} • ${diaMes}`
+}
+
+
+/**
  * Determina o status correto para um anime acompanhado no Deck:
  * - Se está 'Em Dia', mas saiu um novo episódio (acabouDeLancar ou ultimoEpisodioAssistido < ultimoLancado),
  *   a obra não está mais em dia -> retorna 'Assistindo'.

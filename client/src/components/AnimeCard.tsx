@@ -3,7 +3,7 @@ import { useState, type ReactNode } from 'react'
 import { Link } from 'react-router-dom'
 import { getCategoryTheme } from '../lib/filters'
 import { miniatura } from '../lib/miniatura'
-import { obterTextoDiaLancamento } from '../lib/deckHelpers'
+import { obterTextoProximoEp } from '../lib/deckHelpers'
 
 interface NextAiringInfo {
     airingAt: number
@@ -50,30 +50,7 @@ export default function AnimeCard({
 
     const animacaoHover = isFavorite ? '' : 'hover:-translate-y-1'
 
-    // Formata o lançamento do próximo episódio de forma inteligente
-    const obterTextoProximoEp = (info?: NextAiringInfo) => {
-        if (!info?.airingAt || !info?.episode) return null
-
-        const diaSemanal = obterTextoDiaLancamento({ nextAiringEpisode: info })
-        const segundosRestantes = info.airingAt - agora
-        if (segundosRestantes <= 0) return diaSemanal
-
-        const dias = Math.floor(segundosRestantes / 86400)
-
-        if (dias === 0) {
-            const horas = Math.floor(segundosRestantes / 3600)
-            return `EP ${info.episode} hoje${horas > 0 ? ` (~${horas}h)` : ''}`
-        }
-        if (dias === 1) return `EP ${info.episode} amanhã`
-        if (diaSemanal) return `EP ${info.episode} • ${diaSemanal}`
-        if (dias < 7) return `EP ${info.episode} em ${dias}d`
-
-        const data = new Date(info.airingAt * 1000)
-        const diaMes = data.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' })
-        return `EP ${info.episode} • ${diaMes}`
-    }
-
-    const proximoEpTexto = obterTextoProximoEp(nextAiringEpisode)
+    const proximoEpTexto = obterTextoProximoEp(nextAiringEpisode, agora)
 
     const posterContent = (
         <div

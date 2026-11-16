@@ -144,6 +144,7 @@ export default function PainelMinhaLista({ malId, entrada, assistidos, ultimoDis
       } catch {
         showToast(`Ep ${episodio} marcado como visto`)
       }
+      invalidarCachesDoDeck(session?.user.id)
       window.dispatchEvent(new CustomEvent('anideck:episodio-atualizado', { detail: { malId, episodeNumber: episodio, watched: true } }))
     } catch {
       showToast('Não foi possível marcar o episódio.', 'error')

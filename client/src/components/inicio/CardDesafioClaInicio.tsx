@@ -20,19 +20,25 @@ export default function CardDesafioClaInicio() {
     }
 
     let montado = true
-    obterMeuDesafioClaResumo()
-      .then((dados) => {
-        if (montado) setDesafio(dados)
-      })
-      .catch(() => {
-        if (montado) setDesafio(null)
-      })
-      .finally(() => {
-        if (montado) setCarregando(false)
-      })
+    const recarregar = () => {
+      obterMeuDesafioClaResumo()
+        .then((dados) => {
+          if (montado && dados) setDesafio(dados)
+        })
+        .catch(() => {
+          // Mantém o estado anterior em caso de falha transitória.
+        })
+        .finally(() => {
+          if (montado) setCarregando(false)
+        })
+    }
+
+    recarregar()
+    window.addEventListener('anideck:episodio-atualizado', recarregar)
 
     return () => {
       montado = false
+      window.removeEventListener('anideck:episodio-atualizado', recarregar)
     }
   }, [session])
 

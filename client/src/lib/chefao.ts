@@ -48,7 +48,7 @@ export async function obterStatusChefao(temporada?: string): Promise<StatusChefa
     }
 
     const query = temporada ? `?temporada=${encodeURIComponent(temporada)}` : ''
-    const res = await fetch(`/api/chefao${query}`, { headers })
+    const res = await fetch(`/api/chefao${query}`, { headers, cache: 'no-store' })
     if (!res.ok) return null
     const json = await res.json()
     if (!json || typeof json !== 'object' || json.code) return null
