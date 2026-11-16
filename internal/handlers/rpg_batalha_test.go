@@ -144,9 +144,21 @@ func TestSimularBatalha_EmpateDefensivoAcabaEmDerrota(t *testing.T) {
 	}
 }
 
-// Confere o balanceamento inicial do sql/072: um jogador no nível do monstro, com itens da
-// mesma faixa, vence na maior parte das vezes.
+// Confere o balanceamento do sql/072 + sql/078: um jogador no nível do monstro, com os pontos
+// divididos entre Força e Constituição e itens da faixa, vence em pelo menos 60% das lutas —
+// exceto contra o Primordial Esquecido (chefe final, nível 60), calibrado para 10% a 50%.
 func TestBalanceamentoInicial(t *testing.T) {
+	montarJogador := func(nivel int, equipo AtributosRPG) CombatenteRPG {
+		pts := PontosDisponiveis(nivel)
+		prim := PrimariosBase(nivel).Somar(PrimariosRPG{
+			Forca:        (pts + 1) / 2,
+			Constituicao: pts / 2,
+		})
+		base := DerivarAtributos(nivel, prim)
+		total := SomarAtributos(base, []ItemRPG{{Vida: equipo.Vida, Ataque: equipo.Ataque, Defesa: equipo.Defesa}})
+		return combatente(nivel, total)
+	}
+
 	casos := []struct {
 		nome    string
 		nivel   int
@@ -154,12 +166,15 @@ func TestBalanceamentoInicial(t *testing.T) {
 		monstro MonstroRPG
 	}{
 		{"slime, nível 1 com kit", 1, AtributosRPG{Vida: 30, Ataque: 5, Defesa: 4}, monstroDoNivel(1, "comum", 60, 8, 3)},
-		{"lobo, nível 10 com raros", 10, AtributosRPG{Vida: 90, Ataque: 15, Defesa: 11}, monstroDoNivel(10, "comum", 300, 40, 20)},
-		{"cavaleiro, nível 35 com épicos", 35, AtributosRPG{Vida: 220, Ataque: 34, Defesa: 27}, monstroDoNivel(35, "raro", 1300, 105, 60)},
-		{"dragão, nível 55 com lendários", 55, AtributosRPG{Vida: 400, Ataque: 60, Defesa: 40}, monstroDoNivel(50, "chefe", 2200, 150, 90)},
+		{"goblin, nível 4 com kit", 4, AtributosRPG{Vida: 30, Ataque: 5, Defesa: 4}, monstroDoNivel(4, "comum", 120, 14, 6)},
+		{"lobo, nível 10 com raros", 10, AtributosRPG{Vida: 90, Ataque: 15, Defesa: 11}, monstroDoNivel(10, "comum", 380, 48, 24)},
+		{"golem, nível 18 com raros", 18, AtributosRPG{Vida: 90, Ataque: 15, Defesa: 11}, monstroDoNivel(18, "raro", 900, 70, 50)},
+		{"espectro, nível 26 com épicos", 26, AtributosRPG{Vida: 220, Ataque: 34, Defesa: 27}, monstroDoNivel(26, "raro", 1400, 120, 62)},
+		{"cavaleiro, nível 35 com épicos", 35, AtributosRPG{Vida: 220, Ataque: 34, Defesa: 27}, monstroDoNivel(35, "raro", 2100, 145, 80)},
+		{"dragão, nível 50 com lendários", 50, AtributosRPG{Vida: 400, Ataque: 60, Defesa: 40}, monstroDoNivel(50, "chefe", 3600, 210, 120)},
 	}
 	for _, c := range casos {
-		jogador := combatente(c.nivel, SomarAtributos(AtributosBase(c.nivel), []ItemRPG{{Vida: c.equipo.Vida, Ataque: c.equipo.Ataque, Defesa: c.equipo.Defesa}}))
+		jogador := montarJogador(c.nivel, c.equipo)
 		vitorias := 0
 		for semente := int64(0); semente < 200; semente++ {
 			if SimularBatalha(jogador, c.monstro, rand.New(rand.NewSource(semente))).Venceu {
@@ -167,7 +182,28 @@ func TestBalanceamentoInicial(t *testing.T) {
 			}
 		}
 		if vitorias < 120 {
-			t.Errorf("%s: venceu só %d de 200", c.nome, vitorias)
+			t.Errorf("%s: esperava >= 120/200 (60%%), venceu só %d de 200", c.nome, vitorias)
+		}
+	}
+
+	// Caso próprio do chefe final: Primordial Esquecido no nível 60 com lendários fica entre 10% e 50%.
+	primordial := monstroDoNivel(60, "chefe", 4800, 255, 155)
+	jogador60 := montarJogador(60, AtributosRPG{Vida: 400, Ataque: 60, Defesa: 40})
+	vitoriasPrimordial := 0
+	for semente := int64(0); semente < 300; semente++ {
+		if SimularBatalha(jogador60, primordial, rand.New(rand.NewSource(semente))).Venceu {
+			vitoriasPrimordial++
+		}
+	}
+	if vitoriasPrimordial < 30 || vitoriasPrimordial > 150 {
+		t.Errorf("primordial, nível 60 com lendários: esperava entre 10%% e 50%% (30 a 150 em 300), venceu %d de 300", vitoriasPrimordial)
+	}
+
+	// Nível 1 perde para os chefões.
+	iniciante := montarJogador(1, AtributosRPG{Vida: 30, Ataque: 5, Defesa: 4})
+	for semente := int64(0); semente < 50; semente++ {
+		if SimularBatalha(iniciante, primordial, rand.New(rand.NewSource(semente))).Venceu {
+			t.Fatalf("nível 1 não deveria vencer o Primordial Esquecido (semente %d)", semente)
 		}
 	}
 }

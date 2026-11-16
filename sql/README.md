@@ -107,6 +107,7 @@ SELECT pg_get_viewdef('nome_da_view'::regclass, true);
 | `075_rpg_ajustes.sql` | Fase 18 (#225): `search_path` fixo e sem `anon` em `rpg_chances_invocacao`; policies de admin de `rpg_itens` e `rpg_monstros` com `(SELECT is_admin())` | — |
 | `076_rpg_estado_jogador.sql` | Fase 18 (#226): `rpg_estado_jogador()` devolve personagem, soma do XP, inventário, slots, bilhetes, cenário, aura e skins numa consulta só, com a RLS de quem chama; sem ela, o Go cai na leitura tabela por tabela | — |
 | `077_rpg_atributos.sql` | Fase 18 (18.3b, #227): `rpg_atributos` guarda os pontos distribuídos nos seis primários; `rpg_distribuir_pontos` confere o total contra `nível / 2` no banco; `rpg_estado_jogador` passa a trazer os pontos. Depende do 076 | — |
+| `078_rpg_reforco_monstros.sql` | Fase 18 (18.4a, #229): reforço de Vida, Ataque e Defesa dos seis monstros pós-tutorial (`lobo_sombrio` ao `primordial_esquecido`) após os atributos e habilidades da #227 | — |
 
 Datas com `~` são a data do commit, não da aplicação no Supabase.
 
