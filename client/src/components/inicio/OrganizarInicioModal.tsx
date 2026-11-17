@@ -1,6 +1,6 @@
 // client/src/components/inicio/OrganizarInicioModal.tsx
 // Modal para reordenar seções (↑ / ↓), ligar/desligar, minimizar e escolher o destaque da Início (#275).
-import { ArrowDown, ArrowUp, ChevronDown, ChevronUp, Eye, EyeOff, RotateCcw, SlidersHorizontal, X } from 'lucide-react'
+import { ArrowDown, ArrowUp, ChevronsDownUp, ChevronsUpDown, Eye, EyeOff, RotateCcw, SlidersHorizontal, X } from 'lucide-react'
 import {
   CATALOGO_SECOES_INICIO,
   FONTES_DESTAQUE,
@@ -96,13 +96,14 @@ function LinhaSecao({
           onClick={aoAlternarMinimizada}
           aria-label={minimizada ? `Expandir ${info.titulo}` : `Minimizar ${info.titulo}`}
           title={minimizada ? 'Expandir seção' : 'Minimizar seção'}
-          className={`w-8 h-8 rounded-lg border flex items-center justify-center cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed ${
+          className={`h-8 px-2 rounded-lg border flex items-center justify-center gap-1 text-xs font-bold cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed ${
             minimizada
               ? 'bg-holo-2/15 border-holo-2/40 text-holo-2'
               : 'bg-panel border-line hover:border-holo-2 text-muted hover:text-text'
           }`}
         >
-          {minimizada ? <ChevronDown size={14} /> : <ChevronUp size={14} />}
+          {minimizada ? <ChevronsUpDown size={14} /> : <ChevronsDownUp size={14} />}
+          <span className="hidden sm:inline">{minimizada ? 'Expandir' : 'Recolher'}</span>
         </button>
         <button
           type="button"
@@ -169,12 +170,12 @@ export default function OrganizarInicioModal({
 
   return (
     <div
-      className="fixed inset-0 z-50 bg-void/80 backdrop-blur-sm flex items-center justify-center p-4"
+      className="fixed inset-0 z-[60] bg-void/80 backdrop-blur-sm flex items-center justify-center p-4"
       role="dialog"
       aria-modal="true"
       aria-labelledby="titulo-organizar-inicio"
     >
-      <div className="w-full max-w-2xl max-h-[90vh] flex flex-col rounded-3xl border border-line bg-panel shadow-2xl overflow-hidden">
+      <div className="w-full max-w-2xl max-h-[calc(100dvh-2rem)] flex flex-col rounded-3xl border border-line bg-panel shadow-2xl overflow-hidden">
         <div className="px-5 py-4 border-b border-line flex items-center justify-between gap-3">
           <div className="flex items-center gap-2.5 min-w-0">
             <div className="w-9 h-9 rounded-xl bg-holo-3/15 border border-holo-3/35 text-holo-3 flex items-center justify-center shrink-0">

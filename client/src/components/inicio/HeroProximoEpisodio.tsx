@@ -115,7 +115,9 @@ export default function HeroProximoEpisodio({
           <div className="flex items-center justify-between gap-3 mb-2.5">
             <div className="flex flex-wrap items-center gap-2 min-w-0">
               <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-holo-1/15 border border-holo-1/35 text-holo-1 font-mono text-xs font-bold uppercase tracking-widest shrink-0">
-                <Play size={10} fill="currentColor" /> Seu próximo episódio
+                <Play size={10} fill="currentColor" />
+                <span className="hidden sm:inline">Seu próximo episódio</span>
+                <span className="sm:hidden">Próximo ep.</span>
               </span>
               {anime.genres?.slice(0, 3).map((g) => (
                 <span key={g} className="hidden sm:inline-block px-2 py-0.5 rounded-full bg-panel-2/90 border border-line text-muted font-mono text-xs shrink-0">
@@ -183,7 +185,8 @@ export default function HeroProximoEpisodio({
 
           {anime.synopsis && (
             <p className="text-xs sm:text-sm text-muted/90 line-clamp-2 max-w-2xl mt-1.5 mb-2 leading-relaxed">
-              {anime.synopsis}
+              {/* A sinopse da AniList chega com marcação (*itálico*, **negrito**): o texto puro lê melhor. */}
+              {anime.synopsis.replace(/\*{1,2}/g, '')}
             </p>
           )}
 
