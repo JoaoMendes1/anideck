@@ -59,15 +59,15 @@ function Item({ item, aberto, expandido, aoExpandir }: ItemProps) {
           title={item.rotulo}
           aria-current={ativo ? 'page' : undefined}
           {...aoChegar(item.para)}
-          className={`relative flex items-center justify-center gap-3 h-11 rounded-xl text-sm font-bold transition-colors focus-visible:outline-2 focus-visible:outline-holo-3 ${alinhamento} ${
+          className={`relative flex items-center justify-center gap-3 h-9 rounded-xl text-sm font-bold transition-colors focus-visible:outline-2 focus-visible:outline-holo-3 ${alinhamento} ${temSub && aberto ? '2xl:pr-10' : ''} ${
             ativo
               ? 'text-text bg-gradient-to-r from-holo-2/35 to-holo-3/10 shadow-[inset_0_0_0_1px_rgba(123,92,255,0.5),0_0_18px_rgba(123,92,255,0.25)]'
               : 'text-muted hover:text-text hover:bg-panel-2/70'
           }`}
         >
-          {ativo && <span aria-hidden className="absolute -left-3 top-2.5 bottom-2.5 w-[3px] rounded-full bg-holo-3 shadow-[0_0_8px_var(--color-holo-3)]" />}
+          {ativo && <span aria-hidden className="absolute -left-3 top-1.5 bottom-1.5 w-[3px] rounded-full bg-holo-3 shadow-[0_0_8px_var(--color-holo-3)]" />}
           <span className={`flex shrink-0 ${item.cor}`}><Icone size={20} aria-hidden /></span>
-          <span className={soAberto}>{item.rotulo}</span>
+          <span className={`truncate ${soAberto}`}>{item.rotulo}</span>
         </Link>
         {temSub && (
           <button
@@ -95,7 +95,7 @@ function Item({ item, aberto, expandido, aoExpandir }: ItemProps) {
                     tabIndex={expandido ? undefined : -1}
                     aria-current={subAtivo ? 'page' : undefined}
                     {...aoChegar(sub.para)}
-                    className={`relative flex items-center h-8 pl-3 rounded-lg text-[13px] font-semibold transition-colors border-l border-line focus-visible:outline-2 focus-visible:outline-holo-3 ${
+                    className={`relative flex items-center h-7 pl-3 rounded-lg text-[13px] font-semibold transition-colors border-l border-line focus-visible:outline-2 focus-visible:outline-holo-3 ${
                       subAtivo ? 'text-text border-holo-3 bg-panel-2/60' : 'text-muted hover:text-text hover:bg-panel-2/50'
                     }`}
                   >
@@ -115,7 +115,7 @@ function Grupo({ grupo, aberto, expandidos, aoExpandir }: { grupo: GrupoDoMenu; 
   const { soAberto, soTrilho } = classesDoEstado(aberto)
   return (
     <div className="flex flex-col gap-0.5">
-      <span className={`px-3.5 pt-4 pb-1.5 font-mono text-xs font-bold tracking-[0.16em] text-muted-2 ${soAberto}`}>{grupo.titulo}</span>
+      <span className={`px-3.5 pt-3 pb-1 font-mono text-xs font-bold tracking-[0.16em] text-muted-2 ${soAberto}`}>{grupo.titulo}</span>
       {/* No trilho, um filete separa os grupos no lugar do título. */}
       <span aria-hidden className={`mx-3 my-2 h-px bg-line ${soTrilho}`} />
       {grupo.itens.map((item) => (
@@ -142,58 +142,82 @@ export default function MenuLateral({ aberto, aoAlternar }: Props) {
   return (
     <aside
       aria-label="Menu principal"
-      className="hidden xl:flex fixed left-0 top-0 bottom-0 z-50 w-[var(--menu-lateral)] flex-col px-3 py-4 bg-gradient-to-b from-panel/95 to-void/95 backdrop-blur-md border-r border-line overflow-y-auto"
+      className="hidden xl:flex fixed left-0 top-0 bottom-0 z-50 w-[var(--menu-lateral)] flex-col px-3 py-4 bg-gradient-to-b from-panel/95 to-void/95 backdrop-blur-md border-r border-line"
     >
-      <Link to="/" className={`flex items-center justify-center gap-2.5 h-11 mb-1 rounded-xl focus-visible:outline-2 focus-visible:outline-holo-3 ${alinhamento}`} aria-label="AniDeck, início">
-        <LogoMark />
-        <span className={`font-anton text-xl tracking-wide ${soAberto}`}>
-          Ani<span className="text-holo">Deck</span>
-        </span>
-      </Link>
+      <div className="shrink-0 relative mb-1">
+        <Link to="/" className={`flex items-center justify-center gap-2.5 h-11 rounded-xl focus-visible:outline-2 focus-visible:outline-holo-3 ${alinhamento}`} aria-label="AniDeck, início">
+          <LogoMark />
+          <span className={`font-anton text-xl tracking-wide ${soAberto}`}>
+            Ani<span className="text-holo">Deck</span>
+          </span>
+        </Link>
+        {/* Aberto, o botão de recolher fica ao lado da marca: no rodapé ele tomava a altura
+            que faltava para a lista caber sem rolar. */}
+        {aberto && (
+          <button
+            type="button"
+            onClick={aoAlternar}
+            aria-expanded
+            title="Recolher menu"
+            aria-label="Recolher menu"
+            className="hidden 2xl:grid absolute right-0 top-1/2 -translate-y-1/2 w-8 h-8 place-items-center rounded-lg text-muted-2 hover:text-text hover:bg-panel-2/70 transition-colors cursor-pointer focus-visible:outline-2 focus-visible:outline-holo-3"
+          >
+            <PanelLeftClose size={17} aria-hidden />
+          </button>
+        )}
+      </div>
 
-      <nav className="flex flex-col">
+      {/* Só a lista rola, com barra fina do tema: logo e cartão do jogador ficam fixos.
+          O -mx-3 px-3 mantém dentro da área de rolagem o filete do item ativo. */}
+      <nav className="flex-1 min-h-0 flex flex-col -mx-3 px-3 pb-3 overflow-y-auto overflow-x-hidden custom-scrollbar">
         {grupos.map((g) => <Grupo key={g.titulo} grupo={g} aberto={aberto} expandidos={expandidos} aoExpandir={aoExpandir} />)}
+        {/* Em tela baixa, a lista some num degradê em vez de ser cortada seco pelo cartão.
+            Grudado no fim da área de rolagem, ele só cobre itens enquanto há mais abaixo. */}
+        <span aria-hidden className="sticky bottom-0 shrink-0 h-6 -mt-3 bg-gradient-to-t from-void to-transparent pointer-events-none" />
       </nav>
-
-      <div className="flex-1 min-h-4" />
 
       {status && (
         <>
           <Link
             to="/guilda"
-            className={`flex-col gap-2.5 p-3.5 rounded-2xl border border-holo-3/30 bg-gradient-to-br from-holo-3/10 to-panel/90 hover:border-holo-3/60 transition-colors focus-visible:outline-2 focus-visible:outline-holo-3 ${soAbertoBloco}`}
+            className={`shrink-0 mt-2 flex-col gap-2 p-3 rounded-2xl border border-holo-3/30 bg-gradient-to-br from-holo-3/10 to-panel/90 hover:border-holo-3/60 transition-colors focus-visible:outline-2 focus-visible:outline-holo-3 ${soAbertoBloco}`}
           >
             <span className="flex items-center gap-2.5">
-              <InsigniaRank rank={status.rank} tamanho={40} />
+              <InsigniaRank rank={status.rank} tamanho={32} />
               <span className="flex flex-col min-w-0">
-                <b className="text-sm text-text truncate">{status.titulo_rank}</b>
+                <b className="text-sm text-text truncate leading-tight">{status.titulo_rank}</b>
                 <span className="text-xs font-bold text-holo-3">Nível {status.nivel} · Rank {status.rank}</span>
               </span>
             </span>
-            <BarraVital tipo="xp" pct={status.progresso_pct} />
-            <span className="font-mono text-xs text-muted tabular-nums">
-              <b className="text-gold">{status.xp_no_nivel}</b>/{status.xp_para_proximo} XP
+            <span className="flex items-center gap-2">
+              <span className="flex-1 min-w-0"><BarraVital tipo="xp" pct={status.progresso_pct} /></span>
+              <span className="font-mono text-xs text-muted tabular-nums shrink-0">
+                <b className="text-gold">{status.xp_no_nivel}</b>/{status.xp_para_proximo} XP
+              </span>
             </span>
           </Link>
           <Link
             to="/guilda"
             title={`Rank ${status.rank} · Nível ${status.nivel}`}
-            className={`flex justify-center py-1 rounded-xl focus-visible:outline-2 focus-visible:outline-holo-3 ${soTrilho}`}
+            className={`shrink-0 mt-2 flex justify-center py-1 rounded-xl focus-visible:outline-2 focus-visible:outline-holo-3 ${soTrilho}`}
           >
             <InsigniaRank rank={status.rank} tamanho={40} />
           </Link>
         </>
       )}
 
-      <button
-        type="button"
-        onClick={aoAlternar}
-        aria-expanded={aberto}
-        className="hidden 2xl:flex items-center justify-center gap-2.5 h-10 mt-2 rounded-xl text-xs font-bold text-muted-2 hover:text-text hover:bg-panel-2/70 transition-colors cursor-pointer focus-visible:outline-2 focus-visible:outline-holo-3"
-      >
-        {aberto ? <PanelLeftClose size={18} aria-hidden /> : <PanelLeftOpen size={18} aria-hidden />}
-        <span className={aberto ? '' : 'sr-only'}>{aberto ? 'Recolher menu' : 'Abrir menu'}</span>
-      </button>
+      {!aberto && (
+        <button
+          type="button"
+          onClick={aoAlternar}
+          aria-expanded={false}
+          title="Abrir menu"
+          className="hidden 2xl:flex shrink-0 items-center justify-center h-10 mt-2 rounded-xl text-muted-2 hover:text-text hover:bg-panel-2/70 transition-colors cursor-pointer focus-visible:outline-2 focus-visible:outline-holo-3"
+        >
+          <PanelLeftOpen size={18} aria-hidden />
+          <span className="sr-only">Abrir menu</span>
+        </button>
+      )}
     </aside>
   )
 }
