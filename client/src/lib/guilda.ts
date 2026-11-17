@@ -52,6 +52,20 @@ export interface EspecialistaGenero {
   progresso_pct: number
 }
 
+/** Gênero principal do jogador com título de classe (Arcanista, Detetive...). */
+export interface Especialidade {
+  genero: string
+  epiteto: string
+  icone: string
+  lema: string
+  nivel: number
+  rotulo_nivel: string
+  titulo_nivel: string
+  total_vistos: number
+  proximo_alvo: number
+  secundario?: string
+}
+
 export interface InsigniaStatus {
   id: string
   icone: string
@@ -91,6 +105,8 @@ export interface DadosDaGuilda {
   extrato_total?: number
   extrato_total_paginas?: number
   especialistas: EspecialistaGenero[]
+  /** Ausente (null) enquanto nenhum gênero chega a N1. */
+  especialidade?: Especialidade | null
   insignias: InsigniaStatus[]
 }
 

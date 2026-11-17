@@ -3,6 +3,7 @@
 // classes de RPG e conversa por episódio. O que decide permissão mora no banco (sql/041 e sql/061);
 // aqui só se formata e se valida antes de enviar, para a mensagem de erro sair clara.
 import type { ClasseRPG } from './previsoes'
+import type { Especialidade, EspecialistaGenero } from './guilda'
 
 export interface RegrasComunidade {
   mp_max: number
@@ -114,6 +115,13 @@ export interface AutorDoComentario {
   titulo_ativo?: string
 }
 
+export interface RecordesRPGPublicos {
+  vitorias: number
+  monstros_derrotados: number
+  lendarios: number
+  maior_aprimoramento: number
+}
+
 export interface ComentarioDaConversa {
   id: string
   autor: AutorDoComentario
@@ -186,6 +194,12 @@ export interface PerfilPublico {
   cla_papel?: string
   classe?: ClasseRPG
   titulo_ativo?: string
+  /** Gêneros com nível de Especialista; vazio antes do sql/089. */
+  generos?: EspecialistaGenero[]
+  especialidade?: Especialidade | null
+  horas_assistidas?: number
+  missoes_concluidas?: number
+  rpg?: RecordesRPGPublicos
 }
 
 /**

@@ -997,6 +997,44 @@ batalhas, os monstros de item comum mostravam uma chance que nunca acontecia.
 
 ---
 
+## 35. 🏁 Status em inglês num banco que grava em português: a missão "Missão Cumprida" nunca concluía
+
+**Incidente (17/11/2026, #245):** a missão diária de terminar um anime nunca saía de 0, e a de
+anime em lançamento concluía com qualquer episódio.
+
+**Causa:** o handler procurava `media_entries.status = 'COMPLETED'`, mas o app grava os status em
+português (`Completo`, `Em Dia`, `Assistindo`...). O filtro nunca casava, sem erro nenhum. Na
+missão de lançamento, qualquer anime da curadoria contava, e, sem achar nenhum, o código usava o
+total de episódios do dia.
+
+**Correção:** as missões passam a contar o término pela carta de coleção (`user_cards`, criada
+uma vez por anime quando ele vira `Completo`), que também não se repete ao editar a nota, e o
+lançamento pela mesma regra do bônus "cedo" do XP (`episodioEhLancamentoRecente`), no instante em
+que o episódio foi visto.
+
+> **Pergunta obrigatória:** o valor de status ou de enum que o filtro usa existe de verdade no
+> banco? Conferir com um `SELECT DISTINCT status` antes de filtrar por ele.
+
+---
+
+## 36. 🧾 Função SQL só quebra quando roda: INSERT com coluna inexistente passou meses sem ser visto
+
+**Incidente (17/11/2026, #247):** o resgate de código de convite falhava inteiro: nem o convidado
+recebia as AniCoins, nem o convite ficava registrado.
+
+**Causa:** `resgatar_codigo_convite` (`sql/062`) inseria em `crystal_ledger` a coluna
+`saldo_apos`, que nunca existiu, e no `xp_ledger` sem `mal_id` nem `episode_number`, que são
+`NOT NULL`. Função `plpgsql` não confere as colunas ao ser criada, só ao executar; o arquivo foi
+aplicado sem erro.
+
+**Correção:** `sql/088` redefine a função sem a coluna e dá o XP por `conceder_xp_extra()`. O teste
+local aplica a função antiga e confirma o erro antes de aplicar a nova.
+
+> **Pergunta obrigatória:** a função nova foi executada pelo menos uma vez (num Postgres local ou
+> no SQL Editor) antes de ir para o banco? Criar sem erro não prova que ela roda.
+
+---
+
 ## 🧭 Como manter este arquivo
 
 - Toda vez que um bug **silencioso** chegar a produção (não quebrou, só devolveu dado errado),

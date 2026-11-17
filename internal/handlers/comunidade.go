@@ -1052,6 +1052,20 @@ type perfilPublico struct {
 	Avatar          json.RawMessage `json:"avatar,omitempty"`
 	Estagio         string          `json:"estagio,omitempty"`
 	PersonagemBase  string          `json:"personagem_base,omitempty"`
+	// Gêneros com nível de Especialista e a especialidade tirada deles.
+	Generos           []EspecialistaGenero `json:"generos"`
+	Especialidade     *Especialidade       `json:"especialidade,omitempty"`
+	HorasAssistidas   int                  `json:"horas_assistidas"`
+	MissoesConcluidas int                  `json:"missoes_concluidas"`
+	RPG               recordesRPGPublicos  `json:"rpg"`
+}
+
+// recordesRPGPublicos são os números do RPG que o perfil público mostra.
+type recordesRPGPublicos struct {
+	Vitorias           int `json:"vitorias"`
+	MonstrosDerrotados int `json:"monstros_derrotados"`
+	Lendarios          int `json:"lendarios"`
+	MaiorAprimoramento int `json:"maior_aprimoramento"`
 }
 
 // avatarEscolhido diz se a coluna avatar_custom tem um avatar salvo (e não está vazia ou nula).
@@ -1077,6 +1091,8 @@ func (h *ComunidadeHandler) HandlePerfilPublico(w http.ResponseWriter, r *http.R
 		DiasAtivos     []string `json:"dias_ativos"`
 		DescansoInicio *string  `json:"descanso_inicio"`
 		DescansoFim    *string  `json:"descanso_fim"`
+		// Linhas de fn_user_genre_affinity; o nível vem do mesmo cálculo da Guilda.
+		GenerosBrutos []AfinidadeGeneroInput `json:"generos"`
 	}
 	if err := json.Unmarshal([]byte(bruto), &dados); err != nil || dados.Handle == "" {
 		log.Printf("[COMUNIDADE] perfil_publico(%s) devolveu %q", handle, bruto)
@@ -1104,6 +1120,8 @@ func (h *ComunidadeHandler) HandlePerfilPublico(w http.ResponseWriter, r *http.R
 	if p.Status == nil {
 		p.Status = map[string]int{}
 	}
+	p.Generos = CalcularEspecialistasGenero(dados.GenerosBrutos)
+	p.Especialidade = CalcularEspecialidade(p.Generos)
 
 	var profs []struct {
 		UserID      string          `json:"user_id"`

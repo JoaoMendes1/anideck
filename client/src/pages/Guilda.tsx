@@ -11,6 +11,7 @@ import SeloStreak from '../components/hud/SeloStreak'
 import BarraVital from '../components/hud/BarraVital'
 import ModalTransferirAniCoins from '../components/ModalTransferirAniCoins'
 import CardMissoesDiarias from '../components/inicio/CardMissoesDiarias'
+import CartaoEspecialidade from '../components/hud/CartaoEspecialidade'
 import CardChefao from '../components/chefao/CardChefao'
 import SeletorClasse from '../components/comunidade/SeletorClasse'
 import CardPrevisoes from '../components/previsoes/CardPrevisoes'
@@ -139,7 +140,7 @@ export default function Guilda() {
     )
   }
 
-  const { status, economia, ranks, extrato, especialistas, insignias } = dados
+  const { status, economia, ranks, extrato, especialistas, especialidade, insignias } = dados
   const totalDesbloqueadas = insignias.filter((i) => i.desbloqueada).length
 
   return (
@@ -195,6 +196,14 @@ export default function Guilda() {
                     Rank {status.rank}
                   </span>
                   {status.streak_atual > 0 && <SeloStreak dias={status.streak_atual} compacto />}
+                  {especialidade && (
+                    <span
+                      title={`Especialidade: ${especialidade.genero} (${especialidade.rotulo_nivel})`}
+                      className="inline-flex items-center gap-1.5 h-7 font-mono text-xs font-bold uppercase tracking-wider px-2.5 rounded-full bg-holo-1/15 border border-holo-1/40 text-holo-1"
+                    >
+                      <span aria-hidden>{especialidade.icone}</span> {especialidade.epiteto}
+                    </span>
+                  )}
                   <span className="inline-flex items-center gap-1.5 h-7 font-mono text-xs font-bold px-2.5 rounded-full bg-gold/12 border border-gold/40 text-gold">
                     <IconeAniCoin size={13} /> {saldoCristais.toLocaleString('pt-BR')} ₳
                   </span>
@@ -489,6 +498,13 @@ export default function Guilda() {
               <span className="font-mono text-xs text-holo-3 bg-holo-3/12 border border-holo-3/35 px-2.5 py-1 rounded-full">
                 Peso máx. {status.peso_maximo_voto.toFixed(1).replace('.', ',')}×
               </span>
+            </div>
+
+            <div className="mb-4">
+              <CartaoEspecialidade
+                especialidade={especialidade}
+                vazio="Assista a 3 animes do mesmo gênero (Assistindo, Em Dia ou Completo) para conquistar sua especialidade."
+              />
             </div>
 
             {especialistas.length === 0 ? (

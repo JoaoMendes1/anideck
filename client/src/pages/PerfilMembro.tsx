@@ -3,7 +3,7 @@
 // Só existe para perfil marcado como público; o resto do deck continua privado.
 import { useEffect, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
-import { Ban, CalendarDays, Heart, MessageCircle, PlayCircle, Sparkles, UserX, Swords, Award } from 'lucide-react'
+import { Ban, CalendarDays, Heart, MessageCircle, PlayCircle, Sparkles, UserX, Swords, Award, Clock, CheckCircle2, Target, Skull, Gem, Hammer } from 'lucide-react'
 import { useSessao } from '../contexts/SessaoContext'
 import { useToast } from '../contexts/ToastContext'
 import { useComunidade } from '../hooks/useComunidade'
@@ -17,6 +17,7 @@ import TagCla from '../components/TagCla'
 import { obterClasseMoldura, obterClasseCorNome, obterClasseTemaPerfil, renderizarEmblema } from '../lib/cosmeticos'
 import { calcularHPMaximoJogador, faixaDoHP, type PerfilPublico } from '../lib/comunidade'
 import AvatarMontavel from '../components/AvatarMontavel'
+import CartaoEspecialidade from '../components/hud/CartaoEspecialidade'
 import { filtroDoVisual, retratoDoEstagio } from '../lib/personagem'
 import type { CartaColecao, PersonagemFavorito } from '../lib/cartas'
 
@@ -181,6 +182,11 @@ export default function PerfilMembro() {
                 <InsigniaRank rank={perfil.rank} tamanho={26} />
                 Rank {perfil.rank} · Nível {perfil.nivel}
               </span>
+              {perfil.especialidade && (
+                <span className="font-mono text-xs font-bold uppercase tracking-wider px-2.5 py-0.5 rounded-full border border-holo-1/40 bg-holo-1/15 text-holo-1 inline-flex items-center gap-1">
+                  <span aria-hidden>{perfil.especialidade.icone}</span> {perfil.especialidade.epiteto}
+                </span>
+              )}
               {perfil.classe && CLASSES_RPG[perfil.classe] && (
                 <span className={`font-mono text-xs font-bold uppercase tracking-wider px-2.5 py-0.5 rounded-full border ${CLASSES_RPG[perfil.classe].borda} ${CLASSES_RPG[perfil.classe].fundo} ${CLASSES_RPG[perfil.classe].cor}`}>
                   {CLASSES_RPG[perfil.classe].icone} {CLASSES_RPG[perfil.classe].nome}
@@ -260,6 +266,69 @@ export default function PerfilMembro() {
           ))}
         </div>
       </section>
+
+      {((perfil.generos?.length ?? 0) > 0 || perfil.rpg) && (
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start mb-6">
+          <section className="rounded-2xl bg-panel border border-line p-5">
+            <h2 className="font-anton text-base uppercase m-0 mb-4">Especialidade</h2>
+            <CartaoEspecialidade
+              especialidade={perfil.especialidade}
+              vazio={`@${perfil.handle} ainda não tem 3 animes de um mesmo gênero.`}
+            />
+            {(perfil.generos?.length ?? 0) > 0 && (
+              <ul className="list-none m-0 mt-4 p-0 space-y-2.5" aria-label="Gêneros mais assistidos">
+                {perfil.generos!.slice(0, 5).map(g => (
+                  <li key={g.genero}>
+                    <div className="flex items-center justify-between text-[12.5px] mb-1 gap-2">
+                      <span className="text-muted truncate">{g.genero}</span>
+                      <span className="font-mono text-xs text-muted-2 shrink-0">
+                        {g.total_vistos} {g.total_vistos === 1 ? 'anime' : 'animes'} ·{' '}
+                        <b className={g.nivel >= 3 ? 'text-gold' : g.nivel >= 1 ? 'text-holo-2' : 'text-muted-2'}>{g.rotulo_nivel}</b>
+                      </span>
+                    </div>
+                    <div className="h-1.5 rounded-full bg-panel-2 overflow-hidden">
+                      <div
+                        className="h-full bg-gradient-to-r from-holo-1 to-holo-2"
+                        style={{ width: `${Math.round((g.total_vistos / Math.max(1, perfil.generos![0].total_vistos)) * 100)}%` }}
+                      />
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </section>
+
+          <section className="rounded-2xl bg-panel border border-line p-5">
+            <h2 className="font-anton text-base uppercase m-0 mb-4">Jornada</h2>
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+              {[
+                { rotulo: 'Horas vistas', valor: perfil.horas_assistidas ?? 0, icone: <Clock size={13} className="text-holo-3" aria-hidden /> },
+                { rotulo: 'Completos', valor: perfil.status['Completo'] ?? 0, icone: <CheckCircle2 size={13} className="text-green" aria-hidden /> },
+                { rotulo: 'Missões', valor: perfil.missoes_concluidas ?? 0, icone: <Target size={13} className="text-gold" aria-hidden /> },
+                ...(perfil.rpg
+                  ? [
+                      { rotulo: 'Vitórias', valor: perfil.rpg.vitorias, icone: <Swords size={13} className="text-coral" aria-hidden /> },
+                      { rotulo: 'Monstros', valor: perfil.rpg.monstros_derrotados, icone: <Skull size={13} className="text-holo-1" aria-hidden /> },
+                      { rotulo: 'Lendários', valor: perfil.rpg.lendarios, icone: <Gem size={13} className="text-gold" aria-hidden /> },
+                    ]
+                  : []),
+              ].map(item => (
+                <div key={item.rotulo} className="rounded-xl bg-panel-2 border border-line p-3">
+                  <div className="font-mono text-xs text-muted-2 uppercase tracking-wider flex items-center gap-1.5">
+                    {item.icone} <span className="truncate">{item.rotulo}</span>
+                  </div>
+                  <div className="font-anton text-xl mt-1 leading-none">{item.valor.toLocaleString('pt-BR')}</div>
+                </div>
+              ))}
+            </div>
+            {(perfil.rpg?.maior_aprimoramento ?? 0) > 0 && (
+              <p className="font-mono text-xs text-muted-2 mt-3 mb-0 inline-flex items-center gap-1.5">
+                <Hammer size={12} aria-hidden /> Maior aprimoramento: <b className="text-text">+{perfil.rpg!.maior_aprimoramento}</b>
+              </p>
+            )}
+          </section>
+        </div>
+      )}
 
       <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_320px] gap-6 items-start">
         <section className="rounded-2xl bg-panel border border-line p-5">

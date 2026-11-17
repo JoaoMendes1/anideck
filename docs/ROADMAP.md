@@ -46,7 +46,7 @@ Staging sobe já na Fase 1, como projeto esqueleto — mesmo padrão do JVM Syst
 | 13 · Reformulação Visual, Automação de Curadoria e Inteligência de Gosto | ✅ Concluída (08/11/2026) |
 | 14 · Guilda & Gamificação | ✅ Concluída (08/11/2026) |
 | 15 · Comunidade base | ✅ Concluída (08/11/2026, #154); falta abrir o beta |
-| 16 · Economia e cartas | ✅ Concluída (09/11/2026, #165); falta abrir o beta |
+| 16 · Economia e cartas | ✅ Concluída (09/11/2026, #165); missões, especialidade e perfil revisados em 17/11/2026 (#245–#248); falta abrir o beta |
 | 17 · Comunidade viva | ✅ Concluída (13/11/2026, #179) |
 | 18 · O Despertar Isekai | 🚧 Em andamento — 18.1 Meu Personagem (#199, #200), 18.2a escolha de visual (#218), 18.2b cenários (#219), 18.2e auras (#220), equipamentos com atributos (#221), expedições e reforço dos monstros (#222, #229), invocação gratuita (#223) e revisada (#240), Vida persistente com Ouro (#239), skins (#224), desempenho da tela (#226), atributos com livro de habilidades (#227), artes de monstros e itens (#237) e elenco com seis personagens (#238) entregues; falta aplicar o `sql/080` |
 
@@ -741,6 +741,11 @@ Motivo: um motivo diário para voltar (`VISAO_COMUNIDADE.md`: Economia, Cartas, 
   - [x] 16.4c Clima da temporada: ranking de reações (#177)
 - [x] 16.5 Apoiador por link externo, sem pagamento integrado (#178)
 - [x] 16.6 Caixa da plataforma/cofre, devolução de itens com taxa, cosméticos de temporada e upload de avatar (#198)
+- [x] 16.7 Missões e perfil, revisados em 17/11/2026
+  - [x] 16.7a Missões diárias renovadas: 12 no catálogo, 3 por dia em rodízio por usuário que nunca repete as de ontem, pelo menos 2 de assistir, gênero do dia, e um pouco de XP nas de assistir (5 a 20; reagir e comentar dão só AniCoins). XP sem episódio no `xp_ledger` com `mal_id = 0`, fora do teto diário dos episódios, e AniCoins e XP pagos na mesma transação. Corrige "Missão Cumprida", que procurava `COMPLETED` e nunca concluía, e "Na Crista da Onda", que contava qualquer episódio. `sql/087` (#245)
+  - [x] 16.7b Missões da semana: 12 longas, 3 por semana (segunda a domingo), pelo menos uma de terminar anime (do ano, da temporada, do gênero da semana ou dois animes), 50 a 100 AniCoins e 30 a 60 XP. Término conta pela carta do anime, uma vez por anime, e só se um episódio dele foi visto na semana (#246)
+  - [x] Correção (#247): o resgate de convite falhava inteiro (coluna `saldo_apos` inexistente e XP sem episódio). `sql/088`
+  - [x] 16.7c Especialidade: o gênero de maior nível de Especialista vira um título de classe (Fantasia → Arcanista, Mistério → Detetive...), com subclasse, na Guilda e no perfil público. Perfil público com os gêneros, horas assistidas, missões cumpridas e recordes do RPG. `sql/089` (#248)
 
 ## 🐉 Fase 17: Comunidade viva — *concluída (épico #179)*
 
@@ -799,7 +804,7 @@ experiência pequena e funcional de cada vez.
   - [x] 18.6a Invocação gratuita: bilhetes ganhos só em expedições, invocar 1 ou 10, chances visíveis e iguais às do sorteio (`rpg_chances_invocacao`), garantia de épico ou melhor a cada 10, repetidos somam no inventário (#223). Sem pagamento por desenho: ECA Digital, art. 20
   - [x] 18.6a revisada: invocação mais rara. Corrigido o defeito do `sql/073`, em que o resultado "comum" (60%) não achava item fora do kit e caía na reserva de raridade mais alta, dando Lendário em cerca de 62% das invocações. Chances novas: Ouro 78% (25 de Ouro), Raro 17%, Épico 4,5% e Lendário 0,5%; Raro ou melhor garantido a cada 10 sem Raro; Lendário com chance crescente a partir da 70ª tentativa sem ele e certo na 90ª (média de 62 tentativas). Bilhetes por vitória de 1 a 3. `sql/082` (#240)
 
-**Pendência do dono:** aplicar no Supabase, nesta ordem e antes de promover, `sql/083_rpg_aprimoramento.sql` (#241), `sql/084_rpg_maestria.sql` (#242), `sql/085_rpg_bestiario.sql` (#243) e `sql/086_rpg_monstros_sem_item_comum.sql` (#244).
+**Pendência do dono:** aplicar no Supabase, nesta ordem e antes de promover, `sql/083_rpg_aprimoramento.sql` (#241), `sql/084_rpg_maestria.sql` (#242), `sql/085_rpg_bestiario.sql` (#243), `sql/086_rpg_monstros_sem_item_comum.sql` (#244), `sql/087_missoes_com_xp.sql` (#245, #246), `sql/088_convite_resgate.sql` (#247) e `sql/089_perfil_publico_detalhado.sql` (#248, depende do `083`).
 
 **Arte pendente (o sistema já está pronto para recebê-la, sem mudar código de regra):** ilustração de cada skin (entra em `ARTES` com o id da skin e sai de `SKINS`), ícone ou ilustração de cada item de equipamento e de cada monstro, e a segunda personagem do elenco.
 

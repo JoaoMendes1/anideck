@@ -116,6 +116,9 @@ SELECT pg_get_viewdef('nome_da_view'::regclass, true);
 | `084_rpg_maestria.sql` | Fase 18.3e (#242): `rpg_maestria` (usos por habilidade); `rpg_registrar_maestria()` só para o service role; `rpg_estado_jogador()` redefinida com `maestria` (definição viva, antes no `083`). **Depois do `083`, antes de promover** | — |
 | `085_rpg_bestiario.sql` | Fase 18.4b (#243): `rpg_batalhas_hoje()` com `vitorias` por monstro e `rpg_concluir_batalha()` com +10% de Ouro por marco (10, 50 e 150 vitórias), mesma assinatura (definição viva das duas, antes no `081`); índice parcial `rpg_batalhas_vitorias`. **Antes de promover** | — |
 | `086_rpg_monstros_sem_item_comum.sql` | Correção (#244): `chance_item = 0` para os monstros de item comum enquanto não houver item comum fora do kit. Dado de catálogo, aplicável a qualquer momento | — |
+| `087_missoes_com_xp.sql` | Fase 16.7a e 16.7b (#245, #246): `xp_ledger` aceita `mal_id = 0` (XP sem episódio; o CHECK do `039` é trocado pela definição); `xp_extra` (uma linha por origem, o id vira o `episode_number`); `conceder_xp_extra()` e `resgatar_missao()` (AniCoins e XP na mesma transação) só para o service role; remove `missoes_catalogo` de `app_settings`. **Antes de promover** | — |
+| `088_convite_resgate.sql` | Correção (#247): `resgatar_codigo_convite` redefinida (definição viva, antes no `062`) sem a coluna inexistente `saldo_apos` e com o XP do anfitrião por `conceder_xp_extra()`. **Depois do `087`** | — |
+| `089_perfil_publico_detalhado.sql` | Fase 16.7c (#248): `perfil_publico` redefinida (definição viva, antes no `041`) com `generos`, `horas_assistidas`, `missoes_concluidas` e `rpg` (vitórias, monstros, Lendários e maior aprimoramento). **Depois do `083`, antes de promover** | — |
 
 Datas com `~` são a data do commit, não da aplicação no Supabase.
 

@@ -850,6 +850,7 @@ func (h *GuildaHandler) HandleGetGuilda(w http.ResponseWriter, r *http.Request) 
 		"extrato_total":         len(linhasLedger),
 		"extrato_total_paginas": calcularTotalPaginasExtrato(len(linhasLedger), tamanhoPaginaExtratoGuilda),
 		"especialistas":         especialistas,
+		"especialidade":         CalcularEspecialidade(especialistas),
 		"insignias":             insignias,
 	}
 
