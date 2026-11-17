@@ -48,7 +48,8 @@ Staging sobe já na Fase 1, como projeto esqueleto — mesmo padrão do JVM Syst
 | 15 · Comunidade base | ✅ Concluída (08/11/2026, #154); falta abrir o beta |
 | 16 · Economia e cartas | ✅ Concluída (09/11/2026, #165); missões, especialidade e perfil revisados em 17/11/2026 (#245–#248); falta abrir o beta |
 | 17 · Comunidade viva | ✅ Concluída (13/11/2026, #179) |
-| 18 · O Despertar Isekai | 🚧 Em andamento — 18.1 Meu Personagem (#199, #200), 18.2a escolha de visual (#218), 18.2b cenários (#219), 18.2e auras (#220), equipamentos com atributos (#221), expedições e reforço dos monstros (#222, #229), invocação gratuita (#223) e revisada (#240), Vida persistente com Ouro (#239), skins (#224), desempenho da tela (#226), atributos com livro de habilidades (#227), artes de monstros e itens (#237) e elenco com seis personagens (#238) entregues; SQL até o `089` aplicado em 17/11/2026 |
+| 18 · O Despertar Isekai | ✅ Concluída (17/11/2026): combate com elementos, poderes e queda (#250), masmorras (#251), expedição de clã (#252), duelos (#253) e evento da temporada (#254), além de 18.1 Meu Personagem (#199, #200), 18.2a escolha de visual (#218), 18.2b cenários (#219), 18.2e auras (#220), equipamentos com atributos (#221), expedições e reforço dos monstros (#222, #229), invocação gratuita (#223) e revisada (#240), Vida persistente com Ouro (#239), skins (#224), desempenho da tela (#226), atributos com livro de habilidades (#227), artes de monstros e itens (#237) e elenco com seis personagens (#238); falta aplicar `sql/090` a `095` |
+| 19 · Arena de cartas | ⏳ Não começada |
 
 ---
 
@@ -771,7 +772,7 @@ mecânicas). **Pré-requisitos:** Fase 16 concluída e base com gente suficiente
 - [x] 17.6 Avatar montável em camadas vetoriais geométricas (#192)
 - [x] 17.7 Curadoria colaborativa: membros de rank alto sugerem correções (#188)
 
-## 🗡️ Fase 18: O Despertar Isekai — *em andamento*
+## 🗡️ Fase 18: O Despertar Isekai — *concluída em 17/11/2026*
 
 Motivo: ligar o hábito de assistir animes a um RPG de fantasia Isekai, em que o usuário tem um
 aventureiro próprio que evolui com a atividade real (`VISAO_RPG.md`). Entrega incremental: uma
@@ -782,38 +783,47 @@ experiência pequena e funcional de cada vez.
   - [x] 18.1b Tela `/personagem` mobile-first: despertar com nome, arte por estágio com reserva para estágio sem ilustração, jornada com silhueta dos estágios futuros e slots de equipamento "em breve" (#200)
 - [x] Arte do estágio Veterano (15/11/2026): os quatro estágios passam a ter ilustração, miniatura e retrato próprios; a reserva para estágio sem arte continua no código para personagem novo
 - [x] Elenco (16/11/2026): o jogador escolhe entre seis personagens ao despertar e troca de graça na ficha, sem perder nível, itens nem pontos. Haruto (Lanceiro de Fogo), Rin (Assassina do Raio), Mizuki (Maga da Água), Brokk (Guerreiro da Terra) e Celestia (Paladina da Luz) entram ao lado do Espadachim de Éter, cada um com cinco habilidades de classe e uma única. Catálogo de artes montado pelos arquivos; Celestia usa a Veterana até a Lendária existir. Skins da Loja ficam só no Espadachim. `sql/080`, rota `PUT /api/personagem/base` (#238)
-- [ ] 18.2 Visuais e loja
+- [x] 18.2 Visuais e loja
   - [x] 18.2a Escolha de visual: o jogador fixa a aparência de um estágio já alcançado, com prévia antes de confirmar, ou deixa no automático. Coluna `visual_equipado`, rota `PUT /api/personagem/visual`, e o retrato da barra superior, de `/membros` e do perfil público seguem o visual em uso (#218)
   - [x] 18.2b Cenários de fundo da tela do personagem, comprados na Loja: tipo e slot `cenario`, quatro cenários desenhados em CSS (sem imagem), categoria e prévia na Loja com o personagem do jogador, e `GET /api/personagem` devolvendo o cenário equipado (#219)
   - [x] 18.2c Skins: quatro trajes na Loja, vestidos pela mesma escolha de visual (posse conferida em `user_items`), com o filtro aplicado em todo lugar onde o personagem aparece; devolver a skin volta ao automático (#224). Arte provisória: estágio tingido por filtro CSS
   - [x] 18.2d Slots de equipamento: catálogo `rpg_itens`, inventário e slots próprios, kit inicial equipado na primeira visita, troca com ganho e perda de cada item, conferida no banco por posse, slot e nível (#221). Artes definitivas dos 17 itens e dos 8 monstros, recortadas e mapeadas pelo nome do arquivo (#237)
   - [x] Desempenho e slots sobre a arte: o estado do jogador vem numa consulta só (`rpg_estado_jogador`, com a soma do XP no banco), a configuração de rank e estágio fica 60 s em memória, o kit inicial só é pedido quando o inventário vem vazio, e a tela abre com uma chamada à API (`?completo=1`). Os cinco slots ficam sobre a arte, e item comum deixou de parecer slot vazio (#226)
   - [x] 18.2e Auras do personagem, compradas na Loja: tipo e slot `aura`, três auras em CSS desenhadas atrás da ilustração (`CamadaDaAura`), paradas para quem pediu movimento reduzido, com categoria e prévia na Loja (#220)
-- [ ] 18.3 Progressão de RPG
+- [x] 18.3 Progressão de RPG
   - [x] 18.3a Atributos Vida, Ataque e Defesa, calculados no servidor a partir do nível e dos itens equipados; item acima do nível fica no slot sem somar (#221)
   - [x] 18.3b Seis atributos primários (Força, Inteligência, Constituição, Agilidade, Destreza e Sorte), com 1 ponto para distribuir a cada 2 níveis e redistribuição livre, conferida no banco; derivados calculados no servidor: Vida, Ataque, Defesa, Magia, Éter, Velocidade, Crítico, Dano crítico, Esquiva e Sorte de item (#227)
   - [x] 18.3c Livro de habilidades: cinco comuns do Espadachim liberadas por nível e a única do personagem, "Despertar do Éter". No combate, ordem pela Velocidade, esquiva, crítico pela Destreza, Éter que volta a cada rodada e habilidades usadas sozinhas, com o nome no registro da expedição (#227)
   - [x] 18.3d Aprimoramento de equipamento com Ouro: cada nível soma 1% a cada número do item, no mínimo 1 ponto, com teto por raridade (Comum +4, Raro +6, Épico +8, Lendário +10) e preço crescente (20, 40, 80 ou 150 × o próximo nível); nunca falha, e dois cliques iguais cobram uma vez. `sql/083`, rota `POST /api/rpg/aprimorar` (#241)
   - [x] 18.3e Maestria de habilidades: cada habilidade comum usada em batalha soma usos; com 20, 60 e 150 usos, sobe aos graus II, III e IV, e cada grau dá +2% de força ao golpe ou à cura. A única não tem maestria. O livro mostra o grau e quanto falta. `sql/084` (#242)
   - [x] 18.3f Elementos e queda: Fogo > Terra > Raio > Água > Fogo, Luz e Trevas uma contra a outra, Éter neutro. Quem tem vantagem bate 10% mais forte, e quem está em desvantagem, 3% mais fraco. Cair numa batalha custa 10% do Ouro, e só se luta com pelo menos 30% de Vida (escolha do dono). `sql/090` (#250)
-- [ ] 18.4 Mundo e PvE
+- [x] 18.4 Mundo e PvE
   - [x] 18.4a Expedições: oito monstros, batalha por turnos simulada no servidor com os atributos dele, limite de batalhas por dia (`app_settings.rpg_batalhas_por_dia`, padrão 5), vitória dá bilhetes de invocação e chance de item; combate não dá XP (#222); monstros pós-tutorial reforçados após atributos e habilidades (`sql/078`, #229). Arte provisória: ícone e cor por monstro
   - [x] 18.4b Bestiário: as vitórias contra cada monstro abrem marcos com 10, 50 e 150, e cada marco dá +10% de Ouro nas vitórias contra ele (até +30%). Bônus de Ouro, e não de dano, porque +9% de dano já dobrava a vitória contra o chefe final. Lista de monstros com vitórias, marco e quanto falta; aviso de novo marco na vitória. `sql/085` (#243)
   - [x] Correção (#244): o Slime e o Goblin deixam de prometer item comum que nunca caía (todos os comuns são do kit inicial), e os atalhos de Expedições e Invocação no personagem citam Ouro e Vida. `sql/086`. Armadilha registrada no item 34 do `PITFALLS.md`
   - [x] 18.4c Monstros com poderes: golpe forte, dreno de Vida, escudo, fúria e ajudantes chamados no meio da luta, que entram na frente do monstro e atacam junto. Os dois do tutorial não têm poder. Elemento e poderes ficam no código, como as habilidades das classes; a tela mostra os dois no cartão do monstro e no registro da luta (#250)
   - [x] 18.4d Masmorras: seis masmorras de 2 ou 3 andares com monstros do catálogo, uma por dia, fora do limite das expedições. A Vida passa de um andar para o outro com 25% de fôlego; completar dá +50% de Ouro e um baú com 25 pontos a mais de chance de item. Taxa medida no nível mínimo: de 34% a 100% conforme personagem e elemento; o Trono Primordial fica entre 1% e 4%. `sql/091`, rotas `GET` e `POST /api/rpg/masmorras`, tela `/masmorras` (#251)
-- [ ] 18.5 Integração comunitária
+- [x] 18.5 Integração comunitária
   - [x] 18.5a Vida persistente: o dano de uma batalha fica para a próxima, guardado como perda em por mil da Vida máxima; a Vida volta 5% por hora (calculado na leitura, sem tarefa agendada), 8% por episódio assistido com XP real (até 5 por dia, uma vez por episódio, por gatilho em `xp_ledger`) ou com Ouro, na Pousada (Vida cheia, a cada 4 h) e com a Poção (30%). Ouro é moeda nova, só do RPG, ganha nas vitórias (5 + 2 × nível do monstro); sem Vida, a batalha é recusada. `sql/081`, rota `POST /api/rpg/recuperar` (#239)
   - [x] 18.5b Duelos: o desafiante luta contra uma cópia da ficha de outro jogador (atributos, habilidades com maestria e elemento), simulada no servidor com os dois lados usando habilidades e esquiva. Só perfis públicos com personagem, dos dois lados. Até 3 por dia, um por oponente; vitória dá 3 pontos e 15 de Ouro, derrota não custa nada. Ranking da temporada (trimestre). `sql/093`, rotas `GET` e `POST /api/rpg/duelos`, tela `/duelos` (#253)
   - [x] 18.5c Expedição de clã: um chefe por clã e por semana, escolhido pela mediana de nível dos membros (do Lobo ao Primordial), com a Vida do monstro × 3 por membro. Cada membro ataca uma vez por dia (20 rodadas contra o chefe, sem gastar a própria Vida); o dano soma. No golpe final, quem atacou na semana recebe Ouro (4 × o de uma vitória) e 3 bilhetes, na mesma transação. `sql/092`, rotas `GET` e `POST /api/rpg/cla/expedicao`, tela `/expedicao-do-cla` (#252)
   - [x] 18.5d Evento da temporada: um arauto por temporada de anime (Inverno, Primavera, Verão e Outono, cada um com o seu elemento), montado no nível do jogador com 85% dos números do catálogo. Uma luta por dia, com a Vida cheia e sem queda. Com 10 vitórias na temporada, título exclusivo ("Caçador do Outono 2026") e 300 de Ouro, uma vez. Cartão nas Expedições (`/expedicoes#evento`). `sql/094`, rotas `GET` e `POST /api/rpg/evento` (#254)
-- [ ] 18.6 Arena, cartas e invocação
+- [x] 18.6 Invocação (a Arena de cartas virou a Fase 19, por decisão do dono em 17/11/2026)
   - [x] 18.6a Invocação gratuita: bilhetes ganhos só em expedições, invocar 1 ou 10, chances visíveis e iguais às do sorteio (`rpg_chances_invocacao`), garantia de épico ou melhor a cada 10, repetidos somam no inventário (#223). Sem pagamento por desenho: ECA Digital, art. 20
   - [x] 18.6a revisada: invocação mais rara. Corrigido o defeito do `sql/073`, em que o resultado "comum" (60%) não achava item fora do kit e caía na reserva de raridade mais alta, dando Lendário em cerca de 62% das invocações. Chances novas: Ouro 78% (25 de Ouro), Raro 17%, Épico 4,5% e Lendário 0,5%; Raro ou melhor garantido a cada 10 sem Raro; Lendário com chance crescente a partir da 70ª tentativa sem ele e certo na 90ª (média de 62 tentativas). Bilhetes por vitória de 1 a 3. `sql/082` (#240)
 
-**Banco:** `sql/080` a `sql/089` aplicados em 17/11/2026; falta regerar o `snapshot_schema.sql`.
+**Banco:** `sql/080` a `sql/089` aplicados em 17/11/2026. **Pendência do dono:** aplicar `sql/090` a `sql/095` antes de promover, nesta ordem (`090` antes de `091` e `093`; `095` depois do `088`), e regerar o `snapshot_schema.sql`.
 
 **Arte pendente (o sistema já está pronto para recebê-la, sem mudar código de regra):** ilustração de cada skin (entra em `ARTES` com o id da skin e sai de `SKINS`), ícone ou ilustração de cada item de equipamento e de cada monstro, e a segunda personagem do elenco.
+
+## 🃏 Fase 19: Arena de cartas — *não começada*
+
+Motivo: a Arena de cartas é a expansão própria descrita no `VISAO_RPG.md` (seção 12); o dono
+decidiu em 17/11/2026 que ela fecha fora da Fase 18. Escopo a detalhar em issues antes do código.
+
+- [ ] 19.1 Cartas de combate: cartas de monstro e de equipamento, com raridade, ganhas jogando
+- [ ] 19.2 Deck de 5 cartas e duelo de cartas (assíncrono, como os duelos da Fase 18)
+- [ ] 19.3 Balanceamento competitivo: carta rara nunca obrigatória para competir
 
 ## 🔧 Manutenção pós-v1
 
