@@ -339,12 +339,17 @@ export default function Guilda() {
                               className="py-2.5 flex items-center justify-between gap-3 text-xs sm:text-sm"
                             >
                               <div className="min-w-0">
-                                <Link
-                                  to={`/anime/${item.mal_id}`}
-                                  className="font-bold text-text hover:text-holo-3 transition-colors line-clamp-1"
-                                >
-                                  {item.titulo_anime} · <span className="font-mono">ep {item.episode_number}</span>
-                                </Link>
+                                {item.mal_id > 0 ? (
+                                  <Link
+                                    to={`/anime/${item.mal_id}`}
+                                    className="font-bold text-text hover:text-holo-3 transition-colors line-clamp-1"
+                                  >
+                                    {item.titulo_anime} · <span className="font-mono">ep {item.episode_number}</span>
+                                  </Link>
+                                ) : (
+                                  // XP de missão ou convite: não há anime nem episódio para abrir.
+                                  <span className="font-bold text-holo-2 line-clamp-1">{item.titulo_anime}</span>
+                                )}
                                 <div className="font-mono text-xs text-muted-2 mt-0.5 flex flex-wrap items-center gap-2">
                                   <span>{item.reason}</span>
                                   {item.reason.toLowerCase().includes('vitalidade') && (

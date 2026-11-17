@@ -1,12 +1,9 @@
 // internal/handlers/missoes.go
-// Fase 16 · Item 16.1b (#168): Missões diárias com recompensa em AniCoins.
-// Sorteio determinístico no fuso de Brasília, progresso em tempo real e resgate
-// atômico e idempotente via crystal_ledger.
+// Missões diárias e da semana: sorteio por usuário (missoes_regras.go), progresso lido da
+// atividade real e resgate atômico de AniCoins e XP pela função resgatar_missao do banco.
 package handlers
 
 import (
-	"crypto/sha256"
-	"encoding/binary"
 	"encoding/json"
 	"fmt"
 	"log"
@@ -17,35 +14,16 @@ import (
 
 	"github.com/JoaoMendes1/anideck/internal/database"
 	"github.com/JoaoMendes1/anideck/internal/middleware"
+	"github.com/JoaoMendes1/anideck/internal/models"
 	"github.com/go-chi/chi/v5"
 	"github.com/supabase-community/supabase-go"
 )
 
-const ChaveMissoesCatalogo = "missoes_catalogo"
-
-type TipoMissao string
-
-const (
-	MissaoMarcarEpisodios  TipoMissao = "marcar_episodios"
-	MissaoMarcarLancamento TipoMissao = "marcar_lancamento"
-	MissaoReagirEpisodio   TipoMissao = "reagir_episodio"
-	MissaoComentarEpisodio TipoMissao = "comentar_episodio"
-	MissaoCompletarObra    TipoMissao = "completar_obra"
-)
-
-type ItemCatalogoMissao struct {
-	ID         string     `json:"id"`
-	Tipo       TipoMissao `json:"tipo"`
-	Titulo     string     `json:"titulo"`
-	Descricao  string     `json:"descricao"`
-	Meta       int        `json:"meta"`
-	Recompensa int        `json:"recompensa"`
-	Icone      string     `json:"icone,omitempty"`
-}
-
+// MissaoUsuario é uma missão sorteada com o progresso do jogador.
 type MissaoUsuario struct {
 	ID                 string     `json:"id"`
 	Tipo               TipoMissao `json:"tipo"`
+	Periodo            string     `json:"periodo"`
 	Titulo             string     `json:"titulo"`
 	Descricao          string     `json:"descricao"`
 	Meta               int        `json:"meta"`
@@ -53,136 +31,262 @@ type MissaoUsuario struct {
 	ProgressoAtual     int        `json:"progresso_atual"`
 	RecompensaCristais int        `json:"recompensa_cristais"`
 	RecompensaAniCoins int        `json:"recompensa_anicoins"`
+	RecompensaXP       int        `json:"recompensa_xp"`
 	Concluida          bool       `json:"concluida"`
 	Resgatada          bool       `json:"resgatada"`
 	Icone              string     `json:"icone"`
 }
 
+// RespostaMissoesHoje mantém os campos antigos (missões do dia) e acrescenta as longas.
 type RespostaMissoesHoje struct {
-	Data            string          `json:"data"`
-	Missoes         []MissaoUsuario `json:"missoes"`
-	Total           int             `json:"total"`
-	Concluidas      int             `json:"concluidas"`
-	Resgatadas      int             `json:"resgatadas"`
-	TodasResgatadas bool            `json:"todas_resgatadas"`
+	Data             string          `json:"data"`
+	Missoes          []MissaoUsuario `json:"missoes"`
+	Total            int             `json:"total"`
+	Concluidas       int             `json:"concluidas"`
+	Resgatadas       int             `json:"resgatadas"`
+	TodasResgatadas  bool            `json:"todas_resgatadas"`
+	GeneroDoDia      string          `json:"genero_do_dia"`
+	Longas           []MissaoUsuario `json:"longas"`
+	Semana           string          `json:"semana"`
+	LongasTerminamEm string          `json:"longas_terminam_em"`
+	GeneroDaSemana   string          `json:"genero_da_semana"`
+	XPAtivo          bool            `json:"xp_ativo"`
 }
 
 type MissoesHandler struct{}
 
-// CatalogoPadraoMissoes fornece as missões essenciais do AniDeck.
-func CatalogoPadraoMissoes() []ItemCatalogoMissao {
-	return []ItemCatalogoMissao{
-		{
-			ID:         "ep_hoje",
-			Tipo:       MissaoMarcarEpisodios,
-			Titulo:     "Episódio do Dia",
-			Descricao:  "Marque pelo menos 1 episódio como visto hoje",
-			Meta:       1,
-			Recompensa: 15,
-			Icone:      "Play",
-		},
-		{
-			ID:         "maratona",
-			Tipo:       MissaoMarcarEpisodios,
-			Titulo:     "Ritmo de Maratona",
-			Descricao:  "Assista a 3 episódios de qualquer anime hoje",
-			Meta:       3,
-			Recompensa: 30,
-			Icone:      "Flame",
-		},
-		{
-			ID:         "lancamento",
-			Tipo:       MissaoMarcarLancamento,
-			Titulo:     "Na Crista da Onda",
-			Descricao:  "Assista a 1 episódio de um anime em lançamento",
-			Meta:       1,
-			Recompensa: 20,
-			Icone:      "Sparkles",
-		},
-		{
-			ID:         "reacao",
-			Tipo:       MissaoReagirEpisodio,
-			Titulo:     "Reator Emocional",
-			Descricao:  "Deixe sua reação com emoji em 2 episódios",
-			Meta:       2,
-			Recompensa: 15,
-			Icone:      "Smile",
-		},
-		{
-			ID:         "comentario",
-			Tipo:       MissaoComentarEpisodio,
-			Titulo:     "Voz na Comunidade",
-			Descricao:  "Escreva um comentário em qualquer episódio",
-			Meta:       1,
-			Recompensa: 20,
-			Icone:      "MessageSquare",
-		},
-		{
-			ID:         "obra_concluida",
-			Tipo:       MissaoCompletarObra,
-			Titulo:     "Missão Cumprida",
-			Descricao:  "Marque 1 anime como completo no seu deck",
-			Meta:       1,
-			Recompensa: 40,
-			Icone:      "CheckCircle2",
-		},
-	}
+// missaoSorteada guarda a missão com o gênero aplicado e o que identifica o resgate.
+type missaoSorteada struct {
+	ItemCatalogoMissao
+	periodo    string
+	genero     string
+	inicio     time.Time
+	motivo     string
+	referencia string
 }
 
-// LerCatalogoMissoes lê de app_settings ou retorna o catálogo padrão.
-func LerCatalogoMissoes(client *supabase.Client) []ItemCatalogoMissao {
-	padrao := CatalogoPadraoMissoes()
-	if client == nil {
-		return padrao
-	}
+// missoesDoUsuario monta as missões do dia e da semana de agora para o usuário.
+func missoesDoUsuario(userID string, agora time.Time) (diarias, semanais []missaoSorteada) {
+	dataStr := agora.In(fusoGuilda).Format("2006-01-02")
+	inicioDia := inicioDoDiaBrasilia(agora)
+	inicioSemana := inicioDaSemanaBrasilia(agora)
+	semanaStr := inicioSemana.In(fusoGuilda).Format("2006-01-02")
+	generoDia := GeneroDoPeriodo(userID, "dia", indiceDoDia(agora))
+	generoSemana := GeneroDoPeriodo(userID, "semana", indiceDaSemana(agora))
 
-	data, _, err := client.From("app_settings").Select("value", "", false).Eq("key", ChaveMissoesCatalogo).Execute()
-	if err != nil {
-		return padrao
+	for _, m := range SortearMissoesDoDia(CatalogoMissoesDiarias(), userID, agora) {
+		diarias = append(diarias, missaoSorteada{
+			ItemCatalogoMissao: comGenero(m, generoDia), periodo: "dia", genero: generoDia, inicio: inicioDia,
+			motivo: motivoMissaoDiaria, referencia: fmt.Sprintf("missao:%s:%s", dataStr, m.ID),
+		})
 	}
-
-	var linhas []struct {
-		Value string `json:"value"`
+	for _, m := range SortearMissoesDaSemana(CatalogoMissoesSemanais(), userID, agora) {
+		semanais = append(semanais, missaoSorteada{
+			ItemCatalogoMissao: comGenero(m, generoSemana), periodo: "semana", genero: generoSemana, inicio: inicioSemana,
+			motivo: motivoMissaoSemanal, referencia: fmt.Sprintf("semana:%s:%s", semanaStr, m.ID),
+		})
 	}
-	if json.Unmarshal(data, &linhas) != nil || len(linhas) == 0 {
-		return padrao
-	}
-
-	var lidas []ItemCatalogoMissao
-	if json.Unmarshal([]byte(linhas[0].Value), &lidas) != nil || len(lidas) == 0 {
-		return padrao
-	}
-
-	return lidas
+	return diarias, semanais
 }
 
-// SortearMissoesDoDia sorteia deterministicamente 3 missões para o usuário no dia especificado.
-func SortearMissoesDoDia(catalogo []ItemCatalogoMissao, userID, dataStr string) []ItemCatalogoMissao {
-	if len(catalogo) <= 3 {
-		return catalogo
-	}
-
-	pool := make([]ItemCatalogoMissao, len(catalogo))
-	copy(pool, catalogo)
-
-	h := sha256.New()
-	h.Write([]byte(userID + ":" + dataStr))
-	hashBytes := h.Sum(nil)
-
-	for i := len(pool) - 1; i > 0; i-- {
-		offset := (len(pool) - 1 - i) * 4
-		if offset+4 > len(hashBytes) {
-			offset = 0
+// lerInstante aceita os formatos de data que o PostgREST devolve.
+func lerInstante(s string) (time.Time, bool) {
+	s = strings.TrimSpace(s)
+	for _, layout := range formatosDeTimestamp {
+		if t, err := time.Parse(layout, s); err == nil {
+			return t, true
 		}
-		val := binary.BigEndian.Uint32(hashBytes[offset : offset+4])
-		j := int(val % uint32(i+1))
-		pool[i], pool[j] = pool[j], pool[i]
 	}
-
-	return pool[:3]
+	return time.Time{}, false
 }
 
-// HandleGetMissoesHoje lista as missões sorteadas para hoje com o progresso real e status de resgate.
+// carregarAtividadeMissoes lê a semana do jogador: episódios vistos, animes terminados,
+// reações e comentários de hoje e o que cada anime tem de gênero, ano e temporada.
+func carregarAtividadeMissoes(dbClient *supabase.Client, userID string, agora time.Time) AtividadeMissoes {
+	inicioSemana := inicioDaSemanaBrasilia(agora).Format(time.RFC3339)
+	inicioDia := inicioDoDiaBrasilia(agora).Format(time.RFC3339)
+	a := AtividadeMissoes{Animes: map[int]InfoAnimeMissao{}, AnoAtual: agora.In(fusoGuilda).Year()}
+	curados := CarregarCuradoria(dbClient)
+
+	var eps []struct {
+		MalID     int    `json:"mal_id"`
+		Episodio  int    `json:"episode_number"`
+		WatchedAt string `json:"watched_at"`
+	}
+	if data, _, err := dbClient.From("episode_progress").
+		Select("mal_id,episode_number,watched_at", "", false).
+		Eq("user_id", userID).
+		Gte("watched_at", inicioSemana).
+		Limit(1000, "").
+		Execute(); err == nil {
+		_ = json.Unmarshal(data, &eps)
+	}
+	ids := map[int]bool{}
+	for _, e := range eps {
+		em, ok := lerInstante(e.WatchedAt)
+		if !ok || e.MalID <= 0 {
+			continue
+		}
+		var curado *models.CuratedAnime
+		if c, existe := curados[e.MalID]; existe {
+			curado = &c
+		}
+		a.Episodios = append(a.Episodios, EpisodioDaMissao{
+			MalID: e.MalID, Numero: e.Episodio, Em: em,
+			Lancamento: episodioEhLancamentoRecente(curado, e.Episodio, em),
+		})
+		ids[e.MalID] = true
+	}
+
+	// A carta de coleção nasce uma vez por anime, quando ele vira Completo: é o registro de
+	// término que não se repete ao editar a nota ou o status depois.
+	var cartas []struct {
+		MalID    int    `json:"mal_id"`
+		ObtidaEm string `json:"obtida_em"`
+	}
+	if data, _, err := dbClient.From("user_cards").
+		Select("mal_id,obtida_em", "", false).
+		Eq("user_id", userID).
+		Gte("obtida_em", inicioSemana).
+		Execute(); err == nil {
+		_ = json.Unmarshal(data, &cartas)
+	}
+	for _, c := range cartas {
+		if em, ok := lerInstante(c.ObtidaEm); ok {
+			a.Concluidas = append(a.Concluidas, ObraConcluida{MalID: c.MalID, Em: em})
+			ids[c.MalID] = true
+		}
+	}
+
+	if _, n, err := dbClient.From("episode_reactions").Select("user_id", "exact", true).
+		Eq("user_id", userID).Gte("created_at", inicioDia).Execute(); err == nil {
+		a.ReacoesHoje = int(n)
+	}
+	if _, n, err := dbClient.From("episode_comments").Select("id", "exact", true).
+		Eq("user_id", userID).Gte("created_at", inicioDia).Execute(); err == nil {
+		a.ComentariosHoje = int(n)
+	}
+
+	if len(ids) > 0 {
+		lista := make([]string, 0, len(ids))
+		for id := range ids {
+			lista = append(lista, strconv.Itoa(id))
+		}
+		var cache []struct {
+			MalID      int      `json:"mal_id"`
+			Genres     []string `json:"genres"`
+			Tags       []string `json:"tags"`
+			SeasonYear int      `json:"season_year"`
+		}
+		if data, _, err := dbClient.From("anime_metadata_cache").
+			Select("mal_id,genres,tags,season_year", "", false).
+			In("mal_id", lista).
+			Execute(); err == nil {
+			_ = json.Unmarshal(data, &cache)
+		}
+		porID := map[int]int{}
+		for i, c := range cache {
+			porID[c.MalID] = i
+		}
+		indice := taxonomiaAtual().indice
+		inicioTemp, fimTemp := InicioTemporadaBrasilia(agora), fimDaTemporadaBrasilia(agora)
+		for id := range ids {
+			var rotulos, tags []string
+			ano := 0
+			if i, ok := porID[id]; ok {
+				rotulos, tags, ano = cache[i].Genres, cache[i].Tags, cache[i].SeasonYear
+			}
+			info := InfoAnimeMissao{}
+			if c, ok := curados[id]; ok {
+				// Mesma prioridade da fn_user_genre_affinity: rótulo da curadoria antes do cache.
+				if len(c.CustomTags) > 0 {
+					rotulos = c.CustomTags
+				}
+				if c.CustomFirstAiredAt != nil {
+					if t, ok := lerDataDeEstreia(*c.CustomFirstAiredAt); ok {
+						ano = t.In(fusoGuilda).Year()
+						info.DaTemporada = !t.Before(inicioTemp) && t.Before(fimTemp)
+					}
+				}
+			}
+			info.Ano = ano
+			info.Generos = generosCanonicos(indice, append(append([]string{}, rotulos...), tags...))
+			a.Animes[id] = info
+		}
+	}
+	return a
+}
+
+// lerDataDeEstreia aceita a data só com dia (2026-10-04) ou com hora.
+func lerDataDeEstreia(s string) (time.Time, bool) {
+	if t, ok := lerInstante(s); ok {
+		return t, true
+	}
+	if t, err := time.ParseInLocation("2006-01-02", strings.TrimSpace(s), fusoGuilda); err == nil {
+		return t, true
+	}
+	return time.Time{}, false
+}
+
+// generosCanonicos traduz os rótulos pela genre_taxonomy e tira repetidos.
+func generosCanonicos(indice indiceRotulos, rotulos []string) []string {
+	visto := map[string]bool{}
+	var r []string
+	for _, rot := range rotulos {
+		nome := indice.canonico(rot)
+		if nome == "" {
+			nome = strings.TrimSpace(rot)
+		}
+		if nome != "" && !visto[nome] {
+			visto[nome] = true
+			r = append(r, nome)
+		}
+	}
+	return r
+}
+
+// resgatesDoPeriodo devolve as referências já resgatadas com o prefixo do dia ou da semana.
+func resgatesDoPeriodo(dbClient *supabase.Client, userID, motivo, prefixo string) map[string]bool {
+	r := map[string]bool{}
+	data, _, err := dbClient.From("crystal_ledger").
+		Select("referencia", "", false).
+		Eq("user_id", userID).
+		Eq("motivo", motivo).
+		Like("referencia", prefixo+"%").
+		Execute()
+	if err != nil {
+		return r
+	}
+	var linhas []struct {
+		Referencia string `json:"referencia"`
+	}
+	if json.Unmarshal(data, &linhas) == nil {
+		for _, l := range linhas {
+			r[l.Referencia] = true
+		}
+	}
+	return r
+}
+
+func montarMissaoUsuario(m missaoSorteada, a AtividadeMissoes, resgatadas map[string]bool, xpAtivo bool) MissaoUsuario {
+	progresso := AvaliarMissao(m.ItemCatalogoMissao, m.genero, m.inicio, a)
+	xp := m.XP
+	if !xpAtivo {
+		xp = 0
+	}
+	icone := m.Icone
+	if icone == "" {
+		icone = "Play"
+	}
+	return MissaoUsuario{
+		ID: m.ID, Tipo: m.Tipo, Periodo: m.periodo, Titulo: m.Titulo, Descricao: m.Descricao,
+		Meta: m.Meta, Progresso: progresso, ProgressoAtual: progresso,
+		RecompensaCristais: m.Recompensa, RecompensaAniCoins: m.Recompensa, RecompensaXP: xp,
+		Concluida: progresso >= m.Meta, Resgatada: resgatadas[m.referencia], Icone: icone,
+	}
+}
+
+// HandleGetMissoesHoje lista as missões do dia e da semana com o progresso real.
 func (h *MissoesHandler) HandleGetMissoesHoje(w http.ResponseWriter, r *http.Request) {
 	token, ok := r.Context().Value(middleware.TokenKey).(string)
 	userID, userOk := r.Context().Value(middleware.UserIDKey).(string)
@@ -190,195 +294,58 @@ func (h *MissoesHandler) HandleGetMissoesHoje(w http.ResponseWriter, r *http.Req
 		responderErroJSON(w, http.StatusUnauthorized, "Não autorizado")
 		return
 	}
-
 	dbClient, err := database.ClientWithToken(token)
 	if err != nil {
 		responderErroJSON(w, http.StatusInternalServerError, "Erro interno de conexão")
 		return
 	}
 
-	agora := time.Now().In(fusoGuilda)
-	dataStr := agora.Format("2006-01-02")
-	inicioDia := inicioDoDiaBrasilia(agora).Format(time.RFC3339)
+	agora := time.Now()
+	diarias, semanais := missoesDoUsuario(userID, agora)
+	atividade := carregarAtividadeMissoes(dbClient, userID, agora)
+	economia, _, _ := carregarConfigGuilda(dbClient)
 
-	catalogo := LerCatalogoMissoes(database.Client)
-	sorteadas := SortearMissoesDoDia(catalogo, userID, dataStr)
-
-	// Consulta o progresso de cada tipo no banco
-	progressoEpisodios := 0
-	progressoLancamentos := 0
-	progressoReacoes := 0
-	progressoComentarios := 0
-	progressoCompletos := 0
-
-	// 1. Episódios vistos hoje
-	dataEp, countEp, errEp := dbClient.From("episode_progress").
-		Select("mal_id", "exact", false).
-		Eq("user_id", userID).
-		Gte("watched_at", inicioDia).
-		Execute()
-
-	if errEp == nil {
-		progressoEpisodios = int(countEp)
-
-		// Checa se algum pertence a anime em lançamento para missões de lançamento
-		var epsMarcados []struct {
-			MalID int `json:"mal_id"`
-		}
-		if json.Unmarshal(dataEp, &epsMarcados) == nil && len(epsMarcados) > 0 {
-			malIDsStr := make([]string, 0, len(epsMarcados))
-			for _, ep := range epsMarcados {
-				malIDsStr = append(malIDsStr, strconv.Itoa(ep.MalID))
-			}
-			// Verifica na tabela curated_animes ou anime_metadata_cache
-			dataCache, _, errC := dbClient.From("curated_animes").
-				Select("mal_id,is_destaque", "", false).
-				In("mal_id", malIDsStr).
-				Execute()
-			if errC == nil {
-				var curados []struct {
-					MalID int `json:"mal_id"`
-				}
-				if json.Unmarshal(dataCache, &curados) == nil && len(curados) > 0 {
-					progressoLancamentos = len(curados)
-				}
-			}
-			if progressoLancamentos == 0 {
-				progressoLancamentos = progressoEpisodios // fallback
-			}
-		}
+	dataStr := agora.In(fusoGuilda).Format("2006-01-02")
+	semanaStr := inicioDaSemanaBrasilia(agora).In(fusoGuilda).Format("2006-01-02")
+	resgatadas := resgatesDoPeriodo(dbClient, userID, motivoMissaoDiaria, "missao:"+dataStr+":")
+	for ref := range resgatesDoPeriodo(dbClient, userID, motivoMissaoSemanal, "semana:"+semanaStr+":") {
+		resgatadas[ref] = true
 	}
 
-	// 2. Reações feitas hoje
-	_, countReacoes, errReac := dbClient.From("episode_reactions").
-		Select("user_id", "exact", false).
-		Eq("user_id", userID).
-		Gte("created_at", inicioDia).
-		Execute()
-	if errReac == nil {
-		progressoReacoes = int(countReacoes)
+	resp := RespostaMissoesHoje{
+		Data: dataStr, Semana: semanaStr, XPAtivo: economia.Ativo,
+		LongasTerminamEm: inicioDaSemanaBrasilia(agora).AddDate(0, 0, 7).Format(time.RFC3339),
+		Missoes:          make([]MissaoUsuario, 0, len(diarias)),
+		Longas:           make([]MissaoUsuario, 0, len(semanais)),
 	}
-
-	// 3. Comentários feitos hoje
-	_, countComentarios, errCom := dbClient.From("episode_comments").
-		Select("id", "exact", false).
-		Eq("user_id", userID).
-		Gte("created_at", inicioDia).
-		Execute()
-	if errCom == nil {
-		progressoComentarios = int(countComentarios)
-	}
-
-	// 4. Obras marcadas como completas hoje
-	_, countCompletos, errComp := dbClient.From("media_entries").
-		Select("mal_id", "exact", false).
-		Eq("user_id", userID).
-		Eq("status", "COMPLETED").
-		Gte("updated_at", inicioDia).
-		Execute()
-	if errComp == nil {
-		progressoCompletos = int(countCompletos)
-	}
-
-	// 5. Verifica resgates de hoje no crystal_ledger
-	prefixoRef := fmt.Sprintf("missao:%s:", dataStr)
-	dataLedger, _, _ := dbClient.From("crystal_ledger").
-		Select("referencia", "", false).
-		Eq("user_id", userID).
-		Eq("motivo", "missao_diaria").
-		Like("referencia", prefixoRef+"%").
-		Execute()
-
-	resgatadasMap := make(map[string]bool)
-	var movimentos []struct {
-		Referencia string `json:"referencia"`
-	}
-	if json.Unmarshal(dataLedger, &movimentos) == nil {
-		for _, m := range movimentos {
-			idMissao := strings.TrimPrefix(m.Referencia, prefixoRef)
-			resgatadasMap[idMissao] = true
+	for _, m := range diarias {
+		resp.GeneroDoDia = m.genero
+		mu := montarMissaoUsuario(m, atividade, resgatadas, economia.Ativo)
+		if mu.Concluida {
+			resp.Concluidas++
 		}
+		if mu.Resgatada {
+			resp.Resgatadas++
+		}
+		resp.Missoes = append(resp.Missoes, mu)
 	}
-
-	missoesRetorno := make([]MissaoUsuario, 0, len(sorteadas))
-	concluidas := 0
-	resgatadas := 0
-
-	for _, m := range sorteadas {
-		progresso := 0
-		switch m.Tipo {
-		case MissaoMarcarEpisodios:
-			progresso = progressoEpisodios
-		case MissaoMarcarLancamento:
-			progresso = progressoLancamentos
-		case MissaoReagirEpisodio:
-			progresso = progressoReacoes
-		case MissaoComentarEpisodio:
-			progresso = progressoComentarios
-		case MissaoCompletarObra:
-			progresso = progressoCompletos
-		default:
-			progresso = progressoEpisodios
-		}
-
-		jaResgatou := resgatadasMap[m.ID]
-		atingiuMeta := progresso >= m.Meta
-
-		if atingiuMeta {
-			concluidas++
-		}
-		if jaResgatou {
-			resgatadas++
-		}
-
-		icone := m.Icone
-		if icone == "" {
-			switch m.Tipo {
-			case MissaoMarcarLancamento:
-				icone = "Sparkles"
-			case MissaoReagirEpisodio:
-				icone = "Smile"
-			case MissaoComentarEpisodio:
-				icone = "MessageSquare"
-			case MissaoCompletarObra:
-				icone = "CheckCircle2"
-			default:
-				if m.Meta > 1 {
-					icone = "Flame"
-				} else {
-					icone = "Play"
-				}
-			}
-		}
-
-		missoesRetorno = append(missoesRetorno, MissaoUsuario{
-			ID:                 m.ID,
-			Tipo:               m.Tipo,
-			Titulo:             m.Titulo,
-			Descricao:          m.Descricao,
-			Meta:               m.Meta,
-			Progresso:          progresso,
-			ProgressoAtual:     progresso,
-			RecompensaCristais: m.Recompensa,
-			RecompensaAniCoins: m.Recompensa,
-			Concluida:          atingiuMeta,
-			Resgatada:          jaResgatou,
-			Icone:              icone,
-		})
+	for _, m := range semanais {
+		resp.GeneroDaSemana = m.genero
+		resp.Longas = append(resp.Longas, montarMissaoUsuario(m, atividade, resgatadas, economia.Ativo))
 	}
-
-	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(RespostaMissoesHoje{
-		Data:            dataStr,
-		Missoes:         missoesRetorno,
-		Total:           len(sorteadas),
-		Concluidas:      concluidas,
-		Resgatadas:      resgatadas,
-		TodasResgatadas: resgatadas >= len(sorteadas) && len(sorteadas) > 0,
-	})
+	resp.Total = len(resp.Missoes)
+	resp.TodasResgatadas = resp.Total > 0 && resp.Resgatadas >= resp.Total
+	responderJSON(w, http.StatusOK, resp)
 }
 
-// HandleResgatarMissao credita AniCoins de uma missão diária concluída e marca como resgatada no ledger.
+// resultadoResgate espelha o jsonb devolvido por resgatar_missao.
+type resultadoResgate struct {
+	JaResgatada bool `json:"ja_resgatada"`
+	Saldo       int  `json:"saldo"`
+	XP          int  `json:"xp"`
+}
+
+// HandleResgatarMissao confere a missão no servidor e paga AniCoins e XP numa transação só.
 func (h *MissoesHandler) HandleResgatarMissao(w http.ResponseWriter, r *http.Request) {
 	token, ok := r.Context().Value(middleware.TokenKey).(string)
 	userID, userOk := r.Context().Value(middleware.UserIDKey).(string)
@@ -386,144 +353,81 @@ func (h *MissoesHandler) HandleResgatarMissao(w http.ResponseWriter, r *http.Req
 		responderErroJSON(w, http.StatusUnauthorized, "Não autorizado")
 		return
 	}
-
 	missaoID := chi.URLParam(r, "id")
 	if missaoID == "" {
 		responderErroJSON(w, http.StatusBadRequest, "ID da missão é obrigatório")
 		return
 	}
-
 	if database.Client == nil {
 		responderErroJSON(w, http.StatusServiceUnavailable, "Serviço de banco indisponível")
 		return
 	}
-
 	dbClient, err := database.ClientWithToken(token)
 	if err != nil {
 		responderErroJSON(w, http.StatusInternalServerError, "Erro interno de conexão")
 		return
 	}
 
-	agora := time.Now().In(fusoGuilda)
-	dataStr := agora.Format("2006-01-02")
-	inicioDia := inicioDoDiaBrasilia(agora).Format(time.RFC3339)
-
-	catalogo := LerCatalogoMissoes(database.Client)
-	sorteadas := SortearMissoesDoDia(catalogo, userID, dataStr)
-
-	var missaoAlvo *ItemCatalogoMissao
-	for i := range sorteadas {
-		if sorteadas[i].ID == missaoID {
-			missaoAlvo = &sorteadas[i]
-			break
+	agora := time.Now()
+	diarias, semanais := missoesDoUsuario(userID, agora)
+	var alvo *missaoSorteada
+	for i := range diarias {
+		if diarias[i].ID == missaoID {
+			alvo = &diarias[i]
 		}
 	}
-
-	if missaoAlvo == nil {
-		responderErroJSON(w, http.StatusBadRequest, "Esta missão não pertence às suas missões sorteadas para hoje.")
+	for i := range semanais {
+		if semanais[i].ID == missaoID {
+			alvo = &semanais[i]
+		}
+	}
+	if alvo == nil {
+		responderErroJSON(w, http.StatusBadRequest, "Esta missão não está entre as suas missões de agora.")
 		return
 	}
 
-	// Confere se já foi resgatada
-	referencia := fmt.Sprintf("missao:%s:%s", dataStr, missaoID)
-	dataLedger, _, _ := dbClient.From("crystal_ledger").
-		Select("id", "", false).
-		Eq("user_id", userID).
-		Eq("motivo", "missao_diaria").
-		Eq("referencia", referencia).
-		Execute()
-
-	var linhas []struct {
-		ID string `json:"id"`
-	}
-	if json.Unmarshal(dataLedger, &linhas) == nil && len(linhas) > 0 {
-		responderErroJSON(w, http.StatusBadRequest, "Você já resgatou a recompensa desta missão hoje.")
+	atividade := carregarAtividadeMissoes(dbClient, userID, agora)
+	if progresso := AvaliarMissao(alvo.ItemCatalogoMissao, alvo.genero, alvo.inicio, atividade); progresso < alvo.Meta {
+		responderErroJSON(w, http.StatusBadRequest, fmt.Sprintf("Missão não concluída ainda (%d de %d).", progresso, alvo.Meta))
 		return
 	}
 
-	// Confere se a meta foi realmente atingida no banco
-	progresso := 0
-	switch missaoAlvo.Tipo {
-	case MissaoMarcarEpisodios, MissaoMarcarLancamento:
-		_, count, errEp := dbClient.From("episode_progress").
-			Select("id", "exact", false).
-			Eq("user_id", userID).
-			Gte("watched_at", inicioDia).
-			Execute()
-		if errEp == nil {
-			progresso = int(count)
-		}
-	case MissaoReagirEpisodio:
-		_, count, errReac := dbClient.From("episode_reactions").
-			Select("user_id", "exact", false).
-			Eq("user_id", userID).
-			Gte("created_at", inicioDia).
-			Execute()
-		if errReac == nil {
-			progresso = int(count)
-		}
-	case MissaoComentarEpisodio:
-		_, count, errCom := dbClient.From("episode_comments").
-			Select("id", "exact", false).
-			Eq("user_id", userID).
-			Gte("created_at", inicioDia).
-			Execute()
-		if errCom == nil {
-			progresso = int(count)
-		}
-	case MissaoCompletarObra:
-		_, count, errComp := dbClient.From("media_entries").
-			Select("mal_id", "exact", false).
-			Eq("user_id", userID).
-			Eq("status", "COMPLETED").
-			Gte("updated_at", inicioDia).
-			Execute()
-		if errComp == nil {
-			progresso = int(count)
-		}
-	default:
-		_, count, errEp := dbClient.From("episode_progress").
-			Select("id", "exact", false).
-			Eq("user_id", userID).
-			Gte("watched_at", inicioDia).
-			Execute()
-		if errEp == nil {
-			progresso = int(count)
-		}
+	xp := alvo.XP
+	if economia, _, _ := carregarConfigGuilda(dbClient); !economia.Ativo {
+		xp = 0
 	}
-
-	if progresso < missaoAlvo.Meta {
-		responderErroJSON(w, http.StatusBadRequest, fmt.Sprintf("Missão não concluída ainda (%d de %d).", progresso, missaoAlvo.Meta))
-		return
+	prefixoXP := "Missão do dia"
+	if alvo.periodo == "semana" {
+		prefixoXP = "Missão da semana"
 	}
-
-	// Executa a RPC creditar_cristais atômica com service_role
-	resSaldo := strings.TrimSpace(database.Client.Rpc("creditar_cristais", "", map[string]interface{}{
+	bruto := strings.TrimSpace(database.Client.Rpc("resgatar_missao", "", map[string]interface{}{
 		"p_user_id":    userID,
-		"p_quantidade": missaoAlvo.Recompensa,
-		"p_motivo":     "missao_diaria",
-		"p_referencia": referencia,
+		"p_motivo":     alvo.motivo,
+		"p_referencia": alvo.referencia,
+		"p_anicoins":   alvo.Recompensa,
+		"p_xp":         xp,
+		"p_texto_xp":   prefixoXP + ": " + alvo.Titulo,
 	}))
-
-	if strings.Contains(resSaldo, "23505") || strings.Contains(resSaldo, "unique_violation") {
-		responderErroJSON(w, http.StatusBadRequest, "Você já resgatou a recompensa desta missão hoje.")
+	var res resultadoResgate
+	if err := json.Unmarshal([]byte(bruto), &res); err != nil || strings.Contains(bruto, `"code"`) {
+		log.Printf("[MISSOES] resgatar_missao falhou (user=%s, missao=%s): %s", userID, missaoID, bruto)
+		responderErroJSON(w, http.StatusServiceUnavailable, "Não foi possível registrar o resgate agora. Tente de novo em instantes.")
+		return
+	}
+	if res.JaResgatada {
+		responderErroJSON(w, http.StatusBadRequest, "Você já resgatou a recompensa desta missão.")
 		return
 	}
 
-	if strings.Contains(resSaldo, "error") || strings.Contains(resSaldo, "Exception") {
-		log.Printf("[MISSOES] Erro ao creditar AniCoins da missão (%s): %s", missaoID, resSaldo)
-		responderErroJSON(w, http.StatusBadRequest, "Falha ao registrar resgate de recompensa.")
-		return
+	mensagem := fmt.Sprintf("+%d AniCoins adicionadas à sua carteira!", alvo.Recompensa)
+	if res.XP > 0 {
+		mensagem = fmt.Sprintf("+%d AniCoins e +%d XP!", alvo.Recompensa, res.XP)
 	}
-
-	novoSaldo, _ := strconv.Atoi(resSaldo)
-	log.Printf("[MISSOES] Recompensa resgatada: user=%s, missao=%s, recompensa=%d, novo_saldo=%d", userID, missaoID, missaoAlvo.Recompensa, novoSaldo)
-
-	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(map[string]interface{}{
+	responderJSON(w, http.StatusOK, map[string]interface{}{
 		"ok":         true,
-		"novo_saldo": novoSaldo,
-		"recompensa": missaoAlvo.Recompensa,
-		"mensagem":   fmt.Sprintf("+%d AniCoins adicionadas à sua carteira!", missaoAlvo.Recompensa),
+		"novo_saldo": res.Saldo,
+		"recompensa": alvo.Recompensa,
+		"xp":         res.XP,
+		"mensagem":   mensagem,
 	})
 }

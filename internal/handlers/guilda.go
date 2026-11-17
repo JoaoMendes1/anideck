@@ -569,9 +569,11 @@ func RegistrarXPEpisodio(dbClient *supabase.Client, userID string, malID, episod
 	}
 
 	inicioDia := inicioDoDiaBrasilia(agora).Format(time.RFC3339)
+	// mal_id 0 é XP sem episódio (missão, convite): não gasta o teto diário dos episódios.
 	dataHoje, _, errHoje := dbClient.From("xp_ledger").
 		Select("xp_earned", "", false).
 		Eq("user_id", userID).
+		Gt("mal_id", "0").
 		Gte("earned_at", inicioDia).
 		Execute()
 	if errHoje != nil {
@@ -684,7 +686,7 @@ func (h *GuildaHandler) HandleResumoGuilda(w http.ResponseWriter, r *http.Reques
 	xpHoje := 0
 	for _, l := range linhas {
 		xpTotal += l.XPEarned
-		if t, errT := time.Parse(time.RFC3339, l.EarnedAt); errT == nil && !t.Before(inicioDia) {
+		if t, errT := time.Parse(time.RFC3339, l.EarnedAt); errT == nil && !t.Before(inicioDia) && l.MalID > 0 {
 			xpHoje += l.XPEarned
 		}
 	}
@@ -776,7 +778,7 @@ func (h *GuildaHandler) HandleGetGuilda(w http.ResponseWriter, r *http.Request) 
 		if strings.Contains(l.Reason, "antes do próximo sair") {
 			cedoMarcados++
 		}
-		if t, errT := time.Parse(time.RFC3339, l.EarnedAt); errT == nil && !t.Before(inicioDia) {
+		if t, errT := time.Parse(time.RFC3339, l.EarnedAt); errT == nil && !t.Before(inicioDia) && l.MalID > 0 {
 			xpHoje += l.XPEarned
 		}
 	}
@@ -880,6 +882,9 @@ func calcularTotalPaginasExtrato(total int, porPagina int) int {
 	return (total + porPagina - 1) / porPagina
 }
 
+// tituloXPSemEpisodio nomeia, no extrato, o XP que não veio de episódio (mal_id 0).
+const tituloXPSemEpisodio = "Bônus de XP"
+
 func montarItensLedgerGuilda(linhas []linhaLedgerBanco, titulos map[int]string, inicioDia time.Time) []ItemLedgerGuilda {
 	extrato := make([]ItemLedgerGuilda, 0, len(linhas))
 	for _, l := range linhas {
@@ -888,7 +893,9 @@ func montarItensLedgerGuilda(linhas []linhaLedgerBanco, titulos map[int]string, 
 			deHoje = true
 		}
 		titulo := titulos[l.MalID]
-		if titulo == "" {
+		if l.MalID == 0 {
+			titulo = tituloXPSemEpisodio
+		} else if titulo == "" {
 			titulo = fmt.Sprintf("Anime #%d", l.MalID)
 		}
 		extrato = append(extrato, ItemLedgerGuilda{

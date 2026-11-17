@@ -462,6 +462,15 @@ func (h *EntriesHandler) HandleUnmarkEpisode(w http.ResponseWriter, r *http.Requ
 
 	malID := chi.URLParam(r, "mal_id")
 	episodeNumber := chi.URLParam(r, "number")
+	// mal_id 0 no xp_ledger é XP sem episódio; um id não positivo nunca chega aos DELETEs.
+	if n, err := strconv.Atoi(malID); err != nil || n <= 0 {
+		http.Error(w, "mal_id inválido", http.StatusBadRequest)
+		return
+	}
+	if n, err := strconv.Atoi(episodeNumber); err != nil || n <= 0 {
+		http.Error(w, "Episódio inválido", http.StatusBadRequest)
+		return
+	}
 
 	dbClient, errClient := database.ClientWithToken(token)
 	if errClient != nil {
@@ -502,7 +511,7 @@ func (h *EntriesHandler) HandleClearEpisodes(w http.ResponseWriter, r *http.Requ
 	}
 
 	malID := chi.URLParam(r, "mal_id")
-	if _, err := strconv.Atoi(malID); err != nil {
+	if n, err := strconv.Atoi(malID); err != nil || n <= 0 {
 		http.Error(w, "mal_id inválido", http.StatusBadRequest)
 		return
 	}

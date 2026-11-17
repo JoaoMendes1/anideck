@@ -1,5 +1,5 @@
 // client/src/hooks/useMissoesHoje.ts
-// Hook para buscar e resgatar as 3 missões diárias do jogador (Fase 16, #168).
+// Hook das missões: as 3 do dia e as 3 longas da semana, com resgate de AniCoins e XP.
 import { useCallback, useEffect, useState } from 'react'
 import { useSessao } from '../contexts/SessaoContext'
 import { useToast } from '../contexts/ToastContext'
@@ -16,6 +16,9 @@ export interface MissaoDiariaItem {
   progresso_atual?: number
   recompensa_cristais: number
   recompensa_anicoins?: number
+  /** XP da missão; 0 nas missões sociais e quando a gamificação está pausada. */
+  recompensa_xp: number
+  periodo: 'dia' | 'semana'
   concluida: boolean
   resgatada: boolean
   icone: string
@@ -27,17 +30,17 @@ export interface ResumoMissoesHoje {
   total: number
   todas_resgatadas: boolean
   missoes: MissaoDiariaItem[]
+  longas: MissaoDiariaItem[]
+  genero_do_dia: string
+  genero_da_semana: string
+  /** Instante em que as missões da semana trocam (segunda 00:00 de Brasília). */
+  longas_terminam_em: string
 }
 
-/** Busca e normaliza as missões do dia. Devolve null quando o servidor recusa. */
-async function buscarMissoesDeHoje(token: string): Promise<ResumoMissoesHoje | null> {
-  const res = await fetch('/api/missoes/hoje', {
-    headers: { Authorization: `Bearer ${token}` },
-  })
-  if (!res.ok) return null
-  const json = await res.json()
-  const rawMissoes = Array.isArray(json.missoes) ? json.missoes : []
-  const missoesNormalizadas: MissaoDiariaItem[] = rawMissoes.map((m: Record<string, unknown>) => {
+/** Normaliza uma lista de missões; campos ausentes viram valores seguros para a tela. */
+export function normalizarMissoes(bruto: unknown, periodo: 'dia' | 'semana'): MissaoDiariaItem[] {
+  const lista = Array.isArray(bruto) ? (bruto as Record<string, unknown>[]) : []
+  return lista.map((m) => {
     const meta = typeof m.meta === 'number' && m.meta > 0 ? m.meta : Number(m.meta) || 1
     const prog = typeof m.progresso === 'number'
       ? m.progresso
@@ -49,10 +52,9 @@ async function buscarMissoesDeHoje(token: string): Promise<ResumoMissoesHoje | n
       : typeof m.recompensa_anicoins === 'number'
       ? m.recompensa_anicoins
       : Number(m.recompensa_cristais ?? m.recompensa_anicoins) || 15
-
     return {
       id: String(m.id || ''),
-      titulo: String(m.titulo || 'Missão Diária'),
+      titulo: String(m.titulo || (periodo === 'dia' ? 'Missão Diária' : 'Missão da Semana')),
       descricao: String(m.descricao || ''),
       tipo: String(m.tipo || ''),
       meta,
@@ -60,12 +62,23 @@ async function buscarMissoesDeHoje(token: string): Promise<ResumoMissoesHoje | n
       progresso_atual: prog,
       recompensa_cristais: recompensa,
       recompensa_anicoins: recompensa,
+      recompensa_xp: Number(m.recompensa_xp) || 0,
+      periodo: m.periodo === 'semana' || m.periodo === 'dia' ? m.periodo : periodo,
       concluida: Boolean(m.concluida || prog >= meta),
       resgatada: Boolean(m.resgatada),
       icone: String(m.icone || 'Sparkles'),
     }
   })
+}
 
+/** Busca e normaliza as missões do dia e da semana. Devolve null quando o servidor recusa. */
+async function buscarMissoesDeHoje(token: string): Promise<ResumoMissoesHoje | null> {
+  const res = await fetch('/api/missoes/hoje', {
+    headers: { Authorization: `Bearer ${token}` },
+  })
+  if (!res.ok) return null
+  const json = await res.json()
+  const missoesNormalizadas = normalizarMissoes(json.missoes, 'dia')
   const concluidasCount = typeof json.concluidas === 'number'
     ? json.concluidas
     : missoesNormalizadas.filter(m => m.concluida).length
@@ -79,6 +92,10 @@ async function buscarMissoesDeHoje(token: string): Promise<ResumoMissoesHoje | n
       (missoesNormalizadas.length > 0 && missoesNormalizadas.every(m => m.resgatada))
     ),
     missoes: missoesNormalizadas,
+    longas: normalizarMissoes(json.longas, 'semana'),
+    genero_do_dia: String(json.genero_do_dia || ''),
+    genero_da_semana: String(json.genero_da_semana || ''),
+    longas_terminam_em: String(json.longas_terminam_em || ''),
   }
 }
 
@@ -144,6 +161,8 @@ export function useMissoesHoje() {
       showToast(json.mensagem || `+${json.recompensa || 15} ₳ resgatados com sucesso!`, 'success')
       // Notifica carteira para atualizar saldo instantaneamente
       window.dispatchEvent(new CustomEvent('anideck:cristais-atualizados'))
+      // XP muda nível e rank: o HUD e a Guilda recarregam pelo mesmo aviso do episódio marcado.
+      if (Number(json.xp) > 0) window.dispatchEvent(new CustomEvent('anideck:episodio-atualizado'))
       await carregar()
     } catch (err: unknown) {
       showToast(err instanceof Error ? err.message : 'Falha ao resgatar missão', 'error')
@@ -155,6 +174,7 @@ export function useMissoesHoje() {
   return {
     dados,
     missoes: dados?.missoes ?? [],
+    longas: dados?.longas ?? [],
     concluidas: dados?.concluidas ?? 0,
     total: dados?.total ?? 3,
     todasResgatadas: dados?.todas_resgatadas ?? false,

@@ -2,134 +2,270 @@ package handlers
 
 import (
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"testing"
+	"time"
 )
 
-func TestSortearMissoesDoDia(t *testing.T) {
-	catalogo := CatalogoPadraoMissoes()
-	if len(catalogo) < 3 {
-		t.Fatalf("Catálogo precisa de pelo menos 3 missões, tem %d", len(catalogo))
+func TestCatalogosDeMissoes_IdsUnicosERecompensas(t *testing.T) {
+	ids := map[string]bool{}
+	for _, cat := range [][]ItemCatalogoMissao{CatalogoMissoesDiarias(), CatalogoMissoesSemanais()} {
+		for _, m := range cat {
+			if ids[m.ID] {
+				t.Errorf("ID repetido entre os catálogos: %s", m.ID)
+			}
+			ids[m.ID] = true
+			if m.Meta <= 0 || m.Recompensa <= 0 {
+				t.Errorf("%s com meta ou recompensa inválida", m.ID)
+			}
+			social := m.Tipo == MissaoReagirEpisodio || m.Tipo == MissaoComentarEpisodio
+			if social && m.XP != 0 {
+				t.Errorf("%s é social e não pode dar XP", m.ID)
+			}
+			if !social && m.XP <= 0 {
+				t.Errorf("%s é de assistir e deveria dar XP", m.ID)
+			}
+		}
 	}
+	if len(CatalogoMissoesDiarias())%3 != 0 || len(CatalogoMissoesSemanais())%3 != 0 {
+		t.Error("Os catálogos devem ter múltiplo de 3 missões para o rodízio fechar o ciclo")
+	}
+}
 
-	userID1 := "00000000-0000-0000-0000-000000000001"
-	userID2 := "00000000-0000-0000-0000-000000000002"
-	dia1 := "2026-11-08"
-	dia2 := "2026-11-09"
+func idsDasMissoes(ms []ItemCatalogoMissao) map[string]bool {
+	r := map[string]bool{}
+	for _, m := range ms {
+		r[m.ID] = true
+	}
+	return r
+}
 
-	t.Run("sempre retorna 3 missoes", func(t *testing.T) {
-		sorteadas := SortearMissoesDoDia(catalogo, userID1, dia1)
-		if len(sorteadas) != 3 {
-			t.Fatalf("Esperado 3 missões, recebido %d", len(sorteadas))
-		}
-	})
-
-	t.Run("eh deterministico para mesmo usuario e mesmo dia", func(t *testing.T) {
-		s1 := SortearMissoesDoDia(catalogo, userID1, dia1)
-		s2 := SortearMissoesDoDia(catalogo, userID1, dia1)
-
-		for i := 0; i < 3; i++ {
-			if s1[i].ID != s2[i].ID {
-				t.Fatalf("Sorteios deveriam ser idênticos, s1[%d]=%s != s2[%d]=%s", i, s1[i].ID, i, s2[i].ID)
+func TestSortearMissoesDoDia_NuncaRepeteOntemESempreTemDuasDeAssistir(t *testing.T) {
+	cat := CatalogoMissoesDiarias()
+	base := time.Date(2026, 1, 1, 15, 0, 0, 0, fusoGuilda)
+	for u := 0; u < 1000; u++ {
+		user := fmt.Sprintf("user-%d", u)
+		var ontem map[string]bool
+		for d := 0; d < 60; d++ {
+			hoje := SortearMissoesDoDia(cat, user, base.AddDate(0, 0, d))
+			if len(hoje) != 3 {
+				t.Fatalf("%s dia %d: %d missões", user, d, len(hoje))
 			}
-		}
-	})
-
-	t.Run("dias diferentes produzem combinacoes ou ordens distintas", func(t *testing.T) {
-		s1 := SortearMissoesDoDia(catalogo, userID1, dia1)
-		s2 := SortearMissoesDoDia(catalogo, userID1, dia2)
-
-		diferente := false
-		for i := 0; i < 3; i++ {
-			if s1[i].ID != s2[i].ID {
-				diferente = true
-				break
+			principais := 0
+			for _, m := range hoje {
+				if m.Principal {
+					principais++
+				}
+				if ontem[m.ID] {
+					t.Fatalf("%s dia %d repetiu %s de ontem", user, d, m.ID)
+				}
 			}
-		}
-		if !diferente {
-			t.Log("Sorteio em dias diferentes deu a mesma ordem (improvável mas possível)")
-		}
-	})
-
-	t.Run("usuarios diferentes no mesmo dia", func(t *testing.T) {
-		s1 := SortearMissoesDoDia(catalogo, userID1, dia1)
-		s2 := SortearMissoesDoDia(catalogo, userID2, dia1)
-
-		diferente := false
-		for i := 0; i < 3; i++ {
-			if s1[i].ID != s2[i].ID {
-				diferente = true
-				break
+			if principais < 2 {
+				t.Fatalf("%s dia %d: só %d missões de assistir", user, d, principais)
 			}
+			if len(idsDasMissoes(hoje)) != 3 {
+				t.Fatalf("%s dia %d: missão repetida no mesmo dia", user, d)
+			}
+			ontem = idsDasMissoes(hoje)
 		}
-		if !diferente {
-			t.Log("Sorteio para usuários diferentes deu igual")
+	}
+}
+
+func TestSortearMissoesDaSemana_NuncaRepeteESempreTemUmaDeTerminar(t *testing.T) {
+	cat := CatalogoMissoesSemanais()
+	base := time.Date(2026, 1, 5, 12, 0, 0, 0, fusoGuilda)
+	for u := 0; u < 1000; u++ {
+		user := fmt.Sprintf("user-%d", u)
+		var anterior map[string]bool
+		for s := 0; s < 40; s++ {
+			semana := SortearMissoesDaSemana(cat, user, base.AddDate(0, 0, 7*s))
+			terminar := 0
+			for _, m := range semana {
+				if m.Principal {
+					terminar++
+				}
+				if anterior[m.ID] {
+					t.Fatalf("%s semana %d repetiu %s", user, s, m.ID)
+				}
+			}
+			if terminar < 1 {
+				t.Fatalf("%s semana %d sem missão de terminar anime", user, s)
+			}
+			anterior = idsDasMissoes(semana)
 		}
-	})
+	}
+}
+
+func TestSortearMissoes_DeterministicoNoMesmoDiaEDiferePorUsuario(t *testing.T) {
+	cat := CatalogoMissoesDiarias()
+	manha := time.Date(2026, 11, 17, 8, 0, 0, 0, fusoGuilda)
+	noite := time.Date(2026, 11, 17, 23, 30, 0, 0, fusoGuilda)
+	a, b := SortearMissoesDoDia(cat, "u1", manha), SortearMissoesDoDia(cat, "u1", noite)
+	for i := range a {
+		if a[i].ID != b[i].ID {
+			t.Fatal("O mesmo dia deve dar as mesmas missões")
+		}
+	}
+	diferentes := 0
+	for u := 0; u < 20; u++ {
+		s := SortearMissoesDoDia(cat, fmt.Sprintf("x%d", u), manha)
+		if s[0].ID != a[0].ID || s[1].ID != a[1].ID || s[2].ID != a[2].ID {
+			diferentes++
+		}
+	}
+	if diferentes == 0 {
+		t.Error("Usuários diferentes deveriam receber sorteios diferentes")
+	}
+}
+
+func TestGeneroDoPeriodo_TrocaACadaPeriodo(t *testing.T) {
+	vistos := map[string]bool{}
+	for d := 0; d < len(generosDasMissoes); d++ {
+		g, prox := GeneroDoPeriodo("u", "dia", d), GeneroDoPeriodo("u", "dia", d+1)
+		if g == prox {
+			t.Fatalf("Gênero repetiu em dias seguidos: %s", g)
+		}
+		vistos[g] = true
+	}
+	if len(vistos) != len(generosDasMissoes) {
+		t.Errorf("Em %d dias deveriam passar todos os gêneros, passaram %d", len(generosDasMissoes), len(vistos))
+	}
+	m := comGenero(CatalogoMissoesDiarias()[3], "Fantasia")
+	if m.Titulo != "Dia de Fantasia" || m.Descricao != "Assista a 2 episódios de animes de Fantasia" {
+		t.Errorf("Marcador não trocado: %q / %q", m.Titulo, m.Descricao)
+	}
+}
+
+func TestPeriodos_SemanaComecaNaSegundaDeBrasilia(t *testing.T) {
+	// Segunda 00:30 em Brasília já é a semana nova, mesmo perto da virada.
+	seg := time.Date(2026, 11, 16, 0, 30, 0, 0, fusoGuilda)
+	dom := time.Date(2026, 11, 15, 23, 30, 0, 0, fusoGuilda)
+	if indiceDaSemana(seg) != indiceDaSemana(dom)+1 {
+		t.Error("Domingo à noite e segunda de madrugada devem cair em semanas seguidas")
+	}
+	inicio := inicioDaSemanaBrasilia(time.Date(2026, 11, 19, 10, 0, 0, 0, fusoGuilda)).In(fusoGuilda)
+	if inicio.Weekday() != time.Monday || inicio.Day() != 16 || inicio.Hour() != 0 {
+		t.Errorf("Início da semana errado: %v", inicio)
+	}
+	if indiceDoDia(seg) != indiceDoDia(dom)+1 {
+		t.Error("O dia vira à meia-noite de Brasília")
+	}
+}
+
+func atividadeDeTeste() (AtividadeMissoes, time.Time, time.Time) {
+	agora := time.Date(2026, 11, 18, 21, 0, 0, 0, fusoGuilda) // quarta
+	dia := inicioDoDiaBrasilia(agora)
+	semana := inicioDaSemanaBrasilia(agora)
+	ontem := agora.AddDate(0, 0, -1)
+	a := AtividadeMissoes{
+		AnoAtual: 2026,
+		Episodios: []EpisodioDaMissao{
+			{MalID: 10, Numero: 1, Em: agora.Add(-3 * time.Hour)},
+			{MalID: 10, Numero: 2, Em: agora.Add(-2 * time.Hour)},
+			{MalID: 10, Numero: 3, Em: agora.Add(-1 * time.Hour)},
+			{MalID: 20, Numero: 7, Em: agora.Add(-1 * time.Hour), Lancamento: true},
+			{MalID: 30, Numero: 12, Em: ontem},
+		},
+		Concluidas: []ObraConcluida{
+			{MalID: 30, Em: ontem},
+			{MalID: 99, Em: agora}, // terminado sem episódio visto na semana: não conta
+		},
+		ReacoesHoje: 1, ComentariosHoje: 3,
+		Animes: map[int]InfoAnimeMissao{
+			10: {Generos: []string{"Fantasia", "Ação"}, Ano: 2026},
+			20: {Generos: []string{"Comédia"}, Ano: 2026, DaTemporada: true},
+			30: {Generos: []string{"Fantasia"}, Ano: 2026, DaTemporada: true},
+			99: {Generos: []string{"Fantasia"}, Ano: 2026, DaTemporada: true},
+		},
+	}
+	return a, dia, semana
+}
+
+func TestAvaliarMissao_CadaTipo(t *testing.T) {
+	a, dia, semana := atividadeDeTeste()
+	casos := []struct {
+		tipo   TipoMissao
+		meta   int
+		genero string
+		inicio time.Time
+		quer   int
+	}{
+		{MissaoEpisodios, 10, "", dia, 4},
+		{MissaoEpisodios, 3, "", dia, 3}, // limitado à meta
+		{MissaoEpisodios, 30, "", semana, 5},
+		{MissaoEpisodiosGenero, 10, "Fantasia", dia, 3},
+		{MissaoEpisodiosGenero, 10, "fantasia", semana, 4},
+		{MissaoAnimesDistintos, 10, "", dia, 2},
+		{MissaoComecarAnime, 10, "", dia, 1},
+		{MissaoLancamento, 10, "", dia, 1},
+		{MissaoFoco, 10, "", dia, 3},
+		{MissaoDiasAtivos, 10, "", semana, 2},
+		{MissaoCompletarObra, 10, "", dia, 0},
+		{MissaoCompletarObra, 10, "", semana, 1},
+		{MissaoCompletarDoAno, 10, "", semana, 1},
+		{MissaoCompletarTemporada, 10, "", semana, 1},
+		{MissaoCompletarGenero, 10, "Fantasia", semana, 1},
+		{MissaoCompletarGenero, 10, "Romance", semana, 0},
+		{MissaoReagirEpisodio, 2, "", dia, 1},
+		{MissaoComentarEpisodio, 1, "", dia, 1},
+	}
+	for _, c := range casos {
+		m := ItemCatalogoMissao{ID: string(c.tipo), Tipo: c.tipo, Meta: c.meta}
+		if got := AvaliarMissao(m, c.genero, c.inicio, a); got != c.quer {
+			t.Errorf("%s (meta %d, gênero %q): quer %d, veio %d", c.tipo, c.meta, c.genero, c.quer, got)
+		}
+	}
+}
+
+func TestAvaliarMissao_AnoDeOutroAnoNaoConta(t *testing.T) {
+	a, _, semana := atividadeDeTeste()
+	a.Animes[30] = InfoAnimeMissao{Ano: 2019}
+	m := ItemCatalogoMissao{Tipo: MissaoCompletarDoAno, Meta: 1}
+	if AvaliarMissao(m, "", semana, a) != 0 {
+		t.Error("Anime de 2019 não conclui a missão do ano")
+	}
+	a.AnoAtual = 0
+	a.Animes[30] = InfoAnimeMissao{Ano: 0}
+	if AvaliarMissao(m, "", semana, a) != 0 {
+		t.Error("Ano ausente (0) não pode casar com ano atual ausente")
+	}
 }
 
 func TestMissoes_ValidacoesAuth(t *testing.T) {
 	handler := &MissoesHandler{}
-
-	t.Run("get missoes hoje sem sessao retorna 401", func(t *testing.T) {
-		req := httptest.NewRequest(http.MethodGet, "/api/missoes/hoje", nil)
-		rec := httptest.NewRecorder()
-		handler.HandleGetMissoesHoje(rec, req)
-
-		if rec.Code != http.StatusUnauthorized {
-			t.Fatalf("Esperado 401, recebido %d", rec.Code)
-		}
-	})
-
-	t.Run("resgatar sem sessao retorna 401", func(t *testing.T) {
-		req := httptest.NewRequest(http.MethodPost, "/api/missoes/ep_hoje/resgatar", nil)
-		rec := httptest.NewRecorder()
-		handler.HandleResgatarMissao(rec, req)
-
-		if rec.Code != http.StatusUnauthorized {
-			t.Fatalf("Esperado 401, recebido %d", rec.Code)
-		}
-	})
+	req := httptest.NewRequest(http.MethodGet, "/api/missoes/hoje", nil)
+	rec := httptest.NewRecorder()
+	handler.HandleGetMissoesHoje(rec, req)
+	if rec.Code != http.StatusUnauthorized {
+		t.Fatalf("Esperado 401, recebido %d", rec.Code)
+	}
+	req = httptest.NewRequest(http.MethodPost, "/api/missoes/ep_hoje/resgatar", nil)
+	rec = httptest.NewRecorder()
+	handler.HandleResgatarMissao(rec, req)
+	if rec.Code != http.StatusUnauthorized {
+		t.Fatalf("Esperado 401, recebido %d", rec.Code)
+	}
 }
 
 func TestMissoes_SerializacaoJSON(t *testing.T) {
-	m := MissaoUsuario{
-		ID:                 "ep_hoje",
-		Tipo:               MissaoMarcarEpisodios,
-		Titulo:             "Episódio do Dia",
-		Descricao:          "Marque 1 ep",
-		Meta:               1,
-		Progresso:          1,
-		ProgressoAtual:     1,
-		RecompensaCristais: 15,
-		RecompensaAniCoins: 15,
-		Concluida:          true,
-		Resgatada:          false,
-		Icone:              "Play",
-	}
-
-	bytes, err := json.Marshal(m)
+	bytes, err := json.Marshal(MissaoUsuario{ID: "ep_hoje", Tipo: MissaoEpisodios, Periodo: "dia", Meta: 1, RecompensaXP: 5, Icone: "Play"})
 	if err != nil {
-		t.Fatalf("Erro ao serializar: %v", err)
+		t.Fatal(err)
 	}
+	var m map[string]interface{}
+	_ = json.Unmarshal(bytes, &m)
+	for _, campo := range []string{"progresso", "meta", "recompensa_cristais", "recompensa_xp", "periodo", "icone"} {
+		if _, ok := m[campo]; !ok {
+			t.Errorf("Campo %q obrigatório no JSON", campo)
+		}
+	}
+}
 
-	var mResult map[string]interface{}
-	if err := json.Unmarshal(bytes, &mResult); err != nil {
-		t.Fatalf("Erro ao deserializar: %v", err)
-	}
-
-	// Campos essenciais para evitar "Faltam NaN" no frontend
-	if _, ok := mResult["progresso"]; !ok {
-		t.Errorf("Campo 'progresso' obrigatório no JSON")
-	}
-	if _, ok := mResult["meta"]; !ok {
-		t.Errorf("Campo 'meta' obrigatório no JSON")
-	}
-	if _, ok := mResult["recompensa_cristais"]; !ok {
-		t.Errorf("Campo 'recompensa_cristais' obrigatório no JSON")
-	}
-	if _, ok := mResult["icone"]; !ok {
-		t.Errorf("Campo 'icone' obrigatório no JSON")
+func TestExtratoGuilda_XPSemEpisodioTemTitulo(t *testing.T) {
+	itens := montarItensLedgerGuilda([]linhaLedgerBanco{{MalID: 0, EpisodeNumber: 42, XPEarned: 10, Reason: "Missão do dia: Foco Total", EarnedAt: "2026-11-17T10:00:00Z"}}, map[int]string{}, time.Now())
+	if itens[0].TituloAnime != tituloXPSemEpisodio {
+		t.Errorf("Título esperado %q, veio %q", tituloXPSemEpisodio, itens[0].TituloAnime)
 	}
 }
