@@ -1035,6 +1035,24 @@ local aplica a função antiga e confirma o erro antes de aplicar a nova.
 
 ---
 
+## 37. 🧪 Teste local com tipo de coluna diferente do banco: o erro do `jsonb` em `TEXT[]` passou no teste
+
+**Incidente (17/11/2026, #255):** o convite especial de admin falhava inteiro no resgate, mesmo
+depois da correção do #247, que tinha teste local passando.
+
+**Causa:** `resgatar_codigo_convite` (`sql/062`, mantida no `088`) usava operadores de `jsonb` (`?`
+e `|| jsonb_build_array`) em `profiles.titulos_desbloqueados`, que é `TEXT[]` desde o `sql/061`. O
+teste local do #247 criou a tabela `profiles` com essa coluna em `jsonb`, e por isso passou: o
+teste confirmou a suposição errada em vez do banco.
+
+**Correção:** `sql/095` usa `array_append` e `= ANY(...)`. O teste novo cria a coluna em `TEXT[]`,
+como está no snapshot, e prova o erro com a função antiga antes de aplicar a nova.
+
+> **Pergunta obrigatória:** cada coluna da tabela de teste tem o mesmo tipo do
+> `sql/snapshot_schema.sql`? Copiar o tipo do snapshot, não de memória.
+
+---
+
 ## 🧭 Como manter este arquivo
 
 - Toda vez que um bug **silencioso** chegar a produção (não quebrou, só devolveu dado errado),

@@ -745,6 +745,7 @@ Motivo: um motivo diário para voltar (`VISAO_COMUNIDADE.md`: Economia, Cartas, 
   - [x] 16.7a Missões diárias renovadas: 12 no catálogo, 3 por dia em rodízio por usuário que nunca repete as de ontem, pelo menos 2 de assistir, gênero do dia, e um pouco de XP nas de assistir (5 a 20; reagir e comentar dão só AniCoins). XP sem episódio no `xp_ledger` com `mal_id = 0`, fora do teto diário dos episódios, e AniCoins e XP pagos na mesma transação. Corrige "Missão Cumprida", que procurava `COMPLETED` e nunca concluía, e "Na Crista da Onda", que contava qualquer episódio. `sql/087` (#245)
   - [x] 16.7b Missões da semana: 12 longas, 3 por semana (segunda a domingo), pelo menos uma de terminar anime (do ano, da temporada, do gênero da semana ou dois animes), 50 a 100 AniCoins e 30 a 60 XP. Término conta pela carta do anime, uma vez por anime, e só se um episódio dele foi visto na semana (#246)
   - [x] Correção (#247): o resgate de convite falhava inteiro (coluna `saldo_apos` inexistente e XP sem episódio). `sql/088`
+  - [x] Correção (#255): o convite de admin, que dá título, ainda falhava: a função tratava `titulos_desbloqueados` como `jsonb`, e a coluna é `TEXT[]`. `sql/095`. Armadilha 37 do `PITFALLS.md`
   - [x] 16.7c Especialidade: o gênero de maior nível de Especialista vira um título de classe (Fantasia → Arcanista, Mistério → Detetive...), com subclasse, na Guilda e no perfil público. Perfil público com os gêneros, horas assistidas, missões cumpridas e recordes do RPG. `sql/089` (#248)
 
 ## 🐉 Fase 17: Comunidade viva — *concluída (épico #179)*
