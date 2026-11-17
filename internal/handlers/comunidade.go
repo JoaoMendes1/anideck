@@ -886,6 +886,8 @@ type membroNoRanking struct {
 	// se chama `estagio` porque todo visual, hoje, é um estágio.
 	Avatar  json.RawMessage `json:"avatar,omitempty"`
 	Estagio string          `json:"estagio,omitempty"`
+	// Personagem do elenco, para o retrato sair com o rosto certo.
+	PersonagemBase string `json:"personagem_base,omitempty"`
 }
 
 // HandleRankingMembros é público. periodo=semana conta o XP desde segunda-feira
@@ -973,14 +975,19 @@ func (h *ComunidadeHandler) HandleRankingMembros(w http.ResponseWriter, r *http.
 					lista[i].Avatar = avatares[lista[i].Handle]
 				}
 				// Quem fixou um visual aparece com ele; os demais ficam no estágio do nível.
-				fixados := visuaisEquipadosPorUsuario(uids)
-				handleDoFixado := make(map[string]string, len(fixados))
-				for uid, visual := range fixados {
-					handleDoFixado[u2h[uid]] = visual
+				retratos := retratosDosMembros(uids)
+				retratoDoHandle := make(map[string]retratoDoMembro, len(retratos))
+				for uid, rt := range retratos {
+					retratoDoHandle[u2h[uid]] = rt
 				}
 				for i := range lista {
-					if visual, ok := handleDoFixado[lista[i].Handle]; ok {
-						lista[i].Estagio = VisualParaRetrato(visual, lista[i].Nivel, estagios)
+					rt, ok := retratoDoHandle[lista[i].Handle]
+					if !ok {
+						continue
+					}
+					lista[i].PersonagemBase = rt.Base
+					if rt.Visual != "" {
+						lista[i].Estagio = VisualParaRetrato(rt.Visual, lista[i].Nivel, estagios)
 					}
 				}
 				var eqLinhas []struct {
@@ -1044,6 +1051,7 @@ type perfilPublico struct {
 	TituloAtivo     string          `json:"titulo_ativo,omitempty"`
 	Avatar          json.RawMessage `json:"avatar,omitempty"`
 	Estagio         string          `json:"estagio,omitempty"`
+	PersonagemBase  string          `json:"personagem_base,omitempty"`
 }
 
 // avatarEscolhido diz se a coluna avatar_custom tem um avatar salvo (e não está vazia ou nula).
@@ -1110,8 +1118,11 @@ func (h *ComunidadeHandler) HandlePerfilPublico(w http.ResponseWriter, r *http.R
 			if avatarEscolhido(profs[0].Avatar) {
 				p.Avatar = profs[0].Avatar
 			}
-			if visual, ok := visuaisEquipadosPorUsuario([]string{profs[0].UserID})[profs[0].UserID]; ok {
-				p.Estagio = VisualParaRetrato(visual, p.Nivel, estagiosDoPerfil)
+			if rt, ok := retratosDosMembros([]string{profs[0].UserID})[profs[0].UserID]; ok {
+				p.PersonagemBase = rt.Base
+				if rt.Visual != "" {
+					p.Estagio = VisualParaRetrato(rt.Visual, p.Nivel, estagiosDoPerfil)
+				}
 			}
 			var eqLinhas []struct {
 				Slot         string `json:"slot"`

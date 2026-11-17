@@ -146,6 +146,8 @@ export interface MembroNoRanking {
   /** Avatar salvo (fundo e formato) e estágio do personagem, para o retrato. */
   avatar?: unknown
   estagio?: string
+  /** Personagem do elenco; ausente é o padrão. */
+  personagem_base?: string
   cor_nome?: string
   tema_perfil?: string
   emblema?: string
@@ -174,6 +176,8 @@ export interface PerfilPublico {
   /** Avatar salvo (fundo e formato) e estágio do personagem, para o retrato. */
   avatar?: unknown
   estagio?: string
+  /** Personagem do elenco; ausente é o padrão. */
+  personagem_base?: string
   cor_nome?: string
   tema_perfil?: string
   emblema?: string

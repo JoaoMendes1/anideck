@@ -6,18 +6,14 @@
 // não mexe em regra de jogo.
 import { supabase } from './supabase'
 import type { EstadoEquipamento } from './rpg'
-import arteIniciante from '../assets/personagem/espadachim-eter-iniciante.webp'
-import arteAventureiro from '../assets/personagem/espadachim-eter-aventureiro.webp'
-import arteLendario from '../assets/personagem/espadachim-eter-lendario.webp'
-import miniIniciante from '../assets/personagem/espadachim-eter-iniciante-mini.webp'
-import miniAventureiro from '../assets/personagem/espadachim-eter-aventureiro-mini.webp'
-import miniLendario from '../assets/personagem/espadachim-eter-lendario-mini.webp'
-import retratoIniciante from '../assets/personagem/espadachim-eter-iniciante-retrato.webp'
-import retratoAventureiro from '../assets/personagem/espadachim-eter-aventureiro-retrato.webp'
-import retratoLendario from '../assets/personagem/espadachim-eter-lendario-retrato.webp'
-import arteVeterano from '../assets/personagem/espadachim-eter-veterano.webp'
-import miniVeterano from '../assets/personagem/espadachim-eter-veterano-mini.webp'
-import retratoVeterano from '../assets/personagem/espadachim-eter-veterano-retrato.webp'
+
+// Todas as ilustrações do elenco, como URL. O nome do arquivo diz de quem e de qual estágio
+// é: <personagem>-<estágio>[-mini|-retrato].webp, com hífen no lugar do sublinhado do id.
+// A lista sai do build: a arte que entra na pasta entra no catálogo, sem import à mão.
+const ARQUIVOS_DE_ARTE = import.meta.glob('../assets/personagem/*.webp', {
+  eager: true,
+  import: 'default',
+}) as Record<string, string>
 
 export interface EstagioRPG {
   id: string
@@ -128,22 +124,84 @@ export const ORDEM_DOS_ESTAGIOS = ['iniciante', 'aventureiro', 'veterano', 'lend
 
 export const PERSONAGEM_BASE_PADRAO = 'espadachim_eter'
 
+/**
+ * Monta o catálogo a partir dos arquivos. Estágio só entra com as três versões (inteira,
+ * mini e retrato); faltando uma, fica de fora e usa a arte do estágio anterior.
+ */
+export function montarCatalogoDeArtes(arquivos: Record<string, string>): CatalogoDeArtes {
+  const pecas: Record<string, Record<string, Partial<ArteDoEstagio>>> = {}
+  const padrao = new RegExp(`/([a-z-]+)-(${ORDEM_DOS_ESTAGIOS.join('|')})(-mini|-retrato)?\\.webp$`)
+  for (const [caminho, url] of Object.entries(arquivos)) {
+    const achado = padrao.exec(caminho)
+    if (!achado) continue
+    const [, nome, estagio, versao] = achado
+    const base = nome.replaceAll('-', '_')
+    const campo = versao === '-mini' ? 'mini' : versao === '-retrato' ? 'retrato' : 'inteira'
+    pecas[base] ??= {}
+    pecas[base][estagio] ??= {}
+    pecas[base][estagio][campo] = url
+  }
+  const catalogo: CatalogoDeArtes = {}
+  for (const [base, estagios] of Object.entries(pecas)) {
+    for (const [estagio, arte] of Object.entries(estagios)) {
+      if (arte.inteira && arte.mini && arte.retrato) {
+        catalogo[base] ??= {}
+        catalogo[base][estagio] = { inteira: arte.inteira, mini: arte.mini, retrato: arte.retrato }
+      }
+    }
+  }
+  return catalogo
+}
+
 // Estágio sem entrada aqui não tem ilustração própria e usa a do estágio anterior.
-export const ARTES: CatalogoDeArtes = {
-  espadachim_eter: {
-    iniciante: { inteira: arteIniciante, mini: miniIniciante, retrato: retratoIniciante },
-    aventureiro: { inteira: arteAventureiro, mini: miniAventureiro, retrato: retratoAventureiro },
-    veterano: { inteira: arteVeterano, mini: miniVeterano, retrato: retratoVeterano },
-    lendario: { inteira: arteLendario, mini: miniLendario, retrato: retratoLendario },
-  },
+export const ARTES: CatalogoDeArtes = montarCatalogoDeArtes(ARQUIVOS_DE_ARTE)
+
+export interface MembroDoElenco {
+  id: string
+  nome: string
+  classe: string
+  elemento: string
+  // Uma frase para a tela de escolha.
+  resumo: string
+}
+
+// O elenco, na ordem da tela de escolha. O id, a classe e o elemento são os mesmos do
+// servidor (PersonagensBase, no Go); o nome é o do personagem, que o jogador não troca.
+export const ELENCO: MembroDoElenco[] = [
+  { id: 'espadachim_eter', nome: 'Espadachim de Éter', classe: 'espadachim', elemento: 'eter', resumo: 'Equilíbrio entre ataque e defesa. Desperta curando e dobrando o próximo golpe.' },
+  { id: 'lanceiro_fogo', nome: 'Haruto', classe: 'lanceiro', elemento: 'fogo', resumo: 'Golpes que perfuram a defesa. O fogo dele atravessa qualquer armadura.' },
+  { id: 'assassina_raio', nome: 'Rin', classe: 'assassina', elemento: 'raio', resumo: 'Veloz e certeira. Desvia dos golpes e devolve com força dobrada.' },
+  { id: 'maga_agua', nome: 'Mizuki', classe: 'maga', elemento: 'agua', resumo: 'Magia arcana que ignora a força bruta. A maré ancestral cura muito.' },
+  { id: 'guerreiro_terra', nome: 'Brokk', classe: 'guerreiro', elemento: 'terra', resumo: 'O ferreiro das montanhas. Aguenta o tranco e recebe metade do dano.' },
+  { id: 'paladina_luz', nome: 'Celestia', classe: 'paladina', elemento: 'luz', resumo: 'Proteção e cura. A Égide bloqueia golpes e reduz o dano recebido.' },
+]
+
+/** Membro do elenco pelo id; id desconhecido cai no padrão. */
+export function membroDoElenco(id: string | undefined): MembroDoElenco {
+  return ELENCO.find((m) => m.id === id) ?? ELENCO[0]
+}
+
+/** As skins da Loja são trajes do Espadachim: só ele as veste. */
+export function aceitaSkins(personagemBase: string | undefined): boolean {
+  return !personagemBase || personagemBase === PERSONAGEM_BASE_PADRAO
 }
 
 const ROTULOS_DE_CLASSE: Record<string, string> = {
   espadachim: 'Espadachim',
+  lanceiro: 'Lanceiro',
+  assassina: 'Assassina',
+  maga: 'Maga',
+  guerreiro: 'Guerreiro',
+  paladina: 'Paladina',
 }
 
 const ROTULOS_DE_ELEMENTO: Record<string, string> = {
   eter: 'Éter',
+  fogo: 'Fogo',
+  raio: 'Raio',
+  agua: 'Água',
+  terra: 'Terra',
+  luz: 'Luz',
 }
 
 export function rotuloDaClasse(classe: string | undefined): string {
@@ -250,13 +308,14 @@ export async function obterPersonagem(opcoes: { completo?: boolean } = {}): Prom
 /** Cria o personagem. Devolve os dados prontos para a tela, ou a mensagem de erro. */
 export async function despertarPersonagem(
   nome: string,
+  personagemBase: string = PERSONAGEM_BASE_PADRAO,
 ): Promise<{ dados?: RespostaPersonagem; erro?: string }> {
   const falha = 'Não foi possível despertar agora. Tente de novo em instantes.'
   try {
     const res = await fetch('/api/personagem', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', ...(await cabecalhoDeAutenticacao()) },
-      body: JSON.stringify({ nome }),
+      body: JSON.stringify({ nome, personagem_base: personagemBase }),
     })
     const json = (await res.json().catch(() => null)) as (RespostaPersonagem & { error?: string }) | null
     if (!res.ok) return { erro: json?.error || falha }
@@ -283,6 +342,27 @@ export async function equiparVisual(visual: string): Promise<{ dados?: RespostaP
       method: 'PUT',
       headers: { 'Content-Type': 'application/json', ...(await cabecalhoDeAutenticacao()) },
       body: JSON.stringify({ visual }),
+    })
+    const json = (await res.json().catch(() => null)) as (RespostaPersonagem & { error?: string }) | null
+    if (!res.ok) return { erro: json?.error || falha }
+    if (!json || json.existe !== true) return { erro: falha }
+    return { dados: json }
+  } catch {
+    return { erro: falha }
+  }
+}
+
+/**
+ * Troca o personagem do elenco. O nível, os itens e os pontos continuam; o visual fixado
+ * volta ao automático. Devolve os dados prontos para a tela, ou a mensagem de erro.
+ */
+export async function trocarPersonagem(personagemBase: string): Promise<{ dados?: RespostaPersonagem; erro?: string }> {
+  const falha = 'Não foi possível trocar o personagem agora. Tente de novo em instantes.'
+  try {
+    const res = await fetch('/api/personagem/base', {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json', ...(await cabecalhoDeAutenticacao()) },
+      body: JSON.stringify({ personagem_base: personagemBase }),
     })
     const json = (await res.json().catch(() => null)) as (RespostaPersonagem & { error?: string }) | null
     if (!res.ok) return { erro: json?.error || falha }

@@ -26,6 +26,7 @@ import {
   EVENTO_PERSONAGEM_ATUALIZADO,
   ORDEM_DOS_ESTAGIOS,
   PERSONAGEM_BASE_PADRAO,
+  aceitaSkins,
   arteDoEstagio,
   equiparVisual,
   visualEmUso,
@@ -74,6 +75,11 @@ export default function Loja() {
   const trocarEquipado = async (item: ItemCosmeticoLoja, itemID: string | null) => {
     if (item.tipo !== 'skin') {
       equipar(item.tipo, itemID)
+      return
+    }
+    // Os trajes foram desenhados sobre o Espadachim de Éter: outro personagem não os veste.
+    if (itemID && !aceitaSkins(baseDoPersonagem)) {
+      showToast('Os trajes são do Espadachim de Éter. Troque para ele na tela do personagem para vestir.', 'info')
       return
     }
     setVestindoId(item.id)
@@ -353,7 +359,7 @@ export default function Loja() {
                     {item.tipo === 'skin' && (
                       <div className="relative h-36 w-full overflow-hidden rounded-lg border border-line/60 bg-void">
                         {(() => {
-                          const arteDaSkin = arteDoEstagio(baseDoPersonagem, item.id)
+                          const arteDaSkin = arteDoEstagio(PERSONAGEM_BASE_PADRAO, item.id)
                           return arteDaSkin ? (
                             <img
                               src={arteDaSkin.mini}
@@ -368,7 +374,7 @@ export default function Loja() {
                           ) : null
                         })()}
                         <span className="absolute left-2 top-2 rounded-full bg-void/70 px-2 py-0.5 font-mono text-xs text-muted">
-                          Traje do personagem
+                          Traje do Espadachim de Éter
                         </span>
                       </div>
                     )}

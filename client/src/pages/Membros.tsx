@@ -294,7 +294,7 @@ export default function Membros() {
                           {m.posicao === 1 ? <Crown size={20} className="mx-auto" aria-label="1º" /> : m.posicao}
                         </span>
                         <span className={`shrink-0 rounded-full ${obterClasseMoldura(m.moldura)}`} aria-hidden>
-                          <AvatarMontavel avatar={m.avatar ?? null} retrato={retratoDoEstagio(m.estagio)} filtro={filtroDoVisual(m.estagio)} nome={m.nome} tamanho={40} />
+                          <AvatarMontavel avatar={m.avatar ?? null} retrato={retratoDoEstagio(m.estagio, m.personagem_base)} filtro={filtroDoVisual(m.estagio)} nome={m.nome} tamanho={40} />
                         </span>
                         <span className="min-w-0 flex-1">
                           <span className="flex items-center gap-2 min-w-0">

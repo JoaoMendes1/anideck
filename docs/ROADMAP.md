@@ -48,7 +48,7 @@ Staging sobe já na Fase 1, como projeto esqueleto — mesmo padrão do JVM Syst
 | 15 · Comunidade base | ✅ Concluída (08/11/2026, #154); falta abrir o beta |
 | 16 · Economia e cartas | ✅ Concluída (09/11/2026, #165); falta abrir o beta |
 | 17 · Comunidade viva | ✅ Concluída (13/11/2026, #179) |
-| 18 · O Despertar Isekai | 🚧 Em andamento — 18.1 Meu Personagem (#199, #200), 18.2a escolha de visual (#218), 18.2b cenários (#219), 18.2e auras (#220), equipamentos com atributos (#221), expedições e reforço dos monstros (#222, #229), invocação gratuita (#223), skins (#224), desempenho da tela (#226) e atributos com livro de habilidades (#227) entregues; falta aplicar o `sql/078` |
+| 18 · O Despertar Isekai | 🚧 Em andamento — 18.1 Meu Personagem (#199, #200), 18.2a escolha de visual (#218), 18.2b cenários (#219), 18.2e auras (#220), equipamentos com atributos (#221), expedições e reforço dos monstros (#222, #229), invocação gratuita (#223), skins (#224), desempenho da tela (#226), atributos com livro de habilidades (#227), artes de monstros e itens (#237) e elenco com seis personagens (#238) entregues; falta aplicar o `sql/080` |
 
 ---
 
@@ -775,11 +775,12 @@ experiência pequena e funcional de cada vez.
   - [x] 18.1a Personagem do jogador: tabela `rpg_personagens`, despertar com nome e rota `/api/personagem`, com o estágio visual calculado pelo nível da Guilda (#199)
   - [x] 18.1b Tela `/personagem` mobile-first: despertar com nome, arte por estágio com reserva para estágio sem ilustração, jornada com silhueta dos estágios futuros e slots de equipamento "em breve" (#200)
 - [x] Arte do estágio Veterano (15/11/2026): os quatro estágios passam a ter ilustração, miniatura e retrato próprios; a reserva para estágio sem arte continua no código para personagem novo
+- [x] Elenco (16/11/2026): o jogador escolhe entre seis personagens ao despertar e troca de graça na ficha, sem perder nível, itens nem pontos. Haruto (Lanceiro de Fogo), Rin (Assassina do Raio), Mizuki (Maga da Água), Brokk (Guerreiro da Terra) e Celestia (Paladina da Luz) entram ao lado do Espadachim de Éter, cada um com cinco habilidades de classe e uma única. Catálogo de artes montado pelos arquivos; Celestia usa a Veterana até a Lendária existir. Skins da Loja ficam só no Espadachim. `sql/080`, rota `PUT /api/personagem/base` (#238)
 - [ ] 18.2 Visuais e loja
   - [x] 18.2a Escolha de visual: o jogador fixa a aparência de um estágio já alcançado, com prévia antes de confirmar, ou deixa no automático. Coluna `visual_equipado`, rota `PUT /api/personagem/visual`, e o retrato da barra superior, de `/membros` e do perfil público seguem o visual em uso (#218)
   - [x] 18.2b Cenários de fundo da tela do personagem, comprados na Loja: tipo e slot `cenario`, quatro cenários desenhados em CSS (sem imagem), categoria e prévia na Loja com o personagem do jogador, e `GET /api/personagem` devolvendo o cenário equipado (#219)
   - [x] 18.2c Skins: quatro trajes na Loja, vestidos pela mesma escolha de visual (posse conferida em `user_items`), com o filtro aplicado em todo lugar onde o personagem aparece; devolver a skin volta ao automático (#224). Arte provisória: estágio tingido por filtro CSS
-  - [x] 18.2d Slots de equipamento: catálogo `rpg_itens`, inventário e slots próprios, kit inicial equipado na primeira visita, troca com ganho e perda de cada item, conferida no banco por posse, slot e nível (#221). Arte provisória: ícone por slot e cor por raridade
+  - [x] 18.2d Slots de equipamento: catálogo `rpg_itens`, inventário e slots próprios, kit inicial equipado na primeira visita, troca com ganho e perda de cada item, conferida no banco por posse, slot e nível (#221). Artes definitivas dos 17 itens e dos 8 monstros, recortadas e mapeadas pelo nome do arquivo (#237)
   - [x] Desempenho e slots sobre a arte: o estado do jogador vem numa consulta só (`rpg_estado_jogador`, com a soma do XP no banco), a configuração de rank e estágio fica 60 s em memória, o kit inicial só é pedido quando o inventário vem vazio, e a tela abre com uma chamada à API (`?completo=1`). Os cinco slots ficam sobre a arte, e item comum deixou de parecer slot vazio (#226)
   - [x] 18.2e Auras do personagem, compradas na Loja: tipo e slot `aura`, três auras em CSS desenhadas atrás da ilustração (`CamadaDaAura`), paradas para quem pediu movimento reduzido, com categoria e prévia na Loja (#220)
 - [ ] 18.3 Progressão de RPG

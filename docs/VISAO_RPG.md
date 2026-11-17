@@ -121,6 +121,8 @@ Um Deus Guardião apresenta o universo e conduz o nascimento do aventureiro.
 
 A distribuição inicial de classe e elemento poderá ser aleatória ou escolhida, conforme decisão futura.
 
+**Decidido em 16/11/2026 (#238):** o jogador escolhe o personagem do elenco ao despertar, e cada personagem já traz a sua classe e o seu elemento. A troca é livre depois. O elenco entregue está em `client/src/lib/personagem.ts` (`ELENCO`) e em `internal/handlers/personagem.go` (`PersonagensBase`).
+
 A distribuição equilibrada entre classes é uma possibilidade, mas não deve ser implementada antes de estudar a população e os impactos no balanceamento.
 
 ## 4.3 Classes propostas

@@ -109,6 +109,7 @@ SELECT pg_get_viewdef('nome_da_view'::regclass, true);
 | `077_rpg_atributos.sql` | Fase 18 (18.3b, #227): `rpg_atributos` guarda os pontos distribuídos nos seis primários; `rpg_distribuir_pontos` confere o total contra `nível / 2` no banco; `rpg_estado_jogador` passa a trazer os pontos. Depende do 076 | — |
 | `078_rpg_reforco_monstros.sql` | Fase 18 (18.4a, #229): reforço de Vida, Ataque e Defesa dos seis monstros pós-tutorial (`lobo_sombrio` ao `primordial_esquecido`) após os atributos e habilidades da #227 | — |
 | `079_vitalidade_mana_por_nivel.sql` | Fase 18 (#234): `mana_maxima(uuid)` escalada pelo nível do jogador (`mp_max + mp_por_nivel * (nivel - 1)` até `mp_max_teto`), `mana_atual(uuid)` com regeneração proporcional ao teto do jogador + bônus de Paladino (+5/dia) e de Vitalidade alta (+25%), e novos parâmetros `mp_por_nivel=1` e `mp_max_teto=120` em `app_settings.comunidade_regras` | — |
+| `080_rpg_elenco.sql` | Fase 18 (#238): `CHECK` de `rpg_personagens.personagem_base` com os seis personagens do elenco; `despertar_personagem(p_nome, p_base)` com padrão `espadachim_eter`, no lugar da versão só com o nome. Aplicar antes de promover: sem ele, só o Espadachim desperta | — |
 
 Datas com `~` são a data do commit, não da aplicação no Supabase.
 

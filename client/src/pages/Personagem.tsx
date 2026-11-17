@@ -6,7 +6,7 @@
 // ficam lado a lado. Nível, XP e rank são os da Guilda: o personagem não tem XP próprio.
 import { useCallback, useEffect, useState, type FormEvent } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
-import { ChevronLeft, Image, Lock, Orbit, Sparkles, Sword, Swords } from 'lucide-react'
+import { ChevronLeft, Image, Lock, Orbit, Repeat, Sparkles, Sword, Swords } from 'lucide-react'
 import { obterFundoDoCenario } from '../lib/cosmeticos'
 import CamadaDaAura from '../components/personagem/CamadaDaAura'
 import PainelEquipamentos from '../components/personagem/PainelEquipamentos'
@@ -14,6 +14,7 @@ import SlotsDoPersonagem from '../components/personagem/SlotsDoPersonagem'
 import EscolhaDeItem from '../components/personagem/EscolhaDeItem'
 import PainelAtributos from '../components/personagem/PainelAtributos'
 import LivroDeHabilidades from '../components/personagem/LivroDeHabilidades'
+import EscolhaDoElenco from '../components/personagem/EscolhaDoElenco'
 import { obterEquipamentos, type EstadoEquipamento, type SlotId } from '../lib/rpg'
 import {
   ALTURA_DA_ARTE,
@@ -24,7 +25,9 @@ import {
   arteDoEstagio,
   despertarPersonagem,
   equiparVisual,
+  membroDoElenco,
   obterPersonagem,
+  trocarPersonagem,
   rotuloDaClasse,
   rotuloDoElemento,
   temArtePropria,
@@ -77,7 +80,9 @@ function TelaDespertar({ aoDespertar }: { aoDespertar: (dados: RespostaPersonage
   const [nome, setNome] = useState('')
   const [erro, setErro] = useState('')
   const [enviando, setEnviando] = useState(false)
-  const arte = arteDoEstagio(PERSONAGEM_BASE_PADRAO, 'iniciante')
+  const [base, setBase] = useState(PERSONAGEM_BASE_PADRAO)
+  const escolhido = membroDoElenco(base)
+  const arte = arteDoEstagio(base, 'iniciante')
 
   const enviar = async (evento: FormEvent<HTMLFormElement>) => {
     evento.preventDefault()
@@ -91,7 +96,7 @@ function TelaDespertar({ aoDespertar }: { aoDespertar: (dados: RespostaPersonage
 
     setErro('')
     setEnviando(true)
-    const resultado = await despertarPersonagem(conferido.nome)
+    const resultado = await despertarPersonagem(conferido.nome, base)
     setEnviando(false)
 
     if (resultado.dados) {
@@ -121,9 +126,9 @@ function TelaDespertar({ aoDespertar }: { aoDespertar: (dados: RespostaPersonage
               src={arte.inteira}
               width={LARGURA_DA_ARTE}
               height={ALTURA_DA_ARTE}
-              alt="Silhueta de um aventureiro ainda sem nome"
+              alt={`${escolhido.nome}, ${rotuloDaClasse(escolhido.classe)} de ${rotuloDoElemento(escolhido.elemento)}`}
               decoding="async"
-              className="absolute bottom-1 left-1/2 h-[96%] w-auto max-w-none -translate-x-1/2 object-contain brightness-0"
+              className="absolute bottom-1 left-1/2 h-[96%] w-auto max-w-none -translate-x-1/2 object-contain"
             />
           )}
         </div>
@@ -134,17 +139,15 @@ function TelaDespertar({ aoDespertar }: { aoDespertar: (dados: RespostaPersonage
             Um novo mundo te espera
           </h1>
           <p className="text-sm leading-relaxed text-muted m-0">
-            Cada episódio que você assiste fortalece o seu aventureiro. Dê um nome a ele para começar a jornada.
+            Cada episódio que você assiste fortalece o seu aventureiro. Escolha quem vai com você e dê um nome para
+            começar a jornada.
           </p>
 
-          <div className="flex flex-wrap gap-2">
-            <span className="rounded-full border border-line bg-panel px-3 py-1.5 text-xs font-bold">
-              Classe inicial: Espadachim
-            </span>
-            <span className="rounded-full border border-line bg-panel px-3 py-1.5 text-xs font-bold">
-              Elemento: Éter
-            </span>
-          </div>
+          <EscolhaDoElenco escolhido={base} aoEscolher={setBase} nomeDoGrupo="elenco-do-despertar" />
+          <p className="text-xs leading-snug text-muted m-0" aria-live="polite">
+            <strong className="text-text">{escolhido.nome}</strong> · {escolhido.resumo} Dá para trocar de personagem
+            depois, sem perder o nível.
+          </p>
 
           <div className="flex flex-col gap-2">
             <label htmlFor="nome-do-aventureiro" className={ROTULO_DE_SECAO}>
@@ -157,7 +160,7 @@ function TelaDespertar({ aoDespertar }: { aoDespertar: (dados: RespostaPersonage
               onChange={(e) => setNome(e.target.value)}
               maxLength={NOME_MAXIMO}
               autoComplete="off"
-              placeholder="Como ele vai se chamar?"
+              placeholder="Como vai se chamar?"
               aria-invalid={erro ? true : undefined}
               aria-describedby="ajuda-do-nome"
               className="h-13 rounded-2xl border border-line bg-panel-2 px-4 text-base font-semibold text-text placeholder:text-muted-2 focus:border-holo-3 focus:outline-none"
@@ -181,6 +184,54 @@ function TelaDespertar({ aoDespertar }: { aoDespertar: (dados: RespostaPersonage
           </button>
         </form>
       </div>
+    </div>
+  )
+}
+
+// Troca do personagem do elenco, aberta pela ficha. O nível, os itens e os pontos são do
+// jogador e continuam; só a arte, a classe e as habilidades mudam.
+function TrocaDePersonagem({ atual, aoTrocar }: { atual: string; aoTrocar: (dados: RespostaPersonagem) => void }) {
+  const [escolhido, setEscolhido] = useState(atual)
+  const [salvando, setSalvando] = useState(false)
+  const [erro, setErro] = useState('')
+  const membro = membroDoElenco(escolhido)
+
+  const confirmar = async () => {
+    if (salvando || escolhido === atual) return
+    setErro('')
+    setSalvando(true)
+    const resultado = await trocarPersonagem(escolhido)
+    setSalvando(false)
+    if (resultado.dados) {
+      aoTrocar(resultado.dados)
+      return
+    }
+    setErro(resultado.erro ?? 'Não foi possível trocar o personagem agora.')
+  }
+
+  return (
+    <div id="troca-de-personagem" className="flex flex-col gap-3 rounded-2xl border border-line bg-panel-2 p-3">
+      <EscolhaDoElenco escolhido={escolhido} aoEscolher={setEscolhido} atual={atual} nomeDoGrupo="elenco-da-troca" />
+      <p className="m-0 text-xs leading-snug text-muted" aria-live="polite">
+        <strong className="text-text">{membro.nome}</strong> · {membro.resumo}
+      </p>
+      <p className="m-0 text-xs leading-snug text-muted">
+        A troca é livre. Nível, itens e pontos continuam; o visual volta ao do estágio, e os trajes da Loja só servem no
+        Espadachim de Éter.
+      </p>
+      {erro && (
+        <p role="alert" className="m-0 text-xs font-bold text-coral">
+          {erro}
+        </p>
+      )}
+      <button
+        type="button"
+        onClick={confirmar}
+        disabled={salvando || escolhido === atual}
+        className="h-11 cursor-pointer rounded-full bg-gradient-to-r from-holo-1 to-holo-3 px-4 text-xs font-extrabold text-void disabled:cursor-not-allowed disabled:opacity-50"
+      >
+        {salvando ? 'Trocando…' : escolhido === atual ? 'Este é o personagem em uso' : `Jogar com ${membro.nome}`}
+      </button>
     </div>
   )
 }
@@ -228,6 +279,7 @@ function FichaDoPersonagem({
   const fecharSlot = useCallback(() => setSlotAberto(null), [])
   const [salvando, setSalvando] = useState(false)
   const [erroDoVisual, setErroDoVisual] = useState('')
+  const [trocandoPersonagem, setTrocandoPersonagem] = useState(false)
 
   const { personagem, progressao, estagio, proximo_estagio: proximoEstagio } = dados
   if (!personagem || !progressao || !estagio) return null
@@ -346,7 +398,28 @@ function FichaDoPersonagem({
                 <Orbit size={14} className="text-holo-2" aria-hidden="true" />
                 {rotuloDoElemento(personagem.elemento)}
               </span>
+              <button
+                type="button"
+                onClick={() => setTrocandoPersonagem((aberto) => !aberto)}
+                aria-expanded={trocandoPersonagem}
+                aria-controls="troca-de-personagem"
+                className="inline-flex h-8 cursor-pointer items-center gap-1.5 rounded-full border border-line px-3 text-xs font-bold text-muted hover:border-holo-3 hover:text-text"
+              >
+                <Repeat size={14} aria-hidden="true" />
+                {trocandoPersonagem ? 'Fechar' : 'Trocar personagem'}
+              </button>
             </div>
+            {trocandoPersonagem && (
+              <TrocaDePersonagem
+                atual={base}
+                aoTrocar={(novos) => {
+                  aoAtualizar(novos)
+                  setPrevia(null)
+                  setTrocandoPersonagem(false)
+                  window.dispatchEvent(new Event(EVENTO_PERSONAGEM_ATUALIZADO))
+                }}
+              />
+            )}
           </div>
 
           <section aria-labelledby="titulo-da-jornada" className="flex flex-col gap-3">
@@ -603,7 +676,7 @@ function FichaDoPersonagem({
             role="tab"
             aria-selected={abaAtiva === 'status'}
             onClick={() => selecionarAba('status')}
-            className={`flex-1 sm:flex-initial px-4 py-2 rounded-lg font-mono text-xs font-bold transition-colors cursor-pointer ${
+            className={`flex-1 min-w-0 sm:flex-initial px-2 sm:px-4 py-2 rounded-lg font-mono text-xs font-bold transition-colors cursor-pointer ${
               abaAtiva === 'status' ? 'bg-holo-1 text-void' : 'text-muted hover:text-text'
             }`}
           >
@@ -634,7 +707,7 @@ function FichaDoPersonagem({
             role="tab"
             aria-selected={abaAtiva === 'habilidades'}
             onClick={() => selecionarAba('habilidades')}
-            className={`flex-1 sm:flex-initial px-4 py-2 rounded-lg font-mono text-xs font-bold transition-colors cursor-pointer ${
+            className={`flex-1 min-w-0 sm:flex-initial px-2 sm:px-4 py-2 rounded-lg font-mono text-xs font-bold transition-colors cursor-pointer ${
               abaAtiva === 'habilidades' ? 'bg-holo-1 text-void' : 'text-muted hover:text-text'
             }`}
           >

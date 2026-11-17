@@ -160,6 +160,10 @@ func carregarContextoPersonagem(dbClient *supabase.Client, userID string) (conte
 	if !ctx.pontosLidos {
 		ctx.pontos = lerPontos(dbClient, userID)
 	}
+	// As skins da Loja são trajes do Espadachim: com outro personagem, não valem.
+	if !aceitaSkins(ctx.linha.PersonagemBase) {
+		ctx.skins = nil
+	}
 	return ctx, nil
 }
 

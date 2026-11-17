@@ -140,8 +140,13 @@ type lutaEmAndamento struct {
 	eter        int
 	recargas    map[string]int
 	despertou   bool
-	dobro       bool
-	turnos      []TurnoBatalha
+	// Efeitos da habilidade única, depois que ela dispara.
+	multProximo    float64 // multiplica o próximo golpe do jogador; 0 é nenhum
+	ignorarDefesa  bool    // o próximo golpe do jogador atravessa a defesa
+	esquivasCertas int     // golpes do monstro que erram com certeza
+	reducao        float64 // fração do dano do monstro que é absorvida
+	rodadasReducao int     // rodadas em que a redução ainda vale
+	turnos         []TurnoBatalha
 }
 
 func (l *lutaEmAndamento) registrar(t TurnoBatalha) {
@@ -178,13 +183,19 @@ func (l *lutaEmAndamento) escolher() *HabilidadeRPG {
 	return melhor
 }
 
-// golpeDoJogador dá um golpe com o ataque indicado, aplicando crítico e o dobro do despertar.
+// golpeDoJogador dá um golpe com o ataque indicado, aplicando crítico e o que a habilidade
+// única deixou para o próximo golpe (multiplicador, defesa ignorada).
 func (l *lutaEmAndamento) golpeDoJogador(ataque int) (int, bool) {
 	a := l.j.Atributos
-	dano, critico := golpe(l.rng, ataque, l.m.Defesa, a.CriticoPorMil, float64(a.DanoCritico)/100)
-	if l.dobro {
-		dano *= 2
-		l.dobro = false
+	defesa := l.m.Defesa
+	if l.ignorarDefesa {
+		defesa = 0
+		l.ignorarDefesa = false
+	}
+	dano, critico := golpe(l.rng, ataque, defesa, a.CriticoPorMil, float64(a.DanoCritico)/100)
+	if l.multProximo > 0 {
+		dano = int(float64(dano)*l.multProximo + 0.5)
+		l.multProximo = 0
 	}
 	return dano, critico
 }
@@ -229,10 +240,17 @@ func (l *lutaEmAndamento) vezDoJogador() bool {
 // Devolve true quando o jogador cai.
 func (l *lutaEmAndamento) vezDoMonstro() bool {
 	t := TurnoBatalha{Atacante: "monstro"}
-	if l.rng.Intn(1000) < l.j.Atributos.EsquivaPorMil {
+	switch {
+	case l.esquivasCertas > 0:
+		l.esquivasCertas--
 		t.Esquiva = true
-	} else {
+	case l.rng.Intn(1000) < l.j.Atributos.EsquivaPorMil:
+		t.Esquiva = true
+	default:
 		t.Dano, t.Critico = golpe(l.rng, l.m.Ataque, l.j.Atributos.Defesa, critMonstroPorMil, multCritMonstro)
+		if l.rodadasReducao > 0 {
+			t.Dano = max(1, int(float64(t.Dano)*(1-l.reducao)+0.5))
+		}
 		l.vidaJogador = max(0, l.vidaJogador-t.Dano)
 	}
 	l.registrar(t)
@@ -240,7 +258,7 @@ func (l *lutaEmAndamento) vezDoMonstro() bool {
 		return true
 	}
 
-	// A habilidade única reage ao golpe: quem está caindo desperta.
+	// A habilidade única reage ao golpe: abaixo de metade da Vida, uma vez por luta.
 	if !l.despertou && l.vidaJogador*2 < l.j.Atributos.Vida {
 		for _, h := range l.j.Habilidades {
 			if h.Efeito != efeitoDespertar {
@@ -248,7 +266,11 @@ func (l *lutaEmAndamento) vezDoMonstro() bool {
 			}
 			cura := min(int(float64(l.j.Atributos.Vida)*h.Fator+0.5), l.j.Atributos.Vida-l.vidaJogador)
 			l.vidaJogador += cura
-			l.despertou, l.dobro = true, true
+			l.despertou = true
+			l.multProximo = h.Fator2
+			l.ignorarDefesa = h.IgnoraDefesa
+			l.esquivasCertas = h.Esquivas
+			l.reducao, l.rodadasReducao = h.Reducao, h.Rodadas
 			l.registrar(TurnoBatalha{Atacante: "jogador", Habilidade: h.Nome, Cura: cura})
 			break
 		}
@@ -290,6 +312,9 @@ func SimularBatalha(jogador CombatenteRPG, monstro MonstroRPG, rng *rand.Rand) R
 			}
 		}
 		l.eter = min(jogador.Atributos.Eter, l.eter+eterPorRodada)
+		if l.rodadasReducao > 0 {
+			l.rodadasReducao--
+		}
 		for id, r := range l.recargas {
 			if r > 0 {
 				l.recargas[id] = r - 1

@@ -99,6 +99,12 @@ type SkinPersonagem struct {
 	Estilo string `json:"estilo"`
 }
 
+// aceitaSkins diz se o personagem usa as skins da Loja. Todas foram desenhadas sobre o
+// Espadachim de Éter; com outro personagem, a skin não vale e o visual volta ao estágio.
+func aceitaSkins(personagemBase string) bool {
+	return personagemBase == "" || personagemBase == personagemBasePadrao
+}
+
 // prefixoSkin marca os ids de skin, que nunca se confundem com um estágio.
 const prefixoSkin = "skin_"
 
@@ -137,7 +143,7 @@ func ValidarEscolhaDeVisualComSkins(visual string, nivel int, estagios []Estagio
 }
 
 // VisualParaRetrato é o visual que o retrato de um membro mostra. A posse da skin já foi
-// conferida em visuaisEquipadosPorUsuario.
+// conferida em visuaisEPersonagens.
 func VisualParaRetrato(visual string, nivel int, estagios []EstagioRPG) string {
 	if ehSkin(visual) {
 		return visual
@@ -192,11 +198,29 @@ func EstagiosPadrao() []EstagioRPG {
 	}
 }
 
+// ValidarPersonagemBase confere a escolha do elenco. Vazio é o personagem padrão, para
+// quem desperta por uma tela antiga.
+func ValidarPersonagemBase(id string) (string, error) {
+	id = strings.TrimSpace(id)
+	if id == "" {
+		return personagemBasePadrao, nil
+	}
+	if _, ok := PersonagensBase()[id]; !ok {
+		return "", errors.New("Personagem desconhecido.")
+	}
+	return id, nil
+}
+
 // PersonagensBase é o elenco disponível. Personagem novo entra aqui, no CHECK da tabela
 // e nas artes do frontend.
 func PersonagensBase() map[string]PersonagemBase {
 	return map[string]PersonagemBase{
 		personagemBasePadrao: {ID: personagemBasePadrao, Classe: "espadachim", Elemento: "eter"},
+		"lanceiro_fogo":      {ID: "lanceiro_fogo", Classe: "lanceiro", Elemento: "fogo"},
+		"assassina_raio":     {ID: "assassina_raio", Classe: "assassina", Elemento: "raio"},
+		"maga_agua":          {ID: "maga_agua", Classe: "maga", Elemento: "agua"},
+		"guerreiro_terra":    {ID: "guerreiro_terra", Classe: "guerreiro", Elemento: "terra"},
+		"paladina_luz":       {ID: "paladina_luz", Classe: "paladina", Elemento: "luz"},
 	}
 }
 
@@ -507,35 +531,58 @@ func carregarRespostaPersonagem(dbClient *supabase.Client, userID string) (Respo
 	return ctx.resposta(), nil
 }
 
-// visuaisEquipadosPorUsuario lê o visual fixado de vários usuários, para o retrato nas
-// listas de membros. A tabela só deixa cada um ler a própria linha, então a leitura é pelo
-// service role e devolve apenas o visual, que é público: aparece no avatar. Com falha, o
-// mapa vem vazio e cada retrato segue o estágio do nível.
-func visuaisEquipadosPorUsuario(userIDs []string) map[string]string {
+// retratoDoMembro é o que a lista de membros precisa para desenhar o retrato de alguém.
+type retratoDoMembro struct {
+	Visual string // vazio: segue o estágio do nível
+	Base   string // personagem do elenco
+}
+
+// retratosDosMembros lê o visual fixado e o personagem de vários usuários, numa leitura só.
+func retratosDosMembros(userIDs []string) map[string]retratoDoMembro {
+	saida := map[string]retratoDoMembro{}
+	visuais, bases := visuaisEPersonagens(userIDs)
+	for uid, b := range bases {
+		saida[uid] = retratoDoMembro{Visual: visuais[uid], Base: b}
+	}
+	return saida
+}
+
+// visuaisEPersonagens lê, numa consulta, o visual fixado e o personagem de vários usuários.
+// A tabela só deixa cada um ler a própria linha, então a leitura é pelo service role e
+// devolve só o que é público (aparece no avatar). Com falha, os mapas vêm vazios e cada
+// retrato segue o estágio do nível, com o personagem padrão.
+func visuaisEPersonagens(userIDs []string) (map[string]string, map[string]string) {
 	saida := map[string]string{}
+	bases := map[string]string{}
 	if len(userIDs) == 0 {
-		return saida
+		return saida, bases
 	}
 	client, err := database.ServiceRoleClient()
 	if err != nil || client == nil {
-		return saida
+		return saida, bases
 	}
 	dados, _, err := client.From("rpg_personagens").
-		Select("user_id,visual_equipado", "", false).
+		Select("user_id,visual_equipado,personagem_base", "", false).
 		In("user_id", userIDs).
 		Execute()
 	if err != nil {
-		return saida
+		return saida, bases
 	}
 	var linhas []struct {
 		UserID         string  `json:"user_id"`
 		VisualEquipado *string `json:"visual_equipado"`
+		PersonagemBase string  `json:"personagem_base"`
 	}
 	if json.Unmarshal(dados, &linhas) != nil {
-		return saida
+		return saida, bases
 	}
 	skinsFixadas := map[string]bool{}
 	for _, l := range linhas {
+		bases[l.UserID] = l.PersonagemBase
+		// Skin fixada por quem trocou de personagem não vale: o retrato volta ao estágio.
+		if l.VisualEquipado != nil && ehSkin(*l.VisualEquipado) && !aceitaSkins(l.PersonagemBase) {
+			continue
+		}
 		if l.VisualEquipado != nil && *l.VisualEquipado != "" {
 			saida[l.UserID] = *l.VisualEquipado
 			if ehSkin(*l.VisualEquipado) {
@@ -546,7 +593,7 @@ func visuaisEquipadosPorUsuario(userIDs []string) map[string]string {
 	if len(skinsFixadas) > 0 {
 		filtrarSkinsSemPosse(client, saida, skinsFixadas)
 	}
-	return saida
+	return saida, bases
 }
 
 // filtrarSkinsSemPosse tira do mapa a skin que o membro já devolveu na Loja, para o retrato
@@ -635,7 +682,8 @@ func (h *PersonagemHandler) HandleDespertarPersonagem(w http.ResponseWriter, r *
 	}
 
 	var corpo struct {
-		Nome string `json:"nome"`
+		Nome           string `json:"nome"`
+		PersonagemBase string `json:"personagem_base"`
 	}
 	if err := json.NewDecoder(r.Body).Decode(&corpo); err != nil {
 		responderErroJSON(w, http.StatusBadRequest, "Corpo inválido.")
@@ -647,6 +695,11 @@ func (h *PersonagemHandler) HandleDespertarPersonagem(w http.ResponseWriter, r *
 		responderErroJSON(w, http.StatusBadRequest, err.Error())
 		return
 	}
+	base, err := ValidarPersonagemBase(corpo.PersonagemBase)
+	if err != nil {
+		responderErroJSON(w, http.StatusBadRequest, err.Error())
+		return
+	}
 
 	dbClient, err := database.ClientWithToken(token)
 	if err != nil || dbClient == nil {
@@ -654,9 +707,15 @@ func (h *PersonagemHandler) HandleDespertarPersonagem(w http.ResponseWriter, r *
 		return
 	}
 
+	// A versão com o personagem é do sql/080. Sem ele aplicado, o Espadachim ainda desperta
+	// pela versão antiga, que só recebe o nome.
 	bruto := strings.TrimSpace(dbClient.Rpc("despertar_personagem", "", map[string]interface{}{
 		"p_nome": nome,
+		"p_base": base,
 	}))
+	if !strings.Contains(bruto, `"ok"`) && !strings.Contains(bruto, `"erro"`) && base == personagemBasePadrao {
+		bruto = strings.TrimSpace(dbClient.Rpc("despertar_personagem", "", map[string]interface{}{"p_nome": nome}))
+	}
 
 	var retorno struct {
 		Ok     bool   `json:"ok"`
@@ -760,4 +819,73 @@ func (h *PersonagemHandler) HandleEquiparVisual(w http.ResponseWriter, r *http.R
 		ctx.linha.VisualEquipado = &visual
 	}
 	responderJSON(w, http.StatusOK, ctx.resposta())
+}
+
+// HandleTrocarPersonagem troca o personagem do elenco. É livre e não custa nada: o nível,
+// os itens e os pontos são do jogador, não do personagem, e continuam. O visual fixado volta
+// ao automático, porque estágios e skins são de cada personagem. A gravação é pelo service
+// role depois de conferir a escolha, como a do visual.
+func (h *PersonagemHandler) HandleTrocarPersonagem(w http.ResponseWriter, r *http.Request) {
+	userID, ok := r.Context().Value(middleware.UserIDKey).(string)
+	token, tokenOk := r.Context().Value(middleware.TokenKey).(string)
+	if !ok || !tokenOk || userID == "" || token == "" {
+		responderErroJSON(w, http.StatusUnauthorized, "Não autenticado")
+		return
+	}
+
+	var corpo struct {
+		PersonagemBase string `json:"personagem_base"`
+	}
+	if err := json.NewDecoder(http.MaxBytesReader(w, r.Body, 1024)).Decode(&corpo); err != nil {
+		responderErroJSON(w, http.StatusBadRequest, "Corpo inválido.")
+		return
+	}
+	if strings.TrimSpace(corpo.PersonagemBase) == "" {
+		responderErroJSON(w, http.StatusBadRequest, "Escolha um personagem.")
+		return
+	}
+	base, err := ValidarPersonagemBase(corpo.PersonagemBase)
+	if err != nil {
+		responderErroJSON(w, http.StatusBadRequest, err.Error())
+		return
+	}
+
+	dbClient, err := database.ClientWithToken(token)
+	if err != nil || dbClient == nil {
+		responderErroJSON(w, http.StatusServiceUnavailable, "Banco indisponível no momento.")
+		return
+	}
+	linha, err := lerPersonagem(dbClient, userID)
+	if err != nil {
+		responderErroJSON(w, http.StatusServiceUnavailable, "Banco indisponível no momento.")
+		return
+	}
+	if linha == nil {
+		responderErroJSON(w, http.StatusNotFound, "Desperte o seu personagem primeiro.")
+		return
+	}
+
+	if linha.PersonagemBase != base {
+		servico, err := database.ServiceRoleClient()
+		if err != nil || servico == nil {
+			responderErroJSON(w, http.StatusServiceUnavailable, "Banco indisponível no momento.")
+			return
+		}
+		if _, _, err := servico.From("rpg_personagens").
+			Update(map[string]interface{}{"personagem_base": base, "visual_equipado": nil}, "minimal", "").
+			Eq("user_id", userID).
+			Execute(); err != nil {
+			// Sem o sql/080 aplicado, o CHECK da tabela só aceita o Espadachim.
+			log.Printf("[PERSONAGEM] Falha ao trocar personagem (user=%s): %v", userID, err)
+			responderErroJSON(w, http.StatusServiceUnavailable, "Não foi possível trocar o personagem agora.")
+			return
+		}
+	}
+
+	resposta, err := carregarRespostaPersonagem(dbClient, userID)
+	if err != nil || !resposta.Existe {
+		responderErroJSON(w, http.StatusServiceUnavailable, "Banco indisponível no momento.")
+		return
+	}
+	responderJSON(w, http.StatusOK, resposta)
 }
