@@ -43,6 +43,7 @@ import {
   type TipoRecuperacao,
 } from '../lib/rpg'
 import IconeDoMonstro from '../components/rpg/IconeDoMonstro'
+import CartaoEvento from '../components/rpg/CartaoEvento'
 import { ESTILO_DO_TIPO } from '../lib/monstrosVisual'
 import { rotuloDoElemento } from '../lib/personagem'
 
@@ -398,6 +399,8 @@ export default function Expedicoes() {
           </dl>
 
           <PainelDaVida estado={estado} recuperando={recuperando} aoRecuperar={recuperar} />
+
+          <CartaoEvento />
 
           {exausto && (
             <p role="status" className="m-0 rounded-xl border border-coral/40 bg-coral/10 p-3 text-xs text-text">

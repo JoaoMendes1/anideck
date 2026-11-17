@@ -72,6 +72,7 @@ export function montarMenu({ handle = '', isAdmin = false, ano = new Date().getF
             { para: '/personagem?aba=habilidades', rotulo: 'Habilidades' },
             { para: '/expedicoes', rotulo: 'Expedições' },
             { para: '/masmorras', rotulo: 'Masmorras' },
+            { para: '/expedicoes#evento', rotulo: 'Evento da temporada' },
             { para: '/invocacao', rotulo: 'Invocação' },
           ],
         },

@@ -806,3 +806,59 @@ export async function atacarChefeDoCla(): Promise<{ dados?: RespostaAtaqueDoCla;
     return { erro: falha }
   }
 }
+
+// --- Evento da temporada (sql/094) ----------------------------------------------------------
+
+export interface EventoDaTemporada {
+  id: string
+  estacao: string
+  ano: number
+  nome: string
+  descricao: string
+  elemento: string
+  titulo: string
+  inicio: string
+  fim: string
+}
+
+export interface EstadoEvento {
+  evento: EventoDaTemporada
+  monstro: MonstroRPG
+  vitorias: number
+  meta: number
+  lutou_hoje: boolean
+  premiado: boolean
+  ouro_premio: number
+  elemental?: RelacaoElemental
+}
+
+export interface RespostaEvento {
+  estado: EstadoEvento
+  resultado: RespostaBatalha['resultado']
+  jogador: AtributosRPG
+  premiado_agora: boolean
+}
+
+export async function obterEvento(): Promise<{ dados?: EstadoEvento; erro?: string }> {
+  try {
+    const res = await fetch('/api/rpg/evento', { headers: await cabecalhoDeAutenticacao() })
+    const json = (await res.json().catch(() => null)) as (EstadoEvento & { error?: string }) | null
+    if (!res.ok || !json || !json.evento) return { erro: json?.error || 'Evento indisponível no momento.' }
+    return { dados: json }
+  } catch {
+    return { erro: 'Evento indisponível no momento.' }
+  }
+}
+
+export async function lutarNoEvento(): Promise<{ dados?: RespostaEvento; erro?: string }> {
+  const falha = 'Não foi possível lutar agora.'
+  try {
+    const res = await fetch('/api/rpg/evento', { method: 'POST', headers: await cabecalhoDeAutenticacao() })
+    const json = (await res.json().catch(() => null)) as (RespostaEvento & { error?: string }) | null
+    if (!res.ok) return { erro: json?.error || falha }
+    if (!json || !json.estado || !json.resultado) return { erro: falha }
+    return { dados: json }
+  } catch {
+    return { erro: falha }
+  }
+}
