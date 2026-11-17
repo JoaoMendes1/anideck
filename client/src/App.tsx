@@ -8,8 +8,10 @@ import CarregandoPagina from './components/CarregandoPagina'
 import LimiteDeErro from './components/LimiteDeErro'
 import { ToastProvider } from './contexts/ToastContext'
 import { SessaoProvider, useSessao } from './contexts/SessaoContext'
+import { CARREGAR } from './lib/rotasPreguicosas'
 
-// Cada página abaixo vira um arquivo JS separado, baixado só quando alguém abre a rota.
+// Cada página abaixo vira um arquivo JS separado, baixado só quando alguém abre a rota
+// (ou quando o mouse passa pelo link no menu: ver lib/rotasPreguicosas.ts).
 //
 // Antes, o app inteiro era um bundle só: quem abria o Meu Deck baixava e executava
 // também o Painel Admin, o editor de imagens (browser-image-compression), o
@@ -19,28 +21,28 @@ import { SessaoProvider, useSessao } from './contexts/SessaoContext'
 //
 // MeuDeck e Landing continuam no bundle principal: são as portas de entrada
 // (logado e visitante). Separá-las custaria um pedido a mais justo na primeira tela.
-const Auth = lazy(() => import('./pages/Auth'))
-const Busca = lazy(() => import('./pages/Busca'))
-const Detalhes = lazy(() => import('./pages/Detalhes'))
-const Calendario = lazy(() => import('./pages/Calendario'))
-const Rankings = lazy(() => import('./pages/Rankings'))
-const PainelAdmin = lazy(() => import('./pages/PainelAdmin'))
-const Estatisticas = lazy(() => import('./pages/Estatisticas'))
-const Configuracoes = lazy(() => import('./pages/Configuracoes'))
-const Privacidade = lazy(() => import('./pages/Privacidade'))
-const Inicio = lazy(() => import('./pages/Inicio'))
-const Guilda = lazy(() => import('./pages/Guilda'))
-const Personagem = lazy(() => import('./pages/Personagem'))
-const Expedicoes = lazy(() => import('./pages/Expedicoes'))
-const Invocacao = lazy(() => import('./pages/Invocacao'))
-const Membros = lazy(() => import('./pages/Membros'))
-const PerfilMembro = lazy(() => import('./pages/PerfilMembro'))
-const Loja = lazy(() => import('./pages/Loja'))
-const Clas = lazy(() => import('./pages/Clas'))
-const ClaDetalhe = lazy(() => import('./pages/ClaDetalhe'))
-const SalaEstreia = lazy(() => import('./pages/SalaEstreia'))
-const Chefao = lazy(() => import('./pages/Chefao'))
-const Wrapped = lazy(() => import('./pages/Wrapped'))
+const Auth = lazy(CARREGAR.auth)
+const Busca = lazy(CARREGAR.busca)
+const Detalhes = lazy(CARREGAR.detalhes)
+const Calendario = lazy(CARREGAR.calendario)
+const Rankings = lazy(CARREGAR.rankings)
+const PainelAdmin = lazy(CARREGAR.painelAdmin)
+const Estatisticas = lazy(CARREGAR.estatisticas)
+const Configuracoes = lazy(CARREGAR.configuracoes)
+const Privacidade = lazy(CARREGAR.privacidade)
+const Inicio = lazy(CARREGAR.inicio)
+const Guilda = lazy(CARREGAR.guilda)
+const Personagem = lazy(CARREGAR.personagem)
+const Expedicoes = lazy(CARREGAR.expedicoes)
+const Invocacao = lazy(CARREGAR.invocacao)
+const Membros = lazy(CARREGAR.membros)
+const PerfilMembro = lazy(CARREGAR.perfilMembro)
+const Loja = lazy(CARREGAR.loja)
+const Clas = lazy(CARREGAR.clas)
+const ClaDetalhe = lazy(CARREGAR.claDetalhe)
+const SalaEstreia = lazy(CARREGAR.salaEstreia)
+const Chefao = lazy(CARREGAR.chefao)
+const Wrapped = lazy(CARREGAR.wrapped)
 
 // "/" é a Landing para o visitante e a Início para quem está logado.
 function RaizDoSite() {

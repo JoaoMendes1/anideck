@@ -271,7 +271,7 @@ export default function Guilda() {
           <SecaoColecaoCartas cartas={cartas} />
 
           {/* LIVRO-RAZÃO: XP E CRISTAIS */}
-          <section className="p-5 sm:p-6 rounded-2xl bg-panel border border-line">
+          <section id="extrato" className="scroll-mt-28 p-5 sm:p-6 rounded-2xl bg-panel border border-line">
             <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
               <div>
                 <p className="font-mono text-xs text-muted-2 uppercase tracking-widest m-0">
@@ -487,7 +487,7 @@ export default function Guilda() {
           </section>
 
           {/* ESPECIALISTA DE GÊNERO */}
-          <section className="p-5 sm:p-6 rounded-2xl bg-panel border border-line">
+          <section id="especialidade" className="scroll-mt-28 p-5 sm:p-6 rounded-2xl bg-panel border border-line">
             <div className="flex flex-wrap items-center justify-between gap-2 mb-3">
               <div>
                 <p className="font-mono text-xs text-muted-2 uppercase tracking-widest m-0">
@@ -570,7 +570,7 @@ export default function Guilda() {
           <CardConviteAmigos onResgatado={() => recarregarComunidade()} />
 
           {/* INSÍGNIAS (CARTAS FOIL) */}
-          <section className="p-5 rounded-2xl bg-panel border border-line">
+          <section id="insignias" className="scroll-mt-28 p-5 rounded-2xl bg-panel border border-line">
             <div className="flex items-center justify-between gap-2 mb-3">
               <div>
                 <p className="font-mono text-xs text-muted-2 uppercase tracking-widest m-0">

@@ -143,7 +143,7 @@ export default function CardMissoesDiarias() {
   return (
     <section
       id="missoes-diarias-card"
-      className="rounded-2xl border border-line bg-panel/90 backdrop-blur-md overflow-hidden mb-6 transition-all shadow-[0_4px_20px_-4px_rgba(0,0,0,0.5)]"
+      className="scroll-mt-28 rounded-2xl border border-line bg-panel/90 backdrop-blur-md overflow-hidden mb-6 transition-all shadow-[0_4px_20px_-4px_rgba(0,0,0,0.5)]"
     >
       <div className="p-4 sm:p-5 flex items-center justify-between gap-3 border-b border-line/60">
         <div className="flex items-center gap-3 min-w-0">

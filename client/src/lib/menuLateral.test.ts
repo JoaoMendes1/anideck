@@ -1,24 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { ITENS_GUILDA, ITENS_JORNADA, guardarMenuAberto, itemAtivo, lerMenuAberto } from './menuLateral'
-
-const item = (para: string) => [...ITENS_JORNADA, ...ITENS_GUILDA].find((i) => i.para === para)!
-
-describe('itemAtivo', () => {
-  it('acende o Início só na raiz', () => {
-    expect(itemAtivo(item('/'), '/')).toBe(true)
-    expect(itemAtivo(item('/'), '/deck')).toBe(false)
-  })
-
-  it('acende o item nas subrotas e nas rotas associadas', () => {
-    expect(itemAtivo(item('/clas'), '/clas/abc')).toBe(true)
-    expect(itemAtivo(item('/rankings'), '/membros')).toBe(true)
-    expect(itemAtivo(item('/descobrir'), '/anime/123')).toBe(true)
-  })
-
-  it('não confunde rotas que só começam igual', () => {
-    expect(itemAtivo(item('/deck'), '/deckbuilder')).toBe(false)
-  })
-})
+import { guardarMenuAberto, lerMenuAberto } from './menuLateral'
 
 describe('preferência do menu', () => {
   it('abre por padrão e lembra a escolha', () => {

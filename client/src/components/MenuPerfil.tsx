@@ -59,9 +59,9 @@ export default function MenuPerfil() {
             {aberto && (
                 <div
                     role="menu"
-                    className="absolute right-0 top-full mt-2 w-56 bg-panel border border-line rounded-xl shadow-2xl overflow-hidden py-1.5 z-50"
+                    className="absolute right-0 top-full mt-2 w-64 max-h-[calc(100vh-6rem)] overflow-y-auto bg-panel border border-line rounded-xl shadow-2xl py-1.5 z-50"
                 >
-                    <ItensPerfil onNavegar={() => setAberto(false)} />
+                    <ItensPerfil onNavegar={() => setAberto(false)} comMenuLateral />
                 </div>
             )}
         </div>

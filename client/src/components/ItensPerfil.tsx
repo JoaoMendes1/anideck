@@ -1,71 +1,83 @@
 // client/src/components/ItensPerfil.tsx
-// Só a LISTA de opções do menu de perfil. A moldura fica de fora: no desktop é
-// um dropdown ancorado, no mobile é um Sheet. Duplicar estes três itens nas duas
-// molduras garantiria que um dia eles divergissem.
+// Conteúdo do menu do avatar (dropdown no desktop, Sheet no celular). A moldura fica de
+// fora. Os itens vêm de lib/navegacao.ts, a mesma fonte do menu lateral: no desktop com
+// menu lateral (xl para cima) a navegação some daqui e só a conta fica, para não repetir.
 import { Link } from 'react-router-dom'
-import { Settings, Shield, LogOut, BarChart2, Trophy, Compass, Swords, ShoppingBag, Users, Sparkles, UserRound } from 'lucide-react'
+import { LogOut } from 'lucide-react'
 import { useSessao } from '../contexts/SessaoContext'
+import { useComunidade } from '../hooks/useComunidade'
 import { TEMAS, aplicarTema, useTema } from '../lib/temas'
+import { ROTULO_MEU_PERFIL, itensDaConta, montarMenu, type ItemDoMenu } from '../lib/navegacao'
+import { preCarregarRota } from '../lib/rotasPreguicosas'
 
-export default function ItensPerfil({ onNavegar }: { onNavegar: () => void }) {
+interface Props {
+    onNavegar: () => void
+    /** No dropdown do desktop, a navegação fica escondida quando o menu lateral aparece. */
+    comMenuLateral?: boolean
+}
+
+const base = 'w-full flex items-center gap-3 px-4 py-2.5 text-sm font-bold text-left transition-colors cursor-pointer'
+
+function LinhaDoItem({ item, onNavegar, comSubitens }: { item: ItemDoMenu; onNavegar: () => void; comSubitens?: boolean }) {
+    const { Icone } = item
+    return (
+        <>
+            <Link
+                to={item.para}
+                onClick={onNavegar}
+                onMouseEnter={() => preCarregarRota(item.para)}
+                onFocus={() => preCarregarRota(item.para)}
+                className={`${base} text-text hover:bg-panel-2`}
+            >
+                <Icone size={16} className={item.cor} aria-hidden />
+                {item.rotulo}
+            </Link>
+            {comSubitens && (item.subitens?.length ?? 0) > 0 && (
+                <div className="flex flex-wrap gap-1.5 pl-11 pr-4 pb-2" aria-label={`Atalhos de ${item.rotulo}`}>
+                    {item.subitens!.map((sub) => (
+                        <Link
+                            key={sub.para}
+                            to={sub.para}
+                            onClick={onNavegar}
+                            onTouchStart={() => preCarregarRota(sub.para)}
+                            className="px-2.5 py-1 rounded-full border border-line bg-panel-2/60 text-xs font-semibold text-muted hover:text-text hover:border-holo-3 transition-colors"
+                        >
+                            {sub.rotulo}
+                        </Link>
+                    ))}
+                </div>
+            )}
+        </>
+    )
+}
+
+export default function ItensPerfil({ onNavegar, comMenuLateral = false }: Props) {
     const { isAdmin, sair } = useSessao()
+    const { estado } = useComunidade()
     const temaAtivo = useTema()
-
-    const base = 'w-full flex items-center gap-3 px-4 py-3 text-sm font-bold text-left transition-colors cursor-pointer'
+    const perfil = estado?.perfil
+    const handle = perfil?.existe && perfil.publico ? perfil.handle : ''
+    const conta = itensDaConta({ handle })
+    // Meu Perfil já está na conta, logo acima: sai da lista de navegação.
+    const grupos = montarMenu({ handle, isAdmin })
+        .map((g) => ({ ...g, itens: g.itens.filter((i) => i.rotulo !== ROTULO_MEU_PERFIL) }))
+        .filter((g) => g.itens.length > 0)
 
     return (
         <div className="flex flex-col">
-            <Link to="/descobrir" onClick={onNavegar} className={`${base} text-text hover:bg-panel-2`}>
-                <Compass size={16} className="text-muted" />
-                Descobrir
-            </Link>
+            {conta.map((item) => <LinhaDoItem key={item.rotulo} item={item} onNavegar={onNavegar} />)}
 
-            <Link to="/meu-gosto" onClick={onNavegar} className={`${base} text-text hover:bg-panel-2`}>
-                <BarChart2 size={16} className="text-muted" />
-                Meu Gosto
-            </Link>
-
-            <Link to="/guilda" onClick={onNavegar} className={`${base} text-text hover:bg-panel-2`}>
-                <Swords size={16} className="text-holo-2" />
-                Guilda e Insígnias
-            </Link>
-
-            <Link to="/personagem" onClick={onNavegar} className={`${base} text-text hover:bg-panel-2`}>
-                <UserRound size={16} className="text-gold" />
-                Meu Personagem
-            </Link>
-
-            <Link to="/loja" onClick={onNavegar} className={`${base} text-text hover:bg-panel-2`}>
-                <ShoppingBag size={16} className="text-holo-3" />
-                Loja Cosmética
-            </Link>
-
-            <Link to="/clas" onClick={onNavegar} className={`${base} text-text hover:bg-panel-2`}>
-                <Users size={16} className="text-holo-1" />
-                Clãs
-            </Link>
-
-            <Link to="/rankings" onClick={onNavegar} className={`${base} text-text hover:bg-panel-2`}>
-                <Trophy size={16} className="text-muted" />
-                Rankings
-            </Link>
-
-            <Link to={`/wrapped/${new Date().getFullYear()}`} onClick={onNavegar} className={`${base} text-text hover:bg-panel-2`}>
-                <Sparkles size={16} className="text-gold" />
-                AniDeck Wrapped {new Date().getFullYear()}
-            </Link>
-
-            <Link to="/configuracoes" onClick={onNavegar} className={`${base} text-text hover:bg-panel-2`}>
-                <Settings size={16} className="text-muted" />
-                Configurações
-            </Link>
-
-            {isAdmin && (
-                <Link to="/admin" onClick={onNavegar} className={`${base} text-text hover:bg-panel-2`}>
-                    <Shield size={16} className="text-muted" />
-                    Painel Admin
-                </Link>
-            )}
+            <div className={comMenuLateral ? 'xl:hidden' : ''}>
+                {grupos.map((g) => (
+                    <div key={g.titulo}>
+                        <div className="h-px bg-line my-1.5" />
+                        <div className="px-4 pt-1.5 pb-1 font-mono text-xs font-bold tracking-[0.16em] text-muted-2">{g.titulo}</div>
+                        {g.itens.map((item) => (
+                            <LinhaDoItem key={item.rotulo} item={item} onNavegar={onNavegar} comSubitens={!comMenuLateral} />
+                        ))}
+                    </div>
+                ))}
+            </div>
 
             <div className="h-px bg-line my-1.5" />
 

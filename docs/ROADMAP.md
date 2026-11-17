@@ -940,6 +940,13 @@ experiência pequena e funcional de cada vez.
 - [x] **Status com cor fixa em todos os temas** (tokens `status-*`): a fatia do donut e a legenda passam a usar a mesma cor.
 - [x] **Gráfico por ano** com rolagem que alcança o primeiro ano e abre nos mais recentes; **quadrante** com largura mínima e máxima; textos da tela com piso de 12 px.
 
+### 17/11/2026 — Menu único com submenus (#249)
+
+- [x] **Uma fonte só para o menu** (`lib/navegacao.ts`): o menu lateral, o menu do avatar e o Sheet do celular leem os mesmos itens, com os mesmos ícones coloridos. Novo grupo **Comunidade**, com Rankings e **Meu Perfil** (perfil público; sem perfil aberto, leva a Configurações para criar).
+- [x] **Submenus no menu lateral aberto**, que abrem no lugar com animação só de CSS; o da página atual já vem aberto: Guilda (Missões, Especialidade, Extrato de XP, Insígnias, Chefão), Meu Personagem (Atributos, Habilidades, Expedições, Invocação), Rankings (Membros) e Meu Perfil (Wrapped, Configurações). No celular, os atalhos aparecem como pílulas no Sheet.
+- [x] **Menu do avatar sem repetição:** com o menu lateral visível (1280 px para cima), só a conta (perfil, Wrapped, Configurações, tema e sair); abaixo disso, a lista completa.
+- [x] **Páginas baixadas antes do clique:** passar o mouse ou focar um item baixa o código da página (`lib/rotasPreguicosas.ts`, os mesmos carregadores do `lazy()`), e o clique não mostra o carregamento. Links com âncora (`/guilda#extrato`) rolam até a seção quando ela aparece.
+
 ### 15/11/2026 — Menu lateral no desktop (#207)
 
 - [x] **`MenuLateral` para quem está logado, de 1280 px para cima:** trilho de ícones até 1536 px e, daí em diante, aberto com rótulos e botão de recolher (preferência guardada no navegador). Grupos Jornada, Guilda e Gestão, e cartão do jogador no rodapé.

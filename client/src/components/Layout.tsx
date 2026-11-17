@@ -4,6 +4,7 @@ import Navbar from './Navbar'
 import BottomNav from './BottomNav'
 import CarregandoPagina from './CarregandoPagina'
 import MenuLateral from './MenuLateral'
+import RolarAteAncora from './RolarAteAncora'
 import LimiteDeErro from './LimiteDeErro'
 import { useSessao } from '../contexts/SessaoContext'
 import { guardarMenuAberto, lerMenuAberto } from '../lib/menuLateral'
@@ -51,6 +52,7 @@ function LayoutInterno() {
       <div className="bg-ambient"></div>
 
       {session && <MenuLateral aberto={menuAberto} aoAlternar={alternarMenu} />}
+      <RolarAteAncora />
       <Navbar />
 
       {/* pt-24 compensa a navbar superior. pb-24 compensa a BottomNav no mobile... */}
