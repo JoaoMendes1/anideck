@@ -102,6 +102,8 @@ type ResultadoSimulado struct {
 	// para a próxima batalha.
 	VidaInicial int `json:"vida_inicial"`
 	VidaFinal   int `json:"vida_final"`
+	// Usos de cada habilidade comum nesta luta, para a maestria (sql/084).
+	Usos map[string]int `json:"-"`
 }
 
 // CalcularDano dá o dano de um golpe antes da variação. A fórmula ataque²/(ataque+defesa)
@@ -153,6 +155,7 @@ type lutaEmAndamento struct {
 	esquivasCertas int     // golpes do monstro que erram com certeza
 	reducao        float64 // fração do dano do monstro que é absorvida
 	rodadasReducao int     // rodadas em que a redução ainda vale
+	usos           map[string]int
 	turnos         []TurnoBatalha
 }
 
@@ -216,6 +219,9 @@ func (l *lutaEmAndamento) vezDoJogador() bool {
 		l.eter -= h.CustoEter
 		l.recargas[h.ID] = h.Recarga
 		t.Habilidade = h.Nome
+		if h.Tipo == "comum" {
+			l.usos[h.ID]++
+		}
 	}
 
 	switch {
@@ -302,11 +308,12 @@ func SimularBatalha(jogador CombatenteRPG, monstro MonstroRPG, rng *rand.Rand) R
 		vidaMonstro: monstro.Vida,
 		eter:        jogador.Atributos.Eter,
 		recargas:    map[string]int{},
+		usos:        map[string]int{},
 		turnos:      make([]TurnoBatalha, 0, maxTurnosBatalha*2),
 	}
 	jogadorPrimeiro := jogador.Atributos.Velocidade >= monstro.Velocidade
 	fim := func(venceu bool, rodadas int) ResultadoSimulado {
-		return ResultadoSimulado{Venceu: venceu, Rodadas: rodadas, Turnos: l.turnos, VidaInicial: vidaInicial, VidaFinal: l.vidaJogador}
+		return ResultadoSimulado{Venceu: venceu, Rodadas: rodadas, Turnos: l.turnos, VidaInicial: vidaInicial, VidaFinal: l.vidaJogador, Usos: l.usos}
 	}
 
 	for rodada := 1; rodada <= maxTurnosBatalha; rodada++ {
@@ -644,6 +651,17 @@ func (h *RPGHandler) HandleBatalhar(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// O banco pode recusar o item (desativado entre a leitura e a gravação): vale o que ele gravou.
+	// A maestria é gravada à parte: a batalha já está registrada, e perder esta chamada só
+	// deixa de contar alguns usos.
+	if len(resultado.Usos) > 0 {
+		if bruto := strings.TrimSpace(servico.Rpc("rpg_registrar_maestria", "", map[string]interface{}{
+			"p_user_id": sessao.userID,
+			"p_usos":    resultado.Usos,
+		})); !strings.Contains(bruto, `"ok"`) {
+			log.Printf("[RPG] Falha ao registrar maestria (user=%s): %s", sessao.userID, bruto)
+		}
+	}
+
 	recompensa := RecompensaBatalha{Bilhetes: registro.BilhetesGanhos, Ouro: registro.OuroGanho}
 	if registro.ItemID != nil && itemSorteado != nil && *registro.ItemID == itemSorteado.ID {
 		recompensa.Item = itemSorteado

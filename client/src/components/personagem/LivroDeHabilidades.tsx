@@ -3,7 +3,7 @@
 // classe por nível. As bloqueadas aparecem com o nível que as libera. Em combate elas são
 // usadas sozinhas; aqui o jogador só consulta.
 import { BookOpen, Lock, Sparkles } from 'lucide-react'
-import type { HabilidadeRPG } from '../../lib/rpg'
+import { textoDaMaestria, type HabilidadeRPG } from '../../lib/rpg'
 
 const ROTULO_DE_SECAO = 'font-mono text-xs font-semibold uppercase tracking-widest text-muted m-0'
 
@@ -69,11 +69,14 @@ export default function LivroDeHabilidades({ habilidades }: { habilidades: Habil
               </div>
               <p className="m-0 text-xs leading-relaxed text-muted">{h.descricao}</p>
               <Custo h={h} />
+              {textoDaMaestria(h) && <span className="font-mono text-xs font-semibold text-holo-3">{textoDaMaestria(h)}</span>}
             </li>
           )
         })}
       </ul>
-      <p className="m-0 text-xs text-muted">Nas expedições, o personagem usa as habilidades sozinho.</p>
+      <p className="m-0 text-xs text-muted">
+        Nas expedições, o personagem usa as habilidades sozinho. Cada uso conta para a maestria: com 20, 60 e 150 usos, a habilidade fica 10% mais forte por grau.
+      </p>
     </section>
   )
 }

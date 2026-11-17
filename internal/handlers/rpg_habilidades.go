@@ -21,6 +21,11 @@ type HabilidadeRPG struct {
 	CustoEter    int    `json:"custo_eter"`
 	Recarga      int    `json:"recarga"` // rodadas de espera depois do uso
 	Desbloqueada bool   `json:"desbloqueada"`
+	// Maestria (sql/084): usos em batalha, o grau (1 a 4; 0 na única, que não tem) e quantos
+	// usos faltam para o próximo grau (0 no último).
+	Usos           int `json:"usos"`
+	Maestria       int `json:"maestria"`
+	FaltamMaestria int `json:"faltam_maestria"`
 
 	Efeito string  `json:"-"`
 	Fator  float64 `json:"-"` // multiplicador do Ataque, ou fração da Vida na cura

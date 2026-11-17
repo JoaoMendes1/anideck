@@ -90,6 +90,19 @@ describe('LivroDeHabilidades', () => {
     expect(screen.getByText('8 Éter')).toBeTruthy()
   })
 
+  it('mostra a maestria das comuns liberadas, e não da única', () => {
+    render(
+      <LivroDeHabilidades
+        habilidades={[
+          { id: 'despertar_do_eter', nome: 'Despertar do Éter', descricao: 'x', tipo: 'unica', nivel_minimo: 5, custo_eter: 0, recarga: 0, desbloqueada: true, maestria: 0 },
+          { id: 'golpe_firme', nome: 'Golpe Firme', descricao: '1,5x', tipo: 'comum', nivel_minimo: 1, custo_eter: 8, recarga: 0, desbloqueada: true, usos: 26, maestria: 2, faltam_maestria: 34 },
+        ]}
+      />,
+    )
+    expect(screen.getByText('Maestria II · faltam 34 usos')).toBeTruthy()
+    expect(screen.getAllByText(/Maestria/).length).toBe(1)
+  })
+
   it('sem livro, não desenha nada', () => {
     const { container } = render(<LivroDeHabilidades habilidades={undefined} />)
     expect(container.innerHTML).toBe('')

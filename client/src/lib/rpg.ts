@@ -36,6 +36,22 @@ export interface HabilidadeRPG {
   custo_eter: number
   recarga: number
   desbloqueada: boolean
+  /** Maestria (sql/084): usos em batalha, grau de 1 a 4 (0 na única) e usos até o próximo. */
+  usos?: number
+  maestria?: number
+  faltam_maestria?: number
+}
+
+const GRAUS_DE_MAESTRIA = ['', 'I', 'II', 'III', 'IV']
+
+/** "Maestria II · faltam 34 usos", ou vazio para a única e para quem não tem o dado. */
+export function textoDaMaestria(h: Pick<HabilidadeRPG, 'tipo' | 'maestria' | 'faltam_maestria'>): string {
+  const grau = h.maestria ?? 0
+  if (h.tipo !== 'comum' || grau < 1) return ''
+  const nome = `Maestria ${GRAUS_DE_MAESTRIA[Math.min(grau, 4)]}`
+  const faltam = h.faltam_maestria ?? 0
+  if (faltam <= 0) return `${nome} · máxima`
+  return `${nome} · faltam ${faltam} ${faltam === 1 ? 'uso' : 'usos'}`
 }
 
 export type SlotId = 'arma' | 'armadura' | 'capa' | 'botas' | 'joia'

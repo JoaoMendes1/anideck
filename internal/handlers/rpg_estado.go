@@ -70,6 +70,8 @@ type estadoJogadorBanco struct {
 	Bilhetes int `json:"bilhetes"`
 	// Ouro (sql/083); ausente antes dele, e então zero.
 	Ouro int `json:"ouro"`
+	// Usos de cada habilidade (sql/084); ausente antes dele.
+	Maestria map[string]int `json:"maestria"`
 	// Ausente com o sql/076 sem o 077; objeto vazio é quem nunca distribuiu.
 	Pontos     *PrimariosRPG   `json:"pontos"`
 	Cosmeticos json.RawMessage `json:"cosmeticos"`
@@ -98,6 +100,7 @@ func contextoDoEstado(e estadoJogadorBanco, cfg configRPG) (contextoPersonagem, 
 		estagios:       cfg.estagios,
 		bilhetes:       e.Bilhetes,
 		ouro:           e.Ouro,
+		maestria:       e.Maestria,
 		equipados:      map[string]string{},
 		inventarioLido: true,
 	}
@@ -230,7 +233,7 @@ func equipamentoDoContexto(dbClient *supabase.Client, userID string, ctx context
 	if ctx.linha != nil {
 		base = ctx.linha.PersonagemBase
 	}
-	estado.Habilidades = LivroDeHabilidades(base, nivel)
+	estado.Habilidades = AplicarMaestria(LivroDeHabilidades(base, nivel), ctx.maestria)
 	estado.Ouro = ctx.ouro
 	return estado, nil
 }

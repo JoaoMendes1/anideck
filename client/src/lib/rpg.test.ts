@@ -122,3 +122,14 @@ describe('atributos primários e registro da luta', () => {
     })
   })
 })
+
+describe('rpg - maestria', () => {
+  it('descreve o grau e quanto falta', async () => {
+    const { textoDaMaestria } = await import('./rpg')
+    expect(textoDaMaestria({ tipo: 'comum', maestria: 1, faltam_maestria: 20 })).toBe('Maestria I · faltam 20 usos')
+    expect(textoDaMaestria({ tipo: 'comum', maestria: 3, faltam_maestria: 1 })).toBe('Maestria III · faltam 1 uso')
+    expect(textoDaMaestria({ tipo: 'comum', maestria: 4, faltam_maestria: 0 })).toBe('Maestria IV · máxima')
+    expect(textoDaMaestria({ tipo: 'unica', maestria: 0, faltam_maestria: 0 })).toBe('')
+    expect(textoDaMaestria({ tipo: 'comum' })).toBe('')
+  })
+})
