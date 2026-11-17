@@ -5,16 +5,22 @@
 // monstro e reproduz os golpes, um a um, para dar a sensação de batalha. Para quem pediu
 // movimento reduzido, a luta aparece de uma vez.
 //
+// A Vida persiste entre as batalhas (Fase 18.5a): volta com o tempo, com episódios assistidos
+// ou com Ouro, na Pousada ou com uma Poção. Sem Vida, não há batalha.
+//
 // Arte provisória: ícone e cor por monstro. A ilustração entra depois, por id.
 import { useEffect, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 import {
+  BedDouble,
   Bug,
   ChevronLeft,
+  Coins,
   Crown,
   Dog,
   Droplet,
   Flame,
+  FlaskConical,
   Ghost,
   Heart,
   Mountain,
@@ -30,12 +36,17 @@ import {
   batalhasRestantes,
   estiloDaRaridade,
   descreverTurno,
+  horaDaPousada,
   obterExpedicoes,
+  porMilEmPorcento,
+  recuperarVida,
   resumoDoItem,
   rotuloDaDificuldade,
+  semVida,
   type EstadoExpedicoes,
   type MonstroRPG,
   type RespostaBatalha,
+  type TipoRecuperacao,
 } from '../lib/rpg'
 import { arteDoMonstro } from '../lib/artesRpg'
 
@@ -118,7 +129,7 @@ function TelaDeBatalha({ batalha, aoVoltar }: { batalha: RespostaBatalha; aoVolt
   }, [mostrados, terminou])
 
   const ultimo = mostrados > 0 ? resultado.turnos[mostrados - 1] : undefined
-  const vidaJogador = ultimo?.vida_jogador ?? jogador.vida
+  const vidaJogador = ultimo?.vida_jogador ?? resultado.vida_inicial ?? jogador.vida
   const vidaMonstro = ultimo?.vida_monstro ?? monstro.vida
   const recentes = resultado.turnos.slice(Math.max(0, mostrados - 6), mostrados).reverse()
 
@@ -170,6 +181,12 @@ function TelaDeBatalha({ batalha, aoVoltar }: { batalha: RespostaBatalha; aoVolt
                 <Ticket size={16} className="text-gold" aria-hidden="true" />
                 {recompensa.bilhetes === 1 ? '1 bilhete de invocação' : `${recompensa.bilhetes} bilhetes de invocação`}
               </li>
+              {(recompensa.ouro ?? 0) > 0 && (
+                <li className="flex items-center gap-2">
+                  <Coins size={16} className="text-gold" aria-hidden="true" />
+                  {recompensa.ouro} de Ouro
+                </li>
+              )}
               {recompensa.item && (
                 <li className={`flex flex-col rounded-xl border p-2.5 ${estiloDaRaridade(recompensa.item.raridade).borda}`}>
                   <span className={`font-bold ${estiloDaRaridade(recompensa.item.raridade).texto}`}>
@@ -186,7 +203,7 @@ function TelaDeBatalha({ batalha, aoVoltar }: { batalha: RespostaBatalha; aoVolt
             <p className="m-0 text-sm text-muted">
               {resultado.rodadas >= 20 && vidaJogador > 0
                 ? 'A luta se arrastou demais e você recuou. Melhore o equipamento e tente de novo.'
-                : 'Você foi derrotado. Troque o equipamento ou enfrente um monstro mais fraco.'}
+                : 'Você foi derrotado e ficou sem Vida. Descanse, assista a um episódio ou use a Pousada antes da próxima batalha.'}
             </p>
           )}
           <div className="flex flex-wrap gap-2">
@@ -217,6 +234,64 @@ function TelaDeBatalha({ batalha, aoVoltar }: { batalha: RespostaBatalha; aoVolt
   )
 }
 
+function PainelDaVida({
+  estado,
+  recuperando,
+  aoRecuperar,
+}: {
+  estado: EstadoExpedicoes
+  recuperando: TipoRecuperacao | null
+  aoRecuperar: (tipo: TipoRecuperacao) => void
+}) {
+  const vida = estado.vida
+  const regras = estado.hoje.regras
+  if (!vida || !regras) return null
+  const ouro = estado.hoje.ouro ?? 0
+  const cheia = vida.perdida_por_mil === 0
+  const pousadaEm = horaDaPousada(estado.hoje.pousada_livre_em)
+  const pousada = estado.custos?.pousada ?? 0
+  const pocao = estado.custos?.pocao ?? 0
+  const corDaBarra = semVida(vida) ? 'bg-coral' : vida.perdida_por_mil > 500 ? 'bg-gold' : 'bg-gradient-to-r from-holo-2 to-holo-3'
+  return (
+    <section aria-labelledby="titulo-da-vida" className="flex flex-col gap-3 rounded-2xl border border-line bg-panel p-4">
+      <h2 id="titulo-da-vida" className={ROTULO_DE_SECAO}>
+        Sua Vida
+      </h2>
+      <BarraDeVida rotulo="Você" atual={vida.atual} maximo={vida.maxima} cor={corDaBarra} />
+      <p className="m-0 text-xs leading-snug text-muted">
+        O dano fica entre as batalhas. A Vida volta {porMilEmPorcento(regras.regen_por_hora)} por hora e{' '}
+        {porMilEmPorcento(regras.por_episodio)} a cada episódio assistido ({estado.hoje.episodios_hoje ?? 0} de {regras.episodios_por_dia} hoje).
+      </p>
+      <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+        <button
+          type="button"
+          onClick={() => aoRecuperar('pousada')}
+          disabled={cheia || recuperando !== null || ouro < pousada || pousadaEm !== ''}
+          className="flex min-h-12 cursor-pointer items-center justify-between gap-2 rounded-xl border border-line px-3 py-2 text-left text-xs disabled:cursor-not-allowed disabled:opacity-50"
+        >
+          <span className="flex items-center gap-2 font-bold text-text">
+            <BedDouble size={16} className="text-holo-3" aria-hidden="true" />
+            {recuperando === 'pousada' ? 'Descansando…' : 'Pousada: Vida cheia'}
+          </span>
+          <span className="shrink-0 font-mono text-gold">{pousadaEm ? `livre às ${pousadaEm}` : `${pousada} de Ouro`}</span>
+        </button>
+        <button
+          type="button"
+          onClick={() => aoRecuperar('pocao')}
+          disabled={cheia || recuperando !== null || ouro < pocao}
+          className="flex min-h-12 cursor-pointer items-center justify-between gap-2 rounded-xl border border-line px-3 py-2 text-left text-xs disabled:cursor-not-allowed disabled:opacity-50"
+        >
+          <span className="flex items-center gap-2 font-bold text-text">
+            <FlaskConical size={16} className="text-green" aria-hidden="true" />
+            {recuperando === 'pocao' ? 'Bebendo…' : `Poção: +${porMilEmPorcento(regras.pocao)}`}
+          </span>
+          <span className="shrink-0 font-mono text-gold">{pocao} de Ouro</span>
+        </button>
+      </div>
+    </section>
+  )
+}
+
 export default function Expedicoes() {
   const [estado, setEstado] = useState<EstadoExpedicoes | null>(null)
   const [erro, setErro] = useState('')
@@ -225,6 +300,7 @@ export default function Expedicoes() {
   const [lutando, setLutando] = useState<string | null>(null)
   const [batalha, setBatalha] = useState<RespostaBatalha | null>(null)
   const [erroDaLuta, setErroDaLuta] = useState('')
+  const [recuperando, setRecuperando] = useState<TipoRecuperacao | null>(null)
   const topo = useRef<HTMLDivElement>(null)
 
   const carregar = () => {
@@ -246,15 +322,36 @@ export default function Expedicoes() {
     const r = await batalhar(monstroId)
     setLutando(null)
     if (r.dados) {
-      setBatalha(r.dados)
-      setEstado((atual) => (atual ? { ...atual, hoje: r.dados!.hoje } : atual))
+      const dados = r.dados
+      setBatalha(dados)
+      setEstado((atual) => (atual ? { ...atual, hoje: dados.hoje, vida: dados.vida ?? atual.vida } : atual))
       topo.current?.scrollIntoView?.({ block: 'start' })
       return
     }
     setErroDaLuta(r.erro ?? 'Não foi possível batalhar agora.')
   }
 
+  const recuperar = async (tipo: TipoRecuperacao) => {
+    if (recuperando) return
+    setErroDaLuta('')
+    setRecuperando(tipo)
+    const r = await recuperarVida(tipo)
+    setRecuperando(null)
+    if (!r.dados) {
+      setErroDaLuta(r.erro ?? 'Não foi possível recuperar agora.')
+      return
+    }
+    const dados = r.dados
+    setEstado((atual) => {
+      if (!atual) return atual
+      const horas = atual.hoje.regras?.pousada_horas ?? 0
+      const pousadaLivreEm = tipo === 'pousada' ? new Date(Date.now() + horas * 3600_000).toISOString() : atual.hoje.pousada_livre_em
+      return { ...atual, vida: dados.vida, hoje: { ...atual.hoje, ouro: dados.ouro, vida_perdida: dados.vida.perdida_por_mil, pousada_livre_em: pousadaLivreEm } }
+    })
+  }
+
   const restantes = batalhasRestantes(estado?.hoje)
+  const exausto = semVida(estado?.vida)
 
   return (
     <div ref={topo} className={CONTAINER}>
@@ -294,11 +391,11 @@ export default function Expedicoes() {
           <div className="flex flex-col gap-2">
             <h1 className="m-0 font-anton text-[clamp(2rem,8vw,2.6rem)] uppercase leading-none">Expedições</h1>
             <p className="m-0 text-sm text-muted">
-              Enfrente monstros com o seu equipamento. Vitórias dão bilhetes de invocação e, às vezes, um item. Batalhas não dão XP: ele vem só dos animes.
+              Enfrente monstros com o seu equipamento. Vitórias dão bilhetes de invocação, Ouro e, às vezes, um item. Batalhas não dão XP: ele vem só dos animes.
             </p>
           </div>
 
-          <dl className="m-0 grid grid-cols-3 gap-2.5">
+          <dl className="m-0 grid grid-cols-2 gap-2.5 sm:grid-cols-4">
             <div className="flex min-w-0 flex-col gap-1 rounded-xl border border-line bg-panel p-3">
               <dt className="flex items-center gap-1.5 text-xs font-semibold text-muted">
                 <Zap size={13} className="text-holo-2" aria-hidden="true" /> Poder
@@ -320,8 +417,21 @@ export default function Expedicoes() {
               </dt>
               <dd className="m-0 font-anton text-2xl leading-none">{estado.hoje.bilhetes}</dd>
             </div>
+            <div className="flex min-w-0 flex-col gap-1 rounded-xl border border-line bg-panel p-3">
+              <dt className="flex items-center gap-1.5 text-xs font-semibold text-muted">
+                <Coins size={13} className="text-gold" aria-hidden="true" /> Ouro
+              </dt>
+              <dd className="m-0 font-anton text-2xl leading-none">{estado.hoje.ouro ?? 0}</dd>
+            </div>
           </dl>
 
+          <PainelDaVida estado={estado} recuperando={recuperando} aoRecuperar={recuperar} />
+
+          {exausto && (
+            <p role="status" className="m-0 rounded-xl border border-coral/40 bg-coral/10 p-3 text-xs text-text">
+              Seu personagem está sem Vida. Descanse, assista a um episódio ou use a Pousada para voltar às batalhas.
+            </p>
+          )}
           {restantes === 0 && (
             <p role="status" className="m-0 rounded-xl border border-gold/40 bg-gold/10 p-3 text-xs text-text">
               Você já fez todas as batalhas de hoje. As expedições voltam amanhã.
@@ -369,7 +479,7 @@ export default function Expedicoes() {
                   <button
                     type="button"
                     onClick={() => enfrentar(m.id)}
-                    disabled={restantes === 0 || lutando !== null}
+                    disabled={restantes === 0 || lutando !== null || exausto}
                     aria-label={`Enfrentar ${m.nome}`}
                     className="h-11 cursor-pointer rounded-full bg-gradient-to-r from-holo-1 to-holo-3 px-5 text-xs font-extrabold text-void disabled:cursor-not-allowed disabled:opacity-50"
                   >

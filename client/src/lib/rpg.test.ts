@@ -76,6 +76,24 @@ describe('rpg - invocação', () => {
   })
 })
 
+describe('rpg - Vida entre as batalhas', () => {
+  it('sem Vida só quando a perda é total', async () => {
+    const { semVida } = await import('./rpg')
+    expect(semVida(undefined)).toBe(false)
+    expect(semVida({ atual: 1, maxima: 300, perdida_por_mil: 999 })).toBe(false)
+    expect(semVida({ atual: 0, maxima: 300, perdida_por_mil: 1000 })).toBe(true)
+  })
+
+  it('mostra a hora da Pousada só quando ela ainda não vale', async () => {
+    const { horaDaPousada } = await import('./rpg')
+    const agora = new Date('2026-11-17T12:00:00Z')
+    expect(horaDaPousada(null, agora)).toBe('')
+    expect(horaDaPousada('2026-11-17T11:00:00Z', agora)).toBe('')
+    expect(horaDaPousada('não é data', agora)).toBe('')
+    expect(horaDaPousada('2026-11-17T15:30:00Z', agora)).toMatch(/^\d{2}:\d{2}$/)
+  })
+})
+
 describe('atributos primários e registro da luta', () => {
   it('soma os pontos e mostra milésimos como porcentagem', () => {
     expect(somaDosPontos({ forca: 3, inteligencia: 0, constituicao: 2, agilidade: 0, destreza: 1, sorte: 0 })).toBe(6)

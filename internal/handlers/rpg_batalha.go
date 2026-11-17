@@ -77,6 +77,9 @@ type TurnoBatalha struct {
 type CombatenteRPG struct {
 	Atributos   AtributosRPG
 	Habilidades []HabilidadeRPG
+	// VidaInicial é a Vida com que o jogador entra, que persiste entre as batalhas (sql/081).
+	// Zero ou acima da máxima é Vida cheia.
+	VidaInicial int
 }
 
 // CombatenteDoEstado separa do livro só as habilidades liberadas.
@@ -95,6 +98,10 @@ type ResultadoSimulado struct {
 	Venceu  bool           `json:"venceu"`
 	Rodadas int            `json:"rodadas"`
 	Turnos  []TurnoBatalha `json:"turnos"`
+	// VidaInicial e VidaFinal são a Vida do jogador no começo e no fim; a final fica gravada
+	// para a próxima batalha.
+	VidaInicial int `json:"vida_inicial"`
+	VidaFinal   int `json:"vida_final"`
 }
 
 // CalcularDano dá o dano de um golpe antes da variação. A fórmula ataque²/(ataque+defesa)
@@ -285,30 +292,37 @@ func SimularBatalha(jogador CombatenteRPG, monstro MonstroRPG, rng *rand.Rand) R
 	if monstro.Velocidade == 0 {
 		monstro.Velocidade = VelocidadeDoMonstro(monstro)
 	}
+	vidaInicial := jogador.Atributos.Vida
+	if jogador.VidaInicial > 0 && jogador.VidaInicial < vidaInicial {
+		vidaInicial = jogador.VidaInicial
+	}
 	l := &lutaEmAndamento{
 		j: jogador, m: monstro, rng: rng,
-		vidaJogador: jogador.Atributos.Vida,
+		vidaJogador: vidaInicial,
 		vidaMonstro: monstro.Vida,
 		eter:        jogador.Atributos.Eter,
 		recargas:    map[string]int{},
 		turnos:      make([]TurnoBatalha, 0, maxTurnosBatalha*2),
 	}
 	jogadorPrimeiro := jogador.Atributos.Velocidade >= monstro.Velocidade
+	fim := func(venceu bool, rodadas int) ResultadoSimulado {
+		return ResultadoSimulado{Venceu: venceu, Rodadas: rodadas, Turnos: l.turnos, VidaInicial: vidaInicial, VidaFinal: l.vidaJogador}
+	}
 
 	for rodada := 1; rodada <= maxTurnosBatalha; rodada++ {
 		if jogadorPrimeiro {
 			if l.vezDoJogador() {
-				return ResultadoSimulado{Venceu: true, Rodadas: rodada, Turnos: l.turnos}
+				return fim(true, rodada)
 			}
 			if l.vezDoMonstro() {
-				return ResultadoSimulado{Venceu: false, Rodadas: rodada, Turnos: l.turnos}
+				return fim(false, rodada)
 			}
 		} else {
 			if l.vezDoMonstro() {
-				return ResultadoSimulado{Venceu: false, Rodadas: rodada, Turnos: l.turnos}
+				return fim(false, rodada)
 			}
 			if l.vezDoJogador() {
-				return ResultadoSimulado{Venceu: true, Rodadas: rodada, Turnos: l.turnos}
+				return fim(true, rodada)
 			}
 		}
 		l.eter = min(jogador.Atributos.Eter, l.eter+eterPorRodada)
@@ -321,7 +335,7 @@ func SimularBatalha(jogador CombatenteRPG, monstro MonstroRPG, rng *rand.Rand) R
 			}
 		}
 	}
-	return ResultadoSimulado{Venceu: false, Rodadas: maxTurnosBatalha, Turnos: l.turnos}
+	return fim(false, maxTurnosBatalha)
 }
 
 // DificuldadeContra compara o Poder do jogador com o do monstro, para a tela avisar antes.
@@ -371,23 +385,33 @@ type MonstroNaLista struct {
 	Dificuldade string `json:"dificuldade"`
 }
 
-// HojeRPG é o limite de batalhas e o saldo de bilhetes.
+// HojeRPG é o limite de batalhas, os saldos e a Vida guardada (sql/081).
 type HojeRPG struct {
 	Feitas   int `json:"feitas"`
 	Limite   int `json:"limite"`
 	Bilhetes int `json:"bilhetes"`
+	Ouro     int `json:"ouro"`
+	// VidaPerdida já vem com a regeneração descontada, em por mil da Vida máxima.
+	VidaPerdida int `json:"vida_perdida"`
+	// PousadaLivreEm é quando a Pousada volta a valer; nulo é agora.
+	PousadaLivreEm *string    `json:"pousada_livre_em"`
+	EpisodiosHoje  int        `json:"episodios_hoje"`
+	Regras         RegrasVida `json:"regras"`
 }
 
 // EstadoExpedicoes é o corpo de GET /api/rpg/batalhas.
 type EstadoExpedicoes struct {
-	Atributos AtributosRPG     `json:"atributos"`
-	Hoje      HojeRPG          `json:"hoje"`
-	Monstros  []MonstroNaLista `json:"monstros"`
+	Atributos AtributosRPG      `json:"atributos"`
+	Vida      VidaRPG           `json:"vida"`
+	Custos    CustosRecuperacao `json:"custos"`
+	Hoje      HojeRPG           `json:"hoje"`
+	Monstros  []MonstroNaLista  `json:"monstros"`
 }
 
 // RecompensaBatalha é o que a vitória deu.
 type RecompensaBatalha struct {
 	Bilhetes int      `json:"bilhetes"`
+	Ouro     int      `json:"ouro"`
 	Item     *ItemRPG `json:"item,omitempty"`
 }
 
@@ -397,6 +421,7 @@ type RespostaBatalha struct {
 	Jogador    AtributosRPG      `json:"jogador"`
 	Resultado  ResultadoSimulado `json:"resultado"`
 	Recompensa RecompensaBatalha `json:"recompensa"`
+	Vida       VidaRPG           `json:"vida"`
 	Hoje       HojeRPG           `json:"hoje"`
 }
 
@@ -475,11 +500,17 @@ func (h *RPGHandler) HandleGetExpedicoes(w http.ResponseWriter, r *http.Request)
 			Dificuldade: DificuldadeContra(equipamento.Atributos, m),
 		})
 	}
-	responderJSON(w, http.StatusOK, EstadoExpedicoes{Atributos: equipamento.Atributos, Hoje: hoje, Monstros: lista})
+	responderJSON(w, http.StatusOK, EstadoExpedicoes{
+		Atributos: equipamento.Atributos,
+		Vida:      MontarVida(equipamento.Atributos.Vida, hoje.VidaPerdida),
+		Custos:    CustosPara(sessao.nivel),
+		Hoje:      hoje,
+		Monstros:  lista,
+	})
 }
 
-// HandleBatalhar simula a luta com os atributos calculados aqui e grava pelo service role.
-// O corpo traz só o monstro escolhido.
+// HandleBatalhar simula a luta com os atributos calculados aqui, a partir da Vida guardada,
+// e grava pelo service role a batalha, a Vida que sobrou e o Ouro. O corpo traz só o monstro.
 func (h *RPGHandler) HandleBatalhar(w http.ResponseWriter, r *http.Request) {
 	var corpo struct {
 		MonstroID string `json:"monstro_id"`
@@ -513,7 +544,8 @@ func (h *RPGHandler) HandleBatalhar(w http.ResponseWriter, r *http.Request) {
 		equipamento, errEq = equipamentoDoContexto(sessao.dbClient, sessao.userID, sessao.ctx)
 	}()
 	wg.Wait()
-	if errM != nil || errEq != nil {
+	// Sem o dia lido não há a Vida guardada, e a batalha começaria com a Vida cheia.
+	if errM != nil || errEq != nil || errH != nil {
 		responderErroJSON(w, http.StatusServiceUnavailable, "Expedições indisponíveis no momento.")
 		return
 	}
@@ -531,13 +563,21 @@ func (h *RPGHandler) HandleBatalhar(w http.ResponseWriter, r *http.Request) {
 
 	// Conferência antecipada do limite, só para não simular à toa; quem decide é a função
 	// de registro, que trava por usuário.
-	if errH == nil && hoje.Feitas >= hoje.Limite {
+	if hoje.Feitas >= hoje.Limite {
 		responderErroJSON(w, http.StatusTooManyRequests, "Você já fez todas as batalhas de hoje. Volte amanhã.")
+		return
+	}
+	vida := MontarVida(equipamento.Atributos.Vida, hoje.VidaPerdida)
+	if vida.PerdidaPorMil >= perdaTotalPorMil {
+		responderErroJSON(w, http.StatusConflict, "Seu personagem está sem Vida. Descanse, assista a um episódio ou use a Pousada.")
 		return
 	}
 
 	rng := novoGeradorDeBatalha()
-	resultado := SimularBatalha(CombatenteDoEstado(equipamento), *monstro, rng)
+	combatente := CombatenteDoEstado(equipamento)
+	combatente.VidaInicial = vida.Atual
+	resultado := SimularBatalha(combatente, *monstro, rng)
+	perdaFinal := PerdaPorMil(equipamento.Atributos.Vida, resultado.VidaFinal)
 
 	var itemSorteado *ItemRPG
 	if resultado.Venceu {
@@ -564,20 +604,25 @@ func (h *RPGHandler) HandleBatalhar(w http.ResponseWriter, r *http.Request) {
 	if itemSorteado != nil {
 		itemID = itemSorteado.ID
 	}
-	bruto := strings.TrimSpace(servico.Rpc("rpg_registrar_batalha", "", map[string]interface{}{
-		"p_user_id":    sessao.userID,
-		"p_monstro_id": monstro.ID,
-		"p_venceu":     resultado.Venceu,
-		"p_turnos":     len(resultado.Turnos),
-		"p_item_id":    itemID,
+	bruto := strings.TrimSpace(servico.Rpc("rpg_concluir_batalha", "", map[string]interface{}{
+		"p_user_id":      sessao.userID,
+		"p_monstro_id":   monstro.ID,
+		"p_venceu":       resultado.Venceu,
+		"p_turnos":       len(resultado.Turnos),
+		"p_item_id":      itemID,
+		"p_vida_perdida": perdaFinal,
 	}))
 	var registro struct {
 		Ok             bool    `json:"ok"`
 		Erro           string  `json:"erro"`
 		LimiteAtingido bool    `json:"limite_atingido"`
+		SemVida        bool    `json:"sem_vida"`
 		BilhetesGanhos int     `json:"bilhetes_ganhos"`
+		OuroGanho      int     `json:"ouro_ganho"`
 		ItemID         *string `json:"item_id"`
 		Bilhetes       int     `json:"bilhetes"`
+		Ouro           int     `json:"ouro"`
+		VidaPerdida    int     `json:"vida_perdida"`
 		Feitas         int     `json:"feitas"`
 		Limite         int     `json:"limite"`
 	}
@@ -588,15 +633,18 @@ func (h *RPGHandler) HandleBatalhar(w http.ResponseWriter, r *http.Request) {
 	}
 	if registro.Erro != "" {
 		status := http.StatusBadRequest
-		if registro.LimiteAtingido {
+		switch {
+		case registro.LimiteAtingido:
 			status = http.StatusTooManyRequests
+		case registro.SemVida:
+			status = http.StatusConflict
 		}
 		responderErroJSON(w, status, registro.Erro)
 		return
 	}
 
 	// O banco pode recusar o item (desativado entre a leitura e a gravação): vale o que ele gravou.
-	recompensa := RecompensaBatalha{Bilhetes: registro.BilhetesGanhos}
+	recompensa := RecompensaBatalha{Bilhetes: registro.BilhetesGanhos, Ouro: registro.OuroGanho}
 	if registro.ItemID != nil && itemSorteado != nil && *registro.ItemID == itemSorteado.ID {
 		recompensa.Item = itemSorteado
 	}
@@ -606,7 +654,12 @@ func (h *RPGHandler) HandleBatalhar(w http.ResponseWriter, r *http.Request) {
 		Jogador:    equipamento.Atributos,
 		Resultado:  resultado,
 		Recompensa: recompensa,
-		Hoje:       HojeRPG{Feitas: registro.Feitas, Limite: registro.Limite, Bilhetes: registro.Bilhetes},
+		Vida:       MontarVida(equipamento.Atributos.Vida, registro.VidaPerdida),
+		Hoje: HojeRPG{
+			Feitas: registro.Feitas, Limite: registro.Limite, Bilhetes: registro.Bilhetes,
+			Ouro: registro.Ouro, VidaPerdida: registro.VidaPerdida,
+			PousadaLivreEm: hoje.PousadaLivreEm, EpisodiosHoje: hoje.EpisodiosHoje, Regras: hoje.Regras,
+		},
 	})
 }
 

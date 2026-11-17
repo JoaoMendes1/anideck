@@ -110,6 +110,7 @@ SELECT pg_get_viewdef('nome_da_view'::regclass, true);
 | `078_rpg_reforco_monstros.sql` | Fase 18 (18.4a, #229): reforço de Vida, Ataque e Defesa dos seis monstros pós-tutorial (`lobo_sombrio` ao `primordial_esquecido`) após os atributos e habilidades da #227 | — |
 | `079_vitalidade_mana_por_nivel.sql` | Fase 18 (#234): `mana_maxima(uuid)` escalada pelo nível do jogador (`mp_max + mp_por_nivel * (nivel - 1)` até `mp_max_teto`), `mana_atual(uuid)` com regeneração proporcional ao teto do jogador + bônus de Paladino (+5/dia) e de Vitalidade alta (+25%), e novos parâmetros `mp_por_nivel=1` e `mp_max_teto=120` em `app_settings.comunidade_regras` | — |
 | `080_rpg_elenco.sql` | Fase 18 (#238): `CHECK` de `rpg_personagens.personagem_base` com os seis personagens do elenco; `despertar_personagem(p_nome, p_base)` com padrão `espadachim_eter`, no lugar da versão só com o nome. Aplicar antes de promover: sem ele, só o Espadachim desperta | — |
+| `081_rpg_vida_e_ouro.sql` | Fase 18.5a (#239): Vida persistente como perda em por mil (`vida_perdida`, `vida_em`) e `ouro` em `rpg_recursos`; `rpg_recuperacoes` (uma linha por origem); regeneração na leitura (`rpg_vida_perdida_agora`); gatilho em `xp_ledger` que recupera 8% por episódio, até 5 por dia; `rpg_batalhas_hoje()` redefinida (definição viva, antes no `072`); `rpg_concluir_batalha()` e `rpg_recuperar_vida()` só para o service role. **Aplicar antes de promover** | — |
 
 Datas com `~` são a data do commit, não da aplicação no Supabase.
 

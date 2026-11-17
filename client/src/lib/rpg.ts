@@ -232,14 +232,46 @@ export interface MonstroNaLista extends MonstroRPG {
   dificuldade: Dificuldade
 }
 
+/** Regras de recuperação da Vida, em por mil da Vida máxima (sql/081). */
+export interface RegrasVida {
+  regen_por_hora: number
+  por_episodio: number
+  episodios_por_dia: number
+  pocao: number
+  pousada_horas: number
+}
+
 export interface HojeRPG {
   feitas: number
   limite: number
   bilhetes: number
+  ouro?: number
+  /** Vida perdida em por mil, já descontada a regeneração. */
+  vida_perdida?: number
+  /** Quando a Pousada volta a valer; nulo é agora. */
+  pousada_livre_em?: string | null
+  episodios_hoje?: number
+  regras?: RegrasVida
 }
+
+/** Vida do personagem entre as batalhas. */
+export interface VidaRPG {
+  atual: number
+  maxima: number
+  perdida_por_mil: number
+}
+
+export interface CustosRecuperacao {
+  pousada: number
+  pocao: number
+}
+
+export type TipoRecuperacao = 'pousada' | 'pocao'
 
 export interface EstadoExpedicoes {
   atributos: AtributosRPG
+  vida?: VidaRPG
+  custos?: CustosRecuperacao
   hoje: HojeRPG
   monstros: MonstroNaLista[]
 }
@@ -260,8 +292,9 @@ export interface TurnoBatalha {
 export interface RespostaBatalha {
   monstro: MonstroRPG
   jogador: AtributosRPG
-  resultado: { venceu: boolean; rodadas: number; turnos: TurnoBatalha[] }
-  recompensa: { bilhetes: number; item?: ItemRPG }
+  resultado: { venceu: boolean; rodadas: number; turnos: TurnoBatalha[]; vida_inicial?: number; vida_final?: number }
+  recompensa: { bilhetes: number; ouro?: number; item?: ItemRPG }
+  vida?: VidaRPG
   hoje: HojeRPG
 }
 
@@ -285,6 +318,19 @@ export const ROTULO_DA_DIFICULDADE: Record<Dificuldade, { rotulo: string; classe
 
 export function rotuloDaDificuldade(d: string | undefined) {
   return ROTULO_DA_DIFICULDADE[(d ?? 'equilibrada') as Dificuldade] ?? ROTULO_DA_DIFICULDADE.equilibrada
+}
+
+/** Sem Vida, o servidor recusa a batalha: a tela bloqueia antes. */
+export function semVida(vida: VidaRPG | undefined): boolean {
+  return Boolean(vida && vida.perdida_por_mil >= 1000)
+}
+
+/** Hora local em que a Pousada volta a valer, ou vazio quando já vale. */
+export function horaDaPousada(livreEm: string | null | undefined, agora: Date = new Date()): string {
+  if (!livreEm) return ''
+  const quando = new Date(livreEm)
+  if (Number.isNaN(quando.getTime()) || quando <= agora) return ''
+  return quando.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })
 }
 
 /** Quantas batalhas ainda cabem hoje (nunca negativo). */
@@ -317,6 +363,25 @@ export async function batalhar(monstroId: string): Promise<{ dados?: RespostaBat
     if (!res.ok) return { erro: json?.error || falha }
     if (!json || !json.resultado || !Array.isArray(json.resultado.turnos)) return { erro: falha }
     return { dados: json }
+  } catch {
+    return { erro: falha }
+  }
+}
+
+export async function recuperarVida(
+  tipo: TipoRecuperacao,
+): Promise<{ dados?: { vida: VidaRPG; ouro: number; vida_recuperada: number }; erro?: string }> {
+  const falha = 'Não foi possível recuperar agora.'
+  try {
+    const res = await fetch('/api/rpg/recuperar', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', ...(await cabecalhoDeAutenticacao()) },
+      body: JSON.stringify({ tipo }),
+    })
+    const json = (await res.json().catch(() => null)) as { vida?: VidaRPG; ouro?: number; vida_recuperada?: number; error?: string } | null
+    if (!res.ok) return { erro: json?.error || falha }
+    if (!json || !json.vida) return { erro: falha }
+    return { dados: { vida: json.vida, ouro: json.ouro ?? 0, vida_recuperada: json.vida_recuperada ?? 0 } }
   } catch {
     return { erro: falha }
   }
