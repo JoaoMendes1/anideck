@@ -3,6 +3,7 @@
 // privada do deck e integradas à proteção contra spoiler e missões de avaliação.
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
+import BotaoDenunciar from '../moderacao/BotaoDenunciar'
 import { Edit3, EyeOff, Lock, MessageSquareQuote, Send, Star, Trash2 } from 'lucide-react'
 import { useSessao } from '../../contexts/SessaoContext'
 import { useToast } from '../../contexts/ToastContext'
@@ -362,6 +363,7 @@ export default function AvaliacoesDaObra({ malId, ehCompleto, aoContarReviews }:
                         )}
                       </div>
 
+                      {!r.meu && <BotaoDenunciar tipo="avaliacao" alvo={r.id} compacto />}
                       {r.nota !== null && r.nota !== undefined && (
                         <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-gold/10 border border-gold/30 font-mono text-xs font-bold text-gold shrink-0">
                           <Star size={11} className="fill-gold" aria-hidden />

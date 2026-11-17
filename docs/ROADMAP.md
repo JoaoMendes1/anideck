@@ -852,6 +852,9 @@ Motivo: o beta vai receber gente nova, e a primeira impressão decide se a pesso
 
 - [x] 18.9a Adiar episódios na curadoria numa ação só, com selo "Adiado" na Agenda e na grade (#279)
 - [x] 18.9b Configuração inicial (`/bem-vindo`) para contas novas: perfil, o que está assistindo, gosto, personagem e 50 AniCoins com o título "Recém-desperto". `sql/111`
+- [x] 18.9e Denúncia de perfil e de avaliação, aviso na campainha do admin e punições (advertência, silenciar, multa de AniCoins e XP, banir, bloquear e-mail) com histórico e revogação. `sql/112` e `sql/113`
+- [x] 18.9f Aviso de Temporada 0 na Guilda e no painel da barra do topo
+- [ ] 18.9g Insígnia de pioneiro da Temporada 0 (nome e critério de "ativo" a decidir) e captcha no cadastro
 - [ ] 18.9c Página de visitante com demonstração jogável e personagem que evolui com a rolagem
 - [ ] 18.9d Importação com regra de zero recompensa (origem marcada no banco) e interruptor no Painel Admin
 

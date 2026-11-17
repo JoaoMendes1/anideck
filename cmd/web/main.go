@@ -94,6 +94,7 @@ func main() {
 	rankingsComunidadeHandler := &handlers.RankingsComunidadeHandler{}
 	clasHandler := &handlers.ClasHandler{}
 	socialHandler := &handlers.SocialHandler{}
+	moderacaoHandler := &handlers.ModeracaoHandler{}
 	salasEstreiaHandler := &handlers.SalasEstreiaHandler{}
 	chefaoHandler := &handlers.ChefaoHandler{}
 	previsoesHandler := &handlers.PrevisoesHandler{}
@@ -260,6 +261,7 @@ func main() {
 		protegido.Post("/api/membros/{handle}/seguir", socialHandler.HandleSeguir)
 		protegido.Delete("/api/membros/{handle}/seguir", socialHandler.HandleSeguir)
 		protegido.Get("/api/feed", socialHandler.HandleFeed)
+		protegido.Post("/api/denuncias", moderacaoHandler.HandleDenunciar)
 
 		// Clãs (Fase 17, #180, #181): criação, gestão, membros, convites e desafio
 		protegido.Get("/api/me/cla", clasHandler.HandleObterMeuCla)
@@ -392,6 +394,11 @@ func main() {
 
 		// Comunidade: fila de denúncias e regras da Mana e da Vitalidade
 		admin.Get("/api/admin/moderacao", comunidadeHandler.HandleListarModeracao)
+		admin.Get("/api/admin/denuncias", moderacaoHandler.HandleListarDenuncias)
+		admin.Post("/api/admin/denuncias/{id}/decidir", moderacaoHandler.HandleDecidirDenuncia)
+		admin.Post("/api/admin/punicoes", moderacaoHandler.HandleAplicarPunicao)
+		admin.Post("/api/admin/punicoes/{id}/revogar", moderacaoHandler.HandleRevogarPunicao)
+		admin.Get("/api/admin/punicoes/{handle}", moderacaoHandler.HandleHistoricoPunicoes)
 		admin.Post("/api/admin/moderacao/{cid}", comunidadeHandler.HandleModerar)
 		admin.Get("/api/admin/comunidade/regras", comunidadeHandler.HandleGetRegrasComunidade)
 		admin.Put("/api/admin/comunidade/regras", comunidadeHandler.HandleSalvarRegrasComunidade)

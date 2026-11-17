@@ -5,6 +5,8 @@ import { supabase } from '../lib/supabase';
 import { invalidarCachesDoDeck } from '../lib/cacheDeTela';
 import { useToast } from '../contexts/ToastContext';
 import Sheet from './Sheet';
+import { useSessao } from '../contexts/SessaoContext';
+import { contarPendentes } from '../lib/moderacao';
 
 interface AppNotification {
   id: string;
@@ -84,7 +86,17 @@ export default function NotificationBell() {
   const [marcandoEp, setMarcandoEp] = useState<Record<string, boolean>>({});
   const [episodiosMarcados, setEpisodiosMarcados] = useState<Record<string, boolean>>({});
 
-  const naoLidas = notifications.filter(n => !n.read_at).length;
+  const { isAdmin } = useSessao();
+  // Para o admin, as denúncias pendentes contam no número da campainha e viram um atalho
+  // para a Moderação no topo da lista.
+  const [denunciasPendentes, setDenunciasPendentes] = useState(0);
+  useEffect(() => {
+    if (!isAdmin) return;
+    contarPendentes().then(setDenunciasPendentes);
+    const t = window.setInterval(() => contarPendentes().then(setDenunciasPendentes), 5 * 60 * 1000);
+    return () => window.clearInterval(t);
+  }, [isAdmin]);
+  const naoLidas = notifications.filter(n => !n.read_at).length + denunciasPendentes;
 
   const checkExistingSubscription = async () => {
     try {
@@ -306,6 +318,16 @@ export default function NotificationBell() {
       </button>
 
       <Sheet isOpen={isOpen} onClose={() => setIsOpen(false)} title="Notificações" maxWidthClass="md:max-w-md">
+        {denunciasPendentes > 0 && (
+          <Link
+            to="/admin?aba=moderacao"
+            onClick={() => setIsOpen(false)}
+            className="flex items-center justify-between gap-3 mb-3 px-4 py-3 rounded-xl border border-coral/40 bg-coral/10 text-sm font-bold text-coral"
+          >
+            {denunciasPendentes === 1 ? '1 denúncia espera sua decisão' : `${denunciasPendentes} denúncias esperam sua decisão`}
+            <span aria-hidden>→</span>
+          </Link>
+        )}
         {!pushEnabled && (
           <button
             onClick={subscribeToPush}

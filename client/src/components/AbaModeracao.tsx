@@ -1,6 +1,7 @@
 // client/src/components/AbaModeracao.tsx
 // Painel Admin › Comunidade › Moderação: fila de comentários denunciados, resumo da
 // atividade e regras da Mana, da Vitalidade e do Modo Descanso.
+import PainelPunicoes from './moderacao/PainelPunicoes'
 import { useCallback, useEffect, useState, type FormEvent } from 'react'
 import { Link } from 'react-router-dom'
 import { Check, EyeOff, Eye, Trash2, Save, ShieldCheck, Flag, Trophy, Gift, Crown, AlertCircle } from 'lucide-react'
@@ -336,6 +337,7 @@ export default function AbaModeracao() {
 
   return (
     <div className="space-y-6 min-w-0">
+      <PainelPunicoes />
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
         {[
           { rotulo: 'Perfis criados', valor: resumo?.perfis },

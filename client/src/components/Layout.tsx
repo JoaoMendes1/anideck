@@ -1,4 +1,5 @@
 import { Suspense, useState } from 'react'
+import AvisoModeracao from './moderacao/AvisoModeracao'
 import { Outlet, useLocation } from 'react-router-dom'
 import Navbar from './Navbar'
 import BottomNav from './BottomNav'
@@ -58,6 +59,7 @@ function LayoutInterno() {
       {/* pt-24 compensa a navbar superior. pb-24 compensa a BottomNav no mobile... */}
       <main className="relative z-10 flex-1 flex flex-col pt-24 pb-20 md:pb-0 pl-[var(--menu-lateral)] w-full max-w-[100vw] overflow-x-hidden">
         <AvisoCatalogo />
+        <AvisoModeracao />
         {/* Só o miolo espera o código da página chegar (ver lazy() no App.tsx);
             Navbar e BottomNav ficam de pé durante a espera. */}
         <LimiteDeErro chave={pathname}>

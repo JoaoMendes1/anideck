@@ -20,6 +20,7 @@ import CartaoEspecialidade from '../components/hud/CartaoEspecialidade'
 import { filtroDoVisual, retratoDoEstagio } from '../lib/personagem'
 import type { CartaColecao, PersonagemFavorito } from '../lib/cartas'
 import AtividadeDoPerfil from '../components/social/AtividadeDoPerfil'
+import BotaoDenunciar from '../components/moderacao/BotaoDenunciar'
 import { obterResumoSocial, seguir, type ResumoSocial } from '../lib/social'
 
 interface CartaDaVitrine {
@@ -281,6 +282,7 @@ export default function PerfilMembro() {
                       <Ban size={13} aria-hidden /> {bloqueado ? 'Desbloquear' : 'Bloquear'}
                     </button>
                   )}
+                {token && social && !social.sou_eu && <BotaoDenunciar tipo="perfil" alvo={perfil.handle} />}
               </>
             )}
           </div>
