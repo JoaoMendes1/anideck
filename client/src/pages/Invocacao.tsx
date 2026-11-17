@@ -7,7 +7,6 @@ import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { ChevronLeft, ShieldCheck, Sparkles, Swords, Ticket } from 'lucide-react'
 import {
-  SLOTS_RPG,
   estiloDaRaridade,
   faltamParaGarantia,
   invocar,
@@ -18,6 +17,7 @@ import {
   type ItemInvocado,
   type Raridade,
 } from '../lib/rpg'
+import IconeDoItem from '../components/rpg/IconeDoItem'
 
 const ROTULO_DE_SECAO = 'font-mono text-xs font-semibold uppercase tracking-widest text-muted m-0'
 const CONTAINER = 'w-full min-w-0 max-w-[1100px] mx-auto px-4 sm:px-6 lg:px-10 pt-6 pb-24'
@@ -25,14 +25,13 @@ const RARIDADES: Raridade[] = ['lendario', 'epico', 'raro', 'comum']
 
 function CartaoDoItem({ item, indice }: { item: ItemInvocado; indice: number }) {
   const estilo = estiloDaRaridade(item.raridade)
-  const Icone = SLOTS_RPG.find((s) => s.id === item.slot)?.Icone ?? Sparkles
   return (
     <li
       className={`flex min-w-0 flex-col gap-1.5 rounded-2xl border-2 p-3 motion-safe:animate-[surgir_420ms_ease-out_both] ${estilo.borda} ${estilo.fundo}`}
       style={{ animationDelay: `${indice * 90}ms` }}
     >
-      <span className={`flex h-12 w-12 items-center justify-center rounded-xl bg-void/50 ${estilo.texto}`}>
-        <Icone size={24} aria-hidden="true" />
+      <span className={`flex h-12 w-12 items-center justify-center overflow-hidden rounded-xl bg-void/50 ${estilo.texto}`}>
+        <IconeDoItem id={item.id} slot={item.slot} tamanho={24} />
       </span>
       <span className={`truncate text-sm font-bold ${estilo.texto}`}>{item.nome}</span>
       <span className="text-xs text-muted">{estilo.rotulo}</span>

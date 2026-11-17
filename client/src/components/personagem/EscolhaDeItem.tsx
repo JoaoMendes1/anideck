@@ -17,6 +17,7 @@ import {
   type EstadoEquipamento,
   type SlotId,
 } from '../../lib/rpg'
+import IconeDoItem from '../rpg/IconeDoItem'
 
 // Arma, armadura e capa ficam na coluna da esquerda; o painel abre à direita delas.
 const SLOTS_DA_ESQUERDA: SlotId[] = ['arma', 'armadura', 'capa']
@@ -124,6 +125,9 @@ export default function EscolhaDeItem({
             const dif = diferencaDaTroca(noSlot, item)
             return (
               <li key={item.id} className={`flex items-center gap-2 rounded-xl border p-2.5 ${estilo.borda} ${estilo.fundo}`}>
+                <span className={`flex h-11 w-11 shrink-0 items-center justify-center overflow-hidden rounded-lg bg-void/50 ${estilo.texto}`}>
+                  <IconeDoItem id={item.id} slot={item.slot} tamanho={20} />
+                </span>
                 <div className="min-w-0 flex-1">
                   <p className={`m-0 truncate text-sm font-bold ${estilo.texto}`}>
                     {item.nome}

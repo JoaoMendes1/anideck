@@ -4,6 +4,7 @@
 //
 // Arte provisória: o ícone vem do slot e a cor da raridade. A ilustração de cada item entra
 // depois, por id, sem mudar este componente de lugar.
+import IconeDoItem from '../rpg/IconeDoItem'
 import { SLOTS_RPG, estiloDaRaridade, type EstadoEquipamento, type SlotId } from '../../lib/rpg'
 
 const ESQUERDA: SlotId[] = ['arma', 'armadura', 'capa']
@@ -28,7 +29,7 @@ export default function SlotsDoPersonagem({
       {ids.map((id) => {
         const slot = SLOTS_RPG.find((s) => s.id === id)
         if (!slot) return null
-        const { rotulo, Icone } = slot
+        const { rotulo } = slot
         const item = itemNoSlot(id)
         const estilo = estiloDaRaridade(item?.raridade)
         const aberto = slotAberto === id
@@ -41,7 +42,7 @@ export default function SlotsDoPersonagem({
               aria-expanded={aberto}
               aria-label={item ? `${rotulo}: ${item.nome}. Trocar` : `${rotulo}: vazio. Equipar`}
               title={item ? `${rotulo}: ${item.nome}` : `${rotulo}: vazio`}
-              className={`flex h-12 w-12 cursor-pointer items-center justify-center rounded-xl border-2 backdrop-blur-sm lg:h-16 lg:w-16 ${
+              className={`flex h-12 w-12 cursor-pointer items-center justify-center overflow-hidden rounded-xl border-2 backdrop-blur-sm lg:h-16 lg:w-16 ${
                 aberto
                   ? 'border-holo-3 bg-void/80 text-holo-3 ring-2 ring-holo-3/40'
                   : item
@@ -49,7 +50,7 @@ export default function SlotsDoPersonagem({
                     : 'border-dashed border-line bg-void/50 text-muted'
               }`}
             >
-              <Icone size={22} aria-hidden="true" />
+              <IconeDoItem id={item?.id} slot={id} tamanho={22} />
             </button>
           </li>
         )

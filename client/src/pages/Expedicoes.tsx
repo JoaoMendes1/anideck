@@ -37,6 +37,7 @@ import {
   type MonstroRPG,
   type RespostaBatalha,
 } from '../lib/rpg'
+import { arteDoMonstro } from '../lib/artesRpg'
 
 const ROTULO_DE_SECAO = 'font-mono text-xs font-semibold uppercase tracking-widest text-muted m-0'
 const CONTAINER = 'w-full min-w-0 max-w-[1100px] mx-auto px-4 sm:px-6 lg:px-10 pt-6 pb-24'
@@ -62,9 +63,14 @@ const ESTILO_DO_TIPO: Record<string, { rotulo: string; borda: string; icone: str
 function IconeDoMonstro({ monstro, tamanho = 'h-14 w-14' }: { monstro: Pick<MonstroRPG, 'id' | 'tipo'>; tamanho?: string }) {
   const Icone = ICONE_DO_MONSTRO[monstro.id] ?? Skull
   const estilo = ESTILO_DO_TIPO[monstro.tipo] ?? ESTILO_DO_TIPO.comum
+  const arte = arteDoMonstro(monstro.id)
   return (
-    <span className={`flex shrink-0 items-center justify-center rounded-2xl ${tamanho} ${estilo.icone}`}>
-      <Icone size={26} aria-hidden="true" />
+    <span className={`flex shrink-0 items-center justify-center overflow-hidden rounded-2xl ${tamanho} ${estilo.icone}`}>
+      {arte ? (
+        <img src={arte} alt="" aria-hidden="true" loading="lazy" decoding="async" draggable={false} className="h-full w-full object-contain" />
+      ) : (
+        <Icone size={26} aria-hidden="true" />
+      )}
     </span>
   )
 }
