@@ -76,7 +76,7 @@ function Cabecalho() {
   )
 }
 
-function TelaDespertar({ aoDespertar }: { aoDespertar: (dados: RespostaPersonagem) => void }) {
+export function TelaDespertar({ aoDespertar }: { aoDespertar: (dados: RespostaPersonagem) => void }) {
   const [nome, setNome] = useState('')
   const [erro, setErro] = useState('')
   const [enviando, setEnviando] = useState(false)

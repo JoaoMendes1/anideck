@@ -21,6 +21,7 @@ export const CARREGAR = {
   masmorras: () => import('../pages/Masmorras'),
   duelos: () => import('../pages/Duelos'),
   feed: () => import('../pages/Feed'),
+  bemVindo: () => import('../pages/BemVindo'),
   expedicaoDoCla: () => import('../pages/ExpedicaoDoCla'),
   invocacao: () => import('../pages/Invocacao'),
   membros: () => import('../pages/Membros'),

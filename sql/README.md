@@ -140,6 +140,7 @@ SELECT pg_get_viewdef('nome_da_view'::regclass, true);
 | `108_protecao_spoiler.sql` | Comunidade (#274): coluna `contem_spoiler` em `episode_comments`, `GRANT UPDATE`, e recriação em ordem de `atividade_eventos()`, `feed_comunidade()` e `atividade_do_perfil()` (definição viva, antes no `105`). **Depois do `105`, antes de promover** | — |
 | `109_avaliacoes_e_missoes_avaliacao.sql` | Comunidade e Guilda (#276): tabela pública `anime_reviews` (mínimo 100 chars, nota 1..10 opcional, `contem_spoiler`, RLS por coluna exigindo `Completo` + episódio via `pode_avaliar_anime()`), evidência `'review_anime'` em `missoes_evidencias`, trava diária em `resgatar_missao()` e `reavaliar_missoes()` + gatilhos de estorno imediato em `anime_reviews`, `episode_comments` e `media_entries` (definições vivas de `reavaliar_missoes` e `resgatar_missao`, antes no `101`). **Depois do `108`, antes de promover** | — |
 | `110_inicio_personalizavel.sql` | Início (#275): tabela `public.user_preferences` (`user_id`, `inicio_config jsonb`, `updated_at`) com RLS restrita ao próprio usuário e `GRANT` explícito por coluna. **Antes de promover** | — |
+| `111_boas_vindas.sql` | Configuração inicial: `resgatar_boas_vindas()` (chamada pelo próprio usuário) dá 50 AniCoins e o título "Recém-desperto" uma única vez, só para contas criadas a partir de 18/11/2026. **Antes de promover** | — |
 
 Datas com `~` são a data do commit, não da aplicação no Supabase.
 

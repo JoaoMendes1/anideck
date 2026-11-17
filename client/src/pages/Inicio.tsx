@@ -1,7 +1,8 @@
 // client/src/pages/Inicio.tsx
 // A home de quem está logado: personalizável em ordem, visibilidade, minimização e coluna lateral (#275).
 import { useEffect, useRef, useState, type ReactNode } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
+import { precisaDaConfiguracaoInicial } from '../lib/bemVindo'
 import {
   CalendarDays, Compass, Play, Sparkles, Trophy, Plus, Check,
   ChevronLeft, ChevronRight, ChevronDown, ChevronUp, Upload, Lock,
@@ -270,6 +271,13 @@ async function buscarAnimesDoDeck(entradas: EntradaDoDeck[]): Promise<Record<num
 
 export default function Inicio() {
   const { session, isAdmin } = useSessao()
+  const navigate = useNavigate()
+
+  // Conta nova com a configuração inicial pendente vai para /bem-vindo; quem pula ou termina
+  // ganha a marca de concluída e não volta mais para lá.
+  useEffect(() => {
+    if (precisaDaConfiguracaoInicial(session?.user.user_metadata)) navigate('/bem-vindo', { replace: true })
+  }, [session, navigate])
   const { showToast } = useToast()
   const ehDesktopLargo = useMidia('(min-width: 1280px)')
   const userId = session?.user.id || ''

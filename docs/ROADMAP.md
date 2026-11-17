@@ -846,6 +846,15 @@ Princípio: o XP de agora precisa ser o XP que o estado atual justifica. Desfeit
 
 **Banco:** aplicar `sql/101` a `sql/104` na ordem antes de promover.
 
+## 🌱 Fase 18.9: Primeiro contato — *em andamento*
+
+Motivo: o beta vai receber gente nova, e a primeira impressão decide se a pessoa volta.
+
+- [x] 18.9a Adiar episódios na curadoria numa ação só, com selo "Adiado" na Agenda e na grade (#279)
+- [x] 18.9b Configuração inicial (`/bem-vindo`) para contas novas: perfil, o que está assistindo, gosto, personagem e 50 AniCoins com o título "Recém-desperto". `sql/111`
+- [ ] 18.9c Página de visitante com demonstração jogável e personagem que evolui com a rolagem
+- [ ] 18.9d Importação com regra de zero recompensa (origem marcada no banco) e interruptor no Painel Admin
+
 ## 🃏 Fase 19: Arena de cartas — *não começada*
 
 Motivo: a Arena de cartas é a expansão própria descrita no `VISAO_RPG.md` (seção 12); o dono

@@ -88,7 +88,8 @@ export default function Auth() {
         const { error } = await supabase.auth.signUp({
           email,
           password,
-          options: { data: { display_name: name } }
+          // A marca abre a configuração inicial no primeiro acesso (/bem-vindo).
+          options: { data: { display_name: name, configuracao_inicial: 'pendente' } }
         })
         if (error) throw error
         showToast('Conta criada com sucesso! Você já pode fazer login.')

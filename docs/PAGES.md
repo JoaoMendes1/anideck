@@ -46,3 +46,4 @@
 > abrir `client/src/pages/` e comparar. Sem ela, "✅ Implementada" é afirmação que
 > ninguém consegue checar sem ler o repositório inteiro — foi assim que este arquivo
 > passou meses dizendo que só três telas existiam.
+| 30 | Configuração inicial (`/bem-vindo`) | `BemVindo.tsx` | ✅ Implementada · mobile-first, 5 passos com barra de progresso (perfil e @, o que está assistindo na temporada, gosto, despertar do personagem, recompensa de boas-vindas); todo passo pode ser pulado, "Pular tudo" vai à Início, e o passo fica salvo na conta. Abre sozinha só para contas novas (marca no cadastro) | Fase 18.9 (#280) |
