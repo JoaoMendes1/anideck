@@ -6,7 +6,7 @@
 // Desde o sql/082, a maior parte das tentativas dá Ouro, e o Lendário tem garantia própria.
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { ChevronLeft, Coins, ShieldCheck, Sparkles, Swords, Ticket } from 'lucide-react'
+import { ChevronLeft, ShieldCheck, Sparkles, Swords, Ticket } from 'lucide-react'
 import {
   estiloDaRaridade,
   faltamParaGarantia,
@@ -20,6 +20,7 @@ import {
   type Raridade,
 } from '../lib/rpg'
 import IconeDoItem from '../components/rpg/IconeDoItem'
+import IconeOuro from '../components/IconeOuro'
 
 const ROTULO_DE_SECAO = 'font-mono text-xs font-semibold uppercase tracking-widest text-muted m-0'
 const CONTAINER = 'w-full min-w-0 max-w-[1100px] mx-auto px-4 sm:px-6 lg:px-10 pt-6 pb-24'
@@ -33,7 +34,7 @@ function CartaoDoItem({ item, indice }: { item: ItemInvocado; indice: number }) 
         style={{ animationDelay: `${indice * 90}ms` }}
       >
         <span className="flex h-12 w-12 items-center justify-center rounded-xl bg-void/50 text-gold">
-          <Coins size={24} aria-hidden="true" />
+          <IconeOuro size={24} />
         </span>
         <span className="truncate text-sm font-bold text-gold">{item.ouro} de Ouro</span>
         <span className="text-xs text-muted">Sem item desta vez</span>

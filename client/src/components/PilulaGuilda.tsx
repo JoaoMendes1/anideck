@@ -1,11 +1,13 @@
 // client/src/components/PilulaGuilda.tsx
-// HUD da Navbar, em todas as páginas: rank, nível e três barras (XP, Vitalidade e Mana).
+// HUD da Navbar, em todas as páginas: rank, nível, três barras (XP, Vitalidade e Mana) e as
+// duas moedas (AniCoins e Ouro). Quanto mais larga a tela, mais números aparecem na pílula.
 // Quando um valor muda (episódio marcado, comentário publicado), o ganho sobe da pílula
 // por um instante. Tocar abre o painel com os números e o que faz cada barra mudar.
 import { useEffect, useRef, useState } from 'react'
 import { Link, useLocation } from 'react-router-dom'
 import { Droplet, Heart, Sparkles, Users, X, ShoppingBag } from 'lucide-react'
 import IconeAniCoin from './IconeAniCoin'
+import IconeOuro from './IconeOuro'
 
 import { avisosDaMudanca, type AvisoDoHud, type FotoDoJogador } from '../lib/hud'
 import { obterHPEscaladoDoEstado, obterMPMaxDoEstado } from '../lib/comunidade'
@@ -26,12 +28,32 @@ const ESTILO_DO_AVISO: Record<AvisoDoHud['tipo'], string> = {
   hp: 'text-coral border-coral/50',
   mp: 'text-holo-3 border-holo-3/50',
   cristal: 'text-holo-3 border-holo-3/50',
+  ouro: 'text-gold border-gold/50',
+}
+
+// Número da Vitalidade ou da Mana na pílula. De 2xl para cima ganha o máximo e uma barra
+// própria; abaixo disso, só o número, para caber ao lado da busca.
+function IndicadorVital({ tipo, atual, maximo }: { tipo: 'hp' | 'mp'; atual: number; maximo: number }) {
+  const Icone = tipo === 'hp' ? Heart : Droplet
+  const cor = tipo === 'hp' ? 'text-coral' : 'text-mana'
+  const preenchido = tipo === 'hp' ? 'fill-coral/25' : 'fill-mana/25'
+  return (
+    <span className="inline-flex flex-col gap-1 2xl:w-[72px]">
+      <span className={`inline-flex items-center gap-1 ${cor}`}>
+        <Icone size={13} className={preenchido} aria-hidden />
+        {atual}
+        <span className="hidden 2xl:inline text-muted-2 font-normal">/{maximo}</span>
+      </span>
+      <BarraVital tipo={tipo} pct={maximo > 0 ? (atual / maximo) * 100 : 0} className="hidden 2xl:block h-1 w-full" />
+    </span>
+  )
 }
 
 export default function PilulaGuilda() {
   const status = useResumoGuilda()
   const { estado } = useComunidade()
   const { saldo } = useCarteira()
+  const ouro = typeof status?.ouro === 'number' ? status.ouro : null
   const [aberto, setAberto] = useState(false)
   const [avisos, setAvisos] = useState<(AvisoDoHud & { id: number })[]>([])
   const raiz = useRef<HTMLDivElement>(null)
@@ -50,7 +72,7 @@ export default function PilulaGuilda() {
   // registra a foto: carregar a página não é ganho.
   useEffect(() => {
     if (!status) return
-    const foto: FotoDoJogador = { xp: status.xp_total, nivel: status.nivel, hp, mp, cristais: saldo }
+    const foto: FotoDoJogador = { xp: status.xp_total, nivel: status.nivel, hp, mp, cristais: saldo, ouro }
     const novos = avisosDaMudanca(anterior.current, foto)
     // Sem comunidade na leitura anterior, HP e MP entram agora como base, sem aviso.
     anterior.current = foto
@@ -59,7 +81,7 @@ export default function PilulaGuilda() {
     setAvisos(atuais => [...atuais, ...comId].slice(-4))
     const ids = new Set(comId.map(a => a.id))
     window.setTimeout(() => setAvisos(atuais => atuais.filter(a => !ids.has(a.id))), DURACAO_AVISO)
-  }, [status, hp, mp, saldo])
+  }, [status, hp, mp, saldo, ouro])
 
   // Fecha ao trocar de página, ao tocar fora e com Esc.
   useEffect(() => {
@@ -90,6 +112,7 @@ export default function PilulaGuilda() {
     hp !== null ? `Vitalidade ${hp}/${hpMax}` : '',
     mp !== null && estado ? `Mana ${mp}/${mpMax}` : '',
     `${saldo.toLocaleString('pt-BR')} AniCoins`,
+    ouro !== null ? `${ouro.toLocaleString('pt-BR')} de Ouro` : '',
   ]
     .filter(Boolean)
     .join(' · ')
@@ -107,10 +130,13 @@ export default function PilulaGuilda() {
       >
         <InsigniaRank rank={status.rank} tamanho={34} />
 
-        <span className="flex flex-col gap-1 w-16 sm:w-[88px]">
+        <span className="flex flex-col gap-1 w-16 sm:w-[88px] 2xl:w-36">
           <span className="flex items-baseline justify-between gap-2 font-mono text-xs leading-none">
             <b className="text-text font-bold">Nv {status.nivel}</b>
-            <span className="hidden sm:inline text-muted tabular-nums">{Math.round(status.progresso_pct)}%</span>
+            <span className="hidden sm:inline 2xl:hidden text-muted tabular-nums">{Math.round(status.progresso_pct)}%</span>
+            <span className="hidden 2xl:inline text-muted tabular-nums">
+              {status.xp_no_nivel}<span className="text-muted-2">/{status.xp_para_proximo} XP</span>
+            </span>
           </span>
           <BarraVital tipo="xp" pct={status.progresso_pct} />
           {/* No celular e no tablet não há espaço para os números: Vitalidade e Mana viram barras. */}
@@ -122,19 +148,23 @@ export default function PilulaGuilda() {
           )}
         </span>
 
-        {estado && (
-          <span className="hidden lg:flex items-center gap-2.5 pl-2.5 border-l border-line font-mono text-xs font-bold tabular-nums">
-            <span className="inline-flex items-center gap-1 text-coral">
-              <Heart size={13} className="fill-coral/25" aria-hidden /> {hp}
-            </span>
-            <span className="inline-flex items-center gap-1 text-mana">
-              <Droplet size={13} className="fill-mana/25" aria-hidden /> {mp}
-            </span>
+        {estado && hp !== null && mp !== null && (
+          <span className="hidden lg:flex items-center gap-2.5 2xl:gap-3 pl-2.5 2xl:pl-3 border-l border-line font-mono text-xs font-bold tabular-nums leading-none">
+            <IndicadorVital tipo="hp" atual={hp} maximo={hpMax} />
+            <IndicadorVital tipo="mp" atual={mp} maximo={mpMax} />
           </span>
         )}
 
-        <span className="hidden xl:inline-flex items-center gap-1 pl-2.5 border-l border-line font-mono text-xs font-bold text-text tabular-nums">
-          <IconeAniCoin size={14} /> {saldo.toLocaleString('pt-BR')}
+        {/* As duas moedas lado a lado: AniCoins (holográfica) e Ouro (metal), cada uma com o seu ícone. */}
+        <span className="hidden xl:inline-flex items-center gap-2.5 2xl:gap-3 pl-2.5 2xl:pl-3 border-l border-line font-mono text-xs font-bold text-text tabular-nums">
+          <span className="inline-flex items-center gap-1" title="AniCoins">
+            <IconeAniCoin size={15} /> {saldo.toLocaleString('pt-BR')}
+          </span>
+          {ouro !== null && (
+            <span className="inline-flex items-center gap-1 text-gold" title="Ouro do RPG">
+              <IconeOuro size={15} /> {ouro.toLocaleString('pt-BR')}
+            </span>
+          )}
         </span>
       </button>
 
@@ -187,18 +217,32 @@ export default function PilulaGuilda() {
             </Link>
           )}
 
-          <Link
-            to="/loja"
-            title="Abrir Loja Cosmética"
-            className="flex items-center justify-between p-2.5 rounded-xl bg-panel-2/60 border border-line/60 hover:border-gold/60 transition-colors mb-4 group cursor-pointer"
-          >
-            <span className="inline-flex items-center gap-1.5 font-mono text-xs text-muted group-hover:text-text uppercase tracking-wider">
-              <IconeAniCoin size={15} /> AniCoins
-            </span>
-            <span className="font-mono text-xs font-bold text-holo-3 group-hover:text-gold flex items-center gap-1">
-              {saldo.toLocaleString('pt-BR')} ₳ <span className="text-xs text-muted-2">→ Loja</span>
-            </span>
-          </Link>
+          <div className="grid grid-cols-2 gap-2 mb-4">
+            <Link
+              to="/loja"
+              title="Abrir a Loja"
+              className="flex flex-col gap-1 p-2.5 rounded-xl bg-panel-2/60 border border-line/60 hover:border-holo-3/60 transition-colors group"
+            >
+              <span className="inline-flex items-center gap-1.5 font-mono text-xs text-muted group-hover:text-text uppercase tracking-wider">
+                <IconeAniCoin size={15} /> AniCoins
+              </span>
+              <span className="font-mono text-sm font-bold text-holo-3 tabular-nums">
+                {saldo.toLocaleString('pt-BR')} <span className="text-xs font-normal text-muted-2">→ Loja</span>
+              </span>
+            </Link>
+            <Link
+              to="/expedicoes"
+              title="Abrir as Expedições"
+              className="flex flex-col gap-1 p-2.5 rounded-xl bg-panel-2/60 border border-line/60 hover:border-gold/60 transition-colors group"
+            >
+              <span className="inline-flex items-center gap-1.5 font-mono text-xs text-muted group-hover:text-text uppercase tracking-wider">
+                <IconeOuro size={15} /> Ouro
+              </span>
+              <span className="font-mono text-sm font-bold text-gold tabular-nums">
+                {ouro !== null ? ouro.toLocaleString('pt-BR') : '—'} <span className="text-xs font-normal text-muted-2">→ RPG</span>
+              </span>
+            </Link>
+          </div>
 
           {estado ? (
             <BarrasVitais estado={estado} nivel={status.nivel} />

@@ -6,6 +6,7 @@ import { useSessao } from '../contexts/SessaoContext'
 import { chaveDoUsuario, guardarNaMemoria, lerDaMemoria } from '../lib/cacheDeTela'
 import { VALIDADE_NA_MONTAGEM, buscarUmaVez } from '../lib/buscaCompartilhada'
 import type { StatusNivelGuilda } from '../lib/guilda'
+import { EVENTO_OURO } from '../lib/hud'
 
 export function useResumoGuilda(): StatusNivelGuilda | null {
   const { session } = useSessao()
@@ -34,9 +35,11 @@ export function useResumoGuilda(): StatusNivelGuilda | null {
     buscarResumo(VALIDADE_NA_MONTAGEM)
     const aoMudar = () => { buscarResumo(0) }
     window.addEventListener('anideck:episodio-atualizado', aoMudar)
+    window.addEventListener(EVENTO_OURO, aoMudar)
     return () => {
       ativo = false
       window.removeEventListener('anideck:episodio-atualizado', aoMudar)
+      window.removeEventListener(EVENTO_OURO, aoMudar)
     }
   }, [token, chave])
 

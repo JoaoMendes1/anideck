@@ -7,7 +7,7 @@
 // Fecha no X, no Esc e no toque fora. A troca é conferida e gravada no servidor.
 import { useEffect, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
-import { Coins, Hammer, Lock, X } from 'lucide-react'
+import { Hammer, Lock, X } from 'lucide-react'
 import {
   SLOTS_RPG,
   aprimorarItem,
@@ -19,6 +19,7 @@ import {
   type SlotId,
 } from '../../lib/rpg'
 import IconeDoItem from '../rpg/IconeDoItem'
+import IconeOuro from '../IconeOuro'
 
 // Arma, armadura e capa ficam na coluna da esquerda; o painel abre à direita delas.
 const SLOTS_DA_ESQUERDA: SlotId[] = ['arma', 'armadura', 'capa']
@@ -123,7 +124,7 @@ export default function EscolhaDeItem({
       <div className="flex items-center justify-between gap-2">
         <p className="m-0 font-mono text-xs font-semibold uppercase tracking-widest text-muted">{rotulo}</p>
         <span className="ml-auto inline-flex items-center gap-1 font-mono text-xs text-gold">
-          <Coins size={12} aria-hidden="true" /> {ouro} de Ouro
+          <IconeOuro size={12} /> {ouro} de Ouro
         </span>
         <button
           type="button"

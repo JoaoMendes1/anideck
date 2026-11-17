@@ -11,18 +11,7 @@
 // Arte provisória: ícone e cor por monstro. A ilustração entra depois, por id.
 import { useEffect, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
-import {
-  BedDouble,
-  ChevronLeft,
-  Coins,
-  FlaskConical,
-  Heart,
-  Sparkles,
-  Swords,
-  Trophy,
-  Ticket,
-  Zap,
-} from 'lucide-react'
+import { BedDouble, ChevronLeft, FlaskConical, Heart, Sparkles, Swords, Trophy, Ticket, Zap } from 'lucide-react'
 import {
   batalhar,
   batalhasRestantes,
@@ -46,6 +35,7 @@ import IconeDoMonstro from '../components/rpg/IconeDoMonstro'
 import CartaoEvento from '../components/rpg/CartaoEvento'
 import { ESTILO_DO_TIPO } from '../lib/monstrosVisual'
 import { rotuloDoElemento } from '../lib/personagem'
+import IconeOuro from '../components/IconeOuro'
 
 const ROTULO_DE_SECAO = 'font-mono text-xs font-semibold uppercase tracking-widest text-muted m-0'
 const CONTAINER = 'w-full min-w-0 max-w-[1100px] mx-auto px-4 sm:px-6 lg:px-10 pt-6 pb-24'
@@ -149,7 +139,7 @@ function TelaDeBatalha({ batalha, aoVoltar }: { batalha: RespostaBatalha; aoVolt
               </li>
               {(recompensa.ouro ?? 0) > 0 && (
                 <li className="flex items-center gap-2">
-                  <Coins size={16} className="text-gold" aria-hidden="true" />
+                  <IconeOuro size={16} />
                   {recompensa.ouro} de Ouro
                 </li>
               )}
@@ -392,7 +382,7 @@ export default function Expedicoes() {
             </div>
             <div className="flex min-w-0 flex-col gap-1 rounded-xl border border-line bg-panel p-3">
               <dt className="flex items-center gap-1.5 text-xs font-semibold text-muted">
-                <Coins size={13} className="text-gold" aria-hidden="true" /> Ouro
+                <IconeOuro size={13} /> Ouro
               </dt>
               <dd className="m-0 font-anton text-2xl leading-none">{estado.hoje.ouro ?? 0}</dd>
             </div>

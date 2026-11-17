@@ -3,9 +3,10 @@
 // ataca uma vez por dia; o ataque não gasta a Vida do personagem.
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { ChevronLeft, Coins, Shield, Swords, Ticket, Users } from 'lucide-react'
+import { ChevronLeft, Shield, Swords, Ticket, Users } from 'lucide-react'
 import IconeDoMonstro from '../components/rpg/IconeDoMonstro'
 import { atacarChefeDoCla, obterExpedicaoDoCla, textoDaRelacao, type EstadoExpedicaoDoCla } from '../lib/rpg'
+import IconeOuro from '../components/IconeOuro'
 
 const ROTULO_DE_SECAO = 'font-mono text-xs font-semibold uppercase tracking-widest text-muted m-0'
 const CONTAINER = 'w-full min-w-0 max-w-[1100px] mx-auto px-4 sm:px-6 lg:px-10 pt-6 pb-24'
@@ -107,7 +108,7 @@ export default function ExpedicaoDoCla() {
               </div>
               <p className="m-0 flex flex-wrap items-center gap-3 text-xs text-muted">
                 Recompensa para quem atacar na semana:
-                <span className="inline-flex items-center gap-1 font-bold text-text"><Coins size={13} className="text-gold" aria-hidden="true" /> {chefe.ouro} de Ouro</span>
+                <span className="inline-flex items-center gap-1 font-bold text-text"><IconeOuro size={13} /> {chefe.ouro} de Ouro</span>
                 <span className="inline-flex items-center gap-1 font-bold text-text"><Ticket size={13} className="text-gold" aria-hidden="true" /> {chefe.bilhetes} bilhetes</span>
               </p>
               {textoDaRelacao(estado.elemental) && (

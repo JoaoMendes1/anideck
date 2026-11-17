@@ -266,3 +266,25 @@ func TestValidacoesAdminGuilda(t *testing.T) {
 		t.Fatal("esperava erro para regra de insígnia desconhecida")
 	}
 }
+
+func TestOuroDaLeitura(t *testing.T) {
+	casos := []struct {
+		nome  string
+		dados string
+		quer  *int
+	}{
+		{"com linha", `[{"ouro":1234}]`, intPtr(1234)},
+		{"sem linha: ainda não lutou", `[]`, intPtr(0)},
+		{"resposta inválida", `{"message":"erro"}`, nil},
+	}
+	for _, c := range casos {
+		t.Run(c.nome, func(t *testing.T) {
+			got := ouroDaLeitura([]byte(c.dados))
+			if (got == nil) != (c.quer == nil) || (got != nil && *got != *c.quer) {
+				t.Fatalf("ouroDaLeitura(%s) = %v, quer %v", c.dados, got, c.quer)
+			}
+		})
+	}
+}
+
+func intPtr(v int) *int { return &v }

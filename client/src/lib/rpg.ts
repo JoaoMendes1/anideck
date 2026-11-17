@@ -5,6 +5,7 @@
 // e dos itens equipados. A tela só mostra; nada daqui é enviado de volta como atributo.
 import { Footprints, Gem, Shield, Shirt, Sword, type LucideIcon } from 'lucide-react'
 import { supabase } from './supabase'
+import { avisarOuroMudou } from './hud'
 
 export interface AtributosRPG {
   vida: number
@@ -242,6 +243,7 @@ export async function aprimorarItem(itemId: string): Promise<{ dados?: EstadoEqu
     const json = (await res.json().catch(() => null)) as (EstadoEquipamento & { error?: string }) | null
     if (!res.ok) return { erro: json?.error || falha }
     if (!json || !Array.isArray(json.slots)) return { erro: falha }
+    avisarOuroMudou()
     return { dados: json }
   } catch {
     return { erro: falha }
@@ -511,6 +513,7 @@ export async function batalhar(monstroId: string): Promise<{ dados?: RespostaBat
     const json = (await res.json().catch(() => null)) as (RespostaBatalha & { error?: string }) | null
     if (!res.ok) return { erro: json?.error || falha }
     if (!json || !json.resultado || !Array.isArray(json.resultado.turnos)) return { erro: falha }
+    avisarOuroMudou()
     return { dados: json }
   } catch {
     return { erro: falha }
@@ -530,6 +533,7 @@ export async function recuperarVida(
     const json = (await res.json().catch(() => null)) as { vida?: VidaRPG; ouro?: number; vida_recuperada?: number; error?: string } | null
     if (!res.ok) return { erro: json?.error || falha }
     if (!json || !json.vida) return { erro: falha }
+    avisarOuroMudou()
     return { dados: { vida: json.vida, ouro: json.ouro ?? 0, vida_recuperada: json.vida_recuperada ?? 0 } }
   } catch {
     return { erro: falha }
@@ -611,6 +615,7 @@ export async function invocar(vezes: 1 | 10): Promise<{ dados?: EstadoInvocacao;
     const json = (await res.json().catch(() => null)) as (EstadoInvocacao & { error?: string }) | null
     if (!res.ok) return { erro: json?.error || falha }
     if (!json || !Array.isArray(json.itens)) return { erro: falha }
+    avisarOuroMudou()
     return { dados: json }
   } catch {
     return { erro: falha }
@@ -676,6 +681,7 @@ export async function entrarNaMasmorra(masmorraId: string): Promise<{ dados?: Re
     const json = (await res.json().catch(() => null)) as (RespostaMasmorra & { error?: string }) | null
     if (!res.ok) return { erro: json?.error || falha }
     if (!json || !json.expedicao || !Array.isArray(json.expedicao.andares)) return { erro: falha }
+    avisarOuroMudou()
     return { dados: json }
   } catch {
     return { erro: falha }
@@ -747,6 +753,7 @@ export async function duelar(handle: string): Promise<{ dados?: RespostaDuelo; e
     const json = (await res.json().catch(() => null)) as (RespostaDuelo & { error?: string }) | null
     if (!res.ok) return { erro: json?.error || falha }
     if (!json || !json.resultado || !Array.isArray(json.resultado.turnos)) return { erro: falha }
+    avisarOuroMudou()
     return { dados: json }
   } catch {
     return { erro: falha }
@@ -801,6 +808,7 @@ export async function atacarChefeDoCla(): Promise<{ dados?: RespostaAtaqueDoCla;
     const json = (await res.json().catch(() => null)) as (RespostaAtaqueDoCla & { error?: string }) | null
     if (!res.ok) return { erro: json?.error || falha }
     if (!json || !json.estado) return { erro: falha }
+    avisarOuroMudou()
     return { dados: json }
   } catch {
     return { erro: falha }
@@ -857,6 +865,7 @@ export async function lutarNoEvento(): Promise<{ dados?: RespostaEvento; erro?: 
     const json = (await res.json().catch(() => null)) as (RespostaEvento & { error?: string }) | null
     if (!res.ok) return { erro: json?.error || falha }
     if (!json || !json.estado || !json.resultado) return { erro: falha }
+    avisarOuroMudou()
     return { dados: json }
   } catch {
     return { erro: falha }

@@ -3,8 +3,9 @@
 // é decidida no servidor; a tela mostra o resultado de cada andar, com o registro dos golpes.
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { ChevronLeft, ChevronRight, Coins, DoorOpen, Lock, Sparkles, Ticket, Trophy } from 'lucide-react'
+import { ChevronLeft, ChevronRight, DoorOpen, Lock, Sparkles, Ticket, Trophy } from 'lucide-react'
 import IconeDoMonstro from '../components/rpg/IconeDoMonstro'
+import IconeOuro from '../components/IconeOuro'
 import {
   abaixoDaVidaMinima,
   descreverTurno,
@@ -70,7 +71,7 @@ function Resultado({ resposta, aoVoltar }: { resposta: RespostaMasmorra; aoVolta
         <ul className="m-0 flex list-none flex-col gap-2 p-0 text-sm">
           {(recompensa.ouro ?? 0) > 0 && (
             <li className="flex items-center gap-2">
-              <Coins size={16} className="text-gold" aria-hidden="true" /> {recompensa.ouro} de Ouro{expedicao.completou ? ', com o bônus de completar' : ''}
+              <IconeOuro size={16} /> {recompensa.ouro} de Ouro{expedicao.completou ? ', com o bônus de completar' : ''}
             </li>
           )}
           {recompensa.bilhetes > 0 && (

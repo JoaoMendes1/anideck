@@ -86,6 +86,8 @@ type StatusNivelGuilda struct {
 	MaiorStreak      int     `json:"maior_streak"`
 	GamificacaoAtiva bool    `json:"gamificacao_ativa"`
 	PesoMaximoVoto   float64 `json:"peso_maximo_voto"`
+	// Ouro do RPG. Só o resumo da barra do topo preenche; nas outras respostas fica de fora.
+	Ouro *int `json:"ouro,omitempty"`
 }
 
 // AfinidadeGeneroInput representa uma linha lida de view_user_genre_affinity.
@@ -711,9 +713,37 @@ func (h *GuildaHandler) HandleResumoGuilda(w http.ResponseWriter, r *http.Reques
 	status.StreakAtual = streakAtual
 	status.MaiorStreak = maiorStreak
 	status.GamificacaoAtiva = economia.Ativo
+	status.Ouro = lerOuroDoJogador(dbClient, userID)
 
 	w.Header().Set("Content-Type", "application/json")
 	_ = json.NewEncoder(w).Encode(status)
+}
+
+// lerOuroDoJogador lê o Ouro em rpg_recursos com o token do usuário (a RLS só devolve a
+// linha dele). Sem linha, quem ainda não lutou, o Ouro é 0. Falha de leitura devolve nil,
+// e a barra esconde o Ouro em vez de mostrar um zero falso.
+func lerOuroDoJogador(dbClient *supabase.Client, userID string) *int {
+	dados, _, err := dbClient.From("rpg_recursos").Select("ouro", "", false).Eq("user_id", userID).Execute()
+	if err != nil {
+		log.Printf("[GUILDA] Falha ao ler o Ouro (user=%s): %v", userID, err)
+		return nil
+	}
+	return ouroDaLeitura(dados)
+}
+
+// ouroDaLeitura interpreta a resposta do PostgREST: lista vazia é Ouro 0.
+func ouroDaLeitura(dados []byte) *int {
+	var linhas []struct {
+		Ouro int `json:"ouro"`
+	}
+	if err := json.Unmarshal(dados, &linhas); err != nil {
+		return nil
+	}
+	ouro := 0
+	if len(linhas) > 0 {
+		ouro = linhas[0].Ouro
+	}
+	return &ouro
 }
 
 // HandleGetGuilda devolve o estado completo da página /guilda.

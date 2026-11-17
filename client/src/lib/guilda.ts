@@ -21,6 +21,8 @@ export interface StatusNivelGuilda {
   maior_streak: number
   gamificacao_ativa: boolean
   peso_maximo_voto: number
+  /** Ouro do RPG; só o resumo da barra do topo traz. Ausente quando a leitura falhou. */
+  ouro?: number
 }
 
 export interface EconomiaGuilda {

@@ -3,7 +3,7 @@
 // com os atributos, as habilidades e o elemento dos dois; o desafiado não perde nada.
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { ChevronLeft, Coins, Crown, Medal, Swords } from 'lucide-react'
+import { ChevronLeft, Crown, Medal, Swords } from 'lucide-react'
 import {
   ESTILO_DO_ELEMENTO,
   descreverTurno,
@@ -15,6 +15,7 @@ import {
   type RespostaDuelo,
 } from '../lib/rpg'
 import { rotuloDoElemento } from '../lib/personagem'
+import IconeOuro from '../components/IconeOuro'
 
 const ROTULO_DE_SECAO = 'font-mono text-xs font-semibold uppercase tracking-widest text-muted m-0'
 const CONTAINER = 'w-full min-w-0 max-w-[1100px] mx-auto px-4 sm:px-6 lg:px-10 pt-6 pb-24'
@@ -41,7 +42,7 @@ function ResultadoDoDuelo({ resposta, aoVoltar }: { resposta: RespostaDuelo; aoV
         {resultado.venceu && (
           <p className="m-0 flex flex-wrap items-center gap-3 text-sm">
             <span className="inline-flex items-center gap-1.5"><Medal size={15} className="text-gold" aria-hidden="true" /> +{resposta.pontos_ganhos} pontos de duelo</span>
-            <span className="inline-flex items-center gap-1.5"><Coins size={15} className="text-gold" aria-hidden="true" /> +{resposta.ouro_ganho} de Ouro</span>
+            <span className="inline-flex items-center gap-1.5"><IconeOuro size={15} /> +{resposta.ouro_ganho} de Ouro</span>
           </p>
         )}
         {textoDaRelacao(resultado.elemental) && <p className="m-0 text-xs font-bold text-muted">{textoDaRelacao(resultado.elemental).replace('ele bate', 'o oponente bate')}</p>}

@@ -48,4 +48,9 @@ describe('avisosDaMudanca', () => {
     expect(avisosDaMudanca({ ...base, cristais: 100 }, { ...base, cristais: 115 }).map(a => a.texto)).toEqual(['+15 ₳'])
     expect(avisosDaMudanca({ ...base, cristais: 100 }, { ...base, cristais: 60 }).map(a => a.texto)).toEqual(['−40 ₳'])
   })
+  it('Ouro ganho ou perdido avisa; sem leitura anterior do Ouro, não', () => {
+    expect(avisosDaMudanca({ ...base, ouro: 100 }, { ...base, ouro: 135 }).map(a => a.texto)).toEqual(['+35 de Ouro'])
+    expect(avisosDaMudanca({ ...base, ouro: 100 }, { ...base, ouro: 90 }).map(a => a.texto)).toEqual(['−10 de Ouro'])
+    expect(avisosDaMudanca({ ...base, ouro: null }, { ...base, ouro: 90 })).toEqual([])
+  })
 })

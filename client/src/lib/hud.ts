@@ -46,9 +46,10 @@ export interface FotoDoJogador {
   hp: number | null
   mp: number | null
   cristais?: number | null
+  ouro?: number | null
 }
 
-export type TipoDeAviso = 'xp' | 'nivel' | 'hp' | 'mp' | 'cristal'
+export type TipoDeAviso = 'xp' | 'nivel' | 'hp' | 'mp' | 'cristal' | 'ouro'
 
 export interface AvisoDoHud {
   tipo: TipoDeAviso
@@ -58,7 +59,7 @@ export interface AvisoDoHud {
 /**
  * Os avisos que uma mudança merece. A primeira leitura não gera aviso (não houve ganho,
  * só carregou). A Mana só avisa quando cai, porque a recarga natural mostraria "+1 MP"
- * o tempo todo. Cristais mostram qualquer ganho ou gasto.
+ * o tempo todo. Cristais e Ouro mostram qualquer ganho ou gasto.
  */
 export function avisosDaMudanca(antes: FotoDoJogador | null, depois: FotoDoJogador): AvisoDoHud[] {
   if (!antes) return []
@@ -83,5 +84,16 @@ export function avisosDaMudanca(antes: FotoDoJogador | null, depois: FotoDoJogad
     const diff = depois.cristais - antes.cristais
     avisos.push({ tipo: 'cristal', texto: `${diff > 0 ? '+' : '−'}${Math.abs(diff)} ₳` })
   }
+  if (typeof antes.ouro === 'number' && typeof depois.ouro === 'number' && depois.ouro !== antes.ouro) {
+    const diff = depois.ouro - antes.ouro
+    avisos.push({ tipo: 'ouro', texto: `${diff > 0 ? '+' : '−'}${Math.abs(diff)} de Ouro` })
+  }
   return avisos
+}
+
+/** Evento que a tela dispara quando uma ação do RPG muda o Ouro; a barra do topo relê o resumo. */
+export const EVENTO_OURO = 'anideck:ouro-atualizado'
+
+export function avisarOuroMudou(): void {
+  if (typeof window !== 'undefined') window.dispatchEvent(new Event(EVENTO_OURO))
 }
