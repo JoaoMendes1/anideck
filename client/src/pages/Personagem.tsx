@@ -671,6 +671,17 @@ function FichaDoPersonagem({
               </span>
               <span aria-hidden="true" className="text-muted">→</span>
             </Link>
+            <Link
+              to="/duelos"
+              className="flex min-h-14 items-center gap-3 rounded-2xl border border-holo-3/40 bg-holo-3/10 px-4 py-3 hover:border-holo-3"
+            >
+              <Swords size={20} className="shrink-0 text-holo-3" aria-hidden="true" />
+              <span className="min-w-0 flex-1">
+                <span className="block text-sm font-bold text-text">Duelos</span>
+                <span className="block text-xs text-muted">Desafie a ficha de outros jogadores</span>
+              </span>
+              <span aria-hidden="true" className="text-muted">→</span>
+            </Link>
           </nav>
         </div>
       </div>

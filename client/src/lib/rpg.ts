@@ -292,6 +292,16 @@ export const ESTILO_DO_ELEMENTO: Record<string, { simbolo: string; classe: strin
   eter: { simbolo: '✨', classe: 'text-holo-1 border-holo-1/50' },
 }
 
+// Quem cada elemento vence; o mesmo mapa do Go (rpg_combate_avancado.go).
+const VENCE: Record<string, string> = { fogo: 'terra', terra: 'raio', raio: 'agua', agua: 'fogo', luz: 'trevas', trevas: 'luz' }
+
+/** Relação do elemento do atacante sobre o do defensor, igual à do servidor. */
+export function relacaoElemental(atacante: string | undefined, defensor: string | undefined): RelacaoElemental {
+  if (atacante && VENCE[atacante] && VENCE[atacante] === defensor) return 'vantagem'
+  if (defensor && VENCE[defensor] && VENCE[defensor] === atacante) return 'desvantagem'
+  return 'neutro'
+}
+
 /** Frase da relação de elemento entre você e o monstro, ou vazio quando é neutra. */
 export function textoDaRelacao(relacao: string | undefined): string {
   if (relacao === 'vantagem') return 'Vantagem de elemento: você bate 10% mais forte'
@@ -420,6 +430,12 @@ export function descreverTurno(turno: TurnoBatalha, nomeDoMonstro: string): { te
     return { texto: `${quem} ataca`, valor: `−${turno.dano}` }
   }
   if (turno.atacante === 'monstro') {
+    // Nos duelos, o oponente também usa habilidades: cura e despertar aparecem como no jogador.
+    if (turno.habilidade && turno.cura) return { texto: `${nomeDoMonstro}: ${turno.habilidade}`, valor: `+${turno.cura}` }
+    if (turno.habilidade) {
+      if (turno.esquiva) return { texto: `${nomeDoMonstro} usa ${turno.habilidade}, e você esquiva`, valor: '0' }
+      return { texto: `${nomeDoMonstro} usa ${turno.habilidade}`, valor: `−${turno.dano}` }
+    }
     if (turno.invocado) return { texto: `${nomeDoMonstro} usa ${turno.poder ?? 'um poder'}: chega ${turno.invocado}`, valor: '' }
     if (turno.poder && !turno.dano && !turno.esquiva) return { texto: `${nomeDoMonstro} usa ${turno.poder}`, valor: '' }
     const como = turno.poder ? `${nomeDoMonstro} usa ${turno.poder}` : `${nomeDoMonstro} ataca`
@@ -660,6 +676,77 @@ export async function entrarNaMasmorra(masmorraId: string): Promise<{ dados?: Re
     const json = (await res.json().catch(() => null)) as (RespostaMasmorra & { error?: string }) | null
     if (!res.ok) return { erro: json?.error || falha }
     if (!json || !json.expedicao || !Array.isArray(json.expedicao.andares)) return { erro: falha }
+    return { dados: json }
+  } catch {
+    return { erro: falha }
+  }
+}
+
+// --- Duelos (sql/093) ------------------------------------------------------------------
+
+export interface OponenteDeDuelo {
+  handle: string
+  nome: string
+  personagem_base: string
+  elemento: string
+  nivel: number
+  duelado_hoje: boolean
+  pontos: number
+}
+
+export interface LinhaRankingDuelo {
+  posicao: number
+  handle: string
+  nome: string
+  pontos: number
+  vitorias: number
+}
+
+export interface EstadoDuelos {
+  atributos: AtributosRPG
+  elemento: string
+  feitos: number
+  limite: number
+  pontos: number
+  tem_perfil: boolean
+  oponentes: OponenteDeDuelo[]
+  ranking: LinhaRankingDuelo[]
+}
+
+export interface RespostaDuelo {
+  oponente: OponenteDeDuelo
+  jogador: AtributosRPG
+  adversario: AtributosRPG
+  resultado: RespostaBatalha['resultado']
+  pontos_ganhos: number
+  ouro_ganho: number
+  feitos: number
+  limite: number
+}
+
+export async function obterDuelos(): Promise<{ dados?: EstadoDuelos; erro?: string; semPersonagem?: boolean }> {
+  try {
+    const res = await fetch('/api/rpg/duelos', { headers: await cabecalhoDeAutenticacao() })
+    if (res.status === 404) return { semPersonagem: true }
+    const json = (await res.json().catch(() => null)) as (EstadoDuelos & { error?: string }) | null
+    if (!res.ok || !json || !Array.isArray(json.oponentes)) return { erro: json?.error || 'Duelos indisponíveis no momento.' }
+    return { dados: json }
+  } catch {
+    return { erro: 'Duelos indisponíveis no momento.' }
+  }
+}
+
+export async function duelar(handle: string): Promise<{ dados?: RespostaDuelo; erro?: string }> {
+  const falha = 'Não foi possível duelar agora.'
+  try {
+    const res = await fetch('/api/rpg/duelos', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', ...(await cabecalhoDeAutenticacao()) },
+      body: JSON.stringify({ handle }),
+    })
+    const json = (await res.json().catch(() => null)) as (RespostaDuelo & { error?: string }) | null
+    if (!res.ok) return { erro: json?.error || falha }
+    if (!json || !json.resultado || !Array.isArray(json.resultado.turnos)) return { erro: falha }
     return { dados: json }
   } catch {
     return { erro: falha }

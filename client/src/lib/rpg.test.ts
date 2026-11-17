@@ -151,3 +151,15 @@ describe('rpg - bestiário', () => {
     expect(textoDoBestiario({ vitorias: 200, marco: 3, faltam_marco: 0, bonus_ouro: 30 })).toBe('200 vitórias · Caçador III · +30% de Ouro · todos os marcos')
   })
 })
+
+describe('relacaoElemental', () => {
+  it('segue a roda e Luz contra Trevas, com Éter neutro', async () => {
+    const { relacaoElemental } = await import('./rpg')
+    expect(relacaoElemental('fogo', 'terra')).toBe('vantagem')
+    expect(relacaoElemental('terra', 'fogo')).toBe('desvantagem')
+    expect(relacaoElemental('luz', 'trevas')).toBe('vantagem')
+    expect(relacaoElemental('trevas', 'luz')).toBe('vantagem')
+    expect(relacaoElemental('eter', 'fogo')).toBe('neutro')
+    expect(relacaoElemental(undefined, 'eter')).toBe('neutro')
+  })
+})

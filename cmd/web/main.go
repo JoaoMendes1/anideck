@@ -200,6 +200,8 @@ func main() {
 		protegido.Post("/api/rpg/batalhas", rpgHandler.HandleBatalhar)
 		protegido.Get("/api/rpg/masmorras", rpgHandler.HandleGetMasmorras)
 		protegido.Post("/api/rpg/masmorras", rpgHandler.HandleEntrarNaMasmorra)
+		protegido.Get("/api/rpg/duelos", rpgHandler.HandleGetDuelos)
+		protegido.Post("/api/rpg/duelos", rpgHandler.HandleDuelar)
 		protegido.Get("/api/rpg/invocacao", rpgHandler.HandleGetInvocacao)
 		protegido.Post("/api/rpg/invocacao", rpgHandler.HandleInvocar)
 		protegido.Post("/api/rpg/recuperar", rpgHandler.HandleRecuperar)

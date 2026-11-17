@@ -84,7 +84,10 @@ export function montarMenu({ handle = '', isAdmin = false, ano = new Date().getF
       itens: [
         {
           para: '/rankings', rotulo: 'Rankings', Icone: Trophy, cor: 'text-gold',
-          subitens: [{ para: '/membros', rotulo: 'Membros' }],
+          subitens: [
+            { para: '/membros', rotulo: 'Membros' },
+            { para: '/duelos', rotulo: 'Duelos' },
+          ],
         },
         {
           para: perfil, rotulo: ROTULO_MEU_PERFIL, Icone: CircleUserRound, cor: 'text-coral',
