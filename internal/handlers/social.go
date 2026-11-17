@@ -27,22 +27,23 @@ const (
 
 // linhaEvento é uma linha de atividade_eventos, como o banco devolve.
 type linhaEvento struct {
-	Tipo         string          `json:"tipo"`
-	Quando       string          `json:"quando"`
-	AutorID      string          `json:"autor_id"`
-	AutorHandle  string          `json:"autor_handle"`
-	AutorNome    string          `json:"autor_nome"`
-	AutorAvatar  json.RawMessage `json:"autor_avatar"`
-	AutorNivel   int             `json:"autor_nivel"`
-	MalID        int             `json:"mal_id"`
-	Titulo       string          `json:"titulo"`
-	Episodio     int             `json:"episodio"`
-	EpisodioAte  int             `json:"episodio_ate"`
-	ComentarioID string          `json:"comentario_id"`
-	Texto        string          `json:"texto"`
-	TextoOculto  bool            `json:"texto_oculto"`
-	AlvoHandle   string          `json:"alvo_handle"`
-	AlvoNome     string          `json:"alvo_nome"`
+	Tipo          string          `json:"tipo"`
+	Quando        string          `json:"quando"`
+	AutorID       string          `json:"autor_id"`
+	AutorHandle   string          `json:"autor_handle"`
+	AutorNome     string          `json:"autor_nome"`
+	AutorAvatar   json.RawMessage `json:"autor_avatar"`
+	AutorNivel    int             `json:"autor_nivel"`
+	MalID         int             `json:"mal_id"`
+	Titulo        string          `json:"titulo"`
+	Episodio      int             `json:"episodio"`
+	EpisodioAte   int             `json:"episodio_ate"`
+	ComentarioID  string          `json:"comentario_id"`
+	Texto         string          `json:"texto"`
+	TextoOculto   bool            `json:"texto_oculto"`
+	ContemSpoiler bool            `json:"contem_spoiler"`
+	AlvoHandle    string          `json:"alvo_handle"`
+	AlvoNome      string          `json:"alvo_nome"`
 }
 
 // AutorDoEvento é quem fez a ação, com o que a tela precisa para o retrato. Sem user_id.
@@ -57,18 +58,19 @@ type AutorDoEvento struct {
 
 // EventoDeAtividade é um item do feed ou da atividade do perfil.
 type EventoDeAtividade struct {
-	Tipo         string        `json:"tipo"`
-	Quando       string        `json:"quando"`
-	Autor        AutorDoEvento `json:"autor"`
-	MalID        int           `json:"mal_id"`
-	Titulo       string        `json:"titulo,omitempty"`
-	Episodio     int           `json:"episodio,omitempty"`
-	EpisodioAte  int           `json:"episodio_ate,omitempty"`
-	ComentarioID string        `json:"comentario_id,omitempty"`
-	Texto        string        `json:"texto,omitempty"`
-	TextoOculto  bool          `json:"texto_oculto,omitempty"`
-	AlvoHandle   string        `json:"alvo_handle,omitempty"`
-	AlvoNome     string        `json:"alvo_nome,omitempty"`
+	Tipo          string        `json:"tipo"`
+	Quando        string        `json:"quando"`
+	Autor         AutorDoEvento `json:"autor"`
+	MalID         int           `json:"mal_id"`
+	Titulo        string        `json:"titulo,omitempty"`
+	Episodio      int           `json:"episodio,omitempty"`
+	EpisodioAte   int           `json:"episodio_ate,omitempty"`
+	ComentarioID  string        `json:"comentario_id,omitempty"`
+	Texto         string        `json:"texto,omitempty"`
+	TextoOculto   bool          `json:"texto_oculto,omitempty"`
+	ContemSpoiler bool          `json:"contem_spoiler,omitempty"`
+	AlvoHandle    string        `json:"alvo_handle,omitempty"`
+	AlvoNome      string        `json:"alvo_nome,omitempty"`
 }
 
 // PaginaDeAtividade é a resposta do feed e da atividade: os eventos e o cursor da próxima
@@ -101,7 +103,8 @@ func montarEventos(linhas []linhaEvento, retratos map[string]retratoDoMembro, es
 		saida.Eventos = append(saida.Eventos, EventoDeAtividade{
 			Tipo: l.Tipo, Quando: l.Quando, Autor: autor, MalID: l.MalID, Titulo: l.Titulo,
 			Episodio: l.Episodio, EpisodioAte: l.EpisodioAte, ComentarioID: l.ComentarioID,
-			Texto: l.Texto, TextoOculto: l.TextoOculto, AlvoHandle: l.AlvoHandle, AlvoNome: l.AlvoNome,
+			Texto: l.Texto, TextoOculto: l.TextoOculto, ContemSpoiler: l.ContemSpoiler,
+			AlvoHandle: l.AlvoHandle, AlvoNome: l.AlvoNome,
 		})
 	}
 	if tamanhoPagina > 0 && len(linhas) >= tamanhoPagina {

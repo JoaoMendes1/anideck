@@ -127,6 +127,7 @@ export interface ComentarioDaConversa {
   texto: string
   momento_seg: number | null
   origem?: string
+  contem_spoiler?: boolean
   created_at: string
   editado_em: string | null
   curtidas: number

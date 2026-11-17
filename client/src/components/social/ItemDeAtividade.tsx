@@ -5,6 +5,8 @@
 import { Link } from 'react-router-dom'
 import { CheckCircle2, Eye, Heart, MessageCircle, Lock } from 'lucide-react'
 import AvatarMontavel from '../AvatarMontavel'
+import TextoComSpoiler from '../comunidade/TextoComSpoiler'
+import { textoTemSpoilerInline } from '../../lib/spoiler'
 import { filtroDoVisual, retratoDoEstagio } from '../../lib/personagem'
 import { fraseDoEvento, linkDoEvento, tempoDoEvento, type CapaDoAnime, type EventoDeAtividade } from '../../lib/social'
 
@@ -28,6 +30,7 @@ export default function ItemDeAtividade({ evento: e, capa, semAutor = false, ago
   const titulo = e.titulo || capa?.titulo || `Anime #${e.mal_id}`
   const link = linkDoEvento(e)
   const temComentario = e.tipo === 'comentou' || e.tipo === 'curtiu'
+  const precisaSpoiler = Boolean(e.contem_spoiler) || textoTemSpoilerInline(e.texto)
 
   return (
     <li className="flex gap-3 py-3.5 border-b border-line/60 last:border-b-0">
@@ -63,9 +66,18 @@ export default function ItemDeAtividade({ evento: e, capa, semAutor = false, ago
 
         {temComentario && (
           e.texto ? (
-            <Link to={link} className="block mt-1.5 px-3 py-2 rounded-xl bg-panel-2/70 border border-line/70 text-sm text-text leading-snug break-words hover:border-holo-3/50">
-              “{e.texto}”
-            </Link>
+            precisaSpoiler ? (
+              <div className="mt-1.5 px-3 py-2 rounded-xl bg-panel-2/70 border border-line/70">
+                <TextoComSpoiler texto={e.texto} contemSpoiler={Boolean(e.contem_spoiler)} compacto aspas />
+                <Link to={link} className="inline-block mt-1.5 font-mono text-xs text-holo-3 hover:underline">
+                  Ver na conversa →
+                </Link>
+              </div>
+            ) : (
+              <Link to={link} className="block mt-1.5 px-3 py-2 rounded-xl bg-panel-2/70 border border-line/70 text-sm text-text leading-snug break-words hover:border-holo-3/50">
+                “{e.texto}”
+              </Link>
+            )
           ) : (
             <Link to={link} className="mt-1.5 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-panel-2/40 border border-dashed border-line text-xs text-muted hover:text-text">
               <Lock size={12} aria-hidden /> Assista ao ep {e.episodio} para ler, sem spoiler

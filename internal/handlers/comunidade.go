@@ -567,6 +567,7 @@ type comentarioDaConversa struct {
 	Texto         string          `json:"texto"`
 	MomentoSeg    *int            `json:"momento_seg"`
 	Origem        string          `json:"origem,omitempty"`
+	ContemSpoiler bool            `json:"contem_spoiler"`
 	CreatedAt     string          `json:"created_at"`
 	EditadoEm     *string         `json:"editado_em"`
 	Curtidas      int             `json:"curtidas"`
@@ -576,15 +577,16 @@ type comentarioDaConversa struct {
 }
 
 type linhaComentario struct {
-	ID           string  `json:"id"`
-	UserID       string  `json:"user_id"`
-	Texto        string  `json:"texto"`
-	MomentoSeg   *int    `json:"momento_seg"`
-	Origem       string  `json:"origem,omitempty"`
-	Oculto       bool    `json:"oculto"`
-	CreatedAt    string  `json:"created_at"`
-	EditadoEm    *string `json:"editado_em"`
-	CommentLikes []struct {
+	ID            string  `json:"id"`
+	UserID        string  `json:"user_id"`
+	Texto         string  `json:"texto"`
+	MomentoSeg    *int    `json:"momento_seg"`
+	Origem        string  `json:"origem,omitempty"`
+	Oculto        bool    `json:"oculto"`
+	ContemSpoiler bool    `json:"contem_spoiler"`
+	CreatedAt     string  `json:"created_at"`
+	EditadoEm     *string `json:"editado_em"`
+	CommentLikes  []struct {
 		Count int `json:"count"`
 	} `json:"comment_likes"`
 }
@@ -607,7 +609,7 @@ func montarConversa(linhas []linhaComentario, autores map[string]autorComentario
 		}
 		lista = append(lista, comentarioDaConversa{
 			ID: l.ID, Autor: autor, Texto: l.Texto, MomentoSeg: l.MomentoSeg,
-			Origem:    l.Origem,
+			Origem: l.Origem, ContemSpoiler: l.ContemSpoiler,
 			CreatedAt: l.CreatedAt, EditadoEm: l.EditadoEm, Curtidas: curtidas,
 			CurtidoPorMim: curtidos[l.ID], Meu: l.UserID == eu, Oculto: l.Oculto,
 		})
@@ -663,7 +665,7 @@ func (h *ComunidadeHandler) HandleConversaDoEpisodio(w http.ResponseWriter, r *h
 	}
 
 	data, _, err := client.From("episode_comments").
-		Select("id,user_id,texto,momento_seg,origem,oculto,created_at,editado_em,comment_likes(count)", "", false).
+		Select("id,user_id,texto,momento_seg,origem,oculto,contem_spoiler,created_at,editado_em,comment_likes(count)", "", false).
 		Eq("mal_id", mal).Eq("episode_number", ep).
 		Order("created_at", &postgrest.OrderOpts{Ascending: false}).
 		Limit(limiteComentarios, "").
@@ -796,8 +798,9 @@ func (h *ComunidadeHandler) HandleComentar(w http.ResponseWriter, r *http.Reques
 		return
 	}
 	var req struct {
-		Texto      string `json:"texto"`
-		MomentoSeg *int   `json:"momento_seg"`
+		Texto         string `json:"texto"`
+		MomentoSeg    *int   `json:"momento_seg"`
+		ContemSpoiler bool   `json:"contem_spoiler"`
 	}
 	if err := json.NewDecoder(http.MaxBytesReader(w, r.Body, 1<<14)).Decode(&req); err != nil {
 		http.Error(w, "Pedido inválido.", http.StatusBadRequest)
@@ -815,6 +818,7 @@ func (h *ComunidadeHandler) HandleComentar(w http.ResponseWriter, r *http.Reques
 
 	linha := map[string]interface{}{
 		"user_id": userID, "mal_id": malID, "episode_number": numero, "texto": texto,
+		"contem_spoiler": req.ContemSpoiler,
 	}
 	if req.MomentoSeg != nil {
 		linha["momento_seg"] = *req.MomentoSeg

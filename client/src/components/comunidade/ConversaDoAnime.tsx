@@ -4,13 +4,15 @@
 // nem sai do banco (RLS do sql/041), então esconder aqui é só a forma, não a proteção.
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { Lock, MessageCircle, Heart, Flag, Trash2, Ban, ChevronLeft, ChevronRight, Clock, Droplet, Send, Check } from 'lucide-react'
+import { Lock, MessageCircle, Heart, Flag, Trash2, Ban, ChevronLeft, ChevronRight, Clock, Droplet, Send, Check, EyeOff } from 'lucide-react'
 import { useSessao } from '../../contexts/SessaoContext'
 import { useToast } from '../../contexts/ToastContext'
 import { useComunidade, avisarComunidadeAtualizada } from '../../hooks/useComunidade'
 import { invalidarCachesDoDeck } from '../../lib/cacheDeTela'
 import SeloEquipe from './SeloEquipe'
+import TextoComSpoiler from './TextoComSpoiler'
 import TagCla from '../TagCla'
+import { inserirMarcacaoSpoiler } from '../../lib/spoiler'
 import { obterClasseMoldura, obterClasseCorNome, renderizarEmblema } from '../../lib/cosmeticos'
 import {
   REACOES,
@@ -531,13 +533,28 @@ function Compositor({ malId, episodio, token, mana, custo, onComentar }: {
   const [texto, setTexto] = useState('')
   const [momento, setMomento] = useState('')
   const [mostrarMomento, setMostrarMomento] = useState(false)
+  const [contemSpoiler, setContemSpoiler] = useState(false)
   const [enviando, setEnviando] = useState(false)
+  const textareaRef = useRef<HTMLTextAreaElement>(null)
 
   const segundos = lerMomento(momento)
   const momentoInvalido = segundos !== null && Number.isNaN(segundos)
   const semMana = mana < custo
   const restante = MAX_TEXTO_COMENTARIO - texto.length
   const podeEnviar = texto.trim().length > 0 && restante >= 0 && !momentoInvalido && !semMana && !enviando
+
+  const aplicarTrechoSpoiler = () => {
+    const el = textareaRef.current
+    const ini = el?.selectionStart ?? texto.length
+    const fim = el?.selectionEnd ?? texto.length
+    const res = inserirMarcacaoSpoiler(texto, ini, fim)
+    setTexto(res.texto)
+    requestAnimationFrame(() => {
+      if (!textareaRef.current) return
+      textareaRef.current.focus()
+      textareaRef.current.setSelectionRange(res.selecaoInicio, res.selecaoFim)
+    })
+  }
 
   const enviar = async () => {
     if (!podeEnviar) return
@@ -546,7 +563,7 @@ function Compositor({ malId, episodio, token, mana, custo, onComentar }: {
       const res = await fetch(`/api/anime/${malId}/episodios/${episodio}/comentarios`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-        body: JSON.stringify({ texto, momento_seg: segundos }),
+        body: JSON.stringify({ texto, momento_seg: segundos, contem_spoiler: contemSpoiler }),
       })
       if (!res.ok) {
         showToast(await lerErro(res, 'Não foi possível publicar.'), 'error')
@@ -556,6 +573,7 @@ function Compositor({ malId, episodio, token, mana, custo, onComentar }: {
       setTexto('')
       setMomento('')
       setMostrarMomento(false)
+      setContemSpoiler(false)
     } catch {
       showToast('Sem conexão. Tente de novo.', 'error')
     } finally {
@@ -569,6 +587,7 @@ function Compositor({ malId, episodio, token, mana, custo, onComentar }: {
         Comentar o episódio {episodio}
       </label>
       <textarea
+        ref={textareaRef}
         id={`comentario-${episodio}`}
         value={texto}
         onChange={e => setTexto(e.target.value)}
@@ -577,7 +596,7 @@ function Compositor({ malId, episodio, token, mana, custo, onComentar }: {
         }}
         maxLength={MAX_TEXTO_COMENTARIO}
         rows={3}
-        placeholder={`O que achou do episódio ${episodio}?`}
+        placeholder={`O que achou do episódio ${episodio}? Use ||trecho|| para ocultar spoilers específicos.`}
         className="w-full bg-panel-2 border border-line rounded-xl px-4 py-3 text-[14px] leading-relaxed outline-none focus:border-holo-3 transition-colors resize-y min-h-[84px]"
       />
       <div className="flex flex-wrap items-center justify-between gap-2 mt-2">
@@ -599,6 +618,23 @@ function Compositor({ malId, episodio, token, mana, custo, onComentar }: {
               <Clock size={12} aria-hidden /> Marcar o minuto da cena
             </button>
           )}
+          <button
+            type="button"
+            onClick={aplicarTrechoSpoiler}
+            className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full border border-line text-xs font-bold text-muted hover:text-text cursor-pointer"
+            title="Envolve o trecho selecionado com ||spoiler||"
+          >
+            <EyeOff size={12} aria-hidden /> ||spoiler||
+          </button>
+          <label className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full border border-line text-xs font-bold text-muted hover:text-text cursor-pointer select-none">
+            <input
+              type="checkbox"
+              checked={contemSpoiler}
+              onChange={e => setContemSpoiler(e.target.checked)}
+              className="accent-coral cursor-pointer"
+            />
+            Contém spoiler
+          </label>
           <span className={`font-mono text-xs ${semMana ? 'text-coral' : 'text-muted-2'}`}>
             <Droplet size={11} className="inline -mt-0.5 mr-0.5 text-holo-3" aria-hidden />
             {semMana ? `Mana insuficiente (${mana}/${custo})` : `Custa ${custo} · você tem ${mana}`}
@@ -696,13 +732,18 @@ function ItemComentario({ comentario: c, agora, token, onRemover, onBloquear, on
                 <Clock size={9} aria-hidden /> {formatarMomento(c.momento_seg)}
               </span>
             )}
+            {c.contem_spoiler && (
+              <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-coral/12 border border-coral/35 font-mono text-xs text-coral">
+                <EyeOff size={10} aria-hidden /> spoiler
+              </span>
+            )}
             {c.oculto && (
               <span className="px-1.5 py-0.5 rounded bg-coral/12 border border-coral/40 font-mono text-xs text-coral">
                 oculto pela moderação
               </span>
             )}
           </div>
-          <p className="text-[14px] text-text/90 leading-relaxed mt-1 mb-0 whitespace-pre-wrap break-words">{c.texto}</p>
+          <TextoComSpoiler texto={c.texto} contemSpoiler={Boolean(c.contem_spoiler)} className="mt-1" />
 
           <div className="flex flex-wrap items-center gap-1 mt-2 -ml-2">
             <button

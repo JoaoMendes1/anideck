@@ -26,6 +26,7 @@ export interface EventoDeAtividade {
   comentario_id?: string
   texto?: string
   texto_oculto?: boolean
+  contem_spoiler?: boolean
   alvo_handle?: string
   alvo_nome?: string
 }

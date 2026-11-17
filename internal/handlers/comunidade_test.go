@@ -10,6 +10,7 @@ import (
 	"testing"
 
 	"github.com/JoaoMendes1/anideck/internal/middleware"
+	"github.com/go-chi/chi/v5"
 )
 
 func TestMontarConversa(t *testing.T) {
@@ -172,5 +173,52 @@ func TestHandleAtualizarNomeExibicao(t *testing.T) {
 	hFalha.HandleAtualizarNomeExibicao(recErr, req(`{"nome":"Outro"}`))
 	if recErr.Code != http.StatusServiceUnavailable {
 		t.Fatalf("falha no serviço auth esperava 503, veio %d", recErr.Code)
+	}
+}
+
+func TestHandleComentar_ContemSpoiler(t *testing.T) {
+	var bodyEnviado map[string]interface{}
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		if r.Method == http.MethodPost && strings.HasPrefix(r.URL.Path, "/rest/v1/episode_comments") {
+			_ = json.NewDecoder(r.Body).Decode(&bodyEnviado)
+			w.WriteHeader(http.StatusCreated)
+			w.Write([]byte(`[{"id":"c1","user_id":"u-spoiler","texto":"||morre no final||","contem_spoiler":true,"created_at":"2026-11-17T12:00:00Z"}]`))
+			return
+		}
+		if r.Method == http.MethodGet && strings.HasPrefix(r.URL.Path, "/rest/v1/profiles") {
+			w.Write([]byte(`[{"handle":"joao","nome":"João","bio":"","vitrine":[],"publico":true,"mostrar_atividade":true}]`))
+			return
+		}
+		w.Write([]byte(`[]`))
+	}))
+	defer srv.Close()
+
+	t.Setenv("SUPABASE_URL", srv.URL)
+	t.Setenv("SUPABASE_ANON_KEY", "anon-teste")
+
+	r := chi.NewRouter()
+	h := &ComunidadeHandler{}
+	r.Post("/api/anime/{id}/episodios/{n}/comentarios", h.HandleComentar)
+
+	req := httptest.NewRequest(http.MethodPost, "/api/anime/21/episodios/3/comentarios", strings.NewReader(`{"texto":"||morre no final||","contem_spoiler":true}`))
+	ctx := context.WithValue(req.Context(), middleware.UserIDKey, "u-spoiler")
+	ctx = context.WithValue(ctx, middleware.TokenKey, "tok-spoiler")
+	req = req.WithContext(ctx)
+
+	rec := httptest.NewRecorder()
+	r.ServeHTTP(rec, req)
+	if rec.Code != http.StatusCreated {
+		t.Fatalf("esperava 201, veio %d (%s)", rec.Code, rec.Body.String())
+	}
+	if bodyEnviado["contem_spoiler"] != true {
+		t.Errorf("contem_spoiler deveria ir para o banco como true, veio %#v", bodyEnviado["contem_spoiler"])
+	}
+	var resp comentarioDaConversa
+	if err := json.Unmarshal(rec.Body.Bytes(), &resp); err != nil {
+		t.Fatalf("resposta JSON inválida: %v", err)
+	}
+	if !resp.ContemSpoiler || resp.Texto != "||morre no final||" {
+		t.Errorf("resposta não preservou contem_spoiler/texto: %+v", resp)
 	}
 }
