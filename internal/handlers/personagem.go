@@ -464,6 +464,7 @@ type contextoPersonagem struct {
 	inventario     []linhaInventarioRPG
 	equipados      map[string]string
 	bilhetes       int
+	ouro           int
 	inventarioLido bool
 	// Pontos distribuídos (sql/077). pontosLidos false: a leitura única não os trouxe.
 	pontos      PrimariosRPG

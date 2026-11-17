@@ -787,6 +787,7 @@ experiência pequena e funcional de cada vez.
   - [x] 18.3a Atributos Vida, Ataque e Defesa, calculados no servidor a partir do nível e dos itens equipados; item acima do nível fica no slot sem somar (#221)
   - [x] 18.3b Seis atributos primários (Força, Inteligência, Constituição, Agilidade, Destreza e Sorte), com 1 ponto para distribuir a cada 2 níveis e redistribuição livre, conferida no banco; derivados calculados no servidor: Vida, Ataque, Defesa, Magia, Éter, Velocidade, Crítico, Dano crítico, Esquiva e Sorte de item (#227)
   - [x] 18.3c Livro de habilidades: cinco comuns do Espadachim liberadas por nível e a única do personagem, "Despertar do Éter". No combate, ordem pela Velocidade, esquiva, crítico pela Destreza, Éter que volta a cada rodada e habilidades usadas sozinhas, com o nome no registro da expedição (#227)
+  - [x] 18.3d Aprimoramento de equipamento com Ouro: cada nível soma 5% aos números do item, com teto por raridade (Comum +4, Raro +6, Épico +8, Lendário +10) e preço crescente (20, 40, 80 ou 150 × o próximo nível); nunca falha, e dois cliques iguais cobram uma vez. `sql/083`, rota `POST /api/rpg/aprimorar` (#241)
 - [ ] 18.4 Mundo e PvE
   - [x] 18.4a Expedições: oito monstros, batalha por turnos simulada no servidor com os atributos dele, limite de batalhas por dia (`app_settings.rpg_batalhas_por_dia`, padrão 5), vitória dá bilhetes de invocação e chance de item; combate não dá XP (#222); monstros pós-tutorial reforçados após atributos e habilidades (`sql/078`, #229). Arte provisória: ícone e cor por monstro
 - [ ] 18.5 Integração comunitária
@@ -795,7 +796,7 @@ experiência pequena e funcional de cada vez.
   - [x] 18.6a Invocação gratuita: bilhetes ganhos só em expedições, invocar 1 ou 10, chances visíveis e iguais às do sorteio (`rpg_chances_invocacao`), garantia de épico ou melhor a cada 10, repetidos somam no inventário (#223). Sem pagamento por desenho: ECA Digital, art. 20
   - [x] 18.6a revisada: invocação mais rara. Corrigido o defeito do `sql/073`, em que o resultado "comum" (60%) não achava item fora do kit e caía na reserva de raridade mais alta, dando Lendário em cerca de 62% das invocações. Chances novas: Ouro 78% (25 de Ouro), Raro 17%, Épico 4,5% e Lendário 0,5%; Raro ou melhor garantido a cada 10 sem Raro; Lendário com chance crescente a partir da 70ª tentativa sem ele e certo na 90ª (média de 62 tentativas). Bilhetes por vitória de 1 a 3. `sql/082` (#240)
 
-**Pendência do dono:** aplicar no Supabase, nesta ordem e antes de promover, `sql/080_rpg_elenco.sql` (#238), `sql/081_rpg_vida_e_ouro.sql` (#239) e `sql/082_rpg_invocacao_rara.sql` (#240).
+**Pendência do dono:** aplicar no Supabase, nesta ordem e antes de promover, `sql/083_rpg_aprimoramento.sql` (#241).
 
 **Arte pendente (o sistema já está pronto para recebê-la, sem mudar código de regra):** ilustração de cada skin (entra em `ARTES` com o id da skin e sai de `SKINS`), ícone ou ilustração de cada item de equipamento e de cada monstro, e a segunda personagem do elenco.
 

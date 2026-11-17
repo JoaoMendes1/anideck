@@ -47,6 +47,9 @@ type ItemRPG struct {
 	Ataque      int    `json:"ataque"`
 	Defesa      int    `json:"defesa"`
 	NivelMinimo int    `json:"nivel_minimo"`
+	// Aprimoramento é de 0 a 10 (sql/083). Vida, Ataque e Defesa acima já vêm com ele somado
+	// quando o item é do jogador; no catálogo, é sempre 0.
+	Aprimoramento int `json:"aprimoramento"`
 }
 
 // ItemDoInventario é o item como a tela o lista: com quantas cópias, se está em uso e se o
@@ -56,6 +59,10 @@ type ItemDoInventario struct {
 	Quantidade int  `json:"quantidade"`
 	Equipado   bool `json:"equipado"`
 	Bloqueado  bool `json:"bloqueado"`
+	// AprimoramentoMaximo é o teto da raridade; CustoAprimorar é o preço em Ouro do próximo
+	// nível, 0 quando já está no teto.
+	AprimoramentoMaximo int `json:"aprimoramento_maximo"`
+	CustoAprimorar      int `json:"custo_aprimorar"`
 }
 
 // SlotRPG é um dos cinco lugares de equipamento. Item nil é slot vazio.
@@ -78,6 +85,8 @@ type EstadoEquipamento struct {
 	Inventario        []ItemDoInventario `json:"inventario"`
 	// Livro de habilidades da classe, com as bloqueadas pelo nível.
 	Habilidades []HabilidadeRPG `json:"habilidades"`
+	// Ouro disponível para aprimorar (sql/081).
+	Ouro int `json:"ouro"`
 }
 
 // SlotsRPG devolve os slots na ordem em que a tela os mostra. A lista repete o CHECK de
@@ -123,8 +132,9 @@ func SomarAtributos(base AtributosRPG, itens []ItemRPG) AtributosRPG {
 
 // linhaInventarioRPG é uma linha de rpg_inventario com o item do catálogo embutido.
 type linhaInventarioRPG struct {
-	Quantidade int      `json:"quantidade"`
-	Item       *ItemRPG `json:"rpg_itens"`
+	Quantidade    int      `json:"quantidade"`
+	Aprimoramento int      `json:"aprimoramento"`
+	Item          *ItemRPG `json:"rpg_itens"`
 }
 
 // interpretarInventarioRPG lê a resposta do PostgREST. Linha sem item (apagado do catálogo
@@ -142,6 +152,7 @@ func interpretarInventarioRPG(dados []byte) ([]linhaInventarioRPG, error) {
 		if l.Quantidade < 1 {
 			l.Quantidade = 1
 		}
+		l.Aprimoramento = max(0, min(aprimoramentoMaximoGeral, l.Aprimoramento))
 		saida = append(saida, l)
 	}
 	return saida, nil
@@ -156,7 +167,7 @@ func MontarEstadoEquipamento(nivel int, inventario []linhaInventarioRPG, equipad
 	}
 	porID := make(map[string]ItemRPG, len(inventario))
 	for _, l := range inventario {
-		porID[l.Item.ID] = *l.Item
+		porID[l.Item.ID] = AplicarAprimoramento(*l.Item, l.Aprimoramento)
 	}
 
 	slots := make([]SlotRPG, 0, len(SlotsRPG()))
@@ -182,11 +193,18 @@ func MontarEstadoEquipamento(nivel int, inventario []linhaInventarioRPG, equipad
 	}
 	lista := make([]ItemDoInventario, 0, len(inventario))
 	for _, l := range inventario {
+		teto := TetoDeAprimoramento(l.Item.Raridade)
+		custo := 0
+		if l.Aprimoramento < teto {
+			custo = CustoDeAprimoramento(l.Item.Raridade, l.Aprimoramento+1)
+		}
 		lista = append(lista, ItemDoInventario{
-			ItemRPG:    *l.Item,
-			Quantidade: l.Quantidade,
-			Equipado:   equipadoNoSlot[l.Item.ID],
-			Bloqueado:  nivel < l.Item.NivelMinimo,
+			ItemRPG:             porID[l.Item.ID],
+			Quantidade:          l.Quantidade,
+			Equipado:            equipadoNoSlot[l.Item.ID],
+			Bloqueado:           nivel < l.Item.NivelMinimo,
+			AprimoramentoMaximo: teto,
+			CustoAprimorar:      custo,
 		})
 	}
 	sort.SliceStable(lista, func(i, j int) bool {
@@ -219,7 +237,7 @@ func MontarEstadoEquipamento(nivel int, inventario []linhaInventarioRPG, equipad
 // conta para a tela e para o combate, que não aceita atributo vindo do navegador.
 func carregarEstadoEquipamento(dbClient *supabase.Client, userID string, nivel int, pontos PrimariosRPG) (EstadoEquipamento, error) {
 	dados, _, err := dbClient.From("rpg_inventario").
-		Select("quantidade,rpg_itens(id,slot,nome,descricao,raridade,vida,ataque,defesa,nivel_minimo)", "", false).
+		Select("quantidade,aprimoramento,rpg_itens(id,slot,nome,descricao,raridade,vida,ataque,defesa,nivel_minimo)", "", false).
 		Eq("user_id", userID).
 		Execute()
 	if err != nil {

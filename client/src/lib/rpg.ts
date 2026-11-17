@@ -51,12 +51,18 @@ export interface ItemRPG {
   ataque: number
   defesa: number
   nivel_minimo: number
+  /** De 0 a 10 (sql/083); Vida, Ataque e Defesa já vêm com ele somado. */
+  aprimoramento?: number
 }
 
 export interface ItemDoInventario extends ItemRPG {
   quantidade: number
   equipado: boolean
   bloqueado: boolean
+  /** Teto de aprimoramento da raridade. */
+  aprimoramento_maximo?: number
+  /** Preço em Ouro do próximo nível; 0 quando já está no teto. */
+  custo_aprimorar?: number
 }
 
 export interface SlotRPG {
@@ -74,6 +80,8 @@ export interface EstadoEquipamento {
   pontos?: PrimariosRPG
   pontos_disponiveis?: number
   habilidades?: HabilidadeRPG[]
+  /** Ouro disponível para aprimorar. */
+  ouro?: number
 }
 
 /** O que cada atributo primário faz, na ordem da tela. O efeito é texto: a conta é do servidor. */
@@ -196,6 +204,24 @@ export async function equiparItemRPG(
       method: 'PUT',
       headers: { 'Content-Type': 'application/json', ...(await cabecalhoDeAutenticacao()) },
       body: JSON.stringify({ slot, item_id: itemId }),
+    })
+    const json = (await res.json().catch(() => null)) as (EstadoEquipamento & { error?: string }) | null
+    if (!res.ok) return { erro: json?.error || falha }
+    if (!json || !Array.isArray(json.slots)) return { erro: falha }
+    return { dados: json }
+  } catch {
+    return { erro: falha }
+  }
+}
+
+/** Sobe um nível do item. O preço é do servidor; a tela só o mostra. */
+export async function aprimorarItem(itemId: string): Promise<{ dados?: EstadoEquipamento; erro?: string }> {
+  const falha = 'Não foi possível aprimorar agora.'
+  try {
+    const res = await fetch('/api/rpg/aprimorar', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', ...(await cabecalhoDeAutenticacao()) },
+      body: JSON.stringify({ item_id: itemId }),
     })
     const json = (await res.json().catch(() => null)) as (EstadoEquipamento & { error?: string }) | null
     if (!res.ok) return { erro: json?.error || falha }

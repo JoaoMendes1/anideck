@@ -7,9 +7,10 @@
 // Fecha no X, no Esc e no toque fora. A troca é conferida e gravada no servidor.
 import { useEffect, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
-import { Lock, X } from 'lucide-react'
+import { Coins, Hammer, Lock, X } from 'lucide-react'
 import {
   SLOTS_RPG,
+  aprimorarItem,
   diferencaDaTroca,
   equiparItemRPG,
   estiloDaRaridade,
@@ -97,6 +98,21 @@ export default function EscolhaDeItem({
     setErro(resultado.erro ?? 'Não foi possível trocar o equipamento agora.')
   }
 
+  // Aprimorar não fecha a lista: o jogador costuma subir mais de um nível seguido.
+  const aprimorar = async (itemId: string) => {
+    if (salvando) return
+    setErro('')
+    setSalvando(true)
+    const resultado = await aprimorarItem(itemId)
+    setSalvando(false)
+    if (resultado.dados) {
+      aoAtualizar(resultado.dados)
+      return
+    }
+    setErro(resultado.erro ?? 'Não foi possível aprimorar agora.')
+  }
+  const ouro = estado.ouro ?? 0
+
   const rotulo = SLOTS_RPG.find((s) => s.id === slot)?.rotulo ?? ''
   const noSlot = estado.slots.find((s) => s.slot === slot)?.item
   const opcoes = estado.inventario.filter((i) => i.slot === slot)
@@ -106,6 +122,9 @@ export default function EscolhaDeItem({
     <div className="flex flex-col gap-2">
       <div className="flex items-center justify-between gap-2">
         <p className="m-0 font-mono text-xs font-semibold uppercase tracking-widest text-muted">{rotulo}</p>
+        <span className="ml-auto inline-flex items-center gap-1 font-mono text-xs text-gold">
+          <Coins size={12} aria-hidden="true" /> {ouro} de Ouro
+        </span>
         <button
           type="button"
           onClick={aoFechar}
@@ -123,14 +142,17 @@ export default function EscolhaDeItem({
           {opcoes.map((item) => {
             const estilo = estiloDaRaridade(item.raridade)
             const dif = diferencaDaTroca(noSlot, item)
+            const nivel = item.aprimoramento ?? 0
+            const custo = item.custo_aprimorar ?? 0
             return (
-              <li key={item.id} className={`flex items-center gap-2 rounded-xl border p-2.5 ${estilo.borda} ${estilo.fundo}`}>
+              <li key={item.id} className={`flex flex-wrap items-center gap-2 rounded-xl border p-2.5 ${estilo.borda} ${estilo.fundo}`}>
                 <span className={`flex h-11 w-11 shrink-0 items-center justify-center overflow-hidden rounded-lg bg-void/50 ${estilo.texto}`}>
                   <IconeDoItem id={item.id} slot={item.slot} tamanho={20} />
                 </span>
                 <div className="min-w-0 flex-1">
                   <p className={`m-0 truncate text-sm font-bold ${estilo.texto}`}>
                     {item.nome}
+                    {nivel > 0 && <span className="ml-1 font-mono text-xs text-gold">+{nivel}</span>}
                     {item.quantidade > 1 && <span className="ml-1 font-mono text-xs text-muted">×{item.quantidade}</span>}
                   </p>
                   <p className="m-0 text-xs text-muted">
@@ -166,6 +188,26 @@ export default function EscolhaDeItem({
                   >
                     Equipar
                   </button>
+                )}
+                {item.aprimoramento_maximo !== undefined && (
+                  <div className="flex w-full items-center justify-between gap-2 border-t border-line/60 pt-2 font-mono text-xs">
+                    <span className="text-muted">
+                      Aprimoramento +{nivel} de +{item.aprimoramento_maximo}
+                    </span>
+                    {custo > 0 ? (
+                      <button
+                        type="button"
+                        onClick={() => aprimorar(item.id)}
+                        disabled={salvando || ouro < custo}
+                        aria-label={`Aprimorar ${item.nome} para +${nivel + 1} por ${custo} de Ouro`}
+                        className="inline-flex min-h-11 shrink-0 cursor-pointer items-center gap-1.5 rounded-full border border-gold/50 px-3 font-bold text-gold hover:bg-gold/10 disabled:cursor-not-allowed disabled:opacity-50"
+                      >
+                        <Hammer size={12} aria-hidden="true" /> +{nivel + 1} · {custo}
+                      </button>
+                    ) : (
+                      <span className="font-bold text-gold">no máximo</span>
+                    )}
+                  </div>
                 )}
               </li>
             )

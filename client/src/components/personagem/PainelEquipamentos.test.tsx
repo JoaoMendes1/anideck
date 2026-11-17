@@ -6,13 +6,13 @@ import type { EstadoEquipamento, ItemRPG, SlotId } from '../../lib/rpg'
 
 vi.mock('../../lib/rpg', async (original) => {
   const real = await original<typeof import('../../lib/rpg')>()
-  return { ...real, equiparItemRPG: vi.fn() }
+  return { ...real, equiparItemRPG: vi.fn(), aprimorarItem: vi.fn() }
 })
 
 import PainelEquipamentos from './PainelEquipamentos'
 import SlotsDoPersonagem from './SlotsDoPersonagem'
 import EscolhaDeItem from './EscolhaDeItem'
-import { ESTILO_DA_RARIDADE, equiparItemRPG } from '../../lib/rpg'
+import { ESTILO_DA_RARIDADE, aprimorarItem, equiparItemRPG } from '../../lib/rpg'
 
 // Monta os slots, a lista e o painel como a página: o estado fica fora deles.
 function Tela({ inicial }: { inicial: EstadoEquipamento | null | undefined }) {
@@ -47,6 +47,7 @@ function estado(armaEquipada: ItemRPG = espada): EstadoEquipamento {
 
 beforeEach(() => {
   vi.mocked(equiparItemRPG).mockReset()
+  vi.mocked(aprimorarItem).mockReset()
 })
 afterEach(cleanup)
 
@@ -130,3 +131,49 @@ describe('PainelEquipamentos', () => {
   })
 })
 
+
+describe('Aprimoramento', () => {
+  function comAprimoramento(nivelDaLamina: number, ouro: number): EstadoEquipamento {
+    const base = estado(lamina)
+    const custo = nivelDaLamina < 6 ? 40 * (nivelDaLamina + 1) : 0
+    return {
+      ...base,
+      ouro,
+      slots: [{ slot: 'arma', item: { ...lamina, aprimoramento: nivelDaLamina } }, ...base.slots.slice(1)],
+      inventario: base.inventario.map((i) =>
+        i.id === lamina.id ? { ...i, aprimoramento: nivelDaLamina, aprimoramento_maximo: 6, custo_aprimorar: custo } : { ...i, aprimoramento_maximo: 4, custo_aprimorar: 20 },
+      ),
+    }
+  }
+
+  it('mostra o nível, o teto, o preço e o Ouro, e aprimora sem fechar a lista', async () => {
+    vi.mocked(aprimorarItem).mockResolvedValue({ dados: comAprimoramento(3, 20) })
+    render(<Tela inicial={comAprimoramento(2, 140)} />)
+
+    expect(screen.getByText('+2')).toBeTruthy()
+    fireEvent.click(screen.getByRole('button', { name: 'Arma: Lâmina de Éter. Trocar' }))
+    expect(screen.getByText('140 de Ouro')).toBeTruthy()
+    expect(screen.getByText('Aprimoramento +2 de +6')).toBeTruthy()
+
+    fireEvent.click(screen.getByRole('button', { name: 'Aprimorar Lâmina de Éter para +3 por 120 de Ouro' }))
+    await screen.findByText('Aprimoramento +3 de +6')
+    expect(aprimorarItem).toHaveBeenCalledWith('lamina_de_eter')
+    expect(screen.getByText('20 de Ouro')).toBeTruthy()
+    expect((screen.getByRole('button', { name: 'Aprimorar Lâmina de Éter para +4 por 160 de Ouro' }) as HTMLButtonElement).disabled).toBe(true)
+  })
+
+  it('no teto, mostra "no máximo" em vez do botão', () => {
+    render(<Tela inicial={comAprimoramento(6, 999)} />)
+    fireEvent.click(screen.getByRole('button', { name: 'Arma: Lâmina de Éter. Trocar' }))
+    expect(screen.getByText('no máximo')).toBeTruthy()
+    expect(screen.queryByRole('button', { name: /Aprimorar Lâmina de Éter/ })).toBeNull()
+  })
+
+  it('mostra o erro do servidor', async () => {
+    vi.mocked(aprimorarItem).mockResolvedValue({ erro: 'Ouro insuficiente. Vença expedições para ganhar mais.' })
+    render(<Tela inicial={comAprimoramento(0, 500)} />)
+    fireEvent.click(screen.getByRole('button', { name: 'Arma: Lâmina de Éter. Trocar' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Aprimorar Lâmina de Éter para +1 por 40 de Ouro' }))
+    await waitFor(() => expect(screen.getByRole('alert').textContent).toContain('Ouro insuficiente'))
+  })
+})

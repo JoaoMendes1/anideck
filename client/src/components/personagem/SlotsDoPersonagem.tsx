@@ -42,7 +42,7 @@ export default function SlotsDoPersonagem({
               aria-expanded={aberto}
               aria-label={item ? `${rotulo}: ${item.nome}. Trocar` : `${rotulo}: vazio. Equipar`}
               title={item ? `${rotulo}: ${item.nome}` : `${rotulo}: vazio`}
-              className={`flex h-12 w-12 cursor-pointer items-center justify-center overflow-hidden rounded-xl border-2 backdrop-blur-sm lg:h-16 lg:w-16 ${
+              className={`relative flex h-12 w-12 cursor-pointer items-center justify-center overflow-hidden rounded-xl border-2 backdrop-blur-sm lg:h-16 lg:w-16 ${
                 aberto
                   ? 'border-holo-3 bg-void/80 text-holo-3 ring-2 ring-holo-3/40'
                   : item
@@ -51,6 +51,11 @@ export default function SlotsDoPersonagem({
               }`}
             >
               <IconeDoItem id={item?.id} slot={id} tamanho={22} />
+              {(item?.aprimoramento ?? 0) > 0 && (
+                <span className="absolute right-0.5 bottom-0.5 rounded bg-void/85 px-1 font-mono text-[10px] leading-tight font-bold text-gold">
+                  +{item?.aprimoramento}
+                </span>
+              )}
             </button>
           </li>
         )
