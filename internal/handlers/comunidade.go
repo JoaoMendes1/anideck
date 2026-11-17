@@ -80,7 +80,6 @@ type perfilProprio struct {
 	Publico              bool     `json:"publico"`
 	DescansoInicio       string   `json:"descanso_inicio"`
 	DescansoFim          string   `json:"descanso_fim"`
-	Classe               string   `json:"classe,omitempty"`
 	TituloAtivo          string   `json:"titulo_ativo,omitempty"`
 	TitulosDesbloqueados []string `json:"titulos_desbloqueados,omitempty"`
 }
@@ -97,7 +96,7 @@ type estadoComunidade struct {
 
 func lerPerfilProprio(client *supabase.Client, userID string) (perfilProprio, error) {
 	data, _, err := client.From("profiles").
-		Select("handle,nome,bio,vitrine,publico,descanso_inicio,descanso_fim,classe,titulo_ativo,titulos_desbloqueados", "", false).
+		Select("handle,nome,bio,vitrine,publico,descanso_inicio,descanso_fim,titulo_ativo,titulos_desbloqueados", "", false).
 		Eq("user_id", userID).
 		Execute()
 	if err != nil {
@@ -111,7 +110,6 @@ func lerPerfilProprio(client *supabase.Client, userID string) (perfilProprio, er
 		Publico              bool     `json:"publico"`
 		DescansoInicio       *string  `json:"descanso_inicio"`
 		DescansoFim          *string  `json:"descanso_fim"`
-		Classe               string   `json:"classe"`
 		TituloAtivo          string   `json:"titulo_ativo"`
 		TitulosDesbloqueados []string `json:"titulos_desbloqueados"`
 	}
@@ -126,7 +124,6 @@ func lerPerfilProprio(client *supabase.Client, userID string) (perfilProprio, er
 		Bio:                  l.Bio,
 		Vitrine:              l.Vitrine,
 		Publico:              l.Publico,
-		Classe:               l.Classe,
 		TituloAtivo:          l.TituloAtivo,
 		TitulosDesbloqueados: l.TitulosDesbloqueados,
 	}
@@ -1047,7 +1044,6 @@ type perfilPublico struct {
 	ClaTag          string          `json:"cla_tag,omitempty"`
 	ClaNome         string          `json:"cla_nome,omitempty"`
 	ClaPapel        string          `json:"cla_papel,omitempty"`
-	Classe          string          `json:"classe,omitempty"`
 	TituloAtivo     string          `json:"titulo_ativo,omitempty"`
 	Avatar          json.RawMessage `json:"avatar,omitempty"`
 	Estagio         string          `json:"estagio,omitempty"`
@@ -1125,13 +1121,11 @@ func (h *ComunidadeHandler) HandlePerfilPublico(w http.ResponseWriter, r *http.R
 
 	var profs []struct {
 		UserID      string          `json:"user_id"`
-		Classe      string          `json:"classe"`
 		TituloAtivo string          `json:"titulo_ativo"`
 		Avatar      json.RawMessage `json:"avatar_custom"`
 	}
-	if dataP, _, errP := database.Client.From("profiles").Select("user_id,classe,titulo_ativo,avatar_custom", "", false).Eq("handle", handle).Execute(); errP == nil {
+	if dataP, _, errP := database.Client.From("profiles").Select("user_id,titulo_ativo,avatar_custom", "", false).Eq("handle", handle).Execute(); errP == nil {
 		if json.Unmarshal(dataP, &profs) == nil && len(profs) > 0 {
-			p.Classe = profs[0].Classe
 			p.TituloAtivo = profs[0].TituloAtivo
 			if avatarEscolhido(profs[0].Avatar) {
 				p.Avatar = profs[0].Avatar

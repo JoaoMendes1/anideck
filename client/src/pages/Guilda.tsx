@@ -13,7 +13,7 @@ import ModalTransferirAniCoins from '../components/ModalTransferirAniCoins'
 import CardMissoesDiarias from '../components/inicio/CardMissoesDiarias'
 import CartaoEspecialidade from '../components/hud/CartaoEspecialidade'
 import CardChefao from '../components/chefao/CardChefao'
-import SeletorClasse from '../components/comunidade/SeletorClasse'
+import SeletorTitulo from '../components/comunidade/SeletorTitulo'
 import CardPrevisoes from '../components/previsoes/CardPrevisoes'
 import CardConviteAmigos from '../components/comunidade/CardConviteAmigos'
 import SecaoColecaoCartas from '../components/comunidade/SecaoColecaoCartas'
@@ -247,14 +247,13 @@ export default function Guilda() {
           {/* CHEFÃO DA TEMPORADA (Fase 17.3, #185) */}
           <CardChefao />
 
-          {/* Seletor de classe e títulos */}
-          <SeletorClasse
-            classeAtual={estadoComu?.perfil.classe || 'bardo'}
+          {/* Título de honra equipado */}
+          <SeletorTitulo
             tituloAtual={estadoComu?.perfil.titulo_ativo || 'Aventureiro Iniciante'}
             titulosDisponiveis={
               estadoComu?.perfil.titulos_desbloqueados && estadoComu.perfil.titulos_desbloqueados.length > 0
                 ? estadoComu.perfil.titulos_desbloqueados
-                : ['Aventureiro Iniciante', 'Testemunha da Estreia', 'Carrasco de Tiamat', 'Voz da Comunidade']
+                : ['Aventureiro Iniciante']
             }
             onAtualizado={() => {
               recarregarComunidade()

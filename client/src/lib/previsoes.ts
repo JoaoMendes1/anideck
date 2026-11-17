@@ -1,56 +1,6 @@
 // client/src/lib/previsoes.ts
-// Tipos, helpers e chamadas para Previsões, Classes e Títulos (Fase 17.4, #186, #187, #189)
+// Tipos, helpers e chamadas para Previsões e Títulos.
 import { supabase } from './supabase'
-
-export type ClasseRPG = 'bardo' | 'ranger' | 'paladino'
-
-export interface DetalhesClasse {
-  id: ClasseRPG
-  nome: string
-  icone: string
-  papel: string
-  bonus: string
-  descricao: string
-  cor: string
-  borda: string
-  fundo: string
-}
-
-export const CLASSES_RPG: Record<ClasseRPG, DetalhesClasse> = {
-  bardo: {
-    id: 'bardo',
-    nome: 'Bardo',
-    icone: '🎭',
-    papel: 'Voz da Comunidade',
-    bonus: '-40% Custo de Mana em Comentários · +1 ₳ bônus',
-    descricao: 'Especialista em debate e engajamento. Gasta apenas 3 MP por comentário nas salas e episódios, e ganha AniCoins ao enriquecer as conversas.',
-    cor: 'text-holo-3',
-    borda: 'border-holo-3/40',
-    fundo: 'bg-holo-3/15',
-  },
-  ranger: {
-    id: 'ranger',
-    nome: 'Ranger',
-    icone: '🏹',
-    papel: 'Explorador de Obras Obscuras',
-    bonus: '+20% XP em Animes Fora do Radar',
-    descricao: 'Desbravador do desconhecido. Ganha XP bônus ao descobrir e assistir animes pouco populares e raridades do catálogo.',
-    cor: 'text-green',
-    borda: 'border-green/40',
-    fundo: 'bg-green/15',
-  },
-  paladino: {
-    id: 'paladino',
-    nome: 'Paladino',
-    icone: '🛡️',
-    papel: 'Guardião da Constância',
-    bonus: 'Vitalidade Protegida · +5 MP diário',
-    descricao: 'Baluarte inabalável. Sua Vitalidade decai 50% mais devagar durante o Modo Descanso e sua Mana máxima recarrega com maior vigor.',
-    cor: 'text-gold',
-    borda: 'border-gold/40',
-    fundo: 'bg-gold/15',
-  },
-}
 
 export interface OpcaoPrevisao {
   id: number
@@ -126,33 +76,6 @@ export async function apostarPrevisao(
     return { ok: true, mana_restante: json.mana_restante }
   } catch {
     return { ok: false, erro: 'Erro de conexão ao enviar aposta' }
-  }
-}
-
-/**
- * Salva a classe de RPG escolhida pelo usuário.
- */
-export async function escolherClasse(classe: ClasseRPG): Promise<{ ok: boolean; erro?: string }> {
-  try {
-    const { data: { session } } = await supabase.auth.getSession()
-    if (!session?.access_token) return { ok: false, erro: 'Não autenticado' }
-
-    const res = await fetch('/api/perfil/classe', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${session.access_token}`,
-      },
-      body: JSON.stringify({ classe }),
-    })
-
-    const json = await res.json()
-    if (!res.ok || json.erro) {
-      return { ok: false, erro: json.erro || 'Falha ao escolher classe' }
-    }
-    return { ok: true }
-  } catch {
-    return { ok: false, erro: 'Erro de conexão ao salvar classe' }
   }
 }
 

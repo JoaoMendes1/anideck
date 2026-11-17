@@ -22,10 +22,6 @@ type ResolverPrevisaoRequest struct {
 	OpcaoVencedora int `json:"opcao_vencedora"`
 }
 
-type EscolherClasseRequest struct {
-	Classe string `json:"classe"`
-}
-
 type EquiparTituloRequest struct {
 	Titulo string `json:"titulo"`
 }
@@ -168,47 +164,6 @@ func (h *PrevisoesHandler) HandleAdminResolverPrevisao(w http.ResponseWriter, r 
 	if raw == "" || strings.HasPrefix(raw, "error") || (strings.Contains(raw, "\"code\"") && strings.Contains(raw, "\"message\"")) {
 		log.Printf("[PREVISOES] Erro ao resolver previsão: %s", raw)
 		http.Error(w, "Erro ao resolver previsão.", http.StatusBadRequest)
-		return
-	}
-
-	w.Header().Set("Content-Type", "application/json")
-	w.Write([]byte(raw))
-}
-
-// HandleEscolherClasse salva a classe (bardo, ranger ou paladino) no perfil do usuário autenticado.
-func (h *PrevisoesHandler) HandleEscolherClasse(w http.ResponseWriter, r *http.Request) {
-	token, ok := r.Context().Value(middleware.TokenKey).(string)
-	if !ok || token == "" {
-		http.Error(w, "Não autorizado.", http.StatusUnauthorized)
-		return
-	}
-
-	client, err := database.ClientWithToken(token)
-	if err != nil || client == nil {
-		http.Error(w, "Erro ao autenticar no banco.", http.StatusInternalServerError)
-		return
-	}
-
-	var req EscolherClasseRequest
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		http.Error(w, "Corpo inválido.", http.StatusBadRequest)
-		return
-	}
-
-	classeLimpa := strings.ToLower(strings.TrimSpace(req.Classe))
-	if classeLimpa != "bardo" && classeLimpa != "ranger" && classeLimpa != "paladino" {
-		http.Error(w, "Classe inválida. Escolha entre bardo, ranger ou paladino.", http.StatusBadRequest)
-		return
-	}
-
-	params := map[string]interface{}{
-		"p_classe": classeLimpa,
-	}
-
-	raw := strings.TrimSpace(client.Rpc("escolher_classe", "", params))
-	if raw == "" || strings.HasPrefix(raw, "error") || (strings.Contains(raw, "\"code\"") && strings.Contains(raw, "\"message\"")) {
-		log.Printf("[CLASSES] Erro ao escolher classe: %s", raw)
-		http.Error(w, "Erro ao salvar classe.", http.StatusBadRequest)
 		return
 	}
 

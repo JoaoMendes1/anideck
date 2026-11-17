@@ -266,7 +266,6 @@ func main() {
 
 		// Previsões, Classes e Títulos (Fase 17.4, #186, #187, #189)
 		protegido.Post("/api/previsoes/{id}/apostar", previsoesHandler.HandleApostarPrevisao)
-		protegido.Post("/api/perfil/classe", previsoesHandler.HandleEscolherClasse)
 		protegido.Post("/api/perfil/titulo", previsoesHandler.HandleEquiparTitulo)
 
 		// Convites e Recompensas (Fase 17.5b, #191)

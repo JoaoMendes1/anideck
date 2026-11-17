@@ -48,7 +48,8 @@ Staging sobe já na Fase 1, como projeto esqueleto — mesmo padrão do JVM Syst
 | 15 · Comunidade base | ✅ Concluída (08/11/2026, #154); falta abrir o beta |
 | 16 · Economia e cartas | ✅ Concluída (09/11/2026, #165); missões, especialidade e perfil revisados em 17/11/2026 (#245–#248); falta abrir o beta |
 | 17 · Comunidade viva | ✅ Concluída (13/11/2026, #179) |
-| 18 · O Despertar Isekai | ✅ Concluída (17/11/2026): combate com elementos, poderes e queda (#250), masmorras (#251), expedição de clã (#252), duelos (#253) e evento da temporada (#254), além de 18.1 Meu Personagem (#199, #200), 18.2a escolha de visual (#218), 18.2b cenários (#219), 18.2e auras (#220), equipamentos com atributos (#221), expedições e reforço dos monstros (#222, #229), invocação gratuita (#223) e revisada (#240), Vida persistente com Ouro (#239), skins (#224), desempenho da tela (#226), atributos com livro de habilidades (#227), artes de monstros e itens (#237) e elenco com seis personagens (#238); falta aplicar `sql/090` a `095` |
+| 18 · O Despertar Isekai | ✅ Concluída (17/11/2026): combate com elementos, poderes e queda (#250), masmorras (#251), expedição de clã (#252), duelos (#253) e evento da temporada (#254), além de 18.1 Meu Personagem (#199, #200), 18.2a escolha de visual (#218), 18.2b cenários (#219), 18.2e auras (#220), equipamentos com atributos (#221), expedições e reforço dos monstros (#222, #229), invocação gratuita (#223) e revisada (#240), Vida persistente com Ouro (#239), skins (#224), desempenho da tela (#226), atributos com livro de habilidades (#227), artes de monstros e itens (#237) e elenco com seis personagens (#238) |
+| 18.7 · Perfil social e ajustes do dono | 🚧 Em andamento: Ouro na barra (#256), fundar clã com custo (#257, #261), classe da Guilda removida (#258); falta seguir, atividade e feed (#259, #260) e aplicar `sql/096` em diante |
 | 19 · Arena de cartas | ⏳ Não começada |
 
 ---
@@ -812,9 +813,22 @@ experiência pequena e funcional de cada vez.
   - [x] 18.6a Invocação gratuita: bilhetes ganhos só em expedições, invocar 1 ou 10, chances visíveis e iguais às do sorteio (`rpg_chances_invocacao`), garantia de épico ou melhor a cada 10, repetidos somam no inventário (#223). Sem pagamento por desenho: ECA Digital, art. 20
   - [x] 18.6a revisada: invocação mais rara. Corrigido o defeito do `sql/073`, em que o resultado "comum" (60%) não achava item fora do kit e caía na reserva de raridade mais alta, dando Lendário em cerca de 62% das invocações. Chances novas: Ouro 78% (25 de Ouro), Raro 17%, Épico 4,5% e Lendário 0,5%; Raro ou melhor garantido a cada 10 sem Raro; Lendário com chance crescente a partir da 70ª tentativa sem ele e certo na 90ª (média de 62 tentativas). Bilhetes por vitória de 1 a 3. `sql/082` (#240)
 
-**Banco:** `sql/080` a `sql/089` aplicados em 17/11/2026. **Pendência do dono:** aplicar `sql/090` a `sql/095` antes de promover, nesta ordem (`090` antes de `091` e `093`; `095` depois do `088`), e regerar o `snapshot_schema.sql`.
+**Banco:** `sql/080` a `sql/095` aplicados em 17/11/2026, com o snapshot regerado.
 
 **Arte pendente (o sistema já está pronto para recebê-la, sem mudar código de regra):** ilustração de cada skin (entra em `ARTES` com o id da skin e sai de `SKINS`), ícone ou ilustração de cada item de equipamento e de cada monstro, e a segunda personagem do elenco.
+
+## 🤝 Fase 18.7: Perfil social e ajustes do dono — *em andamento*
+
+Motivo: pedidos do dono em 17/11/2026, depois de ver a Fase 18 no ar. Entra antes da Arena de
+cartas porque o perfil público e o feed dão motivo para voltar mesmo a quem não joga o RPG.
+
+- [x] 18.7a Ouro na barra do topo, com ícone de moeda próprio (`IconeOuro`) em todas as telas do RPG; no desktop a barra mostra XP, Vitalidade e Mana com números e as duas moedas (#256)
+- [x] 18.7b Fundar clã exige nível 15 e custa 300 AniCoins, debitados na mesma transação que cria o clã; a tela mostra o requisito e o que falta antes do formulário. `sql/096` (#257). De passagem: as mensagens de erro dos clãs voltaram a aparecer (#261)
+- [x] 18.7c Classe da Guilda (Bardo, Ranger, Paladino) removida: só o Paladino tinha efeito, e a Especialidade já faz o papel de classe. Fica a escolha de título. `sql/097` (#258)
+- [ ] 18.7d Seguir jogadores e atividade no perfil público: o que está assistindo, onde comentou, o que curtiu (#259)
+- [ ] 18.7e Feed da comunidade com abas Geral e Seguindo (#260)
+
+**Banco:** aplicar `sql/096` e `sql/097` antes de promover.
 
 ## 🃏 Fase 19: Arena de cartas — *não começada*
 

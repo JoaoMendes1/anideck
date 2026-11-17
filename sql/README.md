@@ -126,6 +126,7 @@ SELECT pg_get_viewdef('nome_da_view'::regclass, true);
 | `094_rpg_evento_da_temporada.sql` | Fase 18.5d (#254): `rpg_evento_batalhas` (uma por usuário e dia) e `rpg_evento_premios` (um por temporada), com leitura própria; `rpg_evento_registrar()` só para o service role, que recusa temporada passada e, na meta, paga Ouro e põe o título em `profiles.titulos_desbloqueados` (`TEXT[]`). **Antes de promover** | — |
 | `095_convite_titulo.sql` | Correção (#255): `resgatar_codigo_convite` redefinida (definição viva, antes no `088`) com `array_append` e `= ANY(...)`, porque `profiles.titulos_desbloqueados` é `TEXT[]`; o convite de admin, o único que dá título, falhava inteiro. **Depois do `088`** | — |
 | `096_fundar_cla_custo.sql` | #257: `criar_cla` redefinida (definição viva, antes no `054`) exige nível 15 e debita 300 AniCoins na mesma transação que cria o clã; `regras_fundar_cla()` pública lê os dois números de `app_settings`. Sem a chave de nível, vale o padrão, e não `NULL`. **Antes de promover** | — |
+| `097_remover_classe_guilda.sql` | #258: `mana_atual` redefinida (definição viva, antes no `079`) sem o +5 MP do Paladino; `escolher_classe` removida. A coluna `profiles.classe` fica, porque o Wrapped (`063`) a lê. **Antes de promover** | — |
 
 Datas com `~` são a data do commit, não da aplicação no Supabase.
 

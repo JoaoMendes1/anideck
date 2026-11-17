@@ -9,7 +9,6 @@ import { useToast } from '../contexts/ToastContext'
 import { useComunidade } from '../hooks/useComunidade'
 import { obterEstiloRank } from '../lib/guilda'
 import InsigniaRank from '../components/hud/InsigniaRank'
-import { CLASSES_RPG } from '../lib/previsoes'
 import SeloEquipe from '../components/comunidade/SeloEquipe'
 import ModalDueloGosto from '../components/comunidade/ModalDueloGosto'
 import SecaoColecaoCartas from '../components/comunidade/SecaoColecaoCartas'
@@ -185,11 +184,6 @@ export default function PerfilMembro() {
               {perfil.especialidade && (
                 <span className="font-mono text-xs font-bold uppercase tracking-wider px-2.5 py-0.5 rounded-full border border-holo-1/40 bg-holo-1/15 text-holo-1 inline-flex items-center gap-1">
                   <span aria-hidden>{perfil.especialidade.icone}</span> {perfil.especialidade.epiteto}
-                </span>
-              )}
-              {perfil.classe && CLASSES_RPG[perfil.classe] && (
-                <span className={`font-mono text-xs font-bold uppercase tracking-wider px-2.5 py-0.5 rounded-full border ${CLASSES_RPG[perfil.classe].borda} ${CLASSES_RPG[perfil.classe].fundo} ${CLASSES_RPG[perfil.classe].cor}`}>
-                  {CLASSES_RPG[perfil.classe].icone} {CLASSES_RPG[perfil.classe].nome}
                 </span>
               )}
               {perfil.titulo_ativo && (
