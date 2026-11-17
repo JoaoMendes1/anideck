@@ -13,6 +13,7 @@ import ModalTransferirAniCoins from '../components/ModalTransferirAniCoins'
 import CardMissoesDiarias from '../components/inicio/CardMissoesDiarias'
 import CartaoEspecialidade from '../components/hud/CartaoEspecialidade'
 import CardChefao from '../components/chefao/CardChefao'
+import AvisoTemporada0 from '../components/AvisoTemporada0'
 import SeletorTitulo from '../components/comunidade/SeletorTitulo'
 import CardPrevisoes from '../components/previsoes/CardPrevisoes'
 import CardConviteAmigos from '../components/comunidade/CardConviteAmigos'
@@ -247,6 +248,8 @@ export default function Guilda() {
               </div>
             </div>
           </section>
+
+          <AvisoTemporada0 />
 
           {/* CHEFÃO DA TEMPORADA (Fase 17.3, #185) */}
           <CardChefao />

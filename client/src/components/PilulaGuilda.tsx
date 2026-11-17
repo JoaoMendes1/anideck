@@ -8,6 +8,7 @@ import { Link, useLocation } from 'react-router-dom'
 import { Droplet, Heart, Sparkles, Users, X, ShoppingBag } from 'lucide-react'
 import IconeAniCoin from './IconeAniCoin'
 import IconeOuro from './IconeOuro'
+import AvisoTemporada0 from './AvisoTemporada0'
 
 import { avisosDaMudanca, type AvisoDoHud, type FotoDoJogador } from '../lib/hud'
 import { obterHPEscaladoDoEstado, obterMPMaxDoEstado } from '../lib/comunidade'
@@ -199,6 +200,7 @@ export default function PilulaGuilda() {
             <div className="min-w-0 flex-1">
               <p className="font-mono text-xs text-muted-2 uppercase tracking-widest m-0">Rank {status.rank} · Nível {status.nivel}</p>
               <p className="font-anton text-lg uppercase leading-tight m-0 truncate">{status.titulo_rank}</p>
+              <AvisoTemporada0 compacto />
             </div>
             <button type="button" onClick={() => setAberto(false)} aria-label="Fechar" className="w-8 h-8 shrink-0 grid place-items-center rounded-full text-muted hover:text-text cursor-pointer">
               <X size={16} aria-hidden />
