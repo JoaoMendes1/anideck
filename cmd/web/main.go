@@ -135,6 +135,7 @@ func main() {
 	r.With(middleware.OptionalAuth).Get("/api/rankings/clima", rankingsComunidadeHandler.HandleClimaTemporada)
 	// Clãs (Fase 17, #180, #181, #182): listagem, ranking de temporada, campeões, detalhes e desafio semanal
 	r.Get("/api/clas", clasHandler.HandleListarClas)
+	r.Get("/api/clas/fundacao", clasHandler.HandleRegrasFundacao)
 	r.Get("/api/clas/ranking/temporada", clasHandler.HandleRankingClasTemporada)
 	r.Get("/api/clas/ranking/campeoes", clasHandler.HandleHistoricoCampeoesClas)
 	r.Get("/api/clas/{tag}", clasHandler.HandleObterClaPorTag)

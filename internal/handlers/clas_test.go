@@ -334,3 +334,24 @@ func TestCodigoTemporadaBrasilia(t *testing.T) {
 		}
 	}
 }
+
+func TestRegrasFundacaoDaResposta(t *testing.T) {
+	casos := []struct {
+		nome  string
+		bruto string
+		quer  RegrasFundacao
+	}{
+		{"valores do banco", `{"nivel_minimo":15,"custo":300}`, RegrasFundacao{15, 300}},
+		{"ajustados pelo admin", `{"nivel_minimo":20,"custo":0}`, RegrasFundacao{20, 0}},
+		{"resposta vazia cai no padrão", ``, regrasFundacaoPadrao},
+		{"erro do banco cai no padrão", `{"code":"42883","message":"function does not exist"}`, regrasFundacaoPadrao},
+		{"negativos são corrigidos", `{"nivel_minimo":-3,"custo":-10}`, RegrasFundacao{1, 0}},
+	}
+	for _, c := range casos {
+		t.Run(c.nome, func(t *testing.T) {
+			if got := regrasFundacaoDaResposta(c.bruto); got != c.quer {
+				t.Fatalf("regrasFundacaoDaResposta(%q) = %+v, quer %+v", c.bruto, got, c.quer)
+			}
+		})
+	}
+}

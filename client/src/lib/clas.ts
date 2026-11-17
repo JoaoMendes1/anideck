@@ -181,6 +181,40 @@ export async function obterMeuCla(): Promise<MeuClaData> {
   return res.json()
 }
 
+/** Nível mínimo e custo em AniCoins para fundar um clã (sql/096). */
+export interface RegrasFundacao {
+  nivel_minimo: number
+  custo: number
+}
+
+export const REGRAS_FUNDACAO_PADRAO: RegrasFundacao = { nivel_minimo: 15, custo: 300 }
+
+export async function obterRegrasFundacao(): Promise<RegrasFundacao> {
+  try {
+    const res = await fetch('/api/clas/fundacao')
+    if (!res.ok) return REGRAS_FUNDACAO_PADRAO
+    const json = (await res.json()) as Partial<RegrasFundacao>
+    if (typeof json.nivel_minimo !== 'number' || typeof json.custo !== 'number') return REGRAS_FUNDACAO_PADRAO
+    return { nivel_minimo: json.nivel_minimo, custo: json.custo }
+  } catch {
+    return REGRAS_FUNDACAO_PADRAO
+  }
+}
+
+/**
+ * O que impede fundar agora, em uma frase, ou null quando nada impede. O banco confere de
+ * novo; isto só evita abrir o formulário para quem já se sabe que não pode.
+ */
+export function bloqueioDaFundacao(nivel: number, saldo: number, regras: RegrasFundacao): string | null {
+  if (nivel < regras.nivel_minimo) {
+    return `Fundar um clã pede nível ${regras.nivel_minimo}. Você está no nível ${nivel}.`
+  }
+  if (saldo < regras.custo) {
+    return `Fundar um clã custa ${regras.custo} AniCoins. Você tem ${saldo}; faltam ${regras.custo - saldo}.`
+  }
+  return null
+}
+
 export async function criarCla(payload: {
   nome: string
   tag: string
@@ -196,7 +230,9 @@ export async function criarCla(payload: {
     body: JSON.stringify(payload),
   })
   const json = await res.json()
-  if (!res.ok) throw new Error(json.erro || json.message || 'Falha ao fundar clã')
+  if (!res.ok) throw new Error(json.error || json.erro || json.message || 'Falha ao fundar clã')
+  // O custo saiu dos AniCoins: a carteira e a barra do topo releem o saldo.
+  window.dispatchEvent(new Event('anideck:cristais-atualizados'))
   return json
 }
 
@@ -207,7 +243,7 @@ export async function entrarCla(claId: string): Promise<void> {
     headers,
   })
   const json = await res.json()
-  if (!res.ok) throw new Error(json.erro || json.message || 'Falha ao entrar no clã')
+  if (!res.ok) throw new Error(json.error || json.erro || json.message || 'Falha ao entrar no clã')
 }
 
 export async function sairCla(): Promise<void> {
@@ -217,7 +253,7 @@ export async function sairCla(): Promise<void> {
     headers,
   })
   const json = await res.json()
-  if (!res.ok) throw new Error(json.erro || json.message || 'Falha ao sair do clã')
+  if (!res.ok) throw new Error(json.error || json.erro || json.message || 'Falha ao sair do clã')
 }
 
 export async function expulsarMembro(claId: string, userId: string): Promise<void> {
@@ -227,7 +263,7 @@ export async function expulsarMembro(claId: string, userId: string): Promise<voi
     headers,
   })
   const json = await res.json()
-  if (!res.ok) throw new Error(json.erro || json.message || 'Falha ao expulsar membro')
+  if (!res.ok) throw new Error(json.error || json.erro || json.message || 'Falha ao expulsar membro')
 }
 
 export async function transferirLideranca(claId: string, novoLiderId: string): Promise<void> {
@@ -238,7 +274,7 @@ export async function transferirLideranca(claId: string, novoLiderId: string): P
     body: JSON.stringify({ novo_lider_id: novoLiderId }),
   })
   const json = await res.json()
-  if (!res.ok) throw new Error(json.erro || json.message || 'Falha ao transferir liderança')
+  if (!res.ok) throw new Error(json.error || json.erro || json.message || 'Falha ao transferir liderança')
 }
 
 export async function alterarPapel(claId: string, userId: string, novoPapel: 'vice' | 'membro'): Promise<void> {
@@ -249,7 +285,7 @@ export async function alterarPapel(claId: string, userId: string, novoPapel: 'vi
     body: JSON.stringify({ novo_papel: novoPapel }),
   })
   const json = await res.json()
-  if (!res.ok) throw new Error(json.erro || json.message || 'Falha ao alterar papel')
+  if (!res.ok) throw new Error(json.error || json.erro || json.message || 'Falha ao alterar papel')
 }
 
 export async function convidarMembro(claId: string, convidadoUserId: string): Promise<{ sucesso: boolean; convite_id: string }> {
@@ -260,7 +296,7 @@ export async function convidarMembro(claId: string, convidadoUserId: string): Pr
     body: JSON.stringify({ convidado_user_id: convidadoUserId }),
   })
   const json = await res.json()
-  if (!res.ok) throw new Error(json.erro || json.message || 'Falha ao enviar convite')
+  if (!res.ok) throw new Error(json.error || json.erro || json.message || 'Falha ao enviar convite')
   return json
 }
 
@@ -272,7 +308,7 @@ export async function responderConvite(conviteId: string, aceitar: boolean): Pro
     body: JSON.stringify({ aceitar }),
   })
   const json = await res.json()
-  if (!res.ok) throw new Error(json.erro || json.message || 'Falha ao responder convite')
+  if (!res.ok) throw new Error(json.error || json.erro || json.message || 'Falha ao responder convite')
 }
 
 export async function denunciarCla(claId: string, motivo: string): Promise<void> {
@@ -283,7 +319,7 @@ export async function denunciarCla(claId: string, motivo: string): Promise<void>
     body: JSON.stringify({ motivo }),
   })
   const json = await res.json()
-  if (!res.ok) throw new Error(json.erro || json.message || 'Falha ao enviar denúncia')
+  if (!res.ok) throw new Error(json.error || json.erro || json.message || 'Falha ao enviar denúncia')
 }
 
 // -----------------------------------------------------------------------------
@@ -463,6 +499,6 @@ export async function fecharTemporadaClasAdmin(temporadaFechada?: string, novaTe
     body: JSON.stringify({ temporada_fechada: temporadaFechada, nova_temporada: novaTemporada }),
   })
   const json = await res.json()
-  if (!res.ok) throw new Error(json.erro || json.message || 'Falha ao fechar temporada de clãs')
+  if (!res.ok) throw new Error(json.error || json.erro || json.message || 'Falha ao fechar temporada de clãs')
   return json
 }

@@ -212,6 +212,44 @@ func CompararClasLiga(a, b RankingClaTemporadaItem) int {
 func ChaveReferenciaLigaCla(temporada, claID, userID string) string {
 	return fmt.Sprintf("liga_cla:%s:%s:%s", temporada, claID, userID)
 }
+// RegrasFundacao é o que custa fundar um clã: nível mínimo e AniCoins. Os números moram em
+// app_settings e chegam por regras_fundar_cla (sql/096); a tela só os mostra, e criar_cla
+// confere de novo no banco.
+type RegrasFundacao struct {
+	NivelMinimo int `json:"nivel_minimo"`
+	Custo       int `json:"custo"`
+}
+
+// regrasFundacaoPadrao vale quando o banco não responde: os mesmos números do sql/096.
+var regrasFundacaoPadrao = RegrasFundacao{NivelMinimo: 15, Custo: 300}
+
+// regrasFundacaoDaResposta lê a resposta do banco e cai no padrão se ela vier vazia ou
+// quebrada. Valor negativo vira zero; nível abaixo de 1 vira 1.
+func regrasFundacaoDaResposta(bruto string) RegrasFundacao {
+	var r RegrasFundacao
+	if err := json.Unmarshal([]byte(strings.TrimSpace(bruto)), &r); err != nil || (r.NivelMinimo == 0 && r.Custo == 0) {
+		return regrasFundacaoPadrao
+	}
+	if r.NivelMinimo < 1 {
+		r.NivelMinimo = 1
+	}
+	if r.Custo < 0 {
+		r.Custo = 0
+	}
+	return r
+}
+
+// HandleRegrasFundacao devolve o nível e o custo para fundar um clã. Rota pública: o
+// visitante também vê o que é preciso.
+func (h *ClasHandler) HandleRegrasFundacao(w http.ResponseWriter, r *http.Request) {
+	regras := regrasFundacaoPadrao
+	if database.Client != nil {
+		regras = regrasFundacaoDaResposta(database.Client.Rpc("regras_fundar_cla", "", map[string]interface{}{}))
+	}
+	w.Header().Set("Content-Type", "application/json")
+	_ = json.NewEncoder(w).Encode(regras)
+}
+
 
 type ClasHandler struct{}
 

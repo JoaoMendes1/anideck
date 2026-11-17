@@ -20,10 +20,17 @@ import {
 } from 'lucide-react'
 import { useSessao } from '../contexts/SessaoContext'
 import { useToast } from '../contexts/ToastContext'
+import { useResumoGuilda } from '../hooks/useResumoGuilda'
+import { useCarteira } from '../hooks/useCarteira'
+import IconeAniCoin from '../components/IconeAniCoin'
 import {
   listarClas,
   obterMeuCla,
   criarCla,
+  obterRegrasFundacao,
+  bloqueioDaFundacao,
+  REGRAS_FUNDACAO_PADRAO,
+  type RegrasFundacao,
   entrarCla,
   responderConvite,
   EMBLEMAS_CLA,
@@ -44,6 +51,15 @@ export default function Clas() {
   const [carregando, setCarregando] = useState(true)
   const [modalCriarAberto, setModalCriarAberto] = useState(false)
   const [isPending, startTransition] = useTransition()
+  const resumo = useResumoGuilda()
+  const { saldo } = useCarteira()
+  const [regrasFundacao, setRegrasFundacao] = useState<RegrasFundacao>(REGRAS_FUNDACAO_PADRAO)
+  // Sem o resumo ainda, não se sabe o nível: não bloqueia, e o banco confere ao enviar.
+  const bloqueioFundar = resumo ? bloqueioDaFundacao(resumo.nivel, saldo, regrasFundacao) : null
+
+  useEffect(() => {
+    obterRegrasFundacao().then(setRegrasFundacao)
+  }, [])
 
   // Formulário de fundação
   const [nome, setNome] = useState('')
@@ -164,20 +180,38 @@ export default function Clas() {
         </div>
 
         {session && !meuCla?.tem_cla && (
-          <button
-            type="button"
-            onClick={() => {
-              if (meuCla && meuCla.cooldown_dias_restantes > 0) {
-                toast.error(`Você deve aguardar ${meuCla.cooldown_dias_restantes} dias de carência após ter saído de um clã.`)
-                return
-              }
-              setModalCriarAberto(true)
-            }}
-            className="inline-flex items-center justify-center gap-2 px-6 py-3.5 rounded-2xl bg-gradient-to-r from-holo-2 to-holo-3 text-void font-bold shadow-[0_0_20px_rgba(34,211,238,0.3)] hover:opacity-95 transition-all shrink-0 cursor-pointer"
-          >
-            <Plus size={18} />
-            <span>Fundar um Clã</span>
-          </button>
+          <div className="flex flex-col items-stretch md:items-end gap-1.5 shrink-0">
+            <button
+              type="button"
+              onClick={() => {
+                if (meuCla && meuCla.cooldown_dias_restantes > 0) {
+                  toast.error(`Você deve aguardar ${meuCla.cooldown_dias_restantes} dias de carência após ter saído de um clã.`)
+                  return
+                }
+                if (bloqueioFundar) {
+                  toast.error(bloqueioFundar)
+                  return
+                }
+                setModalCriarAberto(true)
+              }}
+              aria-describedby="clas-requisito-fundar"
+              className={`inline-flex items-center justify-center gap-2 px-6 py-3.5 rounded-2xl font-bold transition-all cursor-pointer ${
+                bloqueioFundar
+                  ? 'border border-line bg-panel-2 text-muted hover:text-text'
+                  : 'bg-gradient-to-r from-holo-2 to-holo-3 text-void shadow-[0_0_20px_rgba(34,211,238,0.3)] hover:opacity-95'
+              }`}
+            >
+              {bloqueioFundar ? <Lock size={16} /> : <Plus size={18} />}
+              <span>Fundar um Clã</span>
+            </button>
+            <p id="clas-requisito-fundar" className="m-0 inline-flex items-center justify-center md:justify-end gap-1.5 font-mono text-xs text-muted">
+              Nível {regrasFundacao.nivel_minimo} ·
+              <IconeAniCoin size={13} /> {regrasFundacao.custo.toLocaleString('pt-BR')} AniCoins
+            </p>
+            {bloqueioFundar && (
+              <p className="m-0 max-w-xs text-xs text-coral text-center md:text-right">{bloqueioFundar}</p>
+            )}
+          </div>
         )}
       </div>
 
@@ -414,7 +448,9 @@ export default function Clas() {
               </div>
               <div>
                 <h3 className="text-xl font-black">Fundar um Novo Clã</h3>
-                <span className="text-xs text-muted">Crie a sua bandeira e reúna seus aliados</span>
+                <span className="text-xs text-muted">
+                  Custa {regrasFundacao.custo.toLocaleString('pt-BR')} AniCoins, debitados quando o clã é criado. Entrar num clã continua grátis.
+                </span>
               </div>
             </div>
 
@@ -554,7 +590,7 @@ export default function Clas() {
                   disabled={criando}
                   className="px-6 py-2.5 rounded-xl bg-gradient-to-r from-holo-2 to-holo-3 text-void font-bold text-xs shadow-md hover:opacity-90 transition-opacity cursor-pointer disabled:opacity-50"
                 >
-                  {criando ? 'Fundando...' : 'Fundar Clã'}
+                  {criando ? 'Fundando...' : `Fundar por ${regrasFundacao.custo.toLocaleString('pt-BR')} AniCoins`}
                 </button>
               </div>
             </form>
