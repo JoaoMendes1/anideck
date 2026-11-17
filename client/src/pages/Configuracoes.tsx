@@ -21,6 +21,8 @@ import {
   AVATAR_PADRAO,
   OPCOES_FUNDO,
 } from '../lib/avatar'
+import { useComunidade, avisarComunidadeAtualizada } from '../hooks/useComunidade'
+import type { EstadoComunidade } from '../lib/comunidade'
 
 const ABAS = [
     { id: 'perfil', label: 'Perfil' },
@@ -90,6 +92,7 @@ export default function Configuracoes() {
     const temaAtivo = useTema()
     const { indisponivel } = useCatalogoStatus()
     const { rotulos } = useRotulos()
+    const { estado: estadoComunidade } = useComunidade()
 
     const [carregando, setCarregando] = useState(true)
     const [userId, setUserId] = useState('')
@@ -254,6 +257,13 @@ export default function Configuracoes() {
             setCarregando(false)
         })
     }, [])
+
+    useEffect(() => {
+        const nomePerfil = estadoComunidade?.perfil.existe ? estadoComunidade.perfil.nome.trim() : ''
+        if (!nomePerfil) return
+        setNome((atual) => (atual.trim() === nomeOriginal.trim() ? nomePerfil : atual))
+        setNomeOriginal(nomePerfil)
+    }, [estadoComunidade?.perfil.existe, estadoComunidade?.perfil.nome, nomeOriginal])
 
     const opcoesGeneros = rotulos.length > 0
         ? rotulos.filter(r => r.camada === 'genero' || r.camada === 'demografia').map(r => r.nome)
@@ -519,18 +529,19 @@ export default function Configuracoes() {
         }
     }
 
-    const nomeMudou = nome.trim() !== nomeOriginal
-    const nomeValido = nome.trim().length >= 2
+    const nomeMudou = nome.trim() !== nomeOriginal.trim()
+    const nomeValido = nome.trim().length >= 1 && nome.trim().length <= 40
 
     const salvarPerfil = async () => {
+        const nomeLimpo = nome.trim()
+        if (nomeLimpo.length < 1 || nomeLimpo.length > 40) return
         setSalvando(true)
         setErro(null)
 
-        // O updateUser dispara onAuthStateChange, que a Navbar e o MeuDeck já
-        // escutam. Por isso o nome novo aparece nos dois sem recarregar a página
-        // e sem precisar de nenhum estado global aqui.
+        // O updateUser dispara onAuthStateChange (Navbar, MenuPerfil, Deck) e
+        // PUT /api/perfil/nome espelha em public.profiles.nome quando há perfil público.
         const { error } = await supabase.auth.updateUser({
-            data: { display_name: nome.trim() },
+            data: { display_name: nomeLimpo },
         })
 
         if (error) {
@@ -539,9 +550,37 @@ export default function Configuracoes() {
             return
         }
 
-        setNomeOriginal(nome.trim())
+        const { data: { session: sessaoAtual } } = await supabase.auth.getSession()
+        if (sessaoAtual?.access_token) {
+            try {
+                const res = await fetch('/api/perfil/nome', {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        Authorization: `Bearer ${sessaoAtual.access_token}`,
+                    },
+                    body: JSON.stringify({ nome: nomeLimpo, auth_sincronizado: true }),
+                })
+                if (!res.ok) {
+                    setErro((await res.text()).trim() || 'Não foi possível atualizar o perfil público.')
+                    setSalvando(false)
+                    return
+                }
+                const dados = (await res.json()) as { estado?: EstadoComunidade }
+                if (dados?.estado?.perfil) {
+                    avisarComunidadeAtualizada(dados.estado)
+                }
+            } catch {
+                setErro('Sem conexão ao atualizar o perfil público. Tente de novo.')
+                setSalvando(false)
+                return
+            }
+        }
+
+        setNome(nomeLimpo)
+        setNomeOriginal(nomeLimpo)
         setSalvando(false)
-        showToast('Perfil atualizado!')
+        showToast('Nome de exibição atualizado!')
     }
 
        const atualizarSenha = async () => {
@@ -689,14 +728,14 @@ export default function Configuracoes() {
                         id="nome"
                         type="text"
                         value={nome}
-                        maxLength={30}
+                        maxLength={40}
                         disabled={carregando}
                         onChange={(e) => setNome(e.target.value)}
                         placeholder={carregando ? 'Carregando...' : 'Como você quer ser chamado'}
                         className="w-full bg-panel-2 border border-line rounded-xl px-4 py-3 text-sm mb-1 outline-none focus:border-holo-3 transition-colors disabled:opacity-50"
                     />
                     <p className="text-xs text-muted-2 mb-4">
-                        Aparece na saudação do seu Deck e no topo do site.
+                        É o seu nome único no AniDeck: aparece no seu Deck, no topo do site, nos comentários e no seu perfil público.
                     </p>
 
                     <label htmlFor="email" className="block text-xs font-bold text-muted mb-2 uppercase tracking-wide select-none">

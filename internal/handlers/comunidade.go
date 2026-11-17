@@ -1,10 +1,14 @@
 package handlers
 
 import (
+	"bytes"
 	"encoding/json"
+	"fmt"
+	"io"
 	"log"
 	"math"
 	"net/http"
+	"os"
 	"sort"
 	"strconv"
 	"strings"
@@ -22,7 +26,10 @@ import (
 //
 // O escudo de spoiler mora no banco (RLS do sql/041): este código lê com o token de
 // quem pede, então um comentário de episódio não assistido nem chega até aqui.
-type ComunidadeHandler struct{}
+type ComunidadeHandler struct {
+	// Injetável para testes; quando nil, sincroniza user_metadata.display_name pela API admin do Supabase.
+	SincronizarNomeAuth func(userID, nome string) error
+}
 
 var limiteDeComentarios = novoLimitadorDeTaxa()
 
@@ -236,6 +243,151 @@ func (h *ComunidadeHandler) HandleGetEu(w http.ResponseWriter, r *http.Request) 
 	responderJSON(w, http.StatusOK, estado)
 }
 
+func validarNomeExibicao(bruto string) (string, string) {
+	nome := strings.TrimSpace(bruto)
+	if n := len([]rune(nome)); n < 1 || n > 40 {
+		return "", "O nome de exibição vai de 1 a 40 caracteres."
+	}
+	return nome, ""
+}
+
+func (h *ComunidadeHandler) sincronizarNomeAuth(userID, nome string) error {
+	if h != nil && h.SincronizarNomeAuth != nil {
+		return h.SincronizarNomeAuth(userID, nome)
+	}
+	return atualizarDisplayNameSupabase(userID, nome)
+}
+
+func atualizarDisplayNameSupabase(userID, nome string) error {
+	baseURL := strings.TrimRight(os.Getenv("SUPABASE_URL"), "/")
+	serviceKey := os.Getenv("SUPABASE_SERVICE_ROLE_KEY")
+	if baseURL == "" || serviceKey == "" {
+		return fmt.Errorf("SUPABASE_URL ou SUPABASE_SERVICE_ROLE_KEY ausentes")
+	}
+
+	url := fmt.Sprintf("%s/auth/v1/admin/users/%s", baseURL, userID)
+	client := &http.Client{Timeout: 10 * time.Second}
+
+	getReq, err := http.NewRequest(http.MethodGet, url, nil)
+	if err != nil {
+		return fmt.Errorf("montando leitura admin: %w", err)
+	}
+	getReq.Header.Set("apikey", serviceKey)
+	getReq.Header.Set("Authorization", "Bearer "+serviceKey)
+
+	getRes, err := client.Do(getReq)
+	if err != nil {
+		return fmt.Errorf("consultando API admin: %w", err)
+	}
+	defer getRes.Body.Close()
+
+	if getRes.StatusCode < 200 || getRes.StatusCode >= 300 {
+		corpo, _ := io.ReadAll(io.LimitReader(getRes.Body, 512))
+		return fmt.Errorf("API admin GET respondeu %d: %s", getRes.StatusCode, string(corpo))
+	}
+
+	var usuario struct {
+		UserMetadata map[string]interface{} `json:"user_metadata"`
+	}
+	if err := json.NewDecoder(getRes.Body).Decode(&usuario); err != nil {
+		return fmt.Errorf("decodificando usuário admin: %w", err)
+	}
+	if usuario.UserMetadata == nil {
+		usuario.UserMetadata = map[string]interface{}{}
+	}
+	usuario.UserMetadata["display_name"] = nome
+
+	payload, err := json.Marshal(map[string]interface{}{
+		"user_metadata": usuario.UserMetadata,
+	})
+	if err != nil {
+		return fmt.Errorf("serializando user_metadata: %w", err)
+	}
+
+	putReq, err := http.NewRequest(http.MethodPut, url, bytes.NewReader(payload))
+	if err != nil {
+		return fmt.Errorf("montando atualização admin: %w", err)
+	}
+	putReq.Header.Set("apikey", serviceKey)
+	putReq.Header.Set("Authorization", "Bearer "+serviceKey)
+	putReq.Header.Set("Content-Type", "application/json")
+
+	putRes, err := client.Do(putReq)
+	if err != nil {
+		return fmt.Errorf("atualizando API admin: %w", err)
+	}
+	defer putRes.Body.Close()
+
+	if putRes.StatusCode < 200 || putRes.StatusCode >= 300 {
+		corpo, _ := io.ReadAll(io.LimitReader(putRes.Body, 512))
+		return fmt.Errorf("API admin PUT respondeu %d: %s", putRes.StatusCode, string(corpo))
+	}
+	return nil
+}
+
+// HandleAtualizarNomeExibicao unifica a gravação de "Nome de exibição" entre o
+// perfil público (profiles.nome, quando já existir) e user_metadata.display_name.
+func (h *ComunidadeHandler) HandleAtualizarNomeExibicao(w http.ResponseWriter, r *http.Request) {
+	userID, client, ok := usuarioDaRequisicao(w, r)
+	if !ok {
+		return
+	}
+	var req struct {
+		Nome             string `json:"nome"`
+		AuthSincronizado bool   `json:"auth_sincronizado"`
+	}
+	if err := json.NewDecoder(http.MaxBytesReader(w, r.Body, 1<<12)).Decode(&req); err != nil {
+		http.Error(w, "Pedido inválido.", http.StatusBadRequest)
+		return
+	}
+	nome, problema := validarNomeExibicao(req.Nome)
+	if problema != "" {
+		http.Error(w, problema, http.StatusBadRequest)
+		return
+	}
+
+	atual, err := lerPerfilProprio(client, userID)
+	if err != nil {
+		log.Printf("[ERRO DB] HandleAtualizarNomeExibicao leitura (user=%s): %v", userID, err)
+		http.Error(w, "Não foi possível salvar agora.", http.StatusInternalServerError)
+		return
+	}
+
+	if atual.Existe && atual.Nome != nome {
+		campos := map[string]interface{}{
+			"nome":       nome,
+			"updated_at": time.Now().UTC().Format(time.RFC3339),
+		}
+		_, _, err = client.From("profiles").Update(campos, "minimal", "").Eq("user_id", userID).Execute()
+		if err != nil {
+			status, msg := erroDoBanco(err)
+			log.Printf("[COMUNIDADE] HandleAtualizarNomeExibicao update (user=%s): %v", userID, err)
+			http.Error(w, msg, status)
+			return
+		}
+	}
+
+	if !req.AuthSincronizado {
+		if err := h.sincronizarNomeAuth(userID, nome); err != nil {
+			log.Printf("[AUTH ADMIN] HandleAtualizarNomeExibicao (user=%s): %v", userID, err)
+			http.Error(w, "Serviço de autenticação indisponível ao sincronizar o nome.", http.StatusServiceUnavailable)
+			return
+		}
+	}
+
+	resp := map[string]interface{}{
+		"ok":                true,
+		"nome":              nome,
+		"perfil_atualizado": atual.Existe,
+	}
+	if atual.Existe {
+		if estado, err := h.montarEstado(client, userID); err == nil {
+			resp["estado"] = estado
+		}
+	}
+	responderJSON(w, http.StatusOK, resp)
+}
+
 // HandleSalvarEu cria o perfil público na primeira vez e o atualiza nas seguintes.
 // Não usa upsert: o ON CONFLICT DO UPDATE tentaria gravar user_id, coluna sem GRANT
 // de UPDATE (sql/041).
@@ -263,9 +415,9 @@ func (h *ComunidadeHandler) HandleSalvarEu(w http.ResponseWriter, r *http.Reques
 		http.Error(w, problema, http.StatusBadRequest)
 		return
 	}
-	nome := strings.TrimSpace(req.Nome)
-	if n := len([]rune(nome)); n < 1 || n > 40 {
-		http.Error(w, "O nome de exibição vai de 1 a 40 caracteres.", http.StatusBadRequest)
+	nome, problema := validarNomeExibicao(req.Nome)
+	if problema != "" {
+		http.Error(w, problema, http.StatusBadRequest)
 		return
 	}
 	bio := strings.TrimSpace(req.Bio)
@@ -312,6 +464,12 @@ func (h *ComunidadeHandler) HandleSalvarEu(w http.ResponseWriter, r *http.Reques
 		log.Printf("[COMUNIDADE] HandleSalvarEu (user=%s): %v", userID, err)
 		http.Error(w, msg, status)
 		return
+	}
+
+	if h.SincronizarNomeAuth != nil || os.Getenv("SUPABASE_SERVICE_ROLE_KEY") != "" {
+		if err := h.sincronizarNomeAuth(userID, nome); err != nil {
+			log.Printf("[AUTH ADMIN] HandleSalvarEu sync display_name (user=%s): %v", userID, err)
+		}
 	}
 
 	estado, err := h.montarEstado(client, userID)

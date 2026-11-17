@@ -1,6 +1,16 @@
 package handlers
 
-import "testing"
+import (
+	"context"
+	"encoding/json"
+	"errors"
+	"net/http"
+	"net/http/httptest"
+	"strings"
+	"testing"
+
+	"github.com/JoaoMendes1/anideck/internal/middleware"
+)
 
 func TestMontarConversa(t *testing.T) {
 	cinco := 125
@@ -65,5 +75,102 @@ func TestAgruparDenuncias(t *testing.T) {
 	}
 	if fila[1].Autor.Nome != "Membro sem perfil público" {
 		t.Errorf("autor sem perfil precisa de rótulo: %+v", fila[1].Autor)
+	}
+}
+
+func TestValidarNomeExibicao(t *testing.T) {
+	if nome, err := validarNomeExibicao("  João Mendes  "); err != "" || nome != "João Mendes" {
+		t.Errorf("nome válido falhou: %q %q", nome, err)
+	}
+	if _, err := validarNomeExibicao("   "); err == "" {
+		t.Errorf("nome vazio deveria falhar")
+	}
+	if _, err := validarNomeExibicao(strings.Repeat("ã", 41)); err == "" {
+		t.Errorf("nome com 41 runas deveria falhar")
+	}
+	if nome, err := validarNomeExibicao(strings.Repeat("ã", 40)); err != "" || len([]rune(nome)) != 40 {
+		t.Errorf("nome com 40 runas deveria passar: %d %q", len([]rune(nome)), err)
+	}
+}
+
+func TestHandleAtualizarNomeExibicao(t *testing.T) {
+	hSemLogin := &ComunidadeHandler{}
+	rec := httptest.NewRecorder()
+	hSemLogin.HandleAtualizarNomeExibicao(rec, httptest.NewRequest(http.MethodPut, "/api/perfil/nome", strings.NewReader(`{"nome":"João"}`)))
+	if rec.Code != http.StatusUnauthorized {
+		t.Fatalf("sem login esperava 401, veio %d", rec.Code)
+	}
+
+	var atualizouProfiles bool
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		switch {
+		case r.Method == http.MethodGet && strings.HasPrefix(r.URL.Path, "/rest/v1/profiles"):
+			w.Write([]byte(`[{"handle":"joao","nome":"Antigo","bio":"","vitrine":[],"publico":true,"mostrar_atividade":true}]`))
+		case r.Method == http.MethodPatch && strings.HasPrefix(r.URL.Path, "/rest/v1/profiles"):
+			atualizouProfiles = true
+			w.WriteHeader(http.StatusNoContent)
+		case r.Method == http.MethodGet && strings.HasPrefix(r.URL.Path, "/rest/v1/"):
+			w.Write([]byte(`[]`))
+		default:
+			w.WriteHeader(http.StatusOK)
+			w.Write([]byte(`{}`))
+		}
+	}))
+	defer srv.Close()
+
+	t.Setenv("SUPABASE_URL", srv.URL)
+	t.Setenv("SUPABASE_ANON_KEY", "anon-teste")
+
+	var syncedID, syncedNome string
+	h := &ComunidadeHandler{
+		SincronizarNomeAuth: func(userID, nome string) error {
+			syncedID = userID
+			syncedNome = nome
+			return nil
+		},
+	}
+
+	req := func(body string) *http.Request {
+		r := httptest.NewRequest(http.MethodPut, "/api/perfil/nome", strings.NewReader(body))
+		ctx := context.WithValue(r.Context(), middleware.UserIDKey, "u-123")
+		ctx = context.WithValue(ctx, middleware.TokenKey, "tok-123")
+		return r.WithContext(ctx)
+	}
+
+	// Erro de validação: nome vazio -> 400
+	recBad := httptest.NewRecorder()
+	h.HandleAtualizarNomeExibicao(recBad, req(`{"nome":"  "}`))
+	if recBad.Code != http.StatusBadRequest {
+		t.Fatalf("nome vazio esperava 400, veio %d", recBad.Code)
+	}
+
+	// Caminho feliz: atualiza profiles.nome e sincroniza display_name no auth
+	recOK := httptest.NewRecorder()
+	h.HandleAtualizarNomeExibicao(recOK, req(`{"nome":"  Novo Nome  "}`))
+	if recOK.Code != http.StatusOK {
+		t.Fatalf("esperava 200, veio %d (%s)", recOK.Code, recOK.Body.String())
+	}
+	if !atualizouProfiles {
+		t.Errorf("deveria atualizar public.profiles.nome quando existe perfil")
+	}
+	if syncedID != "u-123" || syncedNome != "Novo Nome" {
+		t.Errorf("auth sync incorreto: %q %q", syncedID, syncedNome)
+	}
+	var resp map[string]interface{}
+	if err := json.Unmarshal(recOK.Body.Bytes(), &resp); err != nil || resp["nome"] != "Novo Nome" {
+		t.Errorf("resposta inesperada: %s (%v)", recOK.Body.String(), err)
+	}
+
+	// Serviço de autenticação fora retorna 503
+	hFalha := &ComunidadeHandler{
+		SincronizarNomeAuth: func(_, _ string) error {
+			return errors.New("timeout")
+		},
+	}
+	recErr := httptest.NewRecorder()
+	hFalha.HandleAtualizarNomeExibicao(recErr, req(`{"nome":"Outro"}`))
+	if recErr.Code != http.StatusServiceUnavailable {
+		t.Fatalf("falha no serviço auth esperava 503, veio %d", recErr.Code)
 	}
 }

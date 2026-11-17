@@ -151,7 +151,7 @@ function TelaDespertar({ aoDespertar }: { aoDespertar: (dados: RespostaPersonage
 
           <div className="flex flex-col gap-2">
             <label htmlFor="nome-do-aventureiro" className={ROTULO_DE_SECAO}>
-              Nome do aventureiro
+              Nome do personagem (RPG)
             </label>
             <input
               id="nome-do-aventureiro"
@@ -160,13 +160,13 @@ function TelaDespertar({ aoDespertar }: { aoDespertar: (dados: RespostaPersonage
               onChange={(e) => setNome(e.target.value)}
               maxLength={NOME_MAXIMO}
               autoComplete="off"
-              placeholder="Como vai se chamar?"
+              placeholder="Como vai se chamar no RPG?"
               aria-invalid={erro ? true : undefined}
               aria-describedby="ajuda-do-nome"
               className="h-13 rounded-2xl border border-line bg-panel-2 px-4 text-base font-semibold text-text placeholder:text-muted-2 focus:border-holo-3 focus:outline-none"
             />
             <p id="ajuda-do-nome" className="text-xs leading-snug text-muted m-0">
-              De 2 a 24 caracteres. Por enquanto, só você vê este nome, e ele não pode ser trocado depois.
+              De 2 a 24 caracteres. É o nome do seu personagem só no RPG (separado do seu Nome de exibição no AniDeck) e não pode ser trocado depois.
             </p>
             {erro && (
               <p role="alert" className="text-xs font-bold text-coral m-0">
@@ -386,6 +386,9 @@ function FichaDoPersonagem({
 
         <div className="flex min-w-0 flex-col gap-6">
           <div className="flex flex-col gap-2.5">
+            <p className="font-mono text-xs uppercase tracking-[0.14em] text-muted-2 m-0">
+              Nome do personagem (RPG)
+            </p>
             <h1 className="font-anton text-[clamp(2.2rem,9vw,2.8rem)] uppercase leading-none m-0 break-words">
               {personagem.nome}
             </h1>

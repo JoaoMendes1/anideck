@@ -239,6 +239,7 @@ func main() {
 		// O escudo de spoiler é a RLS do sql/041; aqui tudo usa o token de quem pede.
 		protegido.Get("/api/comunidade/eu", comunidadeHandler.HandleGetEu)
 		protegido.Put("/api/comunidade/eu", comunidadeHandler.HandleSalvarEu)
+		protegido.Put("/api/perfil/nome", comunidadeHandler.HandleAtualizarNomeExibicao)
 		protegido.Post("/api/comunidade/descanso", comunidadeHandler.HandleAtivarDescanso)
 		protegido.Get("/api/comunidade/bloqueios", comunidadeHandler.HandleListarBloqueios)
 		protegido.Post("/api/comunidade/bloqueios/{handle}", comunidadeHandler.HandleBloquear)

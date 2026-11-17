@@ -1,6 +1,7 @@
 // client/src/components/comunidade/PerfilPublicoConfig.tsx
-// Perfil público nas Configurações: @, nome, bio, vitrine de até cinco animes,
+// Perfil público nas Configurações: @, bio, vitrine de até cinco animes,
 // visibilidade e Modo Descanso. Sem perfil, a pessoa lê e reage, mas não comenta.
+// O Nome de exibição é único e vem da seção Perfil acima.
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { AtSign, Check, Eye, EyeOff, Moon, X, Activity } from 'lucide-react'
@@ -50,8 +51,8 @@ function Formulario({ estado, token, nomeSugerido, daEquipe }: { estado: EstadoC
   const limiteVitrine = temExpansaoVitrine ? 7 : 5
 
   const { perfil, regras } = estado
-  const [handle, setHandle] = useState(perfil.existe ? perfil.handle : sugerirHandle(nomeSugerido))
-  const [nome, setNome] = useState(perfil.existe ? perfil.nome : nomeSugerido)
+  const nomeExibicao = nomeSugerido.trim() || perfil.nome.trim()
+  const [handle, setHandle] = useState(perfil.existe ? perfil.handle : sugerirHandle(nomeExibicao))
   const [bio, setBio] = useState(perfil.bio)
   const [publico, setPublico] = useState(perfil.existe ? perfil.publico : true)
   const [mostrarAtividade, setMostrarAtividade] = useState(perfil.mostrar_atividade ?? true)
@@ -66,11 +67,11 @@ function Formulario({ estado, token, nomeSugerido, daEquipe }: { estado: EstadoC
   const [ativandoDescanso, setAtivandoDescanso] = useState(false)
 
   const checagem = validarHandle(handle, daEquipe)
-  const nomeValido = nome.trim().length >= 1 && nome.trim().length <= 40
+  const nomeValido = nomeExibicao.length >= 1 && nomeExibicao.length <= 40
   const mudou =
     !perfil.existe ||
     checagem.handle !== perfil.handle ||
-    nome.trim() !== perfil.nome ||
+    (nomeExibicao !== '' && nomeExibicao !== perfil.nome) ||
     bio.trim() !== perfil.bio ||
     publico !== perfil.publico ||
     mostrarAtividade !== (perfil.mostrar_atividade ?? true) ||
@@ -126,7 +127,7 @@ function Formulario({ estado, token, nomeSugerido, daEquipe }: { estado: EstadoC
       return
     }
     if (!nomeValido) {
-      setErro('O nome de exibição vai de 1 a 40 caracteres.')
+      setErro('Defina seu Nome de exibição acima (na seção Perfil) antes de salvar o perfil público.')
       return
     }
     setErro(null)
@@ -135,7 +136,7 @@ function Formulario({ estado, token, nomeSugerido, daEquipe }: { estado: EstadoC
       const res = await fetch('/api/comunidade/eu', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-        body: JSON.stringify({ handle: checagem.handle, nome: nome.trim(), bio: bio.trim(), vitrine, publico, mostrar_atividade: mostrarAtividade }),
+        body: JSON.stringify({ handle: checagem.handle, nome: nomeExibicao, bio: bio.trim(), vitrine, publico, mostrar_atividade: mostrarAtividade }),
       })
       if (!res.ok) {
         setErro((await res.text()).trim() || 'Não foi possível salvar agora.')
@@ -213,8 +214,18 @@ function Formulario({ estado, token, nomeSugerido, daEquipe }: { estado: EstadoC
             </p>
           </div>
           <div>
-            <label htmlFor="nome-publico" className={rotulo}>Nome na comunidade</label>
-            <input id="nome-publico" value={nome} maxLength={40} onChange={e => setNome(e.target.value)} placeholder="Como quer aparecer" className={campo} />
+            <span className={rotulo}>Nome de exibição</span>
+            <div className="bg-panel-2/60 border border-line rounded-xl px-4 py-3 text-sm flex items-center justify-between gap-3">
+              <span className={nomeExibicao ? 'font-bold text-text truncate' : 'text-muted-2 truncate'}>
+                {nomeExibicao || 'Defina acima em Perfil'}
+              </span>
+              <a href="#perfil" className="shrink-0 text-xs font-bold text-holo-3 hover:underline">
+                Alterar acima
+              </a>
+            </div>
+            <p className="text-xs text-muted-2 mt-1 mb-0">
+              É o mesmo Nome de exibição da seção Perfil.
+            </p>
           </div>
         </div>
 
