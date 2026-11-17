@@ -10,11 +10,13 @@ import (
 	"github.com/JoaoMendes1/anideck/internal/middleware"
 )
 
-// Regras do aprimoramento (sql/083). Cada nível soma 5% aos números do item; o teto depende
-// da raridade, para um item comum no máximo não valer um raro. Com tudo no teto, o ganho fica
-// perto de 40% sobre os números dos itens, e o teste de balanceamento confere esse caso.
+// Regras do aprimoramento (sql/083). Cada nível soma 1% a cada número do item, e no mínimo 1
+// ponto, para o ganho aparecer também nos itens pequenos. O teto depende da raridade, para um
+// item comum no máximo não valer um raro. Os números são pequenos de propósito: o combate é
+// sensível, e +9% de dano já dobra a vitória contra o chefe final. O teste de progressão
+// (rpg_progressao_test.go) confere o caso com tudo no máximo.
 const (
-	percentualPorAprimoramento = 5
+	percentualPorAprimoramento = 1
 	aprimoramentoMaximoGeral   = 10
 )
 
@@ -46,12 +48,15 @@ func CustoDeAprimoramento(raridade string, para int) int {
 	return base * max(1, para)
 }
 
-// AplicarAprimoramento devolve o item com Vida, Ataque e Defesa somados ao aprimoramento.
-// Arredonda para o inteiro mais próximo; atributo zero continua zero.
+// AplicarAprimoramento devolve o item com Vida, Ataque e Defesa somados ao aprimoramento:
+// 1% por nível, arredondado, e no mínimo 1 ponto por nível. Atributo zero continua zero.
 func AplicarAprimoramento(item ItemRPG, aprimoramento int) ItemRPG {
 	aprimoramento = max(0, min(TetoDeAprimoramento(item.Raridade), aprimoramento))
 	soma := func(valor int) int {
-		return valor + (valor*percentualPorAprimoramento*aprimoramento+50)/100
+		if valor <= 0 || aprimoramento == 0 {
+			return valor
+		}
+		return valor + max(aprimoramento, (valor*percentualPorAprimoramento*aprimoramento+50)/100)
 	}
 	item.Vida, item.Ataque, item.Defesa = soma(item.Vida), soma(item.Ataque), soma(item.Defesa)
 	item.Aprimoramento = aprimoramento

@@ -7,8 +7,9 @@ package handlers
 // marcosDeMaestria são os usos que abrem os graus II, III e IV. O grau I é o de partida.
 var marcosDeMaestria = []int{20, 60, 150}
 
-// bonusPorGrauDeMaestria é a força somada a cada grau acima do I: +10%, até +30% no IV.
-const bonusPorGrauDeMaestria = 0.10
+// bonusPorGrauDeMaestria é a força somada a cada grau acima do I: +2%, até +6% no IV. É pouco
+// de propósito: o combate é sensível, e o teste de progressão confere o caso com tudo no máximo.
+const bonusPorGrauDeMaestria = 0.02
 
 // GrauDeMaestria converte usos em grau, de 1 a 4.
 func GrauDeMaestria(usos int) int {

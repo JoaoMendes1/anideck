@@ -75,7 +75,7 @@ export default function LivroDeHabilidades({ habilidades }: { habilidades: Habil
         })}
       </ul>
       <p className="m-0 text-xs text-muted">
-        Nas expedições, o personagem usa as habilidades sozinho. Cada uso conta para a maestria: com 20, 60 e 150 usos, a habilidade fica 10% mais forte por grau.
+        Nas expedições, o personagem usa as habilidades sozinho. Cada uso conta para a maestria: com 20, 60 e 150 usos, a habilidade fica 2% mais forte por grau.
       </p>
     </section>
   )

@@ -33,11 +33,15 @@ func TestAplicarAprimoramento(t *testing.T) {
 	if got := AplicarAprimoramento(espada, 0); got.Ataque != 60 || got.Defesa != 7 || got.Aprimoramento != 0 {
 		t.Errorf("+0 não muda nada: %+v", got)
 	}
-	if got := AplicarAprimoramento(espada, 10); got.Ataque != 90 || got.Defesa != 11 || got.Vida != 0 || got.Aprimoramento != 10 {
-		t.Errorf("+10 soma 50%%, arredondado, e zero continua zero: %+v", got)
+	if got := AplicarAprimoramento(espada, 10); got.Ataque != 70 || got.Defesa != 17 || got.Vida != 0 || got.Aprimoramento != 10 {
+		t.Errorf("+10 soma 1%% por nível, no mínimo 1 por nível, e zero continua zero: %+v", got)
+	}
+	armadura := ItemRPG{Raridade: "lendario", Vida: 400}
+	if got := AplicarAprimoramento(armadura, 10); got.Vida != 440 {
+		t.Errorf("+10 em 400 de Vida soma 10%%: %+v", got)
 	}
 	comum := ItemRPG{Raridade: "comum", Ataque: 10}
-	if got := AplicarAprimoramento(comum, 10); got.Aprimoramento != 4 || got.Ataque != 12 {
+	if got := AplicarAprimoramento(comum, 10); got.Aprimoramento != 4 || got.Ataque != 14 {
 		t.Errorf("acima do teto vale o teto: %+v", got)
 	}
 	if got := AplicarAprimoramento(comum, -3); got.Aprimoramento != 0 || got.Ataque != 10 {
@@ -56,8 +60,8 @@ func TestMontarEstadoEquipamento_ComAprimoramento(t *testing.T) {
 		map[string]string{"arma": espada.ID, "botas": botas.ID}, PrimariosRPG{})
 	estado := MontarEstadoEquipamento(10, inventario, map[string]string{"arma": espada.ID, "botas": botas.ID}, PrimariosRPG{})
 
-	if estado.Atributos.Ataque-semNada.Atributos.Ataque != 4 || estado.Atributos.Defesa-semNada.Atributos.Defesa != 3 {
-		t.Errorf("o aprimoramento deveria somar 4 de Ataque (+20%%) e 3 de Defesa (+30%%): %+v vs %+v", estado.Atributos, semNada.Atributos)
+	if estado.Atributos.Ataque-semNada.Atributos.Ataque != 4 || estado.Atributos.Defesa-semNada.Atributos.Defesa != 6 {
+		t.Errorf("o aprimoramento deveria somar 4 de Ataque (+4) e 6 de Defesa (+6): %+v vs %+v", estado.Atributos, semNada.Atributos)
 	}
 	for _, item := range estado.Inventario {
 		switch item.ID {

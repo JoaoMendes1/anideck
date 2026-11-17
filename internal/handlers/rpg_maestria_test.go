@@ -45,8 +45,8 @@ func TestAplicarMaestria(t *testing.T) {
 			if h.Maestria != 4 || h.Usos != 150 || h.FaltamMaestria != 0 {
 				t.Errorf("grau IV com 150 usos: %+v", h)
 			}
-			if math.Abs(h.Fator-original.Fator*1.3) > 1e-9 || math.Abs(h.Fator2-original.Fator2*1.3) > 1e-9 {
-				t.Errorf("grau IV soma 30%%: %v -> %v", original.Fator, h.Fator)
+			if math.Abs(h.Fator-original.Fator*1.06) > 1e-9 || math.Abs(h.Fator2-original.Fator2*1.06) > 1e-9 {
+				t.Errorf("grau IV soma 6%%: %v -> %v", original.Fator, h.Fator)
 			}
 		default:
 			if h.Maestria != 1 || h.FaltamMaestria != 20 {
