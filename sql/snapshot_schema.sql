@@ -1,7 +1,7 @@
 -- =============================================================================
 -- snapshot_schema.sql — RETRATO DO BANCO. NAO EXECUTE ESTE ARQUIVO.
 -- =============================================================================
--- Regenerado em 15/11/2026 19:37 a partir do banco de producao.
+-- Regenerado em 17/11/2026 09:48 a partir do banco de producao.
 --
 -- PARA QUE SERVE: consulta rapida do estado real do banco, sem precisar abrir
 -- o painel do Supabase nem confiar nos arquivos sql/ antigos (que podem ter
@@ -400,6 +400,24 @@
 --     mal_id                       bigint NOT NULL
 --     position                     integer NOT NULL
 
+-- rpg_aprimoramentos
+--     id                           bigint NOT NULL
+--     user_id                      uuid NOT NULL
+--     item_id                      text NOT NULL
+--     para                         smallint NOT NULL
+--     ouro_gasto                   integer NOT NULL
+--     criado_em                    timestamp with time zone NOT NULL
+
+-- rpg_atributos
+--     user_id                      uuid NOT NULL
+--     forca                        integer NOT NULL
+--     inteligencia                 integer NOT NULL
+--     constituicao                 integer NOT NULL
+--     agilidade                    integer NOT NULL
+--     destreza                     integer NOT NULL
+--     sorte                        integer NOT NULL
+--     atualizado_em                timestamp with time zone NOT NULL
+
 -- rpg_batalhas
 --     id                           bigint NOT NULL
 --     user_id                      uuid NOT NULL
@@ -409,6 +427,7 @@
 --     bilhetes                     integer NOT NULL
 --     item_id                      text
 --     criado_em                    timestamp with time zone NOT NULL
+--     ouro                         integer NOT NULL
 
 -- rpg_equipados
 --     user_id                      uuid NOT NULL
@@ -421,6 +440,7 @@
 --     item_id                      text NOT NULL
 --     quantidade                   integer NOT NULL
 --     obtido_em                    timestamp with time zone NOT NULL
+--     aprimoramento                smallint NOT NULL
 
 -- rpg_invocacoes
 --     id                           bigint NOT NULL
@@ -429,6 +449,7 @@
 --     raridade                     text NOT NULL
 --     garantida                    boolean NOT NULL
 --     criado_em                    timestamp with time zone NOT NULL
+--     ouro                         integer NOT NULL
 
 -- rpg_itens
 --     id                           text NOT NULL
@@ -443,6 +464,12 @@
 --     inicial                      boolean NOT NULL
 --     ativo                        boolean NOT NULL
 --     ordem                        integer NOT NULL
+
+-- rpg_maestria
+--     user_id                      uuid NOT NULL
+--     habilidade_id                text NOT NULL
+--     usos                         integer NOT NULL
+--     atualizado_em                timestamp with time zone NOT NULL
 
 -- rpg_monstros
 --     id                           text NOT NULL
@@ -466,11 +493,25 @@
 --     criado_em                    timestamp with time zone NOT NULL
 --     visual_equipado              text
 
+-- rpg_recuperacoes
+--     id                           bigint NOT NULL
+--     user_id                      uuid NOT NULL
+--     origem                       text NOT NULL
+--     vida                         integer NOT NULL
+--     ouro_gasto                   integer NOT NULL
+--     criado_em                    timestamp with time zone NOT NULL
+
 -- rpg_recursos
 --     user_id                      uuid NOT NULL
 --     bilhetes                     integer NOT NULL
 --     invocacoes_sem_epico         integer NOT NULL
 --     atualizado_em                timestamp with time zone NOT NULL
+--     vida_perdida                 integer NOT NULL
+--     vida_em                      timestamp with time zone NOT NULL
+--     ouro                         integer NOT NULL
+--     pousada_em                   timestamp with time zone
+--     invocacoes_sem_raro          integer NOT NULL
+--     invocacoes_sem_lendario      integer NOT NULL
 
 -- sala_mensagem_curtidas
 --     mensagem_id                  uuid NOT NULL
@@ -555,6 +596,14 @@
 --     item_id                      text NOT NULL
 --     adquirido_em                 timestamp with time zone NOT NULL
 
+-- xp_extra
+--     id                           integer NOT NULL
+--     user_id                      uuid NOT NULL
+--     origem                       text NOT NULL
+--     xp                           integer NOT NULL
+--     motivo                       text NOT NULL
+--     criado_em                    timestamp with time zone NOT NULL
+
 -- xp_ledger
 --     id                           uuid NOT NULL
 --     user_id                      uuid NOT NULL
@@ -609,13 +658,17 @@
 -- ranking_current_cache     | RLS: t     | policies: 0
 -- ranking_genero            | RLS: t     | policies: 1
 -- ranking_snapshots         | RLS: t     | policies: 0
+-- rpg_aprimoramentos        | RLS: t     | policies: 1
+-- rpg_atributos             | RLS: t     | policies: 1
 -- rpg_batalhas              | RLS: t     | policies: 1
 -- rpg_equipados             | RLS: t     | policies: 1
 -- rpg_inventario            | RLS: t     | policies: 1
 -- rpg_invocacoes            | RLS: t     | policies: 1
 -- rpg_itens                 | RLS: t     | policies: 2
+-- rpg_maestria              | RLS: t     | policies: 1
 -- rpg_monstros              | RLS: t     | policies: 2
 -- rpg_personagens           | RLS: t     | policies: 1
+-- rpg_recuperacoes          | RLS: t     | policies: 1
 -- rpg_recursos              | RLS: t     | policies: 1
 -- sala_mensagem_curtidas    | RLS: t     | policies: 3
 -- sala_mensagem_denuncias   | RLS: t     | policies: 1
@@ -627,6 +680,7 @@
 -- user_cards                | RLS: t     | policies: 1
 -- user_equipped             | RLS: t     | policies: 1
 -- user_items                | RLS: t     | policies: 1
+-- xp_extra                  | RLS: t     | policies: 1
 -- xp_ledger                 | RLS: t     | policies: 2
 
 -- =============================================================================
@@ -1193,6 +1247,14 @@ CREATE OR REPLACE VIEW public.view_user_year_distribution WITH (security_invoker
 --     USING:  true
 --     CHECK:  -
 
+-- rpg_aprimoramentos     | rpg_aprimoramentos_le_o_proprio               | SELECT | authenticated     
+--     USING:  (( SELECT auth.uid() AS uid) = user_id)
+--     CHECK:  -
+
+-- rpg_atributos          | rpg_atributos_le_o_proprio                    | SELECT | authenticated     
+--     USING:  (( SELECT auth.uid() AS uid) = user_id)
+--     CHECK:  -
+
 -- rpg_batalhas           | rpg_batalhas_le_o_proprio                     | SELECT | authenticated     
 --     USING:  (( SELECT auth.uid() AS uid) = user_id)
 --     CHECK:  -
@@ -1210,22 +1272,30 @@ CREATE OR REPLACE VIEW public.view_user_year_distribution WITH (security_invoker
 --     CHECK:  -
 
 -- rpg_itens              | rpg_itens_escrita_admin                       | ALL    | authenticated     
---     USING:  is_admin()
---     CHECK:  is_admin()
+--     USING:  ( SELECT is_admin() AS is_admin)
+--     CHECK:  ( SELECT is_admin() AS is_admin)
 
 -- rpg_itens              | rpg_itens_leitura                             | SELECT | authenticated     
---     USING:  ((ativo = true) OR is_admin())
+--     USING:  ((ativo = true) OR ( SELECT is_admin() AS is_admin))
+--     CHECK:  -
+
+-- rpg_maestria           | rpg_maestria_le_o_proprio                     | SELECT | authenticated     
+--     USING:  (( SELECT auth.uid() AS uid) = user_id)
 --     CHECK:  -
 
 -- rpg_monstros           | rpg_monstros_escrita_admin                    | ALL    | authenticated     
---     USING:  is_admin()
---     CHECK:  is_admin()
+--     USING:  ( SELECT is_admin() AS is_admin)
+--     CHECK:  ( SELECT is_admin() AS is_admin)
 
 -- rpg_monstros           | rpg_monstros_leitura                          | SELECT | authenticated     
---     USING:  ((ativo = true) OR is_admin())
+--     USING:  ((ativo = true) OR ( SELECT is_admin() AS is_admin))
 --     CHECK:  -
 
 -- rpg_personagens        | rpg_personagens_le_o_proprio                  | SELECT | authenticated     
+--     USING:  (( SELECT auth.uid() AS uid) = user_id)
+--     CHECK:  -
+
+-- rpg_recuperacoes       | rpg_recuperacoes_le_o_proprio                 | SELECT | authenticated     
 --     USING:  (( SELECT auth.uid() AS uid) = user_id)
 --     CHECK:  -
 
@@ -1289,6 +1359,10 @@ CREATE OR REPLACE VIEW public.view_user_year_distribution WITH (security_invoker
 --     USING:  ((user_id = auth.uid()) OR is_admin())
 --     CHECK:  -
 
+-- xp_extra               | xp_extra_le_o_proprio                         | SELECT | authenticated     
+--     USING:  (( SELECT auth.uid() AS uid) = user_id)
+--     CHECK:  -
+
 -- xp_ledger              | xp_ledger_user                                | ALL    | authenticated     
 --     USING:  (( SELECT auth.uid() AS uid) = user_id)
 --     CHECK:  (( SELECT auth.uid() AS uid) = user_id)
@@ -1346,6 +1420,7 @@ CREATE OR REPLACE VIEW public.view_user_year_distribution WITH (security_invoker
 -- calcular_datas_temporada       | definer: f     | anon: t     | auth: t     | service: t     | search_path=public, pg_temp
 -- calcular_nivel_usuario         | definer: t     | anon: t     | auth: t     | service: t     | search_path=public, pg_temp
 -- comprar_item                   | definer: t     | anon: f     | auth: t     | service: t     | search_path=public, pg_temp
+-- conceder_xp_extra              | definer: t     | anon: f     | auth: f     | service: t     | search_path=public, pg_temp
 -- contagem_conversa              | definer: t     | anon: t     | auth: t     | service: t     | search_path=public, pg_temp
 -- contar_animes_com_tag          | definer: f     | anon: f     | auth: t     | service: t     | search_path=public, pg_temp
 -- convidar_membro_cla            | definer: t     | anon: t     | auth: t     | service: t     | search_path=public, pg_temp
@@ -1379,6 +1454,7 @@ CREATE OR REPLACE VIEW public.view_user_year_distribution WITH (security_invoker
 -- listar_previsoes_ativas        | definer: t     | anon: t     | auth: t     | service: t     | search_path=public, pg_temp
 -- listar_temporadas_campeoes_clas | definer: f     | anon: t     | auth: t     | service: t     | search_path=public, pg_temp
 -- mana_atual                     | definer: t     | anon: f     | auth: t     | service: t     | search_path=public, pg_temp
+-- mana_maxima                    | definer: t     | anon: f     | auth: t     | service: t     | search_path=public, pg_temp
 -- meu_desafio_cla_resumo         | definer: t     | anon: t     | auth: t     | service: t     | search_path=public, pg_temp
 -- meu_saldo_cristais             | definer: t     | anon: t     | auth: t     | service: t     | search_path=public, pg_temp
 -- minha_mana                     | definer: t     | anon: f     | auth: t     | service: t     | search_path=public, pg_temp
@@ -1403,18 +1479,30 @@ CREATE OR REPLACE VIEW public.view_user_year_distribution WITH (security_invoker
 -- renomear_tag_curadoria         | definer: t     | anon: f     | auth: t     | service: t     | search_path=public, pg_temp
 -- reservar_tarefa_periodica      | definer: f     | anon: f     | auth: f     | service: t     | search_path=public, pg_temp
 -- resgatar_codigo_convite        | definer: t     | anon: t     | auth: t     | service: t     | search_path=public, pg_temp
+-- resgatar_missao                | definer: t     | anon: f     | auth: f     | service: t     | search_path=public, pg_temp
 -- resolver_previsao              | definer: t     | anon: t     | auth: t     | service: t     | search_path=public, pg_temp
 -- responder_convite_cla          | definer: t     | anon: t     | auth: t     | service: t     | search_path=public, pg_temp
 -- rls_auto_enable                | definer: t     | anon: t     | auth: t     | service: t     | search_path=pg_catalog
+-- rpg_aprimorar_item             | definer: t     | anon: f     | auth: f     | service: t     | search_path=public, pg_temp
 -- rpg_batalhas_hoje              | definer: t     | anon: f     | auth: t     | service: t     | search_path=public, pg_temp
--- rpg_chances_invocacao          | definer: f     | anon: t     | auth: t     | service: t     | sem search_path
+-- rpg_chance_lendario            | definer: f     | anon: f     | auth: t     | service: t     | search_path=public, pg_temp
+-- rpg_chances_invocacao          | definer: f     | anon: f     | auth: t     | service: t     | search_path=public, pg_temp
+-- rpg_concluir_batalha           | definer: t     | anon: f     | auth: f     | service: t     | search_path=public, pg_temp
 -- rpg_contar_batalhas_hoje       | definer: t     | anon: f     | auth: f     | service: t     | search_path=public, pg_temp
+-- rpg_distribuir_pontos          | definer: t     | anon: f     | auth: t     | service: t     | search_path=public, pg_temp
 -- rpg_equipar_item               | definer: t     | anon: f     | auth: t     | service: t     | search_path=public, pg_temp
 -- rpg_estado_invocacao           | definer: t     | anon: f     | auth: t     | service: t     | search_path=public, pg_temp
+-- rpg_estado_jogador             | definer: f     | anon: f     | auth: t     | service: t     | search_path=public, pg_temp
 -- rpg_garantir_kit_inicial       | definer: t     | anon: f     | auth: t     | service: t     | search_path=public, pg_temp
+-- rpg_inicio_do_dia              | definer: f     | anon: f     | auth: t     | service: t     | search_path=public, pg_temp
 -- rpg_invocar                    | definer: t     | anon: f     | auth: t     | service: t     | search_path=public, pg_temp
 -- rpg_limite_batalhas_dia        | definer: t     | anon: f     | auth: t     | service: t     | search_path=public, pg_temp
+-- rpg_recuperar_por_episodio     | definer: t     | anon: f     | auth: f     | service: t     | search_path=public, pg_temp
+-- rpg_recuperar_vida             | definer: t     | anon: f     | auth: f     | service: t     | search_path=public, pg_temp
 -- rpg_registrar_batalha          | definer: t     | anon: f     | auth: f     | service: t     | search_path=public, pg_temp
+-- rpg_registrar_maestria         | definer: t     | anon: f     | auth: f     | service: t     | search_path=public, pg_temp
+-- rpg_regras_vida                | definer: f     | anon: f     | auth: t     | service: t     | search_path=public, pg_temp
+-- rpg_vida_perdida_agora         | definer: f     | anon: f     | auth: t     | service: t     | search_path=public, pg_temp
 -- sacar_caixa_loja               | definer: t     | anon: f     | auth: f     | service: t     | search_path=public, pg_temp
 -- sair_cla                       | definer: t     | anon: t     | auth: t     | service: t     | search_path=public, pg_temp
 -- saldo_caixa_loja               | definer: t     | anon: f     | auth: f     | service: t     | search_path=public, pg_temp
