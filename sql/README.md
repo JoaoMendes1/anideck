@@ -115,6 +115,7 @@ SELECT pg_get_viewdef('nome_da_view'::regclass, true);
 | `083_rpg_aprimoramento.sql` | Fase 18.3d (#241): `aprimoramento` (0 a 10) em `rpg_inventario`; histórico `rpg_aprimoramentos`; `rpg_aprimorar_item()` só para o service role (confere posse, nível esperado, teto e Ouro); `rpg_estado_jogador()` redefinida com `aprimoramento` e `ouro` (definição viva, antes no `077`). **Aplicar antes de promover** | — |
 | `084_rpg_maestria.sql` | Fase 18.3e (#242): `rpg_maestria` (usos por habilidade); `rpg_registrar_maestria()` só para o service role; `rpg_estado_jogador()` redefinida com `maestria` (definição viva, antes no `083`). **Depois do `083`, antes de promover** | — |
 | `085_rpg_bestiario.sql` | Fase 18.4b (#243): `rpg_batalhas_hoje()` com `vitorias` por monstro e `rpg_concluir_batalha()` com +10% de Ouro por marco (10, 50 e 150 vitórias), mesma assinatura (definição viva das duas, antes no `081`); índice parcial `rpg_batalhas_vitorias`. **Antes de promover** | — |
+| `086_rpg_monstros_sem_item_comum.sql` | Correção (#244): `chance_item = 0` para os monstros de item comum enquanto não houver item comum fora do kit. Dado de catálogo, aplicável a qualquer momento | — |
 
 Datas com `~` são a data do commit, não da aplicação no Supabase.
 

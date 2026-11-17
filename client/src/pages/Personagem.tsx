@@ -645,7 +645,7 @@ function FichaDoPersonagem({
               <Swords size={20} className="shrink-0 text-coral" aria-hidden="true" />
               <span className="min-w-0 flex-1">
                 <span className="block text-sm font-bold text-text">Expedições</span>
-                <span className="block text-xs text-muted">Enfrente monstros e ganhe bilhetes e itens</span>
+                <span className="block text-xs text-muted">Enfrente monstros, ganhe Ouro e cuide da Vida</span>
               </span>
               <span aria-hidden="true" className="text-muted">→</span>
             </Link>
@@ -656,7 +656,7 @@ function FichaDoPersonagem({
               <Sparkles size={20} className="shrink-0 text-gold" aria-hidden="true" />
               <span className="min-w-0 flex-1">
                 <span className="block text-sm font-bold text-text">Invocação</span>
-                <span className="block text-xs text-muted">Troque bilhetes por equipamentos</span>
+                <span className="block text-xs text-muted">Troque bilhetes por equipamentos ou Ouro</span>
               </span>
               <span aria-hidden="true" className="text-muted">→</span>
             </Link>

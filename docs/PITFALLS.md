@@ -974,6 +974,29 @@ imagem.
 
 ---
 
+## 34. 🎲 Sorteio por raridade sem item daquela raridade cai na reserva, e a reserva subia: Lendário no lugar de Comum
+
+**Incidente (17/11/2026, #240 e #244):** um jogador ganhou dois equipamentos lendários em poucos
+dias de invocação. Na lista de Expedições, o Slime de Éter e o Goblin Batedor prometiam "15%" e
+"20% de item comum", mas nunca davam item.
+
+**Causa:** todos os itens comuns do catálogo (`sql/071`) são do kit inicial (`inicial = true`), e
+os sorteios só usam itens fora do kit. Na invocação (`rpg_invocar`, `sql/073`), o resultado
+"comum" (60% das tentativas) não achava item e caía numa reserva que escolhia **a raridade mais
+alta**: cerca de 62% das invocações davam Lendário (reproduzido num Postgres local). Nas
+batalhas, os monstros de item comum mostravam uma chance que nunca acontecia.
+
+**Correção:**
+1. `sql/082`: a invocação não tem mais Comum na tabela, e a reserva só desce de raridade; sem item
+   nenhum, a tentativa vira Ouro.
+2. `sql/086`: os monstros de item comum ficam com `chance_item = 0` enquanto não houver item comum
+   fora do kit, e a tela deixa de mostrar a chance.
+
+> **Pergunta obrigatória:** toda raridade que o sorteio pode sortear tem pelo menos um item ativo
+> fora do kit (`inicial = false`)? E, quando não tem, a reserva desce de raridade em vez de subir?
+
+---
+
 ## 🧭 Como manter este arquivo
 
 - Toda vez que um bug **silencioso** chegar a produção (não quebrou, só devolveu dado errado),
