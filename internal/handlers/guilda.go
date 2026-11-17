@@ -339,6 +339,22 @@ func CalcularXPEpisodioComFaixa(
 	return xp, motivo
 }
 
+// AplicarLimiteEstorno garante que remarcar o mesmo episódio em até 7 dias nunca
+// renda mais XP do que o valor original guardado no estorno.
+func AplicarLimiteEstorno(xpCalculado int, motivo string, xpOriginalEstorno *int) (int, string) {
+	if xpOriginalEstorno == nil {
+		return xpCalculado, motivo
+	}
+	limite := *xpOriginalEstorno
+	if limite < 0 {
+		limite = 0
+	}
+	if limite < xpCalculado {
+		return limite, "remarcação · limite original"
+	}
+	return xpCalculado, motivo
+}
+
 // CustoProximoNivel devolve o XP exigido para subir do nível L para L+1.
 func CustoProximoNivel(nivel int) int {
 	if nivel < 1 {
@@ -754,6 +770,22 @@ func RegistrarXPEpisodio(dbClient *supabase.Client, userID string, malID, episod
 	}
 
 	xpGanho, motivo := CalcularXPEpisodioComFaixa(ordemNoDia, xpHoje, ehCedo, ehMaratona, saiuAte24h, hp, economia, agora)
+
+	if estBytes, _, errEst := dbClient.From("estornos").
+		Select("xp_original", "", false).
+		Eq("user_id", userID).
+		Eq("mal_id", strconv.Itoa(malID)).
+		Eq("episode_number", strconv.Itoa(episodeNumber)).
+		Gte("estornado_em", agora.Add(-7*24*time.Hour).Format(time.RFC3339)).
+		Limit(1, "").
+		Execute(); errEst == nil {
+		var estRows []struct {
+			XPOriginal int `json:"xp_original"`
+		}
+		if json.Unmarshal(estBytes, &estRows) == nil && len(estRows) > 0 {
+			xpGanho, motivo = AplicarLimiteEstorno(xpGanho, motivo, &estRows[0].XPOriginal)
+		}
+	}
 
 	novaLinha := map[string]interface{}{
 		"user_id":        userID,

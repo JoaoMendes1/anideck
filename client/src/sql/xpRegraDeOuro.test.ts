@@ -105,6 +105,58 @@ describe('Regra de Ouro do XP (estado atual da SQL)', () => {
         )
         expect(await lerXPTotalUsuario(db, USER_ID)).toBe(0)
       }
+
+      const estornoEp1 = await db.query<{ xp_original: number }>(
+        `SELECT xp_original FROM public.estornos WHERE user_id = $1 AND mal_id = $2 AND episode_number = 1`,
+        [USER_ID, ANIME_A],
+      )
+      expect(estornoEp1.rows[0]?.xp_original).toBe(12)
+
+      // Passados mais de 7 dias, a trava expira e o episódio pode voltar a render normalmente
+      await db.query(
+        `UPDATE public.estornos SET estornado_em = now() - interval '8 days'
+          WHERE user_id = $1 AND mal_id = $2 AND episode_number = 1`,
+        [USER_ID, ANIME_A],
+      )
+      await db.query(
+        `INSERT INTO public.episode_progress (user_id, mal_id, episode_number, watched_at)
+         VALUES ($1, $2, 1, now())`,
+        [USER_ID, ANIME_A],
+      )
+      await db.query(
+        `INSERT INTO public.xp_ledger (user_id, mal_id, episode_number, xp_earned, reason)
+         VALUES ($1, $2, 1, 25, 'apos 7 dias')`,
+        [USER_ID, ANIME_A],
+      )
+      expect(await lerXPTotalUsuario(db, USER_ID)).toBe(25)
+
+      // Desmarcar episódio que só estava em xp_pendente (4 XP) grava 4 XP no estorno e trava remarcação
+      await db.query(
+        `INSERT INTO public.episode_progress (user_id, mal_id, episode_number, watched_at)
+         VALUES ($1, $2, 2, NULL)`,
+        [USER_ID, ANIME_A],
+      )
+      await db.query(
+        `DELETE FROM public.episode_progress WHERE user_id = $1 AND mal_id = $2 AND episode_number = 2`,
+        [USER_ID, ANIME_A],
+      )
+      const estornoEp2 = await db.query<{ xp_original: number }>(
+        `SELECT xp_original FROM public.estornos WHERE user_id = $1 AND mal_id = $2 AND episode_number = 2`,
+        [USER_ID, ANIME_A],
+      )
+      expect(estornoEp2.rows[0]?.xp_original).toBe(4)
+
+      await db.query(
+        `INSERT INTO public.episode_progress (user_id, mal_id, episode_number, watched_at)
+         VALUES ($1, $2, 2, now())`,
+        [USER_ID, ANIME_A],
+      )
+      await db.query(
+        `INSERT INTO public.xp_ledger (user_id, mal_id, episode_number, xp_earned, reason)
+         VALUES ($1, $2, 2, 25, 'tentativa apos acervo')`,
+        [USER_ID, ANIME_A],
+      )
+      expect(await lerXPTotalUsuario(db, USER_ID)).toBe(29)
     } finally {
       await db.close()
     }
