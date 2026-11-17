@@ -338,13 +338,22 @@ func (h *RankingsComunidadeHandler) HandleClimaTemporada(w http.ResponseWriter, 
 }
 
 // NumerosComunidadeAnime reúne apenas contagens agregadas de usuários do AniDeck por status.
+// Contagens entre 1 e 2 são mascaradas como -1 ("Menos de 3") para proteger privacidade.
 type NumerosComunidadeAnime struct {
-	MalID         int `json:"mal_id"`
-	Assistindo    int `json:"assistindo"`
-	Completo      int `json:"completo"`
-	Dropado       int `json:"dropado"`
-	QueroAssistir int `json:"quero_assistir"`
-	Total         int `json:"total"`
+	MalID           int  `json:"mal_id"`
+	Assistindo      int  `json:"assistindo"`
+	Completo        int  `json:"completo"`
+	Dropado         int  `json:"dropado"`
+	QueroAssistir   int  `json:"quero_assistir"`
+	Total           int  `json:"total"`
+	TotalAproximado bool `json:"total_aproximado,omitempty"`
+}
+
+func mascararContagemPrivada(n int) int {
+	if n == 1 || n == 2 {
+		return -1
+	}
+	return n
 }
 
 func decodificarNumerosComunidade(malID int, raw string) (NumerosComunidadeAnime, error) {
@@ -357,11 +366,33 @@ func decodificarNumerosComunidade(malID int, raw string) (NumerosComunidadeAnime
 	}
 	res := linhas[0]
 	res.MalID = malID
+
+	// Camada defensiva caso cheguem números brutos (1 ou 2) fora da RPC mascarada.
+	res.Assistindo = mascararContagemPrivada(res.Assistindo)
+	res.Completo = mascararContagemPrivada(res.Completo)
+	res.Dropado = mascararContagemPrivada(res.Dropado)
+	res.QueroAssistir = mascararContagemPrivada(res.QueroAssistir)
+	res.Total = mascararContagemPrivada(res.Total)
+
+	ocultos := 0
+	for _, v := range []int{res.Assistindo, res.Completo, res.Dropado, res.QueroAssistir} {
+		if v == -1 {
+			ocultos++
+		}
+	}
+	if res.Total >= 3 && ocultos == 1 {
+		res.Total = (res.Total / 3) * 3
+		if res.Total < 3 {
+			res.Total = 3
+		}
+		res.TotalAproximado = true
+	}
+
 	return res, nil
 }
 
 // HandleNumerosComunidadeAnime retorna quantos usuários têm o anime no deck em cada status,
-// sem expor identificadores individuais e sem depender da AniList.
+// sem expor identificadores individuais, mascarando valores abaixo de 3 e sem depender da AniList.
 func (h *RankingsComunidadeHandler) HandleNumerosComunidadeAnime(w http.ResponseWriter, r *http.Request) {
 	malID, err := strconv.Atoi(strings.TrimSpace(chi.URLParam(r, "id")))
 	if err != nil || malID <= 0 {
@@ -455,11 +486,11 @@ func montarItensEmAlta(linhas []emAltaLinha, metas map[int]metadadoLocalAnime) [
 			Titulo:              titulo,
 			ImagemURL:           imagem,
 			Pontuacao:           l.Pontuacao,
-			UsuariosAtivos:      l.UsuariosAtivos,
+			UsuariosAtivos:      mascararContagemPrivada(l.UsuariosAtivos),
 			EpisodiosRecentes:   l.EpisodiosRecentes,
 			ComentariosRecentes: l.ComentariosRecentes,
 			ReacoesRecentes:     l.ReacoesRecentes,
-			DropsRecentes:       l.DropsRecentes,
+			DropsRecentes:       mascararContagemPrivada(l.DropsRecentes),
 		})
 	}
 	return itens

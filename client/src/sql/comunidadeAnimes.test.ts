@@ -12,8 +12,8 @@ const USER_3 = '33333333-3333-4333-8333-333333333333'
 const USER_4 = '44444444-4444-4444-8444-444444444444'
 const USER_5 = '55555555-5555-4555-8555-555555555555'
 
-describe('Números da comunidade por anime (#271)', () => {
-  it('soma Assistindo + Em Dia, Completo, Dropado e Quero Assistir sem expor user_id', async () => {
+describe('Números da comunidade por anime (#271 + #272)', () => {
+  it('mascara contagens entre 1 e 2 como -1, impede dedução por subtração e libera números >= 3 sem expor user_id', async () => {
     const db = await criarBancoTeste()
     try {
       await criarUsuarioTeste(db, USER_1, 'user_1')
@@ -22,6 +22,7 @@ describe('Números da comunidade por anime (#271)', () => {
       await criarUsuarioTeste(db, USER_4, 'user_4')
       await criarUsuarioTeste(db, USER_5, 'user_5')
 
+      // 2 Assistindo/Em Dia, 1 Completo, 1 Dropado, 1 Quero Assistir -> tudo abaixo de 3
       await db.query(
         `INSERT INTO public.media_entries (user_id, mal_id, tipo, status) VALUES
            ($1, 100, 'anime', 'Assistindo'),
@@ -33,23 +34,52 @@ describe('Números da comunidade por anime (#271)', () => {
         [USER_1, USER_2, USER_3, USER_4, USER_5],
       )
 
-      const res = await db.query<Record<string, unknown>>(
+      const resMascarado = await db.query<Record<string, unknown>>(
         `SELECT * FROM public.numeros_comunidade_anime(100)`,
       )
-      expect(res.rows).toEqual([
+      expect(resMascarado.rows).toEqual([
         {
           mal_id: 100,
-          assistindo: 2,
-          completo: 1,
-          dropado: 1,
-          quero_assistir: 1,
+          assistindo: -1,
+          completo: -1,
+          dropado: -1,
+          quero_assistir: -1,
           total: 5,
+          total_aproximado: false,
         },
       ])
 
-      const chaves = Object.keys(res.rows[0])
+      const chaves = Object.keys(resMascarado.rows[0])
       expect(chaves).not.toContain('user_id')
       expect(chaves).not.toContain('handle')
+
+      // Obra com apenas 1 pessoa no deck -> total também fica -1 ("Menos de 3")
+      await db.query(
+        `INSERT INTO public.media_entries (user_id, mal_id, tipo, status) VALUES ($1, 101, 'anime', 'Dropado')`,
+        [USER_1],
+      )
+      const umSo = await db.query<Record<string, unknown>>(`SELECT * FROM public.numeros_comunidade_anime(101)`)
+      expect(umSo.rows[0]).toMatchObject({ dropado: -1, total: -1, total_aproximado: false })
+
+      // 3 Assistindo + 1 Dropado (= 4 real): apenas 1 categoria < 3 -> total arredondado para 3 (3+) evitando 4 - 3 = 1
+      await db.query(
+        `INSERT INTO public.media_entries (user_id, mal_id, tipo, status) VALUES
+           ($1, 102, 'anime', 'Assistindo'),
+           ($2, 102, 'anime', 'Assistindo'),
+           ($3, 102, 'anime', 'Em Dia'),
+           ($4, 102, 'anime', 'Dropado')`,
+        [USER_1, USER_2, USER_3, USER_4],
+      )
+      const deducaoBloqueada = await db.query<Record<string, unknown>>(`SELECT * FROM public.numeros_comunidade_anime(102)`)
+      expect(deducaoBloqueada.rows[0]).toEqual({
+        mal_id: 102,
+        assistindo: 3,
+        completo: 0,
+        dropado: -1,
+        quero_assistir: 0,
+        total: 3,
+        total_aproximado: true,
+      })
 
       const vazio = await db.query<Record<string, unknown>>(
         `SELECT * FROM public.numeros_comunidade_anime(999999)`,
@@ -62,6 +92,7 @@ describe('Números da comunidade por anime (#271)', () => {
           dropado: 0,
           quero_assistir: 0,
           total: 0,
+          total_aproximado: false,
         },
       ])
     } finally {
@@ -70,8 +101,8 @@ describe('Números da comunidade por anime (#271)', () => {
   })
 })
 
-describe('Animes em alta na comunidade (#271)', () => {
-  it('ranqueia atividade recente, ignora acervo/oculto/antigo e penaliza drops', async () => {
+describe('Animes em alta na comunidade (#271 + #272)', () => {
+  it('ranqueia atividade recente, ignora acervo/oculto/antigo e mascara < 3 usuários/drops como -1', async () => {
     const db = await criarBancoTeste()
     try {
       await criarUsuarioTeste(db, USER_1, 'user_1')
@@ -80,19 +111,19 @@ describe('Animes em alta na comunidade (#271)', () => {
       await criarUsuarioTeste(db, USER_4, 'user_4')
       await criarUsuarioTeste(db, USER_5, 'user_5')
 
-      // Anime 201: 2 usuários ativos, episódios recentes, 1 comentário visível e 1 reação -> líder
-      // Anime 202: mesma atividade de episódios/comentário, mas com 2 drops recentes -> cai abaixo de 201
+      // Anime 201: 3 usuários ativos, episódios recentes, 1 comentário visível e 1 reação -> líder
+      // Anime 202: 2 usuários ativos com 2 drops recentes -> abaixo de 201 e mascarado (< 3 -> -1)
       // Anime 203: apenas 1 usuário com 1 ep e 3 drops -> pontuação zera e sai da lista
       // Anime 204: só importação antiga / acervo (watched_at NULL) -> não entra em "Em alta"
       // Anime 205: atividade de 30 dias atrás (fora da janela de 14 dias) -> não entra em "Em alta"
       await db.query(
         `INSERT INTO public.episode_progress (user_id, mal_id, episode_number, watched_at) VALUES
-           ($1, 201, 1, now()), ($2, 201, 1, now()),
+           ($1, 201, 1, now()), ($2, 201, 1, now()), ($3, 201, 1, now()),
            ($1, 202, 1, now()), ($2, 202, 1, now()),
            ($1, 203, 1, now()),
            ($1, 204, 1, NULL), ($1, 204, 2, NULL),
            ($1, 205, 1, now() - interval '30 days')`,
-        [USER_1, USER_2],
+        [USER_1, USER_2, USER_3],
       )
 
       await db.query(
@@ -134,14 +165,15 @@ describe('Animes em alta na comunidade (#271)', () => {
 
       expect(res.rows[0]).toMatchObject({
         mal_id: 201,
-        usuarios_ativos: 2,
-        episodios_recentes: 2,
+        usuarios_ativos: 3,
+        episodios_recentes: 3,
         comentarios_recentes: 1,
         reacoes_recentes: 1,
         drops_recentes: 0,
       })
       expect(res.rows[0].pontuacao).toBeGreaterThan(res.rows[1].pontuacao)
-      expect(res.rows[1].drops_recentes).toBe(2)
+      expect(res.rows[1].usuarios_ativos).toBe(-1)
+      expect(res.rows[1].drops_recentes).toBe(-1)
 
       const chaves = Object.keys(res.rows[0])
       expect(chaves).not.toContain('user_id')

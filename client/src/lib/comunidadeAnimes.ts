@@ -10,6 +10,18 @@ export interface NumerosComunidadeAnime {
   dropado: number
   quero_assistir: number
   total: number
+  total_aproximado?: boolean
+}
+
+export function formatarContagemComunidade(valor: number): string {
+  if (valor < 0) return 'Menos de 3'
+  return valor.toLocaleString('pt-BR')
+}
+
+export function formatarTotalComunidade(total: number, aproximado = false): string {
+  if (total < 0) return 'Menos de 3'
+  const base = total.toLocaleString('pt-BR')
+  return aproximado ? `${base}+` : base
 }
 
 export interface EmAltaComunidadeItem {

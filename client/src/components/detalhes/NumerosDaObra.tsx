@@ -4,7 +4,11 @@
 import { motion } from 'framer-motion'
 import { Bookmark, CheckCircle2, Eye, Star, Trophy, Users, XCircle } from 'lucide-react'
 import { formatarNota } from '../../lib/detalhes'
-import type { NumerosComunidadeAnime } from '../../lib/comunidadeAnimes'
+import {
+  formatarContagemComunidade,
+  formatarTotalComunidade,
+  type NumerosComunidadeAnime,
+} from '../../lib/comunidadeAnimes'
 
 export interface EstatisticasDaObra {
   scores: { score: number; votes: number; percentage: number }[]
@@ -79,7 +83,11 @@ export default function NumerosDaObra({ nota, ranking, stats, comunidade, minhaN
           </div>
           <span className="font-mono text-xs text-muted-2">
             {comunidade
-              ? `${comunidade.total.toLocaleString('pt-BR')} ${comunidade.total === 1 ? 'pessoa no deck' : 'pessoas no deck'}`
+              ? comunidade.total < 0
+                ? 'Menos de 3 pessoas no deck'
+                : comunidade.total === 0
+                  ? 'Nenhuma pessoa no deck ainda'
+                  : `${formatarTotalComunidade(comunidade.total, Boolean(comunidade.total_aproximado))} pessoas no deck`
               : 'Carregando...'}
           </span>
         </div>
@@ -90,8 +98,8 @@ export default function NumerosDaObra({ nota, ranking, stats, comunidade, minhaN
               <div className="font-mono text-xs text-muted uppercase tracking-wider flex items-center gap-1.5">
                 {c.icone} {c.rotulo}
               </div>
-              <div className={`font-anton text-2xl mt-1 tabular-nums ${c.cor}`}>
-                {c.valor !== null ? c.valor.toLocaleString('pt-BR') : '–'}
+              <div className={`font-anton ${c.valor !== null && c.valor < 0 ? 'text-lg' : 'text-2xl'} mt-1 tabular-nums ${c.cor}`}>
+                {c.valor !== null ? formatarContagemComunidade(c.valor) : '–'}
               </div>
               <div className="text-[11px] text-muted-2 mt-1">{c.detalhe}</div>
             </div>

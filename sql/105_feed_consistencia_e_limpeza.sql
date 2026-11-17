@@ -15,8 +15,9 @@
 --        exige episode_progress quando o anime tem episódios conhecidos;
 --      - "comentou" e "curtiu" exigem que o autor ainda tenha o episódio
 --        marcado em episode_progress (desmarcar episódios apaga a atividade).
---   4. Limpeza pontual de entradas 'Completo' já órfãs (sem episódios marcados
---      para obras com episódios conhecidos) existentes antes desta correção.
+--   4. Preenchimento retroativo de episódios (watched_at NULL, sem XP e sem fila
+--      xp_pendente) para entradas 'Completo' antigas sem linhas em
+--      episode_progress, preservando o status 'Completo' e as cartas.
 --
 -- Pode rodar mais de uma vez. Depende do sql/098 e do sql/102.
 
@@ -116,18 +117,31 @@ CREATE TRIGGER trg_episode_progress_z_limpar_completo
   EXECUTE FUNCTION public.limpar_completo_sem_episodios();
 
 -- -----------------------------------------------------------------------------
--- 3. Limpeza retroativa de 'Completo' sem episódios em obras com episódios conhecidos
+-- 3. Preenchimento retroativo de episódios em 'Completo' sem progresso (sem XP)
 -- -----------------------------------------------------------------------------
+-- Preserva o status 'Completo' e as cartas já conquistadas em entradas antigas
+-- (importação ou cadastro antes do controle por episódio): preenche todos os
+-- episódios conhecidos com watched_at NULL e remove qualquer pendência em
+-- xp_pendente criada pelo gatilho do sql/103, mantendo zero XP ganho/pendente.
+-- Respeita Item 5 do PITFALLS.md: custom_episodes NULL cai para o cache; array
+-- vazio '{}' é curado vazio de propósito e não gera episódios.
 DO $$
 DECLARE
-  v_removido RECORD;
+  v_entrada      RECORD;
+  v_episodios    integer[];
+  v_inseridos    integer[];
+  v_tem_pendente boolean := to_regclass('public.xp_pendente') IS NOT NULL;
 BEGIN
-  PERFORM set_config('anideck.saida_completo_descarte', '1', true);
-
-  FOR v_removido IN
-    UPDATE public.media_entries m
-       SET status = 'Quero Assistir',
-           completado_em = NULL
+  FOR v_entrada IN
+    SELECT m.user_id,
+           m.mal_id,
+           COALESCE(m.completado_em, m.created_at, now()) AS marcado_em,
+           (ca.mal_id IS NOT NULL AND ca.custom_episodes IS NOT NULL) AS tem_curadoria_eps,
+           ca.custom_episodes,
+           COALESCE(mc.episodes, 0) AS cache_eps
+      FROM public.media_entries m
+      LEFT JOIN public.curated_animes ca ON ca.mal_id = m.mal_id
+      LEFT JOIN public.anime_metadata_cache mc ON mc.mal_id = m.mal_id
      WHERE m.status = 'Completo'
        AND m.tipo = 'anime'
        AND NOT EXISTS (
@@ -136,26 +150,48 @@ BEGIN
           WHERE ep.user_id = m.user_id
             AND ep.mal_id = m.mal_id
        )
-       AND (
-         EXISTS (
-           SELECT 1
-             FROM public.anime_metadata_cache mc
-            WHERE mc.mal_id = m.mal_id
-              AND COALESCE(mc.episodes, 0) > 0
-         )
-         OR EXISTS (
-           SELECT 1
-             FROM public.curated_animes ca
-            WHERE ca.mal_id = m.mal_id
-              AND jsonb_typeof(ca.custom_episodes) = 'array'
-              AND jsonb_array_length(ca.custom_episodes) > 0
-         )
-       )
-    RETURNING m.user_id, m.mal_id
   LOOP
-    DELETE FROM public.user_cards
-     WHERE user_id = v_removido.user_id
-       AND mal_id = v_removido.mal_id;
+    v_episodios := ARRAY[]::integer[];
+
+    IF v_entrada.tem_curadoria_eps THEN
+      IF jsonb_typeof(v_entrada.custom_episodes) = 'array' THEN
+        SELECT COALESCE(array_agg(DISTINCT num ORDER BY num), ARRAY[]::integer[])
+          INTO v_episodios
+          FROM (
+            SELECT NULLIF(btrim(elem->>'number'), '')::integer AS num
+              FROM jsonb_array_elements(v_entrada.custom_episodes) AS elem
+             WHERE jsonb_typeof(elem) = 'object'
+               AND (elem->>'number') ~ '^[0-9]+$'
+          ) sub
+         WHERE num > 0;
+      END IF;
+    ELSIF v_entrada.cache_eps > 0 THEN
+      SELECT array_agg(g ORDER BY g)
+        INTO v_episodios
+        FROM generate_series(1, LEAST(v_entrada.cache_eps, 5000)) AS g;
+    END IF;
+
+    IF COALESCE(cardinality(v_episodios), 0) = 0 THEN
+      CONTINUE;
+    END IF;
+
+    WITH ins AS (
+      INSERT INTO public.episode_progress (user_id, mal_id, episode_number, watched_at, created_at)
+      SELECT v_entrada.user_id, v_entrada.mal_id, ep_num, NULL, v_entrada.marcado_em
+        FROM unnest(v_episodios) AS ep_num
+      ON CONFLICT (user_id, mal_id, episode_number) DO NOTHING
+      RETURNING episode_number
+    )
+    SELECT COALESCE(array_agg(episode_number), ARRAY[]::integer[])
+      INTO v_inseridos
+      FROM ins;
+
+    IF v_tem_pendente AND COALESCE(cardinality(v_inseridos), 0) > 0 THEN
+      DELETE FROM public.xp_pendente
+       WHERE user_id = v_entrada.user_id
+         AND mal_id = v_entrada.mal_id
+         AND episode_number = ANY(v_inseridos);
+    END IF;
   END LOOP;
 END;
 $$;

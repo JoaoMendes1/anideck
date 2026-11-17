@@ -5,6 +5,7 @@
 import { describe, expect, it } from 'vitest'
 import type { PGlite } from '@electric-sql/pglite'
 import { autenticarComo, criarBancoTeste, criarUsuarioTeste, lerXPTotalUsuario } from './bancoDeTeste'
+import sql105 from '../../../sql/105_feed_consistencia_e_limpeza.sql?raw'
 
 const USER_ID = '11111111-1111-4111-8111-111111111111'
 const AMIGO_ID = '22222222-2222-4222-8222-222222222222'
@@ -65,6 +66,96 @@ describe('Prova do defeito do Feed antes do sql/105', () => {
       await db.query(`DELETE FROM public.episode_progress WHERE user_id = $1 AND mal_id = $2`, [USER_ID, ANIME_A])
       const tipos = (await lerFeedGeral(db)).map(e => e.tipo)
       expect(tipos).toContain('completou')
+    } finally {
+      await db.close()
+    }
+  })
+
+  it('backfill do sql/105 preenche Completo antigo sem apagar status/carta, sem XP e respeitando custom_episodes vazio', async () => {
+    const db = await criarBancoTeste({ etapas: ['098', '101', '102', '103', '104'] })
+    try {
+      await criarUsuarioTeste(db, USER_ID, 'otaku_legado')
+      await db.query(
+        `INSERT INTO public.anime_metadata_cache (mal_id, title, episodes) VALUES
+           ($1, 'Legado Normal', 3),
+           ($2, 'Curado Sem Eps', 12)`,
+        [ANIME_A, ANIME_B],
+      )
+      await db.query(
+        `INSERT INTO public.curated_animes (mal_id, custom_title, custom_episodes)
+         VALUES ($1, 'Curado Sem Eps', '[]'::jsonb)`,
+        [ANIME_B],
+      )
+      await db.query(
+        `INSERT INTO public.media_entries (user_id, mal_id, status, created_at)
+         VALUES
+           ($1, $2, 'Completo', now() - interval '90 days'),
+           ($1, $3, 'Completo', now() - interval '10 days')`,
+        [USER_ID, ANIME_A, ANIME_B],
+      )
+      await db.query(
+        `INSERT INTO public.user_cards (user_id, mal_id, raridade)
+         VALUES ($1, $2, 'comum')
+         ON CONFLICT (user_id, mal_id) DO NOTHING`,
+        [USER_ID, ANIME_A],
+      )
+
+      // Consulta somente leitura para contar quantos Completos sem episódios serão preenchidos
+      const contagemPrevia = await db.query<{ afetadas: string }>(
+        `SELECT count(*) AS afetadas
+           FROM public.media_entries m
+          WHERE m.status = 'Completo'
+            AND m.tipo = 'anime'
+            AND NOT EXISTS (
+              SELECT 1 FROM public.episode_progress ep
+               WHERE ep.user_id = m.user_id AND ep.mal_id = m.mal_id
+            )`,
+      )
+      expect(Number(contagemPrevia.rows[0].afetadas)).toBe(2)
+
+      // Aplica sql/105 após já existirem entradas antigas
+      await db.exec(sql105)
+
+      // Ambas as entradas permanecem Completo e a carta é preservada
+      const entries = await db.query<{ mal_id: number; status: string }>(
+        `SELECT mal_id, status FROM public.media_entries WHERE user_id = $1 ORDER BY mal_id`,
+        [USER_ID],
+      )
+      expect(entries.rows).toEqual([
+        { mal_id: ANIME_A, status: 'Completo' },
+        { mal_id: ANIME_B, status: 'Completo' },
+      ])
+
+      const cards = await db.query<{ n: string }>(
+        `SELECT count(*) AS n FROM public.user_cards WHERE user_id = $1 AND mal_id = $2`,
+        [USER_ID, ANIME_A],
+      )
+      expect(Number(cards.rows[0].n)).toBe(1)
+
+      // ANIME_A ganhou episódios 1..3 com watched_at NULL; ANIME_B (custom_episodes '[]') ficou sem episódios
+      const epsA = await db.query<{ episode_number: number; watched_at: string | null }>(
+        `SELECT episode_number, watched_at FROM public.episode_progress WHERE user_id = $1 AND mal_id = $2 ORDER BY episode_number`,
+        [USER_ID, ANIME_A],
+      )
+      expect(epsA.rows).toEqual([
+        { episode_number: 1, watched_at: null },
+        { episode_number: 2, watched_at: null },
+        { episode_number: 3, watched_at: null },
+      ])
+
+      const epsB = await db.query<{ n: string }>(
+        `SELECT count(*) AS n FROM public.episode_progress WHERE user_id = $1 AND mal_id = $2`,
+        [USER_ID, ANIME_B],
+      )
+      expect(Number(epsB.rows[0].n)).toBe(0)
+
+      // Zero XP ganho e zero fila xp_pendente pelo backfill
+      expect(await lerXPTotalUsuario(db, USER_ID)).toBe(0)
+      const pend = await db.query<{ n: string }>(
+        `SELECT count(*) AS n FROM public.xp_pendente WHERE user_id = $1`,
+        [USER_ID],
+      )
+      expect(Number(pend.rows[0].n)).toBe(0)
     } finally {
       await db.close()
     }

@@ -108,12 +108,22 @@ func TestCodigoSemanaAtualBrasilia(t *testing.T) {
 }
 
 func TestDecodificarNumerosComunidade(t *testing.T) {
+	// Caso com apenas 1 categoria < 3 e total >= 3: mascara dropado (-1) e arredonda total para múltiplo de 3
 	num, err := decodificarNumerosComunidade(52991, `[{"mal_id":52991,"assistindo":4,"completo":10,"dropado":2,"quero_assistir":7,"total":23}]`)
 	if err != nil {
 		t.Fatalf("erro inesperado: %v", err)
 	}
-	if num.Assistindo != 4 || num.Completo != 10 || num.Dropado != 2 || num.QueroAssistir != 7 || num.Total != 23 {
-		t.Fatalf("contagens inesperadas: %+v", num)
+	if num.Assistindo != 4 || num.Completo != 10 || num.Dropado != -1 || num.QueroAssistir != 7 || num.Total != 21 || !num.TotalAproximado {
+		t.Fatalf("mascaramento de privacidade incorreto: %+v", num)
+	}
+
+	// Caso com todas as categorias >= 3: devolve números exatos sem aproximação
+	exato, err := decodificarNumerosComunidade(100, `[{"mal_id":100,"assistindo":4,"completo":10,"dropado":3,"quero_assistir":7,"total":24}]`)
+	if err != nil {
+		t.Fatalf("erro inesperado: %v", err)
+	}
+	if exato.Dropado != 3 || exato.Total != 24 || exato.TotalAproximado {
+		t.Fatalf("esperava contagens exatas: %+v", exato)
 	}
 
 	brutoJSON, err := json.Marshal(num)
@@ -175,11 +185,11 @@ func TestMontarItensEmAlta(t *testing.T) {
 	if len(itens) != 2 {
 		t.Fatalf("esperava 2 itens válidos, obteve %d", len(itens))
 	}
-	if itens[0].Titulo != "Sousou no Frieren" || itens[0].ImagemURL == "" {
+	if itens[0].Titulo != "Sousou no Frieren" || itens[0].ImagemURL == "" || itens[0].UsuariosAtivos != 3 {
 		t.Fatalf("metadados curados não aplicados: %+v", itens[0])
 	}
-	if itens[1].Titulo != "Anime #20" || itens[1].DropsRecentes != 1 {
-		t.Fatalf("fallback ou contagem de drops incorreta: %+v", itens[1])
+	if itens[1].Titulo != "Anime #20" || itens[1].UsuariosAtivos != -1 || itens[1].DropsRecentes != -1 {
+		t.Fatalf("mascaramento de privacidade (< 3 -> -1) incorreto: %+v", itens[1])
 	}
 }
 

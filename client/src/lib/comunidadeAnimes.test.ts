@@ -1,10 +1,26 @@
 // client/src/lib/comunidadeAnimes.test.ts
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { obterEmAltaComunidade, obterNumerosComunidadeAnime } from './comunidadeAnimes'
+import {
+  formatarContagemComunidade,
+  formatarTotalComunidade,
+  obterEmAltaComunidade,
+  obterNumerosComunidadeAnime,
+} from './comunidadeAnimes'
 
-describe('comunidadeAnimes (#271)', () => {
+describe('comunidadeAnimes (#271 + #272)', () => {
   afterEach(() => {
     vi.unstubAllGlobals()
+  })
+
+  it('formata contagens abaixo de 3 e totais aproximados sem vazar número exato', () => {
+    expect(formatarContagemComunidade(0)).toBe('0')
+    expect(formatarContagemComunidade(-1)).toBe('Menos de 3')
+    expect(formatarContagemComunidade(5)).toBe('5')
+
+    expect(formatarTotalComunidade(0)).toBe('0')
+    expect(formatarTotalComunidade(-1)).toBe('Menos de 3')
+    expect(formatarTotalComunidade(3, true)).toBe('3+')
+    expect(formatarTotalComunidade(16, false)).toBe('16')
   })
 
   it('consulta números da comunidade sem cache e retorna contagens', async () => {
@@ -14,9 +30,10 @@ describe('comunidadeAnimes (#271)', () => {
           mal_id: 52991,
           assistindo: 3,
           completo: 8,
-          dropado: 1,
+          dropado: -1,
           quero_assistir: 4,
-          total: 16,
+          total: 15,
+          total_aproximado: true,
         }),
         { status: 200 },
       ),
@@ -28,9 +45,10 @@ describe('comunidadeAnimes (#271)', () => {
       mal_id: 52991,
       assistindo: 3,
       completo: 8,
-      dropado: 1,
+      dropado: -1,
       quero_assistir: 4,
-      total: 16,
+      total: 15,
+      total_aproximado: true,
     })
     expect(mockFetch).toHaveBeenCalledWith('/api/anime/52991/comunidade', { cache: 'no-store' })
   })
@@ -58,11 +76,11 @@ describe('comunidadeAnimes (#271)', () => {
                 titulo: 'Anime #2',
                 imagem_url: '',
                 pontuacao: 19,
-                usuarios_ativos: 2,
+                usuarios_ativos: -1,
                 episodios_recentes: 3,
                 comentarios_recentes: 1,
                 reacoes_recentes: 0,
-                drops_recentes: 1,
+                drops_recentes: -1,
               },
             ],
           }),
@@ -103,7 +121,7 @@ describe('comunidadeAnimes (#271)', () => {
                 titulo: 'Obra em cache',
                 imagem_url: '',
                 pontuacao: 15,
-                usuarios_ativos: 2,
+                usuarios_ativos: -1,
                 episodios_recentes: 2,
                 comentarios_recentes: 0,
                 reacoes_recentes: 0,

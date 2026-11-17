@@ -60,7 +60,7 @@ export default function SecaoEmAltaComunidade({ compacta = false }: Props) {
                   #{idx + 1}
                 </span>
                 <span className="absolute bottom-2 right-2 inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-void/85 border border-line font-mono text-[11px] text-text">
-                  <Users size={11} className="text-holo-3" aria-hidden /> {item.usuarios_ativos}
+                  <Users size={11} className="text-holo-3" aria-hidden /> {item.usuarios_ativos < 0 ? '< 3' : item.usuarios_ativos}
                 </span>
               </div>
               <h3 className="mt-2 text-sm font-bold leading-snug line-clamp-2 group-hover:text-holo-3 transition-colors m-0">
@@ -144,7 +144,7 @@ export default function SecaoEmAltaComunidade({ compacta = false }: Props) {
                   <div className="mt-1.5 flex flex-wrap items-center gap-x-2.5 gap-y-1 font-mono text-[11px] text-muted">
                     <span className="inline-flex items-center gap-1 text-holo-3">
                       <Users size={11} aria-hidden />
-                      {item.usuarios_ativos} {item.usuarios_ativos === 1 ? 'ativo' : 'ativos'}
+                      {item.usuarios_ativos < 0 ? 'Menos de 3 ativos' : `${item.usuarios_ativos} ativos`}
                     </span>
                     {item.episodios_recentes > 0 && (
                       <span className="inline-flex items-center gap-1">
@@ -167,10 +167,10 @@ export default function SecaoEmAltaComunidade({ compacta = false }: Props) {
                   </div>
                 </div>
 
-                {item.drops_recentes > 0 && (
+                {item.drops_recentes !== 0 && (
                   <div className="mt-2 inline-flex items-center gap-1 text-[11px] font-mono text-coral w-fit px-2 py-0.5 rounded-full bg-coral/10 border border-coral/25">
                     <TrendingDown size={11} aria-hidden />
-                    {item.drops_recentes} {item.drops_recentes === 1 ? 'drop recente' : 'drops recentes'}
+                    {item.drops_recentes < 0 ? 'Menos de 3 drops recentes' : `${item.drops_recentes} drops recentes`}
                   </div>
                 )}
               </div>

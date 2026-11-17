@@ -25,7 +25,7 @@ import { filtrarLinksStreaming } from '../lib/inicio'
 import { ultimoEpisodioDisponivel } from '../lib/comunidade'
 import { useMidia } from '../hooks/useMidia'
 import { obterSalaPorAnime, type SalaEstreia } from '../lib/salasEstreia'
-import { obterNumerosComunidadeAnime, type NumerosComunidadeAnime } from '../lib/comunidadeAnimes'
+import { formatarTotalComunidade, obterNumerosComunidadeAnime, type NumerosComunidadeAnime } from '../lib/comunidadeAnimes'
 
 interface AnimeDetail {
   mal_id: number
@@ -383,11 +383,21 @@ export default function Detalhes() {
   const sinopseLonga = sinopse.length > 420
   const capa = anime.images?.jpg?.image_url
 
+  const textoTotalComunidade = comunidadeStats && comunidadeStats.total !== 0
+    ? formatarTotalComunidade(comunidadeStats.total, Boolean(comunidadeStats.total_aproximado))
+    : undefined
+
   const abas: { id: AbaDetalhes; rotulo: string; contador?: string }[] = [
     { id: 'sobre', rotulo: 'Sobre' },
     { id: 'episodios', rotulo: 'Episódios', contador: totalEpisodios > 0 && isLoggedIn ? `${episodiosAssistidos.length}/${totalEpisodios}` : undefined },
     { id: 'conversa', rotulo: 'Conversa', contador: comentariosNaObra > 0 ? String(comentariosNaObra) : undefined },
-    { id: 'numeros', rotulo: 'Números', contador: comunidadeStats && comunidadeStats.total > 0 ? String(comunidadeStats.total) : undefined },
+    {
+      id: 'numeros',
+      rotulo: 'Números',
+      contador: comunidadeStats && comunidadeStats.total !== 0
+        ? (comunidadeStats.total < 0 ? '< 3' : textoTotalComunidade)
+        : undefined,
+    },
   ]
 
   const painel = (compacto: boolean) => (
@@ -509,7 +519,7 @@ export default function Detalhes() {
                   <CalendarDays size={13} aria-hidden /> {diaLancamentoSemanal}
                 </span>
               )}
-              {comunidadeStats && comunidadeStats.total > 0 && (
+              {textoTotalComunidade && (
                 <button
                   type="button"
                   onClick={() => trocarAba('numeros')}
@@ -517,7 +527,7 @@ export default function Detalhes() {
                   title="Ver contagens completas da comunidade"
                 >
                   <Users size={13} className="text-holo-3" aria-hidden />
-                  <span>{comunidadeStats.total} no AniDeck</span>
+                  <span>{textoTotalComunidade} no AniDeck</span>
                 </button>
               )}
             </div>
