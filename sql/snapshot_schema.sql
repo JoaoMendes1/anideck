@@ -1,7 +1,7 @@
 -- =============================================================================
 -- snapshot_schema.sql — RETRATO DO BANCO. NAO EXECUTE ESTE ARQUIVO.
 -- =============================================================================
--- Regenerado em 17/11/2026 09:48 a partir do banco de producao.
+-- Regenerado em 17/11/2026 10:35 a partir do banco de producao.
 --
 -- PARA QUE SERVE: consulta rapida do estado real do banco, sem precisar abrir
 -- o painel do Supabase nem confiar nos arquivos sql/ antigos (que podem ter
@@ -428,12 +428,64 @@
 --     item_id                      text
 --     criado_em                    timestamp with time zone NOT NULL
 --     ouro                         integer NOT NULL
+--     ouro_perdido                 integer NOT NULL
+
+-- rpg_cla_ataques
+--     id                           bigint NOT NULL
+--     cla_id                       uuid NOT NULL
+--     semana                       date NOT NULL
+--     user_id                      uuid NOT NULL
+--     dia                          date NOT NULL
+--     dano                         bigint NOT NULL
+--     criado_em                    timestamp with time zone NOT NULL
+
+-- rpg_cla_chefes
+--     cla_id                       uuid NOT NULL
+--     semana                       date NOT NULL
+--     monstro_id                   text NOT NULL
+--     vida_max                     bigint NOT NULL
+--     dano                         bigint NOT NULL
+--     derrotado_em                 timestamp with time zone
+--     criado_em                    timestamp with time zone NOT NULL
+
+-- rpg_cla_recompensas
+--     cla_id                       uuid NOT NULL
+--     semana                       date NOT NULL
+--     user_id                      uuid NOT NULL
+--     ouro                         integer NOT NULL
+--     bilhetes                     integer NOT NULL
+--     criado_em                    timestamp with time zone NOT NULL
+
+-- rpg_duelos
+--     id                           bigint NOT NULL
+--     desafiante_id                uuid NOT NULL
+--     oponente_id                  uuid NOT NULL
+--     venceu                       boolean NOT NULL
+--     turnos                       integer NOT NULL
+--     pontos                       integer NOT NULL
+--     ouro                         integer NOT NULL
+--     criado_em                    timestamp with time zone NOT NULL
 
 -- rpg_equipados
 --     user_id                      uuid NOT NULL
 --     slot                         text NOT NULL
 --     item_id                      text NOT NULL
 --     equipado_em                  timestamp with time zone NOT NULL
+
+-- rpg_evento_batalhas
+--     id                           bigint NOT NULL
+--     user_id                      uuid NOT NULL
+--     temporada                    date NOT NULL
+--     dia                          date NOT NULL
+--     venceu                       boolean NOT NULL
+--     criado_em                    timestamp with time zone NOT NULL
+
+-- rpg_evento_premios
+--     user_id                      uuid NOT NULL
+--     temporada                    date NOT NULL
+--     titulo                       text NOT NULL
+--     ouro                         integer NOT NULL
+--     criado_em                    timestamp with time zone NOT NULL
 
 -- rpg_inventario
 --     user_id                      uuid NOT NULL
@@ -470,6 +522,19 @@
 --     habilidade_id                text NOT NULL
 --     usos                         integer NOT NULL
 --     atualizado_em                timestamp with time zone NOT NULL
+
+-- rpg_masmorras_execucoes
+--     id                           bigint NOT NULL
+--     user_id                      uuid NOT NULL
+--     masmorra_id                  text NOT NULL
+--     dia                          date NOT NULL
+--     andares                      integer NOT NULL
+--     completou                    boolean NOT NULL
+--     ouro                         integer NOT NULL
+--     ouro_perdido                 integer NOT NULL
+--     bilhetes                     integer NOT NULL
+--     item_id                      text
+--     criado_em                    timestamp with time zone NOT NULL
 
 -- rpg_monstros
 --     id                           text NOT NULL
@@ -661,11 +726,18 @@
 -- rpg_aprimoramentos        | RLS: t     | policies: 1
 -- rpg_atributos             | RLS: t     | policies: 1
 -- rpg_batalhas              | RLS: t     | policies: 1
+-- rpg_cla_ataques           | RLS: t     | policies: 1
+-- rpg_cla_chefes            | RLS: t     | policies: 1
+-- rpg_cla_recompensas       | RLS: t     | policies: 1
+-- rpg_duelos                | RLS: t     | policies: 1
 -- rpg_equipados             | RLS: t     | policies: 1
+-- rpg_evento_batalhas       | RLS: t     | policies: 1
+-- rpg_evento_premios        | RLS: t     | policies: 1
 -- rpg_inventario            | RLS: t     | policies: 1
 -- rpg_invocacoes            | RLS: t     | policies: 1
 -- rpg_itens                 | RLS: t     | policies: 2
 -- rpg_maestria              | RLS: t     | policies: 1
+-- rpg_masmorras_execucoes   | RLS: t     | policies: 1
 -- rpg_monstros              | RLS: t     | policies: 2
 -- rpg_personagens           | RLS: t     | policies: 1
 -- rpg_recuperacoes          | RLS: t     | policies: 1
@@ -1259,7 +1331,35 @@ CREATE OR REPLACE VIEW public.view_user_year_distribution WITH (security_invoker
 --     USING:  (( SELECT auth.uid() AS uid) = user_id)
 --     CHECK:  -
 
+-- rpg_cla_ataques        | rpg_cla_ataques_membros                       | SELECT | authenticated     
+--     USING:  (EXISTS ( SELECT 1
+   FROM cla_membros m
+  WHERE ((m.cla_id = rpg_cla_ataques.cla_id) AND (m.user_id = ( SELECT auth.uid() AS uid)))))
+--     CHECK:  -
+
+-- rpg_cla_chefes         | rpg_cla_chefes_membros                        | SELECT | authenticated     
+--     USING:  (EXISTS ( SELECT 1
+   FROM cla_membros m
+  WHERE ((m.cla_id = rpg_cla_chefes.cla_id) AND (m.user_id = ( SELECT auth.uid() AS uid)))))
+--     CHECK:  -
+
+-- rpg_cla_recompensas    | rpg_cla_recompensas_propria                   | SELECT | authenticated     
+--     USING:  (( SELECT auth.uid() AS uid) = user_id)
+--     CHECK:  -
+
+-- rpg_duelos             | rpg_duelos_le_os_proprios                     | SELECT | authenticated     
+--     USING:  ((( SELECT auth.uid() AS uid) = desafiante_id) OR (( SELECT auth.uid() AS uid) = oponente_id))
+--     CHECK:  -
+
 -- rpg_equipados          | rpg_equipados_le_o_proprio                    | SELECT | authenticated     
+--     USING:  (( SELECT auth.uid() AS uid) = user_id)
+--     CHECK:  -
+
+-- rpg_evento_batalhas    | rpg_evento_batalhas_proprias                  | SELECT | authenticated     
+--     USING:  (( SELECT auth.uid() AS uid) = user_id)
+--     CHECK:  -
+
+-- rpg_evento_premios     | rpg_evento_premios_proprios                   | SELECT | authenticated     
 --     USING:  (( SELECT auth.uid() AS uid) = user_id)
 --     CHECK:  -
 
@@ -1280,6 +1380,10 @@ CREATE OR REPLACE VIEW public.view_user_year_distribution WITH (security_invoker
 --     CHECK:  -
 
 -- rpg_maestria           | rpg_maestria_le_o_proprio                     | SELECT | authenticated     
+--     USING:  (( SELECT auth.uid() AS uid) = user_id)
+--     CHECK:  -
+
+-- rpg_masmorras_execucoes | rpg_masmorras_le_o_proprio                    | SELECT | authenticated     
 --     USING:  (( SELECT auth.uid() AS uid) = user_id)
 --     CHECK:  -
 
@@ -1487,21 +1591,31 @@ CREATE OR REPLACE VIEW public.view_user_year_distribution WITH (security_invoker
 -- rpg_batalhas_hoje              | definer: t     | anon: f     | auth: t     | service: t     | search_path=public, pg_temp
 -- rpg_chance_lendario            | definer: f     | anon: f     | auth: t     | service: t     | search_path=public, pg_temp
 -- rpg_chances_invocacao          | definer: f     | anon: f     | auth: t     | service: t     | search_path=public, pg_temp
+-- rpg_cla_atacar                 | definer: t     | anon: f     | auth: f     | service: t     | search_path=public, pg_temp
+-- rpg_cla_expedicao_estado       | definer: t     | anon: f     | auth: f     | service: t     | search_path=public, pg_temp
+-- rpg_cla_garantir_chefe         | definer: t     | anon: f     | auth: f     | service: t     | search_path=public, pg_temp
 -- rpg_concluir_batalha           | definer: t     | anon: f     | auth: f     | service: t     | search_path=public, pg_temp
+-- rpg_concluir_masmorra          | definer: t     | anon: f     | auth: f     | service: t     | search_path=public, pg_temp
 -- rpg_contar_batalhas_hoje       | definer: t     | anon: f     | auth: f     | service: t     | search_path=public, pg_temp
 -- rpg_distribuir_pontos          | definer: t     | anon: f     | auth: t     | service: t     | search_path=public, pg_temp
+-- rpg_duelos_estado              | definer: t     | anon: f     | auth: f     | service: t     | search_path=public, pg_temp
 -- rpg_equipar_item               | definer: t     | anon: f     | auth: t     | service: t     | search_path=public, pg_temp
 -- rpg_estado_invocacao           | definer: t     | anon: f     | auth: t     | service: t     | search_path=public, pg_temp
 -- rpg_estado_jogador             | definer: f     | anon: f     | auth: t     | service: t     | search_path=public, pg_temp
+-- rpg_evento_registrar           | definer: t     | anon: f     | auth: f     | service: t     | search_path=public, pg_temp
+-- rpg_ficha_de_duelo             | definer: t     | anon: f     | auth: f     | service: t     | search_path=public, pg_temp
 -- rpg_garantir_kit_inicial       | definer: t     | anon: f     | auth: t     | service: t     | search_path=public, pg_temp
+-- rpg_inicio_da_temporada        | definer: f     | anon: f     | auth: t     | service: t     | search_path=public, pg_temp
 -- rpg_inicio_do_dia              | definer: f     | anon: f     | auth: t     | service: t     | search_path=public, pg_temp
 -- rpg_invocar                    | definer: t     | anon: f     | auth: t     | service: t     | search_path=public, pg_temp
 -- rpg_limite_batalhas_dia        | definer: t     | anon: f     | auth: t     | service: t     | search_path=public, pg_temp
 -- rpg_recuperar_por_episodio     | definer: t     | anon: f     | auth: f     | service: t     | search_path=public, pg_temp
 -- rpg_recuperar_vida             | definer: t     | anon: f     | auth: f     | service: t     | search_path=public, pg_temp
 -- rpg_registrar_batalha          | definer: t     | anon: f     | auth: f     | service: t     | search_path=public, pg_temp
+-- rpg_registrar_duelo            | definer: t     | anon: f     | auth: f     | service: t     | search_path=public, pg_temp
 -- rpg_registrar_maestria         | definer: t     | anon: f     | auth: f     | service: t     | search_path=public, pg_temp
 -- rpg_regras_vida                | definer: f     | anon: f     | auth: t     | service: t     | search_path=public, pg_temp
+-- rpg_semana_atual               | definer: f     | anon: f     | auth: t     | service: t     | search_path=public, pg_temp
 -- rpg_vida_perdida_agora         | definer: f     | anon: f     | auth: t     | service: t     | search_path=public, pg_temp
 -- sacar_caixa_loja               | definer: t     | anon: f     | auth: f     | service: t     | search_path=public, pg_temp
 -- sair_cla                       | definer: t     | anon: t     | auth: t     | service: t     | search_path=public, pg_temp
