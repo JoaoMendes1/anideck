@@ -133,3 +133,13 @@ describe('rpg - maestria', () => {
     expect(textoDaMaestria({ tipo: 'comum' })).toBe('')
   })
 })
+
+describe('rpg - bestiário', () => {
+  it('resume vitórias, marco e quanto falta', async () => {
+    const { textoDoBestiario } = await import('./rpg')
+    expect(textoDoBestiario(undefined)).toBe('')
+    expect(textoDoBestiario({ vitorias: 1, marco: 0, faltam_marco: 9, bonus_ouro: 0 })).toBe('1 vitória · faltam 9 para o próximo marco')
+    expect(textoDoBestiario({ vitorias: 12, marco: 1, faltam_marco: 38, bonus_ouro: 10 })).toBe('12 vitórias · Caçador I · +10% de Ouro · faltam 38 para o próximo marco')
+    expect(textoDoBestiario({ vitorias: 200, marco: 3, faltam_marco: 0, bonus_ouro: 30 })).toBe('200 vitórias · Caçador III · +30% de Ouro · todos os marcos')
+  })
+})

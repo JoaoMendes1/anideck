@@ -25,7 +25,7 @@ function estado(feitas = 1, perdida = 500, ouro = 100): EstadoExpedicoes {
     vida: { atual: Math.floor((130 * (1000 - perdida)) / 1000), maxima: 130, perdida_por_mil: perdida },
     custos: { pousada: 12, pocao: 6 },
     hoje: { feitas, limite: 5, bilhetes: 3, ouro, vida_perdida: perdida, pousada_livre_em: null, episodios_hoje: 2, regras },
-    monstros: [{ ...slime, poder: 34, dificuldade: 'facil' }],
+    monstros: [{ ...slime, poder: 34, dificuldade: 'facil', bestiario: { vitorias: 9, marco: 0, faltam_marco: 1, bonus_ouro: 0 } }],
   }
 }
 
@@ -86,6 +86,18 @@ describe('Expedições', () => {
     expect(screen.getByText('1 bilhete de invocação')).toBeTruthy()
     expect(screen.getByText('7 de Ouro')).toBeTruthy()
     expect(screen.getByText('Botas do Batedor')).toBeTruthy()
+  })
+
+  it('mostra o bestiário na lista e o novo marco na vitória', async () => {
+    vi.mocked(obterExpedicoes).mockResolvedValue({ dados: estado() })
+    vi.mocked(batalhar).mockResolvedValue({
+      dados: { ...vitoria, bestiario: { vitorias: 10, marco: 1, faltam_marco: 40, bonus_ouro: 10, novo_marco: true } },
+    })
+    abrir()
+
+    await screen.findByText('9 vitórias · faltam 1 para o próximo marco')
+    fireEvent.click(screen.getByRole('button', { name: 'Enfrentar Slime de Éter' }))
+    await screen.findByText('Novo marco do bestiário: +10% de Ouro contra Slime de Éter')
   })
 
   it('mostra a Vida guardada, o Ouro e as regras de recuperação', async () => {

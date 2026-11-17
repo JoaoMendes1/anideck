@@ -27,6 +27,7 @@ import {
   Skull,
   Sparkles,
   Swords,
+  Trophy,
   Ticket,
   Zap,
   type LucideIcon,
@@ -43,6 +44,7 @@ import {
   resumoDoItem,
   rotuloDaDificuldade,
   semVida,
+  textoDoBestiario,
   type EstadoExpedicoes,
   type MonstroRPG,
   type RespostaBatalha,
@@ -185,6 +187,12 @@ function TelaDeBatalha({ batalha, aoVoltar }: { batalha: RespostaBatalha; aoVolt
                 <li className="flex items-center gap-2">
                   <Coins size={16} className="text-gold" aria-hidden="true" />
                   {recompensa.ouro} de Ouro
+                </li>
+              )}
+              {batalha.bestiario?.novo_marco && (
+                <li className="flex items-center gap-2 font-bold text-gold">
+                  <Trophy size={16} aria-hidden="true" />
+                  Novo marco do bestiário: +{batalha.bestiario.bonus_ouro}% de Ouro contra {batalha.monstro.nome}
                 </li>
               )}
               {recompensa.item && (
@@ -476,6 +484,12 @@ export default function Expedicoes() {
                       </span>
                     )}
                   </div>
+                  {m.bestiario && (
+                    <p className="m-0 inline-flex items-start gap-1.5 font-mono text-xs text-muted">
+                      <Trophy size={12} className="mt-0.5 shrink-0 text-gold" aria-hidden="true" />
+                      {textoDoBestiario(m.bestiario)}
+                    </p>
+                  )}
                   <button
                     type="button"
                     onClick={() => enfrentar(m.id)}

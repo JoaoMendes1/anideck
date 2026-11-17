@@ -791,13 +791,14 @@ experiência pequena e funcional de cada vez.
   - [x] 18.3e Maestria de habilidades: cada habilidade comum usada em batalha soma usos; com 20, 60 e 150 usos, sobe aos graus II, III e IV, e cada grau dá +2% de força ao golpe ou à cura. A única não tem maestria. O livro mostra o grau e quanto falta. `sql/084` (#242)
 - [ ] 18.4 Mundo e PvE
   - [x] 18.4a Expedições: oito monstros, batalha por turnos simulada no servidor com os atributos dele, limite de batalhas por dia (`app_settings.rpg_batalhas_por_dia`, padrão 5), vitória dá bilhetes de invocação e chance de item; combate não dá XP (#222); monstros pós-tutorial reforçados após atributos e habilidades (`sql/078`, #229). Arte provisória: ícone e cor por monstro
+  - [x] 18.4b Bestiário: as vitórias contra cada monstro abrem marcos com 10, 50 e 150, e cada marco dá +10% de Ouro nas vitórias contra ele (até +30%). Bônus de Ouro, e não de dano, porque +9% de dano já dobrava a vitória contra o chefe final. Lista de monstros com vitórias, marco e quanto falta; aviso de novo marco na vitória. `sql/085` (#243)
 - [ ] 18.5 Integração comunitária
   - [x] 18.5a Vida persistente: o dano de uma batalha fica para a próxima, guardado como perda em por mil da Vida máxima; a Vida volta 5% por hora (calculado na leitura, sem tarefa agendada), 8% por episódio assistido com XP real (até 5 por dia, uma vez por episódio, por gatilho em `xp_ledger`) ou com Ouro, na Pousada (Vida cheia, a cada 4 h) e com a Poção (30%). Ouro é moeda nova, só do RPG, ganha nas vitórias (5 + 2 × nível do monstro); sem Vida, a batalha é recusada. `sql/081`, rota `POST /api/rpg/recuperar` (#239)
 - [ ] 18.6 Arena, cartas e invocação
   - [x] 18.6a Invocação gratuita: bilhetes ganhos só em expedições, invocar 1 ou 10, chances visíveis e iguais às do sorteio (`rpg_chances_invocacao`), garantia de épico ou melhor a cada 10, repetidos somam no inventário (#223). Sem pagamento por desenho: ECA Digital, art. 20
   - [x] 18.6a revisada: invocação mais rara. Corrigido o defeito do `sql/073`, em que o resultado "comum" (60%) não achava item fora do kit e caía na reserva de raridade mais alta, dando Lendário em cerca de 62% das invocações. Chances novas: Ouro 78% (25 de Ouro), Raro 17%, Épico 4,5% e Lendário 0,5%; Raro ou melhor garantido a cada 10 sem Raro; Lendário com chance crescente a partir da 70ª tentativa sem ele e certo na 90ª (média de 62 tentativas). Bilhetes por vitória de 1 a 3. `sql/082` (#240)
 
-**Pendência do dono:** aplicar no Supabase, nesta ordem e antes de promover, `sql/083_rpg_aprimoramento.sql` (#241) e `sql/084_rpg_maestria.sql` (#242).
+**Pendência do dono:** aplicar no Supabase, nesta ordem e antes de promover, `sql/083_rpg_aprimoramento.sql` (#241), `sql/084_rpg_maestria.sql` (#242) e `sql/085_rpg_bestiario.sql` (#243).
 
 **Arte pendente (o sistema já está pronto para recebê-la, sem mudar código de regra):** ilustração de cada skin (entra em `ARTES` com o id da skin e sai de `SKINS`), ícone ou ilustração de cada item de equipamento e de cada monstro, e a segunda personagem do elenco.
 

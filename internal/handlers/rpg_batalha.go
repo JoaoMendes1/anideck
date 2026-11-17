@@ -388,8 +388,9 @@ func novoGeradorDeBatalha() *rand.Rand {
 // MonstroNaLista é o monstro como a tela de expedições o mostra.
 type MonstroNaLista struct {
 	MonstroRPG
-	Poder       int    `json:"poder"`
-	Dificuldade string `json:"dificuldade"`
+	Poder       int                `json:"poder"`
+	Dificuldade string             `json:"dificuldade"`
+	Bestiario   BestiarioDoMonstro `json:"bestiario"`
 }
 
 // HojeRPG é o limite de batalhas, os saldos e a Vida guardada (sql/081).
@@ -404,6 +405,9 @@ type HojeRPG struct {
 	PousadaLivreEm *string    `json:"pousada_livre_em"`
 	EpisodiosHoje  int        `json:"episodios_hoje"`
 	Regras         RegrasVida `json:"regras"`
+	// Vitorias por monstro, para o bestiário (sql/085). Fica fora da resposta: a lista de
+	// monstros já traz o bestiário de cada um.
+	Vitorias map[string]int `json:"-"`
 }
 
 // EstadoExpedicoes é o corpo de GET /api/rpg/batalhas.
@@ -424,12 +428,13 @@ type RecompensaBatalha struct {
 
 // RespostaBatalha é o corpo de POST /api/rpg/batalhas.
 type RespostaBatalha struct {
-	Monstro    MonstroRPG        `json:"monstro"`
-	Jogador    AtributosRPG      `json:"jogador"`
-	Resultado  ResultadoSimulado `json:"resultado"`
-	Recompensa RecompensaBatalha `json:"recompensa"`
-	Vida       VidaRPG           `json:"vida"`
-	Hoje       HojeRPG           `json:"hoje"`
+	Monstro    MonstroRPG         `json:"monstro"`
+	Jogador    AtributosRPG       `json:"jogador"`
+	Resultado  ResultadoSimulado  `json:"resultado"`
+	Recompensa RecompensaBatalha  `json:"recompensa"`
+	Vida       VidaRPG            `json:"vida"`
+	Bestiario  BestiarioDoMonstro `json:"bestiario"`
+	Hoje       HojeRPG            `json:"hoje"`
 }
 
 func lerMonstros(dbClient *supabase.Client) ([]MonstroRPG, error) {
@@ -452,14 +457,21 @@ func lerMonstros(dbClient *supabase.Client) ([]MonstroRPG, error) {
 }
 
 func lerHojeRPG(dbClient *supabase.Client) (HojeRPG, error) {
-	bruto := strings.TrimSpace(dbClient.Rpc("rpg_batalhas_hoje", "", map[string]interface{}{}))
+	return interpretarHojeRPG(strings.TrimSpace(dbClient.Rpc("rpg_batalhas_hoje", "", map[string]interface{}{})))
+}
+
+// interpretarHojeRPG lê a resposta de rpg_batalhas_hoje(). As vitórias por monstro vêm à
+// parte porque não voltam na resposta da API.
+func interpretarHojeRPG(bruto string) (HojeRPG, error) {
 	var hoje struct {
 		HojeRPG
-		Ok bool `json:"ok"`
+		Ok       bool           `json:"ok"`
+		Vitorias map[string]int `json:"vitorias"`
 	}
 	if bruto == "" || json.Unmarshal([]byte(bruto), &hoje) != nil || !hoje.Ok {
 		return HojeRPG{}, errFalhaRPG
 	}
+	hoje.HojeRPG.Vitorias = hoje.Vitorias
 	return hoje.HojeRPG, nil
 }
 
@@ -505,6 +517,7 @@ func (h *RPGHandler) HandleGetExpedicoes(w http.ResponseWriter, r *http.Request)
 			MonstroRPG:  m,
 			Poder:       PoderDoMonstro(m),
 			Dificuldade: DificuldadeContra(equipamento.Atributos, m),
+			Bestiario:   MontarBestiario(hoje.Vitorias[m.ID]),
 		})
 	}
 	responderJSON(w, http.StatusOK, EstadoExpedicoes{
@@ -583,6 +596,7 @@ func (h *RPGHandler) HandleBatalhar(w http.ResponseWriter, r *http.Request) {
 	rng := novoGeradorDeBatalha()
 	combatente := CombatenteDoEstado(equipamento)
 	combatente.VidaInicial = vida.Atual
+	vitoriasAntes := hoje.Vitorias[monstro.ID]
 	resultado := SimularBatalha(combatente, *monstro, rng)
 	perdaFinal := PerdaPorMil(equipamento.Atributos.Vida, resultado.VidaFinal)
 
@@ -663,6 +677,11 @@ func (h *RPGHandler) HandleBatalhar(w http.ResponseWriter, r *http.Request) {
 	}
 
 	recompensa := RecompensaBatalha{Bilhetes: registro.BilhetesGanhos, Ouro: registro.OuroGanho}
+	bestiario := MontarBestiario(vitoriasAntes)
+	if resultado.Venceu {
+		bestiario = MontarBestiario(vitoriasAntes + 1)
+		bestiario.NovoMarco = bestiario.Marco > MarcoDoBestiario(vitoriasAntes)
+	}
 	if registro.ItemID != nil && itemSorteado != nil && *registro.ItemID == itemSorteado.ID {
 		recompensa.Item = itemSorteado
 	}
@@ -673,6 +692,7 @@ func (h *RPGHandler) HandleBatalhar(w http.ResponseWriter, r *http.Request) {
 		Resultado:  resultado,
 		Recompensa: recompensa,
 		Vida:       MontarVida(equipamento.Atributos.Vida, registro.VidaPerdida),
+		Bestiario:  bestiario,
 		Hoje: HojeRPG{
 			Feitas: registro.Feitas, Limite: registro.Limite, Bilhetes: registro.Bilhetes,
 			Ouro: registro.Ouro, VidaPerdida: registro.VidaPerdida,

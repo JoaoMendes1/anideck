@@ -114,6 +114,7 @@ SELECT pg_get_viewdef('nome_da_view'::regclass, true);
 | `082_rpg_invocacao_rara.sql` | Fase 18.6a (#240): `rpg_chances_invocacao`, `rpg_estado_invocacao` e `rpg_invocar` redefinidas (definição viva, antes no `073`): Ouro 78%, Raro 17%, Épico 4,5%, Lendário 0,5%, sem Comum; garantias de Raro (10) e Lendário (crescente de 70, certa em 90) com `invocacoes_sem_raro` e `invocacoes_sem_lendario`; `rpg_chance_lendario()`; `ouro` em `rpg_invocacoes`; bilhetes por vitória de 1 a 3. Corrige a reserva que dava Lendário no lugar de Comum. **Depois do `081`, antes de promover** | — |
 | `083_rpg_aprimoramento.sql` | Fase 18.3d (#241): `aprimoramento` (0 a 10) em `rpg_inventario`; histórico `rpg_aprimoramentos`; `rpg_aprimorar_item()` só para o service role (confere posse, nível esperado, teto e Ouro); `rpg_estado_jogador()` redefinida com `aprimoramento` e `ouro` (definição viva, antes no `077`). **Aplicar antes de promover** | — |
 | `084_rpg_maestria.sql` | Fase 18.3e (#242): `rpg_maestria` (usos por habilidade); `rpg_registrar_maestria()` só para o service role; `rpg_estado_jogador()` redefinida com `maestria` (definição viva, antes no `083`). **Depois do `083`, antes de promover** | — |
+| `085_rpg_bestiario.sql` | Fase 18.4b (#243): `rpg_batalhas_hoje()` com `vitorias` por monstro e `rpg_concluir_batalha()` com +10% de Ouro por marco (10, 50 e 150 vitórias), mesma assinatura (definição viva das duas, antes no `081`); índice parcial `rpg_batalhas_vitorias`. **Antes de promover** | — |
 
 Datas com `~` são a data do commit, não da aplicação no Supabase.
 

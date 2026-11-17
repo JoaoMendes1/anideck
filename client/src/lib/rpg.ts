@@ -269,9 +269,29 @@ export interface MonstroRPG {
   raridade_item: Raridade
 }
 
+/** Bestiário de um monstro (sql/085): marcos com 10, 50 e 150 vitórias, +10% de Ouro cada. */
+export interface BestiarioDoMonstro {
+  vitorias: number
+  marco: number
+  faltam_marco: number
+  bonus_ouro: number
+  /** Só na resposta da batalha: esta vitória abriu um marco. */
+  novo_marco?: boolean
+}
+
+/** "12 vitórias · Caçador I · +10% de Ouro · faltam 38". */
+export function textoDoBestiario(b: BestiarioDoMonstro | undefined): string {
+  if (!b) return ''
+  const partes = [b.vitorias === 1 ? '1 vitória' : `${b.vitorias} vitórias`]
+  if (b.marco > 0) partes.push(`Caçador ${['', 'I', 'II', 'III'][Math.min(b.marco, 3)]}`, `+${b.bonus_ouro}% de Ouro`)
+  partes.push(b.faltam_marco > 0 ? `faltam ${b.faltam_marco} para o próximo marco` : 'todos os marcos')
+  return partes.join(' · ')
+}
+
 export interface MonstroNaLista extends MonstroRPG {
   poder: number
   dificuldade: Dificuldade
+  bestiario?: BestiarioDoMonstro
 }
 
 /** Regras de recuperação da Vida, em por mil da Vida máxima (sql/081). */
@@ -337,6 +357,7 @@ export interface RespostaBatalha {
   resultado: { venceu: boolean; rodadas: number; turnos: TurnoBatalha[]; vida_inicial?: number; vida_final?: number }
   recompensa: { bilhetes: number; ouro?: number; item?: ItemRPG }
   vida?: VidaRPG
+  bestiario?: BestiarioDoMonstro
   hoje: HojeRPG
 }
 
