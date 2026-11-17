@@ -12,6 +12,7 @@ interface StreamingEpisode {
   url: string
   site: string
   aired_at?: string
+  adiado_de?: string
 }
 
 interface EpisodeGridProps {
@@ -72,7 +73,8 @@ export default function EpisodeGrid({ malId, totalEpisodes, streamingEpisodes = 
       title: data?.title || `Episódio ${epNum}`,
       thumbnail: data?.thumbnail || null,
       url: data?.url || null,
-      airedAt: data?.aired_at || null
+      airedAt: data?.aired_at || null,
+      adiado: Boolean(data?.adiado_de),
     }
   })
 
@@ -298,7 +300,12 @@ export default function EpisodeGrid({ malId, totalEpisodes, streamingEpisodes = 
                   <div className="flex flex-col">
                      <div className="font-mono text-xs text-holo-3 font-bold leading-none mb-1">EP {ep.number}</div>
                      {getEpisodeDate(ep.number, ep.airedAt) && (
-                        <div className="font-mono text-xs text-muted-2 leading-none">{getEpisodeDate(ep.number, ep.airedAt)}</div>
+                        <div className="font-mono text-xs text-muted-2 leading-none">
+                          {getEpisodeDate(ep.number, ep.airedAt)}
+                          {ep.adiado && (
+                            <span className="ml-1.5 px-1.5 py-0.5 rounded bg-coral/15 border border-coral/35 text-coral font-bold" title="Este episódio foi adiado">Adiado</span>
+                          )}
+                        </div>
                      )}
                   </div>
                   

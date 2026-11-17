@@ -30,6 +30,8 @@ export interface StreamingEpisode {
   site: string
   /** Só vem da curadoria: a AniList não informa data por episódio. */
   aired_at?: string
+  /** Data original quando o episódio foi adiado (curadoria). */
+  adiado_de?: string
 }
 
 export interface Character {
@@ -63,6 +65,8 @@ export interface NextAiringEpisode {
   airingAt: number
   timeUntilAiring: number
   episode: number
+  /** Só vem da curadoria: data original quando o episódio foi adiado. */
+  adiado_de?: string
 }
 
 export interface AnimeDaApi {

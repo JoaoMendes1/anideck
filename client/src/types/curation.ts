@@ -19,6 +19,8 @@ export interface CuratedEpisode {
   image?: string
   /** Data de exibição no formato AAAA-MM-DD. */
   aired_at?: string
+  /** Data original quando o episódio foi adiado: o site mostra o selo "Adiado". */
+  adiado_de?: string
 }
 
 export interface CuratedExternalLink {

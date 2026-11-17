@@ -30,6 +30,7 @@ interface HydratedAnime {
         airingAt: number
         timeUntilAiring: number
         episode: number
+        adiado_de?: string
     }
     streaming?: {
         name: string
@@ -234,7 +235,7 @@ export default function Calendario() {
         if (!proximo || proximo.episode <= 1) return []
         const anterior = proximo.airingAt - SEMANA
         if (anterior > agora || getDayLabel(anterior) !== 'Hoje') return []
-        return [{ ...anime, nextAiringEpisode: { ...proximo, airingAt: anterior, episode: proximo.episode - 1 } }]
+        return [{ ...anime, nextAiringEpisode: { ...proximo, airingAt: anterior, episode: proximo.episode - 1, adiado_de: undefined } }]
     })
 
     const sortedAnimes = [...animes, ...saiuHoje].sort((a, b) => (a.nextAiringEpisode?.airingAt || 0) - (b.nextAiringEpisode?.airingAt || 0))
@@ -428,6 +429,11 @@ export default function Calendario() {
                                                         <span className={`inline-flex items-center justify-center font-mono text-xs font-extrabold px-2.5 py-1 rounded-full border ${isLancado ? 'bg-green/15 text-green border-green/30' : 'bg-holo-3/15 text-holo-3 border-holo-3/30'}`}>
                                                             {remainingText}
                                                         </span>
+                                                        {anime.nextAiringEpisode?.adiado_de && !isLancado && (
+                                                            <span className="inline-flex items-center font-mono text-xs font-extrabold px-2 py-1 rounded-full border bg-coral/15 text-coral border-coral/35" title="Este episódio foi adiado">
+                                                                Adiado
+                                                            </span>
+                                                        )}
 
                                                         <div className="flex items-center gap-2.5">
                                                             <span className="font-mono text-[12px] sm:text-[13px] font-bold text-muted tabular-nums">

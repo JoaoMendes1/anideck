@@ -3,6 +3,7 @@ package handlers
 import (
 	"encoding/json"
 	"reflect"
+	"time"
 	"testing"
 
 	"github.com/JoaoMendes1/anideck/internal/anilist"
@@ -228,5 +229,14 @@ func TestConverterEstreia(t *testing.T) {
 				t.Errorf("iso = %q, queria %q", iso, tt.queroISO)
 			}
 		})
+	}
+}
+
+func TestAdiadoDeChegaAoProximoEpisodio(t *testing.T) {
+	futuro := time.Now().Add(72 * time.Hour).UTC().Format(time.RFC3339)
+	bruto := json.RawMessage(`[{"number":7,"aired_at":"` + futuro + `","adiado_de":"2026-11-17T15:00:00Z"}]`)
+	prox := CalcularProximoEpisodioCurado(bruto, nil)
+	if prox == nil || prox.Episode != 7 || prox.AdiadoDe != "2026-11-17T15:00:00Z" {
+		t.Fatalf("próximo episódio deveria levar adiado_de, veio %+v", prox)
 	}
 }

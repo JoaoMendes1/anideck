@@ -1,6 +1,7 @@
 // client/src/components/CuradoriaEpisodios.tsx
 import { useState } from 'react'
-import { Plus, Trash2, UploadCloud, Check, X, Lock, DownloadCloud, ListPlus, Calendar } from 'lucide-react'
+import { Plus, Trash2, UploadCloud, Check, X, Lock, DownloadCloud, ListPlus, Calendar, CalendarClock } from 'lucide-react'
+import { adiarEpisodios, primeiroEpisodioFuturo } from '../lib/adiamento'
 import type { CuratedEpisode } from '../types/curation'
 
 interface CuradoriaEpisodiosProps {
@@ -38,6 +39,8 @@ export default function CuradoriaEpisodios({
   const [dataExibicao, setDataExibicao] = useState('')
   const [editIndex, setEditIndex] = useState<number | null>(null)
   const [totalParaGerar, setTotalParaGerar] = useState('')
+  const [epAdiar, setEpAdiar] = useState('')
+  const [diasAdiar, setDiasAdiar] = useState('7')
 
   const emEdicao = editIndex !== null
 
@@ -137,6 +140,21 @@ export default function CuradoriaEpisodios({
     })
 
     onDefinirLista(novos)
+  }
+
+  const adiar = () => {
+    const n = Number(epAdiar || primeiroEpisodioFuturo(episodes) || 0)
+    const dias = Number(diasAdiar)
+    if (!episodes.some(ep => ep.number === n && ep.aired_at)) {
+      onValidationError('Informe um episódio com data cadastrada para adiar.')
+      return
+    }
+    if (!Number.isInteger(dias) || dias === 0 || Math.abs(dias) > 365) {
+      onValidationError('Informe quantos dias adiar (entre 1 e 365; negativo antecipa).')
+      return
+    }
+    onDefinirLista(adiarEpisodios(episodes, n, dias))
+    setEpAdiar('')
   }
 
   const cancelarEdicao = () => {
@@ -254,6 +272,47 @@ export default function CuradoriaEpisodios({
           <Calendar size={13} />
           Distribuir datas (+7d)
         </button>
+      </div>
+
+      {/* Adiamento: o episódio e todos os seguintes andam os mesmos dias, e o que atrasou
+          ganha o selo "Adiado" no site. Depois de adiar, salve a curadoria. */}
+      <div className="flex flex-wrap items-end gap-2 mb-4 p-3 rounded-lg border border-coral/30 bg-coral/5">
+        <div>
+          <label htmlFor="curadoria-adiar-ep" className="block text-xs mb-1 font-bold text-muted">Adiar a partir do ep.</label>
+          <input
+            id="curadoria-adiar-ep"
+            type="number"
+            min={1}
+            inputMode="numeric"
+            value={epAdiar}
+            onChange={e => setEpAdiar(e.target.value)}
+            placeholder={String(primeiroEpisodioFuturo(episodes) ?? '')}
+            className="w-20 bg-panel-2 border border-line rounded-md px-2 py-1.5 text-sm text-text"
+          />
+        </div>
+        <div>
+          <label htmlFor="curadoria-adiar-dias" className="block text-xs mb-1 font-bold text-muted">Dias</label>
+          <input
+            id="curadoria-adiar-dias"
+            type="number"
+            inputMode="numeric"
+            value={diasAdiar}
+            onChange={e => setDiasAdiar(e.target.value)}
+            className="w-20 bg-panel-2 border border-line rounded-md px-2 py-1.5 text-sm text-text"
+          />
+        </div>
+        <button
+          type="button"
+          onClick={adiar}
+          className="flex items-center gap-1.5 text-xs font-bold bg-coral/15 text-coral border border-coral/40 px-3 py-2 rounded-md hover:bg-coral/25 transition-colors cursor-pointer"
+          title="Adia o episódio e todos os seguintes; o primeiro ganha o selo Adiado"
+        >
+          <CalendarClock size={13} />
+          Adiar episódios
+        </button>
+        <p className="w-full m-0 text-xs text-muted-2">
+          Em branco, adia o próximo episódio que ainda não saiu. Dias negativos desfazem um adiamento. Depois, salve a curadoria.
+        </p>
       </div>
 
       <div className={`flex flex-col sm:flex-row sm:items-end gap-3 mb-4 p-3 rounded-lg border transition-colors ${emEdicao ? 'bg-holo-3/5 border-holo-3' : 'bg-panel border-line'}`}>

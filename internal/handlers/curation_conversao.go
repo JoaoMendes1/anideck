@@ -22,6 +22,8 @@ type episodioCurado struct {
 	Title   string `json:"title"`
 	Image   string `json:"image"`
 	AiredAt string `json:"aired_at"`
+	// AdiadoDe é a data original de um episódio adiado (ferramenta de adiamento da curadoria).
+	AdiadoDe string `json:"adiado_de,omitempty"`
 }
 
 // linkCurado é o formato gravado em curated_animes.custom_external_links.
@@ -83,6 +85,7 @@ func ConverterEpisodios(bruto json.RawMessage, daAniList []anilist.StreamingEpis
 		if ep.AiredAt != "" {
 			resultado[indice].AiredAt = ep.AiredAt
 		}
+		resultado[indice].AdiadoDe = ep.AdiadoDe
 	}
 
 	return resultado
@@ -252,5 +255,6 @@ func CalcularProximoEpisodioCurado(bruto json.RawMessage, firstAiredAt *string) 
 		Episode:         proximo.Number,
 		AiringAt:        airingAt,
 		TimeUntilAiring: segundosRestantes,
+		AdiadoDe:        proximo.AdiadoDe,
 	}
 }

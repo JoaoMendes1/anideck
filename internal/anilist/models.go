@@ -13,6 +13,8 @@ type NextAiringEpisode struct {
 	AiringAt        int `json:"airingAt"`
 	TimeUntilAiring int `json:"timeUntilAiring"`
 	Episode         int `json:"episode"`
+	// AdiadoDe só vem da curadoria: data original do episódio adiado.
+	AdiadoDe string `json:"adiado_de,omitempty"`
 }
 
 // Genre é uma categoria do anime. Tipo nomeado (e não struct anônima) porque o valor é
@@ -148,6 +150,8 @@ type StreamingEpisode struct {
 	// a AniList não informa data por episódio, e sem ela a grade precisa derivar tudo da
 	// estreia do anime, o que erra em obras com hiato ou episódio especial no meio.
 	AiredAt string `json:"aired_at,omitempty"`
+	// AdiadoDe só vem da curadoria: data original quando o episódio foi adiado.
+	AdiadoDe string `json:"adiado_de,omitempty"`
 }
 type FuzzyDate struct {
 	Year  int `json:"year"`
