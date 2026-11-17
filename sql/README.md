@@ -127,6 +127,8 @@ SELECT pg_get_viewdef('nome_da_view'::regclass, true);
 | `095_convite_titulo.sql` | Correção (#255): `resgatar_codigo_convite` redefinida (definição viva, antes no `088`) com `array_append` e `= ANY(...)`, porque `profiles.titulos_desbloqueados` é `TEXT[]`; o convite de admin, o único que dá título, falhava inteiro. **Depois do `088`** | — |
 | `096_fundar_cla_custo.sql` | #257: `criar_cla` redefinida (definição viva, antes no `054`) exige nível 15 e debita 300 AniCoins na mesma transação que cria o clã; `regras_fundar_cla()` pública lê os dois números de `app_settings`. Sem a chave de nível, vale o padrão, e não `NULL`. **Antes de promover** | — |
 | `097_remover_classe_guilda.sql` | #258: `mana_atual` redefinida (definição viva, antes no `079`) sem o +5 MP do Paladino; `escolher_classe` removida. A coluna `profiles.classe` fica, porque o Wrapped (`063`) a lê. **Antes de promover** | — |
+| `098_seguir_e_atividade.sql` | #259 e #260: `profiles.mostrar_atividade` (com `GRANT` por coluna), tabela `seguidores` (lê só as próprias linhas), índices por data, e funções só do service role: `atividade_eventos` (episódios agrupados por anime e dia, completos, comentários e curtidas dos últimos 60 dias; texto de comentário só para quem viu o episódio), `feed_comunidade`, `atividade_do_perfil`, `atividade_assistindo`, `social_resumo`, `social_seguir` e `social_bloqueados`. **Antes de promover** | — |
+| `099_titulo_so_por_funcao.sql` | #262: revoga `UPDATE` direto em `profiles.classe` e `profiles.titulo_ativo`; o título só muda por `equipar_titulo`. **Depois do `061`** | — |
 
 Datas com `~` são a data do commit, não da aplicação no Supabase.
 

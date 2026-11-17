@@ -3,7 +3,7 @@
 // visibilidade e Modo Descanso. Sem perfil, a pessoa lê e reage, mas não comenta.
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { AtSign, Check, Eye, EyeOff, Moon, X } from 'lucide-react'
+import { AtSign, Check, Eye, EyeOff, Moon, X, Activity } from 'lucide-react'
 import { useSessao } from '../../contexts/SessaoContext'
 import { useToast } from '../../contexts/ToastContext'
 import { useComunidade, avisarComunidadeAtualizada } from '../../hooks/useComunidade'
@@ -54,6 +54,7 @@ function Formulario({ estado, token, nomeSugerido, daEquipe }: { estado: EstadoC
   const [nome, setNome] = useState(perfil.existe ? perfil.nome : nomeSugerido)
   const [bio, setBio] = useState(perfil.bio)
   const [publico, setPublico] = useState(perfil.existe ? perfil.publico : true)
+  const [mostrarAtividade, setMostrarAtividade] = useState(perfil.mostrar_atividade ?? true)
   const [vitrine, setVitrine] = useState<number[]>(perfil.vitrine)
   const [salvando, setSalvando] = useState(false)
   const [erro, setErro] = useState<string | null>(null)
@@ -72,6 +73,7 @@ function Formulario({ estado, token, nomeSugerido, daEquipe }: { estado: EstadoC
     nome.trim() !== perfil.nome ||
     bio.trim() !== perfil.bio ||
     publico !== perfil.publico ||
+    mostrarAtividade !== (perfil.mostrar_atividade ?? true) ||
     vitrine.join(',') !== perfil.vitrine.join(',')
 
   // A vitrine precisa dos títulos e capas: busca o deck só quando a pessoa abre o seletor,
@@ -133,7 +135,7 @@ function Formulario({ estado, token, nomeSugerido, daEquipe }: { estado: EstadoC
       const res = await fetch('/api/comunidade/eu', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-        body: JSON.stringify({ handle: checagem.handle, nome: nome.trim(), bio: bio.trim(), vitrine, publico }),
+        body: JSON.stringify({ handle: checagem.handle, nome: nome.trim(), bio: bio.trim(), vitrine, publico, mostrar_atividade: mostrarAtividade }),
       })
       if (!res.ok) {
         setErro((await res.text()).trim() || 'Não foi possível salvar agora.')
@@ -313,6 +315,31 @@ function Formulario({ estado, token, nomeSugerido, daEquipe }: { estado: EstadoC
             <span className={`absolute top-[2px] w-[18px] h-[18px] rounded-full bg-white transition-transform ${publico ? 'translate-x-[20px]' : 'translate-x-[2px]'}`} />
           </span>
         </button>
+
+        {/* Só faz sentido com o perfil público: o privado já não aparece em lugar nenhum. */}
+        {publico && (
+          <button
+            type="button"
+            onClick={() => setMostrarAtividade(m => !m)}
+            aria-pressed={mostrarAtividade}
+            className="w-full mt-3 flex items-center justify-between gap-4 p-3.5 rounded-xl bg-panel-2 border border-line text-left cursor-pointer"
+          >
+            <span className="flex items-start gap-3">
+              {mostrarAtividade ? <Activity size={16} className="text-holo-3 mt-0.5" aria-hidden /> : <EyeOff size={16} className="text-muted mt-0.5" aria-hidden />}
+              <span>
+                <span className="block text-[13.5px] font-bold">{mostrarAtividade ? 'Mostrar minha atividade' : 'Atividade escondida'}</span>
+                <span className="block text-[12px] text-muted-2 mt-0.5">
+                  {mostrarAtividade
+                    ? 'O que você assiste, completa, comenta e curte aparece no seu perfil e no Feed.'
+                    : 'Seu perfil continua público, mas sem o que você assiste e comenta, e você some do Feed.'}
+                </span>
+              </span>
+            </span>
+            <span className={`relative w-[42px] h-6 rounded-full shrink-0 border ${mostrarAtividade ? 'bg-gradient-to-r from-holo-1 to-holo-2 border-transparent' : 'bg-panel border-line'}`}>
+              <span className={`absolute top-[2px] w-[18px] h-[18px] rounded-full bg-white transition-transform ${mostrarAtividade ? 'translate-x-[20px]' : 'translate-x-[2px]'}`} />
+            </span>
+          </button>
+        )}
 
         {erro && <p className="text-coral text-xs font-bold mt-4 mb-0">{erro}</p>}
 

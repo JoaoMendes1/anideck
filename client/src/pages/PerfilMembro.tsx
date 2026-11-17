@@ -3,7 +3,7 @@
 // Só existe para perfil marcado como público; o resto do deck continua privado.
 import { useEffect, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
-import { Ban, CalendarDays, Heart, MessageCircle, PlayCircle, Sparkles, UserX, Swords, Award, Clock, CheckCircle2, Target, Skull, Gem, Hammer } from 'lucide-react'
+import { Ban, CalendarDays, Heart, MessageCircle, PlayCircle, Sparkles, UserX, Swords, Award, Clock, CheckCircle2, Target, Skull, Gem, Hammer, UserPlus, UserCheck } from 'lucide-react'
 import { useSessao } from '../contexts/SessaoContext'
 import { useToast } from '../contexts/ToastContext'
 import { useComunidade } from '../hooks/useComunidade'
@@ -19,6 +19,8 @@ import AvatarMontavel from '../components/AvatarMontavel'
 import CartaoEspecialidade from '../components/hud/CartaoEspecialidade'
 import { filtroDoVisual, retratoDoEstagio } from '../lib/personagem'
 import type { CartaColecao, PersonagemFavorito } from '../lib/cartas'
+import AtividadeDoPerfil from '../components/social/AtividadeDoPerfil'
+import { obterResumoSocial, seguir, type ResumoSocial } from '../lib/social'
 
 interface CartaDaVitrine {
   mal_id: number
@@ -42,6 +44,8 @@ export default function PerfilMembro() {
   const [cartasMembro, setCartasMembro] = useState<CartaColecao[]>([])
   const [personagensMembro, setPersonagensMembro] = useState<PersonagemFavorito[]>([])
   const [modalDueloAberto, setModalDueloAberto] = useState(false)
+  const [social, setSocial] = useState<ResumoSocial | null>(null)
+  const [seguindoAgora, setSeguindoAgora] = useState(false)
 
   const souEu = !!estado?.perfil.existe && estado.perfil.handle === handle.toLowerCase()
 
@@ -112,6 +116,31 @@ export default function PerfilMembro() {
       ativo = false
     }
   }, [token, handle, souEu])
+
+  // Seguidores, seguindo e se quem olha segue. Relido quando o login muda.
+  useEffect(() => {
+    let ativo = true
+    setSocial(null)
+    obterResumoSocial(handle).then(r => {
+      if (ativo) setSocial(r)
+    })
+    return () => {
+      ativo = false
+    }
+  }, [handle, token])
+
+  const alternarSeguir = async () => {
+    if (!social || seguindoAgora) return
+    setSeguindoAgora(true)
+    const r = await seguir(handle, !social.eu_sigo)
+    setSeguindoAgora(false)
+    if (r.dados) {
+      setSocial(r.dados)
+      showToast(r.dados.eu_sigo ? `Agora você segue @${handle}. A atividade aparece no Feed, na aba Seguindo.` : `Você deixou de seguir @${handle}.`)
+    } else {
+      showToast(r.erro || 'Não foi possível concluir agora.', 'error')
+    }
+  }
 
   const alternarBloqueio = async () => {
     if (!token || bloqueado === null) return
@@ -205,6 +234,12 @@ export default function PerfilMembro() {
             </div>
             <p className="font-mono text-[12px] text-muted mt-1 mb-0">
               @{perfil.handle} · <span className="text-text">{perfil.titulo_rank}</span>
+              {social && (
+                <>
+                  {' · '}<b className="text-text">{social.seguidores.toLocaleString('pt-BR')}</b> {social.seguidores === 1 ? 'seguidor' : 'seguidores'}
+                  {' · '}<b className="text-text">{social.seguindo.toLocaleString('pt-BR')}</b> seguindo
+                </>
+              )}
             </p>
             {perfil.bio && <p className="text-[14px] text-text/85 mt-3 mb-0 max-w-xl whitespace-pre-wrap break-words">{perfil.bio}</p>}
           </div>
@@ -215,6 +250,22 @@ export default function PerfilMembro() {
               </Link>
             ) : (
               <>
+                {token && social && !social.sou_eu && (
+                  <button
+                    type="button"
+                    onClick={alternarSeguir}
+                    disabled={seguindoAgora}
+                    aria-pressed={social.eu_sigo}
+                    className={`inline-flex items-center gap-1.5 px-4 py-2 rounded-full text-xs font-bold transition-colors cursor-pointer disabled:opacity-60 ${
+                      social.eu_sigo
+                        ? 'border border-holo-3/50 bg-holo-3/10 text-holo-3 hover:bg-holo-3/20'
+                        : 'bg-text text-void hover:opacity-90'
+                    }`}
+                  >
+                    {social.eu_sigo ? <UserCheck size={13} aria-hidden /> : <UserPlus size={13} aria-hidden />}
+                    {social.eu_sigo ? 'Seguindo' : 'Seguir'}
+                  </button>
+                )}
                 {token && estado?.perfil.existe && (
                   <button
                     type="button"
@@ -323,6 +374,8 @@ export default function PerfilMembro() {
           </section>
         </div>
       )}
+
+      {social && <AtividadeDoPerfil handle={perfil.handle} mostra={social.mostra_atividade} souEu={souEu || social.sou_eu} />}
 
       <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_320px] gap-6 items-start">
         <section className="rounded-2xl bg-panel border border-line p-5">

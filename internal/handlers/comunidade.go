@@ -82,6 +82,8 @@ type perfilProprio struct {
 	DescansoFim          string   `json:"descanso_fim"`
 	TituloAtivo          string   `json:"titulo_ativo,omitempty"`
 	TitulosDesbloqueados []string `json:"titulos_desbloqueados,omitempty"`
+	// Mostra no perfil público e no feed o que assiste, comenta e curte (sql/098).
+	MostrarAtividade bool `json:"mostrar_atividade"`
 }
 
 type estadoComunidade struct {
@@ -96,7 +98,7 @@ type estadoComunidade struct {
 
 func lerPerfilProprio(client *supabase.Client, userID string) (perfilProprio, error) {
 	data, _, err := client.From("profiles").
-		Select("handle,nome,bio,vitrine,publico,descanso_inicio,descanso_fim,titulo_ativo,titulos_desbloqueados", "", false).
+		Select("handle,nome,bio,vitrine,publico,descanso_inicio,descanso_fim,titulo_ativo,titulos_desbloqueados,mostrar_atividade", "", false).
 		Eq("user_id", userID).
 		Execute()
 	if err != nil {
@@ -112,9 +114,10 @@ func lerPerfilProprio(client *supabase.Client, userID string) (perfilProprio, er
 		DescansoFim          *string  `json:"descanso_fim"`
 		TituloAtivo          string   `json:"titulo_ativo"`
 		TitulosDesbloqueados []string `json:"titulos_desbloqueados"`
+		MostrarAtividade     *bool    `json:"mostrar_atividade"`
 	}
 	if err := json.Unmarshal(data, &linhas); err != nil || len(linhas) == 0 {
-		return perfilProprio{Vitrine: []int{}, Publico: true}, err
+		return perfilProprio{Vitrine: []int{}, Publico: true, MostrarAtividade: true}, err
 	}
 	l := linhas[0]
 	p := perfilProprio{
@@ -126,6 +129,8 @@ func lerPerfilProprio(client *supabase.Client, userID string) (perfilProprio, er
 		Publico:              l.Publico,
 		TituloAtivo:          l.TituloAtivo,
 		TitulosDesbloqueados: l.TitulosDesbloqueados,
+		// Antes do sql/098 a coluna não existe e vem ausente: o padrão do banco é ligado.
+		MostrarAtividade: l.MostrarAtividade == nil || *l.MostrarAtividade,
 	}
 	if p.Vitrine == nil {
 		p.Vitrine = []int{}
@@ -245,6 +250,8 @@ func (h *ComunidadeHandler) HandleSalvarEu(w http.ResponseWriter, r *http.Reques
 		Bio     string `json:"bio"`
 		Vitrine []int  `json:"vitrine"`
 		Publico *bool  `json:"publico"`
+		// Opcional: ausente, não muda (a tela antiga não manda o campo).
+		MostrarAtividade *bool `json:"mostrar_atividade"`
 	}
 	if err := json.NewDecoder(http.MaxBytesReader(w, r.Body, 1<<14)).Decode(&req); err != nil {
 		http.Error(w, "Pedido inválido.", http.StatusBadRequest)
@@ -287,6 +294,9 @@ func (h *ComunidadeHandler) HandleSalvarEu(w http.ResponseWriter, r *http.Reques
 	}
 
 	campos := map[string]interface{}{"handle": handle, "nome": nome, "bio": bio, "vitrine": vitrine, "publico": publico}
+	if req.MostrarAtividade != nil {
+		campos["mostrar_atividade"] = *req.MostrarAtividade
+	}
 	if atual.Existe {
 		campos["updated_at"] = time.Now().UTC().Format(time.RFC3339)
 		_, _, err = client.From("profiles").Update(campos, "minimal", "").Eq("user_id", userID).Execute()

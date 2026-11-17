@@ -93,6 +93,7 @@ func main() {
 	cartasHandler := &handlers.CartasHandler{}
 	rankingsComunidadeHandler := &handlers.RankingsComunidadeHandler{}
 	clasHandler := &handlers.ClasHandler{}
+	socialHandler := &handlers.SocialHandler{}
 	salasEstreiaHandler := &handlers.SalasEstreiaHandler{}
 	chefaoHandler := &handlers.ChefaoHandler{}
 	previsoesHandler := &handlers.PrevisoesHandler{}
@@ -130,6 +131,8 @@ func main() {
 	r.Get("/api/apoiador", economiaHandler.HandleGetApoiador)
 	r.Get("/api/membros/{handle}/cartas", cartasHandler.HandleCartasDoMembro)
 	r.Get("/api/membros/{handle}/personagens", cartasHandler.HandlePersonagensDoMembro)
+	r.With(middleware.OptionalAuth).Get("/api/membros/{handle}/atividade", socialHandler.HandleAtividadeDoPerfil)
+	r.With(middleware.OptionalAuth).Get("/api/membros/{handle}/social", socialHandler.HandleResumoSocial)
 	r.Get("/api/membros/{a}/duelo/{b}", cartasHandler.HandleDueloDeGosto)
 	r.Get("/api/membros/ranking/genero", rankingsComunidadeHandler.HandleRankingGenero)
 	r.With(middleware.OptionalAuth).Get("/api/rankings/clima", rankingsComunidadeHandler.HandleClimaTemporada)
@@ -245,6 +248,9 @@ func main() {
 		protegido.Delete("/api/comunidade/comentarios/{cid}/curtida", comunidadeHandler.HandleCurtir)
 		protegido.Post("/api/comunidade/comentarios/{cid}/denuncia", comunidadeHandler.HandleDenunciar)
 		protegido.Get("/api/membros/liga", rankingsComunidadeHandler.HandleLigaSemanal)
+		protegido.Post("/api/membros/{handle}/seguir", socialHandler.HandleSeguir)
+		protegido.Delete("/api/membros/{handle}/seguir", socialHandler.HandleSeguir)
+		protegido.Get("/api/feed", socialHandler.HandleFeed)
 
 		// Clãs (Fase 17, #180, #181): criação, gestão, membros, convites e desafio
 		protegido.Get("/api/me/cla", clasHandler.HandleObterMeuCla)

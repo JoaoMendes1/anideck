@@ -756,6 +756,7 @@ export default function Detalhes() {
                     proximoAoAr={naoLancado ? undefined : anime.nextAiringEpisode?.episode}
                     assistidosIniciais={episodiosAssistidos}
                     aoIrParaEpisodios={() => trocarAba('episodios')}
+                    episodioPedido={Number(searchParams.get('ep')) || undefined}
                   />
                 </div>
               )}

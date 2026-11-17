@@ -5,8 +5,7 @@
 import type { LucideIcon } from 'lucide-react'
 import {
   BarChart2, CalendarDays, CircleUserRound, Compass, Home, LayoutGrid, Settings, Shield,
-  ShoppingBag, Sparkles, Swords, Trophy, UserRound, Users,
-} from 'lucide-react'
+  ShoppingBag, Sparkles, Swords, Trophy, UserRound, Users, Rss } from 'lucide-react'
 
 export interface SubitemDoMenu {
   para: string
@@ -86,6 +85,10 @@ export function montarMenu({ handle = '', isAdmin = false, ano = new Date().getF
     {
       titulo: 'COMUNIDADE',
       itens: [
+        {
+          para: '/feed', rotulo: 'Feed', Icone: Rss, cor: 'text-mana',
+          subitens: [{ para: '/feed?aba=seguindo', rotulo: 'Seguindo' }],
+        },
         {
           para: '/rankings', rotulo: 'Rankings', Icone: Trophy, cor: 'text-gold',
           subitens: [

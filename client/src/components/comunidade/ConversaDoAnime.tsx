@@ -35,6 +35,8 @@ interface Props {
   assistidosIniciais: number[]
   /** Leva para a aba de episódios (a página da obra decide como). */
   aoIrParaEpisodios?: () => void
+  /** Episódio pedido pelo link (?ep=N), vindo do feed ou do perfil. */
+  episodioPedido?: number
 }
 
 const CHIPS_MAXIMOS = 60
@@ -60,7 +62,7 @@ function Avatar({ nome, moldura }: { nome: string; moldura?: string }) {
   )
 }
 
-export default function ConversaDoAnime({ malId, totalEpisodes, proximoAoAr, assistidosIniciais, aoIrParaEpisodios }: Props) {
+export default function ConversaDoAnime({ malId, totalEpisodes, proximoAoAr, assistidosIniciais, aoIrParaEpisodios, episodioPedido }: Props) {
   const { session } = useSessao()
   const token = session?.access_token
   const { showToast } = useToast()
@@ -69,7 +71,7 @@ export default function ConversaDoAnime({ malId, totalEpisodes, proximoAoAr, ass
   const [assistidos, setAssistidos] = useState<number[]>(assistidosIniciais)
   const [contagens, setContagens] = useState<ContagemEpisodio[]>([])
   const [contagensProntas, setContagensProntas] = useState(false)
-  const [episodio, setEpisodio] = useState<number | null>(null)
+  const [episodio, setEpisodio] = useState<number | null>(episodioPedido && episodioPedido > 0 ? episodioPedido : null)
   const [conversa, setConversa] = useState<ConversaDoEpisodio | null>(null)
   const [carregandoConversa, setCarregandoConversa] = useState(false)
   const [ordem, setOrdem] = useState<'recentes' | 'populares'>('recentes')

@@ -209,7 +209,7 @@ export default function Clas() {
               <IconeAniCoin size={13} /> {regrasFundacao.custo.toLocaleString('pt-BR')} AniCoins
             </p>
             {bloqueioFundar && (
-              <p className="m-0 max-w-xs text-xs text-coral text-center md:text-right">{bloqueioFundar}</p>
+              <p className="m-0 max-w-sm text-xs text-coral text-center md:text-right">{bloqueioFundar}</p>
             )}
           </div>
         )}

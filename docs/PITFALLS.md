@@ -1053,6 +1053,28 @@ como está no snapshot, e prova o erro com a função antiga antes de aplicar a 
 
 ---
 
+## 38. 🔐 Permissão por coluna em `profiles`: coluna nova não é gravável, e coluna liberada demais grava título sem conquista
+
+**Incidente (17/11/2026, #262 e #259):** ao criar `profiles.mostrar_atividade`, o salvar das
+Configurações falharia com "permissão negada", e ao conferir o porquê apareceu o contrário: o
+`sql/061` liberava `UPDATE` direto em `titulo_ativo`, e qualquer usuário podia se dar qualquer
+título pela API do banco, sem passar por `equipar_titulo`.
+
+**Causa:** `profiles` não usa `GRANT UPDATE` na tabela, e sim por coluna (`sql/041`, `053` e
+`061`). Coluna nova nasce sem permissão para `authenticated`; coluna incluída na lista fica
+gravável por qualquer um com o próprio token, mesmo que a tela só a mude por uma função que
+confere regras.
+
+**Correção:** `sql/098` dá `INSERT` e `UPDATE` em `mostrar_atividade`; `sql/099` revoga `UPDATE`
+em `classe` e `titulo_ativo`. O teste do `sql/099` confirma que o `PATCH` direto falha e que
+`equipar_titulo` continua funcionando.
+
+> **Pergunta obrigatória:** a coluna nova de `profiles` deve ser gravada pelo próprio usuário?
+> Se sim, ela entra num `GRANT ... (coluna)`. Se só uma função pode mudá-la (título, Mana,
+> moeda), ela fica de fora de todo `GRANT` e a função é `SECURITY DEFINER`.
+
+---
+
 ## 🧭 Como manter este arquivo
 
 - Toda vez que um bug **silencioso** chegar a produção (não quebrou, só devolveu dado errado),

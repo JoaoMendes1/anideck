@@ -41,6 +41,8 @@ export interface PerfilProprio {
   descanso_fim: string
   titulo_ativo?: string
   titulos_desbloqueados?: string[]
+  /** Mostra no perfil e no Feed o que assiste, comenta e curte (padrão: sim). */
+  mostrar_atividade?: boolean
 }
 
 export interface EstadoComunidade {
