@@ -861,6 +861,15 @@ decidiu em 17/11/2026 que ela fecha fora da Fase 18. Escopo a detalhar em issues
 > numeração e não abrem escopo novo. Ficam registrados aqui em ordem cronológica inversa para
 > não sumirem: fase concluída não deve ser reaberta só para receber um conserto.
 
+### 17/11/2026 — Feed e perfil deixam de mostrar atividade desfeita (#270)
+
+- [x] **Limpeza automática ao desfazer ações e filtro na leitura do Feed (`sql/105`, `social.go`, `Detalhes.tsx`):**
+      apagar uma entrada do deck (`media_entries`) passa a limpar `episode_progress`, `xp_pendente`,
+      `revisoes` e `user_cards`; zerar todos os episódios rebaixa `Completo` para `Quero Assistir`;
+      `atividade_eventos()` (definição viva do `098`) passa a usar `completado_em` (evitando que
+      editar nota ressuscite conclusão antiga) e exige episódio marcado para `completou`, `comentou`
+      e `curtiu`. Rotas sociais respondem com `Cache-Control: no-store`.
+
 ### 16/11/2026 — Tags e selos compactos no Meu Deck mobile, busca/ordenação e ajustes no Painel Admin (#235)
 
 - [x] **Tags e selos de `AnimeCard` e `DeckCard` no celular:** respeitando o piso de `text-xs` (12 px) do `DESIGN_TOKENS.md`, o rodapé do pôster passa a exibir 1 tag de gênero no celular e até 2 a partir de `sm:` sem quebra de linha (`leading-none`), e os selos de topo (`statusBadge`, `Novo EP`/`Hoje`/`Amanhã`, `#ranking`) ganham espaçamento compacto para não encobrir a arte.

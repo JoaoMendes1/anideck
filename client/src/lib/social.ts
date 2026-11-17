@@ -133,7 +133,7 @@ export async function obterFeed(aba: AbaDoFeed, antes?: string): Promise<{ dados
   try {
     const q = new URLSearchParams({ aba })
     if (antes) q.set('antes', antes)
-    const res = await fetch(`/api/feed?${q}`, { headers: await cabecalho() })
+    const res = await fetch(`/api/feed?${q}`, { headers: await cabecalho(), cache: 'no-store' })
     if (!res.ok) return { erro: await lerErro(res, falha) }
     const json = (await res.json()) as PaginaDeAtividade
     return { dados: { eventos: Array.isArray(json.eventos) ? json.eventos : [], proximo: json.proximo } }
@@ -145,7 +145,10 @@ export async function obterFeed(aba: AbaDoFeed, antes?: string): Promise<{ dados
 export async function obterAtividadeDoPerfil(handle: string, antes?: string): Promise<AtividadeDoPerfil | null> {
   try {
     const q = antes ? `?antes=${encodeURIComponent(antes)}` : ''
-    const res = await fetch(`/api/membros/${encodeURIComponent(handle)}/atividade${q}`, { headers: await cabecalho() })
+    const res = await fetch(`/api/membros/${encodeURIComponent(handle)}/atividade${q}`, {
+      headers: await cabecalho(),
+      cache: 'no-store',
+    })
     if (!res.ok) return null
     const json = (await res.json()) as AtividadeDoPerfil
     return { eventos: Array.isArray(json.eventos) ? json.eventos : [], proximo: json.proximo, assistindo: json.assistindo ?? [] }
@@ -156,7 +159,10 @@ export async function obterAtividadeDoPerfil(handle: string, antes?: string): Pr
 
 export async function obterResumoSocial(handle: string): Promise<ResumoSocial | null> {
   try {
-    const res = await fetch(`/api/membros/${encodeURIComponent(handle)}/social`, { headers: await cabecalho() })
+    const res = await fetch(`/api/membros/${encodeURIComponent(handle)}/social`, {
+      headers: await cabecalho(),
+      cache: 'no-store',
+    })
     if (!res.ok) return null
     return (await res.json()) as ResumoSocial
   } catch {

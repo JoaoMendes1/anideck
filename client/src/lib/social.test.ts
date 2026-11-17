@@ -1,5 +1,15 @@
-import { describe, expect, it } from 'vitest'
-import { fraseDoEvento, juntarEventos, linkDoEvento, tempoDoEvento, textoDosEpisodios, type EventoDeAtividade } from './social'
+import { afterEach, describe, expect, it, vi } from 'vitest'
+import {
+  fraseDoEvento,
+  juntarEventos,
+  linkDoEvento,
+  obterAtividadeDoPerfil,
+  obterFeed,
+  obterResumoSocial,
+  tempoDoEvento,
+  textoDosEpisodios,
+  type EventoDeAtividade,
+} from './social'
 
 const autor = { handle: 'beto', nome: 'Beto', nivel: 15 }
 const ev = (e: Partial<EventoDeAtividade>): EventoDeAtividade => ({ tipo: 'episodios', quando: '2026-11-17T12:00:00Z', autor, mal_id: 1, ...e })
@@ -47,5 +57,26 @@ describe('juntarEventos', () => {
     const a = ev({ episodio: 1 })
     const b = ev({ episodio: 2, quando: '2026-11-17T11:00:00Z' })
     expect(juntarEventos([a], [a, b])).toEqual([a, b])
+  })
+})
+
+describe('leituras sociais sem cache HTTP', () => {
+  afterEach(() => {
+    vi.restoreAllMocks()
+  })
+
+  it('usa cache no-store ao buscar feed, atividade e resumo social', async () => {
+    const fetchSpy = vi
+      .spyOn(globalThis, 'fetch')
+      .mockResolvedValue(new Response(JSON.stringify({ eventos: [] }), { status: 200 }))
+
+    await obterFeed('geral')
+    await obterAtividadeDoPerfil('beto')
+    await obterResumoSocial('beto')
+
+    expect(fetchSpy).toHaveBeenCalledTimes(3)
+    for (const [, init] of fetchSpy.mock.calls) {
+      expect(init?.cache).toBe('no-store')
+    }
   })
 })

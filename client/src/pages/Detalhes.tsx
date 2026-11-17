@@ -237,15 +237,20 @@ export default function Detalhes() {
       const d = (ev as CustomEvent<{ malId?: number; episodeNumber?: number; watched?: boolean }>).detail
       if (d?.malId !== Number(id) || typeof d.episodeNumber !== 'number') return
       const n = d.episodeNumber
-      setEpisodiosAssistidos(prev => (d.watched ? (prev.includes(n) ? prev : [...prev, n]) : prev.filter(x => x !== n)))
-      if (d.watched) {
+      setEpisodiosAssistidos(prev => {
+        const proximo = d.watched ? (prev.includes(n) ? prev : [...prev, n]) : prev.filter(x => x !== n)
         const atual = entradaAtual.current
-        if (atual?.status === 'Quero Assistir') {
-          setMinhaEntrada({ ...atual, status: 'Assistindo' })
-          showToast('Movido para Assistindo!')
+        if (!d.watched && proximo.length === 0 && atual?.status === 'Completo') {
+          setMinhaEntrada({ ...atual, status: 'Quero Assistir' })
         }
-        supabase.auth.getSession().then(({ data }) => invalidarCachesDoDeck(data.session?.user?.id))
+        return proximo
+      })
+      const atual = entradaAtual.current
+      if (d.watched && atual?.status === 'Quero Assistir') {
+        setMinhaEntrada({ ...atual, status: 'Assistindo' })
+        showToast('Movido para Assistindo!')
       }
+      supabase.auth.getSession().then(({ data }) => invalidarCachesDoDeck(data.session?.user?.id))
     }
     window.addEventListener('anideck:episodio-atualizado', aoAtualizar)
     return () => window.removeEventListener('anideck:episodio-atualizado', aoAtualizar)
@@ -375,6 +380,10 @@ export default function Detalhes() {
       onEpisodiosZerados={() => setEpisodiosAssistidos([])}
       onEntradaMudou={async (nova, anterior) => {
         setMinhaEntrada(nova)
+        if (!nova) {
+          setEpisodiosAssistidos([])
+          return
+        }
         // Completo marca todos os episódios no backend; a grade espelha na hora.
         if (nova?.status === 'Completo' && anterior?.status !== 'Completo') {
           if (totalEpisodios > 0) setEpisodiosAssistidos(Array.from({ length: totalEpisodios }, (_, i) => i + 1))

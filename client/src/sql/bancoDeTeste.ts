@@ -12,20 +12,22 @@ import sql058 from '../../../sql/058_chefao_temporada.sql?raw'
 import sql087 from '../../../sql/087_missoes_com_xp.sql?raw'
 import sql095 from '../../../sql/095_convite_titulo.sql?raw'
 import sql096 from '../../../sql/096_fundar_cla_custo.sql?raw'
+import sql098 from '../../../sql/098_seguir_e_atividade.sql?raw'
 import sql099 from '../../../sql/099_titulo_so_por_funcao.sql?raw'
 import sql101 from '../../../sql/101_missoes_evidencias_e_reavaliacao.sql?raw'
 import sql102 from '../../../sql/102_revisoes_e_saida_completo.sql?raw'
 import sql103 from '../../../sql/103_faixas_xp_e_fila_pendente.sql?raw'
 import sql104 from '../../../sql/104_estornos_e_remarcacao.sql?raw'
+import sql105 from '../../../sql/105_feed_consistencia_e_limpeza.sql?raw'
 
-export type EtapaAmarras = '101' | '102' | '103' | '104'
+export type EtapaAmarras = '098' | '101' | '102' | '103' | '104' | '105'
 
 export interface OpcoesBancoTeste {
   etapas?: EtapaAmarras[]
   scriptsExtras?: string[]
 }
 
-const ETAPAS_ATIVAS_PADRAO: EtapaAmarras[] = ['101', '102', '103', '104']
+const ETAPAS_ATIVAS_PADRAO: EtapaAmarras[] = ['098', '101', '102', '103', '104', '105']
 
 const PRE_BASE_SQL = `
 CREATE SCHEMA IF NOT EXISTS auth;
@@ -176,11 +178,12 @@ BEGIN
 END;
 $$;
 
--- Colunas adicionais em profiles (sql/061, snapshot_schema.sql)
+-- Colunas adicionais em profiles (sql/061, sql/065, snapshot_schema.sql)
 ALTER TABLE public.profiles
   ADD COLUMN IF NOT EXISTS classe text NOT NULL DEFAULT 'bardo' CHECK (classe IN ('bardo', 'ranger', 'paladino')),
   ADD COLUMN IF NOT EXISTS titulo_ativo text DEFAULT 'Aventureiro Iniciante',
-  ADD COLUMN IF NOT EXISTS titulos_desbloqueados text[] DEFAULT ARRAY['Aventureiro Iniciante'];
+  ADD COLUMN IF NOT EXISTS titulos_desbloqueados text[] DEFAULT ARRAY['Aventureiro Iniciante'],
+  ADD COLUMN IF NOT EXISTS avatar_custom jsonb DEFAULT NULL;
 
 GRANT UPDATE (classe, titulo_ativo, updated_at) ON public.profiles TO authenticated;
 
@@ -284,6 +287,9 @@ export async function criarBancoTeste(opcoes: OpcoesBancoTeste = {}): Promise<PG
   await db.exec(sql099)
 
   const etapas = new Set<EtapaAmarras>(opcoes.etapas ?? ETAPAS_ATIVAS_PADRAO)
+  if (etapas.has('098')) {
+    await db.exec(sql098)
+  }
   if (etapas.has('101')) {
     await db.exec(sql101)
   }
@@ -295,6 +301,9 @@ export async function criarBancoTeste(opcoes: OpcoesBancoTeste = {}): Promise<PG
   }
   if (etapas.has('104')) {
     await db.exec(sql104)
+  }
+  if (etapas.has('105')) {
+    await db.exec(sql105)
   }
 
   for (const extra of opcoes.scriptsExtras ?? []) {

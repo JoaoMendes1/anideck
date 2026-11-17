@@ -184,6 +184,7 @@ func (h *SocialHandler) HandleFeed(w http.ResponseWriter, r *http.Request) {
 		responderErroJSON(w, http.StatusInternalServerError, "Não foi possível carregar o feed.")
 		return
 	}
+	w.Header().Set("Cache-Control", "no-store")
 	responderJSON(w, http.StatusOK, pagina)
 }
 
@@ -233,6 +234,7 @@ func (h *SocialHandler) HandleAtividadeDoPerfil(w http.ResponseWriter, r *http.R
 			log.Printf("[SOCIAL] atividade_assistindo(%s) devolveu %q", handle, bruto)
 		}
 	}
+	w.Header().Set("Cache-Control", "no-store")
 	responderJSON(w, http.StatusOK, resposta)
 }
 
@@ -275,6 +277,7 @@ func (h *SocialHandler) HandleResumoSocial(w http.ResponseWriter, r *http.Reques
 		http.Error(w, "Membro não encontrado.", http.StatusNotFound)
 		return
 	}
+	w.Header().Set("Cache-Control", "no-store")
 	responderJSON(w, http.StatusOK, resumo)
 }
 

@@ -46,6 +46,8 @@ export default function EpisodeGrid({ malId, totalEpisodes, streamingEpisodes = 
         const epNum = custom.detail.episodeNumber
         if (custom.detail.watched) {
           setWatched(prev => (prev.includes(epNum) ? prev : [...prev, epNum]))
+        } else if (custom.detail.watched === false) {
+          setWatched(prev => prev.filter(n => n !== epNum))
         }
       }
     }
