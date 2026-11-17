@@ -48,7 +48,7 @@ Staging sobe já na Fase 1, como projeto esqueleto — mesmo padrão do JVM Syst
 | 15 · Comunidade base | ✅ Concluída (08/11/2026, #154); falta abrir o beta |
 | 16 · Economia e cartas | ✅ Concluída (09/11/2026, #165); falta abrir o beta |
 | 17 · Comunidade viva | ✅ Concluída (13/11/2026, #179) |
-| 18 · O Despertar Isekai | 🚧 Em andamento — 18.1 Meu Personagem (#199, #200), 18.2a escolha de visual (#218), 18.2b cenários (#219), 18.2e auras (#220), equipamentos com atributos (#221), expedições e reforço dos monstros (#222, #229), invocação gratuita (#223), Vida persistente com Ouro (#239), skins (#224), desempenho da tela (#226), atributos com livro de habilidades (#227), artes de monstros e itens (#237) e elenco com seis personagens (#238) entregues; falta aplicar o `sql/080` |
+| 18 · O Despertar Isekai | 🚧 Em andamento — 18.1 Meu Personagem (#199, #200), 18.2a escolha de visual (#218), 18.2b cenários (#219), 18.2e auras (#220), equipamentos com atributos (#221), expedições e reforço dos monstros (#222, #229), invocação gratuita (#223) e revisada (#240), Vida persistente com Ouro (#239), skins (#224), desempenho da tela (#226), atributos com livro de habilidades (#227), artes de monstros e itens (#237) e elenco com seis personagens (#238) entregues; falta aplicar o `sql/080` |
 
 ---
 
@@ -793,8 +793,9 @@ experiência pequena e funcional de cada vez.
   - [x] 18.5a Vida persistente: o dano de uma batalha fica para a próxima, guardado como perda em por mil da Vida máxima; a Vida volta 5% por hora (calculado na leitura, sem tarefa agendada), 8% por episódio assistido com XP real (até 5 por dia, uma vez por episódio, por gatilho em `xp_ledger`) ou com Ouro, na Pousada (Vida cheia, a cada 4 h) e com a Poção (30%). Ouro é moeda nova, só do RPG, ganha nas vitórias (5 + 2 × nível do monstro); sem Vida, a batalha é recusada. `sql/081`, rota `POST /api/rpg/recuperar` (#239)
 - [ ] 18.6 Arena, cartas e invocação
   - [x] 18.6a Invocação gratuita: bilhetes ganhos só em expedições, invocar 1 ou 10, chances visíveis e iguais às do sorteio (`rpg_chances_invocacao`), garantia de épico ou melhor a cada 10, repetidos somam no inventário (#223). Sem pagamento por desenho: ECA Digital, art. 20
+  - [x] 18.6a revisada: invocação mais rara. Corrigido o defeito do `sql/073`, em que o resultado "comum" (60%) não achava item fora do kit e caía na reserva de raridade mais alta, dando Lendário em cerca de 62% das invocações. Chances novas: Ouro 78% (25 de Ouro), Raro 17%, Épico 4,5% e Lendário 0,5%; Raro ou melhor garantido a cada 10 sem Raro; Lendário com chance crescente a partir da 70ª tentativa sem ele e certo na 90ª (média de 62 tentativas). Bilhetes por vitória de 1 a 3. `sql/082` (#240)
 
-**Pendência do dono:** aplicar no Supabase, nesta ordem e antes de promover, `sql/080_rpg_elenco.sql` (#238) e `sql/081_rpg_vida_e_ouro.sql` (#239).
+**Pendência do dono:** aplicar no Supabase, nesta ordem e antes de promover, `sql/080_rpg_elenco.sql` (#238), `sql/081_rpg_vida_e_ouro.sql` (#239) e `sql/082_rpg_invocacao_rara.sql` (#240).
 
 **Arte pendente (o sistema já está pronto para recebê-la, sem mudar código de regra):** ilustração de cada skin (entra em `ARTES` com o id da skin e sai de `SKINS`), ícone ou ilustração de cada item de equipamento e de cada monstro, e a segunda personagem do elenco.
 

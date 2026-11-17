@@ -3,12 +3,14 @@
 //
 // Gratuita por desenho: bilhetes não se compram nem se transferem (ECA Digital, art. 20). As
 // chances mostradas aqui são as que o banco usa no sorteio; nada é decidido no navegador.
+// Desde o sql/082, a maior parte das tentativas dá Ouro, e o Lendário tem garantia própria.
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { ChevronLeft, ShieldCheck, Sparkles, Swords, Ticket } from 'lucide-react'
+import { ChevronLeft, Coins, ShieldCheck, Sparkles, Swords, Ticket } from 'lucide-react'
 import {
   estiloDaRaridade,
   faltamParaGarantia,
+  faltamParaLendario,
   invocar,
   obterInvocacao,
   porcentagem,
@@ -21,9 +23,23 @@ import IconeDoItem from '../components/rpg/IconeDoItem'
 
 const ROTULO_DE_SECAO = 'font-mono text-xs font-semibold uppercase tracking-widest text-muted m-0'
 const CONTAINER = 'w-full min-w-0 max-w-[1100px] mx-auto px-4 sm:px-6 lg:px-10 pt-6 pb-24'
-const RARIDADES: Raridade[] = ['lendario', 'epico', 'raro', 'comum']
+const RARIDADES: Exclude<Raridade, 'comum'>[] = ['lendario', 'epico', 'raro']
 
 function CartaoDoItem({ item, indice }: { item: ItemInvocado; indice: number }) {
+  if (item.tipo === 'ouro') {
+    return (
+      <li
+        className="flex min-w-0 flex-col gap-1.5 rounded-2xl border-2 border-gold/40 bg-gold/5 p-3 motion-safe:animate-[surgir_420ms_ease-out_both]"
+        style={{ animationDelay: `${indice * 90}ms` }}
+      >
+        <span className="flex h-12 w-12 items-center justify-center rounded-xl bg-void/50 text-gold">
+          <Coins size={24} aria-hidden="true" />
+        </span>
+        <span className="truncate text-sm font-bold text-gold">{item.ouro} de Ouro</span>
+        <span className="text-xs text-muted">Sem item desta vez</span>
+      </li>
+    )
+  }
   const estilo = estiloDaRaridade(item.raridade)
   return (
     <li
@@ -111,7 +127,9 @@ export default function Invocacao() {
             >
               <Sparkles size={40} className="text-gold motion-safe:animate-pulse" aria-hidden="true" />
               <h1 className="m-0 font-anton text-[clamp(2rem,8vw,2.6rem)] uppercase leading-none">Círculo de Invocação</h1>
-              <p className="m-0 max-w-md text-sm text-muted">Troque bilhetes de expedição por equipamentos. Repetidos se acumulam no inventário.</p>
+              <p className="m-0 max-w-md text-sm text-muted">
+                Troque bilhetes de expedição por uma chance de equipamento. Quando não vem item, vem Ouro. Repetidos se acumulam no inventário.
+              </p>
               <p className="m-0 inline-flex items-center gap-2 rounded-full border border-gold/50 bg-void/60 px-4 py-1.5 font-mono text-sm font-bold text-gold">
                 <Ticket size={16} aria-hidden="true" /> {estado.bilhetes} {estado.bilhetes === 1 ? 'bilhete' : 'bilhetes'}
               </p>
@@ -154,7 +172,7 @@ export default function Invocacao() {
                 </h2>
                 <ul role="status" className="m-0 grid list-none grid-cols-2 gap-2.5 p-0 sm:grid-cols-3 lg:grid-cols-5">
                   {resultado.map((item, i) => (
-                    <CartaoDoItem key={`${item.id}-${i}`} item={item} indice={i} />
+                    <CartaoDoItem key={`${item.tipo === 'ouro' ? 'ouro' : item.id}-${i}`} item={item} indice={i} />
                   ))}
                 </ul>
                 <Link to="/personagem" className="self-start text-xs font-bold text-holo-3 hover:underline">
@@ -178,12 +196,24 @@ export default function Invocacao() {
                   </li>
                 )
               })}
+              <li className="flex items-center justify-between gap-2 text-sm">
+                <span className="font-bold text-gold">{estado.chances.ouro_por_tentativa} de Ouro</span>
+                <span className="font-mono text-muted">{porcentagem(estado.chances.ouro)}</span>
+              </li>
             </ul>
             <p className="m-0 flex items-start gap-2 rounded-xl border border-gold/40 bg-gold/10 p-2.5 text-xs text-text">
               <ShieldCheck size={16} className="shrink-0 text-gold" aria-hidden="true" />
               <span>
-                A cada {estado.chances.garantia} invocações sem épico, a próxima é épica ou lendária. Faltam{' '}
+                A cada {estado.chances.garantia} invocações sem Raro, a próxima é Rara ou melhor. Faltam{' '}
                 <strong>{faltamParaGarantia(estado)}</strong>.
+              </span>
+            </p>
+            <p className="m-0 flex items-start gap-2 rounded-xl border border-gold/40 bg-gold/10 p-2.5 text-xs text-text">
+              <Sparkles size={16} className="shrink-0 text-gold" aria-hidden="true" />
+              <span>
+                O Lendário fica mais provável a partir da {estado.chances.lendario_sobe_em}ª invocação sem ele e é certo na{' '}
+                {estado.chances.lendario_garantido}ª. Faltam <strong>{faltamParaLendario(estado)}</strong>; chance agora:{' '}
+                <strong>{porcentagem(estado.chance_lendario_agora)}</strong>.
               </span>
             </p>
             <p className="m-0 text-xs leading-snug text-muted">

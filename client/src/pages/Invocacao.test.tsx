@@ -12,8 +12,13 @@ vi.mock('../lib/rpg', async (original) => {
 import Invocacao from './Invocacao'
 import { invocar, obterInvocacao } from '../lib/rpg'
 
-const chances = { comum: 600, raro: 300, epico: 85, lendario: 15, garantia: 10 }
-const estado = (bilhetes: number, semEpico = 7): EstadoInvocacao => ({ bilhetes, sem_epico: semEpico, chances })
+const chances = {
+  ouro: 780, raro: 170, epico: 45, lendario: 5, garantia: 10,
+  lendario_sobe_em: 70, lendario_passo: 50, lendario_garantido: 90, ouro_por_tentativa: 25,
+}
+const estado = (bilhetes: number, semRaro = 7, semLendario = 20, chanceAgora = 5): EstadoInvocacao => ({
+  bilhetes, ouro: 0, sem_raro: semRaro, sem_lendario: semLendario, chance_lendario_agora: chanceAgora, chances,
+})
 
 function abrir() {
   return render(<MemoryRouter><Invocacao /></MemoryRouter>)
@@ -26,24 +31,31 @@ beforeEach(() => {
 afterEach(cleanup)
 
 describe('Invocação', () => {
-  it('mostra bilhetes, as chances do servidor e quanto falta para a garantia', async () => {
-    vi.mocked(obterInvocacao).mockResolvedValue({ dados: estado(3) })
+  it('mostra bilhetes, as chances do servidor e quanto falta para as garantias', async () => {
+    vi.mocked(obterInvocacao).mockResolvedValue({ dados: estado(3, 7, 80, 555) })
     abrir()
 
     await screen.findByText('3 bilhetes')
-    expect(screen.getByText('60%')).toBeTruthy()
-    expect(screen.getByText('1,5%')).toBeTruthy()
+    expect(screen.getByText('78%')).toBeTruthy()
+    expect(screen.getByText('0,5%')).toBeTruthy()
+    expect(screen.getByText('25 de Ouro')).toBeTruthy()
+    expect(screen.queryByText('Comum')).toBeNull()
     expect(screen.getByText('3')).toBeTruthy()
+    expect(screen.getByText('10')).toBeTruthy()
+    expect(screen.getByText('55,5%')).toBeTruthy()
     expect((screen.getByRole('button', { name: /Invocar 10/ }) as HTMLButtonElement).disabled).toBe(true)
     expect((screen.getByRole('button', { name: /Invocar 1 1 bilhete/ }) as HTMLButtonElement).disabled).toBe(false)
   })
 
-  it('invoca e revela os itens', async () => {
+  it('invoca e revela os itens e o Ouro', async () => {
     vi.mocked(obterInvocacao).mockResolvedValue({ dados: estado(3) })
     vi.mocked(invocar).mockResolvedValue({
       dados: {
         ...estado(2, 0),
-        itens: [{ id: 'selo_do_guardiao', slot: 'joia', nome: 'Selo do Guardião', descricao: '', raridade: 'epico', vida: 40, ataque: 9, defesa: 0, nivel_minimo: 24, garantida: true }],
+        itens: [
+          { tipo: 'item', id: 'selo_do_guardiao', slot: 'joia', nome: 'Selo do Guardião', descricao: '', raridade: 'epico', vida: 40, ataque: 9, defesa: 0, nivel_minimo: 24, garantida: true },
+          { tipo: 'ouro', ouro: 25, garantida: false },
+        ],
       },
     })
     abrir()
@@ -52,6 +64,7 @@ describe('Invocação', () => {
     await screen.findByText('Selo do Guardião')
     expect(invocar).toHaveBeenCalledWith(1)
     expect(screen.getByText('garantido')).toBeTruthy()
+    expect(screen.getByText('Sem item desta vez')).toBeTruthy()
     expect(screen.getByText('2 bilhetes')).toBeTruthy()
   })
 

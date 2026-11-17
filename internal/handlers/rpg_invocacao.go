@@ -7,28 +7,43 @@ import (
 	"strings"
 )
 
-// ChancesInvocacao são as chances em por mil, como rpg_chances_invocacao() devolve. A tela
-// mostra estes números, que são os mesmos do sorteio.
+// ChancesInvocacao são as chances em por mil, como rpg_chances_invocacao() devolve (sql/082).
+// A tela mostra estes números, que são os mesmos do sorteio. Ouro, Raro, Épico e Lendário
+// somam 1000: não há Comum, porque os itens comuns são todos do kit inicial.
 type ChancesInvocacao struct {
-	Comum    int `json:"comum"`
+	Ouro     int `json:"ouro"`
 	Raro     int `json:"raro"`
 	Epico    int `json:"epico"`
 	Lendario int `json:"lendario"`
+	// Garantia é a cada quantas tentativas sem Raro a próxima é Raro ou melhor.
 	Garantia int `json:"garantia"`
+	// A chance de Lendário sobe a partir de LendarioSobeEm tentativas sem ele, LendarioPasso
+	// por tentativa, e é certa em LendarioGarantido.
+	LendarioSobeEm    int `json:"lendario_sobe_em"`
+	LendarioPasso     int `json:"lendario_passo"`
+	LendarioGarantido int `json:"lendario_garantido"`
+	OuroPorTentativa  int `json:"ouro_por_tentativa"`
 }
 
-// ItemInvocado é um item sorteado, com a marca de quando veio pela garantia.
+// ItemInvocado é um resultado do sorteio: um item ou Ouro (Tipo "ouro", sem os campos do
+// item), com a marca de quando veio pela garantia.
 type ItemInvocado struct {
 	ItemRPG
-	Garantida bool `json:"garantida"`
+	Tipo      string `json:"tipo"`
+	Ouro      int    `json:"ouro,omitempty"`
+	Garantida bool   `json:"garantida"`
 }
 
 // EstadoInvocacao é o corpo de GET e POST /api/rpg/invocacao. Itens só vem no POST.
 type EstadoInvocacao struct {
-	Bilhetes int              `json:"bilhetes"`
-	SemEpico int              `json:"sem_epico"`
-	Chances  ChancesInvocacao `json:"chances"`
-	Itens    []ItemInvocado   `json:"itens,omitempty"`
+	Bilhetes    int `json:"bilhetes"`
+	Ouro        int `json:"ouro"`
+	SemRaro     int `json:"sem_raro"`
+	SemLendario int `json:"sem_lendario"`
+	// ChanceLendarioAgora é a chance da próxima tentativa, já com a garantia.
+	ChanceLendarioAgora int              `json:"chance_lendario_agora"`
+	Chances             ChancesInvocacao `json:"chances"`
+	Itens               []ItemInvocado   `json:"itens,omitempty"`
 }
 
 // QuantidadeDeInvocacaoValida aceita só 1 ou 10, a mesma regra de rpg_invocar.

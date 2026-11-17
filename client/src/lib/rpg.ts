@@ -391,22 +391,34 @@ export async function recuperarVida(
 // Invocação (gratuita: bilhetes só vêm de batalha)
 // ---------------------------------------------------------------------------------------
 
-// Em por mil, como o banco devolve: 600 = 60%.
+// Em por mil, como o banco devolve: 780 = 78%. Não há Comum: os itens comuns são do kit
+// inicial, que a invocação não sorteia (sql/082).
 export interface ChancesInvocacao {
-  comum: number
+  ouro: number
   raro: number
   epico: number
   lendario: number
+  /** A cada quantas tentativas sem Raro a próxima é Raro ou melhor. */
   garantia: number
+  /** A partir desta tentativa sem Lendário, a chance sobe. */
+  lendario_sobe_em: number
+  lendario_passo: number
+  /** Esta tentativa sem Lendário é Lendária. */
+  lendario_garantido: number
+  ouro_por_tentativa: number
 }
 
-export interface ItemInvocado extends ItemRPG {
-  garantida: boolean
-}
+export type ItemInvocado =
+  | (ItemRPG & { tipo: 'item'; garantida: boolean })
+  | { tipo: 'ouro'; ouro: number; garantida: boolean }
 
 export interface EstadoInvocacao {
   bilhetes: number
-  sem_epico: number
+  ouro?: number
+  sem_raro: number
+  sem_lendario: number
+  /** Chance de Lendário na próxima tentativa, em por mil, já com a garantia. */
+  chance_lendario_agora: number
   chances: ChancesInvocacao
   itens?: ItemInvocado[]
 }
@@ -417,9 +429,14 @@ export function porcentagem(porMil: number): string {
   return `${Number.isInteger(valor) ? valor : valor.toFixed(1).replace('.', ',')}%`
 }
 
-/** Quantas invocações faltam para a garantia de épico ou melhor (a próxima é 1). */
-export function faltamParaGarantia(estado: Pick<EstadoInvocacao, 'sem_epico' | 'chances'>): number {
-  return Math.max(1, estado.chances.garantia - estado.sem_epico)
+/** Quantas invocações faltam para a garantia de Raro ou melhor (a próxima é 1). */
+export function faltamParaGarantia(estado: Pick<EstadoInvocacao, 'sem_raro' | 'chances'>): number {
+  return Math.max(1, estado.chances.garantia - estado.sem_raro)
+}
+
+/** Quantas invocações faltam para o Lendário garantido (a próxima é 1). */
+export function faltamParaLendario(estado: Pick<EstadoInvocacao, 'sem_lendario' | 'chances'>): number {
+  return Math.max(1, estado.chances.lendario_garantido - estado.sem_lendario)
 }
 
 export async function obterInvocacao(): Promise<{ dados?: EstadoInvocacao; erro?: string; semPersonagem?: boolean }> {

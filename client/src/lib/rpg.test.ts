@@ -67,12 +67,18 @@ describe('rpg - invocação', () => {
     expect(porcentagem(0)).toBe('0%')
   })
 
-  it('conta quanto falta para a garantia, nunca menos de 1', async () => {
-    const { faltamParaGarantia } = await import('./rpg')
-    const chances = { comum: 600, raro: 300, epico: 85, lendario: 15, garantia: 10 }
-    expect(faltamParaGarantia({ sem_epico: 0, chances })).toBe(10)
-    expect(faltamParaGarantia({ sem_epico: 9, chances })).toBe(1)
-    expect(faltamParaGarantia({ sem_epico: 12, chances })).toBe(1)
+  it('conta quanto falta para as garantias, nunca menos de 1', async () => {
+    const { faltamParaGarantia, faltamParaLendario } = await import('./rpg')
+    const chances = {
+      ouro: 780, raro: 170, epico: 45, lendario: 5, garantia: 10,
+      lendario_sobe_em: 70, lendario_passo: 50, lendario_garantido: 90, ouro_por_tentativa: 25,
+    }
+    expect(faltamParaGarantia({ sem_raro: 0, chances })).toBe(10)
+    expect(faltamParaGarantia({ sem_raro: 9, chances })).toBe(1)
+    expect(faltamParaGarantia({ sem_raro: 12, chances })).toBe(1)
+    expect(faltamParaLendario({ sem_lendario: 0, chances })).toBe(90)
+    expect(faltamParaLendario({ sem_lendario: 89, chances })).toBe(1)
+    expect(faltamParaLendario({ sem_lendario: 120, chances })).toBe(1)
   })
 })
 
