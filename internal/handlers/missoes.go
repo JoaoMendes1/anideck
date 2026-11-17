@@ -186,26 +186,95 @@ func carregarAtividadeMissoes(dbClient *supabase.Client, userID string, agora ti
 		ID        string `json:"id"`
 		MalID     int    `json:"mal_id"`
 		Episodio  int    `json:"episode_number"`
+		Texto     string `json:"texto"`
 		CreatedAt string `json:"created_at"`
 	}
 	if dCom, _, err := dbClient.From("episode_comments").
-		Select("id,mal_id,episode_number,created_at", "", false).
+		Select("id,mal_id,episode_number,texto,created_at", "", false).
 		Eq("user_id", userID).
 		Eq("oculto", "false").
 		Gte("created_at", inicioDia).
 		Execute(); err == nil {
 		_ = json.Unmarshal(dCom, &comRows)
 	}
+	epsVistosChave := map[string]bool{}
+	for _, e := range a.Episodios {
+		if !e.Em.Before(inicioDoDiaBrasilia(agora)) || e.MalID > 0 {
+			epsVistosChave[fmt.Sprintf("%d:%d", e.MalID, e.Numero)] = true
+		}
+	}
+	if len(comRows) > 0 {
+		faltando := map[string]bool{}
+		for _, c := range comRows {
+			chave := fmt.Sprintf("%d:%d", c.MalID, c.Episodio)
+			if !epsVistosChave[chave] && c.MalID > 0 {
+				faltando[strconv.Itoa(c.MalID)] = true
+			}
+		}
+		if len(faltando) > 0 {
+			listaMal := make([]string, 0, len(faltando))
+			for m := range faltando {
+				listaMal = append(listaMal, m)
+			}
+			var epsExtra []struct {
+				MalID    int `json:"mal_id"`
+				Episodio int `json:"episode_number"`
+			}
+			if dEp, _, errEp := dbClient.From("episode_progress").
+				Select("mal_id,episode_number", "", false).
+				Eq("user_id", userID).
+				In("mal_id", listaMal).
+				Execute(); errEp == nil && json.Unmarshal(dEp, &epsExtra) == nil {
+				for _, e := range epsExtra {
+					epsVistosChave[fmt.Sprintf("%d:%d", e.MalID, e.Episodio)] = true
+				}
+			}
+		}
+	}
 	for _, c := range comRows {
 		em, ok := lerInstante(c.CreatedAt)
 		if !ok {
 			em = agora
 		}
-		a.ComentariosHojeLista = append(a.ComentariosHojeLista, ComentarioDaMissao{
-			ID: c.ID, MalID: c.MalID, Numero: c.Episodio, Em: em,
-		})
+		item := ComentarioDaMissao{ID: c.ID, MalID: c.MalID, Numero: c.Episodio, Em: em}
+		a.ComentariosHojeLista = append(a.ComentariosHojeLista, item)
+		if len([]rune(strings.TrimSpace(c.Texto))) >= 60 && epsVistosChave[fmt.Sprintf("%d:%d", c.MalID, c.Episodio)] {
+			a.AvaliacoesEpHojeLista = append(a.AvaliacoesEpHojeLista, item)
+		}
 	}
 	a.ComentariosHoje = len(a.ComentariosHojeLista)
+	a.AvaliacoesEpHoje = len(a.AvaliacoesEpHojeLista)
+
+	var revRows []struct {
+		ID        string `json:"id"`
+		MalID     int    `json:"mal_id"`
+		Texto     string `json:"texto"`
+		CreatedAt string `json:"created_at"`
+	}
+	if dRev, _, err := dbClient.From("anime_reviews").
+		Select("id,mal_id,texto,created_at", "", false).
+		Eq("user_id", userID).
+		Eq("oculto", "false").
+		Gte("created_at", inicioDia).
+		Execute(); err == nil {
+		_ = json.Unmarshal(dRev, &revRows)
+	}
+	for _, rev := range revRows {
+		if len([]rune(strings.TrimSpace(rev.Texto))) < reviewMinCaracteres || rev.MalID <= 0 {
+			continue
+		}
+		if pode, _ := verificarElegibilidadeReview(dbClient, userID, rev.MalID); !pode {
+			continue
+		}
+		em, ok := lerInstante(rev.CreatedAt)
+		if !ok {
+			em = agora
+		}
+		a.ReviewsAnimeHojeLista = append(a.ReviewsAnimeHojeLista, ReviewDaMissao{
+			ID: rev.ID, MalID: rev.MalID, Em: em,
+		})
+	}
+	a.ReviewsAnimeHoje = len(a.ReviewsAnimeHojeLista)
 
 	if len(ids) > 0 {
 		lista := make([]string, 0, len(ids))
@@ -380,9 +449,10 @@ func (h *MissoesHandler) HandleGetMissoesHoje(w http.ResponseWriter, r *http.Req
 
 // resultadoResgate espelha o jsonb devolvido por resgatar_missao.
 type resultadoResgate struct {
-	JaResgatada bool `json:"ja_resgatada"`
-	Saldo       int  `json:"saldo"`
-	XP          int  `json:"xp"`
+	JaResgatada  bool `json:"ja_resgatada"`
+	LimiteDiario bool `json:"limite_diario"`
+	Saldo        int  `json:"saldo"`
+	XP           int  `json:"xp"`
 }
 
 // evidenciasDaMissao monta o payload gravado em missoes_resgates e missoes_evidencias,
@@ -569,6 +639,31 @@ func evidenciasDaMissao(m missaoSorteada, a AtividadeMissoes) map[string]interfa
 				break
 			}
 		}
+	case MissaoAvaliarAnime:
+		for _, rev := range a.ReviewsAnimeHojeLista {
+			evidencias = append(evidencias, map[string]interface{}{
+				"tipo_acao": "review_anime",
+				"review_id": rev.ID,
+				"mal_id":    rev.MalID,
+				"acao_em":   rev.Em.Format(time.RFC3339),
+			})
+			if len(evidencias) >= m.Meta {
+				break
+			}
+		}
+	case MissaoAvaliarEpisodio:
+		for _, c := range a.AvaliacoesEpHojeLista {
+			evidencias = append(evidencias, map[string]interface{}{
+				"tipo_acao":      "comentario",
+				"comment_id":     c.ID,
+				"mal_id":         c.MalID,
+				"episode_number": c.Numero,
+				"acao_em":        c.Em.Format(time.RFC3339),
+			})
+			if len(evidencias) >= m.Meta {
+				break
+			}
+		}
 	}
 
 	return map[string]interface{}{
@@ -652,6 +747,10 @@ func (h *MissoesHandler) HandleResgatarMissao(w http.ResponseWriter, r *http.Req
 	if err := json.Unmarshal([]byte(bruto), &res); err != nil || strings.Contains(bruto, `"code"`) {
 		log.Printf("[MISSOES] resgatar_missao falhou (user=%s, missao=%s): %s", userID, missaoID, bruto)
 		responderErroJSON(w, http.StatusServiceUnavailable, "Não foi possível registrar o resgate agora. Tente de novo em instantes.")
+		return
+	}
+	if res.LimiteDiario {
+		responderErroJSON(w, http.StatusBadRequest, "Esta missão de avaliação vale no máximo uma vez por dia.")
 		return
 	}
 	if res.JaResgatada {

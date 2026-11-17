@@ -27,6 +27,8 @@ const (
 	MissaoDiasAtivos         TipoMissao = "dias_ativos"
 	MissaoReagirEpisodio     TipoMissao = "reagir_episodio"
 	MissaoComentarEpisodio   TipoMissao = "comentar_episodio"
+	MissaoAvaliarAnime       TipoMissao = "avaliar_anime"
+	MissaoAvaliarEpisodio    TipoMissao = "avaliar_episodio"
 )
 
 // marcadorGenero é trocado pelo gênero sorteado no título e na descrição.
@@ -52,8 +54,9 @@ type ItemCatalogoMissao struct {
 	Principal  bool       `json:"-"`
 }
 
-// CatalogoMissoesDiarias tem 12 missões: 4 dias de rodízio com 3 por dia. Missão social
-// (reagir, comentar) paga só AniCoins, porque o XP do AniDeck mede anime assistido.
+// CatalogoMissoesDiarias tem 15 missões: 5 dias de rodízio com 3 por dia.
+// Missões sociais simples (reagir, comentar) pagam só AniCoins; avaliações detalhadas
+// (obra completa >= 100 chars, episódio >= 60 chars) pagam XP com limite de 1x por dia cada.
 func CatalogoMissoesDiarias() []ItemCatalogoMissao {
 	return []ItemCatalogoMissao{
 		{ID: "ep_hoje", Tipo: MissaoEpisodios, Titulo: "Episódio do Dia", Descricao: "Assista a 1 episódio de qualquer anime", Meta: 1, Recompensa: 10, XP: 5, Icone: "Play", Principal: true},
@@ -68,6 +71,9 @@ func CatalogoMissoesDiarias() []ItemCatalogoMissao {
 		{ID: "obra_concluida", Tipo: MissaoCompletarObra, Titulo: "Missão Cumprida", Descricao: "Termine um anime que você está assistindo", Meta: 1, Recompensa: 40, XP: 20, Icone: "CheckCircle2", Principal: true},
 		{ID: "reacao", Tipo: MissaoReagirEpisodio, Titulo: "Reator Emocional", Descricao: "Deixe sua reação em 2 episódios", Meta: 2, Recompensa: 15, Icone: "Heart"},
 		{ID: "comentario", Tipo: MissaoComentarEpisodio, Titulo: "Voz na Comunidade", Descricao: "Escreva um comentário em qualquer episódio", Meta: 1, Recompensa: 20, Icone: "MessageSquare"},
+		{ID: "sessao_dupla", Tipo: MissaoEpisodios, Titulo: "Sessão Dupla", Descricao: "Assista a 2 episódios hoje", Meta: 2, Recompensa: 15, XP: 10, Icone: "Play", Principal: true},
+		{ID: "avaliar_obra", Tipo: MissaoAvaliarAnime, Titulo: "Crítica da Obra", Descricao: "Avalie um anime Completo com pelo menos 100 caracteres", Meta: 1, Recompensa: 30, XP: 25, Icone: "Star"},
+		{ID: "avaliar_episodio", Tipo: MissaoAvaliarEpisodio, Titulo: "Análise de Episódio", Descricao: "Comente um episódio com pelo menos 60 caracteres", Meta: 1, Recompensa: 25, XP: 15, Icone: "PenLine"},
 	}
 }
 
@@ -347,6 +353,13 @@ type ComentarioDaMissao struct {
 	Em     time.Time
 }
 
+// ReviewDaMissao identifica uma avaliação pública de obra completa usada como evidência.
+type ReviewDaMissao struct {
+	ID    string
+	MalID int
+	Em    time.Time
+}
+
 // ReacaoDaMissao identifica uma reação de episódio usada como evidência.
 type ReacaoDaMissao struct {
 	MalID  int
@@ -357,14 +370,18 @@ type ReacaoDaMissao struct {
 
 // AtividadeMissoes é o retrato da semana do jogador, lido uma vez por requisição.
 type AtividadeMissoes struct {
-	Episodios            []EpisodioDaMissao
-	Concluidas           []ObraConcluida
-	ReacoesHoje          int
-	ComentariosHoje      int
-	ReacoesHojeLista     []ReacaoDaMissao
-	ComentariosHojeLista []ComentarioDaMissao
-	Animes               map[int]InfoAnimeMissao
-	AnoAtual             int
+	Episodios             []EpisodioDaMissao
+	Concluidas            []ObraConcluida
+	ReacoesHoje           int
+	ComentariosHoje       int
+	ReviewsAnimeHoje      int
+	AvaliacoesEpHoje      int
+	ReacoesHojeLista      []ReacaoDaMissao
+	ComentariosHojeLista  []ComentarioDaMissao
+	ReviewsAnimeHojeLista []ReviewDaMissao
+	AvaliacoesEpHojeLista []ComentarioDaMissao
+	Animes                map[int]InfoAnimeMissao
+	AnoAtual              int
 }
 
 func (a AtividadeMissoes) temGenero(malID int, genero string) bool {
@@ -466,6 +483,10 @@ func AvaliarMissao(m ItemCatalogoMissao, genero string, inicio time.Time, a Ativ
 		progresso = a.ReacoesHoje
 	case MissaoComentarEpisodio:
 		progresso = a.ComentariosHoje
+	case MissaoAvaliarAnime:
+		progresso = max(a.ReviewsAnimeHoje, len(a.ReviewsAnimeHojeLista))
+	case MissaoAvaliarEpisodio:
+		progresso = max(a.AvaliacoesEpHoje, len(a.AvaliacoesEpHojeLista))
 	}
 	if progresso > m.Meta {
 		progresso = m.Meta

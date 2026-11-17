@@ -1,7 +1,7 @@
 // client/src/lib/detalhes.ts
 // Regras puras da página de um anime: abas, nota e próximo episódio.
 
-export const ABAS_DETALHES = ['sobre', 'episodios', 'conversa', 'numeros'] as const
+export const ABAS_DETALHES = ['sobre', 'episodios', 'conversa', 'avaliacoes', 'numeros'] as const
 export type AbaDetalhes = (typeof ABAS_DETALHES)[number]
 
 /** Aba pedida na URL; links antigos com âncora (#conversa, #episodios) continuam valendo. */

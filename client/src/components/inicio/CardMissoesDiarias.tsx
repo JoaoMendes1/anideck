@@ -4,6 +4,7 @@ import { useState, type ReactNode } from 'react'
 import {
   Target, Play, Calendar, Heart, MessageSquare, CheckCircle2, ChevronDown, ChevronUp,
   Sparkles, Gift, Check, Flame, Compass, Shuffle, Rocket, Trophy, CalendarCheck, Hourglass,
+  PenLine, Star,
 } from 'lucide-react'
 import IconeAniCoin from '../IconeAniCoin'
 import { useMissoesHoje, type MissaoDiariaItem } from '../../hooks/useMissoesHoje'
@@ -22,6 +23,8 @@ const ICONES: Record<string, ReactNode> = {
   Sparkles: <Sparkles size={16} className="text-gold" />,
   Target: <Target size={16} className="text-coral" />,
   Trophy: <Trophy size={16} className="text-gold" />,
+  PenLine: <PenLine size={16} className="text-holo-3" />,
+  Star: <Star size={16} className="text-gold" />,
 }
 
 function renderIcone(nome: string) {

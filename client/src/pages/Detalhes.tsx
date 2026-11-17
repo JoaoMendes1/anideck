@@ -12,6 +12,7 @@ import EpisodeGrid from '../components/EpisodeGrid'
 import ConversaDoAnime from '../components/comunidade/ConversaDoAnime'
 import CardPrevisoes from '../components/previsoes/CardPrevisoes'
 import PainelMinhaLista from '../components/detalhes/PainelMinhaLista'
+import AvaliacoesDaObra from '../components/detalhes/AvaliacoesDaObra'
 import FerramentasCuradoria from '../components/detalhes/FerramentasCuradoria'
 import NumerosDaObra, { type EstatisticasDaObra } from '../components/detalhes/NumerosDaObra'
 import ModalSugerirCorrecao from '../components/ModalSugerirCorrecao'
@@ -26,6 +27,7 @@ import { ultimoEpisodioDisponivel } from '../lib/comunidade'
 import { useMidia } from '../hooks/useMidia'
 import { obterSalaPorAnime, type SalaEstreia } from '../lib/salasEstreia'
 import { formatarTotalComunidade, obterNumerosComunidadeAnime, type NumerosComunidadeAnime } from '../lib/comunidadeAnimes'
+import { listarReviewsDaObra } from '../lib/reviews'
 
 interface AnimeDetail {
   mal_id: number
@@ -117,6 +119,7 @@ export default function Detalhes() {
   const [imagemAmpliada, setImagemAmpliada] = useState<string | null>(null)
   const [episodiosAssistidos, setEpisodiosAssistidos] = useState<number[]>([])
   const [comentariosNaObra, setComentariosNaObra] = useState(0)
+  const [reviewsNaObra, setReviewsNaObra] = useState(0)
   const [comunidadeStats, setComunidadeStats] = useState<NumerosComunidadeAnime | null>(null)
   const [salaAoVivo, setSalaAoVivo] = useState<SalaEstreia | null>(null)
   const [sinopseAberta, setSinopseAberta] = useState(false)
@@ -131,6 +134,7 @@ export default function Detalhes() {
     const emMemoria = lerDaMemoria<AnimeEmMemoria>(chaveDoAnime)
     setSinopseAberta(false)
     setComunidadeStats(null)
+    setReviewsNaObra(0)
 
     // A entrada do usuário e os episódios assistidos não dependem da resposta do anime.
     // Antes, só saíam depois dela, e a página esperava as quatro requisições em fila.
@@ -167,6 +171,9 @@ export default function Detalhes() {
       .catch(() => setComentariosNaObra(0))
 
     if (id && Number(id) > 0) {
+      listarReviewsDaObra(Number(id))
+        .then(r => setReviewsNaObra(r.reviews.length))
+        .catch(() => setReviewsNaObra(0))
       obterNumerosComunidadeAnime(Number(id))
         .then(n => setComunidadeStats(n))
         .catch(() => setComunidadeStats(null))
@@ -391,6 +398,7 @@ export default function Detalhes() {
     { id: 'sobre', rotulo: 'Sobre' },
     { id: 'episodios', rotulo: 'Episódios', contador: totalEpisodios > 0 && isLoggedIn ? `${episodiosAssistidos.length}/${totalEpisodios}` : undefined },
     { id: 'conversa', rotulo: 'Conversa', contador: comentariosNaObra > 0 ? String(comentariosNaObra) : undefined },
+    { id: 'avaliacoes', rotulo: 'Avaliações', contador: reviewsNaObra > 0 ? String(reviewsNaObra) : undefined },
     {
       id: 'numeros',
       rotulo: 'Números',
@@ -589,8 +597,8 @@ export default function Detalhes() {
               aria-label="Seções do anime"
               className="sticky top-[63px] md:top-[73px] z-30 -mx-4 px-4 sm:mx-0 sm:px-0 mb-6 bg-void/95 backdrop-blur-md border-b border-line"
             >
-              <div className="flex items-center justify-between">
-                <div className="flex flex-1 sm:flex-none">
+              <div className="flex items-center justify-between gap-2">
+                <div className="flex flex-1 min-w-0 overflow-x-auto scrollbar-hide sm:flex-none">
                   {abas.map(a => {
                     const ativa = a.id === aba
                     return (
@@ -602,7 +610,7 @@ export default function Detalhes() {
                         aria-selected={ativa}
                         aria-controls={`painel-${a.id}`}
                         onClick={() => trocarAba(a.id)}
-                        className={`relative flex-1 sm:flex-none sm:px-6 py-3.5 text-[13px] font-bold transition-colors cursor-pointer select-none ${ativa ? 'text-text' : 'text-muted hover:text-text'}`}
+                        className={`relative shrink-0 whitespace-nowrap px-3.5 sm:px-5 py-3.5 text-[13px] font-bold transition-colors cursor-pointer select-none ${ativa ? 'text-text' : 'text-muted hover:text-text'}`}
                       >
                         {a.rotulo}
                         {a.contador && (
@@ -811,6 +819,14 @@ export default function Detalhes() {
                     episodioPedido={Number(searchParams.get('ep')) || undefined}
                   />
                 </div>
+              )}
+
+              {aba === 'avaliacoes' && (
+                <AvaliacoesDaObra
+                  malId={anime.mal_id}
+                  ehCompleto={minhaEntrada?.status === 'Completo'}
+                  aoContarReviews={setReviewsNaObra}
+                />
               )}
 
               {aba === 'numeros' && (

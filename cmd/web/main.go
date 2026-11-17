@@ -124,6 +124,8 @@ func main() {
 	// Comunidade (Fase 15): só contagens e perfis públicos, sem conteúdo de comentário
 	r.Get("/api/anime/{id}/conversa", comunidadeHandler.HandleContagemConversa)
 	r.Get("/api/anime/{id}/comunidade", rankingsComunidadeHandler.HandleNumerosComunidadeAnime)
+	reviewsHandler := &handlers.ReviewsHandler{}
+	r.With(middleware.OptionalAuth).Get("/api/anime/{id}/reviews", reviewsHandler.HandleListarReviews)
 	r.Get("/api/membros/ranking", comunidadeHandler.HandleRankingMembros)
 	r.Get("/api/membros/{handle}", comunidadeHandler.HandlePerfilPublico)
 	r.Get("/api/ranking", rankingHandler.HandleGetTopAnime)
@@ -245,6 +247,8 @@ func main() {
 		protegido.Post("/api/comunidade/bloqueios/{handle}", comunidadeHandler.HandleBloquear)
 		protegido.Delete("/api/comunidade/bloqueios/{handle}", comunidadeHandler.HandleBloquear)
 		protegido.Get("/api/anime/{id}/episodios/{n}/conversa", comunidadeHandler.HandleConversaDoEpisodio)
+		protegido.Put("/api/anime/{id}/reviews", reviewsHandler.HandleSalvarReview)
+		protegido.Delete("/api/anime/{id}/reviews", reviewsHandler.HandleApagarReview)
 		protegido.Post("/api/anime/{id}/episodios/{n}/comentarios", comunidadeHandler.HandleComentar)
 		protegido.Put("/api/anime/{id}/episodios/{n}/reacoes/{reacao}", comunidadeHandler.HandleReagir)
 		protegido.Delete("/api/anime/{id}/episodios/{n}/reacoes/{reacao}", comunidadeHandler.HandleReagir)

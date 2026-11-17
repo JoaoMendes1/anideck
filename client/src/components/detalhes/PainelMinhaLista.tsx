@@ -333,7 +333,7 @@ export default function PainelMinhaLista({ malId, entrada, assistidos, ultimoDis
 
   const blocoAnotacao = editandoAnotacao ? (
     <div>
-      <label htmlFor="anotacao-deck" className="sr-only">Anotação</label>
+      <label htmlFor="anotacao-deck" className="sr-only">Anotação privada</label>
       <textarea
         id="anotacao-deck"
         autoFocus
@@ -341,7 +341,7 @@ export default function PainelMinhaLista({ malId, entrada, assistidos, ultimoDis
         onChange={e => setAnotacao(e.target.value)}
         maxLength={2000}
         rows={3}
-        placeholder="O que achou deste anime? Só você vê."
+        placeholder="Anotação privada sobre este anime. Só você vê."
         className="w-full bg-void/40 border border-line rounded-xl px-3.5 py-2.5 text-[13.5px] outline-none focus:border-holo-3 resize-y"
       />
       <div className="flex justify-end gap-2 mt-2">
@@ -372,7 +372,7 @@ export default function PainelMinhaLista({ malId, entrada, assistidos, ultimoDis
       {entrada.anotacao ? (
         <span className="text-[13px] text-muted italic line-clamp-2 break-words">“{entrada.anotacao}”</span>
       ) : (
-        <span className="text-[13px] text-muted-2 group-hover:text-text">Adicionar anotação pessoal</span>
+        <span className="text-[13px] text-muted-2 group-hover:text-text">Adicionar anotação privada (só você vê)</span>
       )}
     </button>
   )

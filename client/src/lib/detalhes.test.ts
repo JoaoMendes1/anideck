@@ -9,6 +9,8 @@ describe('abaDaUrl', () => {
   })
   it('aceita os links antigos com âncora', () => {
     expect(abaDaUrl(null, '#conversa')).toBe('conversa')
+    expect(abaDaUrl(null, '#avaliacoes')).toBe('avaliacoes')
+    expect(abaDaUrl('avaliacoes', '')).toBe('avaliacoes')
     expect(abaDaUrl(null, '#estatisticas')).toBe('numeros')
   })
 })

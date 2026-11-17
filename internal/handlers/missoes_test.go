@@ -20,12 +20,18 @@ func TestCatalogosDeMissoes_IdsUnicosERecompensas(t *testing.T) {
 			if m.Meta <= 0 || m.Recompensa <= 0 {
 				t.Errorf("%s com meta ou recompensa inválida", m.ID)
 			}
-			social := m.Tipo == MissaoReagirEpisodio || m.Tipo == MissaoComentarEpisodio
-			if social && m.XP != 0 {
-				t.Errorf("%s é social e não pode dar XP", m.ID)
+			socialSemXP := m.Tipo == MissaoReagirEpisodio || m.Tipo == MissaoComentarEpisodio
+			if socialSemXP && m.XP != 0 {
+				t.Errorf("%s é social simples e não pode dar XP", m.ID)
 			}
-			if !social && m.XP <= 0 {
-				t.Errorf("%s é de assistir e deveria dar XP", m.ID)
+			if !socialSemXP && m.XP <= 0 {
+				t.Errorf("%s deveria dar XP", m.ID)
+			}
+			if m.Tipo == MissaoAvaliarAnime && m.XP != 25 {
+				t.Errorf("%s deveria dar 25 XP, tem %d", m.ID, m.XP)
+			}
+			if m.Tipo == MissaoAvaliarEpisodio && m.XP != 15 {
+				t.Errorf("%s deveria dar 15 XP, tem %d", m.ID, m.XP)
 			}
 		}
 	}
@@ -310,5 +316,27 @@ func TestEvidenciasDaMissao_CapturaAcoesExatas(t *testing.T) {
 	evsCarta := evidenciasDaMissao(mCarta, a)["evidencias"].([]map[string]interface{})
 	if len(evsCarta) != 1 || evsCarta[0]["tipo_acao"] != "carta" || evsCarta[0]["mal_id"] != 30 {
 		t.Errorf("Evidência de carta incorreta: %+v", evsCarta)
+	}
+
+	a.ReviewsAnimeHojeLista = []ReviewDaMissao{{ID: "rev-1", MalID: 30, Em: dia.Add(2 * time.Hour)}}
+	mRev := missaoSorteada{
+		ItemCatalogoMissao: ItemCatalogoMissao{ID: "avaliar_obra", Tipo: MissaoAvaliarAnime, Meta: 1},
+		periodo:            "dia",
+		inicio:             dia,
+	}
+	evsRev := evidenciasDaMissao(mRev, a)["evidencias"].([]map[string]interface{})
+	if len(evsRev) != 1 || evsRev[0]["tipo_acao"] != "review_anime" || evsRev[0]["review_id"] != "rev-1" {
+		t.Errorf("Evidência de avaliação da obra incorreta: %+v", evsRev)
+	}
+
+	a.AvaliacoesEpHojeLista = []ComentarioDaMissao{{ID: "c-long", MalID: 10, Numero: 3, Em: dia.Add(3 * time.Hour)}}
+	mAvEp := missaoSorteada{
+		ItemCatalogoMissao: ItemCatalogoMissao{ID: "avaliar_episodio", Tipo: MissaoAvaliarEpisodio, Meta: 1},
+		periodo:            "dia",
+		inicio:             dia,
+	}
+	evsAvEp := evidenciasDaMissao(mAvEp, a)["evidencias"].([]map[string]interface{})
+	if len(evsAvEp) != 1 || evsAvEp[0]["tipo_acao"] != "comentario" || evsAvEp[0]["comment_id"] != "c-long" {
+		t.Errorf("Evidência de avaliação de episódio incorreta: %+v", evsAvEp)
 	}
 }
