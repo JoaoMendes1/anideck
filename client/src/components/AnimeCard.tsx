@@ -160,8 +160,9 @@ export default function AnimeCard({
 
                 {/* Ano e Próximo Episódio rigorosamente alinhados */}
                 <div className="flex items-center gap-1.5 font-mono text-[10.5px] text-muted-2 font-semibold truncate">
-                    {year && <span>{year}</span>}
-                    {year && proximoEpTexto && <span className="opacity-40">•</span>}
+                    {/* No celular, com próximo episódio, o ano sai para o dia da semana caber inteiro. */}
+                    {year && <span className={proximoEpTexto ? 'hidden sm:inline' : undefined}>{year}</span>}
+                    {year && proximoEpTexto && <span className="hidden sm:inline opacity-40">•</span>}
                     {proximoEpTexto && (
                         <span className="text-holo-3 truncate font-bold" title={proximoEpTexto}>
                             {proximoEpTexto}

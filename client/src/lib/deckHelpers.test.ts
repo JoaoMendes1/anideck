@@ -91,3 +91,15 @@ describe('obterTextoProximoEp', () => {
   })
 })
 
+
+import { obterTextoProximoEp as textoCurto } from './deckHelpers'
+import { describe as d2, expect as e2, it as i2 } from 'vitest'
+
+d2('obterTextoProximoEp no cartão', () => {
+  i2('dia da semana sem "-feira", para caber no celular', () => {
+    const agora = Date.parse('2026-11-16T12:00:00-03:00') / 1000
+    const segunda = Date.parse('2026-11-23T12:00:00-03:00') / 1000
+    const texto = textoCurto({ airingAt: segunda, episode: 8 }, agora)
+    e2(texto).toBe('EP 8 • Toda segunda')
+  })
+})

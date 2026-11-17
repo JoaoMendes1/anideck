@@ -154,7 +154,8 @@ export function obterTextoProximoEp(
     if (diffDays === 1) {
         return `EP ${info.episode} amanhã${horas > 0 && horas < 24 ? ` (~${horas}h)` : ''}`
     }
-    if (diaSemanal) return `EP ${info.episode} • ${diaSemanal}`
+    // No cartão o espaço é curto: "Toda segunda" em vez de "Toda segunda-feira".
+    if (diaSemanal) return `EP ${info.episode} • ${diaSemanal.replace('-feira', '')}`
     if (diffDays > 1 && diffDays < 7) return `EP ${info.episode} em ${diffDays}d`
 
     const data = new Date(info.airingAt * 1000)

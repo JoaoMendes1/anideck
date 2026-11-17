@@ -209,7 +209,7 @@ export default function Calendario() {
 
     const formatTimeRemaining = (targetEpoch: number) => {
         const diff = targetEpoch - agora
-        if (diff <= 0) return 'Lançado!'
+        if (diff <= 0) return '✓ Já saiu'
 
         const days = Math.floor(diff / 86400)
         const hours = Math.floor((diff % 86400) / 3600)
@@ -225,7 +225,19 @@ export default function Calendario() {
         return date.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })
     }
 
-    const sortedAnimes = [...animes].sort((a, b) => (a.nextAiringEpisode?.airingAt || 0) - (b.nextAiringEpisode?.airingAt || 0))
+    // Quando o episódio de hoje sai, a AniList já informa o da semana que vem e o anime pularia
+    // para o fim da agenda. Para ele continuar em "Hoje", entra uma cópia com o episódio que
+    // acabou de sair (próximo − 7 dias), marcada como já lançada.
+    const SEMANA = 7 * 86400
+    const saiuHoje: HydratedAnime[] = animes.flatMap((anime) => {
+        const proximo = anime.nextAiringEpisode
+        if (!proximo || proximo.episode <= 1) return []
+        const anterior = proximo.airingAt - SEMANA
+        if (anterior > agora || getDayLabel(anterior) !== 'Hoje') return []
+        return [{ ...anime, nextAiringEpisode: { ...proximo, airingAt: anterior, episode: proximo.episode - 1 } }]
+    })
+
+    const sortedAnimes = [...animes, ...saiuHoje].sort((a, b) => (a.nextAiringEpisode?.airingAt || 0) - (b.nextAiringEpisode?.airingAt || 0))
     const groups: { label: string; dateStr: string; animes: HydratedAnime[] }[] = []
 
     sortedAnimes.forEach(anime => {
@@ -317,7 +329,7 @@ export default function Calendario() {
                                         const gradClass = gradienteDoCard(index)
                                         const streamUrl = escolherLinkStreaming(anime.streaming)?.url ?? null
                                         const remainingText = formatTimeRemaining(anime.nextAiringEpisode!.airingAt)
-                                        const isLancado = remainingText === 'Lançado!'
+                                        const isLancado = remainingText === '✓ Já saiu'
                                         const diaSemanal = obterTextoDiaLancamento({ nextAiringEpisode: anime.nextAiringEpisode })
                                         const temaStatus = anime.status ? getStatusTheme(anime.status) : null
                                         const listaGeneros = anime.genres && anime.genres.length > 0 
