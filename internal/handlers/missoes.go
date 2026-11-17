@@ -158,14 +158,54 @@ func carregarAtividadeMissoes(dbClient *supabase.Client, userID string, agora ti
 		}
 	}
 
-	if _, n, err := dbClient.From("episode_reactions").Select("user_id", "exact", true).
-		Eq("user_id", userID).Gte("created_at", inicioDia).Execute(); err == nil {
-		a.ReacoesHoje = int(n)
+	var reacoesRows []struct {
+		MalID     int    `json:"mal_id"`
+		Episodio  int    `json:"episode_number"`
+		Reacao    string `json:"reacao"`
+		CreatedAt string `json:"created_at"`
 	}
-	if _, n, err := dbClient.From("episode_comments").Select("id", "exact", true).
-		Eq("user_id", userID).Gte("created_at", inicioDia).Execute(); err == nil {
-		a.ComentariosHoje = int(n)
+	if dReac, _, err := dbClient.From("episode_reactions").
+		Select("mal_id,episode_number,reacao,created_at", "", false).
+		Eq("user_id", userID).
+		Gte("created_at", inicioDia).
+		Execute(); err == nil {
+		_ = json.Unmarshal(dReac, &reacoesRows)
 	}
+	for _, r := range reacoesRows {
+		em, ok := lerInstante(r.CreatedAt)
+		if !ok {
+			em = agora
+		}
+		a.ReacoesHojeLista = append(a.ReacoesHojeLista, ReacaoDaMissao{
+			MalID: r.MalID, Numero: r.Episodio, Reacao: r.Reacao, Em: em,
+		})
+	}
+	a.ReacoesHoje = len(a.ReacoesHojeLista)
+
+	var comRows []struct {
+		ID        string `json:"id"`
+		MalID     int    `json:"mal_id"`
+		Episodio  int    `json:"episode_number"`
+		CreatedAt string `json:"created_at"`
+	}
+	if dCom, _, err := dbClient.From("episode_comments").
+		Select("id,mal_id,episode_number,created_at", "", false).
+		Eq("user_id", userID).
+		Eq("oculto", "false").
+		Gte("created_at", inicioDia).
+		Execute(); err == nil {
+		_ = json.Unmarshal(dCom, &comRows)
+	}
+	for _, c := range comRows {
+		em, ok := lerInstante(c.CreatedAt)
+		if !ok {
+			em = agora
+		}
+		a.ComentariosHojeLista = append(a.ComentariosHojeLista, ComentarioDaMissao{
+			ID: c.ID, MalID: c.MalID, Numero: c.Episodio, Em: em,
+		})
+	}
+	a.ComentariosHoje = len(a.ComentariosHojeLista)
 
 	if len(ids) > 0 {
 		lista := make([]string, 0, len(ids))
@@ -345,6 +385,202 @@ type resultadoResgate struct {
 	XP          int  `json:"xp"`
 }
 
+// evidenciasDaMissao monta o payload gravado em missoes_resgates e missoes_evidencias,
+// permitindo estornar o XP caso qualquer ação que cumpriu a missão seja desfeita depois.
+func evidenciasDaMissao(m missaoSorteada, a AtividadeMissoes) map[string]interface{} {
+	fim := m.inicio.In(fusoGuilda).AddDate(0, 0, 1).UTC()
+	if m.periodo == "semana" {
+		fim = m.inicio.In(fusoGuilda).AddDate(0, 0, 7).UTC()
+	}
+
+	var epsPeriodo []EpisodioDaMissao
+	for _, e := range a.Episodios {
+		if !e.Em.Before(m.inicio) {
+			epsPeriodo = append(epsPeriodo, e)
+		}
+	}
+
+	evEpisodio := func(e EpisodioDaMissao) map[string]interface{} {
+		generos := a.Animes[e.MalID].Generos
+		if generos == nil {
+			generos = []string{}
+		}
+		return map[string]interface{}{
+			"tipo_acao":      "episodio",
+			"mal_id":         e.MalID,
+			"episode_number": e.Numero,
+			"lancamento":     e.Lancamento,
+			"generos":        generos,
+			"acao_em":        e.Em.Format(time.RFC3339),
+		}
+	}
+
+	evCarta := func(c ObraConcluida) map[string]interface{} {
+		info := a.Animes[c.MalID]
+		generos := info.Generos
+		if generos == nil {
+			generos = []string{}
+		}
+		return map[string]interface{}{
+			"tipo_acao":    "carta",
+			"mal_id":       c.MalID,
+			"do_ano":       a.AnoAtual > 0 && info.Ano == a.AnoAtual,
+			"da_temporada": info.DaTemporada,
+			"generos":      generos,
+			"acao_em":      c.Em.Format(time.RFC3339),
+		}
+	}
+
+	evidencias := make([]map[string]interface{}, 0, m.Meta)
+	switch m.Tipo {
+	case MissaoEpisodios:
+		for _, e := range epsPeriodo {
+			evidencias = append(evidencias, evEpisodio(e))
+			if len(evidencias) >= m.Meta {
+				break
+			}
+		}
+	case MissaoEpisodiosGenero:
+		for _, e := range epsPeriodo {
+			if a.temGenero(e.MalID, m.genero) {
+				evidencias = append(evidencias, evEpisodio(e))
+				if len(evidencias) >= m.Meta {
+					break
+				}
+			}
+		}
+	case MissaoAnimesDistintos:
+		vistos := map[int]bool{}
+		for _, e := range epsPeriodo {
+			if !vistos[e.MalID] {
+				vistos[e.MalID] = true
+				evidencias = append(evidencias, evEpisodio(e))
+				if len(evidencias) >= m.Meta {
+					break
+				}
+			}
+		}
+	case MissaoComecarAnime:
+		for _, e := range epsPeriodo {
+			if e.Numero == 1 {
+				evidencias = append(evidencias, evEpisodio(e))
+				if len(evidencias) >= m.Meta {
+					break
+				}
+			}
+		}
+	case MissaoLancamento:
+		for _, e := range epsPeriodo {
+			if e.Lancamento {
+				evidencias = append(evidencias, evEpisodio(e))
+				if len(evidencias) >= m.Meta {
+					break
+				}
+			}
+		}
+	case MissaoFoco:
+		contagem := map[int]int{}
+		melhorAnime := 0
+		maiorQtd := 0
+		for _, e := range epsPeriodo {
+			contagem[e.MalID]++
+			if contagem[e.MalID] > maiorQtd {
+				maiorQtd = contagem[e.MalID]
+				melhorAnime = e.MalID
+			}
+		}
+		for _, e := range epsPeriodo {
+			if e.MalID == melhorAnime {
+				evidencias = append(evidencias, evEpisodio(e))
+				if len(evidencias) >= m.Meta {
+					break
+				}
+			}
+		}
+	case MissaoDiasAtivos:
+		dias := map[int]bool{}
+		for _, e := range epsPeriodo {
+			d := indiceDoDia(e.Em)
+			if !dias[d] {
+				dias[d] = true
+				evidencias = append(evidencias, evEpisodio(e))
+				if len(evidencias) >= m.Meta {
+					break
+				}
+			}
+		}
+	case MissaoCompletarObra:
+		for _, c := range a.concluidasValidas(m.inicio) {
+			evidencias = append(evidencias, evCarta(c))
+			if len(evidencias) >= m.Meta {
+				break
+			}
+		}
+	case MissaoCompletarDoAno:
+		for _, c := range a.concluidasValidas(m.inicio) {
+			if a.AnoAtual > 0 && a.Animes[c.MalID].Ano == a.AnoAtual {
+				evidencias = append(evidencias, evCarta(c))
+				if len(evidencias) >= m.Meta {
+					break
+				}
+			}
+		}
+	case MissaoCompletarTemporada:
+		for _, c := range a.concluidasValidas(m.inicio) {
+			if a.Animes[c.MalID].DaTemporada {
+				evidencias = append(evidencias, evCarta(c))
+				if len(evidencias) >= m.Meta {
+					break
+				}
+			}
+		}
+	case MissaoCompletarGenero:
+		for _, c := range a.concluidasValidas(m.inicio) {
+			if a.temGenero(c.MalID, m.genero) {
+				evidencias = append(evidencias, evCarta(c))
+				if len(evidencias) >= m.Meta {
+					break
+				}
+			}
+		}
+	case MissaoReagirEpisodio:
+		for _, r := range a.ReacoesHojeLista {
+			evidencias = append(evidencias, map[string]interface{}{
+				"tipo_acao":      "reacao",
+				"mal_id":         r.MalID,
+				"episode_number": r.Numero,
+				"reacao":         r.Reacao,
+				"acao_em":        r.Em.Format(time.RFC3339),
+			})
+			if len(evidencias) >= m.Meta {
+				break
+			}
+		}
+	case MissaoComentarEpisodio:
+		for _, c := range a.ComentariosHojeLista {
+			evidencias = append(evidencias, map[string]interface{}{
+				"tipo_acao":      "comentario",
+				"comment_id":     c.ID,
+				"mal_id":         c.MalID,
+				"episode_number": c.Numero,
+				"acao_em":        c.Em.Format(time.RFC3339),
+			})
+			if len(evidencias) >= m.Meta {
+				break
+			}
+		}
+	}
+
+	return map[string]interface{}{
+		"tipo":           string(m.Tipo),
+		"meta":           m.Meta,
+		"genero":         m.genero,
+		"periodo_inicio": m.inicio.Format(time.RFC3339),
+		"periodo_fim":    fim.Format(time.RFC3339),
+		"evidencias":     evidencias,
+	}
+}
+
 // HandleResgatarMissao confere a missão no servidor e paga AniCoins e XP numa transação só.
 func (h *MissoesHandler) HandleResgatarMissao(w http.ResponseWriter, r *http.Request) {
 	token, ok := r.Context().Value(middleware.TokenKey).(string)
@@ -356,10 +592,6 @@ func (h *MissoesHandler) HandleResgatarMissao(w http.ResponseWriter, r *http.Req
 	missaoID := chi.URLParam(r, "id")
 	if missaoID == "" {
 		responderErroJSON(w, http.StatusBadRequest, "ID da missão é obrigatório")
-		return
-	}
-	if database.Client == nil {
-		responderErroJSON(w, http.StatusServiceUnavailable, "Serviço de banco indisponível")
 		return
 	}
 	dbClient, err := database.ClientWithToken(token)
@@ -392,6 +624,12 @@ func (h *MissoesHandler) HandleResgatarMissao(w http.ResponseWriter, r *http.Req
 		return
 	}
 
+	srvClient, err := database.ServiceRoleClient()
+	if err != nil || srvClient == nil {
+		responderErroJSON(w, http.StatusServiceUnavailable, "Serviço de banco indisponível")
+		return
+	}
+
 	xp := alvo.XP
 	if economia, _, _ := carregarConfigGuilda(dbClient); !economia.Ativo {
 		xp = 0
@@ -400,13 +638,15 @@ func (h *MissoesHandler) HandleResgatarMissao(w http.ResponseWriter, r *http.Req
 	if alvo.periodo == "semana" {
 		prefixoXP = "Missão da semana"
 	}
-	bruto := strings.TrimSpace(database.Client.Rpc("resgatar_missao", "", map[string]interface{}{
+	detalhe := evidenciasDaMissao(*alvo, atividade)
+	bruto := strings.TrimSpace(srvClient.Rpc("resgatar_missao", "", map[string]interface{}{
 		"p_user_id":    userID,
 		"p_motivo":     alvo.motivo,
 		"p_referencia": alvo.referencia,
 		"p_anicoins":   alvo.Recompensa,
 		"p_xp":         xp,
 		"p_texto_xp":   prefixoXP + ": " + alvo.Titulo,
+		"p_detalhe":    detalhe,
 	}))
 	var res resultadoResgate
 	if err := json.Unmarshal([]byte(bruto), &res); err != nil || strings.Contains(bruto, `"code"`) {

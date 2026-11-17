@@ -43,17 +43,35 @@ export function textoDoTempo(minutos: number): string {
 export interface FotoDoJogador {
   xp: number
   nivel: number
+  rank?: string
   hp: number | null
   mp: number | null
   cristais?: number | null
   ouro?: number | null
+  ultimoEstornoMissaoEm?: string | null
 }
 
-export type TipoDeAviso = 'xp' | 'nivel' | 'hp' | 'mp' | 'cristal' | 'ouro'
+export type TipoDeAviso = 'xp' | 'xp_perdido' | 'nivel' | 'rank_queda' | 'hp' | 'mp' | 'cristal' | 'ouro'
 
 export interface AvisoDoHud {
   tipo: TipoDeAviso
   texto: string
+}
+
+const ORDEM_DO_RANK: Record<string, number> = {
+  F: 0,
+  E: 1,
+  D: 2,
+  C: 3,
+  B: 4,
+  A: 5,
+  S: 6,
+  SS: 7,
+}
+
+export function ordemDoRank(rank?: string): number {
+  if (!rank) return -1
+  return ORDEM_DO_RANK[rank.toUpperCase()] ?? -1
 }
 
 /**
@@ -65,8 +83,19 @@ export function avisosDaMudanca(antes: FotoDoJogador | null, depois: FotoDoJogad
   if (!antes) return []
   const avisos: AvisoDoHud[] = []
   const xp = depois.xp - antes.xp
-  if (xp > 0) avisos.push({ tipo: 'xp', texto: `+${xp} XP` })
+  if (xp > 0) {
+    avisos.push({ tipo: 'xp', texto: `+${xp} XP` })
+  } else if (xp < 0) {
+    const foiMissao = Boolean(depois.ultimoEstornoMissaoEm && depois.ultimoEstornoMissaoEm !== antes.ultimoEstornoMissaoEm)
+    avisos.push({
+      tipo: 'xp_perdido',
+      texto: foiMissao ? `−${Math.abs(xp)} XP: missão desfeita` : `−${Math.abs(xp)} XP`,
+    })
+  }
   if (depois.nivel > antes.nivel) avisos.push({ tipo: 'nivel', texto: `Nível ${depois.nivel}!` })
+  if (antes.rank && depois.rank && ordemDoRank(depois.rank) >= 0 && ordemDoRank(antes.rank) > ordemDoRank(depois.rank)) {
+    avisos.push({ tipo: 'rank_queda', texto: `você voltou ao rank ${depois.rank}` })
+  }
   if (antes.hp !== null && depois.hp !== null && depois.hp !== antes.hp) {
     const hp = depois.hp - antes.hp
     avisos.push({ tipo: 'hp', texto: `${hp > 0 ? '+' : '−'}${Math.abs(hp)} HP` })

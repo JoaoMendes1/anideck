@@ -53,4 +53,22 @@ describe('avisosDaMudanca', () => {
     expect(avisosDaMudanca({ ...base, ouro: 100 }, { ...base, ouro: 90 }).map(a => a.texto)).toEqual(['−10 de Ouro'])
     expect(avisosDaMudanca({ ...base, ouro: null }, { ...base, ouro: 90 })).toEqual([])
   })
+  it('XP estornado avisa perda simples ou missão desfeita e queda de rank', () => {
+    expect(
+      avisosDaMudanca(
+        { ...base, rank: 'D', ultimoEstornoMissaoEm: null },
+        { ...base, xp: 975, rank: 'D', ultimoEstornoMissaoEm: null },
+      ).map(a => a.texto),
+    ).toEqual(['−25 XP'])
+
+    expect(
+      avisosDaMudanca(
+        { ...base, rank: 'D', ultimoEstornoMissaoEm: null },
+        { ...base, xp: 980, rank: 'E', ultimoEstornoMissaoEm: '2026-11-17T12:00:00Z' },
+      ),
+    ).toEqual([
+      { tipo: 'xp_perdido', texto: '−20 XP: missão desfeita' },
+      { tipo: 'rank_queda', texto: 'você voltou ao rank E' },
+    ])
+  })
 })

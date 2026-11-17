@@ -179,6 +179,8 @@ export default function ConversaDoAnime({ malId, totalEpisodes, proximoAoAr, ass
       showToast(res ? await lerErro(res, 'Não foi possível registrar a reação.') : 'Sem conexão.', 'error')
       carregarConversa()
       carregarContagens()
+    } else {
+      avisarComunidadeAtualizada()
     }
   }
 
@@ -213,6 +215,7 @@ export default function ConversaDoAnime({ malId, totalEpisodes, proximoAoAr, ass
     if (!conversa || episodioAtual === null) return
     setConversa({ ...conversa, comentarios: conversa.comentarios.filter(c => c.id !== id) })
     setContagens(prev => prev.map(c => (c.episode_number === episodioAtual ? { ...c, comentarios: Math.max(0, c.comentarios - 1) } : c)))
+    avisarComunidadeAtualizada()
   }
 
   const aoBloquear = (handle: string) => {

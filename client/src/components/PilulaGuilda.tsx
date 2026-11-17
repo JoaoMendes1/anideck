@@ -24,7 +24,9 @@ const DURACAO_AVISO = 1800
 
 const ESTILO_DO_AVISO: Record<AvisoDoHud['tipo'], string> = {
   xp: 'text-gold border-gold/50',
+  xp_perdido: 'text-coral border-coral/50',
   nivel: 'text-void bg-gradient-to-r from-holo-1 to-holo-2 border-transparent',
+  rank_queda: 'text-coral border-coral/60 bg-void/95',
   hp: 'text-coral border-coral/50',
   mp: 'text-holo-3 border-holo-3/50',
   cristal: 'text-holo-3 border-holo-3/50',
@@ -72,7 +74,16 @@ export default function PilulaGuilda() {
   // registra a foto: carregar a página não é ganho.
   useEffect(() => {
     if (!status) return
-    const foto: FotoDoJogador = { xp: status.xp_total, nivel: status.nivel, hp, mp, cristais: saldo, ouro }
+    const foto: FotoDoJogador = {
+      xp: status.xp_total,
+      nivel: status.nivel,
+      rank: status.rank,
+      hp,
+      mp,
+      cristais: saldo,
+      ouro,
+      ultimoEstornoMissaoEm: status.ultimo_estorno_missao_em ?? null,
+    }
     const novos = avisosDaMudanca(anterior.current, foto)
     // Sem comunidade na leitura anterior, HP e MP entram agora como base, sem aviso.
     anterior.current = foto

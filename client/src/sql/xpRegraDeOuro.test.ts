@@ -236,8 +236,21 @@ describe('Regra de Ouro do XP (estado atual da SQL)', () => {
         [USER_ID, ANIME_B],
       )
       await db.query(
-        `SELECT public.resgatar_missao($1, 'missao_diaria', 'missao:dia:ep_2', 15, 20, 'Missão do dia: 2 episódios')`,
-        [USER_ID],
+        `SELECT public.resgatar_missao(
+           $1, 'missao_diaria', 'missao:dia:ep_2', 15, 20, 'Missão do dia: 2 episódios',
+           $2::jsonb
+         )`,
+        [
+          USER_ID,
+          JSON.stringify({
+            tipo: 'episodios',
+            meta: 2,
+            evidencias: [
+              { tipo_acao: 'episodio', mal_id: ANIME_B, episode_number: 1 },
+              { tipo_acao: 'episodio', mal_id: ANIME_B, episode_number: 2 },
+            ],
+          }),
+        ],
       )
       await db.query(
         `INSERT INTO public.convites_membros (anfitriao_user_id, codigo) VALUES ($1, 'anfitriao')`,
@@ -254,6 +267,175 @@ describe('Regra de Ouro do XP (estado atual da SQL)', () => {
 
       expect(await lerXPTotalUsuario(db, USER_ID)).toBe(0)
       expect(await lerNivelUsuario(db, USER_ID)).toBe(1)
+
+      // Refazer 1 episódio restaura o XP de convite sem precisar resgatar código de novo (missão exige 2)
+      await db.query(
+        `INSERT INTO public.episode_progress (user_id, mal_id, episode_number, watched_at)
+         VALUES ($1, $2, 1, now())`,
+        [USER_ID, ANIME_B],
+      )
+      expect(await lerXPTotalUsuario(db, USER_ID)).toBe(100)
+    } finally {
+      await db.close()
+    }
+  })
+
+  it('cenário 6b (#266): refazer ação paga XP de novo (soma zero, sem duplicar AniCoins) e funciona para comentário, reação e carta', async () => {
+    const db = await criarBancoTeste()
+    try {
+      await criarUsuarioTeste(db, USER_ID, 'social')
+      await db.query(`INSERT INTO public.anime_metadata_cache (mal_id, title) VALUES ($1, 'Teste')`, [ANIME_A])
+
+      // Missão diária de episódios: resgata com evidência explícita, desmarca, remarca
+      await db.query(
+        `INSERT INTO public.episode_progress (user_id, mal_id, episode_number, watched_at)
+         VALUES ($1, $2, 1, now() - interval '2 days')`,
+        [USER_ID, ANIME_A],
+      )
+      await db.query(
+        `SELECT public.resgatar_missao(
+           $1, 'missao_diaria', 'missao:ontem:estreia', 15, 20, 'Missão do dia: Primeiro Passo',
+           $2::jsonb
+         )`,
+        [
+          USER_ID,
+          JSON.stringify({
+            tipo: 'comecar_anime',
+            meta: 1,
+            periodo_inicio: new Date(Date.now() - 2 * 86400_000).toISOString(),
+            periodo_fim: new Date(Date.now() - 1 * 86400_000).toISOString(),
+            evidencias: [{ tipo_acao: 'episodio', mal_id: ANIME_A, episode_number: 1 }],
+          }),
+        ],
+      )
+      expect(await lerXPTotalUsuario(db, USER_ID)).toBe(20)
+
+      await db.query(`DELETE FROM public.episode_progress WHERE user_id = $1 AND mal_id = $2 AND episode_number = 1`, [
+        USER_ID,
+        ANIME_A,
+      ])
+      expect(await lerXPTotalUsuario(db, USER_ID)).toBe(0)
+
+      // Refaz o episódio 1: XP da missão volta (20) e AniCoins no crystal_ledger não duplicam (segue 15)
+      await db.query(
+        `INSERT INTO public.episode_progress (user_id, mal_id, episode_number, watched_at)
+         VALUES ($1, $2, 1, now())`,
+        [USER_ID, ANIME_A],
+      )
+      expect(await lerXPTotalUsuario(db, USER_ID)).toBe(20)
+      const saldoRes = await db.query<{ soma: string }>(
+        `SELECT COALESCE(SUM(quantidade), 0)::bigint AS soma FROM public.crystal_ledger WHERE user_id = $1`,
+        [USER_ID],
+      )
+      expect(Number(saldoRes.rows[0]?.soma ?? 0)).toBe(15)
+
+      // Missão de reação e comentário: apagar reação/comentário marca estornada_em; refazer limpa estornada_em
+      const comRes = await db.query<{ id: string }>(
+        `INSERT INTO public.episode_comments (user_id, mal_id, episode_number, texto)
+         VALUES ($1, $2, 1, 'Bom demais') RETURNING id`,
+        [USER_ID, ANIME_A],
+      )
+      const commentId = comRes.rows[0].id
+      await db.query(
+        `SELECT public.resgatar_missao(
+           $1, 'missao_diaria', 'missao:hoje:comentario', 20, 0, 'Missão do dia: Voz',
+           $2::jsonb
+         )`,
+        [
+          USER_ID,
+          JSON.stringify({
+            tipo: 'comentar_episodio',
+            meta: 1,
+            evidencias: [{ tipo_acao: 'comentario', comment_id: commentId, mal_id: ANIME_A, episode_number: 1 }],
+          }),
+        ],
+      )
+      await db.query(`DELETE FROM public.episode_comments WHERE id = $1`, [commentId])
+      const estCom = await db.query<{ estornada_em: string | null }>(
+        `SELECT estornada_em FROM public.missoes_resgates WHERE user_id = $1 AND referencia = 'missao:hoje:comentario'`,
+        [USER_ID],
+      )
+      expect(estCom.rows[0]?.estornada_em).not.toBeNull()
+
+      await db.query(
+        `INSERT INTO public.episode_reactions (user_id, mal_id, episode_number, reacao)
+         VALUES ($1, $2, 1, 'chorei')`,
+        [USER_ID, ANIME_A],
+      )
+      await db.query(
+        `SELECT public.resgatar_missao(
+           $1, 'missao_diaria', 'missao:hoje:reacao', 15, 0, 'Missão do dia: Reator',
+           $2::jsonb
+         )`,
+        [
+          USER_ID,
+          JSON.stringify({
+            tipo: 'reagir_episodio',
+            meta: 1,
+            evidencias: [{ tipo_acao: 'reacao', mal_id: ANIME_A, episode_number: 1, reacao: 'chorei' }],
+          }),
+        ],
+      )
+      await db.query(
+        `DELETE FROM public.episode_reactions WHERE user_id = $1 AND mal_id = $2 AND episode_number = 1 AND reacao = 'chorei'`,
+        [USER_ID, ANIME_A],
+      )
+      const estReac = await db.query<{ estornada_em: string | null }>(
+        `SELECT estornada_em FROM public.missoes_resgates WHERE user_id = $1 AND referencia = 'missao:hoje:reacao'`,
+        [USER_ID],
+      )
+      expect(estReac.rows[0]?.estornada_em).not.toBeNull()
+
+      // Missão semanal de completar obra (carta): remover carta estorna XP
+      await db.query(`INSERT INTO public.user_cards (user_id, mal_id, raridade) VALUES ($1, $2, 'comum')`, [
+        USER_ID,
+        ANIME_A,
+      ])
+      await db.query(
+        `SELECT public.resgatar_missao(
+           $1, 'missao_semanal', 'semana:atual:obra_1', 80, 50, 'Missão da semana: Safra',
+           $2::jsonb
+         )`,
+        [
+          USER_ID,
+          JSON.stringify({
+            tipo: 'completar_do_ano',
+            meta: 1,
+            evidencias: [{ tipo_acao: 'carta', mal_id: ANIME_A, do_ano: true }],
+          }),
+        ],
+      )
+      expect(await lerXPTotalUsuario(db, USER_ID)).toBe(70)
+      await db.query(`DELETE FROM public.user_cards WHERE user_id = $1 AND mal_id = $2`, [USER_ID, ANIME_A])
+      expect(await lerXPTotalUsuario(db, USER_ID)).toBe(20)
+    } finally {
+      await db.close()
+    }
+  })
+})
+
+describe('Prova do defeito original antes do sql/101', () => {
+  it('sem sql/101, desmarcar episódio deixa o XP de missão e convite preso na conta', async () => {
+    const db = await criarBancoTeste({ etapas: [] })
+    try {
+      await criarUsuarioTeste(db, USER_ID, 'vazamento')
+      await db.query(
+        `INSERT INTO public.episode_progress (user_id, mal_id, episode_number, watched_at)
+         VALUES ($1, $2, 1, now())`,
+        [USER_ID, ANIME_A],
+      )
+      await db.query(
+        `INSERT INTO public.xp_ledger (user_id, mal_id, episode_number, xp_earned, reason)
+         VALUES ($1, $2, 1, 25, 'ep 1')`,
+        [USER_ID, ANIME_A],
+      )
+      await db.query(
+        `SELECT public.resgatar_missao($1, 'missao_diaria', 'missao:leak:1', 15, 20, 'Missão vazada')`,
+        [USER_ID],
+      )
+      await db.query(`DELETE FROM public.episode_progress WHERE user_id = $1`, [USER_ID])
+      // Sem as amarras, os 20 XP da missão continuavam presos na conta mesmo com 0 episódios
+      expect(await lerXPTotalUsuario(db, USER_ID)).toBe(20)
     } finally {
       await db.close()
     }

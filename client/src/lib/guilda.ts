@@ -23,6 +23,7 @@ export interface StatusNivelGuilda {
   peso_maximo_voto: number
   /** Ouro do RPG; só o resumo da barra do topo traz. Ausente quando a leitura falhou. */
   ouro?: number
+  ultimo_estorno_missao_em?: string
 }
 
 export interface EconomiaGuilda {

@@ -269,3 +269,46 @@ func TestExtratoGuilda_XPSemEpisodioTemTitulo(t *testing.T) {
 		t.Errorf("Título esperado %q, veio %q", tituloXPSemEpisodio, itens[0].TituloAnime)
 	}
 }
+
+func TestEvidenciasDaMissao_CapturaAcoesExatas(t *testing.T) {
+	a, dia, semana := atividadeDeTeste()
+	a.ReacoesHojeLista = []ReacaoDaMissao{{MalID: 10, Numero: 1, Reacao: "amei", Em: dia.Add(time.Hour)}}
+	a.ComentariosHojeLista = []ComentarioDaMissao{{ID: "c1", MalID: 10, Numero: 2, Em: dia.Add(2 * time.Hour)}}
+
+	mFoco := missaoSorteada{
+		ItemCatalogoMissao: ItemCatalogoMissao{ID: "foco", Tipo: MissaoFoco, Meta: 3},
+		periodo:            "dia",
+		inicio:             dia,
+	}
+	det := evidenciasDaMissao(mFoco, a)
+	evs := det["evidencias"].([]map[string]interface{})
+	if len(evs) != 3 {
+		t.Fatalf("Foco esperava 3 evidências do anime 10, veio %d", len(evs))
+	}
+	for _, ev := range evs {
+		if ev["tipo_acao"] != "episodio" || ev["mal_id"] != 10 {
+			t.Errorf("Evidência inesperada para foco: %+v", ev)
+		}
+	}
+
+	mCom := missaoSorteada{
+		ItemCatalogoMissao: ItemCatalogoMissao{ID: "comentario", Tipo: MissaoComentarEpisodio, Meta: 1},
+		periodo:            "dia",
+		inicio:             dia,
+	}
+	evsCom := evidenciasDaMissao(mCom, a)["evidencias"].([]map[string]interface{})
+	if len(evsCom) != 1 || evsCom[0]["comment_id"] != "c1" {
+		t.Errorf("Evidência de comentário incorreta: %+v", evsCom)
+	}
+
+	mCarta := missaoSorteada{
+		ItemCatalogoMissao: ItemCatalogoMissao{ID: "genero_semana", Tipo: MissaoCompletarGenero, Meta: 1},
+		periodo:            "semana",
+		genero:             "Fantasia",
+		inicio:             semana,
+	}
+	evsCarta := evidenciasDaMissao(mCarta, a)["evidencias"].([]map[string]interface{})
+	if len(evsCarta) != 1 || evsCarta[0]["tipo_acao"] != "carta" || evsCarta[0]["mal_id"] != 30 {
+		t.Errorf("Evidência de carta incorreta: %+v", evsCarta)
+	}
+}

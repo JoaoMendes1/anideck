@@ -339,14 +339,32 @@ type InfoAnimeMissao struct {
 	DaTemporada bool
 }
 
+// ComentarioDaMissao identifica um comentário de episódio usado como evidência.
+type ComentarioDaMissao struct {
+	ID     string
+	MalID  int
+	Numero int
+	Em     time.Time
+}
+
+// ReacaoDaMissao identifica uma reação de episódio usada como evidência.
+type ReacaoDaMissao struct {
+	MalID  int
+	Numero int
+	Reacao string
+	Em     time.Time
+}
+
 // AtividadeMissoes é o retrato da semana do jogador, lido uma vez por requisição.
 type AtividadeMissoes struct {
-	Episodios       []EpisodioDaMissao
-	Concluidas      []ObraConcluida
-	ReacoesHoje     int
-	ComentariosHoje int
-	Animes          map[int]InfoAnimeMissao
-	AnoAtual        int
+	Episodios            []EpisodioDaMissao
+	Concluidas           []ObraConcluida
+	ReacoesHoje          int
+	ComentariosHoje      int
+	ReacoesHojeLista     []ReacaoDaMissao
+	ComentariosHojeLista []ComentarioDaMissao
+	Animes               map[int]InfoAnimeMissao
+	AnoAtual             int
 }
 
 func (a AtividadeMissoes) temGenero(malID int, genero string) bool {

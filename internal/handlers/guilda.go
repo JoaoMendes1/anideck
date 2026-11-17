@@ -87,7 +87,8 @@ type StatusNivelGuilda struct {
 	GamificacaoAtiva bool    `json:"gamificacao_ativa"`
 	PesoMaximoVoto   float64 `json:"peso_maximo_voto"`
 	// Ouro do RPG. Só o resumo da barra do topo preenche; nas outras respostas fica de fora.
-	Ouro *int `json:"ouro,omitempty"`
+	Ouro                  *int   `json:"ouro,omitempty"`
+	UltimoEstornoMissaoEm string `json:"ultimo_estorno_missao_em,omitempty"`
 }
 
 // AfinidadeGeneroInput representa uma linha lida de view_user_genre_affinity.
@@ -714,6 +715,23 @@ func (h *GuildaHandler) HandleResumoGuilda(w http.ResponseWriter, r *http.Reques
 	status.MaiorStreak = maiorStreak
 	status.GamificacaoAtiva = economia.Ativo
 	status.Ouro = lerOuroDoJogador(dbClient, userID)
+
+	var estornosRows []struct {
+		EstornadaEm string `json:"estornada_em"`
+	}
+	if eBytes, _, errE := dbClient.From("missoes_resgates").
+		Select("estornada_em", "", false).
+		Eq("user_id", userID).
+		Gt("xp", "0").
+		Not("estornada_em", "is", "null").
+		Order("estornada_em", &postgrest.OrderOpts{Ascending: false}).
+		Limit(1, "").
+		Execute(); errE == nil {
+		_ = json.Unmarshal(eBytes, &estornosRows)
+	}
+	if len(estornosRows) > 0 {
+		status.UltimoEstornoMissaoEm = estornosRows[0].EstornadaEm
+	}
 
 	w.Header().Set("Content-Type", "application/json")
 	_ = json.NewEncoder(w).Encode(status)

@@ -35,10 +35,14 @@ export function useResumoGuilda(): StatusNivelGuilda | null {
     buscarResumo(VALIDADE_NA_MONTAGEM)
     const aoMudar = () => { buscarResumo(0) }
     window.addEventListener('anideck:episodio-atualizado', aoMudar)
+    window.addEventListener('anideck:comunidade-atualizada', aoMudar)
+    window.addEventListener('anideck:entrada-atualizada', aoMudar)
     window.addEventListener(EVENTO_OURO, aoMudar)
     return () => {
       ativo = false
       window.removeEventListener('anideck:episodio-atualizado', aoMudar)
+      window.removeEventListener('anideck:comunidade-atualizada', aoMudar)
+      window.removeEventListener('anideck:entrada-atualizada', aoMudar)
       window.removeEventListener(EVENTO_OURO, aoMudar)
     }
   }, [token, chave])
