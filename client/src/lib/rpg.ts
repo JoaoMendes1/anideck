@@ -600,3 +600,68 @@ export async function invocar(vezes: 1 | 10): Promise<{ dados?: EstadoInvocacao;
     return { erro: falha }
   }
 }
+
+// --- Masmorras (sql/091) ---------------------------------------------------------------
+
+export interface MasmorraNaLista {
+  id: string
+  nome: string
+  descricao: string
+  nivel_minimo: number
+  andares: string[]
+  monstros: MonstroRPG[]
+  bloqueada: boolean
+  dificuldade: Dificuldade
+}
+
+export interface EstadoMasmorras {
+  atributos: AtributosRPG
+  elemento?: string
+  vida: VidaRPG
+  hoje: HojeRPG
+  /** Id da masmorra feita hoje; vazio quando ainda dá para entrar. */
+  feita_hoje: string
+  masmorras: MasmorraNaLista[]
+}
+
+export interface AndarDaMasmorra {
+  monstro: MonstroRPG
+  resultado: RespostaBatalha['resultado']
+}
+
+export interface RespostaMasmorra {
+  masmorra: Omit<MasmorraNaLista, 'monstros' | 'bloqueada' | 'dificuldade'>
+  jogador: AtributosRPG
+  expedicao: { andares: AndarDaMasmorra[]; completou: boolean; caiu: boolean; vida_final: number }
+  recompensa: RespostaBatalha['recompensa']
+  vida: VidaRPG
+}
+
+export async function obterMasmorras(): Promise<{ dados?: EstadoMasmorras; erro?: string; semPersonagem?: boolean }> {
+  try {
+    const res = await fetch('/api/rpg/masmorras', { headers: await cabecalhoDeAutenticacao() })
+    if (res.status === 404) return { semPersonagem: true }
+    const json = (await res.json().catch(() => null)) as (EstadoMasmorras & { error?: string }) | null
+    if (!res.ok || !json || !Array.isArray(json.masmorras)) return { erro: json?.error || 'Masmorras indisponíveis no momento.' }
+    return { dados: json }
+  } catch {
+    return { erro: 'Masmorras indisponíveis no momento.' }
+  }
+}
+
+export async function entrarNaMasmorra(masmorraId: string): Promise<{ dados?: RespostaMasmorra; erro?: string }> {
+  const falha = 'Não foi possível entrar na masmorra agora.'
+  try {
+    const res = await fetch('/api/rpg/masmorras', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', ...(await cabecalhoDeAutenticacao()) },
+      body: JSON.stringify({ masmorra_id: masmorraId }),
+    })
+    const json = (await res.json().catch(() => null)) as (RespostaMasmorra & { error?: string }) | null
+    if (!res.ok) return { erro: json?.error || falha }
+    if (!json || !json.expedicao || !Array.isArray(json.expedicao.andares)) return { erro: falha }
+    return { dados: json }
+  } catch {
+    return { erro: falha }
+  }
+}

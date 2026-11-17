@@ -13,24 +13,15 @@ import { useEffect, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 import {
   BedDouble,
-  Bug,
   ChevronLeft,
   Coins,
-  Crown,
-  Dog,
-  Droplet,
-  Flame,
   FlaskConical,
-  Ghost,
   Heart,
-  Mountain,
-  Skull,
   Sparkles,
   Swords,
   Trophy,
   Ticket,
   Zap,
-  type LucideIcon,
 } from 'lucide-react'
 import {
   batalhar,
@@ -48,48 +39,16 @@ import {
   textoDaRelacao,
   textoDoBestiario,
   type EstadoExpedicoes,
-  type MonstroRPG,
   type RespostaBatalha,
   type TipoRecuperacao,
 } from '../lib/rpg'
-import { arteDoMonstro } from '../lib/artesRpg'
+import IconeDoMonstro from '../components/rpg/IconeDoMonstro'
+import { ESTILO_DO_TIPO } from '../lib/monstrosVisual'
 import { rotuloDoElemento } from '../lib/personagem'
 
 const ROTULO_DE_SECAO = 'font-mono text-xs font-semibold uppercase tracking-widest text-muted m-0'
 const CONTAINER = 'w-full min-w-0 max-w-[1100px] mx-auto px-4 sm:px-6 lg:px-10 pt-6 pb-24'
 const INTERVALO_ENTRE_GOLPES = 380
-
-const ICONE_DO_MONSTRO: Record<string, LucideIcon> = {
-  slime_de_eter: Droplet,
-  goblin_batedor: Bug,
-  lobo_sombrio: Dog,
-  golem_de_runas: Mountain,
-  espectro_do_vazio: Ghost,
-  cavaleiro_caido: Skull,
-  dragao_de_eter: Flame,
-  primordial_esquecido: Crown,
-}
-
-const ESTILO_DO_TIPO: Record<string, { rotulo: string; borda: string; icone: string }> = {
-  comum: { rotulo: 'Comum', borda: 'border-line', icone: 'text-holo-3 bg-holo-3/10' },
-  raro: { rotulo: 'Raro', borda: 'border-holo-2/60', icone: 'text-holo-2 bg-holo-2/15' },
-  chefe: { rotulo: 'Chefão', borda: 'border-gold/60', icone: 'text-gold bg-gold/15' },
-}
-
-function IconeDoMonstro({ monstro, tamanho = 'h-14 w-14' }: { monstro: Pick<MonstroRPG, 'id' | 'tipo'>; tamanho?: string }) {
-  const Icone = ICONE_DO_MONSTRO[monstro.id] ?? Skull
-  const estilo = ESTILO_DO_TIPO[monstro.tipo] ?? ESTILO_DO_TIPO.comum
-  const arte = arteDoMonstro(monstro.id)
-  return (
-    <span className={`flex shrink-0 items-center justify-center overflow-hidden rounded-2xl ${tamanho} ${estilo.icone}`}>
-      {arte ? (
-        <img src={arte} alt="" aria-hidden="true" loading="lazy" decoding="async" draggable={false} className="h-full w-full object-contain" />
-      ) : (
-        <Icone size={26} aria-hidden="true" />
-      )}
-    </span>
-  )
-}
 
 function querMovimentoReduzido(): boolean {
   return typeof window !== 'undefined' && typeof window.matchMedia === 'function'

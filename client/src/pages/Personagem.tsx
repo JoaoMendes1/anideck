@@ -6,7 +6,7 @@
 // ficam lado a lado. Nível, XP e rank são os da Guilda: o personagem não tem XP próprio.
 import { useCallback, useEffect, useState, type FormEvent } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
-import { ChevronLeft, Image, Lock, Orbit, Repeat, Sparkles, Sword, Swords } from 'lucide-react'
+import { DoorOpen, ChevronLeft, Image, Lock, Orbit, Repeat, Sparkles, Sword, Swords } from 'lucide-react'
 import { obterFundoDoCenario } from '../lib/cosmeticos'
 import CamadaDaAura from '../components/personagem/CamadaDaAura'
 import PainelEquipamentos from '../components/personagem/PainelEquipamentos'
@@ -637,7 +637,7 @@ function FichaDoPersonagem({
             </div>
           </section>
 
-          <nav aria-label="Aventura" className="grid grid-cols-1 gap-2.5">
+          <nav aria-label="Aventura" className="grid grid-cols-1 gap-2.5 sm:grid-cols-2">
             <Link
               to="/expedicoes"
               className="flex min-h-14 items-center gap-3 rounded-2xl border border-coral/40 bg-coral/10 px-4 py-3 hover:border-coral"
@@ -657,6 +657,17 @@ function FichaDoPersonagem({
               <span className="min-w-0 flex-1">
                 <span className="block text-sm font-bold text-text">Invocação</span>
                 <span className="block text-xs text-muted">Troque bilhetes por equipamentos ou Ouro</span>
+              </span>
+              <span aria-hidden="true" className="text-muted">→</span>
+            </Link>
+            <Link
+              to="/masmorras"
+              className="flex min-h-14 items-center gap-3 rounded-2xl border border-holo-2/40 bg-holo-2/10 px-4 py-3 hover:border-holo-2"
+            >
+              <DoorOpen size={20} className="shrink-0 text-holo-2" aria-hidden="true" />
+              <span className="min-w-0 flex-1">
+                <span className="block text-sm font-bold text-text">Masmorras</span>
+                <span className="block text-xs text-muted">Andares seguidos e um baú no fim, uma por dia</span>
               </span>
               <span aria-hidden="true" className="text-muted">→</span>
             </Link>

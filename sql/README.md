@@ -120,6 +120,7 @@ SELECT pg_get_viewdef('nome_da_view'::regclass, true);
 | `088_convite_resgate.sql` | Correção (#247): `resgatar_codigo_convite` redefinida (definição viva, antes no `062`) sem a coluna inexistente `saldo_apos` e com o XP do anfitrião por `conceder_xp_extra()`. **Depois do `087`** | 17/11/2026 |
 | `089_perfil_publico_detalhado.sql` | Fase 16.7c (#248): `perfil_publico` redefinida (definição viva, antes no `041`) com `generos`, `horas_assistidas`, `missoes_concluidas` e `rpg` (vitórias, monstros, Lendários e maior aprimoramento). **Depois do `083`, antes de promover** | 17/11/2026 |
 | `090_rpg_queda_e_vida_minima.sql` | Fase 18.3f (#250): `rpg_regras_vida()` com `vida_minima_luta` (300) e `queda_ouro_pct` (10) (definição viva, antes no `081`); `rpg_batalhas.ouro_perdido`; `rpg_concluir_batalha()` com a mesma assinatura recusa abaixo de 30% de Vida e desconta 10% do Ouro na queda (definição viva, antes no `085`). **Antes de promover** | — |
+| `091_rpg_masmorras.sql` | Fase 18.4d (#251): `rpg_masmorras_execucoes` (uma por usuário e dia, RLS de leitura própria) e `rpg_concluir_masmorra()` só para o service role, com o Ouro e os bilhetes contados pelo catálogo, bônus de completar, queda e item do baú. **Depois do `090`, antes de promover** | — |
 
 Datas com `~` são a data do commit, não da aplicação no Supabase.
 
