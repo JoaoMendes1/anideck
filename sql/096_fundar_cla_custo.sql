@@ -14,22 +14,46 @@
 -- moeda que pode vir a ser vendida não é vantagem comprada: o clã não dá atributo, e entrar
 -- num clã continua grátis.
 --
--- Conserto de passagem: com a chave ausente em app_settings, o SELECT ... INTO deixava o
--- nível mínimo em NULL, e "nível < NULL" nunca recusava. Agora o padrão vale nesse caso.
+-- app_settings.value é TEXT no banco (snapshot), e não jsonb: o (value #>> '{}') do sql/054
+-- não existe para texto e derrubava criar_cla sempre (#263). A leitura passa por
+-- config_inteira(), que aceita '15' e '"15"' e cai no padrão com chave ausente ou inválida.
+-- (Antes, com a chave ausente, o SELECT ... INTO deixava o valor em NULL, e "nível < NULL"
+-- nunca recusava.)
 --
 -- A assinatura de criar_cla não muda: o Go (HandleCriarCla) continua igual.
 -- Pode rodar mais de uma vez.
 
 -- =============================================================================
--- 1. Parâmetros
+-- 1. Leitura de número em app_settings
 -- =============================================================================
 
-INSERT INTO public.app_settings (key, value)
-VALUES ('cla_nivel_minimo_criacao', '15'::jsonb)
-ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value;
+CREATE OR REPLACE FUNCTION public.config_inteira(p_chave TEXT, p_padrao INTEGER)
+RETURNS INTEGER
+LANGUAGE sql
+STABLE
+SECURITY DEFINER
+SET search_path = public, pg_temp
+AS $$
+  SELECT COALESCE(
+    (SELECT CASE WHEN btrim(value, ' "') ~ '^-?[0-9]{1,9}$' THEN btrim(value, ' "')::integer END
+       FROM public.app_settings WHERE key = p_chave),
+    p_padrao
+  );
+$$;
 
-INSERT INTO public.app_settings (key, value)
-VALUES ('cla_custo_criacao', '300'::jsonb)
+REVOKE ALL ON FUNCTION public.config_inteira(TEXT, INTEGER) FROM PUBLIC, anon;
+GRANT EXECUTE ON FUNCTION public.config_inteira(TEXT, INTEGER) TO authenticated, service_role;
+
+-- =============================================================================
+-- 2. Parâmetros
+-- =============================================================================
+
+INSERT INTO public.app_settings (key, value, updated_at)
+VALUES ('cla_nivel_minimo_criacao', '15', now())
+ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value, updated_at = now();
+
+INSERT INTO public.app_settings (key, value, updated_at)
+VALUES ('cla_custo_criacao', '300', now())
 ON CONFLICT (key) DO NOTHING;
 
 -- Leitura pública dos dois números, para a tela mostrar o requisito antes do formulário.
@@ -41,8 +65,8 @@ SECURITY DEFINER
 SET search_path = public, pg_temp
 AS $$
   SELECT jsonb_build_object(
-    'nivel_minimo', COALESCE((SELECT (value #>> '{}')::integer FROM public.app_settings WHERE key = 'cla_nivel_minimo_criacao'), 15),
-    'custo', COALESCE((SELECT (value #>> '{}')::integer FROM public.app_settings WHERE key = 'cla_custo_criacao'), 300)
+    'nivel_minimo', public.config_inteira('cla_nivel_minimo_criacao', 15),
+    'custo', public.config_inteira('cla_custo_criacao', 300)
   );
 $$;
 
@@ -50,7 +74,7 @@ REVOKE ALL ON FUNCTION public.regras_fundar_cla() FROM PUBLIC;
 GRANT EXECUTE ON FUNCTION public.regras_fundar_cla() TO anon, authenticated, service_role;
 
 -- =============================================================================
--- 2. criar_cla com nível e custo
+-- 3. criar_cla com nível e custo
 -- =============================================================================
 
 CREATE OR REPLACE FUNCTION public.criar_cla(
@@ -106,7 +130,7 @@ BEGIN
     RAISE EXCEPTION 'Você já pertence a um clã. Saia do clã atual antes de criar um novo.' USING ERRCODE = 'P0003';
   END IF;
 
-  v_cooldown_dias := COALESCE((SELECT (value #>> '{}')::integer FROM public.app_settings WHERE key = 'cla_cooldown_saida_dias'), 7);
+  v_cooldown_dias := public.config_inteira('cla_cooldown_saida_dias', 7);
 
   SELECT saiu_em INTO v_saiu_em
     FROM public.cla_historico_saida

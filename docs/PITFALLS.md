@@ -1048,8 +1048,18 @@ teste confirmou a suposição errada em vez do banco.
 **Correção:** `sql/095` usa `array_append` e `= ANY(...)`. O teste novo cria a coluna em `TEXT[]`,
 como está no snapshot, e prova o erro com a função antiga antes de aplicar a nova.
 
+**Reincidência (17/11/2026, #263):** o `sql/096` copiou do `sql/054` a leitura
+`(value #>> '{}')` de `app_settings`, e o teste local criou `value` como `jsonb`. No banco,
+`value` é `TEXT`: o `096` falhou ao ser aplicado, e a investigação mostrou que `criar_cla`,
+`entrar_cla` e `obter_meu_cla` falhavam sempre desde o `054`, porque o PL/pgSQL só confere a
+linha ao executar. Ninguém fundava nem entrava em clã, e o #261 escondia a mensagem real.
+**Correção:** `config_inteira(chave, padrão)` no `sql/096`, e `entrar_cla` e `obter_meu_cla`
+redefinidas no `sql/100`. O teste novo roda o `054` inteiro sobre a tabela com os tipos do
+snapshot e prova o erro antes da correção.
+
 > **Pergunta obrigatória:** cada coluna da tabela de teste tem o mesmo tipo do
-> `sql/snapshot_schema.sql`? Copiar o tipo do snapshot, não de memória.
+> `sql/snapshot_schema.sql`? Copiar o tipo do snapshot, não de memória. Em `app_settings`,
+> `value` é `TEXT`: número se lê com `config_inteira`, objeto com `value::jsonb`.
 
 ---
 

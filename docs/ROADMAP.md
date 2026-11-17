@@ -49,7 +49,7 @@ Staging sobe já na Fase 1, como projeto esqueleto — mesmo padrão do JVM Syst
 | 16 · Economia e cartas | ✅ Concluída (09/11/2026, #165); missões, especialidade e perfil revisados em 17/11/2026 (#245–#248); falta abrir o beta |
 | 17 · Comunidade viva | ✅ Concluída (13/11/2026, #179) |
 | 18 · O Despertar Isekai | ✅ Concluída (17/11/2026): combate com elementos, poderes e queda (#250), masmorras (#251), expedição de clã (#252), duelos (#253) e evento da temporada (#254), além de 18.1 Meu Personagem (#199, #200), 18.2a escolha de visual (#218), 18.2b cenários (#219), 18.2e auras (#220), equipamentos com atributos (#221), expedições e reforço dos monstros (#222, #229), invocação gratuita (#223) e revisada (#240), Vida persistente com Ouro (#239), skins (#224), desempenho da tela (#226), atributos com livro de habilidades (#227), artes de monstros e itens (#237) e elenco com seis personagens (#238) |
-| 18.7 · Perfil social e ajustes do dono | ✅ Concluída no código (17/11/2026): Ouro na barra (#256), fundar clã com custo (#257, #261), classe da Guilda removida (#258), seguir e atividade no perfil (#259), feed (#260) e título protegido (#262); falta aplicar `sql/096` a `099` |
+| 18.7 · Perfil social e ajustes do dono | ✅ Concluída no código (17/11/2026): Ouro na barra (#256), fundar clã com custo (#257, #261), classe da Guilda removida (#258), seguir e atividade no perfil (#259), feed (#260) título protegido (#262) e clãs consertados no banco (#263); falta aplicar `sql/096` a `100` |
 | 19 · Arena de cartas | ⏳ Não começada |
 
 ---
@@ -828,8 +828,9 @@ cartas porque o perfil público e o feed dão motivo para voltar mesmo a quem n�
 - [x] 18.7d Seguir jogadores e atividade no perfil público: "Assistindo agora" com o último episódio, atividade recente (episódios agrupados por anime e dia, completos, comentários e curtidas) e contadores de seguidores; opção nas Configurações para esconder a atividade sem fechar o perfil. O texto de um comentário só aparece para quem já viu o episódio, como na conversa. `sql/098` (#259)
 - [x] 18.7e Feed da comunidade (`/feed`) com abas Geral e Seguindo, "carregar mais" por cursor e link direto para a conversa do episódio (`/anime/ID?aba=conversa&ep=N`) (#260)
 - [x] 18.7f Título de honra só muda pela função que confere a conquista. `sql/099` (#262)
+- [x] 18.7g Fundar, entrar e ler o próprio clã voltam a funcionar: as três funções falhavam desde o `sql/054` por ler `app_settings.value` (`TEXT`) como `jsonb`. `sql/096` e `sql/100` (#263)
 
-**Banco:** aplicar `sql/096` a `sql/099` antes de promover.
+**Banco:** aplicar `sql/096` a `sql/100` antes de promover.
 
 ## 🃏 Fase 19: Arena de cartas — *não começada*
 
