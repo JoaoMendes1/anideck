@@ -43,7 +43,9 @@ import {
   recuperarVida,
   resumoDoItem,
   rotuloDaDificuldade,
-  semVida,
+  abaixoDaVidaMinima,
+  ESTILO_DO_ELEMENTO,
+  textoDaRelacao,
   textoDoBestiario,
   type EstadoExpedicoes,
   type MonstroRPG,
@@ -51,6 +53,7 @@ import {
   type TipoRecuperacao,
 } from '../lib/rpg'
 import { arteDoMonstro } from '../lib/artesRpg'
+import { rotuloDoElemento } from '../lib/personagem'
 
 const ROTULO_DE_SECAO = 'font-mono text-xs font-semibold uppercase tracking-widest text-muted m-0'
 const CONTAINER = 'w-full min-w-0 max-w-[1100px] mx-auto px-4 sm:px-6 lg:px-10 pt-6 pb-24'
@@ -149,6 +152,7 @@ function TelaDeBatalha({ batalha, aoVoltar }: { batalha: RespostaBatalha; aoVolt
         {recentes.map((turno, i) => {
           const numero = mostrados - i
           const doJogador = turno.atacante === 'jogador'
+          const especial = Boolean(turno.habilidade || turno.poder || turno.invocado)
           const { texto, valor } = descreverTurno(turno, monstro.nome)
           return (
             <li
@@ -158,11 +162,11 @@ function TelaDeBatalha({ batalha, aoVoltar }: { batalha: RespostaBatalha; aoVolt
               } ${i === 0 ? '' : 'opacity-70'}`}
             >
               <span className="min-w-0 truncate">
-                {turno.habilidade ? <strong className={turno.cura ? 'text-green' : 'text-holo-2'}>{texto}</strong> : texto}
+                {especial ? <strong className={turno.cura && doJogador ? 'text-green' : doJogador ? 'text-holo-2' : 'text-coral'}>{texto}</strong> : texto}
                 {turno.critico && <strong className="ml-1 text-gold">Crítico!</strong>}
               </span>
               <span
-                className={`shrink-0 font-mono font-bold ${turno.cura ? 'text-green' : turno.esquiva ? 'text-muted' : doJogador ? 'text-holo-3' : 'text-coral'}`}
+                className={`shrink-0 font-mono font-bold ${turno.cura && doJogador ? 'text-green' : turno.esquiva ? 'text-muted' : doJogador ? 'text-holo-3' : 'text-coral'}`}
               >
                 {valor}
               </span>
@@ -211,7 +215,7 @@ function TelaDeBatalha({ batalha, aoVoltar }: { batalha: RespostaBatalha; aoVolt
             <p className="m-0 text-sm text-muted">
               {resultado.rodadas >= 20 && vidaJogador > 0
                 ? 'A luta se arrastou demais e você recuou. Melhore o equipamento e tente de novo.'
-                : 'Você foi derrotado e ficou sem Vida. Descanse, assista a um episódio ou use a Pousada antes da próxima batalha.'}
+                : `Você caiu${(recompensa.ouro_perdido ?? 0) > 0 ? ` e perdeu ${recompensa.ouro_perdido} de Ouro` : ''}. Volte a lutar com pelo menos 30% de Vida: descanse, assista a um episódio ou use a Pousada.`}
             </p>
           )}
           <div className="flex flex-wrap gap-2">
@@ -259,7 +263,7 @@ function PainelDaVida({
   const pousadaEm = horaDaPousada(estado.hoje.pousada_livre_em)
   const pousada = estado.custos?.pousada ?? 0
   const pocao = estado.custos?.pocao ?? 0
-  const corDaBarra = semVida(vida) ? 'bg-coral' : vida.perdida_por_mil > 500 ? 'bg-gold' : 'bg-gradient-to-r from-holo-2 to-holo-3'
+  const corDaBarra = abaixoDaVidaMinima(vida, regras) ? 'bg-coral' : vida.perdida_por_mil > 500 ? 'bg-gold' : 'bg-gradient-to-r from-holo-2 to-holo-3'
   return (
     <section aria-labelledby="titulo-da-vida" className="flex flex-col gap-3 rounded-2xl border border-line bg-panel p-4">
       <h2 id="titulo-da-vida" className={ROTULO_DE_SECAO}>
@@ -269,6 +273,7 @@ function PainelDaVida({
       <p className="m-0 text-xs leading-snug text-muted">
         O dano fica entre as batalhas. A Vida volta {porMilEmPorcento(regras.regen_por_hora)} por hora e{' '}
         {porMilEmPorcento(regras.por_episodio)} a cada episódio assistido ({estado.hoje.episodios_hoje ?? 0} de {regras.episodios_por_dia} hoje).
+        Para lutar, precisa de {porMilEmPorcento(regras.vida_minima_luta ?? 300)}; cair custa {regras.queda_ouro_pct ?? 10}% do Ouro.
       </p>
       <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
         <button
@@ -359,7 +364,7 @@ export default function Expedicoes() {
   }
 
   const restantes = batalhasRestantes(estado?.hoje)
-  const exausto = semVida(estado?.vida)
+  const exausto = abaixoDaVidaMinima(estado?.vida, estado?.hoje.regras)
 
   return (
     <div ref={topo} className={CONTAINER}>
@@ -437,7 +442,7 @@ export default function Expedicoes() {
 
           {exausto && (
             <p role="status" className="m-0 rounded-xl border border-coral/40 bg-coral/10 p-3 text-xs text-text">
-              Seu personagem está sem Vida. Descanse, assista a um episódio ou use a Pousada para voltar às batalhas.
+              Seu personagem está abaixo de 30% de Vida. Descanse, assista a um episódio ou use a Pousada para voltar às batalhas.
             </p>
           )}
           {restantes === 0 && (
@@ -471,6 +476,25 @@ export default function Expedicoes() {
                       <p className="m-0 mt-1 text-xs leading-snug text-muted">{m.descricao}</p>
                     </div>
                   </div>
+                  {(m.elemento || (m.poderes?.length ?? 0) > 0) && (
+                    <div className="flex flex-col gap-1.5">
+                      {m.elemento && (
+                        <p className="m-0 flex flex-wrap items-center gap-2 text-xs">
+                          <span className={`rounded-full border px-2 py-0.5 font-mono ${(ESTILO_DO_ELEMENTO[m.elemento] ?? ESTILO_DO_ELEMENTO.eter).classe}`}>
+                            {(ESTILO_DO_ELEMENTO[m.elemento] ?? ESTILO_DO_ELEMENTO.eter).simbolo} {rotuloDoElemento(m.elemento)}
+                          </span>
+                          {textoDaRelacao(m.elemental) && (
+                            <span className={m.elemental === 'vantagem' ? 'font-bold text-green' : 'font-bold text-coral'}>{textoDaRelacao(m.elemental)}</span>
+                          )}
+                        </p>
+                      )}
+                      {m.poderes?.map((p) => (
+                        <p key={p.id} className="m-0 text-xs leading-snug text-muted">
+                          <strong className="text-text">{p.nome}:</strong> {p.descricao}
+                        </p>
+                      ))}
+                    </div>
+                  )}
                   <div className="flex flex-wrap items-center gap-x-3 gap-y-1 font-mono text-xs text-muted">
                     <span className="inline-flex items-center gap-1">
                       <Heart size={12} className="text-coral" aria-hidden="true" /> {m.vida}

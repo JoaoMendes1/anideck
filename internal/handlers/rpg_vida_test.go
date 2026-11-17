@@ -155,3 +155,19 @@ func TestHandleRecuperar(t *testing.T) {
 		t.Fatalf("tipo válido sem banco: esperava 404 ou 503, recebeu %d", w.Code)
 	}
 }
+
+func TestPodeLutar_VidaMinima(t *testing.T) {
+	regras := RegrasVida{}.ComPadroes()
+	if regras.VidaMinimaLuta != 300 || regras.QuedaOuroPct != 10 {
+		t.Fatalf("padrões errados: %+v", regras)
+	}
+	casos := map[int]bool{0: true, 700: true, 701: false, 1000: false}
+	for perda, quer := range casos {
+		if got := PodeLutar(perda, RegrasVida{}); got != quer {
+			t.Errorf("perda %d: quer %v, veio %v", perda, quer, got)
+		}
+	}
+	if !PodeLutar(850, RegrasVida{VidaMinimaLuta: 100}) {
+		t.Error("a regra do banco deve valer sobre o padrão")
+	}
+}

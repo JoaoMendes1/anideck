@@ -28,6 +28,31 @@ type RegrasVida struct {
 	EpisodiosPorDia int `json:"episodios_por_dia"`
 	Pocao           int `json:"pocao"`
 	PousadaHoras    int `json:"pousada_horas"`
+	// Vida mínima para começar uma batalha e Ouro perdido na queda (sql/090).
+	VidaMinimaLuta int `json:"vida_minima_luta"`
+	QuedaOuroPct   int `json:"queda_ouro_pct"`
+}
+
+// Valores do sql/090, usados enquanto o banco ainda não os devolve.
+const (
+	vidaMinimaLutaPadrao = 300
+	quedaOuroPctPadrao   = 10
+)
+
+// ComPadroes preenche as regras que o banco ainda não manda: zero é ausente.
+func (r RegrasVida) ComPadroes() RegrasVida {
+	if r.VidaMinimaLuta <= 0 {
+		r.VidaMinimaLuta = vidaMinimaLutaPadrao
+	}
+	if r.QuedaOuroPct <= 0 {
+		r.QuedaOuroPct = quedaOuroPctPadrao
+	}
+	return r
+}
+
+// PodeLutar diz se a Vida guardada alcança o mínimo para começar uma batalha.
+func PodeLutar(perdidaPorMil int, regras RegrasVida) bool {
+	return perdidaPorMil <= perdaTotalPorMil-regras.ComPadroes().VidaMinimaLuta
 }
 
 // CustosRecuperacao é o preço em Ouro de cada forma de recuperar, para o nível do jogador.

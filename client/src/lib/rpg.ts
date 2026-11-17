@@ -267,6 +267,36 @@ export interface MonstroRPG {
   bilhetes: number
   chance_item: number
   raridade_item: Raridade
+  /** Elemento e poderes vêm do código do servidor (rpg_combate_avancado.go). */
+  elemento?: string
+  poderes?: PoderDoMonstro[]
+}
+
+export interface PoderDoMonstro {
+  id: string
+  nome: string
+  descricao: string
+  tipo: 'golpe' | 'drenar' | 'escudo' | 'furia' | 'invocar'
+}
+
+export type RelacaoElemental = 'vantagem' | 'desvantagem' | 'neutro'
+
+/** Cor e símbolo de cada elemento, para os selos da tela. Classes inteiras (Tailwind). */
+export const ESTILO_DO_ELEMENTO: Record<string, { simbolo: string; classe: string }> = {
+  fogo: { simbolo: '🔥', classe: 'text-coral border-coral/50' },
+  agua: { simbolo: '💧', classe: 'text-holo-3 border-holo-3/50' },
+  raio: { simbolo: '⚡', classe: 'text-gold border-gold/50' },
+  terra: { simbolo: '🪨', classe: 'text-green border-green/50' },
+  luz: { simbolo: '☀️', classe: 'text-gold border-gold/50' },
+  trevas: { simbolo: '🌑', classe: 'text-holo-2 border-holo-2/50' },
+  eter: { simbolo: '✨', classe: 'text-holo-1 border-holo-1/50' },
+}
+
+/** Frase da relação de elemento entre você e o monstro, ou vazio quando é neutra. */
+export function textoDaRelacao(relacao: string | undefined): string {
+  if (relacao === 'vantagem') return 'Vantagem de elemento: você bate 10% mais forte'
+  if (relacao === 'desvantagem') return 'Desvantagem de elemento: ele bate 10% mais forte'
+  return ''
 }
 
 /** Bestiário de um monstro (sql/085): marcos com 10, 50 e 150 vitórias, +10% de Ouro cada. */
@@ -292,6 +322,7 @@ export interface MonstroNaLista extends MonstroRPG {
   poder: number
   dificuldade: Dificuldade
   bestiario?: BestiarioDoMonstro
+  elemental?: RelacaoElemental
 }
 
 /** Regras de recuperação da Vida, em por mil da Vida máxima (sql/081). */
@@ -301,6 +332,9 @@ export interface RegrasVida {
   episodios_por_dia: number
   pocao: number
   pousada_horas: number
+  /** Vida mínima para lutar e Ouro perdido na queda (sql/090). */
+  vida_minima_luta?: number
+  queda_ouro_pct?: number
 }
 
 export interface HojeRPG {
@@ -332,6 +366,8 @@ export type TipoRecuperacao = 'pousada' | 'pocao'
 
 export interface EstadoExpedicoes {
   atributos: AtributosRPG
+  /** Elemento do seu personagem. */
+  elemento?: string
   vida?: VidaRPG
   custos?: CustosRecuperacao
   hoje: HojeRPG
@@ -339,7 +375,7 @@ export interface EstadoExpedicoes {
 }
 
 export interface TurnoBatalha {
-  atacante: 'jogador' | 'monstro'
+  atacante: 'jogador' | 'monstro' | 'ajudante'
   dano: number
   critico: boolean
   vida_jogador: number
@@ -349,13 +385,28 @@ export interface TurnoBatalha {
   esquiva?: boolean
   cura?: number
   eter?: number
+  /** Poder do monstro usado nesta ação. */
+  poder?: string
+  /** Ajudante atingido pelo jogador, ou o ajudante que atacou. */
+  alvo?: string
+  /** Ajudante chamado nesta ação. */
+  invocado?: string
 }
 
 export interface RespostaBatalha {
   monstro: MonstroRPG
   jogador: AtributosRPG
-  resultado: { venceu: boolean; rodadas: number; turnos: TurnoBatalha[]; vida_inicial?: number; vida_final?: number }
-  recompensa: { bilhetes: number; ouro?: number; item?: ItemRPG }
+  resultado: {
+    venceu: boolean
+    rodadas: number
+    turnos: TurnoBatalha[]
+    vida_inicial?: number
+    vida_final?: number
+    elemental?: RelacaoElemental
+    /** A Vida chegou a zero: a queda custa Ouro (sql/090). */
+    caiu?: boolean
+  }
+  recompensa: { bilhetes: number; ouro?: number; item?: ItemRPG; ouro_perdido?: number }
   vida?: VidaRPG
   bestiario?: BestiarioDoMonstro
   hoje: HojeRPG
@@ -363,9 +414,21 @@ export interface RespostaBatalha {
 
 /** Texto de uma linha do registro da luta e o número ao lado (dano ou cura). */
 export function descreverTurno(turno: TurnoBatalha, nomeDoMonstro: string): { texto: string; valor: string } {
+  if (turno.atacante === 'ajudante') {
+    const quem = turno.alvo ?? 'O ajudante'
+    if (turno.esquiva) return { texto: `${quem} ataca, e você esquiva`, valor: '0' }
+    return { texto: `${quem} ataca`, valor: `−${turno.dano}` }
+  }
   if (turno.atacante === 'monstro') {
-    if (turno.esquiva) return { texto: `${nomeDoMonstro} ataca, e você esquiva`, valor: '0' }
-    return { texto: `${nomeDoMonstro} ataca`, valor: `−${turno.dano}` }
+    if (turno.invocado) return { texto: `${nomeDoMonstro} usa ${turno.poder ?? 'um poder'}: chega ${turno.invocado}`, valor: '' }
+    if (turno.poder && !turno.dano && !turno.esquiva) return { texto: `${nomeDoMonstro} usa ${turno.poder}`, valor: '' }
+    const como = turno.poder ? `${nomeDoMonstro} usa ${turno.poder}` : `${nomeDoMonstro} ataca`
+    if (turno.esquiva) return { texto: `${como}, e você esquiva`, valor: '0' }
+    if (turno.cura) return { texto: `${como} e recupera ${turno.cura} de Vida`, valor: `−${turno.dano}` }
+    return { texto: como, valor: `−${turno.dano}` }
+  }
+  if (turno.alvo && turno.dano) {
+    return { texto: `${turno.habilidade ? `Você usa ${turno.habilidade}` : 'Você golpeia'} em ${turno.alvo}`, valor: `−${turno.dano}` }
   }
   if (turno.cura) return { texto: `${turno.habilidade ?? 'Você'}: recupera Vida`, valor: `+${turno.cura}` }
   if (turno.habilidade) return { texto: `Você usa ${turno.habilidade}`, valor: `−${turno.dano}` }
@@ -386,6 +449,13 @@ export function rotuloDaDificuldade(d: string | undefined) {
 /** Sem Vida, o servidor recusa a batalha: a tela bloqueia antes. */
 export function semVida(vida: VidaRPG | undefined): boolean {
   return Boolean(vida && vida.perdida_por_mil >= 1000)
+}
+
+/** Abaixo da Vida mínima (30%, sql/090), o servidor recusa a batalha: a tela bloqueia antes. */
+export function abaixoDaVidaMinima(vida: VidaRPG | undefined, regras?: Pick<RegrasVida, 'vida_minima_luta'>): boolean {
+  if (!vida) return false
+  const minima = regras?.vida_minima_luta && regras.vida_minima_luta > 0 ? regras.vida_minima_luta : 300
+  return vida.perdida_por_mil > 1000 - minima
 }
 
 /** Hora local em que a Pousada volta a valer, ou vazio quando já vale. */

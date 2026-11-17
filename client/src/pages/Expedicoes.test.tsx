@@ -111,13 +111,21 @@ describe('Expedições', () => {
     expect(screen.getByText('12 de Ouro')).toBeTruthy()
   })
 
-  it('sem Vida, bloqueia a batalha e avisa como recuperar', async () => {
-    vi.mocked(obterExpedicoes).mockResolvedValue({ dados: estado(1, 1000) })
+  it('abaixo de 30% de Vida, bloqueia a batalha e avisa como recuperar', async () => {
+    vi.mocked(obterExpedicoes).mockResolvedValue({ dados: estado(1, 750) })
     abrir()
 
     const botao = await screen.findByRole('button', { name: 'Enfrentar Slime de Éter' })
     expect((botao as HTMLButtonElement).disabled).toBe(true)
-    expect(screen.getByText(/está sem Vida/)).toBeTruthy()
+    expect(screen.getByText(/abaixo de 30% de Vida/)).toBeTruthy()
+  })
+
+  it('com 30% de Vida, a batalha fica liberada', async () => {
+    vi.mocked(obterExpedicoes).mockResolvedValue({ dados: estado(1, 700) })
+    abrir()
+
+    const botao = await screen.findByRole('button', { name: 'Enfrentar Slime de Éter' })
+    expect((botao as HTMLButtonElement).disabled).toBe(false)
   })
 
   it('a Pousada gasta Ouro, enche a Vida e passa a mostrar quando volta', async () => {

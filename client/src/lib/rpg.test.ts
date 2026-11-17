@@ -88,6 +88,10 @@ describe('rpg - Vida entre as batalhas', () => {
     expect(semVida(undefined)).toBe(false)
     expect(semVida({ atual: 1, maxima: 300, perdida_por_mil: 999 })).toBe(false)
     expect(semVida({ atual: 0, maxima: 300, perdida_por_mil: 1000 })).toBe(true)
+    const { abaixoDaVidaMinima } = await import('./rpg')
+    expect(abaixoDaVidaMinima({ atual: 90, maxima: 300, perdida_por_mil: 700 })).toBe(false)
+    expect(abaixoDaVidaMinima({ atual: 87, maxima: 300, perdida_por_mil: 710 })).toBe(true)
+    expect(abaixoDaVidaMinima({ atual: 30, maxima: 300, perdida_por_mil: 900 }, { vida_minima_luta: 100 })).toBe(false)
   })
 
   it('mostra a hora da Pousada só quando ela ainda não vale', async () => {
@@ -111,6 +115,10 @@ describe('atributos primários e registro da luta', () => {
   it('descreve cada tipo de turno', () => {
     const base = { dano: 12, critico: false, vida_jogador: 100, vida_monstro: 50 }
     expect(descreverTurno({ ...base, atacante: 'jogador' }, 'Lobo')).toEqual({ texto: 'Você golpeia', valor: '−12' })
+    expect(descreverTurno({ ...base, atacante: 'jogador', alvo: 'Lobo Jovem' }, 'Lobo').texto).toBe('Você golpeia em Lobo Jovem')
+    expect(descreverTurno({ ...base, atacante: 'monstro', dano: 0, poder: 'Uivo da Matilha', invocado: 'Lobo Jovem' }, 'Lobo').texto).toBe('Lobo usa Uivo da Matilha: chega Lobo Jovem')
+    expect(descreverTurno({ ...base, atacante: 'monstro', poder: 'Toque do Vazio', cura: 6 }, 'Espectro')).toEqual({ texto: 'Espectro usa Toque do Vazio e recupera 6 de Vida', valor: '−12' })
+    expect(descreverTurno({ ...base, atacante: 'ajudante', alvo: 'Lobo Jovem' }, 'Lobo')).toEqual({ texto: 'Lobo Jovem ataca', valor: '−12' })
     expect(descreverTurno({ ...base, atacante: 'jogador', habilidade: 'Corte Duplo' }, 'Lobo').texto).toBe('Você usa Corte Duplo')
     expect(descreverTurno({ ...base, atacante: 'jogador', dano: 0, habilidade: 'Despertar do Éter', cura: 30 }, 'Lobo')).toEqual({
       texto: 'Despertar do Éter: recupera Vida',

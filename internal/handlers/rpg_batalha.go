@@ -36,6 +36,9 @@ type MonstroRPG struct {
 	Ordem        int    `json:"ordem"`
 	// Velocidade não é coluna: vem do nível e do tipo (VelocidadeDoMonstro).
 	Velocidade int `json:"velocidade"`
+	// Elemento e poderes também não: vêm do código (rpg_combate_avancado.go).
+	Elemento string         `json:"elemento"`
+	Poderes  []PoderMonstro `json:"poderes,omitempty"`
 }
 
 // VelocidadeDoMonstro cresce um pouco abaixo da do jogador do mesmo nível: quem investe em
@@ -71,6 +74,12 @@ type TurnoBatalha struct {
 	Cura int `json:"cura,omitempty"`
 	// Éter do jogador depois da ação.
 	Eter int `json:"eter"`
+	// Poder do monstro usado nesta ação; vazio é golpe comum.
+	Poder string `json:"poder,omitempty"`
+	// Alvo: nome do ajudante atingido pelo jogador, ou do ajudante que atacou.
+	Alvo string `json:"alvo,omitempty"`
+	// Invocado: nome do ajudante chamado nesta ação.
+	Invocado string `json:"invocado,omitempty"`
 }
 
 // CombatenteRPG é o jogador na luta: os números e as habilidades já liberadas.
@@ -80,6 +89,8 @@ type CombatenteRPG struct {
 	// VidaInicial é a Vida com que o jogador entra, que persiste entre as batalhas (sql/081).
 	// Zero ou acima da máxima é Vida cheia.
 	VidaInicial int
+	// Elemento do personagem do elenco; vazio é neutro.
+	Elemento string
 }
 
 // CombatenteDoEstado separa do livro só as habilidades liberadas.
@@ -104,6 +115,10 @@ type ResultadoSimulado struct {
 	VidaFinal   int `json:"vida_final"`
 	// Usos de cada habilidade comum nesta luta, para a maestria (sql/084).
 	Usos map[string]int `json:"-"`
+	// Relação do elemento do jogador com o do monstro: vantagem, desvantagem ou neutro.
+	Elemental string `json:"elemental"`
+	// Caiu: a Vida chegou a zero (derrota por tempo não é queda).
+	Caiu bool `json:"caiu"`
 }
 
 // CalcularDano dá o dano de um golpe antes da variação. A fórmula ataque²/(ataque+defesa)
@@ -157,6 +172,23 @@ type lutaEmAndamento struct {
 	rodadasReducao int     // rodadas em que a redução ainda vale
 	usos           map[string]int
 	turnos         []TurnoBatalha
+	// Estado dos poderes do monstro.
+	rodada        int
+	usosPoder     map[string]int
+	ajudantes     []AjudanteNaLuta
+	furia         float64 // multiplica o ataque do monstro; 0 é nenhum
+	escudo        float64 // fração do dano do jogador que o monstro absorve
+	rodadasEscudo int
+}
+
+// ajudanteVivo devolve o primeiro ajudante de pé, que protege o monstro dos golpes.
+func (l *lutaEmAndamento) ajudanteVivo() *AjudanteNaLuta {
+	for i := range l.ajudantes {
+		if l.ajudantes[i].Vida > 0 {
+			return &l.ajudantes[i]
+		}
+	}
+	return nil
 }
 
 func (l *lutaEmAndamento) registrar(t TurnoBatalha) {
@@ -198,11 +230,17 @@ func (l *lutaEmAndamento) escolher() *HabilidadeRPG {
 func (l *lutaEmAndamento) golpeDoJogador(ataque int) (int, bool) {
 	a := l.j.Atributos
 	defesa := l.m.Defesa
+	if aj := l.ajudanteVivo(); aj != nil {
+		defesa = aj.Defesa
+	}
 	if l.ignorarDefesa {
 		defesa = 0
 		l.ignorarDefesa = false
 	}
 	dano, critico := golpe(l.rng, ataque, defesa, a.CriticoPorMil, float64(a.DanoCritico)/100)
+	if m := MultiplicadorElemental(l.j.Elemento, l.m.Elemento); m != 1 {
+		dano = max(1, int(float64(dano)*m+0.5))
+	}
 	if l.multProximo > 0 {
 		dano = int(float64(dano)*l.multProximo + 0.5)
 		l.multProximo = 0
@@ -244,7 +282,16 @@ func (l *lutaEmAndamento) vezDoJogador() bool {
 		t.Dano, t.Critico = l.golpeDoJogador(int(float64(a.Ataque)*h.Fator + 0.5))
 	}
 
-	l.vidaMonstro = max(0, l.vidaMonstro-t.Dano)
+	// O ajudante de pé recebe o golpe no lugar do monstro; o escudo só protege o monstro.
+	if aj := l.ajudanteVivo(); aj != nil && t.Dano > 0 {
+		aj.Vida = max(0, aj.Vida-t.Dano)
+		t.Alvo = aj.Nome
+	} else if t.Dano > 0 {
+		if l.rodadasEscudo > 0 {
+			t.Dano = max(1, int(float64(t.Dano)*(1-l.escudo)+0.5))
+		}
+		l.vidaMonstro = max(0, l.vidaMonstro-t.Dano)
+	}
 	l.registrar(t)
 	return l.vidaMonstro == 0
 }
@@ -253,22 +300,53 @@ func (l *lutaEmAndamento) vezDoJogador() bool {
 // Devolve true quando o jogador cai.
 func (l *lutaEmAndamento) vezDoMonstro() bool {
 	t := TurnoBatalha{Atacante: "monstro"}
+	poder := l.escolherPoder()
+	fator := 1.0
+	if poder != nil {
+		l.usosPoder[poder.ID]++
+		t.Poder = poder.Nome
+	}
 	switch {
-	case l.esquivasCertas > 0:
-		l.esquivasCertas--
-		t.Esquiva = true
-	case l.rng.Intn(1000) < l.j.Atributos.EsquivaPorMil:
-		t.Esquiva = true
-	default:
-		t.Dano, t.Critico = golpe(l.rng, l.m.Ataque, l.j.Atributos.Defesa, critMonstroPorMil, multCritMonstro)
-		if l.rodadasReducao > 0 {
-			t.Dano = max(1, int(float64(t.Dano)*(1-l.reducao)+0.5))
+	case poder != nil && poder.Tipo == poderEscudo:
+		l.escudo, l.rodadasEscudo = poder.Fator, poder.Rodadas+1
+	case poder != nil && poder.Tipo == poderFuria:
+		l.furia = poder.Fator
+	case poder != nil && poder.Tipo == poderInvocar:
+		aj := AjudanteNaLuta{
+			Nome:   poder.Ajudante,
+			Vida:   max(1, l.m.Vida*poder.AjudanteVidaPct/100),
+			Ataque: max(1, l.m.Ataque*poder.AjudanteAtqPct/100),
+			Defesa: l.m.Defesa / 2,
 		}
-		l.vidaJogador = max(0, l.vidaJogador-t.Dano)
+		l.ajudantes = append(l.ajudantes, aj)
+		t.Invocado = aj.Nome
+	default:
+		if poder != nil {
+			fator = poder.Fator
+		}
+		dano, esquivou := l.golpeNoJogador(int(float64(l.m.Ataque)*fator + 0.5))
+		t.Dano, t.Critico, t.Esquiva = dano.valor, dano.critico, esquivou
+		if poder != nil && poder.Tipo == poderDrenar && t.Dano > 0 {
+			t.Cura = min(t.Dano/2, l.m.Vida-l.vidaMonstro)
+			l.vidaMonstro += t.Cura
+		}
 	}
 	l.registrar(t)
 	if l.vidaJogador == 0 {
 		return true
+	}
+
+	// Os ajudantes de pé atacam logo depois do monstro.
+	for i := range l.ajudantes {
+		aj := &l.ajudantes[i]
+		if aj.Vida == 0 {
+			continue
+		}
+		dano, esquivou := l.golpeNoJogador(aj.Ataque)
+		l.registrar(TurnoBatalha{Atacante: "ajudante", Alvo: aj.Nome, Dano: dano.valor, Critico: dano.critico, Esquiva: esquivou})
+		if l.vidaJogador == 0 {
+			return true
+		}
 	}
 
 	// A habilidade única reage ao golpe: abaixo de metade da Vida, uma vez por luta.
@@ -298,6 +376,12 @@ func SimularBatalha(jogador CombatenteRPG, monstro MonstroRPG, rng *rand.Rand) R
 	if monstro.Velocidade == 0 {
 		monstro.Velocidade = VelocidadeDoMonstro(monstro)
 	}
+	if monstro.Elemento == "" {
+		monstro.Elemento = ElementoDoMonstro(monstro.ID)
+	}
+	if monstro.Poderes == nil {
+		monstro.Poderes = PoderesDoMonstro(monstro.ID)
+	}
 	vidaInicial := jogador.Atributos.Vida
 	if jogador.VidaInicial > 0 && jogador.VidaInicial < vidaInicial {
 		vidaInicial = jogador.VidaInicial
@@ -309,14 +393,19 @@ func SimularBatalha(jogador CombatenteRPG, monstro MonstroRPG, rng *rand.Rand) R
 		eter:        jogador.Atributos.Eter,
 		recargas:    map[string]int{},
 		usos:        map[string]int{},
+		usosPoder:   map[string]int{},
 		turnos:      make([]TurnoBatalha, 0, maxTurnosBatalha*2),
 	}
 	jogadorPrimeiro := jogador.Atributos.Velocidade >= monstro.Velocidade
 	fim := func(venceu bool, rodadas int) ResultadoSimulado {
-		return ResultadoSimulado{Venceu: venceu, Rodadas: rodadas, Turnos: l.turnos, VidaInicial: vidaInicial, VidaFinal: l.vidaJogador, Usos: l.usos}
+		return ResultadoSimulado{
+			Venceu: venceu, Rodadas: rodadas, Turnos: l.turnos, VidaInicial: vidaInicial, VidaFinal: l.vidaJogador, Usos: l.usos,
+			Elemental: RelacaoElemental(jogador.Elemento, monstro.Elemento), Caiu: !venceu && l.vidaJogador == 0,
+		}
 	}
 
 	for rodada := 1; rodada <= maxTurnosBatalha; rodada++ {
+		l.rodada = rodada
 		if jogadorPrimeiro {
 			if l.vezDoJogador() {
 				return fim(true, rodada)
@@ -335,6 +424,9 @@ func SimularBatalha(jogador CombatenteRPG, monstro MonstroRPG, rng *rand.Rand) R
 		l.eter = min(jogador.Atributos.Eter, l.eter+eterPorRodada)
 		if l.rodadasReducao > 0 {
 			l.rodadasReducao--
+		}
+		if l.rodadasEscudo > 0 {
+			l.rodadasEscudo--
 		}
 		for id, r := range l.recargas {
 			if r > 0 {
@@ -391,6 +483,8 @@ type MonstroNaLista struct {
 	Poder       int                `json:"poder"`
 	Dificuldade string             `json:"dificuldade"`
 	Bestiario   BestiarioDoMonstro `json:"bestiario"`
+	// Elemental: relação do elemento do jogador com o do monstro.
+	Elemental string `json:"elemental"`
 }
 
 // HojeRPG é o limite de batalhas, os saldos e a Vida guardada (sql/081).
@@ -413,6 +507,7 @@ type HojeRPG struct {
 // EstadoExpedicoes é o corpo de GET /api/rpg/batalhas.
 type EstadoExpedicoes struct {
 	Atributos AtributosRPG      `json:"atributos"`
+	Elemento  string            `json:"elemento"`
 	Vida      VidaRPG           `json:"vida"`
 	Custos    CustosRecuperacao `json:"custos"`
 	Hoje      HojeRPG           `json:"hoje"`
@@ -424,6 +519,8 @@ type RecompensaBatalha struct {
 	Bilhetes int      `json:"bilhetes"`
 	Ouro     int      `json:"ouro"`
 	Item     *ItemRPG `json:"item,omitempty"`
+	// OuroPerdido: o que a queda custou (sql/090).
+	OuroPerdido int `json:"ouro_perdido,omitempty"`
 }
 
 // RespostaBatalha é o corpo de POST /api/rpg/batalhas.
@@ -452,6 +549,8 @@ func lerMonstros(dbClient *supabase.Client) ([]MonstroRPG, error) {
 	sort.SliceStable(monstros, func(i, j int) bool { return monstros[i].Ordem < monstros[j].Ordem })
 	for i := range monstros {
 		monstros[i].Velocidade = VelocidadeDoMonstro(monstros[i])
+		monstros[i].Elemento = ElementoDoMonstro(monstros[i].ID)
+		monstros[i].Poderes = PoderesDoMonstro(monstros[i].ID)
 	}
 	return monstros, nil
 }
@@ -511,6 +610,7 @@ func (h *RPGHandler) HandleGetExpedicoes(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
+	elemento := elementoDoJogador(sessao.ctx)
 	lista := make([]MonstroNaLista, 0, len(monstros))
 	for _, m := range monstros {
 		lista = append(lista, MonstroNaLista{
@@ -518,10 +618,13 @@ func (h *RPGHandler) HandleGetExpedicoes(w http.ResponseWriter, r *http.Request)
 			Poder:       PoderDoMonstro(m),
 			Dificuldade: DificuldadeContra(equipamento.Atributos, m),
 			Bestiario:   MontarBestiario(hoje.Vitorias[m.ID]),
+			Elemental:   RelacaoElemental(elemento, m.Elemento),
 		})
 	}
+	hoje.Regras = hoje.Regras.ComPadroes()
 	responderJSON(w, http.StatusOK, EstadoExpedicoes{
 		Atributos: equipamento.Atributos,
+		Elemento:  elemento,
 		Vida:      MontarVida(equipamento.Atributos.Vida, hoje.VidaPerdida),
 		Custos:    CustosPara(sessao.nivel),
 		Hoje:      hoje,
@@ -588,14 +691,15 @@ func (h *RPGHandler) HandleBatalhar(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	vida := MontarVida(equipamento.Atributos.Vida, hoje.VidaPerdida)
-	if vida.PerdidaPorMil >= perdaTotalPorMil {
-		responderErroJSON(w, http.StatusConflict, "Seu personagem está sem Vida. Descanse, assista a um episódio ou use a Pousada.")
+	if !PodeLutar(vida.PerdidaPorMil, hoje.Regras) {
+		responderErroJSON(w, http.StatusConflict, "Seu personagem precisa de pelo menos 30% de Vida para lutar. Descanse, assista a um episódio ou use a Pousada.")
 		return
 	}
 
 	rng := novoGeradorDeBatalha()
 	combatente := CombatenteDoEstado(equipamento)
 	combatente.VidaInicial = vida.Atual
+	combatente.Elemento = elementoDoJogador(sessao.ctx)
 	vitoriasAntes := hoje.Vitorias[monstro.ID]
 	resultado := SimularBatalha(combatente, *monstro, rng)
 	perdaFinal := PerdaPorMil(equipamento.Atributos.Vida, resultado.VidaFinal)
@@ -640,6 +744,7 @@ func (h *RPGHandler) HandleBatalhar(w http.ResponseWriter, r *http.Request) {
 		SemVida        bool    `json:"sem_vida"`
 		BilhetesGanhos int     `json:"bilhetes_ganhos"`
 		OuroGanho      int     `json:"ouro_ganho"`
+		OuroPerdido    int     `json:"ouro_perdido"`
 		ItemID         *string `json:"item_id"`
 		Bilhetes       int     `json:"bilhetes"`
 		Ouro           int     `json:"ouro"`
@@ -676,7 +781,7 @@ func (h *RPGHandler) HandleBatalhar(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	recompensa := RecompensaBatalha{Bilhetes: registro.BilhetesGanhos, Ouro: registro.OuroGanho}
+	recompensa := RecompensaBatalha{Bilhetes: registro.BilhetesGanhos, Ouro: registro.OuroGanho, OuroPerdido: registro.OuroPerdido}
 	bestiario := MontarBestiario(vitoriasAntes)
 	if resultado.Venceu {
 		bestiario = MontarBestiario(vitoriasAntes + 1)
@@ -696,7 +801,7 @@ func (h *RPGHandler) HandleBatalhar(w http.ResponseWriter, r *http.Request) {
 		Hoje: HojeRPG{
 			Feitas: registro.Feitas, Limite: registro.Limite, Bilhetes: registro.Bilhetes,
 			Ouro: registro.Ouro, VidaPerdida: registro.VidaPerdida,
-			PousadaLivreEm: hoje.PousadaLivreEm, EpisodiosHoje: hoje.EpisodiosHoje, Regras: hoje.Regras,
+			PousadaLivreEm: hoje.PousadaLivreEm, EpisodiosHoje: hoje.EpisodiosHoje, Regras: hoje.Regras.ComPadroes(),
 		},
 	})
 }
@@ -717,4 +822,65 @@ func lerItensDaRaridade(dbClient *supabase.Client, raridade string) []ItemRPG {
 		return nil
 	}
 	return itens
+}
+
+type danoDeGolpe struct {
+	valor   int
+	critico bool
+}
+
+// golpeNoJogador resolve um golpe do lado do monstro (dele ou de um ajudante): esquiva,
+// fúria, elemento e a redução da habilidade única. Devolve o dano e se o jogador esquivou.
+func (l *lutaEmAndamento) golpeNoJogador(ataque int) (danoDeGolpe, bool) {
+	switch {
+	case l.esquivasCertas > 0:
+		l.esquivasCertas--
+		return danoDeGolpe{}, true
+	case l.rng.Intn(1000) < l.j.Atributos.EsquivaPorMil:
+		return danoDeGolpe{}, true
+	}
+	if l.furia > 0 {
+		ataque = int(float64(ataque)*l.furia + 0.5)
+	}
+	valor, critico := golpe(l.rng, ataque, l.j.Atributos.Defesa, critMonstroPorMil, multCritMonstro)
+	if m := MultiplicadorElemental(l.m.Elemento, l.j.Elemento); m != 1 {
+		valor = max(1, int(float64(valor)*m+0.5))
+	}
+	if l.rodadasReducao > 0 {
+		valor = max(1, int(float64(valor)*(1-l.reducao)+0.5))
+	}
+	l.vidaJogador = max(0, l.vidaJogador-valor)
+	return danoDeGolpe{valor, critico}, false
+}
+
+// escolherPoder decide se o monstro usa um poder nesta vez: o primeiro, na ordem do
+// catálogo, cujas condições valem e cuja chance sai. Sem poder, golpe comum (nil).
+func (l *lutaEmAndamento) escolherPoder() *PoderMonstro {
+	for i := range l.m.Poderes {
+		p := &l.m.Poderes[i]
+		if p.MaxUsos > 0 && l.usosPoder[p.ID] >= p.MaxUsos {
+			continue
+		}
+		if p.APartirDaRodada > 0 && l.rodada < p.APartirDaRodada {
+			continue
+		}
+		if p.AbaixoDePct > 0 && l.vidaMonstro*100 >= l.m.Vida*p.AbaixoDePct {
+			continue
+		}
+		if l.rng.Intn(1000) < p.ChancePorMil {
+			return p
+		}
+	}
+	return nil
+}
+
+// elementoDoJogador é o elemento do personagem do elenco; sem personagem, neutro.
+func elementoDoJogador(ctx contextoPersonagem) string {
+	if ctx.linha == nil {
+		return elementoNeutro
+	}
+	if pb, ok := PersonagensBase()[ctx.linha.PersonagemBase]; ok {
+		return pb.Elemento
+	}
+	return PersonagensBase()[personagemBasePadrao].Elemento
 }

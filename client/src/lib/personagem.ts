@@ -202,6 +202,7 @@ const ROTULOS_DE_ELEMENTO: Record<string, string> = {
   agua: 'Água',
   terra: 'Terra',
   luz: 'Luz',
+  trevas: 'Trevas',
 }
 
 export function rotuloDaClasse(classe: string | undefined): string {
