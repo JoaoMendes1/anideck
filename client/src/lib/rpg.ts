@@ -752,3 +752,57 @@ export async function duelar(handle: string): Promise<{ dados?: RespostaDuelo; e
     return { erro: falha }
   }
 }
+
+// --- Expedição de clã (sql/092) ----------------------------------------------------------
+
+export interface ChefeDoCla {
+  monstro: MonstroRPG
+  vida_maxima: number
+  dano: number
+  derrotado: boolean
+  ouro: number
+  bilhetes: number
+}
+
+export interface EstadoExpedicaoDoCla {
+  tem_cla: boolean
+  cla_nome?: string
+  cla_tag?: string
+  membros: number
+  chefe?: ChefeDoCla
+  atacou_hoje: boolean
+  recebeu: boolean
+  ranking: { nome: string; dano: number; ataques: number; sou_eu: boolean }[]
+  elemental?: RelacaoElemental
+}
+
+export interface RespostaAtaqueDoCla {
+  dano: number
+  derrubou: boolean
+  estado: EstadoExpedicaoDoCla
+}
+
+export async function obterExpedicaoDoCla(): Promise<{ dados?: EstadoExpedicaoDoCla; erro?: string; semPersonagem?: boolean }> {
+  try {
+    const res = await fetch('/api/rpg/cla/expedicao', { headers: await cabecalhoDeAutenticacao() })
+    if (res.status === 404) return { semPersonagem: true }
+    const json = (await res.json().catch(() => null)) as (EstadoExpedicaoDoCla & { error?: string }) | null
+    if (!res.ok || !json || !Array.isArray(json.ranking)) return { erro: json?.error || 'Expedição do clã indisponível no momento.' }
+    return { dados: json }
+  } catch {
+    return { erro: 'Expedição do clã indisponível no momento.' }
+  }
+}
+
+export async function atacarChefeDoCla(): Promise<{ dados?: RespostaAtaqueDoCla; erro?: string }> {
+  const falha = 'Não foi possível atacar agora.'
+  try {
+    const res = await fetch('/api/rpg/cla/expedicao', { method: 'POST', headers: await cabecalhoDeAutenticacao() })
+    const json = (await res.json().catch(() => null)) as (RespostaAtaqueDoCla & { error?: string }) | null
+    if (!res.ok) return { erro: json?.error || falha }
+    if (!json || !json.estado) return { erro: falha }
+    return { dados: json }
+  } catch {
+    return { erro: falha }
+  }
+}

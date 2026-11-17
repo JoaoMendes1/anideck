@@ -75,7 +75,10 @@ export function montarMenu({ handle = '', isAdmin = false, ano = new Date().getF
             { para: '/invocacao', rotulo: 'Invocação' },
           ],
         },
-        { para: '/clas', rotulo: 'Clãs', Icone: Users, cor: 'text-holo-1' },
+        {
+          para: '/clas', rotulo: 'Clãs', Icone: Users, cor: 'text-holo-1',
+          subitens: [{ para: '/expedicao-do-cla', rotulo: 'Expedição do clã' }],
+        },
         { para: '/loja', rotulo: 'Loja', Icone: ShoppingBag, cor: 'text-holo-3' },
       ],
     },

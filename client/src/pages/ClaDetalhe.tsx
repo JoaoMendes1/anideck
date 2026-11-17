@@ -286,6 +286,16 @@ export default function ClaDetalhe() {
               )}
 
               {souMembro && (
+                <Link
+                  to="/expedicao-do-cla"
+                  className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-xl bg-gradient-to-r from-coral to-gold text-void text-xs font-extrabold transition-opacity hover:opacity-90"
+                >
+                  <Swords size={14} />
+                  <span>Expedição do clã</span>
+                </Link>
+              )}
+
+              {souMembro && (
                 <button
                   type="button"
                   onClick={() => setModalSair(true)}
