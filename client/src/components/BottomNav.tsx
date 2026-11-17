@@ -1,5 +1,5 @@
 import { Link, useLocation } from 'react-router-dom'
-import { Home, LayoutDashboard, User, CalendarDays, Trophy, BarChart2 } from 'lucide-react'
+import { Home, LayoutDashboard, User, Trophy, Rss } from 'lucide-react'
 import { useState } from 'react'
 import { useSessao } from '../contexts/SessaoContext'
 import Sheet from './Sheet'
@@ -9,8 +9,7 @@ const ATIVO_EM: Record<string, string[]> = {
     '/': ['/'],
     '/rankings': ['/rankings', '/membros'],
     '/deck': ['/deck'],
-    '/calendario': ['/calendario'],
-    '/meu-gosto': ['/meu-gosto', '/estatisticas'],
+    '/feed': ['/feed'],
 }
 
 export default function BottomNav() {
@@ -23,18 +22,15 @@ export default function BottomNav() {
             ATIVO_EM[item]?.includes(location.pathname) ? 'text-holo-3' : 'text-muted'
         }`
 
-    // A busca fica no topo (Navbar), liberando a barra inferior para Rankings e Meu Gosto.
+    // Cinco itens, os de uso diário: Início, Deck, Feed (o que traz a pessoa de volta todo
+    // dia), Rankings e Perfil. Agenda e Meu Gosto são consulta e ficam no menu do Perfil; a
+    // busca fica no topo (Navbar).
     return (
         <div className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-void/90 backdrop-blur-md border-t border-line pb-safe">
             <div className="flex items-center justify-around h-16 px-1">
                 <Link to="/" className={itemClasse('/')}>
                     <Home size={18} />
                     <span className="text-xs font-bold">Início</span>
-                </Link>
-
-                <Link to="/rankings" className={itemClasse('/rankings')}>
-                    <Trophy size={18} />
-                    <span className="text-xs font-bold">Rankings</span>
                 </Link>
 
                 {session ? (
@@ -44,15 +40,14 @@ export default function BottomNav() {
                             <span className="text-xs font-bold">Deck</span>
                         </Link>
 
-                        <Link to="/calendario" className={itemClasse('/calendario')}>
-                            <CalendarDays size={18} />
-                            <span className="text-xs font-bold">Agenda</span>
+                        <Link to="/feed" className={itemClasse('/feed')}>
+                            <Rss size={18} />
+                            <span className="text-xs font-bold">Feed</span>
                         </Link>
 
-                        <Link to="/meu-gosto" className={itemClasse('/meu-gosto')}>
-                            <BarChart2 size={18} />
-                            {/* "Gosto", e não "Meu Gosto": com seis itens em 360 px, o nome inteiro quebrava em duas linhas. */}
-                            <span className="text-xs font-bold">Gosto</span>
+                        <Link to="/rankings" className={itemClasse('/rankings')}>
+                            <Trophy size={18} />
+                            <span className="text-xs font-bold">Rankings</span>
                         </Link>
 
                         {/* Admin e Sair ficam no Sheet de Perfil: Sair é irreversível e
@@ -68,10 +63,16 @@ export default function BottomNav() {
                         </button>
                     </>
                 ) : (
+                    <>
+                    <Link to="/rankings" className={itemClasse('/rankings')}>
+                        <Trophy size={18} />
+                        <span className="text-xs font-bold">Rankings</span>
+                    </Link>
                     <Link to="/login" className="flex flex-col items-center justify-center w-full h-full space-y-1 text-muted select-none">
                         <div className="w-5 h-5 rounded-full border border-line flex items-center justify-center bg-panel"><User size={12} /></div>
                         <span className="text-xs font-bold">Entrar</span>
                     </Link>
+                    </>
                 )}
             </div>
 

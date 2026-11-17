@@ -829,6 +829,7 @@ cartas porque o perfil público e o feed dão motivo para voltar mesmo a quem n�
 - [x] 18.7e Feed da comunidade (`/feed`) com abas Geral e Seguindo, "carregar mais" por cursor e link direto para a conversa do episódio (`/anime/ID?aba=conversa&ep=N`) (#260)
 - [x] 18.7f Título de honra só muda pela função que confere a conquista. `sql/099` (#262)
 - [x] 18.7g Fundar, entrar e ler o próprio clã voltam a funcionar: as três funções falhavam desde o `sql/054` por ler `app_settings.value` (`TEXT`) como `jsonb`. `sql/096` e `sql/100` (#263)
+- [x] 18.7h Feed na barra inferior do celular: Início, Deck, Feed, Rankings e Perfil; Agenda e Meu Gosto ficam no menu do Perfil (#264)
 
 **Banco:** aplicar `sql/096` a `sql/100` antes de promover.
 
