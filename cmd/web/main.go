@@ -176,6 +176,8 @@ func main() {
 		protegido.Post("/api/entries/{mal_id}/episodes/{number}", entriesHandler.HandleMarkEpisode)
 		protegido.Delete("/api/entries/{mal_id}/episodes/{number}", entriesHandler.HandleUnmarkEpisode)
 		protegido.Delete("/api/entries/{mal_id}/episodes", entriesHandler.HandleClearEpisodes)
+		protegido.Get("/api/entries/{mal_id}/saida-completo", entriesHandler.HandlePreviaSaidaCompleto)
+		protegido.Post("/api/entries/{mal_id}/saida-completo", entriesHandler.HandleExecutarSaidaCompleto)
 
 		protegido.Post("/api/push/subscribe", notificationsHandler.HandleSubscribePush)
 		protegido.Get("/api/notifications", notificationsHandler.HandleGetNotifications)

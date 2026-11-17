@@ -4,8 +4,10 @@ import { Minus, Plus } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import { useToast } from '../contexts/ToastContext'
 import Sheet from './Sheet'
+import ModalSaidaCompleto from './ModalSaidaCompleto'
 import { invalidarCachesDoDeck } from '../lib/cacheDeTela'
 import { darPasso, limitar } from '../lib/campoNumerico'
+import type { EscolhaSaidaCompleto, ResumoSaidaCompleto } from '../lib/detalhes'
 
 interface Entrada {
     id?: string
@@ -43,6 +45,8 @@ export default function EditarEntradaModal({ entrada, onFechar, onSalvar, onExcl
     const [erro, setErro] = useState<string | null>(null)
     const [confirmandoExclusao, setConfirmandoExclusao] = useState(false)
     const [confirmandoZerarEpisodios, setConfirmandoZerarEpisodios] = useState(false)
+    const [confirmandoSaidaCompleto, setConfirmandoSaidaCompleto] = useState(false)
+    const [tokenSaidaCompleto, setTokenSaidaCompleto] = useState<string | undefined>(undefined)
 
     const [entradaAnterior, setEntradaAnterior] = useState<Entrada | null>(null)
 
@@ -60,11 +64,13 @@ export default function EditarEntradaModal({ entrada, onFechar, onSalvar, onExcl
             setErro(null)
             setConfirmandoExclusao(false)
             setConfirmandoZerarEpisodios(false)
+            setConfirmandoSaidaCompleto(false)
             setSalvando(false)
         } else {
             // Limpeza total de estados quando a janela fechar
             setConfirmandoExclusao(false)
             setConfirmandoZerarEpisodios(false)
+            setConfirmandoSaidaCompleto(false)
             setSalvando(false)
             setErro(null)
         }
@@ -72,6 +78,16 @@ export default function EditarEntradaModal({ entrada, onFechar, onSalvar, onExcl
 
     const handleSalvar = async () => {
         if (!entradaCache) return
+
+        // Sair de "Completo" pede escolha entre rever (mantém histórico) ou descartar (estorna XP).
+        const saindoDeCompleto = entradaCache.status === 'Completo' && status !== 'Completo'
+        if (saindoDeCompleto) {
+            const { data: { session } } = await supabase.auth.getSession()
+            setTokenSaidaCompleto(session?.access_token)
+            setErro(null)
+            setConfirmandoSaidaCompleto(true)
+            return
+        }
 
         // Intercepta a mudança para "Quero Assistir" se o usuário tiver episódios registrados
         const trocouParaQueroAssistir = entradaCache.status !== 'Quero Assistir' && status === 'Quero Assistir'
@@ -81,6 +97,60 @@ export default function EditarEntradaModal({ entrada, onFechar, onSalvar, onExcl
         }
 
         await executarSalvamento(false)
+    }
+
+    const executarSaidaCompleto = async (escolha: EscolhaSaidaCompleto) => {
+        if (!entradaCache) return
+        setSalvando(true)
+        setErro(null)
+
+        const { data: { session } } = await supabase.auth.getSession()
+        if (!session) {
+            setSalvando(false)
+            return
+        }
+
+        try {
+            const notaFormatada = nota.trim() === '' ? null : Number(nota.replace(',', '.'))
+            const res = await fetch(`/api/entries/${entradaCache.mal_id}/saida-completo`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${session.access_token}`,
+                },
+                body: JSON.stringify({
+                    escolha,
+                    novo_status: status,
+                    nota: Number.isNaN(notaFormatada) ? null : notaFormatada,
+                    anotacao,
+                    is_favorite: isFavorite,
+                }),
+            })
+
+            if (!res.ok) throw new Error('Falha ao sair de Completo')
+            const dados = (await res.json()) as { entrada?: EntradaSalva; resumo?: ResumoSaidaCompleto }
+            if (escolha === 'desisti_ou_errado') {
+                onEpisodiosLimpos?.()
+            }
+            invalidarCachesDoDeck(session.user.id)
+            if (dados.entrada) onSalvar(dados.entrada)
+            window.dispatchEvent(new CustomEvent('anideck:entrada-atualizada'))
+
+            if (escolha === 'vou_rever') {
+                showToast('Modo revisão ativado: histórico e XP mantidos.')
+            } else if (dados.resumo && dados.resumo.xp_perdido > 0) {
+                showToast(`Status alterado e −${dados.resumo.xp_perdido} XP estornados.`)
+            } else {
+                showToast('Episódios desmarcados e status alterado.')
+            }
+
+            setConfirmandoSaidaCompleto(false)
+            onFechar()
+        } catch {
+            setErro('Não foi possível concluir a alteração. Tente de novo.')
+        } finally {
+            setSalvando(false)
+        }
     }
 
     const executarSalvamento = async (zerarEpisodios: boolean) => {
@@ -129,6 +199,7 @@ export default function EditarEntradaModal({ entrada, onFechar, onSalvar, onExcl
             const atualizada = await response.json()
             invalidarCachesDoDeck(session.user.id)
             onSalvar(Array.isArray(atualizada) ? atualizada[0] : atualizada)
+            window.dispatchEvent(new CustomEvent('anideck:entrada-atualizada'))
             showToast(isNova ? 'Adicionado ao seu Deck!' : 'Alterações salvas com sucesso!')
             setConfirmandoZerarEpisodios(false)
             onFechar()
@@ -257,9 +328,26 @@ export default function EditarEntradaModal({ entrada, onFechar, onSalvar, onExcl
         <>
             {modalConfirmacao}
             {modalZerarEpisodios}
+            {entradaCache && (
+                <ModalSaidaCompleto
+                    aberto={confirmandoSaidaCompleto}
+                    malId={entradaCache.mal_id}
+                    novoStatus={status}
+                    token={tokenSaidaCompleto}
+                    salvando={salvando}
+                    erroExterno={erro}
+                    onConfirmar={executarSaidaCompleto}
+                    onCancelar={() => {
+                        if (!salvando) {
+                            setConfirmandoSaidaCompleto(false)
+                            setErro(null)
+                        }
+                    }}
+                />
+            )}
             <Sheet
                 isOpen={isOpen}
-                onClose={() => { if (!salvando && !confirmandoExclusao && !confirmandoZerarEpisodios) onFechar() }}
+                onClose={() => { if (!salvando && !confirmandoExclusao && !confirmandoZerarEpisodios && !confirmandoSaidaCompleto) onFechar() }}
                 title="Editar entrada"
             >
                 {entradaCache && (

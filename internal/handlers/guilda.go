@@ -566,6 +566,21 @@ func RegistrarXPEpisodio(dbClient *supabase.Client, userID string, malID, episod
 	}
 
 	agora := time.Now().UTC()
+	if revBytes, _, errRev := dbClient.From("revisoes").
+		Select("id", "", false).
+		Eq("user_id", userID).
+		Eq("mal_id", strconv.Itoa(malID)).
+		Eq("ativa", "true").
+		Limit(1, "").
+		Execute(); errRev == nil {
+		var revRows []struct {
+			ID string `json:"id"`
+		}
+		if json.Unmarshal(revBytes, &revRows) == nil && len(revRows) > 0 {
+			return 0, "revisão · histórico preservado"
+		}
+	}
+
 	economia, _, _ := carregarConfigGuilda(dbClient)
 	if !economia.Ativo {
 		return 0, "gamificação pausada"

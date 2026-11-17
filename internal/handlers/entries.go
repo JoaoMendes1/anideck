@@ -3,7 +3,9 @@ package handlers
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
+	"io"
 	"log"
 	"net/http"
 	"strconv"
@@ -542,3 +544,255 @@ func (h *EntriesHandler) HandleClearEpisodes(w http.ResponseWriter, r *http.Requ
 
 	w.WriteHeader(http.StatusNoContent)
 }
+
+type PreviaSaidaCompleto struct {
+	XPAntes           int    `json:"xp_antes"`
+	XPDepois          int    `json:"xp_depois"`
+	XPPerdido         int    `json:"xp_perdido"`
+	NivelAntes        int    `json:"nivel_antes"`
+	NivelDepois       int    `json:"nivel_depois"`
+	NiveisPerdidos    int    `json:"niveis_perdidos"`
+	EpisodiosMarcados int    `json:"episodios_marcados"`
+	CompletadoEm      string `json:"completado_em,omitempty"`
+	Sugestao          string `json:"sugestao"`
+	RankAntes         string `json:"rank_antes"`
+	RankDepois        string `json:"rank_depois"`
+}
+
+type ResumoSaidaCompleto struct {
+	XPAntes        int    `json:"xp_antes"`
+	XPDepois       int    `json:"xp_depois"`
+	XPPerdido      int    `json:"xp_perdido"`
+	NivelAntes     int    `json:"nivel_antes"`
+	NivelDepois    int    `json:"nivel_depois"`
+	NiveisPerdidos int    `json:"niveis_perdidos"`
+	Escolha        string `json:"escolha"`
+	NovoStatus     string `json:"novo_status"`
+	RevisaoAtiva   bool   `json:"revisao_ativa"`
+	RankAntes      string `json:"rank_antes"`
+	RankDepois     string `json:"rank_depois"`
+}
+
+type pedidoSaidaCompleto struct {
+	Escolha    string   `json:"escolha"`
+	NovoStatus string   `json:"novo_status"`
+	Nota       *float64 `json:"nota"`
+	Anotacao   *string  `json:"anotacao"`
+	IsFavorite *bool    `json:"is_favorite"`
+}
+
+func validarPedidoSaidaCompleto(escolha, novoStatus string) error {
+	if escolha != "vou_rever" && escolha != "desisti_ou_errado" {
+		return errors.New("escolha inválida: use vou_rever ou desisti_ou_errado")
+	}
+	switch novoStatus {
+	case "Assistindo", "Em Dia", "Quero Assistir", "Dropado":
+		return nil
+	default:
+		return errors.New("status de destino inválido")
+	}
+}
+
+func (h *EntriesHandler) HandlePreviaSaidaCompleto(w http.ResponseWriter, r *http.Request) {
+	token, ok := r.Context().Value(middleware.TokenKey).(string)
+	userID, userOk := r.Context().Value(middleware.UserIDKey).(string)
+	if !ok || !userOk || token == "" || userID == "" {
+		http.Error(w, "Não autorizado", http.StatusUnauthorized)
+		return
+	}
+
+	malID, err := strconv.Atoi(chi.URLParam(r, "mal_id"))
+	if err != nil || malID <= 0 {
+		http.Error(w, "mal_id inválido", http.StatusBadRequest)
+		return
+	}
+
+	dbClient, errClient := database.ClientWithToken(token)
+	if errClient != nil {
+		http.Error(w, "Erro interno de conexão", http.StatusInternalServerError)
+		return
+	}
+
+	entryBytes, _, errEntry := dbClient.From("media_entries").
+		Select("id,status", "", false).
+		Eq("user_id", userID).
+		Eq("mal_id", strconv.Itoa(malID)).
+		Limit(1, "").
+		Execute()
+	if errEntry != nil {
+		log.Printf("[SAIDA COMPLETO] Falha ao buscar entrada (user=%s, mal_id=%d): %v", userID, malID, errEntry)
+		http.Error(w, "Erro ao verificar entrada no deck", http.StatusInternalServerError)
+		return
+	}
+	var entryRows []struct {
+		ID     string `json:"id"`
+		Status string `json:"status"`
+	}
+	if json.Unmarshal(entryBytes, &entryRows) != nil || len(entryRows) == 0 {
+		http.Error(w, "Entrada não encontrada no seu deck", http.StatusNotFound)
+		return
+	}
+
+	srvClient, errSrv := database.ServiceRoleClient()
+	if errSrv != nil || srvClient == nil {
+		http.Error(w, "Erro interno de conexão", http.StatusInternalServerError)
+		return
+	}
+
+	raw := strings.TrimSpace(srvClient.Rpc("previa_saida_completo", "", map[string]interface{}{
+		"p_user_id": userID,
+		"p_mal_id":  malID,
+	}))
+	if raw == "" || strings.HasPrefix(raw, "error") || strings.Contains(raw, "\"code\"") {
+		log.Printf("[SAIDA COMPLETO] Falha no RPC previa_saida_completo (user=%s, mal_id=%d): %s", userID, malID, raw)
+		http.Error(w, "Erro ao calcular prévia de saída", http.StatusInternalServerError)
+		return
+	}
+
+	var previa PreviaSaidaCompleto
+	if err := json.Unmarshal([]byte(raw), &previa); err != nil {
+		log.Printf("[SAIDA COMPLETO] Falha ao decodificar prévia (user=%s, mal_id=%d): %v", userID, malID, err)
+		http.Error(w, "Erro ao processar prévia de saída", http.StatusInternalServerError)
+		return
+	}
+
+	_, ranks, _ := carregarConfigGuilda(dbClient)
+	previa.RankAntes = CalcularNivelERank(previa.XPAntes, ranks).Rank
+	previa.RankDepois = CalcularNivelERank(previa.XPDepois, ranks).Rank
+
+	w.Header().Set("Content-Type", "application/json")
+	_ = json.NewEncoder(w).Encode(previa)
+}
+
+func (h *EntriesHandler) HandleExecutarSaidaCompleto(w http.ResponseWriter, r *http.Request) {
+	token, ok := r.Context().Value(middleware.TokenKey).(string)
+	userID, userOk := r.Context().Value(middleware.UserIDKey).(string)
+	if !ok || !userOk || token == "" || userID == "" {
+		http.Error(w, "Não autorizado", http.StatusUnauthorized)
+		return
+	}
+
+	malID, err := strconv.Atoi(chi.URLParam(r, "mal_id"))
+	if err != nil || malID <= 0 {
+		http.Error(w, "mal_id inválido", http.StatusBadRequest)
+		return
+	}
+
+	corpo, errRead := io.ReadAll(io.LimitReader(r.Body, 16<<10))
+	if errRead != nil {
+		http.Error(w, "Payload inválido", http.StatusBadRequest)
+		return
+	}
+
+	var req pedidoSaidaCompleto
+	if err := json.Unmarshal(corpo, &req); err != nil {
+		http.Error(w, "Payload inválido", http.StatusBadRequest)
+		return
+	}
+	var chaves map[string]json.RawMessage
+	_ = json.Unmarshal(corpo, &chaves)
+
+	if err := validarPedidoSaidaCompleto(req.Escolha, req.NovoStatus); err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+	if req.Nota != nil && (*req.Nota < 0 || *req.Nota > 10) {
+		http.Error(w, "Nota deve ficar entre 0 e 10", http.StatusBadRequest)
+		return
+	}
+
+	dbClient, errClient := database.ClientWithToken(token)
+	if errClient != nil {
+		http.Error(w, "Erro interno de conexão", http.StatusInternalServerError)
+		return
+	}
+
+	entryBytes, _, errEntry := dbClient.From("media_entries").
+		Select("id,status", "", false).
+		Eq("user_id", userID).
+		Eq("mal_id", strconv.Itoa(malID)).
+		Limit(1, "").
+		Execute()
+	if errEntry != nil {
+		log.Printf("[SAIDA COMPLETO] Falha ao buscar entrada (user=%s, mal_id=%d): %v", userID, malID, errEntry)
+		http.Error(w, "Erro ao verificar entrada no deck", http.StatusInternalServerError)
+		return
+	}
+	var entryRows []struct {
+		ID     string `json:"id"`
+		Status string `json:"status"`
+	}
+	if json.Unmarshal(entryBytes, &entryRows) != nil || len(entryRows) == 0 {
+		http.Error(w, "Entrada não encontrada no seu deck", http.StatusNotFound)
+		return
+	}
+
+	srvClient, errSrv := database.ServiceRoleClient()
+	if errSrv != nil || srvClient == nil {
+		http.Error(w, "Erro interno de conexão", http.StatusInternalServerError)
+		return
+	}
+
+	raw := strings.TrimSpace(srvClient.Rpc("executar_saida_completo", "", map[string]interface{}{
+		"p_user_id":     userID,
+		"p_mal_id":      malID,
+		"p_escolha":     req.Escolha,
+		"p_novo_status": req.NovoStatus,
+	}))
+	if raw == "" || strings.HasPrefix(raw, "error") || strings.Contains(raw, "\"code\"") {
+		log.Printf("[SAIDA COMPLETO] Falha no RPC executar_saida_completo (user=%s, mal_id=%d): %s", userID, malID, raw)
+		http.Error(w, "Erro ao alterar status da obra", http.StatusInternalServerError)
+		return
+	}
+
+	var resumo ResumoSaidaCompleto
+	if err := json.Unmarshal([]byte(raw), &resumo); err != nil {
+		log.Printf("[SAIDA COMPLETO] Falha ao decodificar resumo (user=%s, mal_id=%d): %v", userID, malID, err)
+		http.Error(w, "Erro ao processar saída de Completo", http.StatusInternalServerError)
+		return
+	}
+
+	extras := map[string]interface{}{}
+	if _, temNota := chaves["nota"]; temNota {
+		extras["nota"] = req.Nota
+	}
+	if _, temAnotacao := chaves["anotacao"]; temAnotacao && req.Anotacao != nil {
+		extras["anotacao"] = *req.Anotacao
+	}
+	if _, temFav := chaves["is_favorite"]; temFav && req.IsFavorite != nil {
+		extras["is_favorite"] = *req.IsFavorite
+	}
+	if len(extras) > 0 {
+		if _, _, errUpd := dbClient.From("media_entries").
+			Update(extras, "", "").
+			Eq("user_id", userID).
+			Eq("mal_id", strconv.Itoa(malID)).
+			Execute(); errUpd != nil {
+			log.Printf("[SAIDA COMPLETO] Falha ao atualizar campos extras (user=%s, mal_id=%d): %v", userID, malID, errUpd)
+		}
+	}
+
+	var entradaAtualizada interface{}
+	if atualBytes, _, errAtual := dbClient.From("media_entries").
+		Select("*", "", false).
+		Eq("user_id", userID).
+		Eq("mal_id", strconv.Itoa(malID)).
+		Limit(1, "").
+		Execute(); errAtual == nil {
+		var rows []entries.MediaEntry
+		if json.Unmarshal(atualBytes, &rows) == nil && len(rows) > 0 {
+			entradaAtualizada = rows[0]
+		}
+	}
+
+	_, ranks, _ := carregarConfigGuilda(dbClient)
+	resumo.RankAntes = CalcularNivelERank(resumo.XPAntes, ranks).Rank
+	resumo.RankDepois = CalcularNivelERank(resumo.XPDepois, ranks).Rank
+
+	w.Header().Set("Content-Type", "application/json")
+	_ = json.NewEncoder(w).Encode(map[string]interface{}{
+		"entrada": entradaAtualizada,
+		"resumo":  resumo,
+	})
+}
+

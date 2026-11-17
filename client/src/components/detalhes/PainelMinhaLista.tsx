@@ -7,7 +7,8 @@ import { Check, ChevronDown, Crown, Loader2, MoreHorizontal, NotebookPen, Play, 
 import { useSessao } from '../../contexts/SessaoContext'
 import { useToast } from '../../contexts/ToastContext'
 import { invalidarCachesDoDeck } from '../../lib/cacheDeTela'
-import { STATUS_DO_DECK, ajustarNota, formatarNota, lerNotaDigitada, proximoEpisodio, rotuloDaNota, type EntradaNoDeck } from '../../lib/detalhes'
+import { STATUS_DO_DECK, ajustarNota, formatarNota, lerNotaDigitada, proximoEpisodio, rotuloDaNota, type EntradaNoDeck, type EscolhaSaidaCompleto, type ResumoSaidaCompleto } from '../../lib/detalhes'
+import ModalSaidaCompleto from '../ModalSaidaCompleto'
 
 interface Props {
   malId: number
@@ -32,6 +33,9 @@ export default function PainelMinhaLista({ malId, entrada, assistidos, ultimoDis
   const [salvo, setSalvo] = useState<Salvo>('parado')
   const [statusPendente, setStatusPendente] = useState<string | null>(null)
   const [confirmarQueroAssistir, setConfirmarQueroAssistir] = useState(false)
+  const [saidaCompletoStatus, setSaidaCompletoStatus] = useState<string | null>(null)
+  const [salvandoSaidaCompleto, setSalvandoSaidaCompleto] = useState(false)
+  const [erroSaidaCompleto, setErroSaidaCompleto] = useState<string | null>(null)
   const [confirmarRemocao, setConfirmarRemocao] = useState(false)
   const [editandoAnotacao, setEditandoAnotacao] = useState(false)
   const [anotacao, setAnotacao] = useState(entrada?.anotacao ?? '')
@@ -84,6 +88,7 @@ export default function PainelMinhaLista({ malId, entrada, assistidos, ultimoDis
       const nova = (Array.isArray(resposta) ? resposta[0] : resposta) as EntradaNoDeck
       invalidarCachesDoDeck(session?.user.id)
       onEntradaMudou(nova, anterior)
+      window.dispatchEvent(new CustomEvent('anideck:entrada-atualizada'))
       if (mensagemNova) showToast(mensagemNova)
       marcarSalvo()
       return true
@@ -96,6 +101,13 @@ export default function PainelMinhaLista({ malId, entrada, assistidos, ultimoDis
 
   const escolherStatus = async (status: string, zerar?: boolean) => {
     if (entrada?.status === status) return
+    // Sair de "Completo" exige escolher entre manter o histórico em revisão ou descartar e estornar.
+    if (entrada?.status === 'Completo' && status !== 'Completo') {
+      setConfirmarQueroAssistir(false)
+      setErroSaidaCompleto(null)
+      setSaidaCompletoStatus(status)
+      return
+    }
     // Voltar para "Quero Assistir" com episódios marcados pede uma escolha: manter o
     // histórico (rever depois) ou apagar o que foi marcado por engano.
     if (status === 'Quero Assistir' && entrada && assistidos.length > 0 && zerar === undefined) {
@@ -115,6 +127,43 @@ export default function PainelMinhaLista({ malId, entrada, assistidos, ultimoDis
     }
     await salvar({ status }, entrada ? undefined : `Adicionado como ${status}!`)
     setStatusPendente(null)
+  }
+
+  const confirmarSaidaCompleto = async (escolha: EscolhaSaidaCompleto) => {
+    if (!entrada || !saidaCompletoStatus) return
+    setSalvandoSaidaCompleto(true)
+    setErroSaidaCompleto(null)
+    const anterior = entrada
+    try {
+      const res = await fetch(`/api/entries/${malId}/saida-completo`, {
+        method: 'POST',
+        headers: cabecalho,
+        body: JSON.stringify({ escolha, novo_status: saidaCompletoStatus }),
+      })
+      if (!res.ok) throw new Error()
+      const dados = (await res.json()) as { entrada?: EntradaNoDeck; resumo?: ResumoSaidaCompleto }
+      if (escolha === 'desisti_ou_errado') {
+        onEpisodiosZerados()
+      }
+      invalidarCachesDoDeck(session?.user.id)
+      const nova = dados.entrada ?? { ...anterior, status: saidaCompletoStatus }
+      onEntradaMudou(nova, anterior)
+      window.dispatchEvent(new CustomEvent('anideck:entrada-atualizada'))
+      setSaidaCompletoStatus(null)
+      setAberto(null)
+      marcarSalvo()
+      if (escolha === 'vou_rever') {
+        showToast('Modo revisão ativado: histórico e XP mantidos.')
+      } else if (dados.resumo && dados.resumo.xp_perdido > 0) {
+        showToast(`Status alterado e −${dados.resumo.xp_perdido} XP estornados.`)
+      } else {
+        showToast('Episódios desmarcados e status alterado.')
+      }
+    } catch {
+      setErroSaidaCompleto('Não foi possível concluir a alteração. Tente de novo.')
+    } finally {
+      setSalvandoSaidaCompleto(false)
+    }
   }
 
   const remover = async () => {
@@ -344,90 +393,114 @@ export default function PainelMinhaLista({ malId, entrada, assistidos, ultimoDis
     </button>
   )
 
+  const modalSaidaCompleto = (
+    <ModalSaidaCompleto
+      aberto={saidaCompletoStatus !== null}
+      malId={malId}
+      novoStatus={saidaCompletoStatus}
+      token={token}
+      salvando={salvandoSaidaCompleto}
+      erroExterno={erroSaidaCompleto}
+      onConfirmar={confirmarSaidaCompleto}
+      onCancelar={() => {
+        if (!salvandoSaidaCompleto) {
+          setSaidaCompletoStatus(null)
+          setErroSaidaCompleto(null)
+        }
+      }}
+    />
+  )
+
   // Celular: uma linha com status, nota, favorito e "mais"; cada um abre logo abaixo, sem
   // folha por cima da página. O "continuar" fica sempre à vista, porque é o toque mais comum.
   if (compacto) {
     const alternar = (qual: Expansao) => setAberto(atual => (atual === qual ? null : qual))
     return (
-      <div className="rounded-2xl border border-holo-3/30 bg-gradient-to-br from-panel to-panel-2 p-3 space-y-3">
-        <div className="flex items-center gap-2">
-          <button
-            type="button"
-            onClick={() => alternar('status')}
-            aria-expanded={aberto === 'status'}
-            className={`flex-1 min-w-0 h-10 inline-flex items-center justify-between gap-1.5 pl-3.5 pr-2.5 rounded-full border text-[13px] font-bold cursor-pointer ${
-              aberto === 'status' ? 'border-holo-2 bg-holo-2/20 text-text' : 'border-holo-2/50 bg-holo-2/10 text-text'
-            }`}
-          >
-            <span className="truncate">{statusPendente ?? entrada.status}</span>
-            {statusPendente ? <Loader2 size={14} className="animate-spin shrink-0" aria-hidden /> : <ChevronDown size={15} className={`shrink-0 transition-transform ${aberto === 'status' ? 'rotate-180' : ''}`} aria-hidden />}
-          </button>
-          <button
-            type="button"
-            onClick={() => alternar('nota')}
-            aria-expanded={aberto === 'nota'}
-            aria-label={nota === null ? 'Dar nota' : `Sua nota: ${formatarNota(nota)}. Alterar`}
-            className={`h-10 shrink-0 inline-flex items-center gap-1.5 px-3.5 rounded-full border text-[13px] font-bold cursor-pointer ${
-              aberto === 'nota' ? 'border-holo-3 bg-holo-3/15 text-text' : nota === null ? 'border-line bg-panel-2 text-muted' : 'border-holo-3/50 bg-holo-3/10 text-holo-3'
-            }`}
-          >
-            <Star size={14} className={nota === null ? '' : 'fill-holo-3'} aria-hidden />
-            {nota === null ? 'Nota' : formatarNota(nota)}
-          </button>
-          {botaoFavorito}
-          <button
-            type="button"
-            onClick={() => alternar('mais')}
-            aria-expanded={aberto === 'mais'}
-            aria-label="Anotação e remover do deck"
-            className={`w-10 h-10 shrink-0 grid place-items-center rounded-full border cursor-pointer ${aberto === 'mais' ? 'border-holo-3 text-text' : 'border-line bg-panel-2 text-muted hover:text-text'}`}
-          >
-            <MoreHorizontal size={17} aria-hidden />
-          </button>
+      <>
+        {modalSaidaCompleto}
+        <div className="rounded-2xl border border-holo-3/30 bg-gradient-to-br from-panel to-panel-2 p-3 space-y-3">
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={() => alternar('status')}
+              aria-expanded={aberto === 'status'}
+              className={`flex-1 min-w-0 h-10 inline-flex items-center justify-between gap-1.5 pl-3.5 pr-2.5 rounded-full border text-[13px] font-bold cursor-pointer ${
+                aberto === 'status' ? 'border-holo-2 bg-holo-2/20 text-text' : 'border-holo-2/50 bg-holo-2/10 text-text'
+              }`}
+            >
+              <span className="truncate">{statusPendente ?? entrada.status}</span>
+              {statusPendente ? <Loader2 size={14} className="animate-spin shrink-0" aria-hidden /> : <ChevronDown size={15} className={`shrink-0 transition-transform ${aberto === 'status' ? 'rotate-180' : ''}`} aria-hidden />}
+            </button>
+            <button
+              type="button"
+              onClick={() => alternar('nota')}
+              aria-expanded={aberto === 'nota'}
+              aria-label={nota === null ? 'Dar nota' : `Sua nota: ${formatarNota(nota)}. Alterar`}
+              className={`h-10 shrink-0 inline-flex items-center gap-1.5 px-3.5 rounded-full border text-[13px] font-bold cursor-pointer ${
+                aberto === 'nota' ? 'border-holo-3 bg-holo-3/15 text-text' : nota === null ? 'border-line bg-panel-2 text-muted' : 'border-holo-3/50 bg-holo-3/10 text-holo-3'
+              }`}
+            >
+              <Star size={14} className={nota === null ? '' : 'fill-holo-3'} aria-hidden />
+              {nota === null ? 'Nota' : formatarNota(nota)}
+            </button>
+            {botaoFavorito}
+            <button
+              type="button"
+              onClick={() => alternar('mais')}
+              aria-expanded={aberto === 'mais'}
+              aria-label="Anotação e remover do deck"
+              className={`w-10 h-10 shrink-0 grid place-items-center rounded-full border cursor-pointer ${aberto === 'mais' ? 'border-holo-3 text-text' : 'border-line bg-panel-2 text-muted hover:text-text'}`}
+            >
+              <MoreHorizontal size={17} aria-hidden />
+            </button>
+          </div>
+
+          {aberto === 'status' && (
+            <div>
+              {chipsDeStatus}
+              {confirmacaoQueroAssistir}
+            </div>
+          )}
+          {aberto === 'nota' && <ReguaDeNota nota={nota} onSalvar={n => salvar({ nota: n })} />}
+          {aberto === 'mais' && (
+            <div className="space-y-3 pt-1">
+              {blocoAnotacao}
+              <div className="pt-3 border-t border-line/70">{blocoRemover}</div>
+            </div>
+          )}
+
+          {avisoCompleto}
+          {botaoContinuar}
+          <div className="flex justify-end -mt-1 h-3">{indicadorSalvo}</div>
         </div>
-
-        {aberto === 'status' && (
-          <div>
-            {chipsDeStatus}
-            {confirmacaoQueroAssistir}
-          </div>
-        )}
-        {aberto === 'nota' && <ReguaDeNota nota={nota} onSalvar={n => salvar({ nota: n })} />}
-        {aberto === 'mais' && (
-          <div className="space-y-3 pt-1">
-            {blocoAnotacao}
-            <div className="pt-3 border-t border-line/70">{blocoRemover}</div>
-          </div>
-        )}
-
-        {avisoCompleto}
-        {botaoContinuar}
-        <div className="flex justify-end -mt-1 h-3">{indicadorSalvo}</div>
-      </div>
+      </>
     )
   }
 
   return (
-    <div className="rounded-2xl border border-holo-3/30 bg-gradient-to-br from-panel to-panel-2 p-4 space-y-4">
-      <div className="flex items-center justify-between gap-2">
-        <span className="font-mono text-xs text-muted-2 uppercase tracking-widest">Na sua lista</span>
-        <div className="flex items-center gap-2">
-          {indicadorSalvo}
-          {botaoFavorito}
+    <>
+      {modalSaidaCompleto}
+      <div className="rounded-2xl border border-holo-3/30 bg-gradient-to-br from-panel to-panel-2 p-4 space-y-4">
+        <div className="flex items-center justify-between gap-2">
+          <span className="font-mono text-xs text-muted-2 uppercase tracking-widest">Na sua lista</span>
+          <div className="flex items-center gap-2">
+            {indicadorSalvo}
+            {botaoFavorito}
+          </div>
         </div>
-      </div>
 
-      <div>
-        {chipsDeStatus}
-        {confirmacaoQueroAssistir}
-      </div>
+        <div>
+          {chipsDeStatus}
+          {confirmacaoQueroAssistir}
+        </div>
 
-      {avisoCompleto}
-      <ReguaDeNota nota={nota} onSalvar={n => salvar({ nota: n })} />
-      {botaoContinuar}
-      {blocoAnotacao}
-      <div className="pt-3 border-t border-line/70">{blocoRemover}</div>
-    </div>
+        {avisoCompleto}
+        <ReguaDeNota nota={nota} onSalvar={n => salvar({ nota: n })} />
+        {botaoContinuar}
+        {blocoAnotacao}
+        <div className="pt-3 border-t border-line/70">{blocoRemover}</div>
+      </div>
+    </>
   )
 }
 

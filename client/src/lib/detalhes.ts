@@ -69,3 +69,34 @@ export interface EntradaNoDeck {
   anotacao?: string
   is_favorite?: boolean
 }
+
+export type EscolhaSaidaCompleto = 'vou_rever' | 'desisti_ou_errado'
+
+export interface PreviaSaidaCompleto {
+  xp_antes: number
+  xp_depois: number
+  xp_perdido: number
+  nivel_antes: number
+  nivel_depois: number
+  niveis_perdidos: number
+  episodios_marcados: number
+  completado_em?: string
+  sugestao: EscolhaSaidaCompleto
+  rank_antes: string
+  rank_depois: string
+}
+
+export interface ResumoSaidaCompleto {
+  xp_antes: number
+  xp_depois: number
+  xp_perdido: number
+  nivel_antes: number
+  nivel_depois: number
+  niveis_perdidos: number
+  escolha: EscolhaSaidaCompleto
+  novo_status: string
+  revisao_ativa: boolean
+  rank_antes: string
+  rank_depois: string
+}
+

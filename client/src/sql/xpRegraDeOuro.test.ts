@@ -110,17 +110,10 @@ describe('Regra de Ouro do XP (estado atual da SQL)', () => {
     }
   })
 
-  it('cenário 2: Completo ida e volta (Desisti/marquei errado zera XP e carta; Vou rever preserva)', async () => {
+  it('cenário 2: Completo ida e volta (Desisti/marquei errado mostra prévia exata e zera XP e carta)', async () => {
     const db = await criarBancoTeste()
     try {
       await criarUsuarioTeste(db, USER_ID, 'otaku2')
-      const fnSaida = await db.query<{ existe: boolean }>(
-        `SELECT EXISTS (
-           SELECT 1 FROM pg_proc WHERE proname = 'executar_saida_completo'
-         ) AS existe`,
-      )
-      expect(fnSaida.rows[0]?.existe).toBe(true)
-
       await db.query(
         `INSERT INTO public.media_entries (user_id, mal_id, status) VALUES ($1, $2, 'Completo')`,
         [USER_ID, ANIME_A],
@@ -135,35 +128,151 @@ describe('Regra de Ouro do XP (estado atual da SQL)', () => {
          VALUES ($1, $2, 1, 25, 'ep 1'), ($1, $2, 2, 25, 'ep 2')`,
         [USER_ID, ANIME_A],
       )
+      // O gatilho de sql/050 já gera a carta automaticamente quando media_entries vira Completo
+      const cartaInicial = await db.query<{ n: string }>(
+        `SELECT count(*) AS n FROM public.user_cards WHERE user_id = $1 AND mal_id = $2`,
+        [USER_ID, ANIME_A],
+      )
+      expect(Number(cartaInicial.rows[0].n)).toBe(1)
+      // Missão vinculada a esta obra: também deve entrar na prévia de perda
+      await db.query(
+        `SELECT public.resgatar_missao(
+           $1, 'missao_semanal', 'semana:teste:obra_a', 80, 50, 'Missão da semana: Obra',
+           $2::jsonb
+         )`,
+        [
+          USER_ID,
+          JSON.stringify({
+            tipo: 'completar_obra',
+            meta: 1,
+            evidencias: [{ tipo_acao: 'carta', mal_id: ANIME_A }],
+          }),
+        ],
+      )
+      expect(await lerXPTotalUsuario(db, USER_ID)).toBe(100)
 
-      // Sai por engano -> desmarca episódios, apaga carta e estorna XP
+      // Completado há menos de 24h -> prévia sugere desisti_ou_errado e calcula perda sem alterar nada
+      const prevRes = await db.query<{
+        previa: {
+          xp_antes: number
+          xp_depois: number
+          xp_perdido: number
+          nivel_antes: number
+          nivel_depois: number
+          niveis_perdidos: number
+          episodios_marcados: number
+          sugestao: string
+        }
+      }>(`SELECT public.previa_saida_completo($1, $2) AS previa`, [USER_ID, ANIME_A])
+      const previa = prevRes.rows[0].previa
+      expect(previa.xp_antes).toBe(100)
+      expect(previa.xp_depois).toBe(0)
+      expect(previa.xp_perdido).toBe(100)
+      expect(previa.nivel_antes).toBe(2)
+      expect(previa.nivel_depois).toBe(1)
+      expect(previa.niveis_perdidos).toBe(1)
+      expect(previa.episodios_marcados).toBe(2)
+      expect(previa.sugestao).toBe('desisti_ou_errado')
+
+      // Prévia não mutou o estado do banco
+      expect(await lerXPTotalUsuario(db, USER_ID)).toBe(100)
+
+      // Sai por engano -> desmarca episódios, apaga carta e estorna XP (episódios + missão)
       await autenticarComo(db, USER_ID)
       await db.query(`SELECT public.executar_saida_completo($1, $2, 'desisti_ou_errado', 'Dropado')`, [
         USER_ID,
         ANIME_A,
       ])
       expect(await lerXPTotalUsuario(db, USER_ID)).toBe(0)
+      expect(await lerNivelUsuario(db, USER_ID)).toBe(1)
       const cartas = await db.query(`SELECT count(*) AS n FROM public.user_cards WHERE user_id = $1 AND mal_id = $2`, [
         USER_ID,
         ANIME_A,
       ])
       expect(Number((cartas.rows[0] as { n: string }).n)).toBe(0)
+      const eps = await db.query(`SELECT count(*) AS n FROM public.episode_progress WHERE user_id = $1 AND mal_id = $2`, [
+        USER_ID,
+        ANIME_A,
+      ])
+      expect(Number((eps.rows[0] as { n: string }).n)).toBe(0)
     } finally {
       await db.close()
     }
   })
 
-  it('cenário 3: rever (tabela revisoes) mantém histórico e não rende XP na segunda volta', async () => {
+  it('cenário 3: rever (tabela revisoes) mantém histórico, sugere rever após 24h e não rende XP na segunda volta', async () => {
     const db = await criarBancoTeste()
     try {
       await criarUsuarioTeste(db, USER_ID, 'otaku3')
-      const tblRevisoes = await db.query<{ existe: boolean }>(
-        `SELECT EXISTS (
-           SELECT 1 FROM information_schema.tables
-            WHERE table_schema = 'public' AND table_name = 'revisoes'
-         ) AS existe`,
+      await db.query(
+        `INSERT INTO public.media_entries (user_id, mal_id, status, completado_em)
+         VALUES ($1, $2, 'Completo', now() - interval '3 days')`,
+        [USER_ID, ANIME_A],
       )
-      expect(tblRevisoes.rows[0]?.existe).toBe(true)
+      await db.query(
+        `INSERT INTO public.episode_progress (user_id, mal_id, episode_number, watched_at)
+         VALUES ($1, $2, 1, now() - interval '3 days'), ($1, $2, 2, now() - interval '3 days')`,
+        [USER_ID, ANIME_A],
+      )
+      await db.query(
+        `INSERT INTO public.xp_ledger (user_id, mal_id, episode_number, xp_earned, reason, earned_at)
+         VALUES ($1, $2, 1, 25, 'ep 1', now() - interval '3 days'), ($1, $2, 2, 25, 'ep 2', now() - interval '3 days')`,
+        [USER_ID, ANIME_A],
+      )
+
+      const prevRes = await db.query<{ previa: { sugestao: string } }>(
+        `SELECT public.previa_saida_completo($1, $2) AS previa`,
+        [USER_ID, ANIME_A],
+      )
+      expect(prevRes.rows[0].previa.sugestao).toBe('vou_rever')
+
+      await db.query(`SELECT public.executar_saida_completo($1, $2, 'vou_rever', 'Assistindo')`, [
+        USER_ID,
+        ANIME_A,
+      ])
+
+      // Episódios e XP antigos continuam intactos no histórico
+      expect(await lerXPTotalUsuario(db, USER_ID)).toBe(50)
+      const revAtiva = await db.query<{ ativa: boolean }>(
+        `SELECT ativa FROM public.revisoes WHERE user_id = $1 AND mal_id = $2 AND ativa = true`,
+        [USER_ID, ANIME_A],
+      )
+      expect(revAtiva.rows).toHaveLength(1)
+
+      // Tentar registrar XP novo em episódio durante a revisão zera para 0 XP
+      await db.query(
+        `INSERT INTO public.episode_progress (user_id, mal_id, episode_number, watched_at)
+         VALUES ($1, $2, 3, now())`,
+        [USER_ID, ANIME_A],
+      )
+      await db.query(
+        `INSERT INTO public.xp_ledger (user_id, mal_id, episode_number, xp_earned, reason)
+         VALUES ($1, $2, 3, 25, 'tentativa na revisao')`,
+        [USER_ID, ANIME_A],
+      )
+      expect(await lerXPTotalUsuario(db, USER_ID)).toBe(50)
+
+      // Voltar para Completo fecha o ciclo ativo de revisão
+      await db.query(
+        `UPDATE public.media_entries SET status = 'Completo' WHERE user_id = $1 AND mal_id = $2`,
+        [USER_ID, ANIME_A],
+      )
+      const revDepois = await db.query<{ n: string }>(
+        `SELECT count(*) AS n FROM public.revisoes WHERE user_id = $1 AND mal_id = $2 AND ativa = true`,
+        [USER_ID, ANIME_A],
+      )
+      expect(Number(revDepois.rows[0].n)).toBe(0)
+
+      // Alterar status direto sem executar_saida_completo também ativa revisão automaticamente
+      await db.query(
+        `UPDATE public.media_entries SET status = 'Assistindo' WHERE user_id = $1 AND mal_id = $2`,
+        [USER_ID, ANIME_A],
+      )
+      const revBypass = await db.query<{ n: string }>(
+        `SELECT count(*) AS n FROM public.revisoes WHERE user_id = $1 AND mal_id = $2 AND ativa = true`,
+        [USER_ID, ANIME_A],
+      )
+      expect(Number(revBypass.rows[0].n)).toBe(1)
     } finally {
       await db.close()
     }
