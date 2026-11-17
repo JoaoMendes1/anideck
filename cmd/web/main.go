@@ -293,6 +293,11 @@ func main() {
 		// Curadoria Colaborativa (Fase 17.7, #188)
 		protegido.Post("/api/curation/sugerir", curadoriaCollabHandler.HandleSubmeterSugestao)
 
+		// Início personalizável (#275)
+		inicioPrefHandler := &handlers.InicioPreferenciasHandler{}
+		protegido.Get("/api/inicio/preferencias", inicioPrefHandler.HandleGetPreferencias)
+		protegido.Put("/api/inicio/preferencias", inicioPrefHandler.HandleSalvarPreferencias)
+
 		protegido.Delete("/api/account", accountHandler.HandleDeleteAccount)
 	})
 

@@ -31,11 +31,14 @@ type CurationHandler struct {
 // ausentes na struct completa faria os campos sem omitempty saírem com zero value
 // (tags nulas, order_index 0), que pareceria dado real para quem lê o JSON.
 type destaqueVitrine struct {
-	ID               string `json:"id"`
-	MalID            int    `json:"mal_id"`
-	CustomTitle      string `json:"custom_title"`
-	CustomCoverImage string `json:"custom_cover_image"`
-	CustomFormat     string `json:"custom_format,omitempty"`
+	ID                string   `json:"id"`
+	MalID             int      `json:"mal_id"`
+	CustomTitle       string   `json:"custom_title"`
+	CustomCoverImage  string   `json:"custom_cover_image"`
+	CustomBannerImage string   `json:"custom_banner_image,omitempty"`
+	CustomSynopsis    string   `json:"custom_synopsis,omitempty"`
+	CustomTags        []string `json:"custom_tags,omitempty"`
+	CustomFormat      string   `json:"custom_format,omitempty"`
 }
 
 // maxDestaquesNaVitrine espelha o MAX_NA_VITRINE da VitrineDestaques.tsx.
@@ -47,7 +50,7 @@ const maxDestaquesNaVitrine = 12
 // quaisquer, em ordem certa — o grupo errado, sem erro nenhum.
 func (h *CurationHandler) listarDestaques(w http.ResponseWriter) {
 	data, _, err := database.Client.From("curated_animes").
-		Select("id,mal_id,custom_title,custom_cover_image,custom_format", "", false).
+		Select("id,mal_id,custom_title,custom_cover_image,custom_banner_image,custom_synopsis,custom_tags,custom_format", "", false).
 		Eq("is_destaque", "true").
 		// NullsFirst reproduz a ordem antiga: o Go lia order_index nulo como 0 e punha na frente.
 		Order("order_index", &postgrest.OrderOpts{Ascending: true, NullsFirst: true}).

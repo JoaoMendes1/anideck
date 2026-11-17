@@ -1,5 +1,5 @@
 // client/src/components/inicio/CardMissoesDiarias.tsx
-// Missões do dia (3, trocam todo dia) e da semana (3 longas), com resgate de AniCoins e XP.
+// Missões do dia e da semana, ordenadas por prioridade (prontas e em andamento primeiro).
 import { useState, type ReactNode } from 'react'
 import {
   Target, Play, Calendar, Heart, MessageSquare, CheckCircle2, ChevronDown, ChevronUp,
@@ -9,6 +9,7 @@ import {
 import IconeAniCoin from '../IconeAniCoin'
 import { useMissoesHoje, type MissaoDiariaItem } from '../../hooks/useMissoesHoje'
 import { textoDoPrazo } from '../../lib/missoes'
+import { ordenarMissoesPorPrioridade } from '../../lib/inicioPreferencias'
 
 const ICONES: Record<string, ReactNode> = {
   Calendar: <Calendar size={16} className="text-holo-2" />,
@@ -34,10 +35,11 @@ function renderIcone(nome: string) {
 interface CartaoProps {
   m: MissaoDiariaItem
   emResgate: boolean
+  compacto?: boolean
   onResgatar: (id: string) => void
 }
 
-function CartaoMissao({ m, emResgate, onResgatar }: CartaoProps) {
+function CartaoMissao({ m, emResgate, compacto = false, onResgatar }: CartaoProps) {
   const prog = Number.isFinite(m.progresso) ? m.progresso : 0
   const meta = Number.isFinite(m.meta) && m.meta > 0 ? m.meta : 1
   const pct = Math.min(100, Math.max(0, Math.round((prog / meta) * 100)))
@@ -47,7 +49,7 @@ function CartaoMissao({ m, emResgate, onResgatar }: CartaoProps) {
 
   return (
     <div
-      className={`p-3.5 rounded-xl border transition-all flex flex-col justify-between gap-3 ${
+      className={`${compacto ? 'p-3 gap-2' : 'p-3.5 gap-3'} rounded-xl border transition-all flex flex-col justify-between ${
         m.resgatada
           ? 'bg-panel-2/40 border-line/40 opacity-75'
           : m.concluida
@@ -58,35 +60,39 @@ function CartaoMissao({ m, emResgate, onResgatar }: CartaoProps) {
       }`}
     >
       <div>
-        <div className="flex items-start justify-between gap-2 mb-2">
+        <div className="flex items-start justify-between gap-2 mb-1.5">
           <div className="flex items-center gap-2 min-w-0">
-            <div className="w-7 h-7 rounded-lg bg-panel border border-line flex items-center justify-center shrink-0">
+            <div className={`${compacto ? 'w-6 h-6' : 'w-7 h-7'} rounded-lg bg-panel border border-line flex items-center justify-center shrink-0`}>
               {renderIcone(m.icone)}
             </div>
-            <span className="font-anton text-sm uppercase tracking-wide truncate text-text">{m.titulo}</span>
+            <span className={`font-anton ${compacto ? 'text-xs' : 'text-sm'} uppercase tracking-wide truncate text-text`}>
+              {m.titulo}
+            </span>
           </div>
-          <div className="shrink-0 flex flex-col items-end gap-1">
-            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full font-mono text-xs font-bold text-holo-3 bg-holo-3/10 border border-holo-3/20">
-              <IconeAniCoin size={12} />+{recompensa}
+          <div className="shrink-0 flex flex-wrap items-center justify-end gap-1">
+            <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full font-mono text-xs font-bold text-holo-3 bg-holo-3/10 border border-holo-3/20">
+              <IconeAniCoin size={11} />+{recompensa}
             </span>
             {m.recompensa_xp > 0 && (
-              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full font-mono text-xs font-bold text-holo-2 bg-holo-2/10 border border-holo-2/25">
+              <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full font-mono text-xs font-bold text-holo-2 bg-holo-2/10 border border-holo-2/25">
                 +{m.recompensa_xp} XP
               </span>
             )}
           </div>
         </div>
-        <p className="text-xs text-muted leading-snug line-clamp-2 m-0 mb-3">{m.descricao}</p>
+        <p className={`text-xs text-muted leading-snug line-clamp-2 m-0 ${compacto ? 'mb-2' : 'mb-3'}`}>
+          {m.descricao}
+        </p>
       </div>
 
       <div>
-        <div className="flex items-center justify-between font-mono text-xs text-muted-2 mb-1.5">
+        <div className="flex items-center justify-between font-mono text-xs text-muted-2 mb-1">
           <span>Progresso</span>
           <span className="font-bold text-text">
             {prog} <span className="text-muted-2">/ {meta}</span>
           </span>
         </div>
-        <div className="h-1.5 w-full rounded-full bg-void/80 overflow-hidden border border-line/50 mb-3">
+        <div className={`h-1.5 w-full rounded-full bg-void/80 overflow-hidden border border-line/50 ${compacto ? 'mb-2' : 'mb-3'}`}>
           <div
             className={`h-full transition-all duration-700 rounded-full ${
               m.resgatada
@@ -103,7 +109,7 @@ function CartaoMissao({ m, emResgate, onResgatar }: CartaoProps) {
 
         {m.resgatada ? (
           <div className="w-full py-1.5 px-3 rounded-lg bg-green/10 border border-green/30 text-green font-mono text-xs font-bold flex items-center justify-center gap-1.5 select-none">
-            <Check size={13} /> Recompensa Coletada
+            <Check size={13} /> {compacto ? 'Coletada' : 'Recompensa Coletada'}
           </div>
         ) : m.concluida ? (
           <button
@@ -116,7 +122,7 @@ function CartaoMissao({ m, emResgate, onResgatar }: CartaoProps) {
             {emResgate ? 'Resgatando...' : 'Resgatar'}
           </button>
         ) : (
-          <div className="w-full py-1.5 px-2 rounded-lg bg-panel border border-line/40 text-muted-2 font-mono text-xs text-center select-none truncate">
+          <div className="w-full py-1 px-2 rounded-lg bg-panel border border-line/40 text-muted-2 font-mono text-xs text-center select-none truncate">
             {prog === 0 ? 'Não iniciada' : `Faltam ${faltam}`}
           </div>
         )}
@@ -125,37 +131,59 @@ function CartaoMissao({ m, emResgate, onResgatar }: CartaoProps) {
   )
 }
 
-export default function CardMissoesDiarias() {
+interface CardMissoesDiariasProps {
+  compacto?: boolean
+  minimizada?: boolean
+  onAlternarMinimizar?: () => void
+  className?: string
+}
+
+export default function CardMissoesDiarias({
+  compacto = false,
+  minimizada,
+  onAlternarMinimizar,
+  className = '',
+}: CardMissoesDiariasProps) {
   const { dados, missoes, longas, concluidas, total, todasResgatadas, carregando, resgatandoId, resgatar } = useMissoesHoje()
-  const [expandido, setExpandido] = useState(true)
+  const [expandidoLocal, setExpandidoLocal] = useState(true)
+  const expandido = minimizada !== undefined ? !minimizada : expandidoLocal
+
+  const alternar = () => {
+    if (onAlternarMinimizar) onAlternarMinimizar()
+    else setExpandidoLocal(v => !v)
+  }
 
   if (carregando && missoes.length === 0) {
     return (
-      <div className="p-4 rounded-2xl bg-panel border border-line shimmer mb-6">
+      <div className={`p-4 rounded-2xl bg-panel border border-line shimmer ${className || 'mb-6'}`}>
         <div className="h-5 w-40 bg-panel-2 rounded mb-2" />
-        <div className="h-4 w-60 bg-panel-2 rounded" />
+        <div className="h-4 w-52 bg-panel-2 rounded" />
       </div>
     )
   }
 
   if (missoes.length === 0 && longas.length === 0) return null
 
+  const missoesOrdenadas = ordenarMissoesPorPrioridade(missoes)
+  const longasOrdenadas = ordenarMissoesPorPrioridade(longas)
   const pendentesResgate = [...missoes, ...longas].filter(m => m.concluida && !m.resgatada).length
   const prazo = dados?.longas_terminam_em ? textoDoPrazo(dados.longas_terminam_em) : ''
 
   return (
     <section
       id="missoes-diarias-card"
-      className="scroll-mt-28 rounded-2xl border border-line bg-panel/90 backdrop-blur-md overflow-hidden mb-6 transition-all shadow-[0_4px_20px_-4px_rgba(0,0,0,0.5)]"
+      className={`scroll-mt-28 rounded-2xl border border-line bg-panel/90 backdrop-blur-md overflow-hidden transition-all shadow-[0_4px_20px_-4px_rgba(0,0,0,0.5)] ${className || (compacto ? '' : 'mb-6')}`}
     >
-      <div className="p-4 sm:p-5 flex items-center justify-between gap-3 border-b border-line/60">
-        <div className="flex items-center gap-3 min-w-0">
-          <div className="w-10 h-10 rounded-xl bg-gold/15 border border-gold/30 flex items-center justify-center shrink-0 text-gold shadow-[0_0_12px_rgba(245,158,11,0.2)]">
-            <Target size={20} />
+      <div className={`${compacto ? 'p-3.5' : 'p-4 sm:p-5'} flex items-center justify-between gap-2.5 ${expandido ? 'border-b border-line/60' : ''}`}>
+        <div className="flex items-center gap-2.5 min-w-0">
+          <div className={`${compacto ? 'w-8 h-8 rounded-lg' : 'w-10 h-10 rounded-xl'} bg-gold/15 border border-gold/30 flex items-center justify-center shrink-0 text-gold shadow-[0_0_12px_rgba(245,158,11,0.2)]`}>
+            <Target size={compacto ? 16 : 20} />
           </div>
           <div className="min-w-0">
-            <div className="flex items-center gap-2 flex-wrap">
-              <h3 className="font-anton text-lg sm:text-xl uppercase tracking-wide m-0 text-text">Missões do Dia</h3>
+            <div className="flex items-center gap-1.5 flex-wrap">
+              <h3 className={`font-anton ${compacto ? 'text-base' : 'text-lg sm:text-xl'} uppercase tracking-wide m-0 text-text`}>
+                {compacto ? 'Missões' : 'Missões do Dia'}
+              </h3>
               <span className={`px-2 py-0.5 rounded-full font-mono text-xs font-bold border ${
                 todasResgatadas
                   ? 'bg-green/15 border-green/40 text-green'
@@ -163,23 +191,25 @@ export default function CardMissoesDiarias() {
                   ? 'bg-gold/15 border-gold/40 text-gold animate-pulse'
                   : 'bg-panel-2 border-line text-muted'
               }`}>
-                {concluidas}/{total} {concluidas === total ? 'Completas!' : 'Concluídas'}
+                {concluidas}/{total}
               </span>
               {pendentesResgate > 0 && (
-                <span className="hidden sm:inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-holo-3/15 border border-holo-3/40 text-holo-3 font-mono text-xs font-bold">
-                  <Gift size={11} /> {pendentesResgate} pronta{pendentesResgate > 1 ? 's' : ''} para resgate
+                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-holo-3/15 border border-holo-3/40 text-holo-3 font-mono text-xs font-bold">
+                  <Gift size={11} /> {pendentesResgate}
                 </span>
               )}
             </div>
-            <p className="text-xs text-muted mt-0.5 m-0 truncate">
-              Novas missões todo dia{dados?.genero_do_dia ? <> · gênero do dia: <b className="text-holo-1">{dados.genero_do_dia}</b></> : null}
-            </p>
+            {dados?.genero_do_dia && (
+              <p className="text-xs text-muted mt-0.5 m-0 truncate">
+                Gênero do dia: <b className="text-holo-1">{dados.genero_do_dia}</b>
+              </p>
+            )}
           </div>
         </div>
 
         <button
           type="button"
-          onClick={() => setExpandido(v => !v)}
+          onClick={alternar}
           aria-label={expandido ? 'Recolher missões' : 'Expandir missões'}
           className="w-8 h-8 shrink-0 rounded-full bg-panel-2 border border-line hover:border-holo-2 text-muted hover:text-text grid place-items-center cursor-pointer transition-colors"
         >
@@ -189,26 +219,25 @@ export default function CardMissoesDiarias() {
 
       {expandido && (
         <div className="bg-panel-2/30">
-          <div className="p-3 sm:p-4 grid grid-cols-1 md:grid-cols-3 gap-3">
-            {missoes.map(m => (
-              <CartaoMissao key={m.id} m={m} emResgate={resgatandoId === m.id} onResgatar={resgatar} />
+          <div className={compacto ? 'p-3 grid grid-cols-1 gap-2.5' : 'p-3 sm:p-4 grid grid-cols-1 md:grid-cols-3 gap-3'}>
+            {missoesOrdenadas.map(m => (
+              <CartaoMissao key={m.id} m={m} emResgate={resgatandoId === m.id} compacto={compacto} onResgatar={resgatar} />
             ))}
           </div>
 
-          {longas.length > 0 && (
-            <div className="px-3 sm:px-4 pb-4">
-              <div className="flex items-center justify-between gap-2 flex-wrap border-t border-line/60 pt-3 mb-3">
-                <h4 className="font-anton text-base uppercase tracking-wide m-0 text-text inline-flex items-center gap-2">
-                  <Trophy size={16} className="text-holo-2" /> Missões da Semana
+          {longasOrdenadas.length > 0 && (
+            <div className={compacto ? 'px-3 pb-3' : 'px-3 sm:px-4 pb-4'}>
+              <div className="flex items-center justify-between gap-2 flex-wrap border-t border-line/60 pt-3 mb-2.5">
+                <h4 className="font-anton text-sm uppercase tracking-wide m-0 text-text inline-flex items-center gap-1.5">
+                  <Trophy size={14} className="text-holo-2" /> Missões da Semana
                 </h4>
-                <span className="font-mono text-xs text-muted-2 inline-flex items-center gap-1.5">
-                  <Hourglass size={12} aria-hidden /> {prazo || 'trocam toda segunda'}
-                  {dados?.genero_da_semana ? <> · gênero: <b className="text-holo-1">{dados.genero_da_semana}</b></> : null}
+                <span className="font-mono text-xs text-muted-2 inline-flex items-center gap-1">
+                  <Hourglass size={11} aria-hidden /> {prazo || 'toda segunda'}
                 </span>
               </div>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-                {longas.map(m => (
-                  <CartaoMissao key={m.id} m={m} emResgate={resgatandoId === m.id} onResgatar={resgatar} />
+              <div className={compacto ? 'grid grid-cols-1 gap-2.5' : 'grid grid-cols-1 md:grid-cols-3 gap-3'}>
+                {longasOrdenadas.map(m => (
+                  <CartaoMissao key={m.id} m={m} emResgate={resgatandoId === m.id} compacto={compacto} onResgatar={resgatar} />
                 ))}
               </div>
             </div>

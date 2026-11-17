@@ -861,6 +861,33 @@ decidiu em 17/11/2026 que ela fecha fora da Fase 18. Escopo a detalhar em issues
 > numeração e não abrem escopo novo. Ficam registrados aqui em ordem cronológica inversa para
 > não sumirem: fase concluída não deve ser reaberta só para receber um conserto.
 
+### 17/11/2026 — Início personalizável, destaque configurável e 3ª coluna (#275)
+
+- [x] **Ordem, visibilidade e minimização salvas por usuário (`sql/110`, `inicio_preferencias.go`, `Inicio.tsx`, `OrganizarInicioModal.tsx`):**
+      reordenação com botões `↑`/`↓`, ligar/desligar e minimizar cada bloco gravados em `public.user_preferences`
+      (`GET`/`PUT /api/inicio/preferencias`); destaque do topo unificado com `"Continue de onde parou"`,
+      `"Em destaque"` (`PalcoDestaques.tsx`) configurável entre Curadoria, Em lançamento, Bem avaliados e Em alta, e
+      3ª coluna no desktop reunindo Missões compactas ordenadas por prioridade, Sua semana, Chefão e Desafio do Clã.
+
+### 17/11/2026 — Avaliações públicas da obra e missões de avaliação (#276)
+
+- [x] **`anime_reviews`, proteção de spoiler e amarras com limite diário (`sql/109`, `reviews.go`, `missoes.go`, `AvaliacoesDaObra.tsx`):**
+      avaliação pública separada da anotação privada do deck (exige `Completo` e mínimo de 100 caracteres, com
+      nota `1..10` opcional e spoiler), duas missões novas no catálogo (`Crítica da Obra` +25 XP e `Análise de
+      Episódio` ≥ 60 chars +15 XP) com teto de 1× por dia cada e estorno imediato ao apagar ou editar abaixo do mínimo.
+
+### 17/11/2026 — Proteção contra spoiler em comentários e feed (#274)
+
+- [x] **Caixa `Contém spoiler` e marcação inline `||trecho||` (`sql/108`, `TextoComSpoiler.tsx`, `spoiler.ts`):**
+      comentários e citações no feed/perfil passam a suportar ocultação de trechos com clique para revelar, além
+      de `contem_spoiler` persistido no banco.
+
+### 17/11/2026 — Nome de exibição único e rótulo de personagem RPG (#273)
+
+- [x] **Unificação de nome (`sql/107`, `comunidade.go`, `Configuracoes.tsx`, `Personagem.tsx`):**
+      `"Nome de exibição"` passa a valer tanto na conta quanto no perfil público (`Seu @` separado), com backfill
+      preservando `profiles.nome` e rótulo explícito `"Nome do personagem (RPG)"` na ficha do herói.
+
 ### 17/11/2026 — Números da comunidade por anime e seção "Animes em alta" (#271)
 
 - [x] **Contagens agregadas na obra e pulso recente da comunidade (`sql/106`, `rankings_comunidade.go`, `Detalhes.tsx`, `Rankings.tsx`, `VitrineDescobrir.tsx`):**

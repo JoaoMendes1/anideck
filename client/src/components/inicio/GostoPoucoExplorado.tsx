@@ -3,13 +3,15 @@
 // comparação que gera a sugestão (as duas notas, lado a lado) em vez de só afirmá-la.
 import type { ReactNode } from 'react'
 import { Link } from 'react-router-dom'
-import { ChevronRight, Gem } from 'lucide-react'
+import { ChevronDown, ChevronRight, ChevronUp, Gem } from 'lucide-react'
 
 interface Props {
   rotulo: string
   nota: number
   mediaPessoal: number
   vistos: number
+  minimizada?: boolean
+  onAlternarMinimizar?: () => void
   /** O trilho com as obras sugeridas. */
   children: ReactNode
 }
@@ -28,10 +30,51 @@ function Medida({ texto, valor, classeDaBarra, classeDoValor }: { texto: string;
   )
 }
 
-export default function GostoPoucoExplorado({ rotulo, nota, mediaPessoal, vistos, children }: Props) {
+export default function GostoPoucoExplorado({
+  rotulo,
+  nota,
+  mediaPessoal,
+  vistos,
+  minimizada = false,
+  onAlternarMinimizar,
+  children,
+}: Props) {
+  if (minimizada) {
+    return (
+      <section className="rounded-2xl border border-gold/25 bg-panel/70 px-4 py-3 mb-11 flex items-center justify-between gap-3">
+        <div className="flex items-center gap-2 min-w-0">
+          <Gem size={15} className="text-gold shrink-0" aria-hidden />
+          <span className="font-anton uppercase text-base tracking-wide truncate">
+            Gosto pouco explorado · {rotulo}
+          </span>
+        </div>
+        {onAlternarMinimizar && (
+          <button
+            type="button"
+            onClick={onAlternarMinimizar}
+            aria-label="Expandir Gosto pouco explorado"
+            className="w-8 h-8 shrink-0 rounded-full bg-panel border border-line hover:border-gold text-muted hover:text-text grid place-items-center cursor-pointer"
+          >
+            <ChevronDown size={15} />
+          </button>
+        )}
+      </section>
+    )
+  }
+
   return (
     <section className="relative overflow-hidden rounded-3xl border border-gold/25 bg-panel/70 p-5 sm:p-7 mb-11">
       <span aria-hidden className="pointer-events-none absolute -top-24 -left-20 w-80 h-80 rounded-full bg-gold opacity-10 blur-3xl" />
+      {onAlternarMinimizar && (
+        <button
+          type="button"
+          onClick={onAlternarMinimizar}
+          aria-label="Minimizar Gosto pouco explorado"
+          className="absolute top-4 right-4 z-10 w-8 h-8 rounded-full bg-panel border border-line hover:border-gold text-muted hover:text-text grid place-items-center cursor-pointer"
+        >
+          <ChevronUp size={15} />
+        </button>
+      )}
       <div className="relative grid gap-6 xl:grid-cols-[320px_minmax(0,1fr)] xl:items-center">
         <div>
           <p className="font-mono text-xs uppercase tracking-[0.25em] text-gold m-0 mb-2 flex items-center gap-2">
