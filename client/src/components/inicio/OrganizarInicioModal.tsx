@@ -1,5 +1,6 @@
 // client/src/components/inicio/OrganizarInicioModal.tsx
 // Modal para reordenar seções (↑ / ↓), ligar/desligar, minimizar e escolher o destaque da Início (#275).
+import { createPortal } from 'react-dom'
 import { ArrowDown, ArrowUp, ChevronsDownUp, ChevronsUpDown, Eye, EyeOff, RotateCcw, SlidersHorizontal, X } from 'lucide-react'
 import {
   CATALOGO_SECOES_INICIO,
@@ -168,7 +169,9 @@ export default function OrganizarInicioModal({
     })
   }
 
-  return (
+  // Portal no body: dentro da página, o modal herda o empilhamento do contêiner e fica
+  // atrás das barras fixas do topo e de baixo, por maior que seja o z-index.
+  return createPortal(
     <div
       className="fixed inset-0 z-[60] bg-void/80 backdrop-blur-sm flex items-center justify-center p-4"
       role="dialog"
@@ -309,6 +312,7 @@ export default function OrganizarInicioModal({
           </button>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body,
   )
 }
