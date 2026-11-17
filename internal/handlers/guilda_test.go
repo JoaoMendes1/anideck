@@ -288,3 +288,49 @@ func TestOuroDaLeitura(t *testing.T) {
 }
 
 func intPtr(v int) *int { return &v }
+
+func TestCalcularXPEpisodioComFaixa_TresFaixas(t *testing.T) {
+	cfg := EconomiaPadrao()
+	agora := time.Date(2026, 11, 17, 15, 0, 0, 0, time.UTC)
+
+	// 1. Maratona (>6 eps em 30 min) de obra antiga aplica ~30% (floor(25 * 0.30) = 7 XP).
+	xpMaratona, motMaratona := CalcularXPEpisodioComFaixa(7, 80, false, true, false, 95, cfg, agora)
+	if xpMaratona != 7 || motMaratona != "maratona · 30%" {
+		t.Fatalf("maratona esperada 7 XP ('maratona · 30%%'), recebeu %d (%q)", xpMaratona, motMaratona)
+	}
+
+	// 2. Episódio que saiu há <=24h vence a penalidade de maratona e cai na faixa "Ao vivo".
+	xpAoVivo24h, motAoVivo24h := CalcularXPEpisodioComFaixa(1, 0, true, true, true, 0, cfg, agora)
+	if xpAoVivo24h != 35 || !strings.Contains(motAoVivo24h, "antes do próximo sair") {
+		t.Fatalf("ao vivo <=24h deveria vencer maratona (35 XP), recebeu %d (%q)", xpAoVivo24h, motAoVivo24h)
+	}
+
+	// 3. Maratona perto do teto diário respeita o saldo restante (176/180 -> 4 XP).
+	xpTeto, motTeto := CalcularXPEpisodioComFaixa(8, 176, false, true, false, 0, cfg, agora)
+	if xpTeto != 4 || motTeto != "teto diário atingido" {
+		t.Fatalf("corte de teto na maratona: esperava 4 XP ('teto diário atingido'), recebeu %d (%q)", xpTeto, motTeto)
+	}
+}
+
+func TestValidarEconomiaGuilda_FaixasEPendente(t *testing.T) {
+	base := EconomiaPadrao()
+
+	invalido := base
+	invalido.FatorMaratona = 1.5
+	if _, msg := ValidarEconomiaGuilda(invalido); msg == "" {
+		t.Fatal("esperava erro quando fator_maratona > 1")
+	}
+
+	invalido = base
+	invalido.MaratonaLimiteEps = 0
+	if _, msg := ValidarEconomiaGuilda(invalido); msg == "" {
+		t.Fatal("esperava erro quando maratona_limite_eps <= 0")
+	}
+
+	invalido = base
+	invalido.TetoPendenteDiario = base.TetoDiario + 1
+	if _, msg := ValidarEconomiaGuilda(invalido); msg == "" {
+		t.Fatal("esperava erro quando teto_pendente_diario supera o teto_diario")
+	}
+}
+

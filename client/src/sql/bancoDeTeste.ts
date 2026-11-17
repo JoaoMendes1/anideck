@@ -15,6 +15,7 @@ import sql096 from '../../../sql/096_fundar_cla_custo.sql?raw'
 import sql099 from '../../../sql/099_titulo_so_por_funcao.sql?raw'
 import sql101 from '../../../sql/101_missoes_evidencias_e_reavaliacao.sql?raw'
 import sql102 from '../../../sql/102_revisoes_e_saida_completo.sql?raw'
+import sql103 from '../../../sql/103_faixas_xp_e_fila_pendente.sql?raw'
 
 export type EtapaAmarras = '101' | '102' | '103' | '104'
 
@@ -23,7 +24,7 @@ export interface OpcoesBancoTeste {
   scriptsExtras?: string[]
 }
 
-const ETAPAS_ATIVAS_PADRAO: EtapaAmarras[] = ['101', '102']
+const ETAPAS_ATIVAS_PADRAO: EtapaAmarras[] = ['101', '102', '103']
 
 const PRE_BASE_SQL = `
 CREATE SCHEMA IF NOT EXISTS auth;
@@ -287,6 +288,9 @@ export async function criarBancoTeste(opcoes: OpcoesBancoTeste = {}): Promise<PG
   }
   if (etapas.has('102')) {
     await db.exec(sql102)
+  }
+  if (etapas.has('103')) {
+    await db.exec(sql103)
   }
 
   for (const extra of opcoes.scriptsExtras ?? []) {

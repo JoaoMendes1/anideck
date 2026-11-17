@@ -282,13 +282,88 @@ describe('Regra de Ouro do XP (estado atual da SQL)', () => {
     const db = await criarBancoTeste()
     try {
       await criarUsuarioTeste(db, USER_ID, 'otaku4')
-      const tblPendente = await db.query<{ existe: boolean }>(
-        `SELECT EXISTS (
-           SELECT 1 FROM information_schema.tables
-            WHERE table_schema = 'public' AND table_name = 'xp_pendente'
-         ) AS existe`,
+
+      // Marca 15 episódios em lote (watched_at NULL, como importação MAL ou Completo)
+      for (let ep = 1; ep <= 15; ep++) {
+        await db.query(
+          `INSERT INTO public.episode_progress (user_id, mal_id, episode_number, watched_at)
+           VALUES ($1, $2, $3, NULL)`,
+          [USER_ID, ANIME_A, ep],
+        )
+      }
+
+      // Na hora, 0 XP entra no ledger; os 15 episódios (4 XP cada = 60 XP) ficam pendentes
+      expect(await lerXPTotalUsuario(db, USER_ID)).toBe(0)
+      const pendInicial = await db.query<{ eps: string; soma: string }>(
+        `SELECT count(*) AS eps, COALESCE(sum(xp_pendente), 0) AS soma
+           FROM public.xp_pendente
+          WHERE user_id = $1 AND liberado_em IS NULL`,
+        [USER_ID],
       )
-      expect(tblPendente.rows[0]?.existe).toBe(true)
+      expect(Number(pendInicial.rows[0].eps)).toBe(15)
+      expect(Number(pendInicial.rows[0].soma)).toBe(60)
+
+      // Liberação do dia: teto pendente diário = 50 -> libera 12 eps (48 XP), sobram 3 eps (12 XP)
+      await db.query(`SELECT public.liberar_xp_pendente($1)`, [USER_ID])
+      expect(await lerXPTotalUsuario(db, USER_ID)).toBe(48)
+      const pendDepoisDia1 = await db.query<{ eps: string; soma: string }>(
+        `SELECT count(*) AS eps, COALESCE(sum(xp_pendente), 0) AS soma
+           FROM public.xp_pendente
+          WHERE user_id = $1 AND liberado_em IS NULL`,
+        [USER_ID],
+      )
+      expect(Number(pendDepoisDia1.rows[0].eps)).toBe(3)
+      expect(Number(pendDepoisDia1.rows[0].soma)).toBe(12)
+
+      // Chamar liberar_xp_pendente de novo no mesmo dia não fura o teto pendente diário
+      await db.query(`SELECT public.liberar_xp_pendente($1)`, [USER_ID])
+      expect(await lerXPTotalUsuario(db, USER_ID)).toBe(48)
+
+      // Desmarcar ep 14 (ainda pendente) remove da fila; desmarcar ep 1 (já liberado) estorna 4 XP
+      await db.query(
+        `DELETE FROM public.episode_progress WHERE user_id = $1 AND mal_id = $2 AND episode_number IN (1, 14)`,
+        [USER_ID, ANIME_A],
+      )
+      expect(await lerXPTotalUsuario(db, USER_ID)).toBe(44)
+      const pendRestante = await db.query<{ eps: string }>(
+        `SELECT count(*) AS eps
+           FROM public.xp_pendente
+          WHERE user_id = $1 AND liberado_em IS NULL`,
+        [USER_ID],
+      )
+      expect(Number(pendRestante.rows[0].eps)).toBe(2)
+
+      // Simula que o dia virou (marca os já liberados como de ontem) e usuário ganhou 176 XP Ao vivo hoje
+      await db.query(
+        `UPDATE public.xp_pendente SET liberado_em = now() - interval '1 day'
+          WHERE user_id = $1 AND liberado_em IS NOT NULL`,
+        [USER_ID],
+      )
+      await db.query(
+        `UPDATE public.xp_ledger SET earned_at = now() - interval '1 day'
+          WHERE user_id = $1`,
+        [USER_ID],
+      )
+      await db.query(
+        `INSERT INTO public.episode_progress (user_id, mal_id, episode_number, watched_at)
+         VALUES ($1, $2, 1, now())`,
+        [USER_ID, ANIME_B],
+      )
+      await db.query(
+        `INSERT INTO public.xp_ledger (user_id, mal_id, episode_number, xp_earned, reason, earned_at)
+         VALUES ($1, $2, 1, 176, 'ao vivo · simula perto do teto 180', now())`,
+        [USER_ID, ANIME_B],
+      )
+
+      // Ao vivo tem prioridade: com 176/180 hoje, só resta 4 XP de espaço (libera apenas 1 dos 2 pendentes)
+      await db.query(`SELECT public.liberar_xp_pendente($1)`, [USER_ID])
+      const pendFinal = await db.query<{ eps: string }>(
+        `SELECT count(*) AS eps
+           FROM public.xp_pendente
+          WHERE user_id = $1 AND liberado_em IS NULL`,
+        [USER_ID],
+      )
+      expect(Number(pendFinal.rows[0].eps)).toBe(1)
     } finally {
       await db.close()
     }

@@ -49,6 +49,11 @@ type EconomiaGuilda struct {
 	EventoMultiplicador   float64 `json:"evento_multiplicador"`
 	BonusVitalidadeMax    float64 `json:"bonus_vitalidade_max"`
 	BonusVitalidadeLimiar int     `json:"bonus_vitalidade_limiar"`
+	FatorMaratona         float64 `json:"fator_maratona"`
+	MaratonaLimiteEps     int     `json:"maratona_limite_eps"`
+	MaratonaJanelaMin     int     `json:"maratona_janela_min"`
+	FatorAcervo           float64 `json:"fator_acervo"`
+	TetoPendenteDiario    int     `json:"teto_pendente_diario"`
 }
 
 // FaixaRank define o nível mínimo e o título de cada classe F → SS.
@@ -89,6 +94,7 @@ type StatusNivelGuilda struct {
 	// Ouro do RPG. Só o resumo da barra do topo preenche; nas outras respostas fica de fora.
 	Ouro                  *int   `json:"ouro,omitempty"`
 	UltimoEstornoMissaoEm string `json:"ultimo_estorno_missao_em,omitempty"`
+	XPPendenteTotal       int    `json:"xp_pendente_total,omitempty"`
 }
 
 // AfinidadeGeneroInput representa uma linha lida de view_user_genre_affinity.
@@ -145,6 +151,16 @@ type ItemLedgerGuilda struct {
 	DeHoje        bool   `json:"de_hoje"`
 }
 
+// ItemPendenteGuilda representa uma entrada aguardando liberação gradual na fila de acervo.
+type ItemPendenteGuilda struct {
+	MalID         int    `json:"mal_id"`
+	TituloAnime   string `json:"titulo_anime"`
+	EpisodeNumber int    `json:"episode_number"`
+	XPPendente    int    `json:"xp_pendente"`
+	Motivo        string `json:"motivo"`
+	CriadoEm      string `json:"criado_em"`
+}
+
 // EconomiaPadrao devolve os valores de referência quando a chave não existe no banco.
 func EconomiaPadrao() EconomiaGuilda {
 	return EconomiaGuilda{
@@ -159,6 +175,11 @@ func EconomiaPadrao() EconomiaGuilda {
 		EventoMultiplicador:   2.0,
 		BonusVitalidadeMax:    0.10,
 		BonusVitalidadeLimiar: 80,
+		FatorMaratona:         0.30,
+		MaratonaLimiteEps:     6,
+		MaratonaJanelaMin:     30,
+		FatorAcervo:           0.15,
+		TetoPendenteDiario:    50,
 	}
 }
 
@@ -209,12 +230,49 @@ func CalcularXPEpisodio(ordemNoDia int, xpAcumuladoHoje int, ehLancamentoRecente
 
 // CalcularXPEpisodioComVitalidade inclui o bônus de constância recente (Vitalidade alta) antes do teto diário (Fase 16, #169).
 func CalcularXPEpisodioComVitalidade(ordemNoDia int, xpAcumuladoHoje int, ehLancamentoRecente bool, hp int, cfg EconomiaGuilda, agora time.Time) (int, string) {
+	return CalcularXPEpisodioComFaixa(ordemNoDia, xpAcumuladoHoje, ehLancamentoRecente, false, false, hp, cfg, agora)
+}
+
+// CalcularXPEpisodioComFaixa escolhe a faixa do episódio individual ("Ao vivo" ou "Maratona"):
+//   - "Ao vivo" (fora da janela de maratona OU até 24h após o episódio ir ao ar): regra cheia.
+//   - "Maratona" (acima de MaratonaLimiteEps episódios da mesma obra na janela): ~30% do base.
+func CalcularXPEpisodioComFaixa(
+	ordemNoDia int,
+	xpAcumuladoHoje int,
+	ehLancamentoRecente bool,
+	ehMaratona bool,
+	saiuAte24h bool,
+	hp int,
+	cfg EconomiaGuilda,
+	agora time.Time,
+) (int, string) {
 	if !cfg.Ativo {
 		return 0, "gamificação pausada"
 	}
 	if cfg.TetoDiario > 0 && xpAcumuladoHoje >= cfg.TetoDiario {
 		return 0, "teto diário atingido"
 	}
+
+	if ehMaratona && !saiuAte24h {
+		fator := cfg.FatorMaratona
+		if fator <= 0 {
+			fator = 0.30
+		}
+		xp := int(math.Floor(float64(cfg.XPBaseEpisodio) * fator))
+		if xp < 1 && cfg.XPBaseEpisodio > 0 {
+			xp = 1
+		}
+		motivo := fmt.Sprintf("maratona · %d%%", int(math.Round(fator*100)))
+		if cfg.TetoDiario > 0 && xpAcumuladoHoje+xp > cfg.TetoDiario {
+			xp = cfg.TetoDiario - xpAcumuladoHoje
+			if xp < 0 {
+				xp = 0
+			}
+			motivo = "teto diário atingido"
+		}
+		return xp, motivo
+	}
+
 	if ordemNoDia <= 0 {
 		ordemNoDia = 1
 	}
@@ -507,8 +565,23 @@ func carregarConfigGuilda(dbClient *supabase.Client) (EconomiaGuilda, []FaixaRan
 		}
 		switch l.Key {
 		case chaveGuildaEconomia:
-			var ec EconomiaGuilda
+			ec := EconomiaPadrao()
 			if json.Unmarshal([]byte(raw), &ec) == nil && ec.XPBaseEpisodio > 0 {
+				if ec.FatorMaratona <= 0 {
+					ec.FatorMaratona = 0.30
+				}
+				if ec.MaratonaLimiteEps <= 0 {
+					ec.MaratonaLimiteEps = 6
+				}
+				if ec.MaratonaJanelaMin <= 0 {
+					ec.MaratonaJanelaMin = 30
+				}
+				if ec.FatorAcervo <= 0 {
+					ec.FatorAcervo = 0.15
+				}
+				if ec.TetoPendenteDiario <= 0 {
+					ec.TetoPendenteDiario = 50
+				}
 				economia = ec
 			}
 		case chaveGuildaRanks:
@@ -556,6 +629,68 @@ func episodioEhLancamentoRecente(curado *models.CuratedAnime, episodeNumber int,
 	}
 	status := strings.ToUpper(strings.TrimSpace(curado.CustomStatus))
 	return status == "RELEASING" || status == "EM LANÇAMENTO"
+}
+
+// episodioSaiuAte24h verifica pela data do episódio na curadoria se ele foi ao ar há no máximo 24h.
+// Episódios nessa janela pertencem à faixa "Ao vivo" e não sofrem redução de maratona.
+func episodioSaiuAte24h(curado *models.CuratedAnime, episodeNumber int, agora time.Time) bool {
+	if curado == nil || jsonAusente(curado.CustomEpisodes) {
+		return false
+	}
+	var episodios []episodioCurado
+	if json.Unmarshal(curado.CustomEpisodes, &episodios) != nil {
+		return false
+	}
+	for _, ep := range episodios {
+		if ep.Number != episodeNumber {
+			continue
+		}
+		bruto := strings.TrimSpace(ep.AiredAt)
+		if bruto == "" {
+			return false
+		}
+		for _, layout := range formatosDeTimestamp {
+			if t, err := time.Parse(layout, bruto); err == nil {
+				diff := agora.Sub(t)
+				return diff >= -2*time.Hour && diff <= 24*time.Hour
+			}
+		}
+		if tDia, err := time.ParseInLocation("2006-01-02", bruto, fusoGuilda); err == nil {
+			diff := agora.Sub(tDia)
+			return diff >= 0 && diff <= 48*time.Hour
+		}
+	}
+	return false
+}
+
+// episodioEmMaratona indica se a marcação atual excede o limite de episódios do mesmo anime na janela curta.
+func episodioEmMaratona(dbClient *supabase.Client, userID string, malID int, agora time.Time, cfg EconomiaGuilda) bool {
+	limite := cfg.MaratonaLimiteEps
+	if limite <= 0 {
+		limite = 6
+	}
+	janelaMin := cfg.MaratonaJanelaMin
+	if janelaMin <= 0 {
+		janelaMin = 30
+	}
+	corte := agora.Add(-time.Duration(janelaMin) * time.Minute).Format(time.RFC3339)
+	data, _, err := dbClient.From("episode_progress").
+		Select("episode_number", "", false).
+		Eq("user_id", userID).
+		Eq("mal_id", strconv.Itoa(malID)).
+		Not("watched_at", "is", "null").
+		Gte("watched_at", corte).
+		Execute()
+	if err != nil {
+		return false
+	}
+	var rows []struct {
+		EpisodeNumber int `json:"episode_number"`
+	}
+	if json.Unmarshal(data, &rows) != nil {
+		return false
+	}
+	return len(rows) > limite
 }
 
 // RegistrarXPEpisodio grava o ganho de XP ao marcar um episódio.
@@ -610,13 +745,15 @@ func RegistrarXPEpisodio(dbClient *supabase.Client, userID string, malID, episod
 	}
 	ordemNoDia := len(linhasHoje) + 1
 	ehCedo := episodioEhLancamentoRecente(curado, episodeNumber, agora)
+	saiuAte24h := episodioSaiuAte24h(curado, episodeNumber, agora)
+	ehMaratona := !saiuAte24h && episodioEmMaratona(dbClient, userID, malID, agora, economia)
 
 	hp := 0
 	if resHP := strings.TrimSpace(dbClient.Rpc("vitalidade_atual", "", map[string]interface{}{"p_user": userID})); resHP != "" && !strings.Contains(resHP, "error") {
 		hp, _ = strconv.Atoi(resHP)
 	}
 
-	xpGanho, motivo := CalcularXPEpisodioComVitalidade(ordemNoDia, xpHoje, ehCedo, hp, economia, agora)
+	xpGanho, motivo := CalcularXPEpisodioComFaixa(ordemNoDia, xpHoje, ehCedo, ehMaratona, saiuAte24h, hp, economia, agora)
 
 	novaLinha := map[string]interface{}{
 		"user_id":        userID,
@@ -680,6 +817,101 @@ func ordenarLedgerRecentePrimeiro(linhas []linhaLedgerBanco) {
 	sort.SliceStable(linhas, func(i, j int) bool { return instante(linhas[i]).After(instante(linhas[j])) })
 }
 
+type linhaPendenteBanco struct {
+	MalID         int    `json:"mal_id"`
+	EpisodeNumber int    `json:"episode_number"`
+	XPPendente    int    `json:"xp_pendente"`
+	Motivo        string `json:"motivo"`
+	CriadoEm      string `json:"criado_em"`
+}
+
+// liberarXPPendenteUsuario dispara a liberação diária do próprio usuário apenas se existir
+// fila pendente, evitando chamadas RPC desnecessárias quando o acervo já foi todo liberado.
+func liberarXPPendenteUsuario(dbClient *supabase.Client, userID string) {
+	if dbClient == nil || userID == "" {
+		return
+	}
+	checkBytes, _, errCheck := dbClient.From("xp_pendente").
+		Select("id", "", false).
+		Eq("user_id", userID).
+		Is("liberado_em", "null").
+		Limit(1, "").
+		Execute()
+	if errCheck != nil {
+		return
+	}
+	var tem []struct {
+		ID string `json:"id"`
+	}
+	if json.Unmarshal(checkBytes, &tem) != nil || len(tem) == 0 {
+		return
+	}
+	srvClient, errSrv := database.ServiceRoleClient()
+	if errSrv != nil || srvClient == nil {
+		return
+	}
+	_ = srvClient.Rpc("liberar_xp_pendente", "", map[string]interface{}{"p_user_id": userID})
+}
+
+func carregarPendentesGuilda(dbClient *supabase.Client, userID string, curados map[int]models.CuratedAnime) (int, int, []ItemPendenteGuilda) {
+	linhas, err := paginar[linhaPendenteBanco](func(de, ate int) ([]byte, error) {
+		dados, _, errPagina := dbClient.From("xp_pendente").
+			Select("mal_id,episode_number,xp_pendente,motivo,criado_em", "", false).
+			Eq("user_id", userID).
+			Is("liberado_em", "null").
+			Order("id", &postgrest.OrderOpts{Ascending: true}).
+			Range(de, ate, "").
+			Execute()
+		return dados, errPagina
+	}, tamanhoPaginaPostgREST)
+	if err != nil || len(linhas) == 0 {
+		return 0, 0, []ItemPendenteGuilda{}
+	}
+
+	sort.SliceStable(linhas, func(i, j int) bool {
+		if linhas[i].CriadoEm != linhas[j].CriadoEm {
+			return linhas[i].CriadoEm < linhas[j].CriadoEm
+		}
+		if linhas[i].MalID != linhas[j].MalID {
+			return linhas[i].MalID < linhas[j].MalID
+		}
+		return linhas[i].EpisodeNumber < linhas[j].EpisodeNumber
+	})
+
+	totalXP := 0
+	for _, l := range linhas {
+		totalXP += l.XPPendente
+	}
+
+	limite := 20
+	if len(linhas) < limite {
+		limite = len(linhas)
+	}
+	recorte := linhas[:limite]
+	paraResolver := make([]linhaLedgerBanco, 0, len(recorte))
+	for _, l := range recorte {
+		paraResolver = append(paraResolver, linhaLedgerBanco{MalID: l.MalID})
+	}
+	titulos := resolverTitulosLedger(dbClient, paraResolver, curados)
+
+	itens := make([]ItemPendenteGuilda, 0, len(recorte))
+	for _, l := range recorte {
+		titulo := titulos[l.MalID]
+		if titulo == "" {
+			titulo = fmt.Sprintf("Anime #%d", l.MalID)
+		}
+		itens = append(itens, ItemPendenteGuilda{
+			MalID:         l.MalID,
+			TituloAnime:   titulo,
+			EpisodeNumber: l.EpisodeNumber,
+			XPPendente:    l.XPPendente,
+			Motivo:        l.Motivo,
+			CriadoEm:      l.CriadoEm,
+		})
+	}
+	return totalXP, len(linhas), itens
+}
+
 // HandleResumoGuilda devolve apenas os indicadores da pílula da Navbar e do menu de Perfil.
 func (h *GuildaHandler) HandleResumoGuilda(w http.ResponseWriter, r *http.Request) {
 	userID, ok := r.Context().Value(middleware.UserIDKey).(string)
@@ -695,8 +927,11 @@ func (h *GuildaHandler) HandleResumoGuilda(w http.ResponseWriter, r *http.Reques
 		return
 	}
 
+	liberarXPPendenteUsuario(dbClient, userID)
+
 	economia, ranks, _ := carregarConfigGuilda(dbClient)
 	linhas := carregarLedgerUsuario(dbClient, userID)
+	totalPendenteXP, _, _ := carregarPendentesGuilda(dbClient, userID, nil)
 
 	agora := time.Now().UTC()
 	inicioDia := inicioDoDiaBrasilia(agora)
@@ -730,6 +965,7 @@ func (h *GuildaHandler) HandleResumoGuilda(w http.ResponseWriter, r *http.Reques
 	status.MaiorStreak = maiorStreak
 	status.GamificacaoAtiva = economia.Ativo
 	status.Ouro = lerOuroDoJogador(dbClient, userID)
+	status.XPPendenteTotal = totalPendenteXP
 
 	var estornosRows []struct {
 		EstornadaEm string `json:"estornada_em"`
@@ -794,6 +1030,8 @@ func (h *GuildaHandler) HandleGetGuilda(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
+	liberarXPPendenteUsuario(dbClient, userID)
+
 	economia, ranks, catalogoInsignias := carregarConfigGuilda(dbClient)
 	linhasLedger := carregarLedgerUsuario(dbClient, userID)
 
@@ -829,6 +1067,7 @@ func (h *GuildaHandler) HandleGetGuilda(w http.ResponseWriter, r *http.Request) 
 	}
 
 	curados := CarregarCuradoria(dbClient)
+	totalPendenteXP, totalPendenteEps, itensPendentes := carregarPendentesGuilda(dbClient, userID, curados)
 
 	agora := time.Now().UTC()
 	inicioDia := inicioDoDiaBrasilia(agora)
@@ -867,6 +1106,7 @@ func (h *GuildaHandler) HandleGetGuilda(w http.ResponseWriter, r *http.Request) 
 	status.MaiorStreak = maiorStreak
 	status.GamificacaoAtiva = economia.Ativo
 	status.PesoMaximoVoto = pesoMaximo
+	status.XPPendenteTotal = totalPendenteXP
 
 	// Contagem de sessões ou marcações na madrugada (00h–05h no fuso de Brasília).
 	madrugadas := 0
@@ -912,6 +1152,9 @@ func (h *GuildaHandler) HandleGetGuilda(w http.ResponseWriter, r *http.Request) 
 		"extrato":               extrato,
 		"extrato_total":         len(linhasLedger),
 		"extrato_total_paginas": calcularTotalPaginasExtrato(len(linhasLedger), tamanhoPaginaExtratoGuilda),
+		"pendentes":             itensPendentes,
+		"xp_pendente_total":     totalPendenteXP,
+		"pendentes_total_eps":   totalPendenteEps,
 		"especialistas":         especialistas,
 		"especialidade":         CalcularEspecialidade(especialistas),
 		"insignias":             insignias,

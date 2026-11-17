@@ -57,6 +57,11 @@ export default function AbaGuilda() {
     evento_inicio: '',
     evento_fim: '',
     evento_multiplicador: 2,
+    fator_maratona: 0.3,
+    maratona_limite_eps: 6,
+    maratona_janela_min: 30,
+    fator_acervo: 0.15,
+    teto_pendente_diario: 50,
   })
   const [ranks, setRanks] = useState<FaixaRank[]>([])
   const [insignias, setInsignias] = useState<InsigniaConfigAdmin[]>([])
@@ -75,7 +80,14 @@ export default function AbaGuilda() {
         if (!res.ok) throw new Error()
         const json = (await res.json()) as RespostaAdminGuilda
         if (!ativo) return
-        setEconomia(json.economia)
+        setEconomia({
+          fator_maratona: 0.3,
+          maratona_limite_eps: 6,
+          maratona_janela_min: 30,
+          fator_acervo: 0.15,
+          teto_pendente_diario: 50,
+          ...json.economia,
+        })
         setRanks(json.ranks || [])
         setInsignias(json.insignias || [])
         setDistribuicao(json.distribuicao_ranks || {})
@@ -257,6 +269,73 @@ export default function AbaGuilda() {
                 value={economia.evento_multiplicador}
                 aoMudar={(valor) =>
                   setEconomia((prev) => ({ ...prev, evento_multiplicador: valor }))
+                }
+                className="px-3 py-2 rounded-xl bg-panel-2 border border-line text-text font-mono text-sm"
+              />
+            </label>
+
+            <label className="flex flex-col gap-1.5 text-xs font-bold text-muted">
+              Fator maratona (0–1)
+              <CampoNumerico
+                step={0.05}
+                min={0.05}
+                max={1}
+                value={economia.fator_maratona ?? 0.3}
+                aoMudar={(valor) =>
+                  setEconomia((prev) => ({ ...prev, fator_maratona: valor }))
+                }
+                className="px-3 py-2 rounded-xl bg-panel-2 border border-line text-text font-mono text-sm"
+              />
+            </label>
+
+            <label className="flex flex-col gap-1.5 text-xs font-bold text-muted">
+              Limite eps maratona
+              <CampoNumerico
+                min={1}
+                max={100}
+                value={economia.maratona_limite_eps ?? 6}
+                aoMudar={(valor) =>
+                  setEconomia((prev) => ({ ...prev, maratona_limite_eps: valor }))
+                }
+                className="px-3 py-2 rounded-xl bg-panel-2 border border-line text-text font-mono text-sm"
+              />
+            </label>
+
+            <label className="flex flex-col gap-1.5 text-xs font-bold text-muted">
+              Janela maratona (min)
+              <CampoNumerico
+                min={5}
+                max={240}
+                value={economia.maratona_janela_min ?? 30}
+                aoMudar={(valor) =>
+                  setEconomia((prev) => ({ ...prev, maratona_janela_min: valor }))
+                }
+                className="px-3 py-2 rounded-xl bg-panel-2 border border-line text-text font-mono text-sm"
+              />
+            </label>
+
+            <label className="flex flex-col gap-1.5 text-xs font-bold text-muted">
+              Fator acervo (0–1)
+              <CampoNumerico
+                step={0.05}
+                min={0.05}
+                max={1}
+                value={economia.fator_acervo ?? 0.15}
+                aoMudar={(valor) =>
+                  setEconomia((prev) => ({ ...prev, fator_acervo: valor }))
+                }
+                className="px-3 py-2 rounded-xl bg-panel-2 border border-line text-text font-mono text-sm"
+              />
+            </label>
+
+            <label className="flex flex-col gap-1.5 text-xs font-bold text-muted">
+              Teto pendente diário
+              <CampoNumerico
+                min={0}
+                max={5000}
+                value={economia.teto_pendente_diario ?? 50}
+                aoMudar={(valor) =>
+                  setEconomia((prev) => ({ ...prev, teto_pendente_diario: valor }))
                 }
                 className="px-3 py-2 rounded-xl bg-panel-2 border border-line text-text font-mono text-sm"
               />

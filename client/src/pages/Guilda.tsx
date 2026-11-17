@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
-import { Shield, Sparkles, Lock, Award, ChevronRight, Send, ShoppingBag, UserRound } from 'lucide-react'
+import { Shield, Sparkles, Lock, Award, ChevronRight, Send, ShoppingBag, UserRound, Hourglass } from 'lucide-react'
 import { useSessao } from '../contexts/SessaoContext'
 import { useCarteira } from '../hooks/useCarteira'
 import { useComunidade } from '../hooks/useComunidade'
@@ -73,9 +73,11 @@ export default function Guilda() {
 
     carregar()
     window.addEventListener('anideck:episodio-atualizado', carregar)
+    window.addEventListener('anideck:entrada-atualizada', carregar)
     return () => {
       ativo = false
       window.removeEventListener('anideck:episodio-atualizado', carregar)
+      window.removeEventListener('anideck:entrada-atualizada', carregar)
     }
   }, [session?.access_token, chave, userId, emMemoria])
 
@@ -103,9 +105,11 @@ export default function Guilda() {
 
     carregarExtrato()
     window.addEventListener('anideck:episodio-atualizado', carregarExtrato)
+    window.addEventListener('anideck:entrada-atualizada', carregarExtrato)
     return () => {
       ativo = false
       window.removeEventListener('anideck:episodio-atualizado', carregarExtrato)
+      window.removeEventListener('anideck:entrada-atualizada', carregarExtrato)
     }
   }, [session?.access_token, paginaExtrato])
 
@@ -308,11 +312,56 @@ export default function Guilda() {
 
             {abaLivroRazao === 'xp' ? (
               <>
-                <div className="flex items-center justify-end mb-3">
-                  <span className="font-mono text-xs text-muted bg-panel-2 border border-line px-2.5 py-1 rounded-full">
+                <div className="flex flex-wrap items-center justify-between gap-2 mb-3">
+                  {(dados.xp_pendente_total ?? 0) > 0 && (
+                    <span className="inline-flex items-center gap-1.5 font-mono text-xs font-bold text-gold bg-gold/12 border border-gold/35 px-2.5 py-1 rounded-full">
+                      <Hourglass size={12} /> +{dados.xp_pendente_total} XP a receber
+                    </span>
+                  )}
+                  <span className="font-mono text-xs text-muted bg-panel-2 border border-line px-2.5 py-1 rounded-full ml-auto">
                     Base +{economia.xp_base_episodio} XP · Cedo +{economia.bonus_cedo} XP
                   </span>
                 </div>
+
+                {(dados.pendentes?.length ?? 0) > 0 && (
+                  <div className="mb-4 p-3.5 rounded-xl bg-panel-2 border border-gold/30">
+                    <div className="flex flex-wrap items-center justify-between gap-2 mb-2">
+                      <div className="flex items-center gap-1.5 font-mono text-xs font-bold text-gold uppercase tracking-wider">
+                        <Hourglass size={13} /> Fila XP a receber (Acervo)
+                      </div>
+                      <span className="font-mono text-xs text-muted-2">
+                        {dados.pendentes_total_eps ?? dados.pendentes?.length ?? 0} ep(s) · até{' '}
+                        {economia.teto_pendente_diario ?? 50} XP/dia
+                      </span>
+                    </div>
+                    <div className="divide-y divide-line/60">
+                      {dados.pendentes?.slice(0, 6).map((pend) => (
+                        <div
+                          key={`pend-${pend.mal_id}-${pend.episode_number}`}
+                          className="py-1.5 flex items-center justify-between gap-3 text-xs"
+                        >
+                          <div className="min-w-0">
+                            <Link
+                              to={`/anime/${pend.mal_id}`}
+                              className="font-bold text-text hover:text-holo-3 transition-colors line-clamp-1"
+                            >
+                              {pend.titulo_anime} · <span className="font-mono">ep {pend.episode_number}</span>
+                            </Link>
+                            <span className="font-mono text-xs text-muted-2">{pend.motivo}</span>
+                          </div>
+                          <span className="font-mono font-bold text-gold shrink-0">
+                            +{pend.xp_pendente} XP (pendente)
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                    {(dados.pendentes_total_eps ?? 0) > 6 && (
+                      <p className="font-mono text-xs text-muted-2 mt-2 mb-0">
+                        + {(dados.pendentes_total_eps ?? 0) - 6} episódio(s) na fila aguardando os próximos dias.
+                      </p>
+                    )}
+                  </div>
+                )}
 
                 {(() => {
                   const itensExtrato = extratoPaginado?.itens ?? extrato.slice(0, EXTRATO_POR_PAGINA)
@@ -401,7 +450,8 @@ export default function Guilda() {
 
                 <p className="font-mono text-xs text-muted-2 mt-4 mb-0 leading-relaxed">
                   Cada linha guarda quanto valeu <b className="text-text">na hora</b>. Desmarcar um
-                  episódio devolve exatamente isso, e listas importadas em lote não inflam seu Rank.
+                  episódio devolve exatamente isso; listas importadas e obras fechadas como Completo vão
+                  para a fila <b className="text-text">XP a receber</b> e entram aos poucos sem passar do teto.
                 </p>
               </>
             ) : (

@@ -226,6 +226,13 @@ var tarefasPeriodicasPadrao = []TarefaPeriodica{
 		Frequencia: FrequenciaDiaria(0, 15),
 		Executar:   executarFecharChefaoTemporada,
 	},
+	{
+		Nome:       "liberar_xp_pendente",
+		Titulo:     "Liberação diária da fila de XP pendente",
+		Descricao:  "Libera em ordem FIFO a parcela diária do XP de acervo guardado em xp_pendente, respeitando o teto pendente diário e o teto diário total.",
+		Frequencia: FrequenciaDiaria(0, 10),
+		Executar:   executarLiberarXPPendente,
+	},
 }
 
 // TarefasPeriodicasRegistradas devolve uma cópia das tarefas ativas no worker.
@@ -361,6 +368,19 @@ func executarFecharTemporadaClas(ctx context.Context) (string, error) {
 		"p_nova_temporada":    temporadaAtual,
 	})
 	return fmt.Sprintf("Temporada de clãs fechada (%s -> %s): %s", temporadaPassada, temporadaAtual, bruto), nil
+}
+
+// executarLiberarXPPendente libera a cota diária da fila xp_pendente para todos os usuários com saldo aguardando.
+func executarLiberarXPPendente(ctx context.Context) (string, error) {
+	if err := ctx.Err(); err != nil {
+		return "", err
+	}
+	client, err := database.ServiceRoleClient()
+	if err != nil || client == nil {
+		return "", fmt.Errorf("service role indisponível: %w", err)
+	}
+	bruto := client.Rpc("liberar_xp_pendente", "", map[string]interface{}{"p_user_id": nil})
+	return fmt.Sprintf("Fila de XP pendente processada: %s", bruto), nil
 }
 
 // diasHistoricoTarefas é por quanto tempo uma execução concluída fica visível no Painel.

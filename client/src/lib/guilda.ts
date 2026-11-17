@@ -24,6 +24,7 @@ export interface StatusNivelGuilda {
   /** Ouro do RPG; só o resumo da barra do topo traz. Ausente quando a leitura falhou. */
   ouro?: number
   ultimo_estorno_missao_em?: string
+  xp_pendente_total?: number
 }
 
 export interface EconomiaGuilda {
@@ -36,6 +37,11 @@ export interface EconomiaGuilda {
   evento_inicio: string
   evento_fim: string
   evento_multiplicador: number
+  fator_maratona?: number
+  maratona_limite_eps?: number
+  maratona_janela_min?: number
+  fator_acervo?: number
+  teto_pendente_diario?: number
 }
 
 export interface FaixaRank {
@@ -91,6 +97,15 @@ export interface ItemLedgerGuilda {
   de_hoje: boolean
 }
 
+export interface ItemPendenteGuilda {
+  mal_id: number
+  titulo_anime: string
+  episode_number: number
+  xp_pendente: number
+  motivo: string
+  criado_em: string
+}
+
 export const EXTRATO_POR_PAGINA = 20
 
 export interface RespostaExtratoGuilda {
@@ -107,6 +122,9 @@ export interface DadosDaGuilda {
   extrato: ItemLedgerGuilda[]
   extrato_total?: number
   extrato_total_paginas?: number
+  pendentes?: ItemPendenteGuilda[]
+  xp_pendente_total?: number
+  pendentes_total_eps?: number
   especialistas: EspecialistaGenero[]
   /** Ausente (null) enquanto nenhum gênero chega a N1. */
   especialidade?: Especialidade | null
@@ -218,5 +236,11 @@ export function obterClasseCartaInsignia(insignia: InsigniaStatus, indice: numbe
 
 export function ehMotivoReduzido(reason: string): boolean {
   const texto = reason.toLowerCase()
-  return texto.includes('decrescente') || texto.includes('teto') || texto.includes('pausada')
+  return (
+    texto.includes('decrescente') ||
+    texto.includes('teto') ||
+    texto.includes('pausada') ||
+    texto.includes('maratona') ||
+    texto.includes('acervo')
+  )
 }

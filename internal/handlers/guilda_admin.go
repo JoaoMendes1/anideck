@@ -41,6 +41,22 @@ func ValidarEconomiaGuilda(ec EconomiaGuilda) (EconomiaGuilda, string) {
 		return ec, "O teto diário deve ser maior ou igual ao XP base e no máximo 5000."
 	}
 
+	if ec.FatorMaratona <= 0 || ec.FatorMaratona > 1.0 {
+		return ec, "O fator de maratona deve ficar entre 0.05 e 1.0."
+	}
+	if ec.MaratonaLimiteEps < 1 || ec.MaratonaLimiteEps > 100 {
+		return ec, "O limite de episódios da maratona deve ficar entre 1 e 100."
+	}
+	if ec.MaratonaJanelaMin < 5 || ec.MaratonaJanelaMin > 240 {
+		return ec, "A janela da maratona deve ficar entre 5 e 240 minutos."
+	}
+	if ec.FatorAcervo <= 0 || ec.FatorAcervo > 1.0 {
+		return ec, "O fator de acervo deve ficar entre 0.05 e 1.0."
+	}
+	if ec.TetoPendenteDiario < 0 || ec.TetoPendenteDiario > ec.TetoDiario {
+		return ec, "O teto diário de XP pendente deve ficar entre 0 e o teto diário."
+	}
+
 	ec.EventoInicio = strings.TrimSpace(ec.EventoInicio)
 	ec.EventoFim = strings.TrimSpace(ec.EventoFim)
 	if ec.EventoMultiplicador <= 0 {
