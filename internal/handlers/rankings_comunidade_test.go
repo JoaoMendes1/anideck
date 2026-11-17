@@ -1,8 +1,14 @@
 package handlers
 
 import (
+	"context"
+	"encoding/json"
+	"net/http"
+	"net/http/httptest"
 	"testing"
 	"time"
+
+	"github.com/go-chi/chi/v5"
 )
 
 func TestInicioTemporadaBrasilia(t *testing.T) {
@@ -98,5 +104,98 @@ func TestCodigoSemanaAtualBrasilia(t *testing.T) {
 	}
 	if codSeg != "2026-W46" {
 		t.Errorf("Esperado 2026-W46 na segunda, obteve %s", codSeg)
+	}
+}
+
+func TestDecodificarNumerosComunidade(t *testing.T) {
+	num, err := decodificarNumerosComunidade(52991, `[{"mal_id":52991,"assistindo":4,"completo":10,"dropado":2,"quero_assistir":7,"total":23}]`)
+	if err != nil {
+		t.Fatalf("erro inesperado: %v", err)
+	}
+	if num.Assistindo != 4 || num.Completo != 10 || num.Dropado != 2 || num.QueroAssistir != 7 || num.Total != 23 {
+		t.Fatalf("contagens inesperadas: %+v", num)
+	}
+
+	brutoJSON, err := json.Marshal(num)
+	if err != nil {
+		t.Fatalf("erro ao serializar JSON: %v", err)
+	}
+	var campos map[string]interface{}
+	if err := json.Unmarshal(brutoJSON, &campos); err != nil {
+		t.Fatalf("erro ao ler JSON: %v", err)
+	}
+	for _, proibido := range []string{"user_id", "handle", "usuarios"} {
+		if _, existe := campos[proibido]; existe {
+			t.Fatalf("campo %q não pode ser exposto na resposta agregada", proibido)
+		}
+	}
+
+	vazio, err := decodificarNumerosComunidade(1234, `[]`)
+	if err != nil {
+		t.Fatalf("erro inesperado em array vazio: %v", err)
+	}
+	if vazio.MalID != 1234 || vazio.Total != 0 {
+		t.Fatalf("esperava zeros para array vazio, obteve %+v", vazio)
+	}
+
+	if _, err := decodificarNumerosComunidade(1234, `nao-e-json`); err == nil {
+		t.Fatalf("esperava erro para JSON inválido")
+	}
+}
+
+func TestLimitarJanelaEmAlta(t *testing.T) {
+	casos := []struct {
+		diasIn, limIn     string
+		diasOut, limOut   int
+	}{
+		{"", "", 14, 12},
+		{"abc", "-5", 14, 12},
+		{"7", "5", 7, 5},
+		{"365", "200", 90, 30},
+	}
+	for _, c := range casos {
+		d, l := limitarJanelaEmAlta(c.diasIn, c.limIn)
+		if d != c.diasOut || l != c.limOut {
+			t.Errorf("para (%q, %q) esperava (%d, %d), obteve (%d, %d)", c.diasIn, c.limIn, c.diasOut, c.limOut, d, l)
+		}
+	}
+}
+
+func TestMontarItensEmAlta(t *testing.T) {
+	linhas := []emAltaLinha{
+		{MalID: 10, Pontuacao: 31, UsuariosAtivos: 3, EpisodiosRecentes: 5, ComentariosRecentes: 2, ReacoesRecentes: 2, DropsRecentes: 0},
+		{MalID: 20, Pontuacao: 12, UsuariosAtivos: 2, EpisodiosRecentes: 2, ComentariosRecentes: 1, ReacoesRecentes: 0, DropsRecentes: 1},
+		{MalID: 0, Pontuacao: 99},
+	}
+	metas := map[int]metadadoLocalAnime{
+		10: {Title: "Sousou no Frieren", Image: "https://cdn.local/frieren.webp"},
+	}
+
+	itens := montarItensEmAlta(linhas, metas)
+	if len(itens) != 2 {
+		t.Fatalf("esperava 2 itens válidos, obteve %d", len(itens))
+	}
+	if itens[0].Titulo != "Sousou no Frieren" || itens[0].ImagemURL == "" {
+		t.Fatalf("metadados curados não aplicados: %+v", itens[0])
+	}
+	if itens[1].Titulo != "Anime #20" || itens[1].DropsRecentes != 1 {
+		t.Fatalf("fallback ou contagem de drops incorreta: %+v", itens[1])
+	}
+}
+
+func TestHandleNumerosComunidadeAnimeValidacao(t *testing.T) {
+	h := &RankingsComunidadeHandler{}
+
+	for _, idInvalido := range []string{"abc", "0", "-3"} {
+		req := httptest.NewRequest(http.MethodGet, "/api/anime/"+idInvalido+"/comunidade", nil)
+		rctx := chi.NewRouteContext()
+		rctx.URLParams.Add("id", idInvalido)
+		req = req.WithContext(context.WithValue(req.Context(), chi.RouteCtxKey, rctx))
+
+		rec := httptest.NewRecorder()
+		h.HandleNumerosComunidadeAnime(rec, req)
+		if rec.Code != http.StatusBadRequest {
+			t.Errorf("para id=%q esperava 400, obteve %d", idInvalido, rec.Code)
+		}
 	}
 }

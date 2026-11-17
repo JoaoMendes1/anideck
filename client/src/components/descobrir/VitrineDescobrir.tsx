@@ -9,6 +9,7 @@ import type { CuratedAnime } from '../../types/curation'
 import { buscarDestaquesDaCuradoria } from '../../lib/destaques'
 import { lerDaMemoria } from '../../lib/cacheDeTela'
 import { miniatura } from '../../lib/miniatura'
+import SecaoEmAltaComunidade from '../rankings/SecaoEmAltaComunidade'
 
 // Escritas por extenso: o Tailwind não enxerga classe montada em tempo de execução.
 const FUNDOS = [
@@ -92,6 +93,8 @@ export default function VitrineDescobrir({ rotulos, ano, aoEscolherRotulo, aoVer
           </div>
         </section>
       )}
+
+      <SecaoEmAltaComunidade compacta />
 
       {destaques.length > 0 && (
         <section>

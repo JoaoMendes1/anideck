@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, type ReactNode } from 'react'
 import { useParams, Link, useNavigate, useSearchParams, useLocation } from 'react-router-dom'
-import { PlayCircle, Star, AlertCircle, Trophy, X, ArrowLeft, CalendarDays, ChevronDown, Heart, Radio, Sparkles } from 'lucide-react'
+import { PlayCircle, Star, AlertCircle, Trophy, X, ArrowLeft, CalendarDays, ChevronDown, Heart, Radio, Sparkles, Users } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import { useSessao } from '../contexts/SessaoContext'
 import { useToast } from '../contexts/ToastContext'
@@ -25,6 +25,7 @@ import { filtrarLinksStreaming } from '../lib/inicio'
 import { ultimoEpisodioDisponivel } from '../lib/comunidade'
 import { useMidia } from '../hooks/useMidia'
 import { obterSalaPorAnime, type SalaEstreia } from '../lib/salasEstreia'
+import { obterNumerosComunidadeAnime, type NumerosComunidadeAnime } from '../lib/comunidadeAnimes'
 
 interface AnimeDetail {
   mal_id: number
@@ -116,6 +117,7 @@ export default function Detalhes() {
   const [imagemAmpliada, setImagemAmpliada] = useState<string | null>(null)
   const [episodiosAssistidos, setEpisodiosAssistidos] = useState<number[]>([])
   const [comentariosNaObra, setComentariosNaObra] = useState(0)
+  const [comunidadeStats, setComunidadeStats] = useState<NumerosComunidadeAnime | null>(null)
   const [salaAoVivo, setSalaAoVivo] = useState<SalaEstreia | null>(null)
   const [sinopseAberta, setSinopseAberta] = useState(false)
   const [modalCorrecaoAberto, setModalCorrecaoAberto] = useState(false)
@@ -128,6 +130,7 @@ export default function Detalhes() {
     // troca o id sem desmontar a página.
     const emMemoria = lerDaMemoria<AnimeEmMemoria>(chaveDoAnime)
     setSinopseAberta(false)
+    setComunidadeStats(null)
 
     // A entrada do usuário e os episódios assistidos não dependem da resposta do anime.
     // Antes, só saíam depois dela, e a página esperava as quatro requisições em fila.
@@ -164,6 +167,9 @@ export default function Detalhes() {
       .catch(() => setComentariosNaObra(0))
 
     if (id && Number(id) > 0) {
+      obterNumerosComunidadeAnime(Number(id))
+        .then(n => setComunidadeStats(n))
+        .catch(() => setComunidadeStats(null))
       obterSalaPorAnime(Number(id))
         .then(s => setSalaAoVivo(s))
         .catch(() => setSalaAoVivo(null))
@@ -232,16 +238,25 @@ export default function Detalhes() {
     entradaAtual.current = minhaEntrada
   }, [minhaEntrada])
 
+  const recarregarComunidade = () => {
+    if (!id || Number(id) <= 0) return
+    obterNumerosComunidadeAnime(Number(id))
+      .then(n => { if (n) setComunidadeStats(n) })
+      .catch(() => {})
+  }
+
   useEffect(() => {
     const aoAtualizar = (ev: Event) => {
       const d = (ev as CustomEvent<{ malId?: number; episodeNumber?: number; watched?: boolean }>).detail
       if (d?.malId !== Number(id) || typeof d.episodeNumber !== 'number') return
       const n = d.episodeNumber
+      let mudouStatus = false
       setEpisodiosAssistidos(prev => {
         const proximo = d.watched ? (prev.includes(n) ? prev : [...prev, n]) : prev.filter(x => x !== n)
         const atual = entradaAtual.current
         if (!d.watched && proximo.length === 0 && atual?.status === 'Completo') {
           setMinhaEntrada({ ...atual, status: 'Quero Assistir' })
+          mudouStatus = true
         }
         return proximo
       })
@@ -249,6 +264,12 @@ export default function Detalhes() {
       if (d.watched && atual?.status === 'Quero Assistir') {
         setMinhaEntrada({ ...atual, status: 'Assistindo' })
         showToast('Movido para Assistindo!')
+        mudouStatus = true
+      }
+      if (mudouStatus) {
+        obterNumerosComunidadeAnime(Number(id))
+          .then(num => { if (num) setComunidadeStats(num) })
+          .catch(() => {})
       }
       supabase.auth.getSession().then(({ data }) => invalidarCachesDoDeck(data.session?.user?.id))
     }
@@ -366,7 +387,7 @@ export default function Detalhes() {
     { id: 'sobre', rotulo: 'Sobre' },
     { id: 'episodios', rotulo: 'Episódios', contador: totalEpisodios > 0 && isLoggedIn ? `${episodiosAssistidos.length}/${totalEpisodios}` : undefined },
     { id: 'conversa', rotulo: 'Conversa', contador: comentariosNaObra > 0 ? String(comentariosNaObra) : undefined },
-    { id: 'numeros', rotulo: 'Números' },
+    { id: 'numeros', rotulo: 'Números', contador: comunidadeStats && comunidadeStats.total > 0 ? String(comunidadeStats.total) : undefined },
   ]
 
   const painel = (compacto: boolean) => (
@@ -380,6 +401,7 @@ export default function Detalhes() {
       onEpisodiosZerados={() => setEpisodiosAssistidos([])}
       onEntradaMudou={async (nova, anterior) => {
         setMinhaEntrada(nova)
+        recarregarComunidade()
         if (!nova) {
           setEpisodiosAssistidos([])
           return
@@ -487,6 +509,17 @@ export default function Detalhes() {
                   <CalendarDays size={13} aria-hidden /> {diaLancamentoSemanal}
                 </span>
               )}
+              {comunidadeStats && comunidadeStats.total > 0 && (
+                <button
+                  type="button"
+                  onClick={() => trocarAba('numeros')}
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-panel/90 border border-line hover:border-holo-3 text-[12px] font-bold text-text transition-colors cursor-pointer"
+                  title="Ver contagens completas da comunidade"
+                >
+                  <Users size={13} className="text-holo-3" aria-hidden />
+                  <span>{comunidadeStats.total} no AniDeck</span>
+                </button>
+              )}
             </div>
 
             {anime.genres?.length > 0 && (
@@ -563,7 +596,7 @@ export default function Detalhes() {
                       >
                         {a.rotulo}
                         {a.contador && (
-                          <span className={`ml-1.5 font-mono text-xs ${a.id === 'episodios' ? 'hidden sm:inline' : ''} ${ativa ? 'text-holo-3' : 'text-muted-2'}`}>
+                          <span className={`ml-1.5 font-mono text-xs ${(a.id === 'episodios' || a.id === 'numeros') ? 'hidden sm:inline' : ''} ${ativa ? 'text-holo-3' : 'text-muted-2'}`}>
                             {a.contador}
                           </span>
                         )}
@@ -770,7 +803,15 @@ export default function Detalhes() {
                 </div>
               )}
 
-              {aba === 'numeros' && <NumerosDaObra nota={anime.score} ranking={anime.ranking} stats={stats} minhaNota={minhaEntrada?.nota ?? null} />}
+              {aba === 'numeros' && (
+                <NumerosDaObra
+                  nota={anime.score}
+                  ranking={anime.ranking}
+                  stats={stats}
+                  comunidade={comunidadeStats}
+                  minhaNota={minhaEntrada?.nota ?? null}
+                />
+              )}
             </div>
           </div>
 

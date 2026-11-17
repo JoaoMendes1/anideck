@@ -11,6 +11,7 @@ import (
 
 	"github.com/JoaoMendes1/anideck/internal/database"
 	"github.com/JoaoMendes1/anideck/internal/middleware"
+	"github.com/go-chi/chi/v5"
 	postgrest "github.com/supabase-community/postgrest-go"
 )
 
@@ -305,46 +306,7 @@ func (h *RankingsComunidadeHandler) HandleClimaTemporada(w http.ResponseWriter, 
 			malIDs[i] = strconv.Itoa(l.MalID)
 		}
 
-		metas := map[int]struct{ Title, Image string }{}
-		var caches []struct {
-			MalID int    `json:"mal_id"`
-			Title string `json:"title"`
-		}
-		if dataC, _, errC := database.Client.From("anime_metadata_cache").
-			Select("mal_id,title", "", false).
-			In("mal_id", malIDs).
-			Execute(); errC != nil {
-			log.Printf("[Rankings] Erro ao consultar anime_metadata_cache: %v", errC)
-		} else {
-			_ = json.Unmarshal(dataC, &caches)
-			for _, c := range caches {
-				metas[c.MalID] = struct{ Title, Image string }{Title: c.Title}
-			}
-		}
-
-		var curadas []struct {
-			MalID            int    `json:"mal_id"`
-			CustomTitle      string `json:"custom_title"`
-			CustomCoverImage string `json:"custom_cover_image"`
-		}
-		if dataCur, _, errCur := database.Client.From("curated_animes").
-			Select("mal_id,custom_title,custom_cover_image", "", false).
-			In("mal_id", malIDs).
-			Execute(); errCur != nil {
-			log.Printf("[Rankings] Erro ao consultar curated_animes: %v", errCur)
-		} else {
-			_ = json.Unmarshal(dataCur, &curadas)
-			for _, cur := range curadas {
-				atual := metas[cur.MalID]
-				if cur.CustomTitle != "" {
-					atual.Title = cur.CustomTitle
-				}
-				if cur.CustomCoverImage != "" {
-					atual.Image = cur.CustomCoverImage
-				}
-				metas[cur.MalID] = atual
-			}
-		}
+		metas := buscarMetadadosLocaisPorIDs(malIDs)
 
 		for i, l := range linhas {
 			titulo := fmt.Sprintf("Anime #%d", l.MalID)
@@ -373,6 +335,232 @@ func (h *RankingsComunidadeHandler) HandleClimaTemporada(w http.ResponseWriter, 
 		"reacao": reacao,
 		"itens":  itens,
 	})
+}
+
+// NumerosComunidadeAnime reúne apenas contagens agregadas de usuários do AniDeck por status.
+type NumerosComunidadeAnime struct {
+	MalID         int `json:"mal_id"`
+	Assistindo    int `json:"assistindo"`
+	Completo      int `json:"completo"`
+	Dropado       int `json:"dropado"`
+	QueroAssistir int `json:"quero_assistir"`
+	Total         int `json:"total"`
+}
+
+func decodificarNumerosComunidade(malID int, raw string) (NumerosComunidadeAnime, error) {
+	var linhas []NumerosComunidadeAnime
+	if err := json.Unmarshal([]byte(raw), &linhas); err != nil {
+		return NumerosComunidadeAnime{}, err
+	}
+	if len(linhas) == 0 {
+		return NumerosComunidadeAnime{MalID: malID}, nil
+	}
+	res := linhas[0]
+	res.MalID = malID
+	return res, nil
+}
+
+// HandleNumerosComunidadeAnime retorna quantos usuários têm o anime no deck em cada status,
+// sem expor identificadores individuais e sem depender da AniList.
+func (h *RankingsComunidadeHandler) HandleNumerosComunidadeAnime(w http.ResponseWriter, r *http.Request) {
+	malID, err := strconv.Atoi(strings.TrimSpace(chi.URLParam(r, "id")))
+	if err != nil || malID <= 0 {
+		http.Error(w, "Identificador de anime inválido", http.StatusBadRequest)
+		return
+	}
+	if database.Client == nil {
+		http.Error(w, "Banco indisponível", http.StatusServiceUnavailable)
+		return
+	}
+
+	bruto, problema, status := interpretarRespostaRPC(
+		"numeros_comunidade_anime",
+		database.Client.Rpc("numeros_comunidade_anime", "", map[string]interface{}{"p_mal_id": malID}),
+	)
+	if problema != "" {
+		http.Error(w, problema, status)
+		return
+	}
+
+	numeros, err := decodificarNumerosComunidade(malID, bruto)
+	if err != nil {
+		log.Printf("[Rankings] Erro ao interpretar numeros_comunidade_anime(%d): %v", malID, err)
+		http.Error(w, "Erro ao carregar números da comunidade", http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("Cache-Control", "no-store")
+	json.NewEncoder(w).Encode(numeros)
+}
+
+type emAltaLinha struct {
+	MalID               int `json:"mal_id"`
+	Pontuacao           int `json:"pontuacao"`
+	UsuariosAtivos      int `json:"usuarios_ativos"`
+	EpisodiosRecentes   int `json:"episodios_recentes"`
+	ComentariosRecentes int `json:"comentarios_recentes"`
+	ReacoesRecentes     int `json:"reacoes_recentes"`
+	DropsRecentes       int `json:"drops_recentes"`
+}
+
+// EmAltaComunidadeItem representa um anime ranqueado pela atividade recente da comunidade.
+type EmAltaComunidadeItem struct {
+	MalID               int    `json:"mal_id"`
+	Titulo              string `json:"titulo"`
+	ImagemURL           string `json:"imagem_url"`
+	Pontuacao           int    `json:"pontuacao"`
+	UsuariosAtivos      int    `json:"usuarios_ativos"`
+	EpisodiosRecentes   int    `json:"episodios_recentes"`
+	ComentariosRecentes int    `json:"comentarios_recentes"`
+	ReacoesRecentes     int    `json:"reacoes_recentes"`
+	DropsRecentes       int    `json:"drops_recentes"`
+}
+
+func limitarJanelaEmAlta(diasStr, limiteStr string) (int, int) {
+	dias := 14
+	if parsed, err := strconv.Atoi(strings.TrimSpace(diasStr)); err == nil && parsed > 0 {
+		dias = parsed
+	}
+	if dias > 90 {
+		dias = 90
+	}
+
+	limite := 12
+	if parsed, err := strconv.Atoi(strings.TrimSpace(limiteStr)); err == nil && parsed > 0 {
+		limite = parsed
+	}
+	if limite > 30 {
+		limite = 30
+	}
+	return dias, limite
+}
+
+func montarItensEmAlta(linhas []emAltaLinha, metas map[int]metadadoLocalAnime) []EmAltaComunidadeItem {
+	itens := make([]EmAltaComunidadeItem, 0, len(linhas))
+	for _, l := range linhas {
+		if l.MalID <= 0 {
+			continue
+		}
+		titulo := fmt.Sprintf("Anime #%d", l.MalID)
+		imagem := ""
+		if m, ok := metas[l.MalID]; ok {
+			if m.Title != "" {
+				titulo = m.Title
+			}
+			imagem = m.Image
+		}
+		itens = append(itens, EmAltaComunidadeItem{
+			MalID:               l.MalID,
+			Titulo:              titulo,
+			ImagemURL:           imagem,
+			Pontuacao:           l.Pontuacao,
+			UsuariosAtivos:      l.UsuariosAtivos,
+			EpisodiosRecentes:   l.EpisodiosRecentes,
+			ComentariosRecentes: l.ComentariosRecentes,
+			ReacoesRecentes:     l.ReacoesRecentes,
+			DropsRecentes:       l.DropsRecentes,
+		})
+	}
+	return itens
+}
+
+// HandleEmAltaComunidade devolve os animes com maior atividade recente (episódios,
+// comentários e reações), descontando drops recentes e sem expor usuários individuais.
+func (h *RankingsComunidadeHandler) HandleEmAltaComunidade(w http.ResponseWriter, r *http.Request) {
+	if database.Client == nil {
+		http.Error(w, "Banco indisponível", http.StatusServiceUnavailable)
+		return
+	}
+
+	dias, limite := limitarJanelaEmAlta(r.URL.Query().Get("dias"), r.URL.Query().Get("limite"))
+	bruto, problema, status := interpretarRespostaRPC(
+		"animes_em_alta_comunidade",
+		database.Client.Rpc("animes_em_alta_comunidade", "", map[string]interface{}{
+			"p_dias":   dias,
+			"p_limite": limite,
+		}),
+	)
+	if problema != "" {
+		http.Error(w, problema, status)
+		return
+	}
+
+	var linhas []emAltaLinha
+	if err := json.Unmarshal([]byte(bruto), &linhas); err != nil {
+		log.Printf("[Rankings] Erro ao interpretar animes_em_alta_comunidade: %v", err)
+		http.Error(w, "Erro ao carregar animes em alta", http.StatusInternalServerError)
+		return
+	}
+
+	itens := []EmAltaComunidadeItem{}
+	if len(linhas) > 0 {
+		malIDs := make([]string, len(linhas))
+		for i, l := range linhas {
+			malIDs[i] = strconv.Itoa(l.MalID)
+		}
+		itens = montarItensEmAlta(linhas, buscarMetadadosLocaisPorIDs(malIDs))
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(map[string]interface{}{
+		"dias":  dias,
+		"itens": itens,
+	})
+}
+
+type metadadoLocalAnime struct {
+	Title string
+	Image string
+}
+
+func buscarMetadadosLocaisPorIDs(malIDs []string) map[int]metadadoLocalAnime {
+	metas := map[int]metadadoLocalAnime{}
+	if len(malIDs) == 0 || database.Client == nil {
+		return metas
+	}
+
+	var caches []struct {
+		MalID int    `json:"mal_id"`
+		Title string `json:"title"`
+	}
+	if dataC, _, errC := database.Client.From("anime_metadata_cache").
+		Select("mal_id,title", "", false).
+		In("mal_id", malIDs).
+		Execute(); errC != nil {
+		log.Printf("[Rankings] Erro ao consultar anime_metadata_cache: %v", errC)
+	} else {
+		_ = json.Unmarshal(dataC, &caches)
+		for _, c := range caches {
+			metas[c.MalID] = metadadoLocalAnime{Title: c.Title}
+		}
+	}
+
+	var curadas []struct {
+		MalID            int    `json:"mal_id"`
+		CustomTitle      string `json:"custom_title"`
+		CustomCoverImage string `json:"custom_cover_image"`
+	}
+	if dataCur, _, errCur := database.Client.From("curated_animes").
+		Select("mal_id,custom_title,custom_cover_image", "", false).
+		In("mal_id", malIDs).
+		Execute(); errCur != nil {
+		log.Printf("[Rankings] Erro ao consultar curated_animes: %v", errCur)
+	} else {
+		_ = json.Unmarshal(dataCur, &curadas)
+		for _, cur := range curadas {
+			atual := metas[cur.MalID]
+			if cur.CustomTitle != "" {
+				atual.Title = cur.CustomTitle
+			}
+			if cur.CustomCoverImage != "" {
+				atual.Image = cur.CustomCoverImage
+			}
+			metas[cur.MalID] = atual
+		}
+	}
+
+	return metas
 }
 
 // buscarCosmeticosUsuarios lê as molduras, cores e emblemas equipados para uma lista de usuários

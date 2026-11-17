@@ -1,9 +1,10 @@
 // client/src/components/detalhes/NumerosDaObra.tsx
-// Aba "Números" da página do anime: o que a comunidade da AniList diz sobre a obra, com a
-// nota de quem está vendo marcada na distribuição.
+// Aba "Números" da página do anime: contagens agregadas da comunidade do AniDeck
+// (sem expor usuários) e distribuição global de notas da AniList.
 import { motion } from 'framer-motion'
-import { Star, Trophy, Users } from 'lucide-react'
+import { Bookmark, CheckCircle2, Eye, Star, Trophy, Users, XCircle } from 'lucide-react'
 import { formatarNota } from '../../lib/detalhes'
+import type { NumerosComunidadeAnime } from '../../lib/comunidadeAnimes'
 
 export interface EstatisticasDaObra {
   scores: { score: number; votes: number; percentage: number }[]
@@ -14,16 +15,52 @@ interface Props {
   nota: number
   ranking?: number
   stats: EstatisticasDaObra | null
+  comunidade: NumerosComunidadeAnime | null
   minhaNota: number | null
 }
 
-export default function NumerosDaObra({ nota, ranking, stats, minhaNota }: Props) {
+export default function NumerosDaObra({ nota, ranking, stats, comunidade, minhaNota }: Props) {
   const totalStatus = stats?.statuses?.reduce((a, s) => a + s.amount, 0) || 0
   const pct = (status: string) => (totalStatus > 0 ? ((stats?.statuses?.find(s => s.status === status)?.amount ?? 0) / totalStatus) * 100 : 0)
   const votos = stats?.scores?.reduce((a, s) => a + s.votes, 0) ?? 0
   const maior = stats?.scores?.length ? Math.max(...stats.scores.map(s => s.percentage)) : 0
   // O backend já devolve as faixas de 1 a 10 (a AniList usa 10 a 100).
   const faixaMinha = minhaNota !== null ? Math.max(1, Math.round(minhaNota)) : null
+
+  const cartoesComunidade = [
+    {
+      rotulo: 'Assistindo',
+      detalhe: 'Inclui quem está em dia',
+      valor: comunidade ? comunidade.assistindo : null,
+      icone: <Eye size={13} className="text-holo-3" aria-hidden />,
+      cor: 'text-holo-3',
+      borda: 'border-holo-3/25',
+    },
+    {
+      rotulo: 'Completo',
+      detalhe: 'Já terminaram a obra',
+      valor: comunidade ? comunidade.completo : null,
+      icone: <CheckCircle2 size={13} className="text-green" aria-hidden />,
+      cor: 'text-green',
+      borda: 'border-green/25',
+    },
+    {
+      rotulo: 'Dropado',
+      detalhe: 'Pararam no caminho',
+      valor: comunidade ? comunidade.dropado : null,
+      icone: <XCircle size={13} className="text-coral" aria-hidden />,
+      cor: 'text-coral',
+      borda: 'border-coral/25',
+    },
+    {
+      rotulo: 'Quero assistir',
+      detalhe: 'Na fila para começar',
+      valor: comunidade ? comunidade.quero_assistir : null,
+      icone: <Bookmark size={13} className="text-gold" aria-hidden />,
+      cor: 'text-gold',
+      borda: 'border-gold/25',
+    },
+  ]
 
   const cartoes = [
     { rotulo: 'Nota geral', valor: nota ? nota.toFixed(1) : '–', icone: <Star size={13} className="text-gold" aria-hidden />, cor: 'text-gold' },
@@ -33,7 +70,35 @@ export default function NumerosDaObra({ nota, ranking, stats, minhaNota }: Props
   ]
 
   return (
-    <div className="space-y-5">
+    <div className="space-y-6">
+      <section className="bg-panel border border-line rounded-2xl p-5">
+        <div className="flex flex-wrap items-baseline justify-between gap-2 mb-4">
+          <div>
+            <p className="font-mono text-xs text-holo-3 uppercase tracking-widest m-0">No AniDeck</p>
+            <h3 className="font-anton text-base uppercase m-0 mt-0.5">Comunidade nesta obra</h3>
+          </div>
+          <span className="font-mono text-xs text-muted-2">
+            {comunidade
+              ? `${comunidade.total.toLocaleString('pt-BR')} ${comunidade.total === 1 ? 'pessoa no deck' : 'pessoas no deck'}`
+              : 'Carregando...'}
+          </span>
+        </div>
+
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+          {cartoesComunidade.map(c => (
+            <div key={c.rotulo} className={`bg-panel-2 border ${c.borda} rounded-2xl p-4`}>
+              <div className="font-mono text-xs text-muted uppercase tracking-wider flex items-center gap-1.5">
+                {c.icone} {c.rotulo}
+              </div>
+              <div className={`font-anton text-2xl mt-1 tabular-nums ${c.cor}`}>
+                {c.valor !== null ? c.valor.toLocaleString('pt-BR') : '–'}
+              </div>
+              <div className="text-[11px] text-muted-2 mt-1">{c.detalhe}</div>
+            </div>
+          ))}
+        </div>
+      </section>
+
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
         {cartoes.map(c => (
           <div key={c.rotulo} className="bg-panel border border-line rounded-2xl p-4">
@@ -48,7 +113,7 @@ export default function NumerosDaObra({ nota, ranking, stats, minhaNota }: Props
       {stats?.scores?.length ? (
         <div className="bg-panel border border-line rounded-2xl p-5">
           <div className="flex items-baseline justify-between gap-2 mb-4">
-            <h3 className="font-anton text-base uppercase m-0">Como a comunidade avaliou</h3>
+            <h3 className="font-anton text-base uppercase m-0">Como o público global avaliou</h3>
             <span className="font-mono text-xs text-muted-2">{votos.toLocaleString('pt-BR')} avaliações</span>
           </div>
           <div className="flex items-end gap-1.5 h-[140px] mb-2">
@@ -89,9 +154,11 @@ export default function NumerosDaObra({ nota, ranking, stats, minhaNota }: Props
           )}
         </div>
       ) : (
-        <p className="text-sm text-muted">A distribuição de notas ainda não está disponível para esta obra.</p>
+        <p className="text-sm text-muted">A distribuição global de notas ainda não está disponível para esta obra.</p>
       )}
-      <p className="font-mono text-xs text-muted-2 m-0">Fonte: AniList. Os números do AniDeck entram aqui quando a base crescer.</p>
+      <p className="font-mono text-xs text-muted-2 m-0">
+        Contagens do bloco &quot;No AniDeck&quot; são agregadas pelos decks da comunidade. Notas e histórico global vêm da AniList.
+      </p>
     </div>
   )
 }

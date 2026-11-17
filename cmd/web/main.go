@@ -123,6 +123,7 @@ func main() {
 	r.Get("/api/anime/{id}/statistics", animeHandler.HandleGetStats)
 	// Comunidade (Fase 15): só contagens e perfis públicos, sem conteúdo de comentário
 	r.Get("/api/anime/{id}/conversa", comunidadeHandler.HandleContagemConversa)
+	r.Get("/api/anime/{id}/comunidade", rankingsComunidadeHandler.HandleNumerosComunidadeAnime)
 	r.Get("/api/membros/ranking", comunidadeHandler.HandleRankingMembros)
 	r.Get("/api/membros/{handle}", comunidadeHandler.HandlePerfilPublico)
 	r.Get("/api/ranking", rankingHandler.HandleGetTopAnime)
@@ -136,6 +137,7 @@ func main() {
 	r.Get("/api/membros/{a}/duelo/{b}", cartasHandler.HandleDueloDeGosto)
 	r.Get("/api/membros/ranking/genero", rankingsComunidadeHandler.HandleRankingGenero)
 	r.With(middleware.OptionalAuth).Get("/api/rankings/clima", rankingsComunidadeHandler.HandleClimaTemporada)
+	r.Get("/api/rankings/em-alta", rankingsComunidadeHandler.HandleEmAltaComunidade)
 	// Clãs (Fase 17, #180, #181, #182): listagem, ranking de temporada, campeões, detalhes e desafio semanal
 	r.Get("/api/clas", clasHandler.HandleListarClas)
 	r.Get("/api/clas/fundacao", clasHandler.HandleRegrasFundacao)

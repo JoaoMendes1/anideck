@@ -861,6 +861,15 @@ decidiu em 17/11/2026 que ela fecha fora da Fase 18. Escopo a detalhar em issues
 > numeração e não abrem escopo novo. Ficam registrados aqui em ordem cronológica inversa para
 > não sumirem: fase concluída não deve ser reaberta só para receber um conserto.
 
+### 17/11/2026 — Números da comunidade por anime e seção "Animes em alta" (#271)
+
+- [x] **Contagens agregadas na obra e pulso recente da comunidade (`sql/106`, `rankings_comunidade.go`, `Detalhes.tsx`, `Rankings.tsx`, `VitrineDescobrir.tsx`):**
+      `numeros_comunidade_anime` (`GET /api/anime/{id}/comunidade`) retorna apenas totais por status
+      (`Assistindo` somando `Em Dia`, `Completo`, `Dropado`, `Quero Assistir` e `total`) na aba Números e
+      no resumo do cabeçalho sem expor identidades; `animes_em_alta_comunidade` (`GET /api/rankings/em-alta`)
+      ranqueia obras com mais atividade nos últimos 14 dias (episódios com `watched_at IS NOT NULL`,
+      comentários visíveis e reações), descontando drops recentes.
+
 ### 17/11/2026 — Feed e perfil deixam de mostrar atividade desfeita (#270)
 
 - [x] **Limpeza automática ao desfazer ações e filtro na leitura do Feed (`sql/105`, `social.go`, `Detalhes.tsx`):**

@@ -19,15 +19,16 @@ import sql102 from '../../../sql/102_revisoes_e_saida_completo.sql?raw'
 import sql103 from '../../../sql/103_faixas_xp_e_fila_pendente.sql?raw'
 import sql104 from '../../../sql/104_estornos_e_remarcacao.sql?raw'
 import sql105 from '../../../sql/105_feed_consistencia_e_limpeza.sql?raw'
+import sql106 from '../../../sql/106_numeros_anime_e_em_alta.sql?raw'
 
-export type EtapaAmarras = '098' | '101' | '102' | '103' | '104' | '105'
+export type EtapaAmarras = '098' | '101' | '102' | '103' | '104' | '105' | '106'
 
 export interface OpcoesBancoTeste {
   etapas?: EtapaAmarras[]
   scriptsExtras?: string[]
 }
 
-const ETAPAS_ATIVAS_PADRAO: EtapaAmarras[] = ['098', '101', '102', '103', '104', '105']
+const ETAPAS_ATIVAS_PADRAO: EtapaAmarras[] = ['098', '101', '102', '103', '104', '105', '106']
 
 const PRE_BASE_SQL = `
 CREATE SCHEMA IF NOT EXISTS auth;
@@ -304,6 +305,9 @@ export async function criarBancoTeste(opcoes: OpcoesBancoTeste = {}): Promise<PG
   }
   if (etapas.has('105')) {
     await db.exec(sql105)
+  }
+  if (etapas.has('106')) {
+    await db.exec(sql106)
   }
 
   for (const extra of opcoes.scriptsExtras ?? []) {

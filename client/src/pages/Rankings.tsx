@@ -16,6 +16,7 @@ import PodioRanking from '../components/rankings/PodioRanking'
 import RankingSkeleton from '../components/RankingSkeleton'
 import FilterSheet from '../components/FilterSheet'
 import SecaoClimaTemporada from '../components/rankings/SecaoClimaTemporada'
+import SecaoEmAltaComunidade from '../components/rankings/SecaoEmAltaComunidade'
 import { invalidarCachesDoDeck } from '../lib/cacheDeTela'
 
 interface Anime {
@@ -87,13 +88,14 @@ export default function Rankings() {
     const [lastUpdated, setLastUpdated] = useState<string | null>(retrato?.lastUpdated ?? null)
     const [showCredibilityInfo, setShowCredibilityInfo] = useState(false)
 
+    const modoInicialEmAlta = !retrato && typeof window !== 'undefined' && new URLSearchParams(window.location.search).get('modo') === 'em_alta'
     const [selectedFilters, setSelectedFilters] = useState<FilterItem[]>(retrato?.selectedFilters ?? [])
-    const [selectedStatus, setSelectedStatus] = useState(retrato?.selectedStatus ?? '')
+    const [selectedStatus, setSelectedStatus] = useState(retrato?.selectedStatus ?? (modoInicialEmAlta ? 'RELEASING' : ''))
     const [selectedSeason, setSelectedSeason] = useState(retrato?.selectedSeason ?? '')
     const [selectedYear, setSelectedYear] = useState(retrato?.selectedYear ?? '')
-    const [selectedSort, setSelectedSort] = useState(retrato?.selectedSort ?? 'POPULARITY_DESC')
+    const [selectedSort, setSelectedSort] = useState(retrato?.selectedSort ?? (modoInicialEmAlta ? 'TRENDING_DESC' : 'POPULARITY_DESC'))
     const [modoRanking, setModoRanking] = useState<'top_global' | 'em_alta' | 'clima'>(() => {
-        if (retrato?.selectedStatus === 'RELEASING' && retrato?.selectedSort === 'TRENDING_DESC') {
+        if (modoInicialEmAlta || (retrato?.selectedStatus === 'RELEASING' && retrato?.selectedSort === 'TRENDING_DESC')) {
             return 'em_alta'
         }
         return 'top_global'
@@ -398,6 +400,7 @@ export default function Rankings() {
                     <SecaoClimaTemporada />
                 ) : (
                     <>
+                        {modoRanking === 'em_alta' && <SecaoEmAltaComunidade />}
 
                 <div className="mb-6">
                     <button
