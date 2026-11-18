@@ -344,6 +344,9 @@ export interface RegrasVida {
   episodios_por_dia: number
   pocao: number
   pousada_horas: number
+  /** Poção de Mana (em Mana) e espera da Fonte termal em horas (sql/114). */
+  pocao_mana?: number
+  fonte_horas?: number
   /** Vida mínima para lutar e Ouro perdido na queda (sql/090). */
   vida_minima_luta?: number
   queda_ouro_pct?: number
@@ -372,9 +375,12 @@ export interface VidaRPG {
 export interface CustosRecuperacao {
   pousada: number
   pocao: number
+  /** Poção de Mana e Fonte termal (sql/114); ausentes em servidor antigo. */
+  pocao_mana?: number
+  fonte?: number
 }
 
-export type TipoRecuperacao = 'pousada' | 'pocao'
+export type TipoRecuperacao = 'pousada' | 'pocao' | 'pocao_mana' | 'fonte'
 
 export interface EstadoExpedicoes {
   atributos: AtributosRPG

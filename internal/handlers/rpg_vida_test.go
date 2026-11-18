@@ -60,7 +60,7 @@ func TestPerdaPorMil(t *testing.T) {
 }
 
 func TestCustosDaRecuperacao(t *testing.T) {
-	if c := CustosPara(30); c.Pousada != 70 || c.Pocao != 35 {
+	if c := CustosPara(30); c.Pousada != 70 || c.Pocao != 35 || c.PocaoMana != 34 || c.Fonte != 110 {
 		t.Errorf("custos no nível 30: %+v", c)
 	}
 	if c := CustosPara(0); c.Pousada != 12 || c.Pocao != 6 {
@@ -72,7 +72,13 @@ func TestCustosDaRecuperacao(t *testing.T) {
 	if custo, ok := CustoDaRecuperacao("pocao", 10); !ok || custo != 15 {
 		t.Errorf("poção no nível 10: %d %v", custo, ok)
 	}
-	for _, tipo := range []string{"", "POUSADA", "elixir", "pousada "} {
+	if custo, ok := CustoDaRecuperacao("pocao_mana", 10); !ok || custo != 14 {
+		t.Errorf("poção de mana no nível 10: %d %v", custo, ok)
+	}
+	if custo, ok := CustoDaRecuperacao("fonte", 10); !ok || custo != 50 {
+		t.Errorf("fonte no nível 10: %d %v", custo, ok)
+	}
+	for _, tipo := range []string{"", "POUSADA", "elixir", "pousada ", "FONTE", "mana"} {
 		if _, ok := CustoDaRecuperacao(tipo, 10); ok {
 			t.Errorf("%q deveria ser recusado", tipo)
 		}

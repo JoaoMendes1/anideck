@@ -233,6 +233,13 @@ var tarefasPeriodicasPadrao = []TarefaPeriodica{
 		Frequencia: FrequenciaDiaria(0, 10),
 		Executar:   executarLiberarXPPendente,
 	},
+	{
+		Nome:       "hp_inatividade",
+		Titulo:     "Queda de HP por inatividade",
+		Descricao:  "Tira 10% do HP por dia de quem passou 3 dias sem marcar episódio (até o piso de 20%) e pausa a regeneração até a pessoa voltar. O Modo Descanso protege.",
+		Frequencia: FrequenciaDiaria(4, 0),
+		Executar:   executarHPInatividade,
+	},
 }
 
 // TarefasPeriodicasRegistradas devolve uma cópia das tarefas ativas no worker.
@@ -381,6 +388,18 @@ func executarLiberarXPPendente(ctx context.Context) (string, error) {
 	}
 	bruto := client.Rpc("liberar_xp_pendente", "", map[string]interface{}{"p_user_id": nil})
 	return fmt.Sprintf("Fila de XP pendente processada: %s", bruto), nil
+}
+
+func executarHPInatividade(ctx context.Context) (string, error) {
+	if err := ctx.Err(); err != nil {
+		return "", err
+	}
+	client, err := database.ServiceRoleClient()
+	if err != nil || client == nil {
+		return "", fmt.Errorf("service role indisponível: %w", err)
+	}
+	bruto := client.Rpc("rpg_aplicar_inatividade", "", map[string]interface{}{})
+	return fmt.Sprintf("HP reduzido por inatividade em %s jogador(es).", bruto), nil
 }
 
 // diasHistoricoTarefas é por quanto tempo uma execução concluída fica visível no Painel.

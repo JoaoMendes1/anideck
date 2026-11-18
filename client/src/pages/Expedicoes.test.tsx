@@ -23,7 +23,7 @@ function estado(feitas = 1, perdida = 500, ouro = 100): EstadoExpedicoes {
   return {
     atributos: { vida: 130, ataque: 15, defesa: 9, poder: 61 },
     vida: { atual: Math.floor((130 * (1000 - perdida)) / 1000), maxima: 130, perdida_por_mil: perdida },
-    custos: { pousada: 12, pocao: 6 },
+    custos: { pousada: 12, pocao: 6, pocao_mana: 5, fonte: 23 },
     hoje: { feitas, limite: 5, bilhetes: 3, ouro, vida_perdida: perdida, pousada_livre_em: null, episodios_hoje: 2, regras },
     monstros: [{ ...slime, poder: 34, dificuldade: 'facil', bestiario: { vitorias: 9, marco: 0, faltam_marco: 1, bonus_ouro: 0 } }],
   }
@@ -104,11 +104,14 @@ describe('Expedições', () => {
     vi.mocked(obterExpedicoes).mockResolvedValue({ dados: estado(1, 500, 100) })
     abrir()
 
-    await screen.findByText('Sua Vida')
+    await screen.findByText('Seu HP')
     expect(screen.getByText('65 / 130')).toBeTruthy()
     expect(screen.getByText('100')).toBeTruthy()
     expect(screen.getByText(/5% por hora e 8% a cada episódio assistido \(2 de 5 hoje\)/)).toBeTruthy()
     expect(screen.getByText('12 de Ouro')).toBeTruthy()
+    expect(screen.getByText('Fonte termal: HP e Mana cheios')).toBeTruthy()
+    expect(screen.getByText('23 de Ouro')).toBeTruthy()
+    expect(screen.getByText('Poção de Mana: +25')).toBeTruthy()
   })
 
   it('abaixo de 30% de Vida, bloqueia a batalha e avisa como recuperar', async () => {
@@ -138,7 +141,7 @@ describe('Expedições', () => {
     expect(recuperarVida).toHaveBeenCalledWith('pousada')
     expect(screen.getByText('88')).toBeTruthy()
     expect(screen.getByText(/livre às/)).toBeTruthy()
-    expect((screen.getByRole('button', { name: /Poção/ }) as HTMLButtonElement).disabled).toBe(true)
+    expect((screen.getByRole('button', { name: /Poção de HP/ }) as HTMLButtonElement).disabled).toBe(true)
   })
 
   it('sem Ouro, a Pousada e a Poção ficam desligadas', async () => {
@@ -146,7 +149,7 @@ describe('Expedições', () => {
     abrir()
 
     expect(((await screen.findByRole('button', { name: /Pousada/ })) as HTMLButtonElement).disabled).toBe(true)
-    expect((screen.getByRole('button', { name: /Poção/ }) as HTMLButtonElement).disabled).toBe(true)
+    expect((screen.getByRole('button', { name: /Poção de HP/ }) as HTMLButtonElement).disabled).toBe(true)
   })
 
   it('mostra o erro do servidor ao recuperar', async () => {
@@ -154,7 +157,7 @@ describe('Expedições', () => {
     vi.mocked(recuperarVida).mockResolvedValue({ erro: 'Ouro insuficiente. Vença expedições para ganhar mais.' })
     abrir()
 
-    fireEvent.click(await screen.findByRole('button', { name: /Poção/ }))
+    fireEvent.click(await screen.findByRole('button', { name: /Poção de HP/ }))
     await waitFor(() => expect(screen.getByRole('alert').textContent).toContain('Ouro insuficiente'))
   })
 

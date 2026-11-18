@@ -11,7 +11,7 @@
 // Arte provisória: ícone e cor por monstro. A ilustração entra depois, por id.
 import { useEffect, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { BedDouble, ChevronLeft, FlaskConical, Heart, Sparkles, Swords, Trophy, Ticket, Zap } from 'lucide-react'
+import { BedDouble, ChevronLeft, FlaskConical, Heart, Waves, Sparkles, Swords, Trophy, Ticket, Zap } from 'lucide-react'
 import {
   batalhar,
   batalhasRestantes,
@@ -213,17 +213,20 @@ function PainelDaVida({
   const pousadaEm = horaDaPousada(estado.hoje.pousada_livre_em)
   const pousada = estado.custos?.pousada ?? 0
   const pocao = estado.custos?.pocao ?? 0
+  const pocaoMana = estado.custos?.pocao_mana ?? 0
+  const fonte = estado.custos?.fonte ?? 0
   const corDaBarra = abaixoDaVidaMinima(vida, regras) ? 'bg-coral' : vida.perdida_por_mil > 500 ? 'bg-gold' : 'bg-gradient-to-r from-holo-2 to-holo-3'
   return (
     <section aria-labelledby="titulo-da-vida" className="flex flex-col gap-3 rounded-2xl border border-line bg-panel p-4">
       <h2 id="titulo-da-vida" className={ROTULO_DE_SECAO}>
-        Sua Vida
+        Seu HP
       </h2>
       <BarraDeVida rotulo="Você" atual={vida.atual} maximo={vida.maxima} cor={corDaBarra} />
       <p className="m-0 text-xs leading-snug text-muted">
-        O dano fica entre as batalhas. A Vida volta {porMilEmPorcento(regras.regen_por_hora)} por hora e{' '}
+        É o mesmo HP da barra do topo: o dano das batalhas fica nele. Volta {porMilEmPorcento(regras.regen_por_hora)} por hora e{' '}
         {porMilEmPorcento(regras.por_episodio)} a cada episódio assistido ({estado.hoje.episodios_hoje ?? 0} de {regras.episodios_por_dia} hoje).
         Para lutar, precisa de {porMilEmPorcento(regras.vida_minima_luta ?? 300)}; cair custa {regras.queda_ouro_pct ?? 10}% do Ouro.
+        Três dias sem episódio e o HP começa a cair.
       </p>
       <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
         <button
@@ -234,7 +237,7 @@ function PainelDaVida({
         >
           <span className="flex items-center gap-2 font-bold text-text">
             <BedDouble size={16} className="text-holo-3" aria-hidden="true" />
-            {recuperando === 'pousada' ? 'Descansando…' : 'Pousada: Vida cheia'}
+            {recuperando === 'pousada' ? 'Descansando…' : 'Pousada: HP cheio'}
           </span>
           <span className="shrink-0 font-mono text-gold">{pousadaEm ? `livre às ${pousadaEm}` : `${pousada} de Ouro`}</span>
         </button>
@@ -246,11 +249,42 @@ function PainelDaVida({
         >
           <span className="flex items-center gap-2 font-bold text-text">
             <FlaskConical size={16} className="text-green" aria-hidden="true" />
-            {recuperando === 'pocao' ? 'Bebendo…' : `Poção: +${porMilEmPorcento(regras.pocao)}`}
+            {recuperando === 'pocao' ? 'Bebendo…' : `Poção de HP: +${porMilEmPorcento(regras.pocao)}`}
           </span>
           <span className="shrink-0 font-mono text-gold">{pocao} de Ouro</span>
         </button>
+        {fonte > 0 && (
+          <button
+            type="button"
+            onClick={() => aoRecuperar('fonte')}
+            disabled={recuperando !== null || ouro < fonte}
+            className="flex min-h-12 cursor-pointer items-center justify-between gap-2 rounded-xl border border-line px-3 py-2 text-left text-xs disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            <span className="flex items-center gap-2 font-bold text-text">
+              <Waves size={16} className="text-holo-1" aria-hidden="true" />
+              {recuperando === 'fonte' ? 'Relaxando…' : 'Fonte termal: HP e Mana cheios'}
+            </span>
+            <span className="shrink-0 font-mono text-gold">{fonte} de Ouro</span>
+          </button>
+        )}
+        {pocaoMana > 0 && (
+          <button
+            type="button"
+            onClick={() => aoRecuperar('pocao_mana')}
+            disabled={recuperando !== null || ouro < pocaoMana}
+            className="flex min-h-12 cursor-pointer items-center justify-between gap-2 rounded-xl border border-line px-3 py-2 text-left text-xs disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            <span className="flex items-center gap-2 font-bold text-text">
+              <FlaskConical size={16} className="text-mana" aria-hidden="true" />
+              {recuperando === 'pocao_mana' ? 'Bebendo…' : `Poção de Mana: +${regras.pocao_mana ?? 25}`}
+            </span>
+            <span className="shrink-0 font-mono text-gold">{pocaoMana} de Ouro</span>
+          </button>
+        )}
       </div>
+      {fonte > 0 && (
+        <p className="m-0 text-[11px] text-muted">A Fonte termal recebe você uma vez por dia.</p>
+      )}
     </section>
   )
 }

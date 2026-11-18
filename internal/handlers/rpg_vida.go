@@ -57,8 +57,11 @@ func PodeLutar(perdidaPorMil int, regras RegrasVida) bool {
 
 // CustosRecuperacao é o preço em Ouro de cada forma de recuperar, para o nível do jogador.
 type CustosRecuperacao struct {
-	Pousada int `json:"pousada"`
-	Pocao   int `json:"pocao"`
+	Pousada   int `json:"pousada"`
+	Pocao     int `json:"pocao"`
+	PocaoMana int `json:"pocao_mana"`
+	// Fonte termal: HP e Mana cheios, uma vez a cada 24 horas (sql/114).
+	Fonte int `json:"fonte"`
 }
 
 // MontarVida converte a perda guardada na Vida que a tela mostra. Com qualquer perda abaixo
@@ -92,7 +95,7 @@ func PerdaPorMil(maxima, vidaFinal int) int {
 // sem espera, e por isso custa mais por ponto de Vida.
 func CustosPara(nivel int) CustosRecuperacao {
 	nivel = max(1, nivel)
-	return CustosRecuperacao{Pousada: 10 + 2*nivel, Pocao: 5 + nivel}
+	return CustosRecuperacao{Pousada: 10 + 2*nivel, Pocao: 5 + nivel, PocaoMana: 4 + nivel, Fonte: 20 + 3*nivel}
 }
 
 // CustoDaRecuperacao valida o tipo e devolve o preço. O navegador nunca envia o preço.
@@ -103,6 +106,10 @@ func CustoDaRecuperacao(tipo string, nivel int) (int, bool) {
 		return custos.Pousada, true
 	case "pocao":
 		return custos.Pocao, true
+	case "pocao_mana":
+		return custos.PocaoMana, true
+	case "fonte":
+		return custos.Fonte, true
 	}
 	return 0, false
 }
@@ -114,7 +121,7 @@ type RespostaRecuperacao struct {
 	VidaRecuperada int     `json:"vida_recuperada"`
 }
 
-// HandleRecuperar vende a Pousada ou a Poção. O preço sai do nível calculado aqui, e a
+// HandleRecuperar vende a Pousada, a Fonte termal e as Poções de HP e Mana. O preço sai do nível calculado aqui, e a
 // gravação passa pelo service role depois de conferir o usuário pelo token.
 func (h *RPGHandler) HandleRecuperar(w http.ResponseWriter, r *http.Request) {
 	var corpo struct {
@@ -133,7 +140,7 @@ func (h *RPGHandler) HandleRecuperar(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if _, valido := CustoDaRecuperacao(tipo, 1); !valido {
-		responderErroJSON(w, http.StatusBadRequest, "Escolha a Pousada ou a Poção.")
+		responderErroJSON(w, http.StatusBadRequest, "Escolha a Pousada, a Fonte termal ou uma Poção.")
 		return
 	}
 
@@ -165,6 +172,7 @@ func (h *RPGHandler) HandleRecuperar(w http.ResponseWriter, r *http.Request) {
 		SemOuro        bool   `json:"sem_ouro"`
 		EmEspera       bool   `json:"em_espera"`
 		VidaCheia      bool   `json:"vida_cheia"`
+		ManaCheia      bool   `json:"mana_cheia"`
 		VidaRecuperada int    `json:"vida_recuperada"`
 		VidaPerdida    int    `json:"vida_perdida"`
 		Ouro           int    `json:"ouro"`
@@ -176,7 +184,7 @@ func (h *RPGHandler) HandleRecuperar(w http.ResponseWriter, r *http.Request) {
 	}
 	if retorno.Erro != "" {
 		status := http.StatusBadRequest
-		if retorno.SemOuro || retorno.EmEspera || retorno.VidaCheia {
+		if retorno.SemOuro || retorno.EmEspera || retorno.VidaCheia || retorno.ManaCheia {
 			status = http.StatusConflict
 		}
 		responderErroJSON(w, status, retorno.Erro)
