@@ -80,6 +80,9 @@ type TurnoBatalha struct {
 	Alvo string `json:"alvo,omitempty"`
 	// Invocado: nome do ajudante chamado nesta ação.
 	Invocado string `json:"invocado,omitempty"`
+	// Heroi: na luta em grupo, a posição (a partir de 1) do herói que agiu ou foi atingido;
+	// VidaJogador e Eter são os dele. Ausente na luta solo.
+	Heroi int `json:"heroi,omitempty"`
 }
 
 // CombatenteRPG é o jogador na luta: os números e as habilidades já liberadas.
@@ -154,13 +157,25 @@ const (
 	eterPorRodada     = 2   // Éter que volta a cada rodada
 )
 
-// lutaEmAndamento guarda o que muda durante a luta.
+// estadoDoMonstro é o lado do monstro na luta. Fica num ponteiro à parte para a luta em
+// grupo: cada herói tem a sua lutaEmAndamento, e todas apontam para o mesmo monstro.
+type estadoDoMonstro struct {
+	vida          int
+	rodada        int
+	usosPoder     map[string]int
+	ajudantes     []AjudanteNaLuta
+	furia         float64 // multiplica o ataque do monstro; 0 é nenhum
+	escudo        float64 // fração do dano dos heróis que o monstro absorve
+	rodadasEscudo int
+}
+
+// lutaEmAndamento guarda o que muda durante a luta, do lado de um herói.
 type lutaEmAndamento struct {
 	j           CombatenteRPG
 	m           MonstroRPG
+	mon         *estadoDoMonstro
 	rng         *rand.Rand
 	vidaJogador int
-	vidaMonstro int
 	eter        int
 	recargas    map[string]int
 	despertou   bool
@@ -171,29 +186,25 @@ type lutaEmAndamento struct {
 	reducao        float64 // fração do dano do monstro que é absorvida
 	rodadasReducao int     // rodadas em que a redução ainda vale
 	usos           map[string]int
-	turnos         []TurnoBatalha
-	// Estado dos poderes do monstro.
-	rodada        int
-	usosPoder     map[string]int
-	ajudantes     []AjudanteNaLuta
-	furia         float64 // multiplica o ataque do monstro; 0 é nenhum
-	escudo        float64 // fração do dano do jogador que o monstro absorve
-	rodadasEscudo int
+	// diario é o registro da luta, compartilhado entre os heróis do grupo.
+	diario *[]TurnoBatalha
+	// heroi é a posição do herói no grupo, a partir de 1; 0 na luta solo.
+	heroi int
 }
 
 // ajudanteVivo devolve o primeiro ajudante de pé, que protege o monstro dos golpes.
 func (l *lutaEmAndamento) ajudanteVivo() *AjudanteNaLuta {
-	for i := range l.ajudantes {
-		if l.ajudantes[i].Vida > 0 {
-			return &l.ajudantes[i]
+	for i := range l.mon.ajudantes {
+		if l.mon.ajudantes[i].Vida > 0 {
+			return &l.mon.ajudantes[i]
 		}
 	}
 	return nil
 }
 
 func (l *lutaEmAndamento) registrar(t TurnoBatalha) {
-	t.VidaJogador, t.VidaMonstro, t.Eter = l.vidaJogador, l.vidaMonstro, l.eter
-	l.turnos = append(l.turnos, t)
+	t.VidaJogador, t.VidaMonstro, t.Eter, t.Heroi = l.vidaJogador, l.mon.vida, l.eter, l.heroi
+	*l.diario = append(*l.diario, t)
 }
 
 // pronta diz se a habilidade pode ser usada agora.
@@ -287,13 +298,13 @@ func (l *lutaEmAndamento) vezDoJogador() bool {
 		aj.Vida = max(0, aj.Vida-t.Dano)
 		t.Alvo = aj.Nome
 	} else if t.Dano > 0 {
-		if l.rodadasEscudo > 0 {
-			t.Dano = max(1, int(float64(t.Dano)*(1-l.escudo)+0.5))
+		if l.mon.rodadasEscudo > 0 {
+			t.Dano = max(1, int(float64(t.Dano)*(1-l.mon.escudo)+0.5))
 		}
-		l.vidaMonstro = max(0, l.vidaMonstro-t.Dano)
+		l.mon.vida = max(0, l.mon.vida-t.Dano)
 	}
 	l.registrar(t)
-	return l.vidaMonstro == 0
+	return l.mon.vida == 0
 }
 
 // vezDoMonstro faz o golpe do monstro, com a chance de esquiva, e dispara o despertar.
@@ -303,14 +314,14 @@ func (l *lutaEmAndamento) vezDoMonstro() bool {
 	poder := l.escolherPoder()
 	fator := 1.0
 	if poder != nil {
-		l.usosPoder[poder.ID]++
+		l.mon.usosPoder[poder.ID]++
 		t.Poder = poder.Nome
 	}
 	switch {
 	case poder != nil && poder.Tipo == poderEscudo:
-		l.escudo, l.rodadasEscudo = poder.Fator, poder.Rodadas+1
+		l.mon.escudo, l.mon.rodadasEscudo = poder.Fator, poder.Rodadas+1
 	case poder != nil && poder.Tipo == poderFuria:
-		l.furia = poder.Fator
+		l.mon.furia = poder.Fator
 	case poder != nil && poder.Tipo == poderInvocar:
 		aj := AjudanteNaLuta{
 			Nome:   poder.Ajudante,
@@ -318,7 +329,7 @@ func (l *lutaEmAndamento) vezDoMonstro() bool {
 			Ataque: max(1, l.m.Ataque*poder.AjudanteAtqPct/100),
 			Defesa: l.m.Defesa / 2,
 		}
-		l.ajudantes = append(l.ajudantes, aj)
+		l.mon.ajudantes = append(l.mon.ajudantes, aj)
 		t.Invocado = aj.Nome
 	default:
 		if poder != nil {
@@ -327,8 +338,8 @@ func (l *lutaEmAndamento) vezDoMonstro() bool {
 		dano, esquivou := l.golpeNoJogador(int(float64(l.m.Ataque)*fator + 0.5))
 		t.Dano, t.Critico, t.Esquiva = dano.valor, dano.critico, esquivou
 		if poder != nil && poder.Tipo == poderDrenar && t.Dano > 0 {
-			t.Cura = min(t.Dano/2, l.m.Vida-l.vidaMonstro)
-			l.vidaMonstro += t.Cura
+			t.Cura = min(t.Dano/2, l.m.Vida-l.mon.vida)
+			l.mon.vida += t.Cura
 		}
 	}
 	l.registrar(t)
@@ -337,8 +348,8 @@ func (l *lutaEmAndamento) vezDoMonstro() bool {
 	}
 
 	// Os ajudantes de pé atacam logo depois do monstro.
-	for i := range l.ajudantes {
-		aj := &l.ajudantes[i]
+	for i := range l.mon.ajudantes {
+		aj := &l.mon.ajudantes[i]
 		if aj.Vida == 0 {
 			continue
 		}
@@ -386,26 +397,26 @@ func SimularBatalha(jogador CombatenteRPG, monstro MonstroRPG, rng *rand.Rand) R
 	if jogador.VidaInicial > 0 && jogador.VidaInicial < vidaInicial {
 		vidaInicial = jogador.VidaInicial
 	}
+	diario := make([]TurnoBatalha, 0, maxTurnosBatalha*2)
 	l := &lutaEmAndamento{
 		j: jogador, m: monstro, rng: rng,
+		mon:         &estadoDoMonstro{vida: monstro.Vida, usosPoder: map[string]int{}},
 		vidaJogador: vidaInicial,
-		vidaMonstro: monstro.Vida,
 		eter:        jogador.Atributos.Eter,
 		recargas:    map[string]int{},
 		usos:        map[string]int{},
-		usosPoder:   map[string]int{},
-		turnos:      make([]TurnoBatalha, 0, maxTurnosBatalha*2),
+		diario:      &diario,
 	}
 	jogadorPrimeiro := jogador.Atributos.Velocidade >= monstro.Velocidade
 	fim := func(venceu bool, rodadas int) ResultadoSimulado {
 		return ResultadoSimulado{
-			Venceu: venceu, Rodadas: rodadas, Turnos: l.turnos, VidaInicial: vidaInicial, VidaFinal: l.vidaJogador, Usos: l.usos,
+			Venceu: venceu, Rodadas: rodadas, Turnos: *l.diario, VidaInicial: vidaInicial, VidaFinal: l.vidaJogador, Usos: l.usos,
 			Elemental: RelacaoElemental(jogador.Elemento, monstro.Elemento), Caiu: !venceu && l.vidaJogador == 0,
 		}
 	}
 
 	for rodada := 1; rodada <= maxTurnosBatalha; rodada++ {
-		l.rodada = rodada
+		l.mon.rodada = rodada
 		if jogadorPrimeiro {
 			if l.vezDoJogador() {
 				return fim(true, rodada)
@@ -425,8 +436,8 @@ func SimularBatalha(jogador CombatenteRPG, monstro MonstroRPG, rng *rand.Rand) R
 		if l.rodadasReducao > 0 {
 			l.rodadasReducao--
 		}
-		if l.rodadasEscudo > 0 {
-			l.rodadasEscudo--
+		if l.mon.rodadasEscudo > 0 {
+			l.mon.rodadasEscudo--
 		}
 		for id, r := range l.recargas {
 			if r > 0 {
@@ -849,8 +860,8 @@ func (l *lutaEmAndamento) golpeNoJogador(ataque int) (danoDeGolpe, bool) {
 	case l.rng.Intn(1000) < l.j.Atributos.EsquivaPorMil:
 		return danoDeGolpe{}, true
 	}
-	if l.furia > 0 {
-		ataque = int(float64(ataque)*l.furia + 0.5)
+	if l.mon.furia > 0 {
+		ataque = int(float64(ataque)*l.mon.furia + 0.5)
 	}
 	valor, critico := golpe(l.rng, ataque, l.j.Atributos.Defesa, critMonstroPorMil, multCritMonstro)
 	if m := MultiplicadorElemental(l.m.Elemento, l.j.Elemento); m != 1 {
@@ -868,13 +879,13 @@ func (l *lutaEmAndamento) golpeNoJogador(ataque int) (danoDeGolpe, bool) {
 func (l *lutaEmAndamento) escolherPoder() *PoderMonstro {
 	for i := range l.m.Poderes {
 		p := &l.m.Poderes[i]
-		if p.MaxUsos > 0 && l.usosPoder[p.ID] >= p.MaxUsos {
+		if p.MaxUsos > 0 && l.mon.usosPoder[p.ID] >= p.MaxUsos {
 			continue
 		}
-		if p.APartirDaRodada > 0 && l.rodada < p.APartirDaRodada {
+		if p.APartirDaRodada > 0 && l.mon.rodada < p.APartirDaRodada {
 			continue
 		}
-		if p.AbaixoDePct > 0 && l.vidaMonstro*100 >= l.m.Vida*p.AbaixoDePct {
+		if p.AbaixoDePct > 0 && l.mon.vida*100 >= l.m.Vida*p.AbaixoDePct {
 			continue
 		}
 		if l.rng.Intn(1000) < p.ChancePorMil {

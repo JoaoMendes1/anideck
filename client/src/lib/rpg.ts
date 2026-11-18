@@ -171,7 +171,7 @@ export function diferencaDaTroca(
   }
 }
 
-async function cabecalhoDeAutenticacao(): Promise<Record<string, string>> {
+export async function cabecalhoDeAutenticacao(): Promise<Record<string, string>> {
   const {
     data: { session },
   } = await supabase.auth.getSession()
@@ -418,6 +418,8 @@ export interface TurnoBatalha {
   alvo?: string
   /** Ajudante chamado nesta ação. */
   invocado?: string
+  /** Luta em grupo: posição (a partir de 1) do herói que agiu ou foi atingido. */
+  heroi?: number
 }
 
 export interface RespostaBatalha {

@@ -2,6 +2,7 @@
 import { describe, it, expect, afterEach, beforeEach, vi } from 'vitest'
 import { render, cleanup, screen, fireEvent } from '@testing-library/react'
 import { MemoryRouter } from 'react-router-dom'
+import { ToastProvider } from '../contexts/ToastContext'
 import type { EstadoMasmorras, RespostaMasmorra } from '../lib/rpg'
 
 vi.mock('../lib/rpg', async (original) => {
@@ -50,7 +51,7 @@ beforeEach(() => {
 afterEach(cleanup)
 
 function abrir() {
-  return render(<MemoryRouter><Masmorras /></MemoryRouter>)
+  return render(<ToastProvider><MemoryRouter><Masmorras /></MemoryRouter></ToastProvider>)
 }
 
 describe('Masmorras', () => {

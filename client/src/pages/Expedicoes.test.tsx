@@ -2,6 +2,7 @@
 import { describe, it, expect, afterEach, beforeEach, vi } from 'vitest'
 import { render, cleanup, screen, fireEvent, waitFor } from '@testing-library/react'
 import { MemoryRouter } from 'react-router-dom'
+import { ToastProvider } from '../contexts/ToastContext'
 import type { EstadoExpedicoes, RespostaBatalha } from '../lib/rpg'
 
 vi.mock('../lib/rpg', async (original) => {
@@ -50,7 +51,7 @@ const vitoria: RespostaBatalha = {
 }
 
 function abrir() {
-  return render(<MemoryRouter><Expedicoes /></MemoryRouter>)
+  return render(<ToastProvider><MemoryRouter><Expedicoes /></MemoryRouter></ToastProvider>)
 }
 
 beforeEach(() => {

@@ -9,6 +9,9 @@
 // ou com Ouro, na Pousada ou com uma Poção. Sem Vida, não há batalha.
 //
 // Arte provisória: ícone e cor por monstro. A ilustração entra depois, por id.
+import BotaoEmGrupo from '../components/rpg/BotaoEmGrupo'
+import ControleDeVelocidade from '../components/rpg/ControleDeVelocidade'
+import { intervaloDaVelocidade, lerVelocidade, salvarVelocidade, type Velocidade } from '../lib/velocidadeBatalha'
 import { useComunidade } from '../hooks/useComunidade'
 import { useEffect, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
@@ -40,7 +43,6 @@ import IconeOuro from '../components/IconeOuro'
 
 const ROTULO_DE_SECAO = 'font-mono text-xs font-semibold uppercase tracking-widest text-muted m-0'
 const CONTAINER = 'w-full min-w-0 max-w-[1100px] mx-auto px-4 sm:px-6 lg:px-10 pt-6 pb-24'
-const INTERVALO_ENTRE_GOLPES = 380
 
 function querMovimentoReduzido(): boolean {
   return typeof window !== 'undefined' && typeof window.matchMedia === 'function'
@@ -76,13 +78,14 @@ function TelaDeBatalha({ batalha, aoVoltar }: { batalha: RespostaBatalha; aoVolt
   const { monstro, jogador, resultado, recompensa } = batalha
   const total = resultado.turnos.length
   const [mostrados, setMostrados] = useState(() => (querMovimentoReduzido() ? total : 0))
+  const [velocidade, setVelocidade] = useState<Velocidade>(lerVelocidade)
   const terminou = mostrados >= total
 
   useEffect(() => {
     if (terminou) return
-    const id = window.setTimeout(() => setMostrados((n) => n + 1), INTERVALO_ENTRE_GOLPES)
+    const id = window.setTimeout(() => setMostrados((n) => n + 1), intervaloDaVelocidade(velocidade))
     return () => window.clearTimeout(id)
-  }, [mostrados, terminou])
+  }, [mostrados, terminou, velocidade])
 
   const ultimo = mostrados > 0 ? resultado.turnos[mostrados - 1] : undefined
   const vidaJogador = ultimo?.vida_jogador ?? resultado.vida_inicial ?? jogador.vida
@@ -185,13 +188,14 @@ function TelaDeBatalha({ batalha, aoVoltar }: { batalha: RespostaBatalha; aoVolt
           </div>
         </div>
       ) : (
-        <button
-          type="button"
-          onClick={() => setMostrados(total)}
-          className="h-11 cursor-pointer self-start rounded-full border border-line px-5 text-xs font-bold text-muted hover:text-text"
-        >
-          Pular para o resultado
-        </button>
+        <ControleDeVelocidade
+          velocidade={velocidade}
+          aoMudar={(v) => {
+            setVelocidade(v)
+            salvarVelocidade(v)
+          }}
+          aoPular={() => setMostrados(total)}
+        />
       )}
     </section>
   )
@@ -505,6 +509,7 @@ export default function Expedicoes() {
                       {textoDoBestiario(m.bestiario)}
                     </p>
                   )}
+                  <div className="flex flex-wrap gap-2">
                   <button
                     type="button"
                     onClick={() => enfrentar(m.id)}
@@ -517,6 +522,8 @@ export default function Expedicoes() {
                       <span className="ml-1 font-mono text-[11px] font-semibold opacity-80">· {estado.custos_mana.expedicao} MP</span>
                     )}
                   </button>
+                  <BotaoEmGrupo tipo="monstro" alvoId={m.id} nome={m.nome} desativado={restantes === 0 || lutando !== null || exausto} />
+                  </div>
                 </li>
               )
             })}

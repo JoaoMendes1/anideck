@@ -94,5 +94,21 @@
         "caminho": "/personagem"
       }
     ]
+  },
+  {
+    "chave": "2026-11-18-lutas-em-grupo",
+    "titulo": "Lute em grupo com seus amigos",
+    "categoria": "novidade",
+    "resumo": "Agora dá para enfrentar monstros e masmorras em grupo de até 3. Toque em Em grupo, chame amigos, gente do seu clã ou quem está online, e o convite aparece na tela de quem você chamou.\n\nCada um ganha a recompensa inteira e gasta a própria Mana. O monstro fica mais forte com o grupo, então juntos vocês encaram desafios que seriam difíceis sozinhos.\n\nVocê escolhe quem pode te chamar: todos, só amigos e clã, ou ninguém. E as batalhas agora têm velocidade 1x, 2x e 4x.",
+    "links": [
+      {
+        "rotulo": "Ver Expedições",
+        "caminho": "/expedicoes"
+      },
+      {
+        "rotulo": "Ver Masmorras",
+        "caminho": "/masmorras"
+      }
+    ]
   }
 ]

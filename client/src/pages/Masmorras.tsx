@@ -1,6 +1,7 @@
 // client/src/pages/Masmorras.tsx
 // Masmorras (Fase 18.4d): andares seguidos com monstros do catálogo, uma por dia. A luta inteira
 // é decidida no servidor; a tela mostra o resultado de cada andar, com o registro dos golpes.
+import BotaoEmGrupo from '../components/rpg/BotaoEmGrupo'
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { ChevronLeft, ChevronRight, DoorOpen, Lock, Sparkles, Ticket, Trophy } from 'lucide-react'
@@ -228,6 +229,7 @@ export default function Masmorras() {
                       <Trophy size={18} className="text-gold" aria-label="Baú" />
                     </li>
                   </ol>
+                  <div className="flex flex-wrap gap-2">
                   <button
                     type="button"
                     onClick={() => entrar(m.id)}
@@ -240,6 +242,8 @@ export default function Masmorras() {
                       <span className="ml-1 font-mono text-[11px] font-semibold opacity-80">· {estado.custos_mana.masmorra} MP</span>
                     )}
                   </button>
+                  <BotaoEmGrupo tipo="masmorra" alvoId={m.id} nome={m.nome} desativado={fechada} />
+                  </div>
                 </li>
               )
             })}

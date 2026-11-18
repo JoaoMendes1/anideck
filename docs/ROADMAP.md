@@ -860,6 +860,8 @@ Motivo: o beta vai receber gente nova, e a primeira impressão decide se a pesso
 - [x] 18.9k **Lutas gastam Mana, em escala maior:** Mana 120 +12/nível (até 999); lutas custam % da Mana máxima (expedição e duelo 5%, chefe 8%, masmorra 12%); Poção de Mana 40%; Ouro das vitórias em dobro. Tudo ajustável em Painel › Moderação. `sql/118` (#289)
 - [x] 18.9l **Telas do jogo compactas no celular:** recuo do topo, faixa de combate abaixo da arte do Personagem, atalhos da Guilda em linha. (#290)
 - [x] 18.9m **Mercado na Loja:** equipamentos por Ouro, 7 itens novos de nível 12 a 18, comparação com o equipado. `sql/119` (#291)
+- [x] 18.9n **Lutas em grupo (na hora):** até 3 contra monstro ou masmorra; convite na tela do outro; preferências de quem pode chamar; trava de 3 recusas; velocidade 1x/2x/4x das batalhas. `sql/120` (#292)
+- [ ] 18.9o Lutas em grupo **ao vivo**: cada herói escolhe a ação a cada turno, com espera pelos outros
 - [ ] 18.9g Insígnia de pioneiro da Temporada 0 (nome e critério de "ativo" a decidir) e captcha no cadastro
 - [ ] 18.9c Página de visitante com demonstração jogável e personagem que evolui com a rolagem
 - [ ] 18.9d Importação com regra de zero recompensa (origem marcada no banco) e interruptor no Painel Admin
