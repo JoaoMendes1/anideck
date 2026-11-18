@@ -49,6 +49,11 @@ Valem só aqui. Cada uma com o motivo, para não ser quebrada sem saber o custo.
   uma, a página sai em branco.
 - **Lógica nova vem com teste.** Issue que envolve handler, validação ou cálculo traz teste
   unitário do caminho feliz e dos cenários de erro; `go test ./...` roda antes do push.
+- **Entrega que o jogador percebe traz a novidade pronta.** Função nova, correção que ele
+  sentia ou mudança de tela ganha um item em `internal/handlers/novidades_rascunhos.json`
+  (chave única nova, título, categoria, texto para o jogador e caminhos internos). No deploy
+  ele entra como rascunho e o dono só publica no Painel; sem o item, a novidade não existe.
+  Chave nunca é reaproveitada nem o item editado depois de subir: o banco já guardou a chave.
 - **Labels deste projeto:** `admin` (Painel Admin e curadoria) e `estatisticas` (tela Meu
   Gosto e cálculos de estatística).
 

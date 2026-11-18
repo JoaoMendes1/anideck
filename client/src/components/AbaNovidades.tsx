@@ -2,8 +2,9 @@
 // Painel Admin › Novidades: publica atualizações para todos os jogadores, com data e hora,
 // caminhos para conferir e a chave do aviso no meio da tela.
 import { useCallback, useEffect, useState, type FormEvent } from 'react'
-import { Eye, EyeOff, Megaphone, MonitorUp, Pencil, Plus, Save, Trash2, X } from 'lucide-react'
+import { Eye, EyeOff, Megaphone, Send, MonitorUp, Pencil, Plus, Save, Trash2, X } from 'lucide-react'
 import { useToast } from '../contexts/ToastContext'
+import CartaoNovidade from './novidades/CartaoNovidade'
 import {
   ROTULO_CATEGORIA, alcanceDasNovidades, apagarNovidade, dataHoraDaNovidade, listarNovidades,
   paraCampoDataHora, salvarNovidade, type CategoriaNovidade, type Novidade, type RascunhoNovidade,
@@ -93,7 +94,19 @@ export default function AbaNovidades() {
     else showToast('Não foi possível apagar.', 'error')
   }
 
+  const publicar = async (n: Novidade) => {
+    const res = await salvarNovidade({ ...rascunhoDe(n), ativo: true })
+    if (!res.ok) {
+      showToast(res.erro, 'error')
+      return
+    }
+    showToast(n.no_meio_da_tela ? 'Publicada. Os jogadores vão ver no meio da tela.' : 'Publicada na página Novidades.', 'success')
+    carregar()
+  }
+
   const agora = new Date()
+  const prontas = lista.filter(n => n.rascunho)
+  const demais = lista.filter(n => !n.rascunho)
 
   return (
     <div className="space-y-5">
@@ -190,9 +203,39 @@ export default function AbaNovidades() {
         </form>
       )}
 
+      {prontas.length > 0 && !rascunho && (
+        <section aria-labelledby="titulo-prontas" className="space-y-3 rounded-2xl border border-gold/40 bg-gold/5 p-4">
+          <h3 id="titulo-prontas" className="m-0 text-base font-bold text-gold">
+            Prontas para publicar ({prontas.length})
+          </h3>
+          <p className="m-0 text-xs text-muted">Chegaram com a última atualização do site. Confira o texto e publique; dá para editar antes.</p>
+          {prontas.map(n => (
+            <div key={n.id} className="space-y-2">
+              <CartaoNovidade novidade={n} />
+              <div className="flex flex-wrap items-center gap-2">
+                <button type="button" onClick={() => publicar(n)} className="inline-flex items-center gap-1.5 rounded-xl bg-gold px-4 py-2 text-sm font-bold text-bg cursor-pointer">
+                  <Send size={16} /> Publicar
+                </button>
+                <button type="button" onClick={() => setRascunho(rascunhoDe(n))} className="inline-flex items-center gap-1.5 rounded-xl border border-white/10 px-3 py-2 text-sm text-text cursor-pointer">
+                  <Pencil size={14} /> Editar
+                </button>
+                <label className="flex items-center gap-1.5 text-xs text-muted">
+                  <input type="checkbox" checked={n.no_meio_da_tela} onChange={() => alternar(n, 'no_meio_da_tela')} />
+                  No meio da tela
+                </label>
+                <span className="flex-1" />
+                <button type="button" onClick={() => apagar(n)} className="text-xs text-muted hover:text-coral cursor-pointer">
+                  Descartar
+                </button>
+              </div>
+            </div>
+          ))}
+        </section>
+      )}
+
       <ul className="space-y-2 p-0 list-none">
-        {lista.length === 0 && <li className="text-sm text-muted">Nenhuma novidade ainda.</li>}
-        {lista.map(n => {
+        {demais.length === 0 && <li className="text-sm text-muted">Nenhuma novidade ainda.</li>}
+        {demais.map(n => {
           const agendada = new Date(n.publicado_em) > agora
           return (
             <li key={n.id} className="rounded-2xl border border-white/10 bg-surface/40 p-3">

@@ -19,6 +19,8 @@ export interface Novidade {
   publicado_em: string
   no_meio_da_tela: boolean
   ativo: boolean
+  /** Veio pronta com a entrega e ainda não foi publicada (sql/116). */
+  rascunho: boolean
 }
 
 export const ROTULO_CATEGORIA: Record<CategoriaNovidade, string> = {
@@ -61,13 +63,14 @@ function normalizar(bruto: Partial<Novidade>): Novidade {
     publicado_em: bruto.publicado_em ?? '',
     no_meio_da_tela: Boolean(bruto.no_meio_da_tela),
     ativo: bruto.ativo !== false,
+    rascunho: Boolean(bruto.rascunho),
   }
 }
 
 export async function listarNovidades(limite = 50): Promise<Novidade[]> {
   const { data, error } = await supabase
     .from('novidades')
-    .select('id,titulo,resumo,categoria,links,publicado_em,no_meio_da_tela,ativo')
+    .select('id,titulo,resumo,categoria,links,publicado_em,no_meio_da_tela,ativo,rascunho')
     .order('publicado_em', { ascending: false })
     .limit(limite)
   if (error || !Array.isArray(data)) return []

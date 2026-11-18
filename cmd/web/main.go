@@ -460,6 +460,9 @@ func main() {
 	// Encerramento gracioso: no SIGTERM do deploy, o servidor para de aceitar conexões e
 	// deixa as requisições em andamento terminarem. O prazo cabe nos 10 s que o Docker
 	// espera antes de matar o processo.
+	// Rascunhos de novidades da entrega que acabou de subir (sql/116), sem atrasar o boot.
+	go handlers.ImportarRascunhosNovidades()
+
 	ctx, parar := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
 	defer parar()
 	encerrado := make(chan struct{})
