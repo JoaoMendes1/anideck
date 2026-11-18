@@ -37,6 +37,7 @@ const Expedicoes = lazy(CARREGAR.expedicoes)
 const Masmorras = lazy(CARREGAR.masmorras)
 const Duelos = lazy(CARREGAR.duelos)
 const Feed = lazy(CARREGAR.feed)
+const Novidades = lazy(CARREGAR.novidades)
 const BemVindo = lazy(CARREGAR.bemVindo)
 const ExpedicaoDoCla = lazy(CARREGAR.expedicaoDoCla)
 const Invocacao = lazy(CARREGAR.invocacao)
@@ -85,6 +86,7 @@ function App() {
               <Route path="/masmorras" element={<RotaProtegida><Masmorras /></RotaProtegida>} />
               <Route path="/duelos" element={<RotaProtegida><Duelos /></RotaProtegida>} />
               <Route path="/feed" element={<RotaProtegida><Feed /></RotaProtegida>} />
+              <Route path="/novidades" element={<RotaProtegida><Novidades /></RotaProtegida>} />
               <Route path="/bem-vindo" element={<RotaProtegida><BemVindo /></RotaProtegida>} />
               <Route path="/expedicao-do-cla" element={<RotaProtegida><ExpedicaoDoCla /></RotaProtegida>} />
               <Route path="/invocacao" element={<RotaProtegida><Invocacao /></RotaProtegida>} />

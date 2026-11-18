@@ -47,3 +47,4 @@
 > ninguém consegue checar sem ler o repositório inteiro — foi assim que este arquivo
 > passou meses dizendo que só três telas existiam.
 | 30 | Configuração inicial (`/bem-vindo`) | `BemVindo.tsx` | ✅ Implementada · mobile-first, 5 passos com barra de progresso (perfil e @, o que está assistindo na temporada, gosto, despertar do personagem, recompensa de boas-vindas); todo passo pode ser pulado, "Pular tudo" vai à Início, e o passo fica salvo na conta. Abre sozinha só para contas novas (marca no cadastro) | Fase 18.9 (#280) |
+| 31 | Novidades (`/novidades`) | `Novidades.tsx` | ✅ Implementada · mobile-first, lista das atualizações publicadas com tipo, data e hora e botões para cada caminho. O aviso central (`AvisoNovidades`, no `Layout`) mostra as marcadas "no meio da tela" que a pessoa não viu, ao entrar e a cada 3 minutos com o site aberto. Admin em Painel › Comunidade › Novidades. No menu, grupo Comunidade | Fase 18.9 (#284) |

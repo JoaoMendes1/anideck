@@ -22,6 +22,7 @@ import AbaRevisaoIA from '../components/AbaRevisaoIA'
 import AbaGuilda from '../components/AbaGuilda'
 import AbaModeracao from '../components/AbaModeracao'
 import AbaEconomia from '../components/AbaEconomia'
+import AbaNovidades from '../components/AbaNovidades'
 import type { SugestaoPendente } from '../hooks/useOlheiro'
 import CampoNumerico from '../components/CampoNumerico'
 import LimiteDeErro from '../components/LimiteDeErro'
@@ -76,7 +77,7 @@ const montarHash = (c: CamposDoFormulario) => JSON.stringify([
 
 // Menu do painel agrupado por assunto. As seções do Controle viram itens próprios, para
 // não haver um segundo menu dentro da aba.
-type AbaDoMenu = 'curadoria' | 'controle' | 'trilhas' | 'revisao_ia' | 'guilda' | 'moderacao' | 'economia'
+type AbaDoMenu = 'curadoria' | 'controle' | 'trilhas' | 'revisao_ia' | 'guilda' | 'moderacao' | 'economia' | 'novidades'
 interface ItemDoMenu { id: string; nome: string; aba: AbaDoMenu; secao?: string }
 const GRUPOS_ADMIN: { titulo: string; itens: ItemDoMenu[] }[] = [
   { titulo: 'Catálogo', itens: [
@@ -91,6 +92,7 @@ const GRUPOS_ADMIN: { titulo: string; itens: ItemDoMenu[] }[] = [
   ] },
   { titulo: 'Comunidade', itens: [
     { id: 'moderacao', nome: 'Moderação', aba: 'moderacao' },
+    { id: 'novidades', nome: 'Novidades', aba: 'novidades' },
     { id: 'guilda', nome: 'Guilda e XP', aba: 'guilda' },
     { id: 'economia', nome: 'Economia e AniCoins', aba: 'economia' },
     { id: 'controle:ranking', nome: 'Ranking', aba: 'controle', secao: 'ranking' },
@@ -155,7 +157,7 @@ export default function PainelAdmin() {
   const [searchParams, setSearchParams] = useSearchParams()
   const abaParam = searchParams.get('aba')
   const abaAtiva: AbaAdmin =
-    abaParam === 'controle' || abaParam === 'trilhas' || abaParam === 'revisao_ia' || abaParam === 'guilda' || abaParam === 'moderacao' || abaParam === 'economia'
+    abaParam === 'controle' || abaParam === 'trilhas' || abaParam === 'revisao_ia' || abaParam === 'guilda' || abaParam === 'moderacao' || abaParam === 'economia' || abaParam === 'novidades'
       ? abaParam
       : abaParam === 'comunidade'
         ? 'moderacao'
@@ -1208,6 +1210,8 @@ export default function PainelAdmin() {
             <AbaModeracao />
           </>
         )}
+
+        {abaAtiva === 'novidades' && <AbaNovidades />}
 
         {abaAtiva === 'guilda' && (
           <>
