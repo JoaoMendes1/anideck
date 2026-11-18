@@ -9,13 +9,14 @@ import (
 	"github.com/supabase-community/supabase-go"
 )
 
-// Mana gasta por luta (sql/118). A recarga diária gira em torno de 25 a 30 por dia no nível
-// 15: dá para as lutas do dia e ainda sobra para comentar; o resto vem de Poção e Fonte.
+// TipoDeLuta identifica o custo de Mana nas regras (sql/118).
+type TipoDeLuta string
+
 const (
-	CustoManaExpedicao  = 3
-	CustoManaDuelo      = 3
-	CustoManaChefeDoCla = 5
-	CustoManaMasmorra   = 8
+	LutaExpedicao  TipoDeLuta = "expedicao"
+	LutaDuelo      TipoDeLuta = "duelo"
+	LutaChefeDoCla TipoDeLuta = "chefe_do_cla"
+	LutaMasmorra   TipoDeLuta = "masmorra"
 )
 
 // CustosManaRPG vai nas respostas de leitura para a tela mostrar o preço antes da luta.
@@ -26,9 +27,33 @@ type CustosManaRPG struct {
 	Masmorra   int `json:"masmorra"`
 }
 
-// CustosDeMana devolve a tabela de custos atual.
-func CustosDeMana() CustosManaRPG {
-	return CustosManaRPG{Expedicao: CustoManaExpedicao, Duelo: CustoManaDuelo, ChefeDoCla: CustoManaChefeDoCla, Masmorra: CustoManaMasmorra}
+// CustoDeMana é a porcentagem do tipo de luta sobre a Mana máxima do nível, arredondada para
+// cima: com porcentagem acima de zero, a luta custa pelo menos 1.
+func CustoDeMana(tipo TipoDeLuta, nivel int, r RegrasComunidade) int {
+	pct := map[TipoDeLuta]int{
+		LutaExpedicao: r.MPCustoExpedicaoPct, LutaDuelo: r.MPCustoDueloPct,
+		LutaChefeDoCla: r.MPCustoChefePct, LutaMasmorra: r.MPCustoMasmorraPct,
+	}[tipo]
+	if pct <= 0 {
+		return 0
+	}
+	return (CalcularManaMaxima(nivel, r)*pct + 99) / 100
+}
+
+// CustosDeMana devolve a tabela de custos para o nível.
+func CustosDeMana(nivel int, r RegrasComunidade) CustosManaRPG {
+	return CustosManaRPG{
+		Expedicao: CustoDeMana(LutaExpedicao, nivel, r), Duelo: CustoDeMana(LutaDuelo, nivel, r),
+		ChefeDoCla: CustoDeMana(LutaChefeDoCla, nivel, r), Masmorra: CustoDeMana(LutaMasmorra, nivel, r),
+	}
+}
+
+// OuroComRegra aplica a porcentagem de Ouro das recompensas calculadas no Go (duelo, clã).
+func OuroComRegra(base int, r RegrasComunidade) int {
+	if r.OuroRecompensaPct <= 0 {
+		return base
+	}
+	return (base*r.OuroRecompensaPct + 50) / 100
 }
 
 // interpretarCobrancaMana lê o retorno de rpg_mana_lutar. Resposta fora do formato (função
@@ -50,6 +75,9 @@ func interpretarCobrancaMana(bruto string) (cobrou bool, erro string) {
 // cobrarManaDaLuta cobra antes de registrar a luta. ok=false quer dizer que a resposta de
 // erro já foi escrita (Mana insuficiente).
 func cobrarManaDaLuta(w http.ResponseWriter, servico *supabase.Client, userID string, custo int) (cobrou, ok bool) {
+	if custo <= 0 {
+		return false, true
+	}
 	bruto := strings.TrimSpace(servico.Rpc("rpg_mana_lutar", "", map[string]interface{}{
 		"p_user_id": userID, "p_quantia": custo,
 	}))

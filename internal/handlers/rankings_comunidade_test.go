@@ -155,8 +155,8 @@ func TestDecodificarNumerosComunidade(t *testing.T) {
 
 func TestLimitarJanelaEmAlta(t *testing.T) {
 	casos := []struct {
-		diasIn, limIn     string
-		diasOut, limOut   int
+		diasIn, limIn   string
+		diasOut, limOut int
 	}{
 		{"", "", 14, 12},
 		{"abc", "-5", 14, 12},

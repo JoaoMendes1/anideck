@@ -94,25 +94,25 @@ func TestValidarRegrasComunidade(t *testing.T) {
 func TestCalcularManaEHPMaximoPorNivel(t *testing.T) {
 	r := RegrasComunidadePadrao()
 
-	// Nível 1: base 50 MP e 100 HP.
-	if mp := CalcularManaMaxima(1, r); mp != 50 {
-		t.Fatalf("nível 1 MP: esperava 50, recebeu %d", mp)
+	// Nível 1: base 120 MP e 100 HP.
+	if mp := CalcularManaMaxima(1, r); mp != 120 {
+		t.Fatalf("nível 1 MP: esperava 120, recebeu %d", mp)
 	}
 	if hp := CalcularHPMaximo(1); hp != 100 {
 		t.Fatalf("nível 1 HP: esperava 100, recebeu %d", hp)
 	}
 
-	// Nível 15: 50 + 1*(15-1) = 64 MP; 100 + 5*(15-1) = 170 HP.
-	if mp := CalcularManaMaxima(15, r); mp != 64 {
-		t.Fatalf("nível 15 MP: esperava 64, recebeu %d", mp)
+	// Nível 15: 120 + 12*(15-1) = 288 MP; 100 + 5*(15-1) = 170 HP.
+	if mp := CalcularManaMaxima(15, r); mp != 288 {
+		t.Fatalf("nível 15 MP: esperava 288, recebeu %d", mp)
 	}
 	if hp := CalcularHPMaximo(15); hp != 170 {
 		t.Fatalf("nível 15 HP: esperava 170, recebeu %d", hp)
 	}
 
-	// Acima do teto: 120 MP e 400 HP.
-	if mp := CalcularManaMaxima(90, r); mp != 120 {
-		t.Fatalf("teto MP: esperava 120, recebeu %d", mp)
+	// Acima do teto: 999 MP e 400 HP.
+	if mp := CalcularManaMaxima(90, r); mp != 999 {
+		t.Fatalf("teto MP: esperava 999, recebeu %d", mp)
 	}
 	if hp := CalcularHPMaximo(90); hp != 400 {
 		t.Fatalf("teto HP: esperava 400, recebeu %d", hp)

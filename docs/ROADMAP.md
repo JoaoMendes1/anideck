@@ -857,7 +857,7 @@ Motivo: o beta vai receber gente nova, e a primeira impressão decide se a pesso
 - [x] 18.9h **HP e MP únicos:** a Vitalidade da barra vira a Vida do personagem. Regenera, cura com episódio, Pousada, Poção de HP e Fonte termal; Poção de Mana; batalha tira HP; 3 dias sem episódio tiram 10%/dia até 20%. `sql/114` (#283)
 - [x] 18.9i **Novidades:** o admin publica atualizações com data e hora e caminhos para conferir; aviso no meio da tela (ao entrar e com o site aberto) controlado por novidade; página `/novidades`. `sql/115` (#284)
 - [x] 18.9j **Novidades prontas:** cada entrega traz o texto em `novidades_rascunhos.json`; no deploy vira rascunho no Painel ("Prontas para publicar") e o dono só publica. `sql/116` (#285)
-- [x] 18.9k **Lutas gastam Mana:** expedição e duelo 3, chefe do clã 5, masmorra 8; devolvida se a luta não for registrada. `sql/118` (#289)
+- [x] 18.9k **Lutas gastam Mana, em escala maior:** Mana 120 +12/nível (até 999); lutas custam % da Mana máxima (expedição e duelo 5%, chefe 8%, masmorra 12%); Poção de Mana 40%; Ouro das vitórias em dobro. Tudo ajustável em Painel › Moderação. `sql/118` (#289)
 - [x] 18.9l **Telas do jogo compactas no celular:** recuo do topo, faixa de combate abaixo da arte do Personagem, atalhos da Guilda em linha. (#290)
 - [x] 18.9m **Mercado na Loja:** equipamentos por Ouro, 7 itens novos de nível 12 a 18, comparação com o equipado. `sql/119` (#291)
 - [ ] 18.9g Insígnia de pioneiro da Temporada 0 (nome e critério de "ativo" a decidir) e captcha no cadastro

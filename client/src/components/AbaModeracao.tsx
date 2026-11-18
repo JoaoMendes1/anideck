@@ -64,13 +64,25 @@ type ChaveRegraNumerica =
   | 'hp_dias_para_cheio'
   | 'hp_piso'
   | 'descanso_max_dias'
+  | 'mp_custo_expedicao_pct'
+  | 'mp_custo_duelo_pct'
+  | 'mp_custo_chefe_pct'
+  | 'mp_custo_masmorra_pct'
+  | 'mp_pocao_pct'
+  | 'ouro_recompensa_pct'
 
 const CAMPOS_REGRAS: { chave: ChaveRegraNumerica; rotulo: string; ajuda: string }[] = [
-  { chave: 'mp_max', rotulo: 'Mana máxima (Nível 1)', ajuda: 'Base da barra azul no nível 1.' },
-  { chave: 'mp_por_nivel', rotulo: 'Mana por nível', ajuda: 'Quanto o teto sobe por nível (+1 padrão).' },
-  { chave: 'mp_max_teto', rotulo: 'Teto de Mana máxima', ajuda: 'Limite máximo com o nível (120 padrão).' },
-  { chave: 'mp_regen_dia', rotulo: 'Recarga por dia', ajuda: 'Contínua ao longo do dia (escala com o nível).' },
+  { chave: 'mp_max', rotulo: 'Mana máxima (Nível 1)', ajuda: 'Base da barra azul no nível 1 (120 padrão).' },
+  { chave: 'mp_por_nivel', rotulo: 'Mana por nível', ajuda: 'Quanto o teto sobe por nível (+12 padrão).' },
+  { chave: 'mp_max_teto', rotulo: 'Teto de Mana máxima', ajuda: 'Limite máximo com o nível (999 padrão).' },
+  { chave: 'mp_regen_dia', rotulo: 'Recarga por dia (na base)', ajuda: 'Cresce junto com a Mana máxima (60 padrão).' },
   { chave: 'mp_custo_comentario', rotulo: 'Custo do comentário', ajuda: '0 desliga o custo.' },
+  { chave: 'mp_custo_expedicao_pct', rotulo: 'Expedição (% da Mana)', ajuda: 'Custo de cada expedição (5% padrão).' },
+  { chave: 'mp_custo_duelo_pct', rotulo: 'Duelo (% da Mana)', ajuda: '5% padrão.' },
+  { chave: 'mp_custo_chefe_pct', rotulo: 'Chefe do clã (% da Mana)', ajuda: '8% padrão.' },
+  { chave: 'mp_custo_masmorra_pct', rotulo: 'Masmorra (% da Mana)', ajuda: '12% padrão. 0 desliga o custo.' },
+  { chave: 'mp_pocao_pct', rotulo: 'Poção de Mana (% da Mana)', ajuda: 'Quanto a poção devolve (40% padrão).' },
+  { chave: 'ouro_recompensa_pct', rotulo: 'Ouro das recompensas (%)', ajuda: '100% é o valor base; 200% padrão.' },
   { chave: 'hp_janela_dias', rotulo: 'Janela da Vitalidade (dias)', ajuda: 'Quantos dias para trás contam.' },
   { chave: 'hp_dias_para_cheio', rotulo: 'Dias ativos para encher', ajuda: 'Dentro da janela.' },
   { chave: 'hp_piso', rotulo: 'Piso da Vitalidade', ajuda: 'Nunca cai abaixo disso.' },

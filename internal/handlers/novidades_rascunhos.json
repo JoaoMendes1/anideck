@@ -53,9 +53,9 @@
   },
   {
     "chave": "2026-11-18-mana-nas-lutas",
-    "titulo": "Lutas agora gastam Mana",
+    "titulo": "Mana maior, lutas gastam Mana e o dobro de Ouro",
     "categoria": "balanceamento",
-    "resumo": "Cada luta custa Mana: expedição e duelo 3, chefe do clã 5 e masmorra 8. O custo aparece no botão antes de lutar. Sem Mana, espere ela voltar ou use uma Poção de Mana ou a Fonte termal nas Expedições.\n\nO máximo de Mana continua crescendo com o seu nível.",
+    "resumo": "A Mana ficou bem maior e cresce rápido com o nível: 120 no nível 1 e +12 a cada nível, até 999. Ela também volta mais rápido.\n\nAgora cada luta gasta uma parte dela: expedição e duelo 5% da sua Mana máxima, chefe do clã 8% e masmorra 12%. O custo aparece no botão antes de lutar. A Poção de Mana devolve 40%.\n\nE as vitórias em expedições, masmorras, duelos e no chefe do clã dão o dobro de Ouro.",
     "links": [
       {
         "rotulo": "Ver Expedições",

@@ -234,7 +234,7 @@ func (h *RPGHandler) HandleGetMasmorras(w http.ResponseWriter, r *http.Request) 
 	responderJSON(w, http.StatusOK, EstadoMasmorras{
 		Atributos: equipamento.Atributos, Elemento: elementoDoJogador(sessao.ctx),
 		Vida: MontarVida(equipamento.Atributos.Vida, hoje.VidaPerdida), Hoje: hoje,
-		FeitaHoje: feita, Masmorras: lista, CustosMana: CustosDeMana(),
+		FeitaHoje: feita, Masmorras: lista, CustosMana: CustosDeMana(sessao.nivel, lerRegrasComunidade(sessao.dbClient)),
 	})
 }
 
@@ -327,7 +327,8 @@ func (h *RPGHandler) HandleEntrarNaMasmorra(w http.ResponseWriter, r *http.Reque
 	if vencidos == nil {
 		vencidos = []string{}
 	}
-	cobrou, ok := cobrarManaDaLuta(w, servico, sessao.userID, CustoManaMasmorra)
+	custoMana := CustoDeMana(LutaMasmorra, sessao.nivel, lerRegrasComunidade(sessao.dbClient))
+	cobrou, ok := cobrarManaDaLuta(w, servico, sessao.userID, custoMana)
 	if !ok {
 		return
 	}
@@ -354,7 +355,7 @@ func (h *RPGHandler) HandleEntrarNaMasmorra(w http.ResponseWriter, r *http.Reque
 	}
 	if bruto == "" || json.Unmarshal([]byte(bruto), &registro) != nil || (!registro.Ok && registro.Erro == "") {
 		log.Printf("[RPG] Falha ao registrar masmorra (user=%s): %s", sessao.userID, bruto)
-		devolverManaDaLuta(servico, sessao.userID, CustoManaMasmorra, cobrou)
+		devolverManaDaLuta(servico, sessao.userID, custoMana, cobrou)
 		responderErroJSON(w, http.StatusServiceUnavailable, "Não foi possível registrar a masmorra agora.")
 		return
 	}
@@ -366,7 +367,7 @@ func (h *RPGHandler) HandleEntrarNaMasmorra(w http.ResponseWriter, r *http.Reque
 		case registro.SemVida:
 			status = http.StatusConflict
 		}
-		devolverManaDaLuta(servico, sessao.userID, CustoManaMasmorra, cobrou)
+		devolverManaDaLuta(servico, sessao.userID, custoMana, cobrou)
 		responderErroJSON(w, status, registro.Erro)
 		return
 	}

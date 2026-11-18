@@ -111,7 +111,7 @@ describe('Expedições', () => {
     expect(screen.getByText('12 de Ouro')).toBeTruthy()
     expect(screen.getByText('Fonte termal: HP e Mana cheios')).toBeTruthy()
     expect(screen.getByText('23 de Ouro')).toBeTruthy()
-    expect(screen.getByText('Poção de Mana: +25')).toBeTruthy()
+    expect(screen.getByText('Poção de Mana: +40% da Mana')).toBeTruthy()
   })
 
   it('abaixo de 30% de Vida, bloqueia a batalha e avisa como recuperar', async () => {

@@ -276,7 +276,8 @@ func (h *ComunidadeHandler) HandleSalvarRegrasComunidade(w http.ResponseWriter, 
 	if !ok {
 		return
 	}
-	var regras RegrasComunidade
+	// Parte do padrão: campo que a tela não mandar (tela antiga, campo novo) não vira zero.
+	regras := RegrasComunidadePadrao()
 	if err := json.NewDecoder(http.MaxBytesReader(w, r.Body, 4096)).Decode(&regras); err != nil {
 		http.Error(w, "Pedido inválido.", http.StatusBadRequest)
 		return

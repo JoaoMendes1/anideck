@@ -289,7 +289,10 @@ func (h *RPGHandler) HandleAtacarChefeDoCla(w http.ResponseWriter, r *http.Reque
 		responderErroJSON(w, http.StatusServiceUnavailable, "Expedição do clã indisponível no momento.")
 		return
 	}
-	cobrou, ok := cobrarManaDaLuta(w, servico, sessao.userID, CustoManaChefeDoCla)
+	regras := lerRegrasComunidade(sessao.dbClient)
+	ouro = OuroComRegra(ouro, regras)
+	custoMana := CustoDeMana(LutaChefeDoCla, sessao.nivel, regras)
+	cobrou, ok := cobrarManaDaLuta(w, servico, sessao.userID, custoMana)
 	if !ok {
 		return
 	}
@@ -303,12 +306,12 @@ func (h *RPGHandler) HandleAtacarChefeDoCla(w http.ResponseWriter, r *http.Reque
 	}
 	if bruto == "" || json.Unmarshal([]byte(bruto), &registro) != nil || (!registro.Ok && registro.Erro == "") {
 		log.Printf("[RPG] Falha ao registrar ataque do clã (user=%s): %s", sessao.userID, bruto)
-		devolverManaDaLuta(servico, sessao.userID, CustoManaChefeDoCla, cobrou)
+		devolverManaDaLuta(servico, sessao.userID, custoMana, cobrou)
 		responderErroJSON(w, http.StatusServiceUnavailable, "Não foi possível registrar o ataque agora.")
 		return
 	}
 	if registro.Erro != "" {
-		devolverManaDaLuta(servico, sessao.userID, CustoManaChefeDoCla, cobrou)
+		devolverManaDaLuta(servico, sessao.userID, custoMana, cobrou)
 		responderErroJSON(w, http.StatusConflict, registro.Erro)
 		return
 	}

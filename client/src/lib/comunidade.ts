@@ -15,19 +15,32 @@ export interface RegrasComunidade {
   hp_piso: number
   descanso_max_dias: number
   previsoes_ativas?: boolean
+  /** Custo das lutas em % da Mana máxima, Poção de Mana em % e Ouro das recompensas em % (sql/118). */
+  mp_custo_expedicao_pct?: number
+  mp_custo_duelo_pct?: number
+  mp_custo_chefe_pct?: number
+  mp_custo_masmorra_pct?: number
+  mp_pocao_pct?: number
+  ouro_recompensa_pct?: number
 }
 
 export const REGRAS_COMUNIDADE_PADRAO: RegrasComunidade = {
-  mp_max: 50,
-  mp_por_nivel: 1,
-  mp_max_teto: 120,
-  mp_regen_dia: 20,
-  mp_custo_comentario: 5,
+  mp_max: 120,
+  mp_por_nivel: 12,
+  mp_max_teto: 999,
+  mp_regen_dia: 60,
+  mp_custo_comentario: 12,
   hp_janela_dias: 14,
   hp_dias_para_cheio: 7,
   hp_piso: 20,
   descanso_max_dias: 14,
   previsoes_ativas: true,
+  mp_custo_expedicao_pct: 5,
+  mp_custo_duelo_pct: 5,
+  mp_custo_chefe_pct: 8,
+  mp_custo_masmorra_pct: 12,
+  mp_pocao_pct: 40,
+  ouro_recompensa_pct: 200,
 }
 
 export interface PerfilProprio {
@@ -59,9 +72,9 @@ export interface EstadoComunidade {
 
 /** Calcula a Mana máxima do jogador a partir do nível e das regras (sql/079). */
 export function calcularManaMaximaJogador(nivel: number, regras: RegrasComunidade): number {
-  const base = Math.max(1, regras.mp_max || 50)
-  const porNivel = Math.max(0, regras.mp_por_nivel ?? 1)
-  const teto = Math.max(base, regras.mp_max_teto ?? 120)
+  const base = Math.max(1, regras.mp_max || 120)
+  const porNivel = Math.max(0, regras.mp_por_nivel ?? 12)
+  const teto = Math.max(base, regras.mp_max_teto ?? 999)
   const nv = Math.max(1, Math.floor(nivel || 1))
   return Math.min(teto, base + porNivel * (nv - 1))
 }

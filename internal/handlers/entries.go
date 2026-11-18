@@ -795,4 +795,3 @@ func (h *EntriesHandler) HandleExecutarSaidaCompleto(w http.ResponseWriter, r *h
 		"resumo":  resumo,
 	})
 }
-

@@ -176,4 +176,3 @@ func TestHandleExecutarSaidaCompleto_Validacao(t *testing.T) {
 		t.Errorf("esperava 400 para nota > 10, recebeu: %d", wNotaRuim.Code)
 	}
 }
-

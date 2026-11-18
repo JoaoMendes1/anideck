@@ -9,6 +9,7 @@
 // ou com Ouro, na Pousada ou com uma Poção. Sem Vida, não há batalha.
 //
 // Arte provisória: ícone e cor por monstro. A ilustração entra depois, por id.
+import { useComunidade } from '../hooks/useComunidade'
 import { useEffect, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { BedDouble, ChevronLeft, FlaskConical, Heart, Waves, Sparkles, Swords, Trophy, Ticket, Zap } from 'lucide-react'
@@ -205,6 +206,8 @@ function PainelDaVida({
   recuperando: TipoRecuperacao | null
   aoRecuperar: (tipo: TipoRecuperacao) => void
 }) {
+  // Porcentagem vem das regras da comunidade (sql/118); 40% até elas chegarem.
+  const pctPocaoMana = useComunidade().estado?.regras.mp_pocao_pct ?? 40
   const vida = estado.vida
   const regras = estado.hoje.regras
   if (!vida || !regras) return null
@@ -276,7 +279,7 @@ function PainelDaVida({
           >
             <span className="flex items-center gap-2 font-bold text-text">
               <FlaskConical size={16} className="text-mana" aria-hidden="true" />
-              {recuperando === 'pocao_mana' ? 'Bebendo…' : `Poção de Mana: +${regras.pocao_mana ?? 25}`}
+              {recuperando === 'pocao_mana' ? 'Bebendo…' : `Poção de Mana: +${pctPocaoMana}% da Mana`}
             </span>
             <span className="shrink-0 font-mono text-gold">{pocaoMana} de Ouro</span>
           </button>

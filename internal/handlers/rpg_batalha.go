@@ -631,7 +631,7 @@ func (h *RPGHandler) HandleGetExpedicoes(w http.ResponseWriter, r *http.Request)
 		Custos:     CustosPara(sessao.nivel),
 		Hoje:       hoje,
 		Monstros:   lista,
-		CustosMana: CustosDeMana(),
+		CustosMana: CustosDeMana(sessao.nivel, lerRegrasComunidade(sessao.dbClient)),
 	})
 }
 
@@ -732,7 +732,8 @@ func (h *RPGHandler) HandleBatalhar(w http.ResponseWriter, r *http.Request) {
 	if itemSorteado != nil {
 		itemID = itemSorteado.ID
 	}
-	cobrou, ok := cobrarManaDaLuta(w, servico, sessao.userID, CustoManaExpedicao)
+	custoMana := CustoDeMana(LutaExpedicao, sessao.nivel, lerRegrasComunidade(sessao.dbClient))
+	cobrou, ok := cobrarManaDaLuta(w, servico, sessao.userID, custoMana)
 	if !ok {
 		return
 	}
@@ -761,7 +762,7 @@ func (h *RPGHandler) HandleBatalhar(w http.ResponseWriter, r *http.Request) {
 	}
 	if bruto == "" || json.Unmarshal([]byte(bruto), &registro) != nil || (!registro.Ok && registro.Erro == "") {
 		log.Printf("[RPG] Falha ao registrar batalha (user=%s): %s", sessao.userID, bruto)
-		devolverManaDaLuta(servico, sessao.userID, CustoManaExpedicao, cobrou)
+		devolverManaDaLuta(servico, sessao.userID, custoMana, cobrou)
 		responderErroJSON(w, http.StatusServiceUnavailable, "Não foi possível registrar a batalha agora.")
 		return
 	}
@@ -773,7 +774,7 @@ func (h *RPGHandler) HandleBatalhar(w http.ResponseWriter, r *http.Request) {
 		case registro.SemVida:
 			status = http.StatusConflict
 		}
-		devolverManaDaLuta(servico, sessao.userID, CustoManaExpedicao, cobrou)
+		devolverManaDaLuta(servico, sessao.userID, custoMana, cobrou)
 		responderErroJSON(w, status, registro.Erro)
 		return
 	}

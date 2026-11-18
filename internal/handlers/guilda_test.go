@@ -333,4 +333,3 @@ func TestValidarEconomiaGuilda_FaixasEPendente(t *testing.T) {
 		t.Fatal("esperava erro quando teto_pendente_diario supera o teto_diario")
 	}
 }
-

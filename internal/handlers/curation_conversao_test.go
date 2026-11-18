@@ -3,8 +3,8 @@ package handlers
 import (
 	"encoding/json"
 	"reflect"
-	"time"
 	"testing"
+	"time"
 
 	"github.com/JoaoMendes1/anideck/internal/anilist"
 )

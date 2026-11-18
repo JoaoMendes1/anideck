@@ -26,23 +26,38 @@ type RegrasComunidade struct {
 	HPPiso            int  `json:"hp_piso"`
 	DescansoMaxDias   int  `json:"descanso_max_dias"`
 	PrevisoesAtivas   bool `json:"previsoes_ativas"`
+	// Custo de cada luta em % da Mana máxima, Poção de Mana em % e Ouro das recompensas em %
+	// do valor base (sql/118).
+	MPCustoExpedicaoPct int `json:"mp_custo_expedicao_pct"`
+	MPCustoDueloPct     int `json:"mp_custo_duelo_pct"`
+	MPCustoChefePct     int `json:"mp_custo_chefe_pct"`
+	MPCustoMasmorraPct  int `json:"mp_custo_masmorra_pct"`
+	MPPocaoPct          int `json:"mp_pocao_pct"`
+	OuroRecompensaPct   int `json:"ouro_recompensa_pct"`
 }
 
 const chaveRegrasComunidade = "comunidade_regras"
 
-// RegrasComunidadePadrao espelha o valor inicial gravado pelo sql/041, sql/062 e sql/079.
+// RegrasComunidadePadrao espelha o valor gravado pelo sql/118 (escala nova da Mana e do Ouro).
 func RegrasComunidadePadrao() RegrasComunidade {
 	return RegrasComunidade{
-		MPMax:             50,
-		MPPorNivel:        1,
-		MPMaxTeto:         120,
-		MPRegenDia:        20,
-		MPCustoComentario: 5,
+		MPMax:             120,
+		MPPorNivel:        12,
+		MPMaxTeto:         999,
+		MPRegenDia:        60,
+		MPCustoComentario: 12,
 		HPJanelaDias:      14,
 		HPDiasParaCheio:   10,
 		HPPiso:            20,
 		DescansoMaxDias:   14,
 		PrevisoesAtivas:   false,
+
+		MPCustoExpedicaoPct: 5,
+		MPCustoDueloPct:     5,
+		MPCustoChefePct:     8,
+		MPCustoMasmorraPct:  12,
+		MPPocaoPct:          40,
+		OuroRecompensaPct:   200,
 	}
 }
 
@@ -105,6 +120,13 @@ func validarRegrasComunidade(r RegrasComunidade) string {
 		return "O piso da Vitalidade vai de 0 a 90."
 	case r.DescansoMaxDias < 1 || r.DescansoMaxDias > 30:
 		return "O Modo Descanso vai de 1 a 30 dias."
+	case foraDe(r.MPCustoExpedicaoPct, 0, 50) || foraDe(r.MPCustoDueloPct, 0, 50) ||
+		foraDe(r.MPCustoChefePct, 0, 50) || foraDe(r.MPCustoMasmorraPct, 0, 50):
+		return "O custo de Mana das lutas vai de 0% a 50% da Mana máxima."
+	case foraDe(r.MPPocaoPct, 5, 100):
+		return "A Poção de Mana vai de 5% a 100% da Mana máxima."
+	case foraDe(r.OuroRecompensaPct, 50, 500):
+		return "O Ouro das recompensas vai de 50% a 500%."
 	}
 	return ""
 }
@@ -326,3 +348,5 @@ func erroDoBanco(err error) (int, string) {
 	}
 	return 500, "Não foi possível salvar agora."
 }
+
+func foraDe(v, minimo, maximo int) bool { return v < minimo || v > maximo }

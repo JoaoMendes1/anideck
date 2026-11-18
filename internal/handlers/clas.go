@@ -212,6 +212,7 @@ func CompararClasLiga(a, b RankingClaTemporadaItem) int {
 func ChaveReferenciaLigaCla(temporada, claID, userID string) string {
 	return fmt.Sprintf("liga_cla:%s:%s:%s", temporada, claID, userID)
 }
+
 // RegrasFundacao é o que custa fundar um clã: nível mínimo e AniCoins. Os números moram em
 // app_settings e chegam por regras_fundar_cla (sql/096); a tela só os mostra, e criar_cla
 // confere de novo no banco.
@@ -249,7 +250,6 @@ func (h *ClasHandler) HandleRegrasFundacao(w http.ResponseWriter, r *http.Reques
 	w.Header().Set("Content-Type", "application/json")
 	_ = json.NewEncoder(w).Encode(regras)
 }
-
 
 type ClasHandler struct{}
 
