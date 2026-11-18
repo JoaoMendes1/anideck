@@ -150,8 +150,8 @@ export default function Guilda() {
 
   return (
     <div className="w-full min-w-0 max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-10 pt-6 pb-24">
-      <header className="mb-6 select-none">
-        <p className="font-mono text-xs text-muted-2 uppercase tracking-widest mb-1">
+      <header className="mb-4 select-none sm:mb-6">
+        <p className="hidden font-mono text-xs text-muted-2 uppercase tracking-widest mb-1 sm:block">
           // guilda do anideck · progressão & credibilidade
         </p>
         <div className="flex flex-wrap items-end justify-between gap-4">
@@ -163,7 +163,7 @@ export default function Guilda() {
               Rank mede sua constância presente; Especialista de Gênero reconhece sua bagagem acumulada.
             </p>
           </div>
-          <div className="flex flex-wrap items-center gap-2">
+          <div className="-mx-4 flex w-[calc(100%+2rem)] items-center gap-2 overflow-x-auto px-4 pb-1 sm:mx-0 sm:w-auto sm:flex-wrap sm:overflow-visible sm:px-0 sm:pb-0 [&>a]:shrink-0 [&>a]:whitespace-nowrap">
             <Link
               to="/personagem"
               className="inline-flex items-center gap-1.5 px-4 py-2 rounded-full bg-gold/15 border border-gold/40 hover:bg-gold/25 text-xs font-bold text-gold transition-colors"
@@ -174,7 +174,7 @@ export default function Guilda() {
               to="/loja"
               className="inline-flex items-center gap-1.5 px-4 py-2 rounded-full bg-holo-3/15 border border-holo-3/40 hover:bg-holo-3/25 text-xs font-bold text-holo-3 transition-colors"
             >
-              <ShoppingBag size={13} /> Loja Cosmética →
+              <ShoppingBag size={13} /> Loja →
             </Link>
             <Link
               to="/meu-gosto"

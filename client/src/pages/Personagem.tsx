@@ -15,6 +15,7 @@ import EscolhaDeItem from '../components/personagem/EscolhaDeItem'
 import PainelAtributos from '../components/personagem/PainelAtributos'
 import LivroDeHabilidades from '../components/personagem/LivroDeHabilidades'
 import EscolhaDoElenco from '../components/personagem/EscolhaDoElenco'
+import ResumoDeCombate from '../components/personagem/ResumoDeCombate'
 import { obterEquipamentos, type EstadoEquipamento, type SlotId } from '../lib/rpg'
 import {
   ALTURA_DA_ARTE,
@@ -63,7 +64,7 @@ const ROTULO_DE_SECAO = 'font-mono text-xs font-semibold uppercase tracking-wide
 
 function Cabecalho() {
   return (
-    <header className="mb-4 flex items-center gap-1 select-none">
+    <header className="mb-4 hidden items-center gap-1 select-none md:flex">
       <Link
         to="/guilda"
         aria-label="Voltar para a Guilda"
@@ -332,7 +333,7 @@ function FichaDoPersonagem({
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,1fr)_420px] lg:items-start">
         <section
           aria-label="Arte do personagem"
-          className="relative h-[min(62vh,520px)] overflow-hidden rounded-2xl border border-line bg-void lg:h-[680px]"
+          className="relative h-[min(56vh,470px)] overflow-hidden rounded-2xl border border-line bg-void lg:h-[680px]"
           data-cenario={cenario ? dados.cenario : 'padrao'}
           style={{ backgroundImage: cenario ? `${luz}, ${cenario}` : luz }}
         >
@@ -385,6 +386,15 @@ function FichaDoPersonagem({
         </section>
 
         <div className="flex min-w-0 flex-col gap-6">
+          {equipamento && (
+            <ResumoDeCombate
+              estado={equipamento}
+              aoAbrirAtributos={() => {
+                selecionarAba('atributos')
+                document.getElementById('abas-de-combate')?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+              }}
+            />
+          )}
           <div className="flex flex-col gap-2.5">
             <p className="font-mono text-xs uppercase tracking-[0.14em] text-muted-2 m-0">
               Nome do personagem (RPG)
@@ -690,7 +700,7 @@ function FichaDoPersonagem({
       </div>
 
       {/* LINHA 2: Largura toda, com controle segmentado de abas (Status, Atributos, Habilidades) */}
-      <div className="mt-6 flex flex-col gap-4 rounded-2xl border border-line bg-panel-2/40 p-4 sm:p-5">
+      <div id="abas-de-combate" className="mt-6 flex scroll-mt-24 flex-col gap-4 rounded-2xl border border-line bg-panel-2/40 p-4 sm:p-5">
         <div
           role="tablist"
           aria-label="Seções de combate do personagem"
