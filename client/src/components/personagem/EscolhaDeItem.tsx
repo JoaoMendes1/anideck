@@ -136,6 +136,12 @@ export default function EscolhaDeItem({
         </button>
       </div>
 
+      {erro && (
+        <p role="alert" className="m-0 rounded-lg border border-coral/40 bg-coral/10 px-3 py-2 text-xs font-bold text-coral">
+          {erro}
+        </p>
+      )}
+
       {opcoes.length === 0 ? (
         <p className="m-0 text-xs text-muted">Você ainda não tem itens para este slot. Eles vêm de batalhas e da invocação.</p>
       ) : (
@@ -216,11 +222,6 @@ export default function EscolhaDeItem({
         </ul>
       )}
 
-      {erro && (
-        <p role="alert" className="m-0 text-xs font-bold text-coral">
-          {erro}
-        </p>
-      )}
     </div>
   )
 

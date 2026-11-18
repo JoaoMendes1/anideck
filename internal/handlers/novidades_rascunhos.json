@@ -38,5 +38,17 @@
         "caminho": "/novidades"
       }
     ]
+  },
+  {
+    "chave": "2026-11-18-toque-na-base-da-tela",
+    "titulo": "Botões perto do rodapé voltaram a responder",
+    "categoria": "correcao",
+    "resumo": "No celular, alguns botões logo acima da barra de baixo não respondiam ao toque, como o Equipar na troca de joias. A causa era o aviso de mensagens, que ficava invisível por cima deles. Corrigido em todas as telas.",
+    "links": [
+      {
+        "rotulo": "Ver Personagem",
+        "caminho": "/personagem"
+      }
+    ]
   }
 ]

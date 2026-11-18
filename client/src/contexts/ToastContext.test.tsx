@@ -36,4 +36,11 @@ describe('ToastProvider', () => {
     render(<ToastProvider><TelaQueFalha aoCarregar={aoCarregar} /></ToastProvider>)
     expect(cargas).toBe(1)
   })
+
+  it('aviso escondido não bloqueia o toque nos botões da base da tela', () => {
+    const { container } = render(<ToastProvider><span /></ToastProvider>)
+    const caixa = container.querySelector('[role="status"] > div')
+    expect(caixa?.className).toContain('pointer-events-none')
+    expect(caixa?.className).not.toContain('pointer-events-auto')
+  })
 })

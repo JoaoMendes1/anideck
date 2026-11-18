@@ -71,8 +71,9 @@ export function ToastProvider({ children }: { children: ReactNode }) {
             : 'opacity-0 translate-y-3 scale-95'
         }`}
       >
+        {/* Só recebe toque quando aparece: invisível, a caixa ficava sobre os botões da base da tela. */}
         <div
-          className={`pointer-events-auto flex items-start gap-3 p-3.5 sm:p-4 rounded-2xl border backdrop-blur-xl shadow-2xl transition-all ${
+          className={`${toast.visible ? 'pointer-events-auto' : 'pointer-events-none'} flex items-start gap-3 p-3.5 sm:p-4 rounded-2xl border backdrop-blur-xl shadow-2xl transition-all ${
             toast.type === 'success'
               ? 'bg-panel/95 border-green/40 shadow-[0_12px_40px_rgba(34,197,94,0.18)]'
               : toast.type === 'error'
