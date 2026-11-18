@@ -1,14 +1,14 @@
 // client/src/components/personagem/SlotsDoPersonagem.tsx
-// Os cinco slots de equipamento sobre a arte do personagem: arma, armadura e capa à esquerda,
-// botas e joia à direita. Tocar num slot abre a lista daquele slot no painel de atributos.
+// Os sete slots de equipamento sobre a arte do personagem: arma, elmo, armadura e luvas à
+// esquerda; capa, botas e joia à direita. Tocar num slot abre a lista daquele slot no painel de atributos.
 //
 // Arte provisória: o ícone vem do slot e a cor da raridade. A ilustração de cada item entra
 // depois, por id, sem mudar este componente de lugar.
 import IconeDoItem from '../rpg/IconeDoItem'
 import { SLOTS_RPG, estiloDaRaridade, type EstadoEquipamento, type SlotId } from '../../lib/rpg'
 
-const ESQUERDA: SlotId[] = ['arma', 'armadura', 'capa']
-const DIREITA: SlotId[] = ['botas', 'joia']
+const ESQUERDA: SlotId[] = ['arma', 'elmo', 'armadura', 'luvas']
+const DIREITA: SlotId[] = ['capa', 'botas', 'joia']
 
 export default function SlotsDoPersonagem({
   estado,

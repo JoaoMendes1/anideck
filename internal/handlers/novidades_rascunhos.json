@@ -138,5 +138,17 @@
         "caminho": "/deck"
       }
     ]
+  },
+  {
+    "chave": "2026-11-18-equipamentos-classes-conjuntos",
+    "titulo": "Equipamentos novos: elmo, luvas, conjuntos e armas por classe",
+    "categoria": "novidade",
+    "resumo": "Chegaram 41 equipamentos Épicos e Lendários. Agora os itens dão também Magia, Velocidade, Crítico, Dano Crítico e Esquiva. Cada arma é de uma classe (o grimório é da Maga, a lança é do Lanceiro), e o seu herói ganhou dois espaços novos: elmo e luvas. Juntando peças do mesmo conjunto, você ganha bônus com 2 e com 4 peças. Se você trocar de personagem, o que ele não usa volta para o inventário.",
+    "links": [
+      {
+        "rotulo": "Ver Meu Personagem",
+        "caminho": "/personagem"
+      }
+    ]
   }
 ]

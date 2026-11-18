@@ -56,9 +56,9 @@ func TestMontarEstadoEquipamento_ComAprimoramento(t *testing.T) {
 		{Quantidade: 1, Aprimoramento: 4, Item: &espada},
 		{Quantidade: 2, Aprimoramento: 6, Item: &botas},
 	}
-	semNada := MontarEstadoEquipamento(10, []linhaInventarioRPG{{Quantidade: 1, Item: &espada}, {Quantidade: 2, Item: &botas}},
+	semNada := MontarEstadoEquipamento(10, "", []linhaInventarioRPG{{Quantidade: 1, Item: &espada}, {Quantidade: 2, Item: &botas}},
 		map[string]string{"arma": espada.ID, "botas": botas.ID}, PrimariosRPG{})
-	estado := MontarEstadoEquipamento(10, inventario, map[string]string{"arma": espada.ID, "botas": botas.ID}, PrimariosRPG{})
+	estado := MontarEstadoEquipamento(10, "", inventario, map[string]string{"arma": espada.ID, "botas": botas.ID}, PrimariosRPG{})
 
 	if estado.Atributos.Ataque-semNada.Atributos.Ataque != 4 || estado.Atributos.Defesa-semNada.Atributos.Defesa != 6 {
 		t.Errorf("o aprimoramento deveria somar 4 de Ataque (+4) e 6 de Defesa (+6): %+v vs %+v", estado.Atributos, semNada.Atributos)

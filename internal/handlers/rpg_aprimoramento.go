@@ -58,7 +58,7 @@ func AplicarAprimoramento(item ItemRPG, aprimoramento int) ItemRPG {
 		}
 		return valor + max(aprimoramento, (valor*percentualPorAprimoramento*aprimoramento+50)/100)
 	}
-	item.Vida, item.Ataque, item.Defesa = soma(item.Vida), soma(item.Ataque), soma(item.Defesa)
+	item.Vida, item.Ataque, item.Defesa, item.Magia = soma(item.Vida), soma(item.Ataque), soma(item.Defesa), soma(item.Magia)
 	item.Aprimoramento = aprimoramento
 	return item
 }

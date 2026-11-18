@@ -74,7 +74,7 @@ func TestValidarDistribuicao(t *testing.T) {
 }
 
 func TestMontarEstadoEquipamento_ComPontos(t *testing.T) {
-	estado := MontarEstadoEquipamento(10, nil, nil, PrimariosRPG{Forca: 4, Sorte: 9})
+	estado := MontarEstadoEquipamento(10, "", nil, nil, PrimariosRPG{Forca: 4, Sorte: 9})
 	// 5 disponíveis: a Sorte é cortada até caber.
 	if estado.PontosDisponiveis != 5 || estado.Pontos != (PrimariosRPG{Forca: 4, Sorte: 1}) {
 		t.Fatalf("pontos não foram limitados: %+v", estado.Pontos)

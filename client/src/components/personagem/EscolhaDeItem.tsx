@@ -7,7 +7,7 @@
 // Fecha no X, no Esc e no toque fora. A troca é conferida e gravada no servidor.
 import { useEffect, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
-import { Hammer, Lock, X } from 'lucide-react'
+import { Ban, Hammer, Layers, Lock, X } from 'lucide-react'
 import {
   SLOTS_RPG,
   aprimorarItem,
@@ -15,14 +15,16 @@ import {
   equiparItemRPG,
   estiloDaRaridade,
   resumoDoItem,
+  textoDasClasses,
   type EstadoEquipamento,
   type SlotId,
 } from '../../lib/rpg'
 import IconeDoItem from '../rpg/IconeDoItem'
 import IconeOuro from '../IconeOuro'
 
-// Arma, armadura e capa ficam na coluna da esquerda; o painel abre à direita delas.
-const SLOTS_DA_ESQUERDA: SlotId[] = ['arma', 'armadura', 'capa']
+// Arma, elmo, armadura e luvas ficam na coluna da esquerda; o painel abre à direita delas.
+// Repete as colunas de SlotsDoPersonagem.
+const SLOTS_DA_ESQUERDA: SlotId[] = ['arma', 'elmo', 'armadura', 'luvas']
 const CONSULTA_DESKTOP = '(min-width: 1024px)'
 
 function useDesktop(): boolean {
@@ -151,6 +153,8 @@ export default function EscolhaDeItem({
             const dif = diferencaDaTroca(noSlot, item)
             const nivel = item.aprimoramento ?? 0
             const custo = item.custo_aprimorar ?? 0
+            const classes = textoDasClasses(item)
+            const conjunto = item.conjunto ? (estado.conjuntos ?? []).find((c) => c.id === item.conjunto) : undefined
             return (
               <li key={item.id} className={`flex flex-wrap items-center gap-2 rounded-xl border p-2.5 ${estilo.borda} ${estilo.fundo}`}>
                 <span className={`flex h-10 w-11 shrink-0 items-center justify-center overflow-hidden rounded-lg bg-void/50 ${estilo.texto}`}>
@@ -165,15 +169,32 @@ export default function EscolhaDeItem({
                   <p className="m-0 text-xs text-muted">
                     {estilo.rotulo} · {resumoDoItem(item)}
                   </p>
-                  {!item.equipado && !item.bloqueado && (
+                  {item.descricao && <p className="m-0 text-xs text-muted/80 italic">{item.descricao}</p>}
+                  {classes && (
+                    <p className={`m-0 text-xs ${item.nao_serve ? 'text-coral' : 'text-muted'}`}>Só para {classes}</p>
+                  )}
+                  {item.conjunto && (
+                    <p className="m-0 inline-flex items-center gap-1 text-xs text-holo-2">
+                      <Layers size={11} aria-hidden="true" />
+                      Conjunto {conjunto?.nome ?? item.conjunto}
+                      {conjunto ? ` · ${conjunto.pecas} em uso` : ''}
+                    </p>
+                  )}
+                  {!item.equipado && !item.bloqueado && !item.nao_serve && (
                     <p className="m-0 flex flex-wrap gap-x-2 font-mono text-xs">
                       <Diferenca valor={dif.vida} rotulo="Vida" />
                       <Diferenca valor={dif.ataque} rotulo="Ataque" />
                       <Diferenca valor={dif.defesa} rotulo="Defesa" />
+                      <Diferenca valor={dif.magia} rotulo="Magia" />
+                      <Diferenca valor={dif.velocidade} rotulo="Velocidade" />
                     </p>
                   )}
                 </div>
-                {item.bloqueado ? (
+                {item.nao_serve && !item.equipado ? (
+                  <span className="inline-flex shrink-0 items-center gap-1 font-mono text-xs text-coral">
+                    <Ban size={12} aria-hidden="true" /> outra classe
+                  </span>
+                ) : item.bloqueado ? (
                   <span className="inline-flex shrink-0 items-center gap-1 font-mono text-xs text-muted">
                     <Lock size={12} aria-hidden="true" /> nível {item.nivel_minimo}
                   </span>

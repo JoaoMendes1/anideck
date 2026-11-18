@@ -47,7 +47,19 @@ type ItemRPG struct {
 	Ataque      int    `json:"ataque"`
 	Defesa      int    `json:"defesa"`
 	NivelMinimo int    `json:"nivel_minimo"`
-	// Aprimoramento é de 0 a 10 (sql/083). Vida, Ataque e Defesa acima já vêm com ele somado
+	// Atributos além de Vida, Ataque e Defesa (sql/121). Chances em milésimos, como em
+	// AtributosRPG; DanoCritico soma pontos percentuais ao multiplicador.
+	Magia         int `json:"magia"`
+	Velocidade    int `json:"velocidade"`
+	CriticoPorMil int `json:"critico_por_mil"`
+	DanoCritico   int `json:"dano_critico"`
+	EsquivaPorMil int `json:"esquiva_por_mil"`
+	// Classes que podem usar o item: nil serve a todas, lista vazia não serve a nenhuma.
+	Classes []string `json:"classes"`
+	// PersonagemExclusivo, quando preenchido, vale no lugar das classes.
+	PersonagemExclusivo string `json:"personagem_exclusivo,omitempty"`
+	Conjunto            string `json:"conjunto,omitempty"`
+	// Aprimoramento é de 0 a 10 (sql/083). Vida, Ataque, Defesa e Magia já vêm com ele somado
 	// quando o item é do jogador; no catálogo, é sempre 0.
 	Aprimoramento int `json:"aprimoramento"`
 }
@@ -59,13 +71,15 @@ type ItemDoInventario struct {
 	Quantidade int  `json:"quantidade"`
 	Equipado   bool `json:"equipado"`
 	Bloqueado  bool `json:"bloqueado"`
+	// NaoServe é o item que a classe do personagem não usa: aparece na lista, mas não equipa.
+	NaoServe bool `json:"nao_serve"`
 	// AprimoramentoMaximo é o teto da raridade; CustoAprimorar é o preço em Ouro do próximo
 	// nível, 0 quando já está no teto.
 	AprimoramentoMaximo int `json:"aprimoramento_maximo"`
 	CustoAprimorar      int `json:"custo_aprimorar"`
 }
 
-// SlotRPG é um dos cinco lugares de equipamento. Item nil é slot vazio.
+// SlotRPG é um dos sete lugares de equipamento. Item nil é slot vazio.
 type SlotRPG struct {
 	Slot string   `json:"slot"`
 	Item *ItemRPG `json:"item,omitempty"`
@@ -87,12 +101,38 @@ type EstadoEquipamento struct {
 	Habilidades []HabilidadeRPG `json:"habilidades"`
 	// Ouro disponível para aprimorar (sql/081).
 	Ouro int `json:"ouro"`
+	// Conjuntos com ao menos uma peça em uso, com o bônus de cada faixa.
+	Conjuntos []ConjuntoEmUso `json:"conjuntos"`
 }
 
 // SlotsRPG devolve os slots na ordem em que a tela os mostra. A lista repete o CHECK de
-// rpg_itens e de rpg_equipados e a função rpg_equipar_item (sql/071).
+// rpg_itens e de rpg_equipados e a função rpg_equipar_item (sql/121).
 func SlotsRPG() []string {
-	return []string{"arma", "armadura", "capa", "botas", "joia"}
+	return []string{"arma", "elmo", "armadura", "luvas", "capa", "botas", "joia"}
+}
+
+// ItemServe diz se o personagem pode usar o item. Repete rpg_item_serve (sql/121): o banco
+// recusa equipar, e aqui o item que sobrou num slot deixa de somar.
+func ItemServe(item ItemRPG, personagemBase string) bool {
+	if personagemBase == "" {
+		personagemBase = personagemBasePadrao
+	}
+	if item.PersonagemExclusivo != "" {
+		return item.PersonagemExclusivo == personagemBase
+	}
+	if item.Classes == nil {
+		return true
+	}
+	base, conhecido := PersonagensBase()[personagemBase]
+	if !conhecido {
+		base = PersonagensBase()[personagemBasePadrao]
+	}
+	for _, c := range item.Classes {
+		if c == base.Classe {
+			return true
+		}
+	}
+	return false
 }
 
 // SlotRPGValido diz se o slot existe.
@@ -118,15 +158,37 @@ func AtributosBase(nivel int) AtributosRPG {
 	return DerivarAtributos(nivel, PrimariosBase(nivel))
 }
 
-// SomarAtributos junta os atributos base aos dos itens equipados.
+// Tetos das chances depois dos itens: acima disso o combate perde a graça (crítico quase
+// certo, golpe que quase nunca acerta).
+const (
+	tetoCriticoPorMil = 750
+	tetoEsquivaPorMil = 400
+)
+
+// SomarAtributos junta os atributos base aos dos itens equipados e aos bônus de conjunto.
 func SomarAtributos(base AtributosRPG, itens []ItemRPG) AtributosRPG {
 	total := base
 	for _, i := range itens {
-		total.Vida += i.Vida
-		total.Ataque += i.Ataque
-		total.Defesa += i.Defesa
+		total = somarItem(total, i)
 	}
+	for _, c := range ConjuntosEmUso(itens) {
+		total = somarItem(total, c.bonusAtivo)
+	}
+	total.CriticoPorMil = min(tetoCriticoPorMil, total.CriticoPorMil)
+	total.EsquivaPorMil = min(tetoEsquivaPorMil, total.EsquivaPorMil)
 	total.Poder = CalcularPoder(total)
+	return total
+}
+
+func somarItem(total AtributosRPG, i ItemRPG) AtributosRPG {
+	total.Vida += i.Vida
+	total.Ataque += i.Ataque
+	total.Defesa += i.Defesa
+	total.Magia += i.Magia
+	total.Velocidade += i.Velocidade
+	total.CriticoPorMil += i.CriticoPorMil
+	total.DanoCritico += i.DanoCritico
+	total.EsquivaPorMil += i.EsquivaPorMil
 	return total
 }
 
@@ -159,9 +221,10 @@ func interpretarInventarioRPG(dados []byte) ([]linhaInventarioRPG, error) {
 }
 
 // MontarEstadoEquipamento calcula o que a tela mostra e o que o combate usa. Um item
-// equipado só conta se o jogador ainda o possui e se o nível o alcança: desmarcar episódios
-// reduz o XP, e o item acima do nível fica no slot sem somar atributo, em vez de dar erro.
-func MontarEstadoEquipamento(nivel int, inventario []linhaInventarioRPG, equipados map[string]string, pontos PrimariosRPG) EstadoEquipamento {
+// equipado só conta se o jogador ainda o possui, se serve ao personagem e se o nível o
+// alcança: desmarcar episódios reduz o XP, e o item acima do nível fica no slot sem somar
+// atributo, em vez de dar erro.
+func MontarEstadoEquipamento(nivel int, personagemBase string, inventario []linhaInventarioRPG, equipados map[string]string, pontos PrimariosRPG) EstadoEquipamento {
 	if nivel < 1 {
 		nivel = 1
 	}
@@ -182,7 +245,7 @@ func MontarEstadoEquipamento(nivel int, inventario []linhaInventarioRPG, equipad
 		copia := item
 		slots = append(slots, SlotRPG{Slot: slot, Item: &copia})
 		equipadoNoSlot[item.ID] = true
-		if nivel >= item.NivelMinimo {
+		if nivel >= item.NivelMinimo && ItemServe(item, personagemBase) {
 			emUso = append(emUso, item)
 		}
 	}
@@ -203,6 +266,7 @@ func MontarEstadoEquipamento(nivel int, inventario []linhaInventarioRPG, equipad
 			Quantidade:          l.Quantidade,
 			Equipado:            equipadoNoSlot[l.Item.ID],
 			Bloqueado:           nivel < l.Item.NivelMinimo,
+			NaoServe:            !ItemServe(*l.Item, personagemBase),
 			AprimoramentoMaximo: teto,
 			CustoAprimorar:      custo,
 		})
@@ -230,12 +294,15 @@ func MontarEstadoEquipamento(nivel int, inventario []linhaInventarioRPG, equipad
 		PontosDisponiveis: disponiveis,
 		Slots:             slots,
 		Inventario:        lista,
+		Conjuntos:         ConjuntosEmUso(emUso),
 	}
 }
 
 // carregarEstadoEquipamento lê inventário e slots do jogador e monta o estado. É a mesma
 // conta para a tela e para o combate, que não aceita atributo vindo do navegador.
-func carregarEstadoEquipamento(dbClient *supabase.Client, userID string, nivel int, pontos PrimariosRPG) (EstadoEquipamento, error) {
+func carregarEstadoEquipamento(dbClient *supabase.Client, userID, personagemBase string, nivel int, pontos PrimariosRPG) (EstadoEquipamento, error) {
+	// Sem as colunas do sql/121: esta é a leitura de reserva (primeira visita, kit inicial),
+	// e pedir coluna que ainda não existe derrubaria a leitura inteira.
 	dados, _, err := dbClient.From("rpg_inventario").
 		Select("quantidade,aprimoramento,rpg_itens(id,slot,nome,descricao,raridade,vida,ataque,defesa,nivel_minimo)", "", false).
 		Eq("user_id", userID).
@@ -267,7 +334,7 @@ func carregarEstadoEquipamento(dbClient *supabase.Client, userID string, nivel i
 		equipados[l.Slot] = l.ItemID
 	}
 
-	return MontarEstadoEquipamento(nivel, inventario, equipados, pontos), nil
+	return MontarEstadoEquipamento(nivel, personagemBase, inventario, equipados, pontos), nil
 }
 
 // RPGHandler responde pelas rotas de jogo do personagem: equipamentos, batalhas e invocação.

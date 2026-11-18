@@ -9,11 +9,12 @@ import {
   porMilEmPorcento,
   resumoDoItem,
   somaDosPontos,
+  textoDasClasses,
 } from './rpg'
 
 describe('rpg - equipamentos', () => {
   it('lista os cinco slots na ordem do servidor', () => {
-    expect(SLOTS_RPG.map((s) => s.id)).toEqual(['arma', 'armadura', 'capa', 'botas', 'joia'])
+    expect(SLOTS_RPG.map((s) => s.id)).toEqual(['arma', 'elmo', 'armadura', 'luvas', 'capa', 'botas', 'joia'])
   })
 
   it('resume só os atributos que o item dá', () => {
@@ -24,8 +25,8 @@ describe('rpg - equipamentos', () => {
 
   it('calcula ganho e perda da troca', () => {
     const atual = { vida: 0, ataque: 4, defesa: 0 }
-    expect(diferencaDaTroca(atual, { vida: 0, ataque: 10, defesa: 1, bloqueado: false })).toEqual({ vida: 0, ataque: 6, defesa: 1 })
-    expect(diferencaDaTroca(undefined, { vida: 20, ataque: 0, defesa: 2, bloqueado: false })).toEqual({ vida: 20, ataque: 0, defesa: 2 })
+    expect(diferencaDaTroca(atual, { vida: 0, ataque: 10, defesa: 1, bloqueado: false })).toEqual({ vida: 0, ataque: 6, defesa: 1, magia: 0, velocidade: 0 })
+    expect(diferencaDaTroca(undefined, { vida: 20, ataque: 0, defesa: 2, bloqueado: false })).toEqual({ vida: 20, ataque: 0, defesa: 2, magia: 0, velocidade: 0 })
   })
 
   it('item bloqueado pelo nível não soma na troca', () => {
@@ -33,7 +34,27 @@ describe('rpg - equipamentos', () => {
       vida: 0,
       ataque: -4,
       defesa: 0,
+      magia: 0,
+      velocidade: 0,
     })
+  })
+
+  it('item de outra classe não soma na troca', () => {
+    expect(diferencaDaTroca({ vida: 0, ataque: 4, defesa: 0 }, { vida: 0, ataque: 45, defesa: 0, bloqueado: false, nao_serve: true }).ataque).toBe(-4)
+  })
+
+  it('resume os atributos novos', () => {
+    expect(resumoDoItem({ vida: 0, ataque: 0, defesa: 0, magia: 12, critico_por_mil: 50, dano_critico: 18, esquiva_por_mil: 15, velocidade: 3 })).toBe(
+      '+12 Magia · +3 Velocidade · +5% Crítico · +18% Dano Crítico · +1,5% Esquiva',
+    )
+  })
+
+  it('escreve as classes que usam o item', () => {
+    expect(textoDasClasses({ classes: null })).toBe('')
+    expect(textoDasClasses({ classes: [] })).toBe('')
+    expect(textoDasClasses({ classes: ['assassina'] })).toBe('Assassina')
+    expect(textoDasClasses({ classes: ['espadachim', 'paladina'] })).toBe('Espadachim e Paladina')
+    expect(textoDasClasses({ classes: ['maga', 'paladina', 'guerreiro'] })).toBe('Maga, Paladina e Guerreiro')
   })
 
   it('raridade desconhecida cai em comum', () => {

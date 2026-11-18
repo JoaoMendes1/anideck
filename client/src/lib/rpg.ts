@@ -3,7 +3,7 @@
 //
 // Os números de combate (Vida, Ataque, Defesa) são calculados no servidor a partir do nível
 // e dos itens equipados. A tela só mostra; nada daqui é enviado de volta como atributo.
-import { Footprints, Gem, Shield, Shirt, Sword, type LucideIcon } from 'lucide-react'
+import { Footprints, Gem, HandFist, HardHat, Shield, Shirt, Sword, type LucideIcon } from 'lucide-react'
 import { supabase } from './supabase'
 import { avisarOuroMudou } from './hud'
 
@@ -55,7 +55,7 @@ export function textoDaMaestria(h: Pick<HabilidadeRPG, 'tipo' | 'maestria' | 'fa
   return `${nome} · faltam ${faltam} ${faltam === 1 ? 'uso' : 'usos'}`
 }
 
-export type SlotId = 'arma' | 'armadura' | 'capa' | 'botas' | 'joia'
+export type SlotId = 'arma' | 'elmo' | 'armadura' | 'luvas' | 'capa' | 'botas' | 'joia'
 export type Raridade = 'comum' | 'raro' | 'epico' | 'lendario'
 
 export interface ItemRPG {
@@ -68,14 +68,26 @@ export interface ItemRPG {
   ataque: number
   defesa: number
   nivel_minimo: number
-  /** De 0 a 10 (sql/083); Vida, Ataque e Defesa já vêm com ele somado. */
+  /** De 0 a 10 (sql/083); Vida, Ataque, Defesa e Magia já vêm com ele somado. */
   aprimoramento?: number
+  /** Atributos do sql/121. Chances em milésimos; dano_critico em pontos percentuais. */
+  magia?: number
+  velocidade?: number
+  critico_por_mil?: number
+  dano_critico?: number
+  esquiva_por_mil?: number
+  /** Classes que usam o item: null ou ausente serve a todas; lista vazia, a nenhuma. */
+  classes?: string[] | null
+  personagem_exclusivo?: string
+  conjunto?: string
 }
 
 export interface ItemDoInventario extends ItemRPG {
   quantidade: number
   equipado: boolean
   bloqueado: boolean
+  /** A classe do personagem não usa este item: aparece, mas não equipa. */
+  nao_serve?: boolean
   /** Teto de aprimoramento da raridade. */
   aprimoramento_maximo?: number
   /** Preço em Ouro do próximo nível; 0 quando já está no teto. */
@@ -99,6 +111,35 @@ export interface EstadoEquipamento {
   habilidades?: HabilidadeRPG[]
   /** Ouro disponível para aprimorar. */
   ouro?: number
+  /** Conjuntos com ao menos uma peça em uso. */
+  conjuntos?: ConjuntoEmUso[]
+}
+
+export interface ConjuntoEmUso {
+  id: string
+  nome: string
+  pecas: number
+  bonus_2: string
+  bonus_4?: string
+  ativo_2: boolean
+  ativo_4: boolean
+}
+
+/** Nome de cada classe, para o aviso de quem usa o item. Repete as classes de PersonagensBase (Go). */
+export const ROTULO_DA_CLASSE: Record<string, string> = {
+  espadachim: 'Espadachim',
+  lanceiro: 'Lanceiro',
+  assassina: 'Assassina',
+  maga: 'Maga',
+  guerreiro: 'Guerreiro',
+  paladina: 'Paladina',
+}
+
+/** "Espadachim e Paladina", ou vazio quando o item serve a todos. */
+export function textoDasClasses(item: Pick<ItemRPG, 'classes'>): string {
+  if (!item.classes || item.classes.length === 0) return ''
+  const nomes = item.classes.map((c) => ROTULO_DA_CLASSE[c] ?? c)
+  return nomes.length === 1 ? nomes[0] : `${nomes.slice(0, -1).join(', ')} e ${nomes[nomes.length - 1]}`
 }
 
 /** O que cada atributo primário faz, na ordem da tela. O efeito é texto: a conta é do servidor. */
@@ -127,7 +168,9 @@ export function porMilEmPorcento(valor: number | undefined): string {
 // depois, por id, sem mudar regra.
 export const SLOTS_RPG: { id: SlotId; rotulo: string; Icone: LucideIcon }[] = [
   { id: 'arma', rotulo: 'Arma', Icone: Sword },
+  { id: 'elmo', rotulo: 'Elmo', Icone: HardHat },
   { id: 'armadura', rotulo: 'Armadura', Icone: Shield },
+  { id: 'luvas', rotulo: 'Luvas', Icone: HandFist },
   { id: 'capa', rotulo: 'Capa', Icone: Shirt },
   { id: 'botas', rotulo: 'Botas', Icone: Footprints },
   { id: 'joia', rotulo: 'Joia', Icone: Gem },
@@ -147,27 +190,37 @@ export function estiloDaRaridade(raridade: string | undefined) {
 }
 
 /** Texto curto dos atributos de um item, só com os que ele dá ("+4 Ataque · +2 Defesa"). */
-export function resumoDoItem(item: Pick<ItemRPG, 'vida' | 'ataque' | 'defesa'>): string {
+export function resumoDoItem(
+  item: Pick<ItemRPG, 'vida' | 'ataque' | 'defesa'> &
+    Partial<Pick<ItemRPG, 'magia' | 'velocidade' | 'critico_por_mil' | 'dano_critico' | 'esquiva_por_mil'>>,
+): string {
   const partes: string[] = []
   if (item.vida > 0) partes.push(`+${item.vida} Vida`)
   if (item.ataque > 0) partes.push(`+${item.ataque} Ataque`)
   if (item.defesa > 0) partes.push(`+${item.defesa} Defesa`)
+  if ((item.magia ?? 0) > 0) partes.push(`+${item.magia} Magia`)
+  if ((item.velocidade ?? 0) > 0) partes.push(`+${item.velocidade} Velocidade`)
+  if ((item.critico_por_mil ?? 0) > 0) partes.push(`+${porMilEmPorcento(item.critico_por_mil)} Crítico`)
+  if ((item.dano_critico ?? 0) > 0) partes.push(`+${item.dano_critico}% Dano Crítico`)
+  if ((item.esquiva_por_mil ?? 0) > 0) partes.push(`+${porMilEmPorcento(item.esquiva_por_mil)} Esquiva`)
   return partes.length ? partes.join(' · ') : 'Sem atributos'
 }
 
 /**
  * Diferença de atributos ao trocar o item do slot pelo candidato. Positivo é ganho.
- * Item bloqueado pelo nível não soma, então a troca para ele mostra só a perda.
+ * Item bloqueado pelo nível ou de outra classe não soma, então a troca para ele mostra só a perda.
  */
 export function diferencaDaTroca(
-  atual: Pick<ItemRPG, 'vida' | 'ataque' | 'defesa'> | undefined,
-  candidato: Pick<ItemDoInventario, 'vida' | 'ataque' | 'defesa' | 'bloqueado'>,
-): { vida: number; ataque: number; defesa: number } {
-  const somaDoCandidato = candidato.bloqueado ? { vida: 0, ataque: 0, defesa: 0 } : candidato
+  atual: Pick<ItemRPG, 'vida' | 'ataque' | 'defesa' | 'magia' | 'velocidade'> | undefined,
+  candidato: Pick<ItemDoInventario, 'vida' | 'ataque' | 'defesa' | 'magia' | 'velocidade' | 'bloqueado' | 'nao_serve'>,
+): { vida: number; ataque: number; defesa: number; magia: number; velocidade: number } {
+  const soma = candidato.bloqueado || candidato.nao_serve ? undefined : candidato
   return {
-    vida: somaDoCandidato.vida - (atual?.vida ?? 0),
-    ataque: somaDoCandidato.ataque - (atual?.ataque ?? 0),
-    defesa: somaDoCandidato.defesa - (atual?.defesa ?? 0),
+    vida: (soma?.vida ?? 0) - (atual?.vida ?? 0),
+    ataque: (soma?.ataque ?? 0) - (atual?.ataque ?? 0),
+    defesa: (soma?.defesa ?? 0) - (atual?.defesa ?? 0),
+    magia: (soma?.magia ?? 0) - (atual?.magia ?? 0),
+    velocidade: (soma?.velocidade ?? 0) - (atual?.velocidade ?? 0),
   }
 }
 

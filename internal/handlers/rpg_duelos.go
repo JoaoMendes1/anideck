@@ -302,11 +302,11 @@ func OrdenarOponentes(lista []OponenteDeDuelo, meuNivel int) {
 // (quem nunca abriu a ficha), luta só com a base: o kit é entregue na primeira visita dele.
 func fichaDeDuelo(ctx contextoPersonagem) CombatenteRPG {
 	nivel := CalcularNivelERank(ctx.xpTotal, ctx.ranks).Nivel
-	estado := MontarEstadoEquipamento(nivel, ctx.inventario, ctx.equipados, ctx.pontos)
 	base := ""
 	if ctx.linha != nil {
 		base = ctx.linha.PersonagemBase
 	}
+	estado := MontarEstadoEquipamento(nivel, base, ctx.inventario, ctx.equipados, ctx.pontos)
 	estado.Habilidades = AplicarMaestria(LivroDeHabilidades(base, nivel), ctx.maestria)
 	c := CombatenteDoEstado(estado)
 	c.Elemento = elementoDoJogador(ctx)

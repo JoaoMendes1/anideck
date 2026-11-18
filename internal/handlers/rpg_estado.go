@@ -219,19 +219,19 @@ func carregarContextoPersonagemAntigo(dbClient *supabase.Client, userID string) 
 // não recebeu o kit, e só então o kit é entregue e lido de novo.
 func equipamentoDoContexto(dbClient *supabase.Client, userID string, ctx contextoPersonagem) (EstadoEquipamento, error) {
 	nivel := CalcularNivelERank(ctx.xpTotal, ctx.ranks).Nivel
-	var estado EstadoEquipamento
-	if ctx.inventarioLido && len(ctx.inventario) > 0 {
-		estado = MontarEstadoEquipamento(nivel, ctx.inventario, ctx.equipados, ctx.pontos)
-	} else {
-		dbClient.Rpc("rpg_garantir_kit_inicial", "", map[string]interface{}{})
-		var err error
-		if estado, err = carregarEstadoEquipamento(dbClient, userID, nivel, ctx.pontos); err != nil {
-			return EstadoEquipamento{}, err
-		}
-	}
 	base := ""
 	if ctx.linha != nil {
 		base = ctx.linha.PersonagemBase
+	}
+	var estado EstadoEquipamento
+	if ctx.inventarioLido && len(ctx.inventario) > 0 {
+		estado = MontarEstadoEquipamento(nivel, base, ctx.inventario, ctx.equipados, ctx.pontos)
+	} else {
+		dbClient.Rpc("rpg_garantir_kit_inicial", "", map[string]interface{}{})
+		var err error
+		if estado, err = carregarEstadoEquipamento(dbClient, userID, base, nivel, ctx.pontos); err != nil {
+			return EstadoEquipamento{}, err
+		}
 	}
 	estado.Habilidades = AplicarMaestria(LivroDeHabilidades(base, nivel), ctx.maestria)
 	estado.Ouro = ctx.ouro

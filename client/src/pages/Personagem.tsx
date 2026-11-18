@@ -13,6 +13,7 @@ import PainelEquipamentos from '../components/personagem/PainelEquipamentos'
 import SlotsDoPersonagem from '../components/personagem/SlotsDoPersonagem'
 import EscolhaDeItem from '../components/personagem/EscolhaDeItem'
 import PainelAtributos from '../components/personagem/PainelAtributos'
+import ConjuntosEmUso from '../components/personagem/ConjuntosEmUso'
 import LivroDeHabilidades from '../components/personagem/LivroDeHabilidades'
 import EscolhaDoElenco from '../components/personagem/EscolhaDoElenco'
 import ResumoDeCombate from '../components/personagem/ResumoDeCombate'
@@ -751,7 +752,12 @@ function FichaDoPersonagem({
         </div>
 
         <div role="tabpanel">
-          {abaAtiva === 'status' && <PainelEquipamentos estado={equipamento} />}
+          {abaAtiva === 'status' && (
+            <div className="flex flex-col gap-4">
+              <PainelEquipamentos estado={equipamento} />
+              {equipamento && <ConjuntosEmUso estado={equipamento} />}
+            </div>
+          )}
           {abaAtiva === 'atributos' &&
             (equipamento ? (
               <PainelAtributos estado={equipamento} aoAtualizar={aoAtualizarEquipamento} />

@@ -54,18 +54,18 @@ func TestMontarEstadoEquipamento(t *testing.T) {
 	}
 
 	t.Run("soma só os itens equipados e alcançados", func(t *testing.T) {
-		estado := MontarEstadoEquipamento(10, inventario, map[string]string{"arma": "espada_de_ferro", "armadura": "gibao"}, PrimariosRPG{})
+		estado := MontarEstadoEquipamento(10, "", inventario, map[string]string{"arma": "espada_de_ferro", "armadura": "gibao"}, PrimariosRPG{})
 		base := AtributosBase(10)
 		if estado.Atributos.Vida != base.Vida+20 || estado.Atributos.Ataque != base.Ataque+4 || estado.Atributos.Defesa != base.Defesa+2 {
 			t.Errorf("atributos errados: base %+v, total %+v", base, estado.Atributos)
 		}
-		if len(estado.Slots) != 5 || estado.Slots[0].Slot != "arma" || estado.Slots[0].Item == nil || estado.Slots[2].Item != nil {
+		if len(estado.Slots) != 7 || estado.Slots[0].Slot != "arma" || estado.Slots[0].Item == nil || estado.Slots[4].Item != nil {
 			t.Errorf("slots errados: %+v", estado.Slots)
 		}
 	})
 
 	t.Run("item acima do nível fica no slot mas não soma", func(t *testing.T) {
-		estado := MontarEstadoEquipamento(10, inventario, map[string]string{"arma": "lamina_primordial"}, PrimariosRPG{})
+		estado := MontarEstadoEquipamento(10, "", inventario, map[string]string{"arma": "lamina_primordial"}, PrimariosRPG{})
 		if estado.Slots[0].Item == nil || estado.Slots[0].Item.ID != "lamina_primordial" {
 			t.Fatalf("o item deveria continuar no slot: %+v", estado.Slots[0])
 		}
@@ -75,8 +75,8 @@ func TestMontarEstadoEquipamento(t *testing.T) {
 	})
 
 	t.Run("item equipado que o jogador não possui ou de outro slot é ignorado", func(t *testing.T) {
-		estado := MontarEstadoEquipamento(60, inventario, map[string]string{"arma": "item_fantasma", "botas": "gibao"}, PrimariosRPG{})
-		if estado.Slots[0].Item != nil || estado.Slots[3].Item != nil {
+		estado := MontarEstadoEquipamento(60, "", inventario, map[string]string{"arma": "item_fantasma", "botas": "gibao"}, PrimariosRPG{})
+		if estado.Slots[0].Item != nil || estado.Slots[5].Item != nil {
 			t.Errorf("slots deveriam ficar vazios: %+v", estado.Slots)
 		}
 		if estado.Atributos != SomarAtributos(AtributosBase(60), nil) {
@@ -85,7 +85,7 @@ func TestMontarEstadoEquipamento(t *testing.T) {
 	})
 
 	t.Run("inventário marca equipado e bloqueado e vem em ordem de slot", func(t *testing.T) {
-		estado := MontarEstadoEquipamento(10, inventario, map[string]string{"arma": "espada_de_ferro"}, PrimariosRPG{})
+		estado := MontarEstadoEquipamento(10, "", inventario, map[string]string{"arma": "espada_de_ferro"}, PrimariosRPG{})
 		ordem := []string{"espada_de_ferro", "lamina_primordial", "gibao", "botas_raras"}
 		for i, item := range estado.Inventario {
 			if item.ID != ordem[i] {

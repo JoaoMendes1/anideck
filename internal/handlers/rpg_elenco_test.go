@@ -15,7 +15,7 @@ import (
 // Constituição, itens da faixa e o livro de habilidades da classe.
 func jogadorDoElenco(base string, nivel int, item ItemRPG) CombatenteRPG {
 	p := PontosDisponiveis(nivel)
-	est := MontarEstadoEquipamento(nivel, nil, nil, PrimariosRPG{Forca: p / 2, Constituicao: p - p/2})
+	est := MontarEstadoEquipamento(nivel, "", nil, nil, PrimariosRPG{Forca: p / 2, Constituicao: p - p/2})
 	return CombatenteDoEstado(EstadoEquipamento{
 		Atributos:   SomarAtributos(est.Base, []ItemRPG{item}),
 		Habilidades: LivroDeHabilidades(base, nivel),
