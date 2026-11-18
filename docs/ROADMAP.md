@@ -865,6 +865,8 @@ Motivo: o beta vai receber gente nova, e a primeira impressão decide se a pesso
 - [x] 18.9p **Celular compacto (1ª leva) e busca do AniDeck:** escala menor no celular, botões e títulos menores, Deck sem o "Bem-vindo" e o "Buscar Anime", Guilda, painel do topo (HP), Expedições, Masmorras e Rankings compactos; busca de telas e funções na lupa e no Ctrl+K. (#293)
 - [ ] 18.9q Celular compacto, 2ª leva: Personagem (abas), Invocação, Clãs, Duelos, Feed, Perfil, Agenda, detalhe do anime, Configurações e modais
 - [x] 18.9r **Equipamentos mais ricos:** Magia, Velocidade, Crítico, Dano Crítico e Esquiva nos itens; arma por classe; elmo e luvas; 7 conjuntos com bônus de 2 e 4 peças; 41 itens Épicos e Lendários com arte. `sql/121` (#295)
+- [x] 18.9s **Loja mais clara:** moedas explicadas em cada aba, Mercado separado em comprar agora, juntar Ouro, libera depois e já tem, com o motivo no botão. (#296)
+- [x] 18.9t **Forja do Brokk:** 11 materiais (vitória de expedição e masmorra completa, ou desmontar cópia repetida); 40 receitas Épicas e Lendárias por Ouro e materiais; vender cópia repetida por Ouro. `sql/122` (#297)
 - [ ] 18.9g Insígnia de pioneiro da Temporada 0 (nome e critério de "ativo" a decidir) e captcha no cadastro
 - [ ] 18.9c Página de visitante com demonstração jogável e personagem que evolui com a rolagem
 - [ ] 18.9d Importação com regra de zero recompensa (origem marcada no banco) e interruptor no Painel Admin

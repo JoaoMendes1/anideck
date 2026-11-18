@@ -7,12 +7,13 @@
 // Fecha no X, no Esc e no toque fora. A troca é conferida e gravada no servidor.
 import { useEffect, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
-import { Ban, Hammer, Layers, Lock, X } from 'lucide-react'
+import { Ban, Coins, Hammer, Layers, Lock, Recycle, X } from 'lucide-react'
 import {
   SLOTS_RPG,
   aprimorarItem,
   diferencaDaTroca,
   equiparItemRPG,
+  obterEquipamentos,
   estiloDaRaridade,
   resumoDoItem,
   textoDasClasses,
@@ -21,6 +22,7 @@ import {
 } from '../../lib/rpg'
 import IconeDoItem from '../rpg/IconeDoItem'
 import IconeOuro from '../IconeOuro'
+import { desmontarRepetido, textoDosMateriais, valorDeVenda, venderRepetido } from '../../lib/forja'
 
 // Arma, elmo, armadura e luvas ficam na coluna da esquerda; o painel abre à direita delas.
 // Repete as colunas de SlotsDoPersonagem.
@@ -64,6 +66,7 @@ export default function EscolhaDeItem({
   const desktop = useDesktop()
   const [salvando, setSalvando] = useState(false)
   const [erro, setErro] = useState('')
+  const [aviso, setAviso] = useState('')
   const painelRef = useRef<HTMLDivElement>(null)
 
   // Desktop: tocar fora do painel fecha. O toque num slot fica de fora: ele troca o slot aberto.
@@ -80,6 +83,7 @@ export default function EscolhaDeItem({
 
   useEffect(() => {
     setErro('')
+    setAviso('')
     const aoTeclar = (e: KeyboardEvent) => {
       if (e.key === 'Escape') aoFechar()
     }
@@ -114,6 +118,27 @@ export default function EscolhaDeItem({
     }
     setErro(resultado.erro ?? 'Não foi possível aprimorar agora.')
   }
+  // Vender ou desmontar tira uma cópia repetida; a última nunca sai (o banco confere).
+  const tirarCopia = async (itemId: string, nome: string, acao: 'vender' | 'desmontar') => {
+    if (salvando) return
+    setErro('')
+    setAviso('')
+    setSalvando(true)
+    const resposta = acao === 'vender' ? await venderRepetido(itemId) : await desmontarRepetido(itemId)
+    if (!resposta.ok) {
+      setSalvando(false)
+      setErro(resposta.erro)
+      return
+    }
+    const novo = await obterEquipamentos()
+    setSalvando(false)
+    if (novo) aoAtualizar(novo)
+    setAviso(
+      'ouro_ganho' in resposta.dados
+        ? `Vendeu uma cópia de ${nome} por ${resposta.dados.ouro_ganho} de Ouro.`
+        : `Desmontou uma cópia de ${nome}: ${textoDosMateriais(resposta.dados.materiais)}. Use na Forja da Loja.`,
+    )
+  }
   const ouro = estado.ouro ?? 0
 
   const rotulo = SLOTS_RPG.find((s) => s.id === slot)?.rotulo ?? ''
@@ -141,6 +166,11 @@ export default function EscolhaDeItem({
       {erro && (
         <p role="alert" className="m-0 rounded-lg border border-coral/40 bg-coral/10 px-3 py-2 text-xs font-bold text-coral">
           {erro}
+        </p>
+      )}
+      {aviso && (
+        <p role="status" className="m-0 rounded-lg border border-green/40 bg-green/10 px-3 py-2 text-xs font-bold text-green">
+          {aviso}
         </p>
       )}
 
@@ -216,6 +246,33 @@ export default function EscolhaDeItem({
                   >
                     Equipar
                   </button>
+                )}
+                {item.quantidade > 1 && (
+                  <div className="flex w-full flex-wrap items-center justify-between gap-2 border-t border-line/60 pt-2 font-mono text-xs">
+                    <span className="text-muted">
+                      {item.quantidade - 1 === 1 ? '1 cópia repetida' : `${item.quantidade - 1} cópias repetidas`}
+                    </span>
+                    <span className="flex gap-1.5">
+                      <button
+                        type="button"
+                        onClick={() => tirarCopia(item.id, item.nome, 'vender')}
+                        disabled={salvando}
+                        aria-label={`Vender uma cópia de ${item.nome} por ${valorDeVenda(item.raridade)} de Ouro`}
+                        className="inline-flex min-h-10 cursor-pointer items-center gap-1 rounded-full border border-gold/50 px-3 font-bold text-gold hover:bg-gold/10 disabled:cursor-wait disabled:opacity-50"
+                      >
+                        <Coins size={12} aria-hidden="true" /> +{valorDeVenda(item.raridade)}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => tirarCopia(item.id, item.nome, 'desmontar')}
+                        disabled={salvando}
+                        aria-label={`Desmontar uma cópia de ${item.nome} em materiais da Forja`}
+                        className="inline-flex min-h-10 cursor-pointer items-center gap-1 rounded-full border border-holo-2/50 px-3 font-bold text-holo-2 hover:bg-holo-2/10 disabled:cursor-wait disabled:opacity-50"
+                      >
+                        <Recycle size={12} aria-hidden="true" /> Desmontar
+                      </button>
+                    </span>
+                  </div>
                 )}
                 {item.aprimoramento_maximo !== undefined && (
                   <div className="flex w-full items-center justify-between gap-2 border-t border-line/60 pt-2 font-mono text-xs">

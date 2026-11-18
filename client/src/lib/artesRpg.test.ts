@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest'
-import { IDS_COM_ARTE, arteDoItem, arteDoMonstro } from './artesRpg'
+import { IDS_COM_ARTE, arteDoItem, arteDoMaterial, arteDoMonstro } from './artesRpg'
+import { MATERIAIS } from './forja'
 
 // Catálogos do sql/071, do sql/072 e do sql/121: todo id precisa de arte.
 const ITENS = [
@@ -29,6 +30,10 @@ describe('artes de monstros e itens', () => {
     for (const id of MONSTROS) expect(arteDoMonstro(id), id).toBeTruthy()
     expect(IDS_COM_ARTE.itens).toHaveLength(ITENS.length)
     expect(IDS_COM_ARTE.monstros).toHaveLength(MONSTROS.length)
+  })
+
+  it('todo material da Forja tem arte', () => {
+    for (const m of MATERIAIS) expect(arteDoMaterial(m.id), m.id).toBeTruthy()
   })
 
   it('id desconhecido ou vazio não tem arte', () => {

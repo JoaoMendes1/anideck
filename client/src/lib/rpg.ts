@@ -488,7 +488,7 @@ export interface RespostaBatalha {
     /** A Vida chegou a zero: a queda custa Ouro (sql/090). */
     caiu?: boolean
   }
-  recompensa: { bilhetes: number; ouro?: number; item?: ItemRPG; ouro_perdido?: number }
+  recompensa: { bilhetes: number; ouro?: number; item?: ItemRPG; ouro_perdido?: number; materiais?: Record<string, number> }
   vida?: VidaRPG
   bestiario?: BestiarioDoMonstro
   hoje: HojeRPG

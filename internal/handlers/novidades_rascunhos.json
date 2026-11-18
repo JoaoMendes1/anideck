@@ -162,5 +162,17 @@
         "caminho": "/loja"
       }
     ]
+  },
+  {
+    "chave": "2026-11-18-forja-do-brokk",
+    "titulo": "Forja do Brokk: equipamentos Épicos e Lendários sem depender de sorte",
+    "categoria": "novidade",
+    "resumo": "A Loja ganhou a aba Forja. Lá o Brokk transforma Ouro e materiais em equipamentos Épicos e Lendários. Os materiais caem nas vitórias de expedição e quando você completa uma masmorra. Cópias repetidas de itens também têm destino agora: na lista de itens do Personagem, venda por Ouro ou desmonte em materiais. A última cópia de um item nunca sai.",
+    "links": [
+      {
+        "rotulo": "Abrir a Forja",
+        "caminho": "/loja?secao=forja"
+      }
+    ]
   }
 ]

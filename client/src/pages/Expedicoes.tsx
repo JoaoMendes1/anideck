@@ -15,7 +15,7 @@ import { intervaloDaVelocidade, lerVelocidade, salvarVelocidade, type Velocidade
 import { useComunidade } from '../hooks/useComunidade'
 import { useEffect, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { BedDouble, ChevronLeft, FlaskConical, Heart, Waves, Sparkles, Swords, Trophy, Ticket, Zap } from 'lucide-react'
+import { BedDouble, Hammer, ChevronLeft, FlaskConical, Heart, Waves, Sparkles, Swords, Trophy, Ticket, Zap } from 'lucide-react'
 import {
   batalhar,
   batalhasRestantes,
@@ -39,6 +39,7 @@ import IconeDoMonstro from '../components/rpg/IconeDoMonstro'
 import CartaoEvento from '../components/rpg/CartaoEvento'
 import { ESTILO_DO_TIPO } from '../lib/monstrosVisual'
 import { rotuloDoElemento } from '../lib/personagem'
+import { textoDosMateriais } from '../lib/forja'
 import IconeOuro from '../components/IconeOuro'
 
 const ROTULO_DE_SECAO = 'font-mono text-xs font-semibold uppercase tracking-widest text-muted m-0'
@@ -151,6 +152,12 @@ function TelaDeBatalha({ batalha, aoVoltar }: { batalha: RespostaBatalha; aoVolt
                 <li className="flex items-center gap-2 font-bold text-gold">
                   <Trophy size={16} aria-hidden="true" />
                   Novo marco do bestiário: +{batalha.bestiario.bonus_ouro}% de Ouro contra {batalha.monstro.nome}
+                </li>
+              )}
+              {recompensa.materiais && textoDosMateriais(recompensa.materiais) && (
+                <li className="flex items-center gap-2 text-holo-2">
+                  <Hammer size={16} aria-hidden="true" />
+                  Materiais da Forja: {textoDosMateriais(recompensa.materiais)}
                 </li>
               )}
               {recompensa.item && (

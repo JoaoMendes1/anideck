@@ -382,6 +382,7 @@ func (h *RPGHandler) HandleEntrarNaMasmorra(w http.ResponseWriter, r *http.Reque
 	if registro.ItemID != nil && itemSorteado != nil && *registro.ItemID == itemSorteado.ID {
 		recompensa.Item = itemSorteado
 	}
+	recompensa.Materiais = entregarMateriais(servico, sessao.userID, SortearMateriaisDaMasmorra(rng, expedicao.Completou))
 	responderJSON(w, http.StatusOK, RespostaMasmorra{
 		Masmorra: masmorra, Jogador: equipamento.Atributos, Expedicao: expedicao,
 		Recompensa: recompensa, Vida: MontarVida(equipamento.Atributos.Vida, registro.VidaPerdida),

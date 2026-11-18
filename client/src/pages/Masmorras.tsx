@@ -4,8 +4,9 @@
 import BotaoEmGrupo from '../components/rpg/BotaoEmGrupo'
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { ChevronLeft, ChevronRight, DoorOpen, Lock, Sparkles, Ticket, Trophy } from 'lucide-react'
+import { ChevronLeft, Hammer, ChevronRight, DoorOpen, Lock, Sparkles, Ticket, Trophy } from 'lucide-react'
 import IconeDoMonstro from '../components/rpg/IconeDoMonstro'
+import { textoDosMateriais } from '../lib/forja'
 import IconeOuro from '../components/IconeOuro'
 import {
   abaixoDaVidaMinima,
@@ -78,6 +79,12 @@ function Resultado({ resposta, aoVoltar }: { resposta: RespostaMasmorra; aoVolta
           {recompensa.bilhetes > 0 && (
             <li className="flex items-center gap-2">
               <Ticket size={16} className="text-gold" aria-hidden="true" /> {recompensa.bilhetes === 1 ? '1 bilhete' : `${recompensa.bilhetes} bilhetes`} de invocação
+            </li>
+          )}
+          {recompensa.materiais && textoDosMateriais(recompensa.materiais) && (
+            <li className="flex items-center gap-2 text-holo-2">
+              <Hammer size={16} aria-hidden="true" />
+              Materiais da Forja: {textoDosMateriais(recompensa.materiais)}
             </li>
           )}
           {recompensa.item && (

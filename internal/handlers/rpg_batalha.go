@@ -534,6 +534,8 @@ type RecompensaBatalha struct {
 	Item     *ItemRPG `json:"item,omitempty"`
 	// OuroPerdido: o que a queda custou (sql/090).
 	OuroPerdido int `json:"ouro_perdido,omitempty"`
+	// Materiais da Forja ganhos na luta (sql/122).
+	Materiais map[string]int `json:"materiais,omitempty"`
 }
 
 // RespostaBatalha é o corpo de POST /api/rpg/batalhas.
@@ -811,6 +813,7 @@ func (h *RPGHandler) HandleBatalhar(w http.ResponseWriter, r *http.Request) {
 	if registro.ItemID != nil && itemSorteado != nil && *registro.ItemID == itemSorteado.ID {
 		recompensa.Item = itemSorteado
 	}
+	recompensa.Materiais = entregarMateriais(servico, sessao.userID, SortearMateriaisDaExpedicao(rng, resultado.Venceu))
 
 	responderJSON(w, http.StatusOK, RespostaBatalha{
 		Monstro:    *monstro,

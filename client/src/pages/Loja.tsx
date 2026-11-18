@@ -3,6 +3,7 @@
 import { useState, useMemo } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 import Mercado from '../components/loja/Mercado'
+import Forja from '../components/loja/Forja'
 import {
   Sparkles, Crown, Flame, Zap, Award, Check, Shield, ArrowRight, User, Heart, RotateCcw,
 } from 'lucide-react'
@@ -60,8 +61,9 @@ export default function Loja() {
   const [filtroTipo, setFiltroTipo] = useState<string>('todos')
   // Mercado (Ouro) abre primeiro: é onde o jogador evolui; o Visual fica a um toque.
   const [params, setParams] = useSearchParams()
-  const secao: 'mercado' | 'visual' = params.get('secao') === 'visual' ? 'visual' : 'mercado'
-  const irPara = (nova: 'mercado' | 'visual') => {
+  const secaoPedida = params.get('secao')
+  const secao: 'mercado' | 'forja' | 'visual' = secaoPedida === 'visual' || secaoPedida === 'forja' ? secaoPedida : 'mercado'
+  const irPara = (nova: 'mercado' | 'forja' | 'visual') => {
     const proximos = new URLSearchParams(params)
     proximos.set('secao', nova)
     setParams(proximos, { replace: true })
@@ -155,7 +157,9 @@ export default function Loja() {
             </div>
 
             <p className="text-xs text-muted-2 mt-1 mb-0 leading-snug">
-              {secao === 'mercado'
+              {secao === 'forja'
+                ? 'Na Forja do Brokk, Ouro e materiais viram equipamentos Épicos e Lendários, sem depender de sorte.'
+                : secao === 'mercado'
                 ? 'Equipamentos deixam seu personagem mais forte e só se compram com Ouro, que você ganha em expedições, masmorras e duelos.'
                 : 'Cosméticos se compram com AniCoins, que vêm de assistir episódios e das missões. São só visuais: nunca mudam XP, Rank, notas nem força.'}
             </p>
@@ -208,10 +212,11 @@ export default function Loja() {
         </div>
       </header>
 
-      {/* SEÇÕES: Mercado (Ouro) e Visual (AniCoins) */}
-      <div role="tablist" aria-label="Seções da Loja" className="mb-4 grid grid-cols-2 gap-1 rounded-2xl border border-line bg-panel p-1">
+      {/* SEÇÕES: Mercado (Ouro), Forja (Ouro e materiais) e Visual (AniCoins) */}
+      <div role="tablist" aria-label="Seções da Loja" className="mb-4 grid grid-cols-3 gap-1 rounded-2xl border border-line bg-panel p-1">
         {([
           { id: 'mercado', rotulo: 'Mercado', detalhe: 'Equipamentos · Ouro' },
+          { id: 'forja', rotulo: 'Forja', detalhe: 'Ouro e materiais' },
           { id: 'visual', rotulo: 'Visual', detalhe: 'Cosméticos · AniCoins' },
         ] as const).map((s) => {
           const ativa = secao === s.id
@@ -223,7 +228,7 @@ export default function Loja() {
               aria-selected={ativa}
               onClick={() => irPara(s.id)}
               className={`flex cursor-pointer flex-col items-center rounded-xl px-2 py-2 transition-colors ${
-                ativa ? (s.id === 'mercado' ? 'bg-gold text-void' : 'bg-holo-1 text-void') : 'text-muted hover:text-text'
+                ativa ? (s.id === 'visual' ? 'bg-holo-1 text-void' : 'bg-gold text-void') : 'text-muted hover:text-text'
               }`}
             >
               <span className="text-sm font-extrabold leading-tight">{s.rotulo}</span>
@@ -234,6 +239,7 @@ export default function Loja() {
       </div>
 
       {secao === 'mercado' && <Mercado />}
+      {secao === 'forja' && <Forja />}
 
       {secao === 'visual' && (<>
       {/* FILTROS DE CATEGORIA */}
