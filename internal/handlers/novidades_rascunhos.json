@@ -150,5 +150,17 @@
         "caminho": "/personagem"
       }
     ]
+  },
+  {
+    "chave": "2026-11-18-loja-mais-clara",
+    "titulo": "Loja mais fácil de entender",
+    "categoria": "layout",
+    "resumo": "Cada aba da Loja agora explica o que vende e de onde vem a moeda: equipamentos só com Ouro, que você ganha em expedições, masmorras e duelos; cosméticos com AniCoins, que vêm de assistir e das missões. No Mercado, o que dá para comprar agora aparece primeiro, e os itens trancados ficam separados, dizendo em que nível liberam ou quanto Ouro falta.",
+    "links": [
+      {
+        "rotulo": "Abrir a Loja",
+        "caminho": "/loja"
+      }
+    ]
   }
 ]

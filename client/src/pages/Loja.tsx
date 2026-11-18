@@ -135,11 +135,13 @@ export default function Loja() {
 
               {/* Ações compactas no celular (título e saldo na mesma linha, Apoiador como ícone) */}
               <div className="flex md:hidden items-center gap-2 shrink-0">
-                <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-panel-2 border border-line font-mono text-xs font-bold text-text">
-                  <IconeAniCoin size={14} />
-                  <span className="text-holo-3">{saldo.toLocaleString('pt-BR')}</span>
-                  <span className="text-muted">₳</span>
-                </div>
+                {secao === 'visual' && (
+                  <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-panel-2 border border-line font-mono text-xs font-bold text-text">
+                    <IconeAniCoin size={14} />
+                    <span className="text-holo-3">{saldo.toLocaleString('pt-BR')}</span>
+                    <span className="text-muted">₳</span>
+                  </div>
+                )}
                 <button
                   type="button"
                   onClick={() => setModalApoiadorAberto(true)}
@@ -154,28 +156,32 @@ export default function Loja() {
 
             <p className="text-xs text-muted-2 mt-1 mb-0 leading-snug">
               {secao === 'mercado'
-                ? 'Equipamentos por Ouro para deixar seu personagem mais forte.'
-                : 'Cosméticos são puramente visuais e nunca alteram XP, Rank nem notas.'}
+                ? 'Equipamentos deixam seu personagem mais forte e só se compram com Ouro, que você ganha em expedições, masmorras e duelos.'
+                : 'Cosméticos se compram com AniCoins, que vêm de assistir episódios e das missões. São só visuais: nunca mudam XP, Rank, notas nem força.'}
             </p>
           </div>
 
           {/* Direita no desktop: chip de saldo + link Ganhar AniCoins + botão Seja um Apoiador */}
           <div className="hidden md:flex items-center gap-3 shrink-0">
-            <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-xl bg-panel-2 border border-line">
-              <IconeAniCoin size={15} />
-              <span className="font-anton text-lg text-holo-3 tracking-wide leading-none">
-                {saldo.toLocaleString('pt-BR')}
-              </span>
-              <span className="font-mono text-xs font-bold text-muted">₳ AniCoins</span>
-            </div>
-
-            <Link
-              to="/#missoes-diarias-card"
-              className="px-3 py-1.5 rounded-xl bg-panel-2 border border-line font-mono text-xs font-bold text-holo-2 hover:border-holo-2/50 hover:underline inline-flex items-center gap-1 transition-colors"
-            >
-              <span>Ganhar AniCoins</span>
-              <ArrowRight size={12} />
-            </Link>
+            {secao === 'visual' && (
+              <>
+              <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-xl bg-panel-2 border border-line">
+                <IconeAniCoin size={15} />
+                <span className="font-anton text-lg text-holo-3 tracking-wide leading-none">
+                  {saldo.toLocaleString('pt-BR')}
+                </span>
+                <span className="font-mono text-xs font-bold text-muted">₳ AniCoins</span>
+              </div>
+  
+              <Link
+                to="/#missoes-diarias-card"
+                className="px-3 py-1.5 rounded-xl bg-panel-2 border border-line font-mono text-xs font-bold text-holo-2 hover:border-holo-2/50 hover:underline inline-flex items-center gap-1 transition-colors"
+              >
+                <span>Ganhar AniCoins</span>
+                <ArrowRight size={12} />
+              </Link>
+              </>
+            )}
 
             <button
               type="button"
@@ -188,15 +194,17 @@ export default function Loja() {
           </div>
 
           {/* Link complementar de Ganhar AniCoins no celular */}
-          <div className="flex md:hidden items-center justify-end">
-            <Link
-              to="/#missoes-diarias-card"
-              className="font-mono text-xs font-bold text-holo-2 hover:underline inline-flex items-center gap-1"
-            >
-              <span>Ganhar AniCoins</span>
-              <ArrowRight size={11} />
-            </Link>
-          </div>
+          {secao === 'visual' && (
+            <div className="flex md:hidden items-center justify-end">
+              <Link
+                to="/#missoes-diarias-card"
+                className="font-mono text-xs font-bold text-holo-2 hover:underline inline-flex items-center gap-1"
+              >
+                <span>Ganhar AniCoins</span>
+                <ArrowRight size={11} />
+              </Link>
+            </div>
+          )}
         </div>
       </header>
 

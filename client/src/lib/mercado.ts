@@ -63,3 +63,29 @@ export function situacaoDaCompra(item: ItemDoMercado, ouro: number): 'possui' | 
   if (ouro < item.preco_ouro) return 'sem_ouro'
   return 'pode'
 }
+
+export interface GruposDoMercado {
+  /** Dá para comprar agora. */
+  podeComprar: ItemDoMercado[]
+  /** O nível alcança, mas falta Ouro: do mais perto de comprar ao mais longe. */
+  junteOuro: ItemDoMercado[]
+  /** O nível ainda não alcança: do que libera primeiro ao último. */
+  liberaDepois: ItemDoMercado[]
+  /** Já está no inventário. */
+  noInventario: ItemDoMercado[]
+}
+
+/** Separa a vitrine pelo que o jogador pode fazer com cada item, na ordem da tela. */
+export function agruparMercado(itens: ItemDoMercado[], ouro: number): GruposDoMercado {
+  const grupos: GruposDoMercado = { podeComprar: [], junteOuro: [], liberaDepois: [], noInventario: [] }
+  for (const item of itens) {
+    const s = situacaoDaCompra(item, ouro)
+    if (s === 'possui') grupos.noInventario.push(item)
+    else if (s === 'bloqueado') grupos.liberaDepois.push(item)
+    else if (s === 'sem_ouro') grupos.junteOuro.push(item)
+    else grupos.podeComprar.push(item)
+  }
+  grupos.junteOuro.sort((a, b) => a.preco_ouro - b.preco_ouro)
+  grupos.liberaDepois.sort((a, b) => a.nivel_minimo - b.nivel_minimo || a.preco_ouro - b.preco_ouro)
+  return grupos
+}
