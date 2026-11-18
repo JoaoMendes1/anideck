@@ -14,7 +14,7 @@ import ModalDueloGosto from '../components/comunidade/ModalDueloGosto'
 import SecaoColecaoCartas from '../components/comunidade/SecaoColecaoCartas'
 import TagCla from '../components/TagCla'
 import { obterClasseMoldura, obterClasseCorNome, obterClasseTemaPerfil, renderizarEmblema } from '../lib/cosmeticos'
-import { calcularHPMaximoJogador, faixaDoHP, type PerfilPublico } from '../lib/comunidade'
+import { faixaDoHP, type PerfilPublico } from '../lib/comunidade'
 import AvatarMontavel from '../components/AvatarMontavel'
 import CartaoEspecialidade from '../components/hud/CartaoEspecialidade'
 import { filtroDoVisual, retratoDoEstagio } from '../lib/personagem'
@@ -290,13 +290,11 @@ export default function PerfilMembro() {
 
         <div className="relative grid grid-cols-2 md:grid-cols-4 gap-3 mt-6">
           {(() => {
-            const hpMaxPerfil = calcularHPMaximoJogador(perfil.nivel)
-            const hpAtualPerfil = Math.round((perfil.hp * hpMaxPerfil) / 100)
             return [
               { rotulo: 'XP total', valor: perfil.xp_total.toLocaleString('pt-BR'), icone: <Sparkles size={13} className="text-holo-2" aria-hidden /> },
               { rotulo: 'Episódios vistos', valor: perfil.episodios_vistos.toLocaleString('pt-BR'), icone: <PlayCircle size={13} className="text-holo-3" aria-hidden /> },
               { rotulo: 'Comentários', valor: perfil.comentarios.toLocaleString('pt-BR'), icone: <MessageCircle size={13} className="text-holo-1" aria-hidden /> },
-              { rotulo: 'Vitalidade', valor: `${hpAtualPerfil}/${hpMaxPerfil}`, icone: <Heart size={13} className="text-coral" aria-hidden /> },
+              { rotulo: 'HP', valor: `${perfil.hp}%`, icone: <Heart size={13} className="text-coral" aria-hidden /> },
             ]
           })().map(item => (
             <div key={item.rotulo} className="rounded-xl bg-panel-2 border border-line p-3">

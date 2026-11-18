@@ -206,3 +206,16 @@ describe('REACOES', () => {
     expect(new Set(REACOES.map(r => r.id)).size).toBe(16)
   })
 })
+
+describe('obterHPEscaladoDoEstado com o HP do personagem', () => {
+  it('usa o máximo e o atual das batalhas quando vierem', async () => {
+    const { obterHPEscaladoDoEstado } = await import('./comunidade')
+    const estado = { hp: 96, hp_max_jogador: 450, hp_atual_jogador: 431 } as unknown as Parameters<typeof obterHPEscaladoDoEstado>[0]
+    expect(obterHPEscaladoDoEstado(estado, 15)).toMatchObject({ atual: 431, maximo: 450 })
+  })
+  it('sem personagem, segue a regra do nível', async () => {
+    const { obterHPEscaladoDoEstado } = await import('./comunidade')
+    const estado = { hp: 100 } as unknown as Parameters<typeof obterHPEscaladoDoEstado>[0]
+    expect(obterHPEscaladoDoEstado(estado, 15)).toMatchObject({ atual: 170, maximo: 170 })
+  })
+})

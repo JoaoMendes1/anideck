@@ -94,13 +94,15 @@ type perfilProprio struct {
 }
 
 type estadoComunidade struct {
-	Perfil       perfilProprio    `json:"perfil"`
-	Mana         float64          `json:"mana"`
-	HP           int              `json:"hp"`
-	MPMaxJogador int              `json:"mp_max_jogador"`
-	HPMaxJogador int              `json:"hp_max_jogador"`
-	Regras       RegrasComunidade `json:"regras"`
-	EmPausa      bool             `json:"em_descanso"`
+	Perfil       perfilProprio `json:"perfil"`
+	Mana         float64       `json:"mana"`
+	HP           int           `json:"hp"`
+	MPMaxJogador int           `json:"mp_max_jogador"`
+	HPMaxJogador int           `json:"hp_max_jogador"`
+	// HP exato do personagem, o mesmo das batalhas (sql/114). Ausente sem personagem.
+	HPAtualJogador *int             `json:"hp_atual_jogador,omitempty"`
+	Regras         RegrasComunidade `json:"regras"`
+	EmPausa        bool             `json:"em_descanso"`
 }
 
 func lerPerfilProprio(client *supabase.Client, userID string) (perfilProprio, error) {
@@ -215,16 +217,22 @@ func (h *ComunidadeHandler) montarEstado(client *supabase.Client, userID string)
 	nivel := lerNivelUsuario(client, userID)
 	mpMaxJogador := CalcularManaMaxima(nivel, regras)
 	hpMaxJogador := CalcularHPMaximo(nivel)
+	var hpAtual *int
+	if maxima, atual, ok := hpDoPersonagem(client, userID); ok {
+		hpMaxJogador = maxima
+		hpAtual = &atual
+	}
 	hoje := time.Now().In(fusoGuilda)
 	hojeTexto := hoje.Format("2006-01-02")
 	return estadoComunidade{
-		Perfil:       perfil,
-		Mana:         lerMinhaMana(client, mpMaxJogador),
-		HP:           lerMinhaVitalidade(client, perfil, hoje, regras),
-		MPMaxJogador: mpMaxJogador,
-		HPMaxJogador: hpMaxJogador,
-		Regras:       regras,
-		EmPausa:      perfil.DescansoFim != "" && perfil.DescansoInicio <= hojeTexto && hojeTexto <= perfil.DescansoFim,
+		HPAtualJogador: hpAtual,
+		Perfil:         perfil,
+		Mana:           lerMinhaMana(client, mpMaxJogador),
+		HP:             lerMinhaVitalidade(client, perfil, hoje, regras),
+		MPMaxJogador:   mpMaxJogador,
+		HPMaxJogador:   hpMaxJogador,
+		Regras:         regras,
+		EmPausa:        perfil.DescansoFim != "" && perfil.DescansoInicio <= hojeTexto && hojeTexto <= perfil.DescansoFim,
 	}, nil
 }
 
@@ -1356,4 +1364,29 @@ func (h *ComunidadeHandler) HandlePerfilPublico(w http.ResponseWriter, r *http.R
 	}
 
 	responderJSON(w, http.StatusOK, p)
+}
+
+// hpDoPersonagem lê o HP como as batalhas o veem: máximo pelos atributos e equipamento, e
+// a perda guardada já com a regeneração. Sem personagem, a barra fica com a regra do nível.
+func hpDoPersonagem(client *supabase.Client, userID string) (maxima, atual int, ok bool) {
+	if client == nil {
+		return 0, 0, false
+	}
+	ctx, err := carregarContextoPersonagem(client, userID)
+	if err != nil || ctx.linha == nil {
+		return 0, 0, false
+	}
+	equipamento, err := equipamentoDoContexto(client, userID, ctx)
+	if err != nil || equipamento.Atributos.Vida < 1 {
+		return 0, 0, false
+	}
+	var hoje struct {
+		VidaPerdida int `json:"vida_perdida"`
+	}
+	bruto := strings.TrimSpace(client.Rpc("rpg_batalhas_hoje", "", map[string]interface{}{}))
+	if bruto == "" || json.Unmarshal([]byte(bruto), &hoje) != nil {
+		return 0, 0, false
+	}
+	vida := MontarVida(equipamento.Atributos.Vida, hoje.VidaPerdida)
+	return vida.Maxima, vida.Atual, true
 }

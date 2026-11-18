@@ -124,5 +124,8 @@ export function avisosDaMudanca(antes: FotoDoJogador | null, depois: FotoDoJogad
 export const EVENTO_OURO = 'anideck:ouro-atualizado'
 
 export function avisarOuroMudou(): void {
-  if (typeof window !== 'undefined') window.dispatchEvent(new Event(EVENTO_OURO))
+  if (typeof window === 'undefined') return
+  window.dispatchEvent(new Event(EVENTO_OURO))
+  // Ouro muda em batalha e recuperação, que também mexem no HP e na Mana da barra.
+  window.dispatchEvent(new Event('anideck:comunidade-atualizada'))
 }

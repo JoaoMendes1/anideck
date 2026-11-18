@@ -51,6 +51,8 @@ export interface EstadoComunidade {
   hp: number
   mp_max_jogador?: number
   hp_max_jogador?: number
+  /** HP exato do personagem, o mesmo das batalhas (sql/114). */
+  hp_atual_jogador?: number
   regras: RegrasComunidade
   em_descanso: boolean
 }
@@ -88,7 +90,10 @@ export function obterHPEscaladoDoEstado(
       ? estado.hp_max_jogador
       : calcularHPMaximoJogador(nivel)
   const pct = Math.min(100, Math.max(0, estado.hp))
-  const atual = Math.round((pct * maximo) / 100)
+  const atual =
+    typeof estado.hp_atual_jogador === 'number'
+      ? Math.min(maximo, Math.max(0, estado.hp_atual_jogador))
+      : Math.round((pct * maximo) / 100)
   return { atual, maximo, pct }
 }
 
