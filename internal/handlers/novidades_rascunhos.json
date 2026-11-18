@@ -66,5 +66,33 @@
         "caminho": "/masmorras"
       }
     ]
+  },
+  {
+    "chave": "2026-11-18-mercado-de-ouro",
+    "titulo": "Mercado na Loja: equipamentos por Ouro",
+    "categoria": "novidade",
+    "resumo": "A Loja agora abre no Mercado, onde o seu Ouro vira equipamento. São 12 itens, incluindo uma leva nova de nível 12 a 18, como o Sabre do Mercenário e o Peitoral de Aço.\n\nCada item mostra quanto melhora em relação ao que você está usando. Os cosméticos continuam na seção Visual, com AniCoins.",
+    "links": [
+      {
+        "rotulo": "Ver Mercado",
+        "caminho": "/loja?secao=mercado"
+      },
+      {
+        "rotulo": "Ver Personagem",
+        "caminho": "/personagem"
+      }
+    ]
+  },
+  {
+    "chave": "2026-11-18-telas-compactas-celular",
+    "titulo": "Telas do jogo mais diretas no celular",
+    "categoria": "layout",
+    "resumo": "Menos espaço vazio no topo das páginas. No Personagem, logo abaixo da arte, agora aparecem Poder, Vida, Ataque, Defesa e Ouro, os pontos para distribuir e os atalhos para Expedições e Masmorras, sem precisar rolar.",
+    "links": [
+      {
+        "rotulo": "Ver Personagem",
+        "caminho": "/personagem"
+      }
+    ]
   }
 ]

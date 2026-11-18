@@ -148,6 +148,7 @@ SELECT pg_get_viewdef('nome_da_view'::regclass, true);
 | `116_novidades_rascunhos.sql` | Colunas `novidades.chave` (única) e `rascunho`; `novidades_chaves_importadas` (chave apagada não volta); `importar_rascunho_novidade()` (service role, chamada no boot do site com `internal/handlers/novidades_rascunhos.json`); gatilho que tira o rascunho ao publicar. **Depois do `115`** | — |
 | `117_novidades_lixeira.sql` | `novidades.apagada_em`; `apagar_novidade()` passa a mandar para a Lixeira (definição viva; antes `115`) e `restaurar_novidade()` traz de volta. **Depois do `116`** | — |
 | `118_mana_nas_lutas.sql` | `rpg_mana_lutar(usuario, quantia)` (service role): cobra a Mana de uma luta (positivo) ou devolve (negativo, até o máximo), com o perfil travado. Custos em `internal/handlers/rpg_mana.go` | — |
+| `119_mercado_de_ouro.sql` | `rpg_itens.preco_ouro` e 7 itens novos (nível 12 a 18); preços só onde vazio; `rpg_compras`; `rpg_mercado()` e `rpg_comprar_item()` (autenticado: nível, posse e Ouro conferidos no banco) | — |
 
 Datas com `~` são a data do commit, não da aplicação no Supabase.
 

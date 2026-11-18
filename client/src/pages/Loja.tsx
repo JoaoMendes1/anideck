@@ -1,7 +1,8 @@
 // client/src/pages/Loja.tsx
 // Loja de Cosméticos do AniDeck: compra e personalização com AniCoins (Fase 16, #170 e #171).
 import { useState, useMemo } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useSearchParams } from 'react-router-dom'
+import Mercado from '../components/loja/Mercado'
 import {
   Sparkles, Crown, Flame, Zap, Award, Check, Shield, ArrowRight, User, Heart, RotateCcw,
 } from 'lucide-react'
@@ -57,6 +58,14 @@ export default function Loja() {
   const { estado } = useComunidade()
 
   const [filtroTipo, setFiltroTipo] = useState<string>('todos')
+  // Mercado (Ouro) abre primeiro: é onde o jogador evolui; o Visual fica a um toque.
+  const [params, setParams] = useSearchParams()
+  const secao: 'mercado' | 'visual' = params.get('secao') === 'visual' ? 'visual' : 'mercado'
+  const irPara = (nova: 'mercado' | 'visual') => {
+    const proximos = new URLSearchParams(params)
+    proximos.set('secao', nova)
+    setParams(proximos, { replace: true })
+  }
   const [modalApoiadorAberto, setModalApoiadorAberto] = useState(false)
   const [itemDevolvendo, setItemDevolvendo] = useState<ItemCosmeticoLoja | null>(null)
 
@@ -144,7 +153,9 @@ export default function Loja() {
             </div>
 
             <p className="text-xs text-muted-2 mt-1 mb-0 leading-snug">
-              Cosméticos são puramente visuais e nunca alteram XP, Rank nem notas.
+              {secao === 'mercado'
+                ? 'Equipamentos por Ouro para deixar seu personagem mais forte.'
+                : 'Cosméticos são puramente visuais e nunca alteram XP, Rank nem notas.'}
             </p>
           </div>
 
@@ -189,6 +200,34 @@ export default function Loja() {
         </div>
       </header>
 
+      {/* SEÇÕES: Mercado (Ouro) e Visual (AniCoins) */}
+      <div role="tablist" aria-label="Seções da Loja" className="mb-4 grid grid-cols-2 gap-1 rounded-2xl border border-line bg-panel p-1">
+        {([
+          { id: 'mercado', rotulo: 'Mercado', detalhe: 'Equipamentos · Ouro' },
+          { id: 'visual', rotulo: 'Visual', detalhe: 'Cosméticos · AniCoins' },
+        ] as const).map((s) => {
+          const ativa = secao === s.id
+          return (
+            <button
+              key={s.id}
+              type="button"
+              role="tab"
+              aria-selected={ativa}
+              onClick={() => irPara(s.id)}
+              className={`flex cursor-pointer flex-col items-center rounded-xl px-2 py-2 transition-colors ${
+                ativa ? (s.id === 'mercado' ? 'bg-gold text-void' : 'bg-holo-1 text-void') : 'text-muted hover:text-text'
+              }`}
+            >
+              <span className="text-sm font-extrabold leading-tight">{s.rotulo}</span>
+              <span className={`font-mono text-[11px] leading-tight ${ativa ? 'opacity-80' : 'text-muted-2'}`}>{s.detalhe}</span>
+            </button>
+          )
+        })}
+      </div>
+
+      {secao === 'mercado' && <Mercado />}
+
+      {secao === 'visual' && (<>
       {/* FILTROS DE CATEGORIA */}
       <div className="relative mb-6">
         <div className="flex items-center gap-2 overflow-x-auto md:overflow-visible md:flex-wrap pb-2 md:pb-0 pr-8 md:pr-0 snap-x snap-mandatory scrollbar-none select-none">
@@ -230,13 +269,13 @@ export default function Loja() {
         {/* Degradê lateral no celular indicando que há mais categorias para rolar */}
         <div
           aria-hidden="true"
-          className="pointer-events-none absolute inset-y-0 right-0 w-10 bg-gradient-to-l from-bg to-transparent md:hidden"
+          className="pointer-events-none absolute inset-y-0 right-0 w-10 bg-gradient-to-l from-void to-transparent md:hidden"
         />
       </div>
 
       {/* CATÁLOGO DE ITENS */}
       {carregando ? (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-5">
           {Array.from({ length: 6 }).map((_, i) => (
             <div key={i} className="h-64 rounded-2xl bg-panel border border-line shimmer" />
           ))}
@@ -246,7 +285,7 @@ export default function Loja() {
           <p className="text-muted text-sm font-mono m-0">Nenhum cosmético encontrado nesta categoria.</p>
         </div>
       ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-5">
           {itensFiltrados.map((item: ItemCosmeticoLoja) => {
             const corRaridade = CORES_RARIDADE[item.raridade] || CORES_RARIDADE.comum
             const podeComprar = saldo >= item.preco
@@ -256,7 +295,7 @@ export default function Loja() {
             return (
               <div
                 key={item.id}
-                className={`p-5 rounded-2xl bg-panel border transition-all flex flex-col justify-between gap-4 hover:shadow-xl ${corRaridade.border} ${
+                className={`p-4 sm:p-5 rounded-2xl bg-panel border transition-all flex flex-col justify-between gap-3 sm:gap-4 hover:shadow-xl ${corRaridade.border} ${
                   estaEquipado(item) ? 'ring-2 ring-holo-3/60 bg-panel-2/40' : ''
                 }`}
               >
@@ -492,6 +531,7 @@ export default function Loja() {
           })}
         </div>
       )}
+      </>)}
 
       {/* MODAL DE DEVOLUÇÃO COM REEMBOLSO */}
       {itemDevolvendo && (
