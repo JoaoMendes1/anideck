@@ -857,6 +857,7 @@ Motivo: o beta vai receber gente nova, e a primeira impressão decide se a pesso
 - [x] 18.9h **HP e MP únicos:** a Vitalidade da barra vira a Vida do personagem. Regenera, cura com episódio, Pousada, Poção de HP e Fonte termal; Poção de Mana; batalha tira HP; 3 dias sem episódio tiram 10%/dia até 20%. `sql/114` (#283)
 - [x] 18.9i **Novidades:** o admin publica atualizações com data e hora e caminhos para conferir; aviso no meio da tela (ao entrar e com o site aberto) controlado por novidade; página `/novidades`. `sql/115` (#284)
 - [x] 18.9j **Novidades prontas:** cada entrega traz o texto em `novidades_rascunhos.json`; no deploy vira rascunho no Painel ("Prontas para publicar") e o dono só publica. `sql/116` (#285)
+- [x] 18.9k **Lutas gastam Mana:** expedição e duelo 3, chefe do clã 5, masmorra 8; devolvida se a luta não for registrada. `sql/118` (#289)
 - [ ] 18.9g Insígnia de pioneiro da Temporada 0 (nome e critério de "ativo" a decidir) e captcha no cadastro
 - [ ] 18.9c Página de visitante com demonstração jogável e personagem que evolui com a rolagem
 - [ ] 18.9d Importação com regra de zero recompensa (origem marcada no banco) e interruptor no Painel Admin

@@ -119,6 +119,8 @@ type EstadoMasmorras struct {
 	Hoje      HojeRPG           `json:"hoje"`
 	FeitaHoje string            `json:"feita_hoje"`
 	Masmorras []MasmorraNaLista `json:"masmorras"`
+	// Mana de cada tipo de luta (sql/118).
+	CustosMana CustosManaRPG `json:"custos_mana"`
 }
 
 // RespostaMasmorra é o corpo de POST /api/rpg/masmorras.
@@ -232,7 +234,7 @@ func (h *RPGHandler) HandleGetMasmorras(w http.ResponseWriter, r *http.Request) 
 	responderJSON(w, http.StatusOK, EstadoMasmorras{
 		Atributos: equipamento.Atributos, Elemento: elementoDoJogador(sessao.ctx),
 		Vida: MontarVida(equipamento.Atributos.Vida, hoje.VidaPerdida), Hoje: hoje,
-		FeitaHoje: feita, Masmorras: lista,
+		FeitaHoje: feita, Masmorras: lista, CustosMana: CustosDeMana(),
 	})
 }
 
@@ -325,6 +327,10 @@ func (h *RPGHandler) HandleEntrarNaMasmorra(w http.ResponseWriter, r *http.Reque
 	if vencidos == nil {
 		vencidos = []string{}
 	}
+	cobrou, ok := cobrarManaDaLuta(w, servico, sessao.userID, CustoManaMasmorra)
+	if !ok {
+		return
+	}
 	bruto := strings.TrimSpace(servico.Rpc("rpg_concluir_masmorra", "", map[string]interface{}{
 		"p_user_id":      sessao.userID,
 		"p_masmorra_id":  masmorra.ID,
@@ -348,6 +354,7 @@ func (h *RPGHandler) HandleEntrarNaMasmorra(w http.ResponseWriter, r *http.Reque
 	}
 	if bruto == "" || json.Unmarshal([]byte(bruto), &registro) != nil || (!registro.Ok && registro.Erro == "") {
 		log.Printf("[RPG] Falha ao registrar masmorra (user=%s): %s", sessao.userID, bruto)
+		devolverManaDaLuta(servico, sessao.userID, CustoManaMasmorra, cobrou)
 		responderErroJSON(w, http.StatusServiceUnavailable, "Não foi possível registrar a masmorra agora.")
 		return
 	}
@@ -359,6 +366,7 @@ func (h *RPGHandler) HandleEntrarNaMasmorra(w http.ResponseWriter, r *http.Reque
 		case registro.SemVida:
 			status = http.StatusConflict
 		}
+		devolverManaDaLuta(servico, sessao.userID, CustoManaMasmorra, cobrou)
 		responderErroJSON(w, status, registro.Erro)
 		return
 	}

@@ -236,6 +236,9 @@ export default function Masmorras() {
                     className="inline-flex h-11 cursor-pointer items-center justify-center gap-2 rounded-full bg-gradient-to-r from-holo-1 to-holo-3 px-5 text-xs font-extrabold text-void disabled:cursor-not-allowed disabled:opacity-50"
                   >
                     <DoorOpen size={15} aria-hidden="true" /> {entrando === m.id ? 'Explorando…' : 'Entrar'}
+                    {entrando !== m.id && estado.custos_mana && (
+                      <span className="ml-1 font-mono text-[11px] font-semibold opacity-80">· {estado.custos_mana.masmorra} MP</span>
+                    )}
                   </button>
                 </li>
               )

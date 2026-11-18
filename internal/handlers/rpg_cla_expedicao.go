@@ -289,6 +289,10 @@ func (h *RPGHandler) HandleAtacarChefeDoCla(w http.ResponseWriter, r *http.Reque
 		responderErroJSON(w, http.StatusServiceUnavailable, "Expedição do clã indisponível no momento.")
 		return
 	}
+	cobrou, ok := cobrarManaDaLuta(w, servico, sessao.userID, CustoManaChefeDoCla)
+	if !ok {
+		return
+	}
 	bruto := strings.TrimSpace(servico.Rpc("rpg_cla_atacar", "", map[string]interface{}{
 		"p_user_id": sessao.userID, "p_dano": dano, "p_ouro": ouro, "p_bilhetes": bilhetes,
 	}))
@@ -299,10 +303,12 @@ func (h *RPGHandler) HandleAtacarChefeDoCla(w http.ResponseWriter, r *http.Reque
 	}
 	if bruto == "" || json.Unmarshal([]byte(bruto), &registro) != nil || (!registro.Ok && registro.Erro == "") {
 		log.Printf("[RPG] Falha ao registrar ataque do clã (user=%s): %s", sessao.userID, bruto)
+		devolverManaDaLuta(servico, sessao.userID, CustoManaChefeDoCla, cobrou)
 		responderErroJSON(w, http.StatusServiceUnavailable, "Não foi possível registrar o ataque agora.")
 		return
 	}
 	if registro.Erro != "" {
+		devolverManaDaLuta(servico, sessao.userID, CustoManaChefeDoCla, cobrou)
 		responderErroJSON(w, http.StatusConflict, registro.Erro)
 		return
 	}

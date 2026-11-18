@@ -50,5 +50,21 @@
         "caminho": "/personagem"
       }
     ]
+  },
+  {
+    "chave": "2026-11-18-mana-nas-lutas",
+    "titulo": "Lutas agora gastam Mana",
+    "categoria": "balanceamento",
+    "resumo": "Cada luta custa Mana: expedição e duelo 3, chefe do clã 5 e masmorra 8. O custo aparece no botão antes de lutar. Sem Mana, espere ela voltar ou use uma Poção de Mana ou a Fonte termal nas Expedições.\n\nO máximo de Mana continua crescendo com o seu nível.",
+    "links": [
+      {
+        "rotulo": "Ver Expedições",
+        "caminho": "/expedicoes"
+      },
+      {
+        "rotulo": "Ver Masmorras",
+        "caminho": "/masmorras"
+      }
+    ]
   }
 ]

@@ -455,6 +455,10 @@ func (h *RPGHandler) HandleDuelar(w http.ResponseWriter, r *http.Request) {
 	desafiante.Elemento = elementoDoJogador(sessao.ctx)
 	resultado := SimularDuelo(desafiante, oponente, novoGeradorDeBatalha())
 
+	cobrou, ok := cobrarManaDaLuta(w, servico, sessao.userID, CustoManaDuelo)
+	if !ok {
+		return
+	}
 	bruto := strings.TrimSpace(servico.Rpc("rpg_registrar_duelo", "", map[string]interface{}{
 		"p_user_id": sessao.userID,
 		"p_handle":  handle,
@@ -474,6 +478,7 @@ func (h *RPGHandler) HandleDuelar(w http.ResponseWriter, r *http.Request) {
 	}
 	if bruto == "" || json.Unmarshal([]byte(bruto), &registro) != nil || (!registro.Ok && registro.Erro == "") {
 		log.Printf("[RPG] Falha ao registrar duelo (user=%s): %s", sessao.userID, bruto)
+		devolverManaDaLuta(servico, sessao.userID, CustoManaDuelo, cobrou)
 		responderErroJSON(w, http.StatusServiceUnavailable, "Não foi possível registrar o duelo agora.")
 		return
 	}
@@ -482,6 +487,7 @@ func (h *RPGHandler) HandleDuelar(w http.ResponseWriter, r *http.Request) {
 		if registro.LimiteAtingido {
 			status = http.StatusTooManyRequests
 		}
+		devolverManaDaLuta(servico, sessao.userID, CustoManaDuelo, cobrou)
 		responderErroJSON(w, status, registro.Erro)
 		return
 	}

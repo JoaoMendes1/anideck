@@ -390,6 +390,15 @@ export interface EstadoExpedicoes {
   custos?: CustosRecuperacao
   hoje: HojeRPG
   monstros: MonstroNaLista[]
+  /** Mana de cada luta (sql/118); ausente em servidor antigo. */
+  custos_mana?: CustosManaRPG
+}
+
+export interface CustosManaRPG {
+  expedicao: number
+  duelo: number
+  chefe_do_cla: number
+  masmorra: number
 }
 
 export interface TurnoBatalha {
@@ -649,6 +658,7 @@ export interface EstadoMasmorras {
   /** Id da masmorra feita hoje; vazio quando ainda dá para entrar. */
   feita_hoje: string
   masmorras: MasmorraNaLista[]
+  custos_mana?: CustosManaRPG
 }
 
 export interface AndarDaMasmorra {

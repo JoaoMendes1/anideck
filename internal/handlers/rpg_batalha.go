@@ -512,6 +512,8 @@ type EstadoExpedicoes struct {
 	Custos    CustosRecuperacao `json:"custos"`
 	Hoje      HojeRPG           `json:"hoje"`
 	Monstros  []MonstroNaLista  `json:"monstros"`
+	// Mana de cada tipo de luta (sql/118).
+	CustosMana CustosManaRPG `json:"custos_mana"`
 }
 
 // RecompensaBatalha é o que a vitória deu.
@@ -623,12 +625,13 @@ func (h *RPGHandler) HandleGetExpedicoes(w http.ResponseWriter, r *http.Request)
 	}
 	hoje.Regras = hoje.Regras.ComPadroes()
 	responderJSON(w, http.StatusOK, EstadoExpedicoes{
-		Atributos: equipamento.Atributos,
-		Elemento:  elemento,
-		Vida:      MontarVida(equipamento.Atributos.Vida, hoje.VidaPerdida),
-		Custos:    CustosPara(sessao.nivel),
-		Hoje:      hoje,
-		Monstros:  lista,
+		Atributos:  equipamento.Atributos,
+		Elemento:   elemento,
+		Vida:       MontarVida(equipamento.Atributos.Vida, hoje.VidaPerdida),
+		Custos:     CustosPara(sessao.nivel),
+		Hoje:       hoje,
+		Monstros:   lista,
+		CustosMana: CustosDeMana(),
 	})
 }
 
@@ -729,6 +732,10 @@ func (h *RPGHandler) HandleBatalhar(w http.ResponseWriter, r *http.Request) {
 	if itemSorteado != nil {
 		itemID = itemSorteado.ID
 	}
+	cobrou, ok := cobrarManaDaLuta(w, servico, sessao.userID, CustoManaExpedicao)
+	if !ok {
+		return
+	}
 	bruto := strings.TrimSpace(servico.Rpc("rpg_concluir_batalha", "", map[string]interface{}{
 		"p_user_id":      sessao.userID,
 		"p_monstro_id":   monstro.ID,
@@ -754,6 +761,7 @@ func (h *RPGHandler) HandleBatalhar(w http.ResponseWriter, r *http.Request) {
 	}
 	if bruto == "" || json.Unmarshal([]byte(bruto), &registro) != nil || (!registro.Ok && registro.Erro == "") {
 		log.Printf("[RPG] Falha ao registrar batalha (user=%s): %s", sessao.userID, bruto)
+		devolverManaDaLuta(servico, sessao.userID, CustoManaExpedicao, cobrou)
 		responderErroJSON(w, http.StatusServiceUnavailable, "Não foi possível registrar a batalha agora.")
 		return
 	}
@@ -765,6 +773,7 @@ func (h *RPGHandler) HandleBatalhar(w http.ResponseWriter, r *http.Request) {
 		case registro.SemVida:
 			status = http.StatusConflict
 		}
+		devolverManaDaLuta(servico, sessao.userID, CustoManaExpedicao, cobrou)
 		responderErroJSON(w, status, registro.Erro)
 		return
 	}

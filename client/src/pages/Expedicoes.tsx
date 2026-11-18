@@ -388,7 +388,9 @@ export default function Expedicoes() {
           <div className="flex flex-col gap-2">
             <h1 className="m-0 font-anton text-[clamp(2rem,8vw,2.6rem)] uppercase leading-none">Expedições</h1>
             <p className="m-0 text-sm text-muted">
-              Enfrente monstros com o seu equipamento. Vitórias dão bilhetes de invocação, Ouro e, às vezes, um item. Batalhas não dão XP: ele vem só dos animes.
+              Vitórias dão bilhetes, Ouro e, às vezes, um item.{' '}
+              {estado.custos_mana ? `Cada batalha gasta ${estado.custos_mana.expedicao} de Mana. ` : ''}
+              XP só vem dos animes.
             </p>
           </div>
 
@@ -508,6 +510,9 @@ export default function Expedicoes() {
                     className="h-11 cursor-pointer rounded-full bg-gradient-to-r from-holo-1 to-holo-3 px-5 text-xs font-extrabold text-void disabled:cursor-not-allowed disabled:opacity-50"
                   >
                     {lutando === m.id ? 'Batalhando…' : 'Enfrentar'}
+                    {lutando !== m.id && estado.custos_mana && (
+                      <span className="ml-1 font-mono text-[11px] font-semibold opacity-80">· {estado.custos_mana.expedicao} MP</span>
+                    )}
                   </button>
                 </li>
               )
