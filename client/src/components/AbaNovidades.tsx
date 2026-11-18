@@ -6,7 +6,7 @@ import { Eye, EyeOff, Megaphone, Send, MonitorUp, Pencil, Plus, Save, Trash2, X 
 import { useToast } from '../contexts/ToastContext'
 import CartaoNovidade from './novidades/CartaoNovidade'
 import {
-  ROTULO_CATEGORIA, alcanceDasNovidades, apagarNovidade, dataHoraDaNovidade, listarNovidades,
+  ROTULO_CATEGORIA, alcanceDasNovidades, apagarNovidade, restaurarNovidade, dataHoraDaNovidade, listarNovidades,
   paraCampoDataHora, salvarNovidade, type CategoriaNovidade, type Novidade, type RascunhoNovidade,
 } from '../lib/novidades'
 
@@ -42,7 +42,7 @@ function rascunhoDe(n: Novidade): RascunhoNovidade {
   }
 }
 
-const CAMPO = 'w-full rounded-xl border border-white/10 bg-surface px-3 py-2 text-sm text-text'
+const CAMPO = 'mt-1 w-full rounded-lg border border-line bg-panel-2 px-3 py-2 text-sm text-text outline-none focus:border-holo-2 [color-scheme:dark] [&_option]:bg-panel-2 [&_option]:text-text'
 
 export default function AbaNovidades() {
   const { showToast } = useToast()
@@ -89,9 +89,17 @@ export default function AbaNovidades() {
   }
 
   const apagar = async (n: Novidade) => {
-    if (!window.confirm(`Apagar "${n.titulo}"? Isso não pode ser desfeito.`)) return
-    if (await apagarNovidade(n.id)) carregar()
-    else showToast('Não foi possível apagar.', 'error')
+    if (await apagarNovidade(n.id)) {
+      showToast(`"${n.titulo}" foi para a lixeira. Dá para restaurar lá embaixo.`, 'success')
+      carregar()
+    } else showToast('Não foi possível apagar.', 'error')
+  }
+
+  const restaurar = async (n: Novidade) => {
+    if (await restaurarNovidade(n.id)) {
+      showToast(n.rascunho ? 'Restaurada em Prontas para publicar.' : 'Restaurada, desligada. Publique quando quiser.', 'success')
+      carregar()
+    } else showToast('Não foi possível restaurar.', 'error')
   }
 
   const publicar = async (n: Novidade) => {
@@ -105,8 +113,9 @@ export default function AbaNovidades() {
   }
 
   const agora = new Date()
-  const prontas = lista.filter(n => n.rascunho)
-  const demais = lista.filter(n => !n.rascunho)
+  const lixeira = lista.filter(n => n.apagada_em)
+  const prontas = lista.filter(n => n.rascunho && !n.apagada_em)
+  const demais = lista.filter(n => !n.rascunho && !n.apagada_em)
 
   return (
     <div className="space-y-5">
@@ -119,14 +128,14 @@ export default function AbaNovidades() {
           </p>
         </div>
         {!rascunho && (
-          <button type="button" onClick={() => setRascunho(rascunhoVazio())} className="inline-flex items-center gap-1.5 rounded-xl bg-holo-1 px-4 py-2 text-sm font-bold text-bg cursor-pointer">
+          <button type="button" onClick={() => setRascunho(rascunhoVazio())} className="inline-flex items-center gap-1.5 rounded-xl bg-holo-1 px-4 py-2 text-sm font-bold text-void cursor-pointer">
             <Plus size={16} /> Nova novidade
           </button>
         )}
       </header>
 
       {rascunho && (
-        <form onSubmit={enviar} className="rounded-2xl border border-holo-1/30 bg-surface/60 p-4 space-y-3">
+        <form onSubmit={enviar} className="rounded-2xl border border-holo-1/30 bg-panel p-4 space-y-3">
           <div className="grid gap-3 sm:grid-cols-2">
             <label className="block text-sm text-muted sm:col-span-2">
               Título
@@ -174,7 +183,7 @@ export default function AbaNovidades() {
                   type="button"
                   disabled={rascunho.links.filter(l => l.caminho || l.rotulo).length >= 6}
                   onClick={() => mudar('links', [...rascunho.links.filter(l => l.caminho || l.rotulo), s])}
-                  className="rounded-full border border-white/10 px-2 py-0.5 text-xs text-muted hover:text-text cursor-pointer disabled:opacity-40"
+                  className="rounded-full border border-line px-2 py-0.5 text-xs text-muted hover:text-text cursor-pointer disabled:opacity-40"
                 >
                   {s.rotulo}
                 </button>
@@ -196,7 +205,7 @@ export default function AbaNovidades() {
 
           <div className="flex gap-2 justify-end">
             <button type="button" onClick={() => setRascunho(null)} className="rounded-xl px-4 py-2 text-sm text-muted cursor-pointer">Cancelar</button>
-            <button type="submit" disabled={salvando} className="inline-flex items-center gap-1.5 rounded-xl bg-holo-1 px-4 py-2 text-sm font-bold text-bg cursor-pointer disabled:opacity-50">
+            <button type="submit" disabled={salvando} className="inline-flex items-center gap-1.5 rounded-xl bg-holo-1 px-4 py-2 text-sm font-bold text-void cursor-pointer disabled:opacity-50">
               <Save size={16} /> {rascunho.id ? 'Salvar' : 'Publicar'}
             </button>
           </div>
@@ -213,10 +222,10 @@ export default function AbaNovidades() {
             <div key={n.id} className="space-y-2">
               <CartaoNovidade novidade={n} />
               <div className="flex flex-wrap items-center gap-2">
-                <button type="button" onClick={() => publicar(n)} className="inline-flex items-center gap-1.5 rounded-xl bg-gold px-4 py-2 text-sm font-bold text-bg cursor-pointer">
+                <button type="button" onClick={() => publicar(n)} className="inline-flex items-center gap-1.5 rounded-xl bg-gold px-4 py-2 text-sm font-bold text-void cursor-pointer">
                   <Send size={16} /> Publicar
                 </button>
-                <button type="button" onClick={() => setRascunho(rascunhoDe(n))} className="inline-flex items-center gap-1.5 rounded-xl border border-white/10 px-3 py-2 text-sm text-text cursor-pointer">
+                <button type="button" onClick={() => setRascunho(rascunhoDe(n))} className="inline-flex items-center gap-1.5 rounded-xl border border-line px-3 py-2 text-sm text-text cursor-pointer">
                   <Pencil size={14} /> Editar
                 </button>
                 <label className="flex items-center gap-1.5 text-xs text-muted">
@@ -238,13 +247,13 @@ export default function AbaNovidades() {
         {demais.map(n => {
           const agendada = new Date(n.publicado_em) > agora
           return (
-            <li key={n.id} className="rounded-2xl border border-white/10 bg-surface/40 p-3">
+            <li key={n.id} className="rounded-2xl border border-line bg-panel p-3">
               <div className="flex flex-wrap items-center gap-2">
                 <span className="flex-1 min-w-0 font-semibold text-text truncate">{n.titulo}</span>
                 <span className="text-xs text-muted">{ROTULO_CATEGORIA[n.categoria]} · {dataHoraDaNovidade(n.publicado_em)}</span>
               </div>
               <div className="mt-1 flex flex-wrap items-center gap-2 text-xs">
-                {!n.ativo && <span className="rounded-full bg-white/10 px-2 py-0.5 text-muted">Desligada</span>}
+                {!n.ativo && <span className="rounded-full bg-panel-2 px-2 py-0.5 text-muted">Desligada</span>}
                 {n.ativo && agendada && <span className="rounded-full bg-gold/15 px-2 py-0.5 text-gold">Agendada</span>}
                 {n.no_meio_da_tela && <span className="rounded-full bg-holo-1/15 px-2 py-0.5 text-holo-1">No meio da tela</span>}
                 <span className="text-muted">{alcance[n.id] ?? 0} viram o aviso</span>
@@ -266,6 +275,23 @@ export default function AbaNovidades() {
           )
         })}
       </ul>
+
+      {lixeira.length > 0 && (
+        <details className="rounded-2xl border border-line bg-panel p-3">
+          <summary className="cursor-pointer text-sm text-muted">Lixeira ({lixeira.length})</summary>
+          <ul className="mt-2 space-y-2 p-0 list-none">
+            {lixeira.map(n => (
+              <li key={n.id} className="flex flex-wrap items-center gap-2 rounded-xl bg-panel-2 px-3 py-2">
+                <span className="flex-1 min-w-0 truncate text-sm text-text">{n.titulo}</span>
+                <span className="text-xs text-muted">{ROTULO_CATEGORIA[n.categoria]}</span>
+                <button type="button" onClick={() => restaurar(n)} className="rounded-lg border border-holo-1/40 px-3 py-1 text-xs font-semibold text-holo-1 cursor-pointer">
+                  Restaurar
+                </button>
+              </li>
+            ))}
+          </ul>
+        </details>
+      )}
     </div>
   )
 }

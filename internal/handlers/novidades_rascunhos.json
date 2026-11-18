@@ -5,8 +5,14 @@
     "categoria": "novidade",
     "resumo": "Seu personagem tem um HP só: o da barra do topo. Ele regenera sozinho (5% por hora), cada episódio assistido cura 8% e as batalhas tiram HP. Defesa alta faz perder menos.\n\nChegaram dois jeitos novos de se recuperar nas Expedições: a Fonte termal, que enche HP e Mana uma vez por dia, e a Poção de Mana. A Pousada e a Poção de HP continuam lá.\n\nAtenção: depois de 3 dias sem assistir nada, o HP começa a cair 10% por dia. O Modo Descanso protege.",
     "links": [
-      { "rotulo": "Ver Expedições", "caminho": "/expedicoes" },
-      { "rotulo": "Ver Personagem", "caminho": "/personagem" }
+      {
+        "rotulo": "Ver Expedições",
+        "caminho": "/expedicoes"
+      },
+      {
+        "rotulo": "Ver Personagem",
+        "caminho": "/personagem"
+      }
     ]
   },
   {
@@ -15,7 +21,22 @@
     "categoria": "novidade",
     "resumo": "Agora toda atualização do AniDeck fica registrada numa página só, com data e hora: funções novas, correções e mudanças de layout. Quando sair algo importante, você recebe o aviso aqui mesmo, com o caminho para conferir.",
     "links": [
-      { "rotulo": "Ver Novidades", "caminho": "/novidades" }
+      {
+        "rotulo": "Ver Novidades",
+        "caminho": "/novidades"
+      }
+    ]
+  },
+  {
+    "chave": "2026-11-17-pagina-novidades-2",
+    "titulo": "Nova página: Novidades",
+    "categoria": "novidade",
+    "resumo": "Agora toda atualização do AniDeck fica registrada numa página só, com data e hora: funções novas, correções e mudanças de layout. Quando sair algo importante, você recebe o aviso aqui mesmo, com o caminho para conferir.",
+    "links": [
+      {
+        "rotulo": "Ver Novidades",
+        "caminho": "/novidades"
+      }
     ]
   }
 ]

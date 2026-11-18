@@ -146,6 +146,7 @@ SELECT pg_get_viewdef('nome_da_view'::regclass, true);
 | `114_hp_unico.sql` | HP único: `vitalidade_atual()` passa a ler a Vida de `rpg_recursos` (definição viva; antes `048`); `rpg_regras_vida()` ganha inatividade, Poção de Mana e Fonte termal; `rpg_aplicar_inatividade()` (tarefa diária `hp_inatividade`); `rpg_recuperar_vida()` aceita `pocao_mana` e `fonte` (definição viva; antes `081`). Colunas `fonte_em` e `inatividade_em` | — |
 | `115_novidades.sql` | Tabelas `novidades` (título, resumo, categoria, até 6 caminhos internos, data e hora, chave "no meio da tela", ligada/desligada) e `novidades_vistas`; RLS de leitura para publicadas (admin lê todas); `novidades_nao_vistas()`, `marcar_novidades_vistas()`, e para o admin `salvar_novidade()`, `apagar_novidade()` e `novidades_alcance()` | — |
 | `116_novidades_rascunhos.sql` | Colunas `novidades.chave` (única) e `rascunho`; `novidades_chaves_importadas` (chave apagada não volta); `importar_rascunho_novidade()` (service role, chamada no boot do site com `internal/handlers/novidades_rascunhos.json`); gatilho que tira o rascunho ao publicar. **Depois do `115`** | — |
+| `117_novidades_lixeira.sql` | `novidades.apagada_em`; `apagar_novidade()` passa a mandar para a Lixeira (definição viva; antes `115`) e `restaurar_novidade()` traz de volta. **Depois do `116`** | — |
 
 Datas com `~` são a data do commit, não da aplicação no Supabase.
 

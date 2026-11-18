@@ -6,7 +6,7 @@ import { COR_CATEGORIA, ROTULO_CATEGORIA, dataHoraDaNovidade, type Novidade } fr
 
 export default function CartaoNovidade({ novidade, aoNavegar }: { novidade: Novidade; aoNavegar?: () => void }) {
   return (
-    <article className="rounded-2xl border border-white/10 bg-surface/60 p-4 space-y-2">
+    <article className="rounded-2xl border border-line bg-panel-2 p-4 space-y-2">
       <div className="flex flex-wrap items-center gap-2 text-xs">
         <span className={`rounded-full border px-2 py-0.5 font-semibold ${COR_CATEGORIA[novidade.categoria]}`}>
           {ROTULO_CATEGORIA[novidade.categoria]}

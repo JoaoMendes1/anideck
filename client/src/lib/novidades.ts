@@ -21,6 +21,8 @@ export interface Novidade {
   ativo: boolean
   /** Veio pronta com a entrega e ainda não foi publicada (sql/116). */
   rascunho: boolean
+  /** Na lixeira desde quando; nulo fora dela (sql/117). */
+  apagada_em: string | null
 }
 
 export const ROTULO_CATEGORIA: Record<CategoriaNovidade, string> = {
@@ -64,13 +66,14 @@ function normalizar(bruto: Partial<Novidade>): Novidade {
     no_meio_da_tela: Boolean(bruto.no_meio_da_tela),
     ativo: bruto.ativo !== false,
     rascunho: Boolean(bruto.rascunho),
+    apagada_em: bruto.apagada_em ?? null,
   }
 }
 
 export async function listarNovidades(limite = 50): Promise<Novidade[]> {
   const { data, error } = await supabase
     .from('novidades')
-    .select('id,titulo,resumo,categoria,links,publicado_em,no_meio_da_tela,ativo,rascunho')
+    .select('id,titulo,resumo,categoria,links,publicado_em,no_meio_da_tela,ativo,rascunho,apagada_em')
     .order('publicado_em', { ascending: false })
     .limit(limite)
   if (error || !Array.isArray(data)) return []
@@ -132,6 +135,11 @@ export async function salvarNovidade(r: RascunhoNovidade): Promise<{ ok: true } 
 
 export async function apagarNovidade(id: string): Promise<boolean> {
   const { error } = await supabase.rpc('apagar_novidade', { p_id: id })
+  return !error
+}
+
+export async function restaurarNovidade(id: string): Promise<boolean> {
+  const { error } = await supabase.rpc('restaurar_novidade', { p_id: id })
   return !error
 }
 

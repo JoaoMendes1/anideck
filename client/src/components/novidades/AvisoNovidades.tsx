@@ -45,9 +45,9 @@ export default function AvisoNovidades() {
   const varias = lista.length > 1
 
   return createPortal(
-    <div className="fixed inset-0 z-[70] flex items-center justify-center bg-black/70 p-4" role="dialog" aria-modal="true" aria-labelledby="titulo-novidades">
-      <div className="w-full max-w-lg max-h-[85vh] flex flex-col rounded-3xl border border-white/10 bg-bg shadow-2xl">
-        <header className="flex items-center gap-3 border-b border-white/10 px-5 py-4">
+    <div className="fixed inset-0 z-[70] flex items-center justify-center bg-void/85 backdrop-blur-sm p-4" role="dialog" aria-modal="true" aria-labelledby="titulo-novidades">
+      <div className="w-full max-w-lg max-h-[85vh] flex flex-col rounded-3xl border border-line bg-panel shadow-2xl">
+        <header className="flex items-center gap-3 border-b border-line px-5 py-4">
           <Megaphone size={20} className="text-holo-1 shrink-0" aria-hidden />
           <h2 id="titulo-novidades" className="m-0 flex-1 text-lg font-bold text-text">
             {varias ? `${lista.length} atualizações novas` : 'Atualização nova'}
@@ -60,11 +60,11 @@ export default function AvisoNovidades() {
           {varias && <p className="m-0 text-sm text-muted">Escolha o que quer conferir primeiro:</p>}
           {lista.map(n => <CartaoNovidade key={n.id} novidade={n} aoNavegar={fechar} />)}
         </div>
-        <footer className="flex items-center justify-between gap-3 border-t border-white/10 px-5 py-3">
+        <footer className="flex items-center justify-between gap-3 border-t border-line px-5 py-3">
           <Link to="/novidades" onClick={fechar} className="text-sm text-muted hover:text-text">
             Ver todas as novidades
           </Link>
-          <button type="button" onClick={fechar} className="rounded-xl bg-holo-1 px-4 py-2 text-sm font-bold text-bg cursor-pointer">
+          <button type="button" onClick={fechar} className="rounded-xl bg-holo-1 px-4 py-2 text-sm font-bold text-void cursor-pointer">
             Entendi
           </button>
         </footer>
