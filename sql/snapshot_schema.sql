@@ -1,7 +1,7 @@
 -- =============================================================================
 -- snapshot_schema.sql — RETRATO DO BANCO. NAO EXECUTE ESTE ARQUIVO.
 -- =============================================================================
--- Regenerado em 17/11/2026 10:35 a partir do banco de producao.
+-- Regenerado em 17/11/2026 22:17 a partir do banco de producao.
 --
 -- PARA QUE SERVE: consulta rapida do estado real do banco, sem precisar abrir
 -- o painel do Supabase nem confiar nos arquivos sql/ antigos (que podem ter
@@ -49,6 +49,17 @@
 --     season_year                  integer
 --     last_updated                 timestamp with time zone
 --     tags                         ARRAY
+
+-- anime_reviews
+--     id                           uuid NOT NULL
+--     user_id                      uuid NOT NULL
+--     mal_id                       integer NOT NULL
+--     nota                         numeric
+--     texto                        text NOT NULL
+--     contem_spoiler               boolean NOT NULL
+--     oculto                       boolean NOT NULL
+--     created_at                   timestamp with time zone NOT NULL
+--     updated_at                   timestamp with time zone NOT NULL
 
 -- app_admins
 --     user_id                      uuid NOT NULL
@@ -233,6 +244,26 @@
 --     created_at                   timestamp with time zone NOT NULL
 --     reviewed_at                  timestamp with time zone
 
+-- denuncias
+--     id                           uuid NOT NULL
+--     alvo_tipo                    text NOT NULL
+--     alvo_id                      uuid NOT NULL
+--     alvo_user_id                 uuid NOT NULL
+--     denunciante_id               uuid NOT NULL
+--     motivo                       text NOT NULL
+--     detalhe                      text NOT NULL
+--     status                       text NOT NULL
+--     decisao                      text NOT NULL
+--     resolvida_por                uuid
+--     resolvida_em                 timestamp with time zone
+--     created_at                   timestamp with time zone NOT NULL
+
+-- emails_bloqueados
+--     email_normalizado            text NOT NULL
+--     motivo                       text NOT NULL
+--     punicao_id                   uuid
+--     created_at                   timestamp with time zone NOT NULL
+
 -- episode_comments
 --     id                           uuid NOT NULL
 --     user_id                      uuid NOT NULL
@@ -244,6 +275,7 @@
 --     created_at                   timestamp with time zone NOT NULL
 --     editado_em                   timestamp with time zone
 --     origem                       text
+--     contem_spoiler               boolean NOT NULL
 
 -- episode_progress
 --     id                           uuid NOT NULL
@@ -259,6 +291,16 @@
 --     episode_number               integer NOT NULL
 --     reacao                       text NOT NULL
 --     created_at                   timestamp with time zone NOT NULL
+
+-- estornos
+--     id                           uuid NOT NULL
+--     user_id                      uuid NOT NULL
+--     mal_id                       integer NOT NULL
+--     episode_number               integer NOT NULL
+--     xp_original                  integer NOT NULL
+--     motivo_original              text NOT NULL
+--     earned_at_original           timestamp with time zone
+--     estornado_em                 timestamp with time zone NOT NULL
 
 -- favorite_characters
 --     id                           uuid NOT NULL
@@ -300,6 +342,39 @@
 --     created_at                   timestamp with time zone NOT NULL
 --     updated_at                   timestamp with time zone NOT NULL
 --     is_favorite                  boolean
+--     completado_em                timestamp with time zone
+
+-- missoes_evidencias
+--     id                           bigint NOT NULL
+--     resgate_id                   uuid NOT NULL
+--     user_id                      uuid NOT NULL
+--     tipo_acao                    text NOT NULL
+--     mal_id                       integer
+--     episode_number               integer
+--     comment_id                   uuid
+--     reacao                       text
+--     lancamento                   boolean NOT NULL
+--     do_ano                       boolean NOT NULL
+--     da_temporada                 boolean NOT NULL
+--     generos                      ARRAY NOT NULL
+--     acao_em                      timestamp with time zone NOT NULL
+--     criado_em                    timestamp with time zone NOT NULL
+--     review_id                    uuid
+
+-- missoes_resgates
+--     id                           uuid NOT NULL
+--     user_id                      uuid NOT NULL
+--     referencia                   text NOT NULL
+--     motivo                       text NOT NULL
+--     tipo                         text NOT NULL
+--     meta                         integer NOT NULL
+--     xp                           integer NOT NULL
+--     texto_xp                     text NOT NULL
+--     periodo_inicio               timestamp with time zone NOT NULL
+--     periodo_fim                  timestamp with time zone NOT NULL
+--     genero                       text NOT NULL
+--     estornada_em                 timestamp with time zone
+--     criado_em                    timestamp with time zone NOT NULL
 
 -- notifications
 --     id                           uuid NOT NULL
@@ -310,6 +385,23 @@
 --     created_at                   timestamp with time zone
 --     anime_title                  text
 --     anime_image                  text
+
+-- novidades
+--     id                           uuid NOT NULL
+--     titulo                       text NOT NULL
+--     resumo                       text NOT NULL
+--     categoria                    text NOT NULL
+--     links                        jsonb NOT NULL
+--     publicado_em                 timestamp with time zone NOT NULL
+--     no_meio_da_tela              boolean NOT NULL
+--     ativo                        boolean NOT NULL
+--     criado_por                   uuid
+--     criado_em                    timestamp with time zone NOT NULL
+
+-- novidades_vistas
+--     user_id                      uuid NOT NULL
+--     novidade_id                  uuid NOT NULL
+--     visto_em                     timestamp with time zone NOT NULL
 
 -- olheiro_tags
 --     raw_name                     text NOT NULL
@@ -362,6 +454,22 @@
 --     titulo_ativo                 text
 --     titulos_desbloqueados        ARRAY
 --     avatar_custom                jsonb
+--     mostrar_atividade            boolean NOT NULL
+
+-- punicoes
+--     id                           uuid NOT NULL
+--     user_id                      uuid NOT NULL
+--     tipo                         text NOT NULL
+--     gravidade                    text NOT NULL
+--     motivo                       text NOT NULL
+--     anicoins                     integer NOT NULL
+--     xp                           integer NOT NULL
+--     ate                          timestamp with time zone
+--     denuncia_id                  uuid
+--     aplicada_por                 uuid
+--     created_at                   timestamp with time zone NOT NULL
+--     revogada_em                  timestamp with time zone
+--     xp_ledger_ep                 integer
 
 -- push_subscriptions
 --     id                           uuid NOT NULL
@@ -399,6 +507,15 @@
 --     captured_at                  timestamp with time zone NOT NULL
 --     mal_id                       bigint NOT NULL
 --     position                     integer NOT NULL
+
+-- revisoes
+--     id                           uuid NOT NULL
+--     user_id                      uuid NOT NULL
+--     mal_id                       integer NOT NULL
+--     iniciada_em                  timestamp with time zone NOT NULL
+--     concluida_em                 timestamp with time zone
+--     ativa                        boolean NOT NULL
+--     criado_em                    timestamp with time zone NOT NULL
 
 -- rpg_aprimoramentos
 --     id                           bigint NOT NULL
@@ -577,6 +694,8 @@
 --     pousada_em                   timestamp with time zone
 --     invocacoes_sem_raro          integer NOT NULL
 --     invocacoes_sem_lendario      integer NOT NULL
+--     fonte_em                     timestamp with time zone
+--     inatividade_em               date
 
 -- sala_mensagem_curtidas
 --     mensagem_id                  uuid NOT NULL
@@ -610,6 +729,11 @@
 --     fecha_em                     timestamp with time zone NOT NULL
 --     encerrada                    boolean NOT NULL
 --     created_at                   timestamp with time zone NOT NULL
+
+-- seguidores
+--     seguidor_id                  uuid NOT NULL
+--     seguido_id                   uuid NOT NULL
+--     criado_em                    timestamp with time zone NOT NULL
 
 -- store_items
 --     id                           text NOT NULL
@@ -661,6 +785,11 @@
 --     item_id                      text NOT NULL
 --     adquirido_em                 timestamp with time zone NOT NULL
 
+-- user_preferences
+--     user_id                      uuid NOT NULL
+--     inicio_config                jsonb NOT NULL
+--     updated_at                   timestamp with time zone NOT NULL
+
 -- xp_extra
 --     id                           integer NOT NULL
 --     user_id                      uuid NOT NULL
@@ -678,6 +807,17 @@
 --     reason                       text NOT NULL
 --     earned_at                    timestamp with time zone NOT NULL
 
+-- xp_pendente
+--     id                           uuid NOT NULL
+--     user_id                      uuid NOT NULL
+--     mal_id                       integer NOT NULL
+--     episode_number               integer NOT NULL
+--     xp_pendente                  integer NOT NULL
+--     xp_liberado                  integer NOT NULL
+--     motivo                       text NOT NULL
+--     criado_em                    timestamp with time zone NOT NULL
+--     liberado_em                  timestamp with time zone
+
 -- =============================================================================
 -- [2] RLS POR TABELA
 -- =============================================================================
@@ -689,6 +829,7 @@
 
 -- ai_curation_queue         | RLS: t     | policies: 1
 -- anime_metadata_cache      | RLS: t     | policies: 3
+-- anime_reviews             | RLS: t     | policies: 4
 -- app_admins                | RLS: t     | policies: 0
 -- app_settings              | RLS: t     | policies: 3
 -- chefoes                   | RLS: t     | policies: 2
@@ -707,22 +848,31 @@
 -- curated_animes            | RLS: t     | policies: 4
 -- curation_collab_suggestions | RLS: t     | policies: 2
 -- curation_suggestions      | RLS: t     | policies: 1
+-- denuncias                 | RLS: t     | policies: 0
+-- emails_bloqueados         | RLS: t     | policies: 0
 -- episode_comments          | RLS: t     | policies: 4
 -- episode_progress          | RLS: t     | policies: 1
 -- episode_reactions         | RLS: t     | policies: 3
+-- estornos                  | RLS: t     | policies: 1
 -- favorite_characters       | RLS: t     | policies: 2
 -- genre_taxonomy            | RLS: t     | policies: 3
 -- liga_participacoes        | RLS: t     | policies: 1
 -- media_entries             | RLS: t     | policies: 4
+-- missoes_evidencias        | RLS: t     | policies: 1
+-- missoes_resgates          | RLS: t     | policies: 1
 -- notifications             | RLS: t     | policies: 2
+-- novidades                 | RLS: t     | policies: 1
+-- novidades_vistas          | RLS: t     | policies: 1
 -- olheiro_tags              | RLS: t     | policies: 1
 -- previsao_apostas          | RLS: t     | policies: 1
 -- previsoes                 | RLS: t     | policies: 2
 -- profiles                  | RLS: t     | policies: 3
+-- punicoes                  | RLS: t     | policies: 0
 -- push_subscriptions        | RLS: t     | policies: 1
 -- ranking_current_cache     | RLS: t     | policies: 0
 -- ranking_genero            | RLS: t     | policies: 1
 -- ranking_snapshots         | RLS: t     | policies: 0
+-- revisoes                  | RLS: t     | policies: 1
 -- rpg_aprimoramentos        | RLS: t     | policies: 1
 -- rpg_atributos             | RLS: t     | policies: 1
 -- rpg_batalhas              | RLS: t     | policies: 1
@@ -746,14 +896,17 @@
 -- sala_mensagem_denuncias   | RLS: t     | policies: 1
 -- sala_mensagens            | RLS: t     | policies: 2
 -- salas_estreia             | RLS: t     | policies: 1
+-- seguidores                | RLS: t     | policies: 1
 -- store_items               | RLS: t     | policies: 2
 -- tarefas_periodicas        | RLS: t     | policies: 0
 -- user_blocks               | RLS: t     | policies: 1
 -- user_cards                | RLS: t     | policies: 1
 -- user_equipped             | RLS: t     | policies: 1
 -- user_items                | RLS: t     | policies: 1
+-- user_preferences          | RLS: t     | policies: 3
 -- xp_extra                  | RLS: t     | policies: 1
 -- xp_ledger                 | RLS: t     | policies: 2
+-- xp_pendente               | RLS: t     | policies: 1
 
 -- =============================================================================
 -- [3] VIEWS — definicao viva
@@ -1069,6 +1222,22 @@ CREATE OR REPLACE VIEW public.view_user_year_distribution WITH (security_invoker
 --     USING:  ( SELECT is_admin() AS is_admin)
 --     CHECK:  ( SELECT is_admin() AS is_admin)
 
+-- anime_reviews          | anime_reviews_remove                          | DELETE | authenticated     
+--     USING:  ((( SELECT auth.uid() AS uid) = user_id) OR ( SELECT is_admin() AS is_admin))
+--     CHECK:  -
+
+-- anime_reviews          | anime_reviews_cria                            | INSERT | authenticated     
+--     USING:  -
+--     CHECK:  ((( SELECT auth.uid() AS uid) = user_id) AND (NOT oculto) AND pode_avaliar_anime(( SELECT auth.uid() AS uid), mal_id))
+
+-- anime_reviews          | anime_reviews_leitura                         | SELECT | anon,authenticated
+--     USING:  ((NOT oculto) OR (( SELECT auth.uid() AS uid) = user_id) OR ( SELECT is_admin() AS is_admin))
+--     CHECK:  -
+
+-- anime_reviews          | anime_reviews_edita                           | UPDATE | authenticated     
+--     USING:  ((( SELECT auth.uid() AS uid) = user_id) AND (NOT oculto))
+--     CHECK:  ((( SELECT auth.uid() AS uid) = user_id) AND (NOT oculto) AND pode_avaliar_anime(( SELECT auth.uid() AS uid), mal_id))
+
 -- app_settings           | app_settings_insert_admin                     | INSERT | public            
 --     USING:  -
 --     CHECK:  is_admin()
@@ -1231,6 +1400,10 @@ CREATE OR REPLACE VIEW public.view_user_year_distribution WITH (security_invoker
 --     USING:  (( SELECT auth.uid() AS uid) = user_id)
 --     CHECK:  -
 
+-- estornos               | estornos_le_o_proprio                         | SELECT | authenticated     
+--     USING:  ((( SELECT auth.uid() AS uid) = user_id) OR ( SELECT is_admin() AS is_admin))
+--     CHECK:  -
+
 -- favorite_characters    | Usuários gerenciam seus próprios personagens favoritos | ALL    | public            
 --     USING:  (auth.uid() = user_id)
 --     CHECK:  (auth.uid() = user_id)
@@ -1275,6 +1448,14 @@ CREATE OR REPLACE VIEW public.view_user_year_distribution WITH (security_invoker
 --     USING:  (( SELECT auth.uid() AS uid) = user_id)
 --     CHECK:  (( SELECT auth.uid() AS uid) = user_id)
 
+-- missoes_evidencias     | missoes_evidencias_le_o_proprio               | SELECT | authenticated     
+--     USING:  ((( SELECT auth.uid() AS uid) = user_id) OR ( SELECT is_admin() AS is_admin))
+--     CHECK:  -
+
+-- missoes_resgates       | missoes_resgates_le_o_proprio                 | SELECT | authenticated     
+--     USING:  ((( SELECT auth.uid() AS uid) = user_id) OR ( SELECT is_admin() AS is_admin))
+--     CHECK:  -
+
 -- notifications          | Users view own notifications                  | SELECT | public            
 --     USING:  (( SELECT auth.uid() AS uid) = user_id)
 --     CHECK:  -
@@ -1282,6 +1463,14 @@ CREATE OR REPLACE VIEW public.view_user_year_distribution WITH (security_invoker
 -- notifications          | Users update own notifications                | UPDATE | public            
 --     USING:  (( SELECT auth.uid() AS uid) = user_id)
 --     CHECK:  (( SELECT auth.uid() AS uid) = user_id)
+
+-- novidades              | novidades_ler                                 | SELECT | authenticated     
+--     USING:  ((ativo AND (publicado_em <= now())) OR is_admin())
+--     CHECK:  -
+
+-- novidades_vistas       | novidades_vistas_ler                          | SELECT | authenticated     
+--     USING:  (user_id = auth.uid())
+--     CHECK:  -
 
 -- olheiro_tags           | olheiro_tags_admin                            | ALL    | public            
 --     USING:  is_admin()
@@ -1317,6 +1506,10 @@ CREATE OR REPLACE VIEW public.view_user_year_distribution WITH (security_invoker
 
 -- ranking_genero         | Qualquer um pode ler ranking por genero       | SELECT | public            
 --     USING:  true
+--     CHECK:  -
+
+-- revisoes               | revisoes_le_o_proprio                         | SELECT | authenticated     
+--     USING:  ((( SELECT auth.uid() AS uid) = user_id) OR ( SELECT is_admin() AS is_admin))
 --     CHECK:  -
 
 -- rpg_aprimoramentos     | rpg_aprimoramentos_le_o_proprio               | SELECT | authenticated     
@@ -1437,6 +1630,10 @@ CREATE OR REPLACE VIEW public.view_user_year_distribution WITH (security_invoker
 --     USING:  true
 --     CHECK:  -
 
+-- seguidores             | seguidores_le_os_proprios                     | SELECT | authenticated     
+--     USING:  (( SELECT auth.uid() AS uid) = seguidor_id)
+--     CHECK:  -
+
 -- store_items            | Escrita de itens da loja por admin            | ALL    | authenticated     
 --     USING:  is_admin()
 --     CHECK:  is_admin()
@@ -1463,6 +1660,18 @@ CREATE OR REPLACE VIEW public.view_user_year_distribution WITH (security_invoker
 --     USING:  ((user_id = auth.uid()) OR is_admin())
 --     CHECK:  -
 
+-- user_preferences       | user_preferences_insert_own                   | INSERT | authenticated     
+--     USING:  -
+--     CHECK:  (( SELECT auth.uid() AS uid) = user_id)
+
+-- user_preferences       | user_preferences_select_own                   | SELECT | authenticated     
+--     USING:  (( SELECT auth.uid() AS uid) = user_id)
+--     CHECK:  -
+
+-- user_preferences       | user_preferences_update_own                   | UPDATE | authenticated     
+--     USING:  (( SELECT auth.uid() AS uid) = user_id)
+--     CHECK:  (( SELECT auth.uid() AS uid) = user_id)
+
 -- xp_extra               | xp_extra_le_o_proprio                         | SELECT | authenticated     
 --     USING:  (( SELECT auth.uid() AS uid) = user_id)
 --     CHECK:  -
@@ -1473,6 +1682,10 @@ CREATE OR REPLACE VIEW public.view_user_year_distribution WITH (security_invoker
 
 -- xp_ledger              | xp_ledger_admin_select                        | SELECT | authenticated     
 --     USING:  ( SELECT is_admin() AS is_admin)
+--     CHECK:  -
+
+-- xp_pendente            | xp_pendente_le_o_proprio                      | SELECT | authenticated     
+--     USING:  ((( SELECT auth.uid() AS uid) = user_id) OR ( SELECT is_admin() AS is_admin))
 --     CHECK:  -
 
 -- =============================================================================
@@ -1517,52 +1730,80 @@ CREATE OR REPLACE VIEW public.view_user_year_distribution WITH (security_invoker
 -- admin_revisar_sugestao_curadoria | definer: t     | anon: t     | auth: t     | service: t     | search_path=public, pg_temp
 -- alterar_papel_membro_cla       | definer: t     | anon: t     | auth: t     | service: t     | search_path=public, pg_temp
 -- anideck_wrapped                | definer: t     | anon: t     | auth: t     | service: t     | search_path=public, pg_temp
+-- animes_em_alta_comunidade      | definer: t     | anon: t     | auth: t     | service: t     | search_path=public, pg_temp
+-- apagar_novidade                | definer: t     | anon: f     | auth: t     | service: t     | search_path=public, pg_temp
+-- aplicar_punicao                | definer: t     | anon: f     | auth: f     | service: t     | search_path=public, pg_temp
 -- apostar_previsao               | definer: t     | anon: t     | auth: t     | service: t     | search_path=public, pg_temp
 -- ativar_descanso                | definer: t     | anon: f     | auth: t     | service: t     | search_path=public, pg_temp
+-- atividade_assistindo           | definer: t     | anon: f     | auth: f     | service: t     | search_path=public, pg_temp
+-- atividade_do_perfil            | definer: t     | anon: f     | auth: f     | service: t     | search_path=public, pg_temp
+-- atividade_eventos              | definer: t     | anon: f     | auth: f     | service: t     | search_path=public, pg_temp
 -- atualizar_ranking_genero       | definer: t     | anon: f     | auth: f     | service: t     | search_path=public, pg_temp
+-- barrar_email_bloqueado         | definer: t     | anon: t     | auth: t     | service: t     | search_path=public, pg_temp
+-- barrar_silenciado              | definer: t     | anon: t     | auth: t     | service: t     | search_path=public, pg_temp
 -- calcular_datas_semana          | definer: f     | anon: t     | auth: t     | service: t     | search_path=public, pg_temp
 -- calcular_datas_temporada       | definer: f     | anon: t     | auth: t     | service: t     | search_path=public, pg_temp
+-- calcular_nivel_por_xp          | definer: f     | anon: t     | auth: t     | service: t     | search_path=public, pg_temp
 -- calcular_nivel_usuario         | definer: t     | anon: t     | auth: t     | service: t     | search_path=public, pg_temp
 -- comprar_item                   | definer: t     | anon: f     | auth: t     | service: t     | search_path=public, pg_temp
 -- conceder_xp_extra              | definer: t     | anon: f     | auth: f     | service: t     | search_path=public, pg_temp
+-- config_inteira                 | definer: t     | anon: f     | auth: t     | service: t     | search_path=public, pg_temp
 -- contagem_conversa              | definer: t     | anon: t     | auth: t     | service: t     | search_path=public, pg_temp
 -- contar_animes_com_tag          | definer: f     | anon: f     | auth: t     | service: t     | search_path=public, pg_temp
 -- convidar_membro_cla            | definer: t     | anon: t     | auth: t     | service: t     | search_path=public, pg_temp
 -- creditar_cristais              | definer: t     | anon: f     | auth: f     | service: t     | search_path=public, pg_temp
 -- criar_cla                      | definer: t     | anon: t     | auth: t     | service: t     | search_path=public, pg_temp
 -- debitar_cristais               | definer: t     | anon: f     | auth: f     | service: t     | search_path=public, pg_temp
+-- decidir_denuncia               | definer: t     | anon: f     | auth: f     | service: t     | search_path=public, pg_temp
+-- denunciar                      | definer: t     | anon: f     | auth: t     | service: t     | search_path=public, pg_temp
 -- denunciar_cla                  | definer: t     | anon: t     | auth: t     | service: t     | search_path=public, pg_temp
 -- despertar_personagem           | definer: t     | anon: f     | auth: t     | service: t     | search_path=public, pg_temp
 -- devolver_item                  | definer: t     | anon: f     | auth: t     | service: t     | search_path=public, pg_temp
 -- duelo_de_gosto                 | definer: t     | anon: t     | auth: t     | service: t     | search_path=public, pg_temp
+-- enfileirar_xp_pendente_ao_inserir_acervo | definer: t     | anon: f     | auth: f     | service: t     | search_path=public, pg_temp
 -- entrar_cla                     | definer: t     | anon: t     | auth: t     | service: t     | search_path=public, pg_temp
 -- equipar_item                   | definer: t     | anon: f     | auth: t     | service: t     | search_path=public, pg_temp
 -- equipar_titulo                 | definer: t     | anon: t     | auth: t     | service: t     | search_path=public, pg_temp
--- escolher_classe                | definer: t     | anon: t     | auth: t     | service: t     | search_path=public, pg_temp
+-- executar_saida_completo        | definer: t     | anon: f     | auth: f     | service: t     | search_path=public, pg_temp
 -- expulsar_membro_cla            | definer: t     | anon: t     | auth: t     | service: t     | search_path=public, pg_temp
 -- fechar_sala_estreia            | definer: t     | anon: t     | auth: t     | service: t     | sem search_path
 -- fechar_semana_desafios_cla     | definer: t     | anon: f     | auth: f     | service: t     | search_path=public, pg_temp
 -- fechar_semana_liga             | definer: t     | anon: f     | auth: f     | service: t     | search_path=public, pg_temp
 -- fechar_temporada_clas          | definer: t     | anon: f     | auth: f     | service: t     | search_path=public, pg_temp
+-- feed_comunidade                | definer: t     | anon: f     | auth: f     | service: t     | search_path=public, pg_temp
 -- fn_sala_mensagem_curtida_toggle | definer: t     | anon: t     | auth: t     | service: t     | sem search_path
 -- fn_sala_mensagens_rate_limit   | definer: t     | anon: t     | auth: t     | service: t     | sem search_path
 -- fn_user_genre_affinity         | definer: f     | anon: t     | auth: t     | service: t     | search_path=public, pg_temp
 -- garantir_desafio_semanal_cla   | definer: t     | anon: t     | auth: t     | service: t     | search_path=public, pg_temp
 -- gastar_mana_ao_comentar        | definer: t     | anon: t     | auth: t     | service: t     | search_path=public, pg_temp
+-- gatilho_reavaliar_missoes      | definer: t     | anon: f     | auth: f     | service: t     | search_path=public, pg_temp
+-- gerenciar_revisoes_ao_mudar_status | definer: t     | anon: f     | auth: f     | service: t     | search_path=public, pg_temp
 -- get_cron_media_entries         | definer: t     | anon: f     | auth: f     | service: t     | search_path=public
 -- hook_limite_cadastros          | definer: f     | anon: f     | auth: f     | service: t     | search_path=public, pg_temp
 -- is_admin                       | definer: t     | anon: t     | auth: t     | service: t     | search_path=public, pg_temp
+-- ler_economia_guilda            | definer: t     | anon: f     | auth: f     | service: t     | search_path=public, pg_temp
+-- liberar_xp_pendente            | definer: t     | anon: f     | auth: f     | service: t     | search_path=public, pg_temp
+-- limpar_completo_sem_episodios  | definer: t     | anon: f     | auth: f     | service: t     | search_path=public, pg_temp
 -- limpar_mensagens_antigas_salas | definer: t     | anon: t     | auth: t     | service: t     | sem search_path
+-- limpar_progresso_ao_remover_entrada | definer: t     | anon: f     | auth: f     | service: t     | search_path=public, pg_temp
 -- listar_clas                    | definer: t     | anon: t     | auth: t     | service: t     | search_path=public, pg_temp
 -- listar_demanda_curadoria       | definer: t     | anon: f     | auth: t     | service: t     | search_path=public, pg_temp
 -- listar_previsoes_ativas        | definer: t     | anon: t     | auth: t     | service: t     | search_path=public, pg_temp
 -- listar_temporadas_campeoes_clas | definer: f     | anon: t     | auth: t     | service: t     | search_path=public, pg_temp
 -- mana_atual                     | definer: t     | anon: f     | auth: t     | service: t     | search_path=public, pg_temp
 -- mana_maxima                    | definer: t     | anon: f     | auth: t     | service: t     | search_path=public, pg_temp
+-- manter_completado_em           | definer: f     | anon: t     | auth: t     | service: t     | search_path=public, pg_temp
+-- marcar_novidades_vistas        | definer: t     | anon: f     | auth: t     | service: t     | search_path=public, pg_temp
 -- meu_desafio_cla_resumo         | definer: t     | anon: t     | auth: t     | service: t     | search_path=public, pg_temp
 -- meu_saldo_cristais             | definer: t     | anon: t     | auth: t     | service: t     | search_path=public, pg_temp
 -- minha_mana                     | definer: t     | anon: f     | auth: t     | service: t     | search_path=public, pg_temp
 -- minha_vitalidade               | definer: t     | anon: f     | auth: t     | service: t     | search_path=public, pg_temp
+-- minhas_punicoes                | definer: t     | anon: f     | auth: t     | service: t     | search_path=public, pg_temp
+-- moderacao_pendentes            | definer: t     | anon: f     | auth: t     | service: t     | search_path=public, pg_temp
+-- normalizar_email               | definer: f     | anon: t     | auth: t     | service: t     | sem search_path
+-- novidades_alcance              | definer: t     | anon: f     | auth: t     | service: t     | search_path=public, pg_temp
+-- novidades_nao_vistas           | definer: t     | anon: f     | auth: t     | service: t     | search_path=public, pg_temp
+-- numeros_comunidade_anime       | definer: t     | anon: t     | auth: t     | service: t     | search_path=public, pg_temp
 -- obter_chefao_atual             | definer: t     | anon: t     | auth: t     | service: t     | search_path=public, pg_temp
 -- obter_cla_detalhe              | definer: t     | anon: t     | auth: t     | service: t     | search_path=public, pg_temp
 -- obter_desafio_semanal_cla      | definer: t     | anon: t     | auth: t     | service: t     | search_path=public, pg_temp
@@ -1571,22 +1812,31 @@ CREATE OR REPLACE VIEW public.view_user_year_distribution WITH (security_invoker
 -- pagar_recompensas_chefao       | definer: t     | anon: t     | auth: t     | service: t     | search_path=public, pg_temp
 -- pegar_proximo_da_fila_ia       | definer: f     | anon: f     | auth: f     | service: t     | search_path=public, pg_temp
 -- perfil_publico                 | definer: t     | anon: t     | auth: t     | service: t     | search_path=public, pg_temp
+-- pode_avaliar_anime             | definer: t     | anon: f     | auth: t     | service: t     | search_path=public, pg_temp
+-- previa_saida_completo          | definer: t     | anon: f     | auth: f     | service: t     | search_path=public, pg_temp
 -- process_cron_notification      | definer: t     | anon: f     | auth: f     | service: t     | search_path=public
 -- processar_carta_anime_completo | definer: t     | anon: t     | auth: t     | service: t     | search_path=public, pg_temp
 -- proteger_handle_reservado      | definer: t     | anon: t     | auth: t     | service: t     | search_path=public, pg_temp
+-- proteger_pendente_em_revisao   | definer: t     | anon: f     | auth: f     | service: t     | search_path=public, pg_temp
+-- proteger_xp_em_revisao         | definer: t     | anon: f     | auth: f     | service: t     | search_path=public, pg_temp
 -- ranking_clas_temporada         | definer: t     | anon: t     | auth: t     | service: t     | search_path=public, pg_temp
 -- ranking_membros                | definer: t     | anon: t     | auth: t     | service: t     | search_path=public, pg_temp
+-- reavaliar_missoes              | definer: t     | anon: f     | auth: f     | service: t     | search_path=public, pg_temp
 -- recalcular_raridade_cartas     | definer: t     | anon: f     | auth: f     | service: t     | search_path=public, pg_temp
 -- regra_comunidade               | definer: f     | anon: t     | auth: t     | service: t     | search_path=public, pg_temp
+-- regras_fundar_cla              | definer: t     | anon: t     | auth: t     | service: t     | search_path=public, pg_temp
 -- remover_tag_curadoria          | definer: t     | anon: f     | auth: t     | service: t     | search_path=public, pg_temp
--- remover_xp_ao_desmarcar_episodio | definer: f     | anon: t     | auth: t     | service: t     | search_path=public, pg_temp
+-- remover_xp_ao_desmarcar_episodio | definer: t     | anon: t     | auth: t     | service: t     | search_path=public, pg_temp
 -- renomear_tag_curadoria         | definer: t     | anon: f     | auth: t     | service: t     | search_path=public, pg_temp
 -- reservar_tarefa_periodica      | definer: f     | anon: f     | auth: f     | service: t     | search_path=public, pg_temp
+-- resgatar_boas_vindas           | definer: t     | anon: f     | auth: t     | service: t     | search_path=public, pg_temp
 -- resgatar_codigo_convite        | definer: t     | anon: t     | auth: t     | service: t     | search_path=public, pg_temp
 -- resgatar_missao                | definer: t     | anon: f     | auth: f     | service: t     | search_path=public, pg_temp
 -- resolver_previsao              | definer: t     | anon: t     | auth: t     | service: t     | search_path=public, pg_temp
 -- responder_convite_cla          | definer: t     | anon: t     | auth: t     | service: t     | search_path=public, pg_temp
+-- revogar_punicao                | definer: t     | anon: f     | auth: f     | service: t     | search_path=public, pg_temp
 -- rls_auto_enable                | definer: t     | anon: t     | auth: t     | service: t     | search_path=pg_catalog
+-- rpg_aplicar_inatividade        | definer: t     | anon: f     | auth: f     | service: t     | search_path=public, pg_temp
 -- rpg_aprimorar_item             | definer: t     | anon: f     | auth: f     | service: t     | search_path=public, pg_temp
 -- rpg_batalhas_hoje              | definer: t     | anon: f     | auth: t     | service: t     | search_path=public, pg_temp
 -- rpg_chance_lendario            | definer: f     | anon: f     | auth: t     | service: t     | search_path=public, pg_temp
@@ -1622,12 +1872,19 @@ CREATE OR REPLACE VIEW public.view_user_year_distribution WITH (security_invoker
 -- saldo_caixa_loja               | definer: t     | anon: f     | auth: f     | service: t     | search_path=public, pg_temp
 -- saldo_cristais_usuario         | definer: t     | anon: f     | auth: f     | service: t     | search_path=public, pg_temp
 -- salvar_avatar_customizado      | definer: t     | anon: f     | auth: t     | service: t     | search_path=public, pg_temp
+-- salvar_novidade                | definer: t     | anon: f     | auth: t     | service: t     | search_path=public, pg_temp
+-- silenciado_ate                 | definer: t     | anon: f     | auth: t     | service: t     | search_path=public, pg_temp
 -- sincronizar_xp_liga_semana     | definer: t     | anon: f     | auth: t     | service: t     | search_path=public, pg_temp
+-- social_bloqueados              | definer: t     | anon: f     | auth: f     | service: t     | search_path=public, pg_temp
+-- social_resumo                  | definer: t     | anon: f     | auth: f     | service: t     | search_path=public, pg_temp
+-- social_seguir                  | definer: t     | anon: f     | auth: f     | service: t     | search_path=public, pg_temp
 -- submeter_sugestao_curadoria    | definer: t     | anon: t     | auth: t     | service: t     | search_path=public, pg_temp
 -- top_reacoes_temporada          | definer: t     | anon: t     | auth: t     | service: t     | search_path=public, pg_temp
 -- total_cristais_em_circulacao   | definer: t     | anon: f     | auth: f     | service: t     | search_path=public, pg_temp
 -- transferir_cristais            | definer: t     | anon: f     | auth: f     | service: t     | search_path=public, pg_temp
 -- transferir_lideranca_cla       | definer: t     | anon: t     | auth: t     | service: t     | search_path=public, pg_temp
+-- trava_pendente_estorno         | definer: t     | anon: f     | auth: f     | service: t     | search_path=public, pg_temp
+-- trava_remarcacao_estorno       | definer: t     | anon: f     | auth: f     | service: t     | search_path=public, pg_temp
 -- uso_do_bucket_curadoria        | definer: f     | anon: f     | auth: t     | service: t     | search_path=public, storage, pg_temp
 -- validar_limite_personagens_favoritos | definer: t     | anon: t     | auth: t     | service: t     | search_path=public, pg_temp
 -- validar_limite_vitrine         | definer: t     | anon: t     | auth: t     | service: t     | search_path=public, pg_temp
