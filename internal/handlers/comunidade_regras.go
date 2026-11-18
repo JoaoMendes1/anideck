@@ -288,9 +288,25 @@ func (l *limitadorDeTaxa) permitir(chave string, max int, janela time.Duration, 
 
 // erroDoBanco traduz a falha de escrita do PostgREST para status e mensagem da tela.
 // O texto vem como "(CÓDIGO) mensagem" (postgrest-go, execute.go).
+// prazoDoSilencio acha "até 24/11 às 21:12" no texto do gatilho do sql/113.
+var prazoDoSilencio = regexp.MustCompile(`até (\d{2}/\d{2} às \d{2}:\d{2})`)
+
+// mensagemDeSilencio explica para a pessoa por que a ação foi recusada, com o prazo quando
+// houver: a frase genérica de erro fazia parecer defeito do app.
+func mensagemDeSilencio(texto string) string {
+	prazo := "por tempo indeterminado"
+	if m := prazoDoSilencio.FindStringSubmatch(texto); len(m) == 2 {
+		prazo = "até " + m[1]
+	}
+	return "Sua conta está silenciada " + prazo + " por má conduta ou por descumprir as regras do AniDeck. " +
+		"Até lá, não dá para comentar, avaliar nem reagir. O motivo aparece no aviso no topo do app."
+}
+
 func erroDoBanco(err error) (int, string) {
 	texto := err.Error()
 	switch {
+	case strings.Contains(texto, "silenciada"):
+		return 403, mensagemDeSilencio(texto)
 	case strings.Contains(texto, "mana_insuficiente"):
 		return 422, "Sua Mana acabou por agora. Ela recarrega sozinha ao longo do dia."
 	case strings.Contains(texto, "perfil_necessario"):

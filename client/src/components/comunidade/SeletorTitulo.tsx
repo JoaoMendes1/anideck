@@ -42,13 +42,15 @@ export default function SeletorTitulo({
 
   return (
     <div className={`p-5 sm:p-6 rounded-2xl bg-panel border border-line ${className}`}>
-      <div className="flex items-center justify-between gap-2 mb-3">
-        <div>
+      {/* No celular o selo desce para baixo do texto: lado a lado, o título ficava espremido
+          numa coluna estreita. */}
+      <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3 mb-4">
+        <div className="min-w-0">
           <span className="font-mono text-xs text-muted-2 uppercase tracking-widest block">// títulos de honra</span>
-          <h3 className="font-anton text-lg uppercase text-text m-0">Título equipado</h3>
+          <h3 className="font-anton text-lg uppercase text-text m-0 whitespace-nowrap">Título equipado</h3>
           <p className="text-xs text-muted m-0 mt-1">Aparece ao lado do seu nome no perfil e nos comentários. Novos títulos vêm de eventos, do Chefão e de convites.</p>
         </div>
-        <span className="font-mono text-xs font-bold text-gold flex items-center gap-1 bg-gold/15 border border-gold/30 px-2.5 py-0.5 rounded-full shrink-0">
+        <span className="self-start font-mono text-xs font-bold text-gold inline-flex items-center gap-1 bg-gold/15 border border-gold/30 px-2.5 py-0.5 rounded-full shrink-0">
           <Award size={12} /> {titulo}
         </span>
       </div>

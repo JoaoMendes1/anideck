@@ -51,12 +51,14 @@ export function descreverPunicao(p: { tipo: TipoPunicao; anicoins?: number; xp?:
   const ate = p.ate ? new Date(p.ate).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' }) : null
   switch (p.tipo) {
     case 'advertencia':
-      return 'Você recebeu uma advertência da moderação.'
+      return 'Você recebeu uma advertência da moderação por descumprir as regras do AniDeck.'
     case 'silenciar':
-      return ate ? `Sua conta está silenciada até ${ate}: não dá para comentar, avaliar nem reagir.` : 'Sua conta está silenciada: não dá para comentar, avaliar nem reagir.'
+      return ate
+        ? `Sua conta está silenciada até ${ate} por má conduta ou por descumprir as regras do AniDeck: até lá, não dá para comentar, avaliar nem reagir.`
+        : 'Sua conta está silenciada por má conduta ou por descumprir as regras do AniDeck: não dá para comentar, avaliar nem reagir.'
     case 'multa': {
       const partes = [p.anicoins ? `${p.anicoins} AniCoins` : '', p.xp ? `${p.xp} XP` : ''].filter(Boolean).join(' e ')
-      return `Você recebeu uma multa de ${partes}.`
+      return `Você recebeu uma multa de ${partes} por má conduta ou por descumprir as regras do AniDeck.`
     }
     default:
       return 'A moderação aplicou uma punição na sua conta.'

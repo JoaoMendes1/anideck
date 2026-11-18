@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -63,5 +64,16 @@ func TestDenunciar_SemLogin(t *testing.T) {
 	(&ModeracaoHandler{}).HandleDenunciar(w, httptest.NewRequest(http.MethodPost, "/api/denuncias", strings.NewReader(`{}`)))
 	if w.Code != http.StatusUnauthorized {
 		t.Fatalf("sem login: esperado 401, veio %d", w.Code)
+	}
+}
+
+func TestErroDoBancoSilencio(t *testing.T) {
+	status, msg := erroDoBanco(fmt.Errorf("(P0010) Sua conta está silenciada pela moderação até 24/11 às 21:12."))
+	if status != 403 || !strings.Contains(msg, "até 24/11 às 21:12") || !strings.Contains(msg, "regras do AniDeck") {
+		t.Fatalf("silêncio com prazo: %d %q", status, msg)
+	}
+	_, msg = erroDoBanco(fmt.Errorf("(P0010) Sua conta está silenciada pela moderação."))
+	if !strings.Contains(msg, "por tempo indeterminado") {
+		t.Fatalf("silêncio sem prazo: %q", msg)
 	}
 }
