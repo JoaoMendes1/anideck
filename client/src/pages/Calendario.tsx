@@ -257,7 +257,7 @@ export default function Calendario() {
 
     return (
         <div className="pb-20">
-            <div className="max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-10 pt-8 relative z-10">
+            <div className="max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-10 pt-3 sm:pt-8 relative z-10">
                 <div className="mb-8">
                     <h1 className="font-anton text-[clamp(1.6rem,3.6vw,2.2rem)] uppercase mb-1 text-text select-none">
                         Calendário de Lançamentos

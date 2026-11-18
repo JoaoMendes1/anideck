@@ -157,13 +157,13 @@ export default function VitrineGuilda({ aoPedirConvite }: { aoPedirConvite: () =
           <button
             type="button"
             onClick={aoPedirConvite}
-            className="inline-flex items-center gap-2 min-h-11 px-5 rounded-full text-sm font-extrabold text-void bg-gradient-to-r from-holo-1 via-holo-2 to-holo-3 hover:-translate-y-0.5 transition-transform cursor-pointer"
+            className="inline-flex items-center gap-2 min-h-10 px-5 rounded-full text-sm font-extrabold text-void bg-gradient-to-r from-holo-1 via-holo-2 to-holo-3 hover:-translate-y-0.5 transition-transform cursor-pointer"
           >
             <Mail size={15} aria-hidden /> Solicitar convite Beta
           </button>
           <Link
             to="/membros"
-            className="inline-flex items-center gap-2 min-h-11 px-5 rounded-full text-sm font-bold border border-line bg-panel-2 text-text hover:border-holo-3 transition-colors"
+            className="inline-flex items-center gap-2 min-h-10 px-5 rounded-full text-sm font-bold border border-line bg-panel-2 text-text hover:border-holo-3 transition-colors"
           >
             <Users size={15} aria-hidden /> Ver o ranking de membros
           </Link>

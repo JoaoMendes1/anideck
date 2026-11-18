@@ -46,14 +46,14 @@ export default function DialogoConfirmacao({
           ref={botaoCancelar}
           type="button"
           onClick={aoCancelar}
-          className="min-h-11 px-5 rounded-xl border border-line bg-panel-2 text-sm font-bold text-text transition-colors hover:border-line-hover cursor-pointer focus-visible:outline-2 focus-visible:outline-holo-3"
+          className="min-h-10 px-5 rounded-xl border border-line bg-panel-2 text-sm font-bold text-text transition-colors hover:border-line-hover cursor-pointer focus-visible:outline-2 focus-visible:outline-holo-3"
         >
           {rotuloCancelar}
         </button>
         <button
           type="button"
           onClick={aoConfirmar}
-          className={`min-h-11 px-5 rounded-xl border text-sm font-bold transition-colors cursor-pointer focus-visible:outline-2 focus-visible:outline-holo-3 ${corDoConfirmar}`}
+          className={`min-h-10 px-5 rounded-xl border text-sm font-bold transition-colors cursor-pointer focus-visible:outline-2 focus-visible:outline-holo-3 ${corDoConfirmar}`}
         >
           {rotuloConfirmar}
         </button>

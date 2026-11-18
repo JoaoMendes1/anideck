@@ -116,7 +116,7 @@ export default function Guilda() {
 
   if (carregando && !dados) {
     return (
-      <div className="w-full max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-10 pt-8 pb-24">
+      <div className="w-full max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-10 pt-3 sm:pt-8 pb-24">
         <div className="h-40 rounded-2xl bg-panel border border-line animate-pulse mb-6" />
         <div className="grid grid-cols-1 lg:grid-cols-[1fr_380px] gap-6">
           <div className="h-96 rounded-2xl bg-panel border border-line animate-pulse" />
@@ -128,7 +128,7 @@ export default function Guilda() {
 
   if (erro || !dados) {
     return (
-      <div className="w-full max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-10 pt-12 pb-24 text-center">
+      <div className="w-full max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-10 pt-3 sm:pt-12 pb-24 text-center">
         <div className="max-w-md mx-auto p-6 rounded-2xl bg-panel border border-line">
           <h1 className="font-anton text-2xl uppercase mb-2">Guilda indisponível no momento</h1>
           <p className="text-sm text-muted mb-4">
@@ -149,36 +149,36 @@ export default function Guilda() {
   const totalDesbloqueadas = insignias.filter((i) => i.desbloqueada).length
 
   return (
-    <div className="w-full min-w-0 max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-10 pt-6 pb-24">
+    <div className="w-full min-w-0 max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-10 pt-3 sm:pt-6 pb-24">
       <header className="mb-4 select-none sm:mb-6">
         <p className="hidden font-mono text-xs text-muted-2 uppercase tracking-widest mb-1 sm:block">
           // guilda do anideck · progressão & credibilidade
         </p>
-        <div className="flex flex-wrap items-end justify-between gap-4">
+        <div className="flex flex-wrap items-end justify-between gap-3 sm:gap-4">
           <div>
-            <h1 className="font-anton text-[clamp(1.7rem,3.5vw,2.4rem)] uppercase m-0 leading-none">
+            <h1 className="font-anton text-[1.5rem] sm:text-[2.4rem] uppercase m-0 leading-none">
               Sua Ficha na <span className="text-holo">Guilda</span>
             </h1>
-            <p className="text-xs sm:text-sm text-muted mt-1.5">
+            <p className="hidden sm:block text-sm text-muted mt-1.5">
               Rank mede sua constância presente; Especialista de Gênero reconhece sua bagagem acumulada.
             </p>
           </div>
           <div className="-mx-4 flex w-[calc(100%+2rem)] items-center gap-2 overflow-x-auto px-4 pb-1 sm:mx-0 sm:w-auto sm:flex-wrap sm:overflow-visible sm:px-0 sm:pb-0 [&>a]:shrink-0 [&>a]:whitespace-nowrap">
             <Link
               to="/personagem"
-              className="inline-flex items-center gap-1.5 px-4 py-2 rounded-full bg-gold/15 border border-gold/40 hover:bg-gold/25 text-xs font-bold text-gold transition-colors"
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 sm:px-4 sm:py-2 rounded-full bg-gold/15 border border-gold/40 hover:bg-gold/25 text-xs font-bold text-gold transition-colors"
             >
               <UserRound size={13} /> Meu Personagem →
             </Link>
             <Link
               to="/loja"
-              className="inline-flex items-center gap-1.5 px-4 py-2 rounded-full bg-holo-3/15 border border-holo-3/40 hover:bg-holo-3/25 text-xs font-bold text-holo-3 transition-colors"
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 sm:px-4 sm:py-2 rounded-full bg-holo-3/15 border border-holo-3/40 hover:bg-holo-3/25 text-xs font-bold text-holo-3 transition-colors"
             >
               <ShoppingBag size={13} /> Loja →
             </Link>
             <Link
               to="/meu-gosto"
-              className="inline-flex items-center gap-1.5 px-4 py-2 rounded-full bg-panel border border-line hover:border-holo-3 text-xs font-bold text-text transition-colors"
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 sm:px-4 sm:py-2 rounded-full bg-panel border border-line hover:border-holo-3 text-xs font-bold text-text transition-colors"
             >
               <Sparkles size={13} className="text-holo-3" /> Ver Meu Gosto →
             </Link>
@@ -186,30 +186,30 @@ export default function Guilda() {
         </div>
       </header>
 
-      <div className="grid grid-cols-1 lg:grid-cols-[1fr_390px] gap-6 items-start">
+      <div className="grid grid-cols-1 lg:grid-cols-[1fr_390px] gap-3 sm:gap-6 items-start">
         {/* COLUNA PRINCIPAL */}
-        <div className="flex flex-col gap-6 min-w-0">
+        <div className="flex flex-col gap-3 sm:gap-6 min-w-0">
           {/* CARTÃO PRINCIPAL DE RANK E NÍVEL */}
-          <section className="p-5 sm:p-6 rounded-2xl bg-panel border border-line relative overflow-hidden">
-            <div className="flex flex-col sm:flex-row sm:items-center gap-5">
-              {/* Insígnia do rank, a mesma do painel do Início e do menu. */}
-              <InsigniaRank rank={status.rank} tamanho={116} className="shrink-0 mx-auto sm:mx-0" />
+          <section className="p-3.5 sm:p-6 rounded-2xl bg-panel border border-line relative overflow-hidden">
+            <div className="flex flex-row items-start sm:items-center gap-3 sm:gap-5">
+              {/* Insígnia do rank, a mesma do painel do Início e do menu. No celular, ao lado do texto. */}
+              <InsigniaRank rank={status.rank} tamanho={116} className="shrink-0 h-auto w-16 sm:w-[116px]" />
 
-              <div className="flex-1 min-w-0 text-center sm:text-left">
-                <div className="flex flex-wrap items-center justify-center sm:justify-start gap-2 mb-1">
-                  <span className="inline-flex items-center h-7 font-mono text-xs font-bold uppercase tracking-wider px-2.5 rounded-full bg-holo-2/15 border border-holo-2/40 text-holo-2">
+              <div className="flex-1 min-w-0 text-left">
+                <div className="flex flex-wrap items-center gap-1.5 sm:gap-2 mb-1">
+                  <span className="inline-flex items-center h-6 sm:h-7 font-mono text-[11px] sm:text-xs font-bold uppercase tracking-wider px-2 sm:px-2.5 rounded-full bg-holo-2/15 border border-holo-2/40 text-holo-2">
                     Rank {status.rank}
                   </span>
                   {status.streak_atual > 0 && <SeloStreak dias={status.streak_atual} compacto />}
                   {especialidade && (
                     <span
                       title={`Especialidade: ${especialidade.genero} (${especialidade.rotulo_nivel})`}
-                      className="inline-flex items-center gap-1.5 h-7 font-mono text-xs font-bold uppercase tracking-wider px-2.5 rounded-full bg-holo-1/15 border border-holo-1/40 text-holo-1"
+                      className="inline-flex items-center gap-1 h-6 sm:h-7 font-mono text-[11px] sm:text-xs font-bold uppercase tracking-wider px-2 sm:px-2.5 rounded-full bg-holo-1/15 border border-holo-1/40 text-holo-1"
                     >
                       <span aria-hidden>{especialidade.icone}</span> {especialidade.epiteto}
                     </span>
                   )}
-                  <span className="inline-flex items-center gap-1.5 h-7 font-mono text-xs font-bold px-2.5 rounded-full bg-gold/12 border border-gold/40 text-gold">
+                  <span className="inline-flex items-center gap-1 h-6 sm:h-7 font-mono text-[11px] sm:text-xs font-bold px-2 sm:px-2.5 rounded-full bg-gold/12 border border-gold/40 text-gold">
                     <IconeAniCoin size={13} /> {saldoCristais.toLocaleString('pt-BR')} ₳
                   </span>
                   {!status.gamificacao_ativa && (
@@ -219,17 +219,17 @@ export default function Guilda() {
                   )}
                 </div>
 
-                <h2 className="font-anton text-2xl sm:text-3xl uppercase m-0 tracking-wide">
+                <h2 className="font-anton text-xl sm:text-3xl uppercase m-0 tracking-wide">
                   {status.titulo_rank}
                 </h2>
-                <p className="font-mono text-xs text-muted mt-1">
+                <p className="font-mono text-[11px] sm:text-xs text-muted mt-1">
                   Nível <b className="text-text">{status.nivel}</b> · {status.xp_no_nivel} /{' '}
-                  {status.xp_para_proximo} XP ({status.xp_total.toLocaleString('pt-BR')} XP total)
+                  {status.xp_para_proximo} XP<span className="hidden sm:inline"> ({status.xp_total.toLocaleString('pt-BR')} XP total)</span>
                 </p>
 
-                <BarraVital tipo="xp" pct={status.progresso_pct} className="h-2.5 w-full mt-3" />
+                <BarraVital tipo="xp" pct={status.progresso_pct} className="h-2 sm:h-2.5 w-full mt-2 sm:mt-3" />
 
-                <div className="flex flex-wrap items-center justify-between gap-2 mt-3 font-mono text-xs text-muted-2">
+                <div className="flex flex-wrap items-center justify-between gap-x-2 gap-y-0.5 mt-2 sm:mt-3 font-mono text-[11px] sm:text-xs text-muted-2">
                   <span>
                     Hoje:{' '}
                     <b className={status.xp_hoje >= status.teto_diario ? 'text-gold' : 'text-green'}>

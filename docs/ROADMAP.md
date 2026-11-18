@@ -862,6 +862,8 @@ Motivo: o beta vai receber gente nova, e a primeira impressão decide se a pesso
 - [x] 18.9m **Mercado na Loja:** equipamentos por Ouro, 7 itens novos de nível 12 a 18, comparação com o equipado. `sql/119` (#291)
 - [x] 18.9n **Lutas em grupo (na hora):** até 3 contra monstro ou masmorra; convite na tela do outro; preferências de quem pode chamar; trava de 3 recusas; velocidade 1x/2x/4x das batalhas. `sql/120` (#292)
 - [ ] 18.9o Lutas em grupo **ao vivo**: cada herói escolhe a ação a cada turno, com espera pelos outros
+- [x] 18.9p **Celular compacto (1ª leva) e busca do AniDeck:** escala menor no celular, botões e títulos menores, Deck sem o "Bem-vindo" e o "Buscar Anime", Guilda, painel do topo (HP), Expedições, Masmorras e Rankings compactos; busca de telas e funções na lupa e no Ctrl+K. (#293)
+- [ ] 18.9q Celular compacto, 2ª leva: Personagem (abas), Invocação, Clãs, Duelos, Feed, Perfil, Agenda, detalhe do anime, Configurações e modais
 - [ ] 18.9g Insígnia de pioneiro da Temporada 0 (nome e critério de "ativo" a decidir) e captcha no cadastro
 - [ ] 18.9c Página de visitante com demonstração jogável e personagem que evolui com a rolagem
 - [ ] 18.9d Importação com regra de zero recompensa (origem marcada no banco) e interruptor no Painel Admin

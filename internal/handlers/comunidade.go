@@ -200,7 +200,8 @@ func lerMinhaVitalidade(client *supabase.Client, perfil perfilProprio, hoje time
 	if client != nil {
 		bruto := strings.TrimSpace(client.Rpc("minha_vitalidade", "", map[string]interface{}{}))
 		if bruto != "" && bruto != "null" && !strings.Contains(bruto, "error") {
-			if v, err := strconv.Atoi(bruto); err == nil && v >= regras.HPPiso && v <= 100 {
+			// Desde o HP único (sql/114) o valor vai de 0 a 100: o piso antigo da Vitalidade não vale mais.
+			if v, err := strconv.Atoi(bruto); err == nil && v >= 0 && v <= 100 {
 				return v
 			}
 		}

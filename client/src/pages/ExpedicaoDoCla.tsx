@@ -9,7 +9,7 @@ import { atacarChefeDoCla, obterExpedicaoDoCla, textoDaRelacao, type EstadoExped
 import IconeOuro from '../components/IconeOuro'
 
 const ROTULO_DE_SECAO = 'font-mono text-xs font-semibold uppercase tracking-widest text-muted m-0'
-const CONTAINER = 'w-full min-w-0 max-w-[1100px] mx-auto px-4 sm:px-6 lg:px-10 pt-6 pb-24'
+const CONTAINER = 'w-full min-w-0 max-w-[1100px] mx-auto px-4 sm:px-6 lg:px-10 pt-3 sm:pt-6 pb-24'
 
 const numero = (n: number) => n.toLocaleString('pt-BR')
 
@@ -52,8 +52,8 @@ export default function ExpedicaoDoCla() {
 
   return (
     <div className={CONTAINER}>
-      <header className="mb-4 flex items-center gap-1 select-none">
-        <Link to="/clas" aria-label="Voltar para os clãs" className="-ml-2 flex h-11 w-11 items-center justify-center rounded-full text-muted hover:text-text">
+      <header className="mb-4 hidden items-center gap-1 select-none md:flex">
+        <Link to="/clas" aria-label="Voltar para os clãs" className="-ml-2 flex h-10 w-11 items-center justify-center rounded-full text-muted hover:text-text">
           <ChevronLeft size={22} />
         </Link>
         <p className={ROTULO_DE_SECAO}>Expedição do clã</p>
@@ -64,20 +64,20 @@ export default function ExpedicaoDoCla() {
       ) : semPersonagem ? (
         <div className="rounded-2xl border border-line bg-panel p-6 text-center">
           <h1 className="m-0 mb-2 font-anton text-2xl uppercase">Desperte o seu personagem</h1>
-          <Link to="/personagem" className="inline-flex h-11 items-center rounded-full bg-gradient-to-r from-holo-1 to-holo-3 px-5 text-xs font-extrabold text-void">Ir para o despertar</Link>
+          <Link to="/personagem" className="inline-flex h-10 items-center rounded-full bg-gradient-to-r from-holo-1 to-holo-3 px-5 text-xs font-extrabold text-void">Ir para o despertar</Link>
         </div>
       ) : !estado ? (
         <div className="rounded-2xl border border-line bg-panel p-6 text-center">
           <h1 className="m-0 mb-2 font-anton text-2xl uppercase">Expedição indisponível</h1>
           <p className="m-0 mb-4 text-sm text-muted">{erro}</p>
-          <button type="button" onClick={carregar} className="h-11 cursor-pointer rounded-full bg-gradient-to-r from-holo-1 to-holo-3 px-5 text-xs font-extrabold text-void">Tentar de novo</button>
+          <button type="button" onClick={carregar} className="h-10 cursor-pointer rounded-full bg-gradient-to-r from-holo-1 to-holo-3 px-5 text-xs font-extrabold text-void">Tentar de novo</button>
         </div>
       ) : !estado.tem_cla || !chefe ? (
         <div className="rounded-2xl border border-line bg-panel p-6 text-center">
           <Users size={28} className="mx-auto mb-2 text-holo-1" aria-hidden="true" />
           <h1 className="m-0 mb-2 font-anton text-2xl uppercase">Entre num clã</h1>
           <p className="m-0 mb-4 text-sm text-muted">A expedição é um chefe por semana enfrentado pelo clã inteiro. Escolha um clã para participar.</p>
-          <Link to="/clas" className="inline-flex h-11 items-center rounded-full bg-gradient-to-r from-holo-1 to-holo-3 px-5 text-xs font-extrabold text-void">Ver clãs</Link>
+          <Link to="/clas" className="inline-flex h-10 items-center rounded-full bg-gradient-to-r from-holo-1 to-holo-3 px-5 text-xs font-extrabold text-void">Ver clãs</Link>
         </div>
       ) : (
         <div className="grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,1fr)_340px] lg:items-start">
@@ -86,7 +86,7 @@ export default function ExpedicaoDoCla() {
               <p className="m-0 font-mono text-xs text-muted">
                 <Link to={`/clas/${estado.cla_tag}`} className="hover:text-holo-3">[{estado.cla_tag}] {estado.cla_nome}</Link> · {estado.membros} {estado.membros === 1 ? 'membro' : 'membros'} com personagem
               </p>
-              <h1 className="m-0 font-anton text-[clamp(2rem,8vw,2.6rem)] uppercase leading-none">Chefe da semana</h1>
+              <h1 className="m-0 font-anton text-[1.75rem] sm:text-[2.6rem] uppercase leading-none">Chefe da semana</h1>
             </div>
 
             <section className={`flex flex-col gap-3 rounded-2xl border bg-panel p-4 ${chefe.derrotado ? 'border-gold/60' : 'border-coral/50'}`}>
@@ -94,7 +94,7 @@ export default function ExpedicaoDoCla() {
                 <IconeDoMonstro monstro={chefe.monstro} tamanho="h-16 w-16" />
                 <div className="min-w-0 flex-1">
                   <h2 className="m-0 text-lg font-bold">{chefe.monstro.nome}</h2>
-                  <p className="m-0 font-mono text-xs text-muted">nível {chefe.monstro.nivel} · {chefe.derrotado ? 'derrotado' : 'de pé'}</p>
+                  <p className="m-0 font-mono text-xs text-muted line-clamp-2 sm:line-clamp-none">nível {chefe.monstro.nivel} · {chefe.derrotado ? 'derrotado' : 'de pé'}</p>
                 </div>
               </div>
               <div>
@@ -125,7 +125,7 @@ export default function ExpedicaoDoCla() {
                   type="button"
                   onClick={atacar}
                   disabled={estado.atacou_hoje || atacando}
-                  className="inline-flex h-11 cursor-pointer items-center justify-center gap-2 rounded-full bg-gradient-to-r from-coral to-gold px-5 text-xs font-extrabold text-void disabled:cursor-not-allowed disabled:opacity-50"
+                  className="inline-flex h-10 cursor-pointer items-center justify-center gap-2 rounded-full bg-gradient-to-r from-coral to-gold px-5 text-xs font-extrabold text-void disabled:cursor-not-allowed disabled:opacity-50"
                 >
                   <Swords size={15} aria-hidden="true" /> {atacando ? 'Atacando…' : estado.atacou_hoje ? 'Você já atacou hoje' : 'Atacar o chefe'}
                 </button>

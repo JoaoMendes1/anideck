@@ -229,7 +229,7 @@ export default function Landing() {
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
           <div className="bg-panel border border-line rounded-[18px] p-6">
-            <div className="w-11 h-11 rounded-xl mb-4 flex items-center justify-center bg-gradient-to-br from-holo-1/20 to-holo-3/20 text-holo-3">
+            <div className="w-11 h-10 rounded-xl mb-4 flex items-center justify-center bg-gradient-to-br from-holo-1/20 to-holo-3/20 text-holo-3">
               <Layers size={22} />
             </div>
             <h3 className="text-[16px] font-bold mb-2">Coleção Foil &amp; Progresso</h3>
@@ -239,7 +239,7 @@ export default function Landing() {
           </div>
 
           <div className="bg-panel border border-line rounded-[18px] p-6">
-            <div className="w-11 h-11 rounded-xl mb-4 flex items-center justify-center bg-gradient-to-br from-holo-1/20 to-holo-3/20 text-holo-2">
+            <div className="w-11 h-10 rounded-xl mb-4 flex items-center justify-center bg-gradient-to-br from-holo-1/20 to-holo-3/20 text-holo-2">
               <BarChart3 size={22} />
             </div>
             <h3 className="text-[16px] font-bold mb-2">Raio-X do Meu Gosto</h3>
@@ -249,7 +249,7 @@ export default function Landing() {
           </div>
 
           <div className="bg-panel border border-line rounded-[18px] p-6">
-            <div className="w-11 h-11 rounded-xl mb-4 flex items-center justify-center bg-gradient-to-br from-holo-1/20 to-holo-3/20 text-holo-1">
+            <div className="w-11 h-10 rounded-xl mb-4 flex items-center justify-center bg-gradient-to-br from-holo-1/20 to-holo-3/20 text-holo-1">
               <CalendarDays size={22} />
             </div>
             <h3 className="text-[16px] font-bold mb-2">Agenda Viva &amp; Push</h3>
@@ -259,7 +259,7 @@ export default function Landing() {
           </div>
 
           <div className="bg-panel border border-line rounded-[18px] p-6">
-            <div className="w-11 h-11 rounded-xl mb-4 flex items-center justify-center bg-gradient-to-br from-holo-1/20 to-holo-3/20 text-gold">
+            <div className="w-11 h-10 rounded-xl mb-4 flex items-center justify-center bg-gradient-to-br from-holo-1/20 to-holo-3/20 text-gold">
               <Sparkles size={22} />
             </div>
             <h3 className="text-[16px] font-bold mb-2">Ranking Bayesiano</h3>

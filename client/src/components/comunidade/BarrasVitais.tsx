@@ -1,5 +1,5 @@
 // client/src/components/comunidade/BarrasVitais.tsx
-// Vitalidade (HP) e Mana (MP). Compacta para cards laterais, completa para a Guilda,
+// HP e Mana (MP). Compacta para cards laterais, completa para a Guilda,
 // onde explica como cada barra sobe e desce.
 import { Heart, Droplet, Zap } from 'lucide-react'
 import {
@@ -12,9 +12,9 @@ import { minutosParaManaCheia, textoDoTempo, taxaRegenEfetiva } from '../../lib/
 import BarraVital from '../hud/BarraVital'
 
 const FRASE_HP = {
-  cheio: 'Vitalidade cheia: você está em dia com seus animes.',
-  bom: 'Alguns dias sem episódio. Assista um para recuperar.',
-  baixo: 'Faz tempo que você não aparece. Um episódio já começa a recuperar.',
+  cheio: 'HP cheio: pronto para lutar.',
+  bom: 'O HP volta sozinho, com episódios assistidos e na Pousada.',
+  baixo: 'HP baixo: assista a um episódio, descanse ou use a Pousada.',
 }
 
 export default function BarrasVitais({
@@ -27,7 +27,9 @@ export default function BarrasVitais({
   nivel?: number
 }) {
   const { hp, regras, em_descanso: emDescanso } = estado
-  const { atual: hpAtual, maximo: hpMax, pct: hpPct } = obterHPEscaladoDoEstado(estado, nivel)
+  const { atual: hpAtual, maximo: hpMax } = obterHPEscaladoDoEstado(estado, nivel)
+  // A barra segue os números mostrados, que vêm do personagem (sql/114).
+  const hpPct = hpMax > 0 ? (hpAtual / hpMax) * 100 : 0
   const mpMax = obterMPMaxDoEstado(estado, nivel)
   // A Mana chega fracionada (recarga contínua); a tela mostra a parte inteira.
   const mana = Math.floor(estado.mana)
@@ -43,14 +45,14 @@ export default function BarrasVitais({
       <div>
         <div className="flex items-center justify-between font-mono text-xs mb-1.5">
           <span className="inline-flex items-center gap-1.5 text-muted uppercase tracking-wider">
-            <Heart size={12} className="text-coral" aria-hidden /> Vitalidade
+            <Heart size={12} className="text-coral" aria-hidden /> HP
             {temBonusVitalidade && (
               <span className="inline-flex items-center gap-0.5 px-1.5 py-px rounded-full text-xs font-bold bg-green/15 text-green border border-green/30">
                 <Zap size={11} aria-hidden /> +10% XP
               </span>
             )}
           </span>
-          <span className="text-text font-bold" aria-label={`Vitalidade ${hpAtual} de ${hpMax}`}>
+          <span className="text-text font-bold" aria-label={`HP ${hpAtual} de ${hpMax}`}>
             {hpAtual}
             <span className="text-muted-2">/{hpMax}</span>
           </span>
@@ -59,9 +61,9 @@ export default function BarrasVitais({
         {!compacta && (
           <p className="text-xs text-muted-2 mt-1.5 mb-0">
             {emDescanso
-              ? 'Modo Descanso ativo: sua Vitalidade está congelada.'
+              ? 'Modo Descanso ativo: seu HP não cai por inatividade.'
               : temBonusVitalidade
-              ? 'Vitalidade alta: você ganha até +10% de XP por episódio e sua Mana recarrega mais rápido!'
+              ? 'HP alto: até +10% de XP por episódio e Mana recarregando mais rápido.'
               : FRASE_HP[faixa]}
           </p>
         )}

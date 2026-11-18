@@ -42,7 +42,7 @@ import { rotuloDoElemento } from '../lib/personagem'
 import IconeOuro from '../components/IconeOuro'
 
 const ROTULO_DE_SECAO = 'font-mono text-xs font-semibold uppercase tracking-widest text-muted m-0'
-const CONTAINER = 'w-full min-w-0 max-w-[1100px] mx-auto px-4 sm:px-6 lg:px-10 pt-6 pb-24'
+const CONTAINER = 'w-full min-w-0 max-w-[1100px] mx-auto px-4 sm:px-6 lg:px-10 pt-3 sm:pt-6 pb-24'
 
 function querMovimentoReduzido(): boolean {
   return typeof window !== 'undefined' && typeof window.matchMedia === 'function'
@@ -176,12 +176,12 @@ function TelaDeBatalha({ batalha, aoVoltar }: { batalha: RespostaBatalha; aoVolt
             <button
               type="button"
               onClick={aoVoltar}
-              className="h-11 cursor-pointer rounded-full bg-gradient-to-r from-holo-1 to-holo-3 px-5 text-xs font-extrabold text-void"
+              className="h-10 cursor-pointer rounded-full bg-gradient-to-r from-holo-1 to-holo-3 px-5 text-xs font-extrabold text-void"
             >
               Voltar às expedições
             </button>
             {recompensa.bilhetes > 0 && (
-              <Link to="/invocacao" className="inline-flex h-11 items-center rounded-full border border-gold/60 px-5 text-xs font-bold text-gold">
+              <Link to="/invocacao" className="inline-flex h-10 items-center rounded-full border border-gold/60 px-5 text-xs font-bold text-gold">
                 Usar bilhetes
               </Link>
             )}
@@ -223,75 +223,47 @@ function PainelDaVida({
   const pocaoMana = estado.custos?.pocao_mana ?? 0
   const fonte = estado.custos?.fonte ?? 0
   const corDaBarra = abaixoDaVidaMinima(vida, regras) ? 'bg-coral' : vida.perdida_por_mil > 500 ? 'bg-gold' : 'bg-gradient-to-r from-holo-2 to-holo-3'
+  const opcoes: { tipo: TipoRecuperacao; nome: string; efeito: string; Icone: typeof BedDouble; cor: string; preco: string; desligado: boolean; fazendo: string }[] = [
+    { tipo: 'pousada', nome: 'Pousada', efeito: 'HP cheio', Icone: BedDouble, cor: 'text-holo-3', preco: pousadaEm ? `livre às ${pousadaEm}` : `${pousada} de Ouro`, desligado: cheia || ouro < pousada || pousadaEm !== '', fazendo: 'Descansando…' },
+    { tipo: 'pocao', nome: 'Poção de HP', efeito: `+${porMilEmPorcento(regras.pocao)}`, Icone: FlaskConical, cor: 'text-green', preco: `${pocao} de Ouro`, desligado: cheia || ouro < pocao, fazendo: 'Bebendo…' },
+  ]
+  if (fonte > 0) opcoes.push({ tipo: 'fonte', nome: 'Fonte termal', efeito: 'HP e Mana · 1×/dia', Icone: Waves, cor: 'text-holo-1', preco: `${fonte} de Ouro`, desligado: ouro < fonte, fazendo: 'Relaxando…' })
+  if (pocaoMana > 0) opcoes.push({ tipo: 'pocao_mana', nome: 'Poção de Mana', efeito: `+${pctPocaoMana}% da Mana`, Icone: FlaskConical, cor: 'text-mana', preco: `${pocaoMana} de Ouro`, desligado: ouro < pocaoMana, fazendo: 'Bebendo…' })
+
   return (
-    <section aria-labelledby="titulo-da-vida" className="flex flex-col gap-3 rounded-2xl border border-line bg-panel p-4">
-      <h2 id="titulo-da-vida" className={ROTULO_DE_SECAO}>
+    <section id="vida" aria-labelledby="titulo-da-vida" className="flex scroll-mt-20 flex-col gap-2.5 rounded-2xl border border-line bg-panel p-3 sm:p-4">
+      <h2 id="titulo-da-vida" className="sr-only">
         Seu HP
       </h2>
-      <BarraDeVida rotulo="Você" atual={vida.atual} maximo={vida.maxima} cor={corDaBarra} />
-      <p className="m-0 text-xs leading-snug text-muted">
-        É o mesmo HP da barra do topo: o dano das batalhas fica nele. Volta {porMilEmPorcento(regras.regen_por_hora)} por hora e{' '}
-        {porMilEmPorcento(regras.por_episodio)} a cada episódio assistido ({estado.hoje.episodios_hoje ?? 0} de {regras.episodios_por_dia} hoje).
-        Para lutar, precisa de {porMilEmPorcento(regras.vida_minima_luta ?? 300)}; cair custa {regras.queda_ouro_pct ?? 10}% do Ouro.
-        Três dias sem episódio e o HP começa a cair.
-      </p>
-      <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
-        <button
-          type="button"
-          onClick={() => aoRecuperar('pousada')}
-          disabled={cheia || recuperando !== null || ouro < pousada || pousadaEm !== ''}
-          className="flex min-h-12 cursor-pointer items-center justify-between gap-2 rounded-xl border border-line px-3 py-2 text-left text-xs disabled:cursor-not-allowed disabled:opacity-50"
-        >
-          <span className="flex items-center gap-2 font-bold text-text">
-            <BedDouble size={16} className="text-holo-3" aria-hidden="true" />
-            {recuperando === 'pousada' ? 'Descansando…' : 'Pousada: HP cheio'}
-          </span>
-          <span className="shrink-0 font-mono text-gold">{pousadaEm ? `livre às ${pousadaEm}` : `${pousada} de Ouro`}</span>
-        </button>
-        <button
-          type="button"
-          onClick={() => aoRecuperar('pocao')}
-          disabled={cheia || recuperando !== null || ouro < pocao}
-          className="flex min-h-12 cursor-pointer items-center justify-between gap-2 rounded-xl border border-line px-3 py-2 text-left text-xs disabled:cursor-not-allowed disabled:opacity-50"
-        >
-          <span className="flex items-center gap-2 font-bold text-text">
-            <FlaskConical size={16} className="text-green" aria-hidden="true" />
-            {recuperando === 'pocao' ? 'Bebendo…' : `Poção de HP: +${porMilEmPorcento(regras.pocao)}`}
-          </span>
-          <span className="shrink-0 font-mono text-gold">{pocao} de Ouro</span>
-        </button>
-        {fonte > 0 && (
+      <BarraDeVida rotulo="Seu HP" atual={vida.atual} maximo={vida.maxima} cor={corDaBarra} />
+      <div className="grid grid-cols-2 gap-1.5">
+        {opcoes.map((o) => (
           <button
+            key={o.tipo}
             type="button"
-            onClick={() => aoRecuperar('fonte')}
-            disabled={recuperando !== null || ouro < fonte}
-            className="flex min-h-12 cursor-pointer items-center justify-between gap-2 rounded-xl border border-line px-3 py-2 text-left text-xs disabled:cursor-not-allowed disabled:opacity-50"
+            onClick={() => aoRecuperar(o.tipo)}
+            disabled={o.desligado || recuperando !== null}
+            aria-label={`${o.nome}: ${o.efeito}, ${o.preco}`}
+            className="flex min-w-0 cursor-pointer items-center gap-2 rounded-xl border border-line bg-panel-2/50 px-2.5 py-2 text-left disabled:cursor-not-allowed disabled:opacity-45"
           >
-            <span className="flex items-center gap-2 font-bold text-text">
-              <Waves size={16} className="text-holo-1" aria-hidden="true" />
-              {recuperando === 'fonte' ? 'Relaxando…' : 'Fonte termal: HP e Mana cheios'}
+            <o.Icone size={16} className={`shrink-0 ${o.cor}`} aria-hidden="true" />
+            <span className="min-w-0 flex-1">
+              <span className="block truncate text-xs font-bold leading-tight text-text">{recuperando === o.tipo ? o.fazendo : o.nome}</span>
+              <span className="block truncate text-[11px] leading-tight text-muted">{o.efeito}</span>
+              <span className="block truncate font-mono text-[11px] leading-tight text-gold">{o.preco}</span>
             </span>
-            <span className="shrink-0 font-mono text-gold">{fonte} de Ouro</span>
           </button>
-        )}
-        {pocaoMana > 0 && (
-          <button
-            type="button"
-            onClick={() => aoRecuperar('pocao_mana')}
-            disabled={recuperando !== null || ouro < pocaoMana}
-            className="flex min-h-12 cursor-pointer items-center justify-between gap-2 rounded-xl border border-line px-3 py-2 text-left text-xs disabled:cursor-not-allowed disabled:opacity-50"
-          >
-            <span className="flex items-center gap-2 font-bold text-text">
-              <FlaskConical size={16} className="text-mana" aria-hidden="true" />
-              {recuperando === 'pocao_mana' ? 'Bebendo…' : `Poção de Mana: +${pctPocaoMana}% da Mana`}
-            </span>
-            <span className="shrink-0 font-mono text-gold">{pocaoMana} de Ouro</span>
-          </button>
-        )}
+        ))}
       </div>
-      {fonte > 0 && (
-        <p className="m-0 text-[11px] text-muted">A Fonte termal recebe você uma vez por dia.</p>
-      )}
+      <details className="text-xs text-muted">
+        <summary className="cursor-pointer select-none font-semibold text-muted hover:text-text">Como o HP funciona</summary>
+        <p className="m-0 mt-1.5 leading-snug">
+          É o mesmo HP da barra do topo: o dano das batalhas fica nele. Volta {porMilEmPorcento(regras.regen_por_hora)} por hora e{' '}
+          {porMilEmPorcento(regras.por_episodio)} a cada episódio assistido ({estado.hoje.episodios_hoje ?? 0} de {regras.episodios_por_dia} hoje).
+          Para lutar, precisa de {porMilEmPorcento(regras.vida_minima_luta ?? 300)}; cair custa {regras.queda_ouro_pct ?? 10}% do Ouro.
+          Três dias sem episódio e o HP começa a cair.
+        </p>
+      </details>
     </section>
   )
 }
@@ -359,11 +331,11 @@ export default function Expedicoes() {
 
   return (
     <div ref={topo} className={CONTAINER}>
-      <header className="mb-4 flex items-center gap-1 select-none">
+      <header className="mb-4 hidden items-center gap-1 select-none md:flex">
         <Link
           to="/personagem"
           aria-label="Voltar para o personagem"
-          className="-ml-2 flex h-11 w-11 items-center justify-center rounded-full text-muted hover:text-text"
+          className="-ml-2 flex h-10 w-11 items-center justify-center rounded-full text-muted hover:text-text"
         >
           <ChevronLeft size={22} />
         </Link>
@@ -376,7 +348,7 @@ export default function Expedicoes() {
         <div className="rounded-2xl border border-line bg-panel p-6 text-center">
           <h1 className="m-0 mb-2 font-anton text-2xl uppercase">Desperte o seu personagem</h1>
           <p className="m-0 mb-4 text-sm text-muted">As expedições começam depois do despertar.</p>
-          <Link to="/personagem" className="inline-flex h-11 items-center rounded-full bg-gradient-to-r from-holo-1 to-holo-3 px-5 text-xs font-extrabold text-void">
+          <Link to="/personagem" className="inline-flex h-10 items-center rounded-full bg-gradient-to-r from-holo-1 to-holo-3 px-5 text-xs font-extrabold text-void">
             Ir para o despertar
           </Link>
         </div>
@@ -384,56 +356,54 @@ export default function Expedicoes() {
         <div className="rounded-2xl border border-line bg-panel p-6 text-center">
           <h1 className="m-0 mb-2 font-anton text-2xl uppercase">Expedições indisponíveis</h1>
           <p className="m-0 mb-4 text-sm text-muted">{erro}</p>
-          <button type="button" onClick={carregar} className="h-11 cursor-pointer rounded-full bg-gradient-to-r from-holo-1 to-holo-3 px-5 text-xs font-extrabold text-void">
+          <button type="button" onClick={carregar} className="h-10 cursor-pointer rounded-full bg-gradient-to-r from-holo-1 to-holo-3 px-5 text-xs font-extrabold text-void">
             Tentar de novo
           </button>
         </div>
       ) : batalha ? (
         <TelaDeBatalha key={batalha.resultado.turnos.length + batalha.monstro.id} batalha={batalha} aoVoltar={() => { setBatalha(null); carregar() }} />
       ) : (
-        <div className="flex flex-col gap-5">
+        <div className="flex flex-col gap-3 sm:gap-5">
           <div className="flex flex-col gap-2">
-            <h1 className="m-0 font-anton text-[clamp(2rem,8vw,2.6rem)] uppercase leading-none">Expedições</h1>
-            <p className="m-0 text-sm text-muted">
+            <h1 className="m-0 font-anton text-[1.75rem] sm:text-[2.6rem] uppercase leading-none">Expedições</h1>
+            <p className="m-0 text-sm text-muted line-clamp-2 sm:line-clamp-none">
               Vitórias dão bilhetes, Ouro e, às vezes, um item.{' '}
               {estado.custos_mana ? `Cada batalha gasta ${estado.custos_mana.expedicao} de Mana. ` : ''}
               XP só vem dos animes.
             </p>
           </div>
 
-          <dl className="m-0 grid grid-cols-2 gap-2.5 sm:grid-cols-4">
-            <div className="flex min-w-0 flex-col gap-1 rounded-xl border border-line bg-panel p-3">
-              <dt className="flex items-center gap-1.5 text-xs font-semibold text-muted">
+          <dl className="m-0 grid grid-cols-4 gap-1.5 sm:gap-2.5">
+            <div className="flex min-w-0 flex-col gap-1 rounded-xl border border-line bg-panel p-2 sm:p-3">
+              <dt className="flex min-w-0 items-center gap-1 truncate text-[11px] font-semibold text-muted sm:gap-1.5 sm:text-xs">
                 <Zap size={13} className="text-holo-2" aria-hidden="true" /> Poder
               </dt>
-              <dd className="m-0 font-anton text-2xl leading-none">{estado.atributos.poder}</dd>
+              <dd className="m-0 font-anton text-lg leading-none sm:text-2xl">{estado.atributos.poder}</dd>
             </div>
-            <div className="flex min-w-0 flex-col gap-1 rounded-xl border border-line bg-panel p-3">
-              <dt className="flex items-center gap-1.5 text-xs font-semibold text-muted">
+            <div className="flex min-w-0 flex-col gap-1 rounded-xl border border-line bg-panel p-2 sm:p-3">
+              <dt className="flex min-w-0 items-center gap-1 truncate text-[11px] font-semibold text-muted sm:gap-1.5 sm:text-xs">
                 <Swords size={13} className="text-coral" aria-hidden="true" /> Hoje
               </dt>
-              <dd className="m-0 font-anton text-2xl leading-none">
+              <dd className="m-0 font-anton text-lg leading-none sm:text-2xl">
                 {restantes}
                 <span className="font-mono text-xs text-muted"> de {estado.hoje.limite}</span>
               </dd>
             </div>
-            <div className="flex min-w-0 flex-col gap-1 rounded-xl border border-line bg-panel p-3">
-              <dt className="flex items-center gap-1.5 text-xs font-semibold text-muted">
+            <div className="flex min-w-0 flex-col gap-1 rounded-xl border border-line bg-panel p-2 sm:p-3">
+              <dt className="flex min-w-0 items-center gap-1 truncate text-[11px] font-semibold text-muted sm:gap-1.5 sm:text-xs">
                 <Ticket size={13} className="text-gold" aria-hidden="true" /> Bilhetes
               </dt>
-              <dd className="m-0 font-anton text-2xl leading-none">{estado.hoje.bilhetes}</dd>
+              <dd className="m-0 font-anton text-lg leading-none sm:text-2xl">{estado.hoje.bilhetes}</dd>
             </div>
-            <div className="flex min-w-0 flex-col gap-1 rounded-xl border border-line bg-panel p-3">
-              <dt className="flex items-center gap-1.5 text-xs font-semibold text-muted">
+            <div className="flex min-w-0 flex-col gap-1 rounded-xl border border-line bg-panel p-2 sm:p-3">
+              <dt className="flex min-w-0 items-center gap-1 truncate text-[11px] font-semibold text-muted sm:gap-1.5 sm:text-xs">
                 <IconeOuro size={13} /> Ouro
               </dt>
-              <dd className="m-0 font-anton text-2xl leading-none">{estado.hoje.ouro ?? 0}</dd>
+              <dd className="m-0 font-anton text-lg leading-none sm:text-2xl">{estado.hoje.ouro ?? 0}</dd>
             </div>
           </dl>
 
           <PainelDaVida estado={estado} recuperando={recuperando} aoRecuperar={recuperar} />
-
-          <CartaoEvento />
 
           {exausto && (
             <p role="status" className="m-0 rounded-xl border border-coral/40 bg-coral/10 p-3 text-xs text-text">
@@ -457,7 +427,7 @@ export default function Expedicoes() {
               const dificuldade = rotuloDaDificuldade(m.dificuldade)
               const item = estiloDaRaridade(m.raridade_item)
               return (
-                <li key={m.id} className={`flex flex-col gap-3 rounded-2xl border bg-panel p-4 ${tipo.borda}`}>
+                <li key={m.id} className={`flex flex-col gap-2 rounded-2xl border bg-panel p-3 sm:gap-3 sm:p-4 ${tipo.borda}`}>
                   <div className="flex items-start gap-3">
                     <IconeDoMonstro monstro={m} />
                     <div className="min-w-0 flex-1">
@@ -468,7 +438,7 @@ export default function Expedicoes() {
                       <p className="m-0 font-mono text-xs text-muted">
                         {tipo.rotulo} · nível {m.nivel} · poder {m.poder}
                       </p>
-                      <p className="m-0 mt-1 text-xs leading-snug text-muted">{m.descricao}</p>
+                      <p className="m-0 mt-1 line-clamp-2 text-xs leading-snug text-muted sm:line-clamp-none">{m.descricao}</p>
                     </div>
                   </div>
                   {(m.elemento || (m.poderes?.length ?? 0) > 0) && (
@@ -515,7 +485,7 @@ export default function Expedicoes() {
                     onClick={() => enfrentar(m.id)}
                     disabled={restantes === 0 || lutando !== null || exausto}
                     aria-label={`Enfrentar ${m.nome}`}
-                    className="h-11 cursor-pointer rounded-full bg-gradient-to-r from-holo-1 to-holo-3 px-5 text-xs font-extrabold text-void disabled:cursor-not-allowed disabled:opacity-50"
+                    className="h-10 cursor-pointer rounded-full bg-gradient-to-r from-holo-1 to-holo-3 px-5 text-xs font-extrabold text-void disabled:cursor-not-allowed disabled:opacity-50"
                   >
                     {lutando === m.id ? 'Batalhando…' : 'Enfrentar'}
                     {lutando !== m.id && estado.custos_mana && (
@@ -528,6 +498,8 @@ export default function Expedicoes() {
               )
             })}
           </ul>
+
+          <CartaoEvento />
         </div>
       )}
     </div>

@@ -6,8 +6,7 @@ import EditarEntradaModal from '../components/EditarEntradaModal'
 import DeckCard from '../components/DeckCard'
 import type { AnimeDaApi } from '../types/anime'
 import DeckSkeleton from '../components/DeckSkeleton'
-import StatCard from '../components/StatCard'
-import { Play, CheckCircle2, Bookmark, MonitorPlay, Star, XCircle, AlertCircle, Clock, Search, X, ArrowUpDown } from 'lucide-react'
+import { Bookmark, AlertCircle, Search, X, ArrowUpDown, Plus } from 'lucide-react'
 import type { AiringInfo } from '../lib/deckHelpers'
 import { gradienteDoCard, reconciliarStatusDeck } from '../lib/deckHelpers'
 import { usePosicaoDeLista } from '../lib/posicaoDeLista'
@@ -241,10 +240,6 @@ export default function MeuDeck() {
         }
     }, [entradas])
 
-    const alternarFiltroPorCard = (status: string) => {
-        setFiltroAtivo(prev => prev === status ? 'Todos' : status)
-    }
-
     // Mapa de contadores para exibir os totais dentro de cada aba
     const contadoresPorAba = useMemo(() => {
         const counts: Record<string, number> = {
@@ -293,7 +288,7 @@ export default function MeuDeck() {
     if (loading) {
         return (
             <div className="pb-20">
-                <div className="max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-10 pt-8">
+                <div className="max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-10 pt-3 sm:pt-8">
                     <div className="mb-8 space-y-2">
                         <div className="h-7 w-64 max-w-full rounded-full shimmer" />
                         <div className="h-4 w-48 rounded-full shimmer" />
@@ -320,34 +315,26 @@ export default function MeuDeck() {
 
     return (
         <div className="pb-20">
-            <div className="max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-10 pt-8 relative z-10">
-                <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-5 mb-8">
-                    <div>
-                        <h1 className="font-anton text-[clamp(1.6rem,3.6vw,2.2rem)] uppercase mb-1 select-none">
-                            Bem-vindo de volta, <span className="bg-gradient-to-r from-holo-1 via-holo-2 to-holo-3 text-transparent bg-clip-text">{userName}</span>
-                        </h1>
-                        <p className="text-muted text-sm select-none">Aqui está o que está rolando na sua coleção.</p>
-                    </div>
-                    <Link
-                        to="/descobrir"
-                        className="w-full md:w-auto justify-center font-extrabold text-[13.5px] px-6 py-3 rounded-full text-void bg-gradient-to-r from-holo-1 via-holo-2 to-holo-3 flex items-center gap-2 hover:-translate-y-0.5 active:scale-95 transition-transform select-none"
-                    >
-                        <Play size={14} fill="currentColor" />
-                        Buscar Anime
-                    </Link>
-                </div>
-
-                <div className="flex md:grid md:grid-cols-6 gap-3.5 mb-10 select-none overflow-x-auto md:overflow-visible scrollbar-hide snap-x snap-mandatory -mx-4 px-4 scroll-px-4 sm:-mx-6 sm:px-6 sm:scroll-px-6 md:mx-0 md:px-0 md:scroll-px-0">
-                    <StatCard icon={<MonitorPlay size={14} />} value={stats.assistindo} label="Assistindo" accentColor="holo-3" active={filtroAtivo === 'Assistindo'} onClick={() => alternarFiltroPorCard('Assistindo')} />
-                    <StatCard icon={<Bookmark size={14} />} value={stats.emDia} label="Em Dia" accentColor="green" active={filtroAtivo === 'Em Dia'} onClick={() => alternarFiltroPorCard('Em Dia')} />
-                    <StatCard icon={<Clock size={14} />} value={stats.queroAssistir} label="Quero Assistir" accentColor="holo-1" active={filtroAtivo === 'Quero Assistir'} onClick={() => alternarFiltroPorCard('Quero Assistir')} />
-                    <StatCard icon={<CheckCircle2 size={14} />} value={stats.concluidos} label="Completos" accentColor="gold" active={filtroAtivo === 'Completo'} onClick={() => alternarFiltroPorCard('Completo')} />
-                    <StatCard icon={<XCircle size={14} />} value={stats.dropados} label="Dropados" accentColor="coral" active={filtroAtivo === 'Dropado'} onClick={() => alternarFiltroPorCard('Dropado')} />
-                    <StatCard icon={<Star size={14} />} value={stats.notaMedia} label="Sua Nota Média" accentColor="holo-1" />
-                </div>
-
+            <div className="max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-10 pt-3 sm:pt-8 relative z-10">
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4 select-none">
-                    <h2 className="font-anton text-[17px] uppercase m-0">Meu Deck</h2>
+                    {/* Os números de cada status ficam nas abas logo abaixo; aqui só o resumo. */}
+                    <div className="flex items-center justify-between gap-3 sm:justify-start">
+                        <div className="min-w-0">
+                            <h1 className="font-anton text-xl sm:text-2xl uppercase m-0 leading-none">Meu Deck</h1>
+                            <p className="m-0 mt-1 font-mono text-[11px] text-muted">
+                                {entradas.length} {entradas.length === 1 ? 'anime' : 'animes'}
+                                {stats.notaMedia !== 'N/A' ? ` · sua nota média ${stats.notaMedia}` : ''}
+                            </p>
+                        </div>
+                        <Link
+                            to="/descobrir?foco=1"
+                            aria-label="Adicionar anime ao deck"
+                            title="Adicionar anime"
+                            className="inline-flex h-9 shrink-0 items-center gap-1.5 rounded-full border border-holo-3/50 px-3 text-xs font-bold text-holo-3 hover:bg-holo-3/10"
+                        >
+                            <Plus size={14} aria-hidden="true" /> Adicionar
+                        </Link>
+                    </div>
                     {entradas.length > 0 && (
                         <div className="flex items-center gap-2 w-full sm:w-auto">
                             <div className="relative flex-1 sm:w-56">
@@ -390,7 +377,7 @@ export default function MeuDeck() {
                 </div>
 
                 {/* Abas com contadores numéricos integrados */}
-                <div className="flex overflow-x-auto md:flex-wrap md:overflow-visible scrollbar-hide gap-2 mb-7 select-none -mx-4 px-4 sm:-mx-6 sm:px-6 md:mx-0 md:px-0">
+                <div className="flex overflow-x-auto md:flex-wrap md:overflow-visible scrollbar-hide gap-1.5 mb-4 sm:mb-7 select-none -mx-4 px-4 sm:-mx-6 sm:px-6 md:mx-0 md:px-0">
                     {FILTER_TABS.map(tab => {
                         const totalAba = contadoresPorAba[tab] ?? 0
                         const ativa = filtroAtivo === tab
@@ -399,13 +386,13 @@ export default function MeuDeck() {
                             <button
                                 key={tab}
                                 onClick={() => setFiltroAtivo(tab)}
-                                className={`shrink-0 whitespace-nowrap text-[13px] font-bold px-4 py-2 rounded-full border transition-all cursor-pointer flex items-center gap-2 ${ativa
+                                className={`shrink-0 whitespace-nowrap text-xs font-bold px-3 py-1.5 rounded-full border transition-all cursor-pointer flex items-center gap-1.5 ${ativa
                                     ? 'bg-gradient-to-r from-holo-1 to-holo-2 text-white border-transparent shadow-lg'
                                     : 'bg-panel border-line text-muted hover:border-holo-3 hover:text-text'
                                     }`}
                             >
                                 <span>{tab}</span>
-                                <span className={`font-mono text-xs px-1.5 py-0.5 rounded-full ${
+                                <span className={`font-mono text-[11px] px-1.5 py-px rounded-full ${
                                     ativa
                                         ? 'bg-white/20 text-white'
                                         : 'bg-panel-2 text-muted-2 border border-line/60'

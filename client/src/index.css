@@ -473,3 +473,17 @@ html[data-tema='estudio'] {
   .palco-destaque-texto, .palco-destaque-fundo { animation: none; }
   .palco-destaque-tempo { display: none; }
 }
+
+/* Celular mais compacto: a escala de rem cai para 15px, e tudo o que é medido em rem
+   (texto, espaçamento, altura de botão) encolhe junto, sem mexer componente por componente.
+   Campos ficam em 16px: abaixo disso o iOS dá zoom ao focar. */
+@media (max-width: 639px) {
+  html {
+    font-size: 15px;
+  }
+  input,
+  select,
+  textarea {
+    font-size: 16px;
+  }
+}

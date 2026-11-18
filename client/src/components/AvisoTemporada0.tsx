@@ -17,17 +17,21 @@ export default function AvisoTemporada0({ compacto = false }: Props) {
       </p>
     )
   }
+  // Fechado mostra uma linha; aberto, a explicação inteira.
   return (
-    <section className="rounded-2xl border border-holo-3/35 bg-holo-3/10 p-4 sm:p-5 flex gap-3">
-      <Sparkles size={20} className="text-holo-3 shrink-0 mt-0.5" aria-hidden />
-      <div>
-        <p className="m-0 font-anton text-lg uppercase text-text">Você está na Temporada 0</p>
-        <p className="m-0 mt-1 text-sm text-muted">
-          É a pré-temporada do AniDeck. A <b className="text-text">Temporada 1</b> começa em janeiro de 2027, junto com a nova
-          temporada de animes. Seu progresso continua na virada, e quem jogar a Temporada 0 e seguir ativo vai ganhar uma
-          insígnia exclusiva de pioneiro no perfil público.
-        </p>
-      </div>
-    </section>
+    <details className="group rounded-2xl border border-holo-3/35 bg-holo-3/10 px-3.5 py-2.5 sm:px-5 sm:py-3.5">
+      <summary className="flex cursor-pointer list-none items-center gap-2 select-none [&::-webkit-details-marker]:hidden">
+        <Sparkles size={16} className="shrink-0 text-holo-3" aria-hidden />
+        <span className="min-w-0 flex-1 text-sm font-bold text-text">
+          Temporada 0 <span className="font-normal text-muted">· a Temporada 1 começa em janeiro de 2027</span>
+        </span>
+        <span className="shrink-0 text-xs text-holo-3 group-open:hidden">Saiba mais</span>
+      </summary>
+      <p className="m-0 mt-2 text-sm text-muted">
+        É a pré-temporada do AniDeck. A <b className="text-text">Temporada 1</b> começa junto com a nova temporada de animes. Seu
+        progresso continua na virada, e quem jogar a Temporada 0 e seguir ativo vai ganhar uma insígnia exclusiva de pioneiro no
+        perfil público.
+      </p>
+    </details>
   )
 }

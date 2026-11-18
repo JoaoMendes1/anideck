@@ -457,7 +457,7 @@ export default function Estatisticas() {
 
   return (
     <div className="pb-20">
-      <div className="max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-10 pt-6 sm:pt-8 relative z-10">
+      <div className="max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-10 pt-3 sm:pt-6 sm:pt-8 relative z-10">
 
         {/* Cabeçalho: a conclusão primeiro; os gráficos abaixo são o apoio dela. */}
         <header ref={registrar} className="reveal relative overflow-hidden rounded-3xl border border-line bg-panel/80 p-5 sm:p-8 mb-4 sm:mb-5">

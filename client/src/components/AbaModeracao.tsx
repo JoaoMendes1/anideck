@@ -687,14 +687,14 @@ export default function AbaModeracao() {
             <button
               type="button"
               onClick={() => setClaParaRenomear(null)}
-              className="min-h-11 px-5 rounded-xl border border-line bg-panel-2 text-sm font-bold text-text hover:border-line-hover transition-colors cursor-pointer"
+              className="min-h-10 px-5 rounded-xl border border-line bg-panel-2 text-sm font-bold text-text hover:border-line-hover transition-colors cursor-pointer"
             >
               Cancelar
             </button>
             <button
               type="submit"
               disabled={!nomeValido || !tagValida || renomeando}
-              className="min-h-11 px-5 rounded-xl border border-holo-3/50 bg-holo-3/15 text-holo-3 text-sm font-bold hover:bg-holo-3 hover:text-void transition-colors cursor-pointer disabled:opacity-50 disabled:pointer-events-none"
+              className="min-h-10 px-5 rounded-xl border border-holo-3/50 bg-holo-3/15 text-holo-3 text-sm font-bold hover:bg-holo-3 hover:text-void transition-colors cursor-pointer disabled:opacity-50 disabled:pointer-events-none"
             >
               {renomeando ? 'Salvando…' : 'Renomear'}
             </button>

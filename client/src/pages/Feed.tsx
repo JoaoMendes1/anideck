@@ -22,7 +22,7 @@ export default function Feed() {
   }, [aba])
 
   return (
-    <div className="w-full min-w-0 max-w-[1100px] mx-auto px-4 sm:px-6 lg:px-10 pt-6 pb-28">
+    <div className="w-full min-w-0 max-w-[1100px] mx-auto px-4 sm:px-6 lg:px-10 pt-3 sm:pt-6 pb-28">
       <header className="mb-6">
         <p className="font-mono text-xs font-semibold uppercase tracking-widest text-muted m-0">// comunidade</p>
         <h1 className="font-anton text-3xl sm:text-4xl uppercase m-0">Feed</h1>

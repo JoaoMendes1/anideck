@@ -95,7 +95,7 @@ export default function CartaoEvento() {
         type="button"
         onClick={lutar}
         disabled={estado.lutou_hoje || lutando}
-        className="inline-flex h-11 cursor-pointer items-center justify-center gap-2 self-start rounded-full bg-gradient-to-r from-gold to-holo-2 px-5 text-xs font-extrabold text-void disabled:cursor-not-allowed disabled:opacity-50"
+        className="inline-flex h-10 cursor-pointer items-center justify-center gap-2 self-start rounded-full bg-gradient-to-r from-gold to-holo-2 px-5 text-xs font-extrabold text-void disabled:cursor-not-allowed disabled:opacity-50"
       >
         <Swords size={15} aria-hidden="true" /> {lutando ? 'Lutando…' : estado.lutou_hoje ? 'Volte amanhã' : 'Enfrentar o arauto'}
       </button>

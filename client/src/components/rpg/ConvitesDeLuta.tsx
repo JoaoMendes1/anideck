@@ -86,7 +86,7 @@ export default function ConvitesDeLuta() {
       <button
         type="button"
         onClick={() => setAberto(true)}
-        className="fixed bottom-24 right-4 z-[55] inline-flex h-11 cursor-pointer items-center gap-2 rounded-full border border-holo-2/60 bg-panel px-4 text-xs font-bold text-holo-2 shadow-xl md:bottom-6"
+        className="fixed bottom-24 right-4 z-[55] inline-flex h-10 cursor-pointer items-center gap-2 rounded-full border border-holo-2/60 bg-panel px-4 text-xs font-bold text-holo-2 shadow-xl md:bottom-6"
       >
         <Swords size={15} aria-hidden="true" />
         {convites.length === 1 ? '1 convite para lutar' : `${convites.length} convites para lutar`}
@@ -119,7 +119,7 @@ export default function ConvitesDeLuta() {
                   type="button"
                   onClick={() => aceitar(c)}
                   disabled={ocupado !== null}
-                  className="h-11 flex-1 cursor-pointer rounded-full bg-gradient-to-r from-holo-1 to-holo-3 text-sm font-extrabold text-void disabled:opacity-50"
+                  className="h-10 flex-1 cursor-pointer rounded-full bg-gradient-to-r from-holo-1 to-holo-3 text-sm font-extrabold text-void disabled:opacity-50"
                 >
                   {ocupado === c.grupo_id ? 'Entrando…' : 'Aceitar'}
                 </button>
@@ -127,7 +127,7 @@ export default function ConvitesDeLuta() {
                   type="button"
                   onClick={() => recusar(c)}
                   disabled={ocupado !== null}
-                  className="h-11 cursor-pointer rounded-full border border-line px-5 text-sm font-bold text-muted hover:text-text disabled:opacity-50"
+                  className="h-10 cursor-pointer rounded-full border border-line px-5 text-sm font-bold text-muted hover:text-text disabled:opacity-50"
                 >
                   Recusar
                 </button>

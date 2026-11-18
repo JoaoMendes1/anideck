@@ -145,7 +145,7 @@ export default function MenuLateral({ aberto, aoAlternar }: Props) {
       className="hidden xl:flex fixed left-0 top-0 bottom-0 z-50 w-[var(--menu-lateral)] flex-col px-3 py-4 bg-gradient-to-b from-panel/95 to-void/95 backdrop-blur-md border-r border-line"
     >
       <div className="shrink-0 relative mb-1">
-        <Link to="/" className={`flex items-center justify-center gap-2.5 h-11 rounded-xl focus-visible:outline-2 focus-visible:outline-holo-3 ${alinhamento}`} aria-label="AniDeck, início">
+        <Link to="/" className={`flex items-center justify-center gap-2.5 h-10 rounded-xl focus-visible:outline-2 focus-visible:outline-holo-3 ${alinhamento}`} aria-label="AniDeck, início">
           <LogoMark />
           <span className={`font-anton text-xl tracking-wide ${soAberto}`}>
             Ani<span className="text-holo">Deck</span>

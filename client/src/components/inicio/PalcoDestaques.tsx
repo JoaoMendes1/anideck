@@ -310,7 +310,7 @@ export default function PalcoDestaques({
                 <div className="flex flex-wrap items-center gap-3 mt-5">
                   <Link
                     to={`/anime/${atual.mal_id}`}
-                    className="inline-flex items-center gap-2 h-11 px-6 rounded-full bg-gradient-to-r from-holo-1 to-holo-2 text-void font-bold text-sm"
+                    className="inline-flex items-center gap-2 h-10 px-6 rounded-full bg-gradient-to-r from-holo-1 to-holo-2 text-void font-bold text-sm"
                   >
                     Ver a obra <ChevronRight size={16} aria-hidden />
                   </Link>

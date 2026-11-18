@@ -28,7 +28,7 @@ const ICONE: Record<PrimarioId, { Icone: LucideIcon; cor: string }> = {
 }
 
 const BOTAO =
-  'flex h-11 w-11 shrink-0 cursor-pointer items-center justify-center rounded-full border border-line text-text hover:border-holo-3 disabled:cursor-not-allowed disabled:opacity-35'
+  'flex h-10 w-11 shrink-0 cursor-pointer items-center justify-center rounded-full border border-line text-text hover:border-holo-3 disabled:cursor-not-allowed disabled:opacity-35'
 
 export default function PainelAtributos({
   estado,
@@ -145,7 +145,7 @@ export default function PainelAtributos({
                 type="button"
                 onClick={salvar}
                 disabled={salvando || livres < 0}
-                className="h-11 flex-1 cursor-pointer rounded-full bg-gradient-to-r from-holo-1 to-holo-3 px-5 text-xs font-extrabold text-void disabled:cursor-wait disabled:opacity-60"
+                className="h-10 flex-1 cursor-pointer rounded-full bg-gradient-to-r from-holo-1 to-holo-3 px-5 text-xs font-extrabold text-void disabled:cursor-wait disabled:opacity-60"
               >
                 {salvando ? 'Salvando…' : 'Salvar pontos'}
               </button>
@@ -156,7 +156,7 @@ export default function PainelAtributos({
                   setRascunho(salvos)
                 }}
                 disabled={salvando}
-                className="h-11 cursor-pointer rounded-full border border-line px-5 text-xs font-bold text-muted hover:text-text"
+                className="h-10 cursor-pointer rounded-full border border-line px-5 text-xs font-bold text-muted hover:text-text"
               >
                 Desfazer
               </button>

@@ -900,7 +900,7 @@ export default function Inicio() {
     : []
 
   return (
-    <div className="w-full min-w-0 max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-10 pt-6 pb-24">
+    <div className="w-full min-w-0 max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-10 pt-3 sm:pt-6 pb-24">
       <PlayerHudInicio
         nome={nome}
         dataHoje={dataDeHoje}

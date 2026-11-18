@@ -110,5 +110,21 @@
         "caminho": "/masmorras"
       }
     ]
+  },
+  {
+    "chave": "2026-11-18-celular-compacto-e-busca",
+    "titulo": "AniDeck mais compacto no celular e busca nova",
+    "categoria": "layout",
+    "resumo": "As telas ficaram mais enxutas no celular: títulos, botões e cartões menores, e o que você usa mais aparece logo no topo. Nas Expedições, HP, recuperação e monstros cabem quase numa tela só.\n\nA lupa do topo agora busca dentro do AniDeck: digite \"pousada\", \"trocar arma\" ou \"quando sai\" e vá direto para a tela certa. Procurar anime continua lá, como última opção.",
+    "links": [
+      {
+        "rotulo": "Ver Expedições",
+        "caminho": "/expedicoes"
+      },
+      {
+        "rotulo": "Ver Meu Deck",
+        "caminho": "/deck"
+      }
+    ]
   }
 ]

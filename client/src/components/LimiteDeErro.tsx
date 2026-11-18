@@ -45,14 +45,14 @@ export default class LimiteDeErro extends Component<Props, Estado> {
             <button
               type="button"
               onClick={() => window.location.reload()}
-              className="inline-flex items-center gap-2 h-11 px-5 rounded-full bg-gradient-to-r from-holo-1 to-holo-3 text-sm font-bold text-void cursor-pointer focus-visible:outline-2 focus-visible:outline-holo-3"
+              className="inline-flex items-center gap-2 h-10 px-5 rounded-full bg-gradient-to-r from-holo-1 to-holo-3 text-sm font-bold text-void cursor-pointer focus-visible:outline-2 focus-visible:outline-holo-3"
             >
               <RefreshCw size={16} aria-hidden /> Recarregar a página
             </button>
             {/* Link comum, e não o do roteador: se o defeito estiver na navegação, ainda funciona. */}
             <a
               href="/"
-              className="inline-flex items-center h-11 px-5 rounded-full border border-line bg-panel-2 text-sm font-bold text-text hover:border-holo-2 focus-visible:outline-2 focus-visible:outline-holo-3"
+              className="inline-flex items-center h-10 px-5 rounded-full border border-line bg-panel-2 text-sm font-bold text-text hover:border-holo-2 focus-visible:outline-2 focus-visible:outline-holo-3"
             >
               Voltar ao início
             </a>

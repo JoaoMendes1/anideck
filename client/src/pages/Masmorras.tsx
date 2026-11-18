@@ -20,13 +20,13 @@ import {
 } from '../lib/rpg'
 
 const ROTULO_DE_SECAO = 'font-mono text-xs font-semibold uppercase tracking-widest text-muted m-0'
-const CONTAINER = 'w-full min-w-0 max-w-[1100px] mx-auto px-4 sm:px-6 lg:px-10 pt-6 pb-24'
+const CONTAINER = 'w-full min-w-0 max-w-[1100px] mx-auto px-4 sm:px-6 lg:px-10 pt-3 sm:pt-6 pb-24'
 
 function Resultado({ resposta, aoVoltar }: { resposta: RespostaMasmorra; aoVoltar: () => void }) {
   const { expedicao, recompensa, masmorra } = resposta
   return (
     <section aria-label={`Resultado de ${masmorra.nome}`} className="flex flex-col gap-4">
-      <h1 className="m-0 font-anton text-[clamp(1.8rem,7vw,2.4rem)] uppercase leading-none">{masmorra.nome}</h1>
+      <h1 className="m-0 font-anton text-[1.6rem] sm:text-[2.4rem] uppercase leading-none">{masmorra.nome}</h1>
       <ol className="m-0 flex list-none flex-col gap-3 p-0">
         {expedicao.andares.map((andar, i) => {
           const r = andar.resultado
@@ -92,7 +92,7 @@ function Resultado({ resposta, aoVoltar }: { resposta: RespostaMasmorra; aoVolta
             <li className="text-coral">A queda custou {recompensa.ouro_perdido} de Ouro.</li>
           )}
         </ul>
-        <button type="button" onClick={aoVoltar} className="h-11 cursor-pointer self-start rounded-full bg-gradient-to-r from-holo-1 to-holo-3 px-5 text-xs font-extrabold text-void">
+        <button type="button" onClick={aoVoltar} className="h-10 cursor-pointer self-start rounded-full bg-gradient-to-r from-holo-1 to-holo-3 px-5 text-xs font-extrabold text-void">
           Voltar às masmorras
         </button>
       </div>
@@ -136,8 +136,8 @@ export default function Masmorras() {
 
   return (
     <div className={CONTAINER}>
-      <header className="mb-4 flex items-center gap-1 select-none">
-        <Link to="/personagem" aria-label="Voltar para o personagem" className="-ml-2 flex h-11 w-11 items-center justify-center rounded-full text-muted hover:text-text">
+      <header className="mb-4 hidden items-center gap-1 select-none md:flex">
+        <Link to="/personagem" aria-label="Voltar para o personagem" className="-ml-2 flex h-10 w-11 items-center justify-center rounded-full text-muted hover:text-text">
           <ChevronLeft size={22} />
         </Link>
         <p className={ROTULO_DE_SECAO}>Masmorras</p>
@@ -148,7 +148,7 @@ export default function Masmorras() {
       ) : semPersonagem ? (
         <div className="rounded-2xl border border-line bg-panel p-6 text-center">
           <h1 className="m-0 mb-2 font-anton text-2xl uppercase">Desperte o seu personagem</h1>
-          <Link to="/personagem" className="inline-flex h-11 items-center rounded-full bg-gradient-to-r from-holo-1 to-holo-3 px-5 text-xs font-extrabold text-void">
+          <Link to="/personagem" className="inline-flex h-10 items-center rounded-full bg-gradient-to-r from-holo-1 to-holo-3 px-5 text-xs font-extrabold text-void">
             Ir para o despertar
           </Link>
         </div>
@@ -156,36 +156,36 @@ export default function Masmorras() {
         <div className="rounded-2xl border border-line bg-panel p-6 text-center">
           <h1 className="m-0 mb-2 font-anton text-2xl uppercase">Masmorras indisponíveis</h1>
           <p className="m-0 mb-4 text-sm text-muted">{erro}</p>
-          <button type="button" onClick={carregar} className="h-11 cursor-pointer rounded-full bg-gradient-to-r from-holo-1 to-holo-3 px-5 text-xs font-extrabold text-void">
+          <button type="button" onClick={carregar} className="h-10 cursor-pointer rounded-full bg-gradient-to-r from-holo-1 to-holo-3 px-5 text-xs font-extrabold text-void">
             Tentar de novo
           </button>
         </div>
       ) : resposta ? (
         <Resultado resposta={resposta} aoVoltar={() => { setResposta(null); carregar() }} />
       ) : (
-        <div className="flex flex-col gap-5">
+        <div className="flex flex-col gap-3 sm:gap-5">
           <div className="flex flex-col gap-2">
-            <h1 className="m-0 font-anton text-[clamp(2rem,8vw,2.6rem)] uppercase leading-none">Masmorras</h1>
-            <p className="m-0 text-sm text-muted">
+            <h1 className="m-0 font-anton text-[1.75rem] sm:text-[2.6rem] uppercase leading-none">Masmorras</h1>
+            <p className="m-0 text-sm text-muted line-clamp-2 sm:line-clamp-none">
               Andares seguidos, uma masmorra por dia. Entre um andar e outro, você recupera 25% da Vida. Completar dá 50% a mais de Ouro e um baú com chance de item.
               Cair custa Ouro, como nas expedições.
             </p>
           </div>
 
-          <dl className="m-0 grid grid-cols-3 gap-2.5">
-            <div className="flex min-w-0 flex-col gap-1 rounded-xl border border-line bg-panel p-3">
-              <dt className="text-xs font-semibold text-muted">Vida</dt>
-              <dd className="m-0 font-anton text-xl leading-none">
+          <dl className="m-0 grid grid-cols-3 gap-1.5 sm:gap-2.5">
+            <div className="flex min-w-0 flex-col gap-1 rounded-xl border border-line bg-panel p-2 sm:p-3">
+              <dt className="text-[11px] font-semibold text-muted sm:text-xs">HP</dt>
+              <dd className="m-0 font-anton text-lg leading-none sm:text-xl">
                 {estado.vida.atual}
                 <span className="font-mono text-xs text-muted"> / {estado.vida.maxima}</span>
               </dd>
             </div>
-            <div className="flex min-w-0 flex-col gap-1 rounded-xl border border-line bg-panel p-3">
-              <dt className="text-xs font-semibold text-muted">Ouro</dt>
-              <dd className="m-0 font-anton text-xl leading-none">{estado.hoje.ouro ?? 0}</dd>
+            <div className="flex min-w-0 flex-col gap-1 rounded-xl border border-line bg-panel p-2 sm:p-3">
+              <dt className="text-[11px] font-semibold text-muted sm:text-xs">Ouro</dt>
+              <dd className="m-0 font-anton text-lg leading-none sm:text-xl">{estado.hoje.ouro ?? 0}</dd>
             </div>
-            <div className="flex min-w-0 flex-col gap-1 rounded-xl border border-line bg-panel p-3">
-              <dt className="text-xs font-semibold text-muted">Hoje</dt>
+            <div className="flex min-w-0 flex-col gap-1 rounded-xl border border-line bg-panel p-2 sm:p-3">
+              <dt className="text-[11px] font-semibold text-muted sm:text-xs">Hoje</dt>
               <dd className={`m-0 text-sm font-bold leading-tight ${feita ? 'text-muted' : 'text-green'}`}>{feita ? 'Já explorou' : 'Disponível'}</dd>
             </div>
           </dl>
@@ -202,7 +202,7 @@ export default function Masmorras() {
               const dificuldade = rotuloDaDificuldade(m.dificuldade)
               const fechada = m.bloqueada || feita || fraco || entrando !== null
               return (
-                <li key={m.id} className={`flex flex-col gap-3 rounded-2xl border bg-panel p-4 ${m.bloqueada ? 'border-line opacity-70' : 'border-holo-2/40'}`}>
+                <li key={m.id} className={`flex flex-col gap-2.5 rounded-2xl border bg-panel p-3 sm:gap-3 sm:p-4 ${m.bloqueada ? 'border-line opacity-70' : 'border-holo-2/40'}`}>
                   <div className="flex flex-wrap items-center gap-2">
                     <h2 className="m-0 text-base font-bold">{m.nome}</h2>
                     {m.bloqueada ? (
@@ -214,17 +214,17 @@ export default function Masmorras() {
                     )}
                   </div>
                   <p className="m-0 text-xs text-muted">{m.descricao}</p>
-                  <ol aria-label="Andares" className="m-0 flex list-none flex-wrap items-center gap-1.5 p-0">
+                  <ol aria-label="Andares" className="-mx-1 m-0 flex list-none items-center gap-1 overflow-x-auto px-1 p-0 sm:flex-wrap sm:gap-1.5">
                     {m.monstros.map((monstro, i) => (
-                      <li key={i} className="flex items-center gap-1.5">
+                      <li key={i} className="flex shrink-0 items-center gap-1">
                         {i > 0 && <ChevronRight size={14} className="text-muted-2" aria-hidden="true" />}
-                        <span className="flex items-center gap-1.5 rounded-xl border border-line bg-panel-2/50 py-1 pl-1 pr-2.5">
-                          <IconeDoMonstro monstro={monstro} tamanho="h-8 w-8" />
-                          <span className="text-xs font-semibold">{monstro.nome}</span>
+                        <span className="flex items-center gap-1.5 rounded-xl border border-line bg-panel-2/50 py-0.5 pl-0.5 pr-2">
+                          <IconeDoMonstro monstro={monstro} tamanho="h-7 w-7" />
+                          <span className="max-w-[6.5rem] truncate text-[11px] font-semibold sm:max-w-none sm:text-xs">{monstro.nome}</span>
                         </span>
                       </li>
                     ))}
-                    <li className="flex items-center gap-1.5">
+                    <li className="flex shrink-0 items-center gap-1">
                       <ChevronRight size={14} className="text-muted-2" aria-hidden="true" />
                       <Trophy size={18} className="text-gold" aria-label="Baú" />
                     </li>
@@ -235,7 +235,7 @@ export default function Masmorras() {
                     onClick={() => entrar(m.id)}
                     disabled={fechada}
                     aria-label={`Entrar em ${m.nome}`}
-                    className="inline-flex h-11 cursor-pointer items-center justify-center gap-2 rounded-full bg-gradient-to-r from-holo-1 to-holo-3 px-5 text-xs font-extrabold text-void disabled:cursor-not-allowed disabled:opacity-50"
+                    className="inline-flex h-10 cursor-pointer items-center justify-center gap-2 rounded-full bg-gradient-to-r from-holo-1 to-holo-3 px-5 text-xs font-extrabold text-void disabled:cursor-not-allowed disabled:opacity-50"
                   >
                     <DoorOpen size={15} aria-hidden="true" /> {entrando === m.id ? 'Explorando…' : 'Entrar'}
                     {entrando !== m.id && estado.custos_mana && (

@@ -130,7 +130,7 @@ export default function EscolhaDeItem({
           type="button"
           onClick={aoFechar}
           aria-label="Fechar a lista de itens"
-          className="-mr-2 flex h-11 w-11 cursor-pointer items-center justify-center rounded-full text-muted hover:text-text"
+          className="-mr-2 flex h-10 w-11 cursor-pointer items-center justify-center rounded-full text-muted hover:text-text"
         >
           <X size={16} aria-hidden="true" />
         </button>
@@ -153,7 +153,7 @@ export default function EscolhaDeItem({
             const custo = item.custo_aprimorar ?? 0
             return (
               <li key={item.id} className={`flex flex-wrap items-center gap-2 rounded-xl border p-2.5 ${estilo.borda} ${estilo.fundo}`}>
-                <span className={`flex h-11 w-11 shrink-0 items-center justify-center overflow-hidden rounded-lg bg-void/50 ${estilo.texto}`}>
+                <span className={`flex h-10 w-11 shrink-0 items-center justify-center overflow-hidden rounded-lg bg-void/50 ${estilo.texto}`}>
                   <IconeDoItem id={item.id} slot={item.slot} tamanho={20} />
                 </span>
                 <div className="min-w-0 flex-1">
@@ -182,7 +182,7 @@ export default function EscolhaDeItem({
                     type="button"
                     onClick={() => trocar('')}
                     disabled={salvando}
-                    className="h-11 shrink-0 cursor-pointer rounded-full border border-line px-4 text-xs font-bold text-muted hover:text-text disabled:cursor-wait disabled:opacity-60"
+                    className="h-10 shrink-0 cursor-pointer rounded-full border border-line px-4 text-xs font-bold text-muted hover:text-text disabled:cursor-wait disabled:opacity-60"
                   >
                     Remover
                   </button>
@@ -191,7 +191,7 @@ export default function EscolhaDeItem({
                     type="button"
                     onClick={() => trocar(item.id)}
                     disabled={salvando}
-                    className="h-11 shrink-0 cursor-pointer rounded-full bg-gradient-to-r from-holo-1 to-holo-3 px-4 text-xs font-extrabold text-void disabled:cursor-wait disabled:opacity-60"
+                    className="h-10 shrink-0 cursor-pointer rounded-full bg-gradient-to-r from-holo-1 to-holo-3 px-4 text-xs font-extrabold text-void disabled:cursor-wait disabled:opacity-60"
                   >
                     Equipar
                   </button>
@@ -207,7 +207,7 @@ export default function EscolhaDeItem({
                         onClick={() => aprimorar(item.id)}
                         disabled={salvando || ouro < custo}
                         aria-label={`Aprimorar ${item.nome} para +${nivel + 1} por ${custo} de Ouro`}
-                        className="inline-flex min-h-11 shrink-0 cursor-pointer items-center gap-1.5 rounded-full border border-gold/50 px-3 font-bold text-gold hover:bg-gold/10 disabled:cursor-not-allowed disabled:opacity-50"
+                        className="inline-flex min-h-10 shrink-0 cursor-pointer items-center gap-1.5 rounded-full border border-gold/50 px-3 font-bold text-gold hover:bg-gold/10 disabled:cursor-not-allowed disabled:opacity-50"
                       >
                         <Hammer size={12} aria-hidden="true" /> +{nivel + 1} · {custo}
                       </button>

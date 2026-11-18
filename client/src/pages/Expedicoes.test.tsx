@@ -105,14 +105,14 @@ describe('Expedições', () => {
     vi.mocked(obterExpedicoes).mockResolvedValue({ dados: estado(1, 500, 100) })
     abrir()
 
-    await screen.findByText('Seu HP')
+    await screen.findAllByText('Seu HP')
     expect(screen.getByText('65 / 130')).toBeTruthy()
     expect(screen.getByText('100')).toBeTruthy()
     expect(screen.getByText(/5% por hora e 8% a cada episódio assistido \(2 de 5 hoje\)/)).toBeTruthy()
     expect(screen.getByText('12 de Ouro')).toBeTruthy()
-    expect(screen.getByText('Fonte termal: HP e Mana cheios')).toBeTruthy()
+    expect(screen.getByText('HP e Mana · 1×/dia')).toBeTruthy()
     expect(screen.getByText('23 de Ouro')).toBeTruthy()
-    expect(screen.getByText('Poção de Mana: +40% da Mana')).toBeTruthy()
+    expect(screen.getByText('+40% da Mana')).toBeTruthy()
   })
 
   it('abaixo de 30% de Vida, bloqueia a batalha e avisa como recuperar', async () => {

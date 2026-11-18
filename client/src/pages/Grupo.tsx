@@ -12,7 +12,7 @@ import {
 import BatalhaEmGrupo from '../components/rpg/BatalhaEmGrupo'
 import PreferenciasDeConvite from '../components/rpg/PreferenciasDeConvite'
 
-const CONTAINER = 'w-full min-w-0 max-w-[900px] mx-auto px-4 sm:px-6 lg:px-10 pt-6 pb-24'
+const CONTAINER = 'w-full min-w-0 max-w-[900px] mx-auto px-4 sm:px-6 lg:px-10 pt-3 sm:pt-6 pb-24'
 const INTERVALO_SALA_MS = 3000
 type Filtro = 'todos' | 'amigos' | 'cla' | 'online'
 
@@ -132,7 +132,7 @@ export default function Grupo() {
   return (
     <div className={`${CONTAINER} flex flex-col gap-4`}>
       <header className="flex items-center gap-1">
-        <Link to={voltarPara} aria-label="Voltar" className="-ml-2 flex h-11 w-11 items-center justify-center rounded-full text-muted hover:text-text">
+        <Link to={voltarPara} aria-label="Voltar" className="-ml-2 flex h-10 w-11 items-center justify-center rounded-full text-muted hover:text-text">
           <ChevronLeft size={22} />
         </Link>
         <div className="min-w-0 flex-1">
@@ -185,7 +185,7 @@ export default function Grupo() {
                 type="button"
                 onClick={lutar}
                 disabled={ocupado !== null || grupo.status !== 'aberto'}
-                className="inline-flex h-11 flex-1 cursor-pointer items-center justify-center gap-2 rounded-full bg-gradient-to-r from-holo-1 to-holo-3 px-5 text-sm font-extrabold text-void disabled:opacity-50 sm:flex-none"
+                className="inline-flex h-10 flex-1 cursor-pointer items-center justify-center gap-2 rounded-full bg-gradient-to-r from-holo-1 to-holo-3 px-5 text-sm font-extrabold text-void disabled:opacity-50 sm:flex-none"
               >
                 <Swords size={16} aria-hidden="true" />
                 {ocupado === 'lutar' || grupo.status === 'lutando' ? 'Lutando…' : prontos > 1 ? `Lutar com ${prontos} heróis` : 'Lutar sozinho'}
@@ -193,7 +193,7 @@ export default function Grupo() {
             ) : (
               <p className="m-0 flex-1 text-sm text-muted">Você está no grupo. A luta começa quando o líder mandar; fique nesta tela para ver.</p>
             )}
-            <button type="button" onClick={sair} className="h-11 cursor-pointer rounded-full border border-line px-4 text-xs font-bold text-muted hover:text-text">
+            <button type="button" onClick={sair} className="h-10 cursor-pointer rounded-full border border-line px-4 text-xs font-bold text-muted hover:text-text">
               {souLider ? 'Fechar grupo' : 'Sair do grupo'}
             </button>
           </div>

@@ -24,9 +24,9 @@ const estadoBase: EstadoComunidade = {
 }
 
 describe('BarrasVitais', () => {
-  it('exibe Vitalidade e Mana escaladas pelo nível do jogador (ex.: 170/170 e 64/64 no nível 15)', () => {
+  it('exibe HP e Mana escalados pelo nível do jogador (ex.: 170/170 e 64/64 no nível 15)', () => {
     render(<BarrasVitais estado={estadoBase} nivel={15} />)
-    expect(screen.getByLabelText('Vitalidade 170 de 170')).toBeTruthy()
+    expect(screen.getByLabelText('HP 170 de 170')).toBeTruthy()
     expect(screen.getByLabelText('Mana 64 de 64')).toBeTruthy()
   })
 })

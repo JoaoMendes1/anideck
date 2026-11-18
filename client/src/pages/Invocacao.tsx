@@ -23,7 +23,7 @@ import IconeDoItem from '../components/rpg/IconeDoItem'
 import IconeOuro from '../components/IconeOuro'
 
 const ROTULO_DE_SECAO = 'font-mono text-xs font-semibold uppercase tracking-widest text-muted m-0'
-const CONTAINER = 'w-full min-w-0 max-w-[1100px] mx-auto px-4 sm:px-6 lg:px-10 pt-6 pb-24'
+const CONTAINER = 'w-full min-w-0 max-w-[1100px] mx-auto px-4 sm:px-6 lg:px-10 pt-3 sm:pt-6 pb-24'
 const RARIDADES: Exclude<Raridade, 'comum'>[] = ['lendario', 'epico', 'raro']
 
 function CartaoDoItem({ item, indice }: { item: ItemInvocado; indice: number }) {
@@ -94,8 +94,8 @@ export default function Invocacao() {
 
   return (
     <div className={CONTAINER}>
-      <header className="mb-4 flex items-center gap-1 select-none">
-        <Link to="/personagem" aria-label="Voltar para o personagem" className="-ml-2 flex h-11 w-11 items-center justify-center rounded-full text-muted hover:text-text">
+      <header className="mb-4 hidden items-center gap-1 select-none md:flex">
+        <Link to="/personagem" aria-label="Voltar para o personagem" className="-ml-2 flex h-10 w-11 items-center justify-center rounded-full text-muted hover:text-text">
           <ChevronLeft size={22} />
         </Link>
         <p className={ROTULO_DE_SECAO}>Invocação</p>
@@ -107,7 +107,7 @@ export default function Invocacao() {
         <div className="rounded-2xl border border-line bg-panel p-6 text-center">
           <h1 className="m-0 mb-2 font-anton text-2xl uppercase">Desperte o seu personagem</h1>
           <p className="m-0 mb-4 text-sm text-muted">A invocação começa depois do despertar.</p>
-          <Link to="/personagem" className="inline-flex h-11 items-center rounded-full bg-gradient-to-r from-holo-1 to-holo-3 px-5 text-xs font-extrabold text-void">
+          <Link to="/personagem" className="inline-flex h-10 items-center rounded-full bg-gradient-to-r from-holo-1 to-holo-3 px-5 text-xs font-extrabold text-void">
             Ir para o despertar
           </Link>
         </div>
@@ -115,7 +115,7 @@ export default function Invocacao() {
         <div className="rounded-2xl border border-line bg-panel p-6 text-center">
           <h1 className="m-0 mb-2 font-anton text-2xl uppercase">Invocação indisponível</h1>
           <p className="m-0 mb-4 text-sm text-muted">{erro}</p>
-          <button type="button" onClick={carregar} className="h-11 cursor-pointer rounded-full bg-gradient-to-r from-holo-1 to-holo-3 px-5 text-xs font-extrabold text-void">
+          <button type="button" onClick={carregar} className="h-10 cursor-pointer rounded-full bg-gradient-to-r from-holo-1 to-holo-3 px-5 text-xs font-extrabold text-void">
             Tentar de novo
           </button>
         </div>
@@ -127,8 +127,8 @@ export default function Invocacao() {
               style={{ backgroundImage: 'radial-gradient(60% 70% at 50% 45%, color-mix(in srgb, var(--color-holo-2) 45%, transparent), transparent 75%)' }}
             >
               <Sparkles size={40} className="text-gold motion-safe:animate-pulse" aria-hidden="true" />
-              <h1 className="m-0 font-anton text-[clamp(2rem,8vw,2.6rem)] uppercase leading-none">Círculo de Invocação</h1>
-              <p className="m-0 max-w-md text-sm text-muted">
+              <h1 className="m-0 font-anton text-[1.75rem] sm:text-[2.6rem] uppercase leading-none">Círculo de Invocação</h1>
+              <p className="m-0 max-w-md text-sm text-muted line-clamp-2 sm:line-clamp-none">
                 Troque bilhetes de expedição por uma chance de equipamento. Quando não vem item, vem Ouro. Repetidos se acumulam no inventário.
               </p>
               <p className="m-0 inline-flex items-center gap-2 rounded-full border border-gold/50 bg-void/60 px-4 py-1.5 font-mono text-sm font-bold text-gold">

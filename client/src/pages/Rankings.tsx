@@ -280,11 +280,11 @@ export default function Rankings() {
 
     return (
         <div className="pb-20">
-            <div className="max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-10 pt-10">
+            <div className="max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-10 pt-3 sm:pt-10">
                 <AbasDescobrir />
 
                 {/* --- SELETOR DE MODO DO RANKING --- */}
-                <div className="flex gap-2 flex-wrap mb-6 select-none border-b border-line pb-4" role="tablist" aria-label="Modo do Ranking">
+                <div className="-mx-4 flex gap-1.5 overflow-x-auto px-4 mb-3 sm:mx-0 sm:flex-wrap sm:gap-2 sm:px-0 sm:mb-6 select-none border-b border-line pb-3 sm:pb-4 [&>button]:shrink-0 [&>button]:whitespace-nowrap" role="tablist" aria-label="Modo do Ranking">
                     <button
                         type="button"
                         onClick={() => {
@@ -294,13 +294,13 @@ export default function Rankings() {
                             setSelectedYear('')
                             setSelectedSort('POPULARITY_DESC')
                         }}
-                        className={`text-[13px] font-bold px-5 py-2.5 rounded-full border transition-all cursor-pointer ${
+                        className={`text-xs sm:text-[13px] font-bold px-3 py-1.5 sm:px-5 sm:py-2.5 rounded-full border transition-all cursor-pointer ${
                             modoRanking === 'top_global'
                                 ? 'bg-gradient-to-r from-holo-1 to-holo-2 text-white border-transparent shadow-lg'
                                 : 'bg-panel border-line text-muted hover:border-holo-3 hover:text-text'
                         }`}
                     >
-                        🏆 Mais Aclamados (Top Global)
+                        🏆 Mais Aclamados
                     </button>
                     <button
                         type="button"
@@ -311,35 +311,35 @@ export default function Rankings() {
                             setSelectedYear('')
                             setSelectedSort('TRENDING_DESC')
                         }}
-                        className={`text-[13px] font-bold px-5 py-2.5 rounded-full border transition-all cursor-pointer flex items-center gap-2 ${
+                        className={`text-xs sm:text-[13px] font-bold px-3 py-1.5 sm:px-5 sm:py-2.5 rounded-full border transition-all cursor-pointer flex items-center gap-2 ${
                             modoRanking === 'em_alta'
                                 ? 'bg-coral/20 border-coral text-coral shadow-[0_0_15px_rgba(255,92,108,0.2)]'
                                 : 'bg-panel border-line text-muted hover:border-coral hover:text-text'
                         }`}
                     >
-                        🔥 Em Alta na Temporada
+                        🔥 Em Alta
                     </button>
                     <button
                         type="button"
                         onClick={() => setModoRanking('clima')}
-                        className={`text-[13px] font-bold px-5 py-2.5 rounded-full border transition-all cursor-pointer flex items-center gap-2 ${
+                        className={`text-xs sm:text-[13px] font-bold px-3 py-1.5 sm:px-5 sm:py-2.5 rounded-full border transition-all cursor-pointer flex items-center gap-2 ${
                             modoRanking === 'clima'
                                 ? 'bg-holo-2/20 border-holo-2 text-holo-2 shadow-[0_0_15px_rgba(34,211,238,0.25)]'
                                 : 'bg-panel border-line text-muted hover:border-holo-2 hover:text-text'
                         }`}
                     >
-                        <Sparkles size={15} />
-                        <span>Clima da Temporada</span>
+                        <Sparkles size={14} />
+                        <span>Clima</span>
                     </button>
                 </div>
 
                 {/* --- CABEÇALHO CONTEXTUAL E CAIXA DE CREDIBILIDADE --- */}
-                <div className="mb-6">
+                <div className="mb-3 sm:mb-6">
                     {modoRanking === 'top_global' && (
                         <>
-                            <p className="font-mono text-xs text-holo-3 tracking-widest mb-1.5 select-none">// ranking global bayesiano</p>
+                            <p className="font-mono text-xs text-holo-3 tracking-widest mb-1.5 select-none hidden sm:block">// ranking global bayesiano</p>
                             <div className="flex items-center gap-3 mb-1.5">
-                                <h1 className="font-anton text-3xl md:text-4xl uppercase text-text select-none m-0">Os Mais Aclamados</h1>
+                                <h1 className="font-anton text-xl sm:text-3xl md:text-4xl uppercase text-text select-none m-0">Os Mais Aclamados</h1>
                                 <button
                                     onClick={() => setShowCredibilityInfo(!showCredibilityInfo)}
                                     className={`p-1.5 rounded-full transition-colors cursor-pointer ${
@@ -348,11 +348,11 @@ export default function Rankings() {
                                     aria-label="Entenda o nosso cálculo"
                                     title="Por que nosso ranking é diferente?"
                                 >
-                                    <Info size={22} />
+                                    <Info size={18} />
                                 </button>
                             </div>
                             <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between text-muted text-sm select-none">
-                                <p className="m-0">Direto da base pública da AniList — ranking ponderado com média bayesiana para evitar distorções de nicho.</p>
+                                <p className="m-0 hidden sm:block">Direto da base pública da AniList — ranking ponderado com média bayesiana para evitar distorções de nicho.</p>
                                 {lastUpdated && selectedSort === 'POPULARITY_DESC' && activeFilterCount === 0 && (
                                     <p className="flex items-center gap-1.5 text-xs font-mono text-holo-3 bg-holo-3/10 px-3 py-1 rounded-full border border-holo-3/20 w-fit mt-2 sm:mt-0">
                                         ⏳ Atualizado às {new Date(lastUpdated).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
@@ -377,9 +377,9 @@ export default function Rankings() {
 
                     {modoRanking === 'em_alta' && (
                         <>
-                            <p className="font-mono text-xs text-coral tracking-widest mb-1.5 select-none">// animes em lançamento</p>
-                            <h1 className="font-anton text-3xl md:text-4xl uppercase text-text select-none m-0 mb-1.5">Em Alta na Temporada</h1>
-                            <p className="text-muted text-sm select-none m-0">
+                            <p className="font-mono text-xs text-coral tracking-widest mb-1.5 select-none hidden sm:block">// animes em lançamento</p>
+                            <h1 className="font-anton text-xl sm:text-3xl md:text-4xl uppercase text-text select-none m-0 mb-1.5">Em Alta na Temporada</h1>
+                            <p className="text-muted text-sm select-none m-0 line-clamp-2 sm:line-clamp-none">
                                 As obras que estão sendo lançadas neste trimestre com maior volume de discussão e acompanhamento.
                             </p>
                         </>
@@ -387,9 +387,9 @@ export default function Rankings() {
 
                     {modoRanking === 'clima' && (
                         <>
-                            <p className="font-mono text-xs text-holo-2 tracking-widest mb-1.5 select-none">// termômetro da comunidade</p>
-                            <h1 className="font-anton text-3xl md:text-4xl uppercase text-text select-none m-0 mb-1.5">Clima da Temporada</h1>
-                            <p className="text-muted text-sm select-none m-0">
+                            <p className="font-mono text-xs text-holo-2 tracking-widest mb-1.5 select-none hidden sm:block">// termômetro da comunidade</p>
+                            <h1 className="font-anton text-xl sm:text-3xl md:text-4xl uppercase text-text select-none m-0 mb-1.5">Clima da Temporada</h1>
+                            <p className="text-muted text-sm select-none m-0 line-clamp-2 sm:line-clamp-none">
                                 Rankings de sentimentos e reações reais marcados episódio a episódio pela comunidade.
                             </p>
                         </>
@@ -402,16 +402,16 @@ export default function Rankings() {
                     <>
                         {modoRanking === 'em_alta' && <SecaoEmAltaComunidade />}
 
-                <div className="mb-6">
+                <div className="mb-3 sm:mb-6">
                     <button
                         onClick={() => setShowFilters(v => !v)}
-                        className={`select-none inline-flex items-center gap-2 px-4 py-2 rounded-full border text-sm font-bold transition-all duration-200 cursor-pointer ${showFilters || activeFilterCount > 0
+                        className={`select-none inline-flex items-center gap-1.5 px-3 py-1.5 sm:px-4 sm:py-2 rounded-full border text-xs sm:text-sm font-bold transition-all duration-200 cursor-pointer ${showFilters || activeFilterCount > 0
                             ? 'border-holo-2 text-holo-2 bg-holo-2/10'
                             : 'border-line text-muted bg-panel hover:border-holo-2 hover:text-holo-2'
                             }`}
                     >
                         <SlidersHorizontal size={14} />
-                        Filtros Avançados
+                        Filtros
                         {activeFilterCount > 0 && (
                             <span className="flex items-center justify-center w-5 h-5 rounded-full bg-gradient-to-r from-holo-1 to-holo-2 text-void text-xs font-black">
                                 {activeFilterCount}

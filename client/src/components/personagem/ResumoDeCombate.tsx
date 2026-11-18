@@ -44,10 +44,10 @@ export default function ResumoDeCombate({ estado, aoAbrirAtributos }: { estado: 
         )}
       </div>
       <div className="grid grid-cols-2 gap-2">
-        <Link to="/expedicoes" className="inline-flex h-11 items-center justify-center gap-1.5 rounded-xl bg-gradient-to-r from-holo-1 to-holo-3 text-sm font-extrabold text-void">
+        <Link to="/expedicoes" className="inline-flex h-10 items-center justify-center gap-1.5 rounded-xl bg-gradient-to-r from-holo-1 to-holo-3 text-sm font-extrabold text-void">
           <Swords size={15} aria-hidden="true" /> Expedições
         </Link>
-        <Link to="/masmorras" className="inline-flex h-11 items-center justify-center gap-1.5 rounded-xl border border-line bg-panel-2 text-sm font-bold text-text">
+        <Link to="/masmorras" className="inline-flex h-10 items-center justify-center gap-1.5 rounded-xl border border-line bg-panel-2 text-sm font-bold text-text">
           <DoorOpen size={15} aria-hidden="true" /> Masmorras
         </Link>
       </div>

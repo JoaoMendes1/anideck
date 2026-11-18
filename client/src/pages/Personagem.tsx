@@ -59,7 +59,7 @@ const ANEL_DO_ESTAGIO: Record<string, string> = {
 }
 
 
-const CONTAINER = 'w-full min-w-0 max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-10 pt-6 pb-24'
+const CONTAINER = 'w-full min-w-0 max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-10 pt-3 sm:pt-6 pb-24'
 const ROTULO_DE_SECAO = 'font-mono text-xs font-semibold uppercase tracking-widest text-muted m-0'
 
 function Cabecalho() {
@@ -68,7 +68,7 @@ function Cabecalho() {
       <Link
         to="/guilda"
         aria-label="Voltar para a Guilda"
-        className="-ml-2 flex h-11 w-11 items-center justify-center rounded-full text-muted hover:text-text transition-colors"
+        className="-ml-2 flex h-10 w-11 items-center justify-center rounded-full text-muted hover:text-text transition-colors"
       >
         <ChevronLeft size={22} />
       </Link>
@@ -136,7 +136,7 @@ export function TelaDespertar({ aoDespertar }: { aoDespertar: (dados: RespostaPe
 
         <form onSubmit={enviar} className="flex flex-col gap-4" noValidate>
           <p className="font-mono text-xs font-semibold uppercase tracking-widest text-holo-3 m-0">O Despertar</p>
-          <h1 className="font-anton text-[clamp(2rem,8vw,2.6rem)] uppercase leading-[1.05] m-0">
+          <h1 className="font-anton text-[1.75rem] sm:text-[2.6rem] uppercase leading-[1.05] m-0">
             Um novo mundo te espera
           </h1>
           <p className="text-sm leading-relaxed text-muted m-0">
@@ -229,7 +229,7 @@ function TrocaDePersonagem({ atual, aoTrocar }: { atual: string; aoTrocar: (dado
         type="button"
         onClick={confirmar}
         disabled={salvando || escolhido === atual}
-        className="h-11 cursor-pointer rounded-full bg-gradient-to-r from-holo-1 to-holo-3 px-4 text-xs font-extrabold text-void disabled:cursor-not-allowed disabled:opacity-50"
+        className="h-10 cursor-pointer rounded-full bg-gradient-to-r from-holo-1 to-holo-3 px-4 text-xs font-extrabold text-void disabled:cursor-not-allowed disabled:opacity-50"
       >
         {salvando ? 'Trocando…' : escolhido === atual ? 'Este é o personagem em uso' : `Jogar com ${membro.nome}`}
       </button>
@@ -378,7 +378,7 @@ function FichaDoPersonagem({
           </span>
           <Link
             to="/loja"
-            className="absolute bottom-3 right-3 inline-flex h-11 items-center gap-1.5 rounded-full border border-line bg-void/70 px-3 text-xs font-bold text-muted hover:text-text"
+            className="absolute bottom-3 right-3 inline-flex h-10 items-center gap-1.5 rounded-full border border-line bg-void/70 px-3 text-xs font-bold text-muted hover:text-text"
           >
             <Image size={14} aria-hidden="true" />
             Cenários e auras
@@ -399,7 +399,7 @@ function FichaDoPersonagem({
             <p className="font-mono text-xs uppercase tracking-[0.14em] text-muted-2 m-0">
               Nome do personagem (RPG)
             </p>
-            <h1 className="font-anton text-[clamp(2.2rem,9vw,2.8rem)] uppercase leading-none m-0 break-words">
+            <h1 className="font-anton text-[1.8rem] sm:text-[2.8rem] uppercase leading-none m-0 break-words">
               {personagem.nome}
             </h1>
             <div className="flex flex-wrap gap-2">
@@ -574,7 +574,7 @@ function FichaDoPersonagem({
                   type="button"
                   onClick={() => trocarVisual(mostrado)}
                   disabled={salvando}
-                  className="h-11 cursor-pointer rounded-full bg-gradient-to-r from-holo-1 to-holo-3 px-4 text-xs font-extrabold text-void disabled:cursor-wait disabled:opacity-60"
+                  className="h-10 cursor-pointer rounded-full bg-gradient-to-r from-holo-1 to-holo-3 px-4 text-xs font-extrabold text-void disabled:cursor-wait disabled:opacity-60"
                 >
                   {salvando ? 'Trocando…' : 'Usar este visual'}
                 </button>
@@ -582,7 +582,7 @@ function FichaDoPersonagem({
                   type="button"
                   onClick={() => setPrevia(null)}
                   disabled={salvando}
-                  className="h-11 cursor-pointer rounded-full border border-line px-4 text-xs font-bold text-muted hover:text-text"
+                  className="h-10 cursor-pointer rounded-full border border-line px-4 text-xs font-bold text-muted hover:text-text"
                 >
                   Cancelar
                 </button>
@@ -597,7 +597,7 @@ function FichaDoPersonagem({
                   type="button"
                   onClick={() => trocarVisual('')}
                   disabled={salvando}
-                  className="h-11 cursor-pointer rounded-full border border-line px-4 text-xs font-bold text-text hover:border-holo-3 disabled:cursor-wait disabled:opacity-60"
+                  className="h-10 cursor-pointer rounded-full border border-line px-4 text-xs font-bold text-text hover:border-holo-3 disabled:cursor-wait disabled:opacity-60"
                 >
                   {salvando ? 'Trocando…' : 'Voltar ao automático'}
                 </button>

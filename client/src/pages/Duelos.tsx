@@ -18,7 +18,7 @@ import { rotuloDoElemento } from '../lib/personagem'
 import IconeOuro from '../components/IconeOuro'
 
 const ROTULO_DE_SECAO = 'font-mono text-xs font-semibold uppercase tracking-widest text-muted m-0'
-const CONTAINER = 'w-full min-w-0 max-w-[1100px] mx-auto px-4 sm:px-6 lg:px-10 pt-6 pb-24'
+const CONTAINER = 'w-full min-w-0 max-w-[1100px] mx-auto px-4 sm:px-6 lg:px-10 pt-3 sm:pt-6 pb-24'
 
 function SeloDoElemento({ elemento }: { elemento: string }) {
   const estilo = ESTILO_DO_ELEMENTO[elemento] ?? ESTILO_DO_ELEMENTO.eter
@@ -63,7 +63,7 @@ function ResultadoDoDuelo({ resposta, aoVoltar }: { resposta: RespostaDuelo; aoV
           )
         })}
       </ol>
-      <button type="button" onClick={aoVoltar} className="h-11 cursor-pointer self-start rounded-full bg-gradient-to-r from-holo-1 to-holo-3 px-5 text-xs font-extrabold text-void">
+      <button type="button" onClick={aoVoltar} className="h-10 cursor-pointer self-start rounded-full bg-gradient-to-r from-holo-1 to-holo-3 px-5 text-xs font-extrabold text-void">
         Voltar aos duelos
       </button>
     </section>
@@ -105,8 +105,8 @@ export default function Duelos() {
 
   return (
     <div className={CONTAINER}>
-      <header className="mb-4 flex items-center gap-1 select-none">
-        <Link to="/personagem" aria-label="Voltar para o personagem" className="-ml-2 flex h-11 w-11 items-center justify-center rounded-full text-muted hover:text-text">
+      <header className="mb-4 hidden items-center gap-1 select-none md:flex">
+        <Link to="/personagem" aria-label="Voltar para o personagem" className="-ml-2 flex h-10 w-11 items-center justify-center rounded-full text-muted hover:text-text">
           <ChevronLeft size={22} />
         </Link>
         <p className={ROTULO_DE_SECAO}>Duelos</p>
@@ -117,7 +117,7 @@ export default function Duelos() {
       ) : semPersonagem ? (
         <div className="rounded-2xl border border-line bg-panel p-6 text-center">
           <h1 className="m-0 mb-2 font-anton text-2xl uppercase">Desperte o seu personagem</h1>
-          <Link to="/personagem" className="inline-flex h-11 items-center rounded-full bg-gradient-to-r from-holo-1 to-holo-3 px-5 text-xs font-extrabold text-void">
+          <Link to="/personagem" className="inline-flex h-10 items-center rounded-full bg-gradient-to-r from-holo-1 to-holo-3 px-5 text-xs font-extrabold text-void">
             Ir para o despertar
           </Link>
         </div>
@@ -125,7 +125,7 @@ export default function Duelos() {
         <div className="rounded-2xl border border-line bg-panel p-6 text-center">
           <h1 className="m-0 mb-2 font-anton text-2xl uppercase">Duelos indisponíveis</h1>
           <p className="m-0 mb-4 text-sm text-muted">{erro}</p>
-          <button type="button" onClick={carregar} className="h-11 cursor-pointer rounded-full bg-gradient-to-r from-holo-1 to-holo-3 px-5 text-xs font-extrabold text-void">
+          <button type="button" onClick={carregar} className="h-10 cursor-pointer rounded-full bg-gradient-to-r from-holo-1 to-holo-3 px-5 text-xs font-extrabold text-void">
             Tentar de novo
           </button>
         </div>
@@ -135,8 +135,8 @@ export default function Duelos() {
         <div className="grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,1fr)_340px] lg:items-start">
           <div className="flex min-w-0 flex-col gap-4">
             <div className="flex flex-col gap-2">
-              <h1 className="m-0 font-anton text-[clamp(2rem,8vw,2.6rem)] uppercase leading-none">Duelos</h1>
-              <p className="m-0 text-sm text-muted">
+              <h1 className="m-0 font-anton text-[1.75rem] sm:text-[2.6rem] uppercase leading-none">Duelos</h1>
+              <p className="m-0 text-sm text-muted line-clamp-2 sm:line-clamp-none">
                 Desafie a ficha de outro jogador: atributos, habilidades e elemento dele contra os seus. Até {estado.limite} duelos por dia, um por oponente.
                 Vitória dá pontos de duelo e Ouro; quem perde, não perde nada.
               </p>
@@ -144,12 +144,12 @@ export default function Duelos() {
 
             <dl className="m-0 grid grid-cols-2 gap-2.5">
               <div className="flex flex-col gap-1 rounded-xl border border-line bg-panel p-3">
-                <dt className="flex items-center gap-1.5 text-xs font-semibold text-muted"><Swords size={13} className="text-coral" aria-hidden="true" /> Hoje</dt>
-                <dd className="m-0 font-anton text-2xl leading-none">{restantes}<span className="font-mono text-xs text-muted"> de {estado.limite}</span></dd>
+                <dt className="flex min-w-0 items-center gap-1 truncate text-[11px] font-semibold text-muted sm:gap-1.5 sm:text-xs"><Swords size={13} className="text-coral" aria-hidden="true" /> Hoje</dt>
+                <dd className="m-0 font-anton text-lg leading-none sm:text-2xl">{restantes}<span className="font-mono text-xs text-muted"> de {estado.limite}</span></dd>
               </div>
               <div className="flex flex-col gap-1 rounded-xl border border-line bg-panel p-3">
-                <dt className="flex items-center gap-1.5 text-xs font-semibold text-muted"><Medal size={13} className="text-gold" aria-hidden="true" /> Pontos na temporada</dt>
-                <dd className="m-0 font-anton text-2xl leading-none">{estado.pontos}</dd>
+                <dt className="flex min-w-0 items-center gap-1 truncate text-[11px] font-semibold text-muted sm:gap-1.5 sm:text-xs"><Medal size={13} className="text-gold" aria-hidden="true" /> Pontos na temporada</dt>
+                <dd className="m-0 font-anton text-lg leading-none sm:text-2xl">{estado.pontos}</dd>
               </div>
             </dl>
 
@@ -171,7 +171,7 @@ export default function Duelos() {
                   const relacao = relacaoElemental(estado.elemento, o.elemento)
                   return (
                     <li key={o.handle} className="flex flex-wrap items-center gap-3 rounded-2xl border border-line bg-panel p-3.5">
-                      <span className="grid h-11 w-11 shrink-0 place-items-center rounded-full bg-gradient-to-br from-holo-2 to-holo-3 font-anton text-lg text-void" aria-hidden="true">
+                      <span className="grid h-10 w-11 shrink-0 place-items-center rounded-full bg-gradient-to-br from-holo-2 to-holo-3 font-anton text-lg text-void" aria-hidden="true">
                         {o.nome.charAt(0).toUpperCase()}
                       </span>
                       <div className="min-w-0 flex-1">

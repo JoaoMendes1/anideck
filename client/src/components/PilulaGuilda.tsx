@@ -18,7 +18,6 @@ import { useCarteira } from '../hooks/useCarteira'
 import BarrasVitais from './comunidade/BarrasVitais'
 import BarraVital from './hud/BarraVital'
 import InsigniaRank from './hud/InsigniaRank'
-import SeloStreak from './hud/SeloStreak'
 
 // Tempo que cada aviso fica na tela; a animação em index.css (.aviso-hud) dura o mesmo.
 const DURACAO_AVISO = 1800
@@ -121,7 +120,7 @@ export default function PilulaGuilda() {
 
   const resumoTitulo = [
     `Rank ${status.rank} · Nível ${status.nivel} (${status.xp_no_nivel}/${status.xp_para_proximo} XP)`,
-    hp !== null ? `Vitalidade ${hp}/${hpMax}` : '',
+    hp !== null ? `HP ${hp}/${hpMax}` : '',
     mp !== null && estado ? `Mana ${mp}/${mpMax}` : '',
     `${saldo.toLocaleString('pt-BR')} AniCoins`,
     ouro !== null ? `${ouro.toLocaleString('pt-BR')} de Ouro` : '',
@@ -193,10 +192,10 @@ export default function PilulaGuilda() {
         <div
           role="dialog"
           aria-label="Seu status"
-          className="fixed left-4 right-4 top-[68px] md:absolute md:left-auto md:right-0 md:top-full md:mt-2 md:w-[340px] z-[70] rounded-2xl border border-line bg-panel/95 backdrop-blur-xl p-4 shadow-[0_24px_60px_-12px_rgba(0,0,0,0.8)]"
+          className="fixed left-3 right-3 top-[58px] max-h-[calc(100dvh-140px)] overflow-y-auto md:absolute md:left-auto md:right-0 md:top-full md:mt-2 md:w-[340px] md:max-h-none z-[70] rounded-2xl border border-line bg-panel/95 backdrop-blur-xl p-3 sm:p-4 shadow-[0_24px_60px_-12px_rgba(0,0,0,0.8)]"
         >
-          <div className="flex items-start gap-3 mb-4">
-            <InsigniaRank rank={status.rank} tamanho={52} />
+          <div className="flex items-start gap-3 mb-3">
+            <InsigniaRank rank={status.rank} tamanho={44} />
             <div className="min-w-0 flex-1">
               <p className="font-mono text-xs text-muted-2 uppercase tracking-widest m-0">Rank {status.rank} · Nível {status.nivel}</p>
               <p className="font-anton text-lg uppercase leading-tight m-0 truncate">{status.titulo_rank}</p>
@@ -207,7 +206,7 @@ export default function PilulaGuilda() {
             </button>
           </div>
 
-          <div className="mb-4">
+          <div className="mb-3">
             <div className="flex items-center justify-between font-mono text-xs mb-1.5">
               <span className="inline-flex items-center gap-1.5 text-muted uppercase tracking-wider">
                 <Sparkles size={12} className="text-gold" aria-hidden /> XP
@@ -218,23 +217,18 @@ export default function PilulaGuilda() {
               </span>
             </div>
             <BarraVital tipo="xp" pct={status.progresso_pct} className="h-2 w-full" />
-            <p className="text-xs text-muted-2 mt-1.5 mb-0">
-              {status.xp_hoje > 0 ? `+${status.xp_hoje} XP hoje` : 'Nenhum XP hoje ainda'}
-              {status.teto_diario > 0 ? ` (o teto diário é ${status.teto_diario}).` : '.'} Cada episódio marcado vale XP.
+            <p className="font-mono text-[11px] text-muted-2 mt-1 mb-0">
+              {status.xp_hoje > 0 ? `+${status.xp_hoje} XP hoje` : 'Nenhum XP hoje'}
+              {status.teto_diario > 0 ? ` · teto ${status.teto_diario}` : ''}
+              {status.streak_atual > 0 ? ` · 🔥 ${status.streak_atual} ${status.streak_atual === 1 ? 'dia' : 'dias'} seguidos` : ''}
             </p>
           </div>
 
-          {status.streak_atual > 0 && (
-            <Link to="/meu-gosto" className="flex mb-2 rounded-[14px] focus-visible:outline-2 focus-visible:outline-holo-3">
-              <SeloStreak dias={status.streak_atual} />
-            </Link>
-          )}
-
-          <div className="grid grid-cols-2 gap-2 mb-4">
+          <div className="grid grid-cols-2 gap-2 mb-3">
             <Link
               to="/loja"
               title="Abrir a Loja"
-              className="flex flex-col gap-1 p-2.5 rounded-xl bg-panel-2/60 border border-line/60 hover:border-holo-3/60 transition-colors group"
+              className="flex flex-col gap-0.5 px-2.5 py-2 rounded-xl bg-panel-2/60 border border-line/60 hover:border-holo-3/60 transition-colors group"
             >
               <span className="inline-flex items-center gap-1.5 font-mono text-xs text-muted group-hover:text-text uppercase tracking-wider">
                 <IconeAniCoin size={15} /> AniCoins
@@ -246,7 +240,7 @@ export default function PilulaGuilda() {
             <Link
               to="/expedicoes"
               title="Abrir as Expedições"
-              className="flex flex-col gap-1 p-2.5 rounded-xl bg-panel-2/60 border border-line/60 hover:border-gold/60 transition-colors group"
+              className="flex flex-col gap-0.5 px-2.5 py-2 rounded-xl bg-panel-2/60 border border-line/60 hover:border-gold/60 transition-colors group"
             >
               <span className="inline-flex items-center gap-1.5 font-mono text-xs text-muted group-hover:text-text uppercase tracking-wider">
                 <IconeOuro size={15} /> Ouro
@@ -258,9 +252,9 @@ export default function PilulaGuilda() {
           </div>
 
           {estado ? (
-            <BarrasVitais estado={estado} nivel={status.nivel} />
+            <BarrasVitais estado={estado} nivel={status.nivel} compacta />
           ) : (
-            <p className="text-[12px] text-muted-2 m-0">Vitalidade e Mana aparecem quando a comunidade estiver disponível.</p>
+            <p className="text-[12px] text-muted-2 m-0">HP e Mana aparecem quando a comunidade estiver disponível.</p>
           )}
 
           {estado && !estado.perfil.existe && (
@@ -269,7 +263,7 @@ export default function PilulaGuilda() {
             </Link>
           )}
 
-          <div className="grid grid-cols-4 gap-1.5 mt-4">
+          <div className="grid grid-cols-4 gap-1.5 mt-3">
             <Link to="/guilda" className="px-1.5 py-2 rounded-xl border border-line text-center text-xs font-bold text-text hover:border-holo-3">
               Guilda
             </Link>

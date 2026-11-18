@@ -1,6 +1,7 @@
 import { useState, useEffect, useSyncExternalStore } from 'react'
 import { Link, useLocation } from 'react-router-dom'
 import { Search, ShoppingBag } from 'lucide-react'
+import BuscaDoAniDeck from './BuscaDoAniDeck'
 import NotificationBell from './NotificationBell'
 import PilulaGuilda from './PilulaGuilda'
 import MenuPerfil from './MenuPerfil'
@@ -31,6 +32,19 @@ export default function Navbar() {
   // dado, e três cópias da mesma pergunta gerariam três chamadas ao servidor.
   const { session } = useSessao()
   const [scrolled, setScrolled] = useState(false)
+  const [buscaAberta, setBuscaAberta] = useState(false)
+
+  // Ctrl+K / ⌘K abre a busca do AniDeck em qualquer tela.
+  useEffect(() => {
+    const atalho = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') {
+        e.preventDefault()
+        setBuscaAberta(true)
+      }
+    }
+    window.addEventListener('keydown', atalho)
+    return () => window.removeEventListener('keydown', atalho)
+  }, [])
   const location = useLocation()
   const ehDesktop = useEhDesktop()
 
@@ -56,8 +70,9 @@ export default function Navbar() {
 
   return (
     <>
+      <BuscaDoAniDeck aberta={buscaAberta} aoFechar={() => setBuscaAberta(false)} />
       <nav
-        className={`fixed top-0 left-[var(--menu-lateral)] right-0 z-50 transition-all duration-300 ${scrolled ? 'py-2.5 bg-void/85 backdrop-blur-md border-b border-line' : 'py-4 bg-transparent'
+        className={`fixed top-0 left-[var(--menu-lateral)] right-0 z-50 transition-all duration-300 ${scrolled ? 'py-2 md:py-2.5 bg-void/85 backdrop-blur-md border-b border-line' : 'py-2 md:py-4 bg-transparent'
           }`}
       >
         <div className="max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-10 flex items-center justify-between gap-4">
@@ -72,14 +87,15 @@ export default function Navbar() {
           {/* No celular a busca fica no topo: o botão flutuante cobria o conteúdo das páginas. */}
           {!ehDesktop && (
             <div className="flex md:hidden items-center gap-1.5 sm:gap-2">
-              <Link
-                to="/descobrir?foco=1"
-                aria-label="Buscar anime"
-                title="Buscar anime"
-                className="w-9 h-9 rounded-full border border-line bg-panel text-muted flex items-center justify-center transition-colors hover:border-holo-3 hover:text-holo-3 shrink-0"
+              <button
+                type="button"
+                onClick={() => setBuscaAberta(true)}
+                aria-label="Buscar no AniDeck"
+                title="Buscar no AniDeck"
+                className="w-9 h-9 cursor-pointer rounded-full border border-line bg-panel text-muted flex items-center justify-center transition-colors hover:border-holo-3 hover:text-holo-3 shrink-0"
               >
                 <Search size={16} />
-              </Link>
+              </button>
               {session && (
                 <Link
                   to="/loja"
@@ -103,13 +119,15 @@ export default function Navbar() {
           {/* "Admin" saiu daqui e foi pro MenuPerfil: é destino raro e restrito,
               não merecia um slot fixo ao lado dos links de uso diário. */}
           {session && (
-            <Link
-              to="/descobrir?foco=1"
-              className="hidden xl:flex items-center gap-2.5 h-11 w-full max-w-[420px] px-4 rounded-xl border border-line bg-panel/85 text-sm text-muted-2 transition-colors hover:border-holo-3 hover:text-text focus-visible:outline-2 focus-visible:outline-holo-3"
+            <button
+              type="button"
+              onClick={() => setBuscaAberta(true)}
+              className="hidden xl:flex cursor-pointer items-center gap-2.5 h-10 w-full max-w-[420px] px-4 rounded-xl border border-line bg-panel/85 text-sm text-muted-2 transition-colors hover:border-holo-3 hover:text-text focus-visible:outline-2 focus-visible:outline-holo-3"
             >
-              <Search size={17} aria-hidden />
-              Buscar anime
-            </Link>
+              <Search size={16} aria-hidden />
+              Buscar no AniDeck
+              <kbd className="ml-auto rounded border border-line px-1.5 font-mono text-[10px] text-muted-2">Ctrl K</kbd>
+            </button>
           )}
           <div className={`hidden md:flex items-center gap-3.5 lg:gap-5 xl:gap-6 ${soSemMenuLateral}`}>
             <Link to="/" className={linkClasse('/')}>Início</Link>
@@ -128,9 +146,9 @@ export default function Navbar() {
 
           {/* Ações (Busca, Auth/User) */}
           <div className="hidden md:flex items-center gap-3">
-            <Link to="/descobrir" className={`w-9 h-9 rounded-full border border-line bg-panel text-muted flex items-center justify-center transition-all hover:border-holo-3 hover:text-holo-3 ${soSemMenuLateral}`} title="Buscar">
+            <button type="button" onClick={() => setBuscaAberta(true)} className={`w-9 h-9 cursor-pointer rounded-full border border-line bg-panel text-muted flex items-center justify-center transition-all hover:border-holo-3 hover:text-holo-3 ${soSemMenuLateral}`} title="Buscar no AniDeck" aria-label="Buscar no AniDeck">
               <Search size={16} />
-            </Link>
+            </button>
 
             {session && ehDesktop && <PilulaGuilda />}
             {session && ehDesktop && <NotificationBell />}

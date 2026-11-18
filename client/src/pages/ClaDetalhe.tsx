@@ -346,7 +346,7 @@ export default function ClaDetalhe() {
                 className="p-4 rounded-2xl bg-void/60 border border-line flex items-center justify-between gap-4 hover:border-line-hover transition-colors"
               >
                 <div className="flex items-center gap-3.5">
-                  <div className="w-11 h-11 rounded-2xl bg-panel-2 border border-line flex items-center justify-center font-bold text-sm shrink-0 overflow-hidden">
+                  <div className="w-11 h-10 rounded-2xl bg-panel-2 border border-line flex items-center justify-center font-bold text-sm shrink-0 overflow-hidden">
                     {membro.avatar_url ? (
                       <img src={membro.avatar_url} alt={membro.nome} className="w-full h-full object-cover" />
                     ) : (

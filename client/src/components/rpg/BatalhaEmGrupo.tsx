@@ -166,11 +166,11 @@ export default function BatalhaEmGrupo({
             </ul>
           ) : null}
           <div className="flex flex-wrap gap-2">
-            <button type="button" onClick={aoVoltar} className="h-11 cursor-pointer rounded-full bg-gradient-to-r from-holo-1 to-holo-3 px-5 text-xs font-extrabold text-void">
+            <button type="button" onClick={aoVoltar} className="h-10 cursor-pointer rounded-full bg-gradient-to-r from-holo-1 to-holo-3 px-5 text-xs font-extrabold text-void">
               {rotuloVoltar}
             </button>
             {(recompensa?.bilhetes ?? 0) > 0 && (
-              <Link to="/invocacao" className="inline-flex h-11 items-center rounded-full border border-gold/60 px-5 text-xs font-bold text-gold">
+              <Link to="/invocacao" className="inline-flex h-10 items-center rounded-full border border-gold/60 px-5 text-xs font-bold text-gold">
                 Usar bilhetes
               </Link>
             )}

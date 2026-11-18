@@ -122,7 +122,7 @@ export default function Loja() {
   }, [itens])
 
   return (
-    <div className="w-full min-w-0 max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-10 pt-6 pb-24">
+    <div className="w-full min-w-0 max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-10 pt-3 sm:pt-6 pb-24">
       {/* CABEÇALHO COMPACTO DA LOJA */}
       <header className="mb-5 rounded-2xl border border-line bg-panel px-4 py-3 sm:px-5 sm:py-3.5">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-2.5 md:gap-4">

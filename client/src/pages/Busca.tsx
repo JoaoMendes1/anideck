@@ -88,7 +88,8 @@ export default function Busca() {
         }
     }, [searchParams, setSearchParams])
 
-    const [query, setQuery] = useState(retrato?.query ?? '')
+    // ?q=termo chega da busca do AniDeck ("Procurar anime").
+    const [query, setQuery] = useState(retrato?.query ?? searchParams.get('q') ?? '')
     // Um link pode chegar com ?rotulo=Nome (ex.: a sugestão de gosto): o filtro já abre aplicado.
     const [selectedRotulos, setSelectedRotulos] = useState<string[]>(
         retrato?.selectedRotulos ?? searchParams.getAll('rotulo')

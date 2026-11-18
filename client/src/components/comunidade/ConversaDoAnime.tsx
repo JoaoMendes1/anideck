@@ -421,7 +421,7 @@ function EscudoDeSpoiler({ episodio, contagem, logado, marcando, onMarcar, aoIrP
   const reacoes = totalDeReacoes(contagem)
   return (
     <div className="text-center py-6 px-2">
-      <span className="w-11 h-11 mx-auto rounded-full grid place-items-center bg-panel-2 border border-line mb-3">
+      <span className="w-11 h-10 mx-auto rounded-full grid place-items-center bg-panel-2 border border-line mb-3">
         <Lock size={18} className="text-muted" aria-hidden />
       </span>
       <p className="font-bold text-[14px] text-text m-0">
@@ -504,7 +504,7 @@ function TermometroDoEpisodio({ episodio, reacoes, minhas, habilitado, onAlterna
               title={r.rotulo}
               disabled={!habilitado}
               onClick={() => onAlternar(r.id)}
-              className={`h-11 lg:h-10 lg:px-3 min-w-0 rounded-xl border flex flex-col lg:flex-row items-center justify-center lg:justify-start gap-0.5 lg:gap-2 transition-all cursor-pointer disabled:opacity-50 active:scale-95 ${
+              className={`h-10 lg:h-10 lg:px-3 min-w-0 rounded-xl border flex flex-col lg:flex-row items-center justify-center lg:justify-start gap-0.5 lg:gap-2 transition-all cursor-pointer disabled:opacity-50 active:scale-95 ${
                 ligada ? 'border-holo-1 bg-holo-1/12 shadow-[0_0_12px_rgba(255,79,216,0.18)]' : 'border-line bg-panel-2 hover:border-holo-1/50'
               }`}
             >
