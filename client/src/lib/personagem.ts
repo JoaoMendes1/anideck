@@ -50,6 +50,16 @@ export interface VisualPersonagem {
   automatico: boolean
 }
 
+// Regras do elenco (alinhadas ao servidor / sql/123).
+export interface ElencoPersonagemInfo {
+  desbloqueados: string[]
+  ultima_troca_em?: string
+  proxima_troca_em?: string
+  preco_desbloquear_ouro: number
+  troca_cooldown_horas: number
+  preco_troca_antecipada_ouro: number
+}
+
 // Quem ainda não despertou recebe só `existe: false`: os outros campos ficam ausentes.
 export interface RespostaPersonagem {
   existe: boolean
@@ -63,6 +73,7 @@ export interface RespostaPersonagem {
   // Estilo da aura equipada na Loja (chave de AURAS); ausente é sem aura.
   aura?: string
   estagios?: EstagioStatusRPG[]
+  elenco?: ElencoPersonagemInfo
   // Skins compradas na Loja; o id de cada uma é um visual que pode ser vestido.
   skins?: SkinPersonagem[]
   /** Só com `completo`: equipamento e atributos, na mesma resposta. */
@@ -123,6 +134,23 @@ export const ALTURA_DA_ARTE = 1024
 export const ORDEM_DOS_ESTAGIOS = ['iniciante', 'aventureiro', 'veterano', 'lendario']
 
 export const PERSONAGEM_BASE_PADRAO = 'espadachim_eter'
+
+export const PRECO_DESBLOQUEAR_OURO = 400
+export const PRECO_TROCA_ANTECIPADA_OURO = 150
+export const COOLDOWN_TROCA_HORAS = 24
+
+/** Formata o tempo restante até a próxima troca gratuita, ou devolve null quando já liberou. */
+export function formatarEsperaTroca(proximaTrocaEm?: string, agoraMs: number = Date.now()): string | null {
+  if (!proximaTrocaEm) return null
+  const alvoMs = Date.parse(proximaTrocaEm)
+  if (!Number.isFinite(alvoMs) || alvoMs <= agoraMs) return null
+  const minutosTotais = Math.max(1, Math.ceil((alvoMs - agoraMs) / 60000))
+  const horas = Math.floor(minutosTotais / 60)
+  const minutos = minutosTotais % 60
+  if (horas > 0 && minutos > 0) return `${horas}h ${minutos}min`
+  if (horas > 0) return `${horas}h`
+  return `${minutos}min`
+}
 
 /**
  * Monta o catálogo a partir dos arquivos. Estágio só entra com as três versões (inteira,
@@ -354,16 +382,43 @@ export async function equiparVisual(visual: string): Promise<{ dados?: RespostaP
 }
 
 /**
- * Troca o personagem do elenco. O nível, os itens e os pontos continuam; o visual fixado
- * volta ao automático. Devolve os dados prontos para a tela, ou a mensagem de erro.
+ * Desbloqueia um personagem do elenco usando Ouro. Devolve os dados prontos (incluindo
+ * equipamento atualizado) ou a mensagem de erro.
  */
-export async function trocarPersonagem(personagemBase: string): Promise<{ dados?: RespostaPersonagem; erro?: string }> {
+export async function desbloquearPersonagem(
+  personagemBase: string,
+): Promise<{ dados?: RespostaPersonagem; erro?: string }> {
+  const falha = 'Não foi possível desbloquear o personagem agora. Tente de novo em instantes.'
+  try {
+    const res = await fetch('/api/personagem/desbloquear', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', ...(await cabecalhoDeAutenticacao()) },
+      body: JSON.stringify({ personagem_base: personagemBase }),
+    })
+    const json = (await res.json().catch(() => null)) as (RespostaPersonagem & { error?: string }) | null
+    if (!res.ok) return { erro: json?.error || falha }
+    if (!json || json.existe !== true) return { erro: falha }
+    return { dados: json }
+  } catch {
+    return { erro: falha }
+  }
+}
+
+/**
+ * Troca o personagem do elenco entre os já desbloqueados. A primeira troca ou após 24h
+ * é gratuita; antes do prazo exige `pagarAntecipado = true` (custo em Ouro). O visual
+ * fixado volta ao automático e peças de outra classe são desequipadas.
+ */
+export async function trocarPersonagem(
+  personagemBase: string,
+  pagarAntecipado = false,
+): Promise<{ dados?: RespostaPersonagem; erro?: string }> {
   const falha = 'Não foi possível trocar o personagem agora. Tente de novo em instantes.'
   try {
     const res = await fetch('/api/personagem/base', {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json', ...(await cabecalhoDeAutenticacao()) },
-      body: JSON.stringify({ personagem_base: personagemBase }),
+      body: JSON.stringify({ personagem_base: personagemBase, pagar_antecipado: pagarAntecipado }),
     })
     const json = (await res.json().catch(() => null)) as (RespostaPersonagem & { error?: string }) | null
     if (!res.ok) return { erro: json?.error || falha }

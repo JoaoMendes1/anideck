@@ -7,6 +7,7 @@ import {
   PERSONAGEM_BASE_PADRAO,
   aceitaSkins,
   arteDoEstagio,
+  formatarEsperaTroca,
   membroDoElenco,
   montarCatalogoDeArtes,
   retratoDoEstagio,
@@ -48,9 +49,9 @@ describe('elenco - personagens', () => {
     }
   })
 
-  it('a Paladina usa a arte de Veterana enquanto a Lendária não existe', () => {
-    if (temArtePropria('paladina_luz', 'lendario')) return
-    expect(arteDoEstagio('paladina_luz', 'lendario')).toBe(arteDoEstagio('paladina_luz', 'veterano'))
+  it('a Paladina tem arte própria no estágio Lendário', () => {
+    expect(temArtePropria('paladina_luz', 'lendario')).toBe(true)
+    expect(arteDoEstagio('paladina_luz', 'lendario')).not.toBe(arteDoEstagio('paladina_luz', 'veterano'))
   })
 
   it('cada personagem tem rosto próprio no retrato', () => {
@@ -75,5 +76,14 @@ describe('elenco - personagens', () => {
     expect(aceitaSkins(undefined)).toBe(true)
     expect(aceitaSkins(PERSONAGEM_BASE_PADRAO)).toBe(true)
     expect(aceitaSkins('paladina_luz')).toBe(false)
+  })
+
+  it('formata o tempo restante de espera da troca gratuita', () => {
+    const base = Date.parse('2026-11-18T12:00:00Z')
+    expect(formatarEsperaTroca(undefined, base)).toBeNull()
+    expect(formatarEsperaTroca('2026-11-18T11:59:59Z', base)).toBeNull()
+    expect(formatarEsperaTroca('2026-11-18T12:25:00Z', base)).toBe('25min')
+    expect(formatarEsperaTroca('2026-11-18T15:00:00Z', base)).toBe('3h')
+    expect(formatarEsperaTroca('2026-11-18T14:15:00Z', base)).toBe('2h 15min')
   })
 })

@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"testing"
+	"time"
 
 	"github.com/JoaoMendes1/anideck/internal/middleware"
 )
@@ -138,6 +139,72 @@ func TestHandleTrocarPersonagem_RecusaAntesDoBanco(t *testing.T) {
 				t.Fatalf("esperava 400, recebeu %d (%s)", w.Code, w.Body.String())
 			}
 		})
+	}
+}
+
+func TestHandleDesbloquearPersonagem_RecusaAntesDoBanco(t *testing.T) {
+	h := &PersonagemHandler{}
+
+	w := httptest.NewRecorder()
+	h.HandleDesbloquearPersonagem(w, httptest.NewRequest(http.MethodPost, "/api/personagem/desbloquear", bytes.NewReader([]byte(`{"personagem_base":"maga_agua"}`))))
+	if w.Code != http.StatusUnauthorized {
+		t.Fatalf("sem auth: esperava 401, recebeu %d", w.Code)
+	}
+
+	casos := map[string]string{
+		"corpo ilegível": `{"personagem_base":`,
+		"vazio":          `{}`,
+		"desconhecido":   `{"personagem_base":"dragao_secreto"}`,
+	}
+	for nome, corpo := range casos {
+		t.Run(nome, func(t *testing.T) {
+			req := httptest.NewRequest(http.MethodPost, "/api/personagem/desbloquear", bytes.NewReader([]byte(corpo)))
+			ctx := context.WithValue(req.Context(), middleware.UserIDKey, "00000000-0000-0000-0000-0000000000aa")
+			ctx = context.WithValue(ctx, middleware.TokenKey, "token-de-teste")
+			w := httptest.NewRecorder()
+			h.HandleDesbloquearPersonagem(w, req.WithContext(ctx))
+			if w.Code != http.StatusBadRequest {
+				t.Fatalf("esperava 400, recebeu %d (%s)", w.Code, w.Body.String())
+			}
+		})
+	}
+}
+
+func TestCalcularElencoInfo(t *testing.T) {
+	agora := time.Date(2026, 11, 18, 12, 0, 0, 0, time.UTC)
+
+	// Sem coluna desbloqueados (banco antigo): garante ao menos o personagem atual e sem espera.
+	basico := calcularElencoInfo(linhaPersonagemBanco{PersonagemBase: "maga_agua"}, "maga_agua", agora)
+	if len(basico.Desbloqueados) != 1 || basico.Desbloqueados[0] != "maga_agua" {
+		t.Fatalf("fallback de desbloqueados falhou: %+v", basico.Desbloqueados)
+	}
+	if basico.ProximaTrocaEm != "" {
+		t.Errorf("sem ultima_troca_em não deveria haver espera: %q", basico.ProximaTrocaEm)
+	}
+
+	// Filtra repetidos e desconhecidos, mantendo o atual presente.
+	recente := agora.Add(-2 * time.Hour).Format(time.RFC3339)
+	dentroDaEspera := calcularElencoInfo(linhaPersonagemBanco{
+		PersonagemBase: "paladina_luz",
+		Desbloqueados:  []string{"maga_agua", "maga_agua", "invalido"},
+		UltimaTrocaEm:  &recente,
+	}, "paladina_luz", agora)
+	if len(dentroDaEspera.Desbloqueados) != 2 || dentroDaEspera.Desbloqueados[0] != "maga_agua" || dentroDaEspera.Desbloqueados[1] != "paladina_luz" {
+		t.Fatalf("normalização inesperada: %+v", dentroDaEspera.Desbloqueados)
+	}
+	if dentroDaEspera.ProximaTrocaEm != "2026-11-19T10:00:00Z" {
+		t.Errorf("esperava proxima_troca_em em 2026-11-19T10:00:00Z, veio %q", dentroDaEspera.ProximaTrocaEm)
+	}
+
+	// Passadas 24h, proxima_troca_em fica vazia.
+	antiga := agora.Add(-25 * time.Hour).Format(time.RFC3339)
+	liberado := calcularElencoInfo(linhaPersonagemBanco{
+		PersonagemBase: "paladina_luz",
+		Desbloqueados:  []string{"paladina_luz", "maga_agua"},
+		UltimaTrocaEm:  &antiga,
+	}, "paladina_luz", agora)
+	if liberado.ProximaTrocaEm != "" {
+		t.Errorf("após 24h proxima_troca_em deve sair vazia, veio %q", liberado.ProximaTrocaEm)
 	}
 }
 

@@ -674,6 +674,8 @@
 --     personagem_base              text NOT NULL
 --     criado_em                    timestamp with time zone NOT NULL
 --     visual_equipado              text
+--     desbloqueados                text[] NOT NULL
+--     ultima_troca_em              timestamp with time zone
 
 -- rpg_recuperacoes
 --     id                           bigint NOT NULL
@@ -1847,6 +1849,7 @@ CREATE OR REPLACE VIEW public.view_user_year_distribution WITH (security_invoker
 -- rpg_concluir_batalha           | definer: t     | anon: f     | auth: f     | service: t     | search_path=public, pg_temp
 -- rpg_concluir_masmorra          | definer: t     | anon: f     | auth: f     | service: t     | search_path=public, pg_temp
 -- rpg_contar_batalhas_hoje       | definer: t     | anon: f     | auth: f     | service: t     | search_path=public, pg_temp
+-- rpg_desbloquear_personagem     | definer: t     | anon: f     | auth: t     | service: t     | search_path=public, pg_temp
 -- rpg_distribuir_pontos          | definer: t     | anon: f     | auth: t     | service: t     | search_path=public, pg_temp
 -- rpg_duelos_estado              | definer: t     | anon: f     | auth: f     | service: t     | search_path=public, pg_temp
 -- rpg_equipar_item               | definer: t     | anon: f     | auth: t     | service: t     | search_path=public, pg_temp
@@ -1866,6 +1869,7 @@ CREATE OR REPLACE VIEW public.view_user_year_distribution WITH (security_invoker
 -- rpg_registrar_maestria         | definer: t     | anon: f     | auth: f     | service: t     | search_path=public, pg_temp
 -- rpg_regras_vida                | definer: f     | anon: f     | auth: t     | service: t     | search_path=public, pg_temp
 -- rpg_semana_atual               | definer: f     | anon: f     | auth: t     | service: t     | search_path=public, pg_temp
+-- rpg_trocar_personagem          | definer: t     | anon: f     | auth: t     | service: t     | search_path=public, pg_temp
 -- rpg_vida_perdida_agora         | definer: f     | anon: f     | auth: t     | service: t     | search_path=public, pg_temp
 -- sacar_caixa_loja               | definer: t     | anon: f     | auth: f     | service: t     | search_path=public, pg_temp
 -- sair_cla                       | definer: t     | anon: t     | auth: t     | service: t     | search_path=public, pg_temp

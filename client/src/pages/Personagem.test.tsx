@@ -7,7 +7,14 @@ import type { RespostaPersonagem } from '../lib/personagem'
 // As chamadas ao servidor são trocadas; o resto do módulo (artes, textos) é o real.
 vi.mock('../lib/personagem', async (original) => {
   const real = await original<typeof import('../lib/personagem')>()
-  return { ...real, obterPersonagem: vi.fn(), equiparVisual: vi.fn(), despertarPersonagem: vi.fn() }
+  return {
+    ...real,
+    obterPersonagem: vi.fn(),
+    equiparVisual: vi.fn(),
+    despertarPersonagem: vi.fn(),
+    desbloquearPersonagem: vi.fn(),
+    trocarPersonagem: vi.fn(),
+  }
 })
 
 vi.mock('../lib/rpg', async (original) => {
@@ -17,7 +24,13 @@ vi.mock('../lib/rpg', async (original) => {
 
 import Personagem from './Personagem'
 import { obterEquipamentos } from '../lib/rpg'
-import { EVENTO_PERSONAGEM_ATUALIZADO, equiparVisual, obterPersonagem } from '../lib/personagem'
+import {
+  EVENTO_PERSONAGEM_ATUALIZADO,
+  desbloquearPersonagem,
+  equiparVisual,
+  obterPersonagem,
+  trocarPersonagem,
+} from '../lib/personagem'
 
 const estagios = [
   { id: 'iniciante', nome: 'Iniciante', nivel_minimo: 1 },
@@ -52,6 +65,8 @@ beforeEach(() => {
   vi.mocked(obterEquipamentos).mockReset()
   vi.mocked(obterEquipamentos).mockResolvedValue(null)
   vi.mocked(equiparVisual).mockReset()
+  vi.mocked(desbloquearPersonagem).mockReset()
+  vi.mocked(trocarPersonagem).mockReset()
 })
 afterEach(cleanup)
 
@@ -285,3 +300,143 @@ describe('Personagem - skins', () => {
     expect(screen.getByRole('tab', { name: 'Status' }).getAttribute('aria-selected')).toBe('true')
   })
 })
+
+describe('Personagem - elenco, desbloqueio e espera na troca', () => {
+  function equipamentoComOuro(ouro: number) {
+    return {
+      nivel: 12,
+      ouro,
+      base: { vida: 320, ataque: 43, defesa: 27, poder: 172 },
+      atributos: { vida: 320, ataque: 47, defesa: 27, poder: 180 },
+      slots: [
+        { slot: 'arma' as const },
+        { slot: 'armadura' as const },
+        { slot: 'capa' as const },
+        { slot: 'botas' as const },
+        { slot: 'joia' as const },
+      ],
+      inventario: [],
+    }
+  }
+
+  it('desbloqueia personagem trancado por 400 Ouro e mantém a gaveta aberta para trocar', async () => {
+    const inicial: RespostaPersonagem = {
+      ...personagemNoNivel(12, { id: 'aventureiro', automatico: true }),
+      elenco: {
+        desbloqueados: ['espadachim_eter'],
+        preco_desbloquear_ouro: 400,
+        troca_cooldown_horas: 24,
+        preco_troca_antecipada_ouro: 150,
+      },
+      equipamento: equipamentoComOuro(550),
+    }
+    const aposDesbloquear: RespostaPersonagem = {
+      ...inicial,
+      elenco: { ...inicial.elenco!, desbloqueados: ['espadachim_eter', 'paladina_luz'] },
+      equipamento: equipamentoComOuro(150),
+    }
+    vi.mocked(obterPersonagem).mockResolvedValue(inicial)
+    vi.mocked(desbloquearPersonagem).mockResolvedValue({ dados: aposDesbloquear })
+    abrir()
+
+    fireEvent.click(await screen.findByRole('button', { name: 'Trocar personagem' }))
+    fireEvent.click(screen.getByRole('radio', { name: /Celestia, Paladina de Luz, trancado/ }))
+
+    const botao = screen.getByRole('button', { name: 'Desbloquear por 400 Ouro' }) as HTMLButtonElement
+    expect(botao.disabled).toBe(false)
+    fireEvent.click(botao)
+
+    await waitFor(() => expect(desbloquearPersonagem).toHaveBeenCalledWith('paladina_luz'))
+    expect(await screen.findByRole('button', { name: 'Trocar para Celestia (grátis)' })).toBeTruthy()
+    expect(screen.getByText('150 Ouro')).toBeTruthy()
+  })
+
+  it('avisa quanto Ouro falta e desabilita o desbloqueio quando saldo não alcança', async () => {
+    const inicial: RespostaPersonagem = {
+      ...personagemNoNivel(12, { id: 'aventureiro', automatico: true }),
+      elenco: {
+        desbloqueados: ['espadachim_eter'],
+        preco_desbloquear_ouro: 400,
+        troca_cooldown_horas: 24,
+        preco_troca_antecipada_ouro: 150,
+      },
+      equipamento: equipamentoComOuro(250),
+    }
+    vi.mocked(obterPersonagem).mockResolvedValue(inicial)
+    abrir()
+
+    fireEvent.click(await screen.findByRole('button', { name: 'Trocar personagem' }))
+    fireEvent.click(screen.getByRole('radio', { name: /Celestia, Paladina de Luz, trancado/ }))
+
+    const botao = screen.getByRole('button', { name: 'Desbloquear por 400 Ouro' }) as HTMLButtonElement
+    expect(botao.disabled).toBe(true)
+    expect(screen.getByText('Faltam 150 de Ouro')).toBeTruthy()
+    expect(desbloquearPersonagem).not.toHaveBeenCalled()
+  })
+
+  it('troca gratuitamente quando desbloqueado e sem espera ativa', async () => {
+    const inicial: RespostaPersonagem = {
+      ...personagemNoNivel(12, { id: 'aventureiro', automatico: true }),
+      elenco: {
+        desbloqueados: ['espadachim_eter', 'paladina_luz'],
+        preco_desbloquear_ouro: 400,
+        troca_cooldown_horas: 24,
+        preco_troca_antecipada_ouro: 150,
+      },
+      equipamento: equipamentoComOuro(100),
+    }
+    const aposTroca: RespostaPersonagem = {
+      ...inicial,
+      personagem: { nome: 'Ren', personagem_base: 'paladina_luz', classe: 'paladina', elemento: 'luz', criado_em: '' },
+      elenco: {
+        ...inicial.elenco!,
+        proxima_troca_em: new Date(Date.now() + 24 * 3600 * 1000).toISOString(),
+      },
+      equipamento: equipamentoComOuro(100),
+    }
+    vi.mocked(obterPersonagem).mockResolvedValue(inicial)
+    vi.mocked(trocarPersonagem).mockResolvedValue({ dados: aposTroca })
+    abrir()
+
+    fireEvent.click(await screen.findByRole('button', { name: 'Trocar personagem' }))
+    fireEvent.click(screen.getByRole('radio', { name: /Celestia, Paladina de Luz$/ }))
+    fireEvent.click(screen.getByRole('button', { name: 'Trocar para Celestia (grátis)' }))
+
+    await waitFor(() => expect(trocarPersonagem).toHaveBeenCalledWith('paladina_luz', false))
+    expect(await screen.findByText('Paladina')).toBeTruthy()
+    expect(screen.queryByRole('button', { name: 'Trocar para Celestia (grátis)' })).toBeNull()
+  })
+
+  it('mostra contagem na espera de 24h e permite troca antecipada paga por 150 Ouro', async () => {
+    const daquiDezHoras = new Date(Date.now() + 10 * 3600 * 1000).toISOString()
+    const inicial: RespostaPersonagem = {
+      ...personagemNoNivel(12, { id: 'aventureiro', automatico: true }),
+      elenco: {
+        desbloqueados: ['espadachim_eter', 'paladina_luz'],
+        proxima_troca_em: daquiDezHoras,
+        preco_desbloquear_ouro: 400,
+        troca_cooldown_horas: 24,
+        preco_troca_antecipada_ouro: 150,
+      },
+      equipamento: equipamentoComOuro(200),
+    }
+    const aposTrocaPaga: RespostaPersonagem = {
+      ...inicial,
+      personagem: { nome: 'Ren', personagem_base: 'paladina_luz', classe: 'paladina', elemento: 'luz', criado_em: '' },
+      equipamento: equipamentoComOuro(50),
+    }
+    vi.mocked(obterPersonagem).mockResolvedValue(inicial)
+    vi.mocked(trocarPersonagem).mockResolvedValue({ dados: aposTrocaPaga })
+    abrir()
+
+    fireEvent.click(await screen.findByRole('button', { name: 'Trocar personagem' }))
+    fireEvent.click(screen.getByRole('radio', { name: /Celestia, Paladina de Luz$/ }))
+
+    expect(screen.getByText(/Troca gratuita disponível em/)).toBeTruthy()
+    fireEvent.click(screen.getByRole('button', { name: 'Trocar agora por 150 Ouro' }))
+
+    await waitFor(() => expect(trocarPersonagem).toHaveBeenCalledWith('paladina_luz', true))
+    expect(await screen.findByText('Paladina')).toBeTruthy()
+  })
+})
+

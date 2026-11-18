@@ -6,6 +6,7 @@ import (
 	"log"
 	"net/http"
 	"strings"
+	"time"
 	"unicode"
 	"unicode/utf8"
 
@@ -15,10 +16,13 @@ import (
 )
 
 const (
-	chaveRPGEstagios     = "rpg_estagios"
-	personagemBasePadrao = "espadachim_eter"
-	nomePersonagemMinimo = 2
-	nomePersonagemMaximo = 24
+	chaveRPGEstagios             = "rpg_estagios"
+	personagemBasePadrao         = "espadachim_eter"
+	nomePersonagemMinimo         = 2
+	nomePersonagemMaximo         = 24
+	precoDesbloquearPersonagem   = 400
+	trocaPersonagemCooldownHoras = 24
+	precoTrocaAntecipadaOuro     = 150
 )
 
 // EstagioRPG é um degrau da jornada visual do personagem, alcançado por nível.
@@ -71,6 +75,17 @@ type VisualPersonagem struct {
 	Automatico bool   `json:"automatico"`
 }
 
+// ElencoPersonagemInfo traz os personagens desbloqueados da conta, a espera entre trocas
+// gratuitas e os preços em Ouro definidos em sql/123.
+type ElencoPersonagemInfo struct {
+	Desbloqueados            []string `json:"desbloqueados"`
+	UltimaTrocaEm            string   `json:"ultima_troca_em,omitempty"`
+	ProximaTrocaEm           string   `json:"proxima_troca_em,omitempty"`
+	PrecoDesbloquearOuro     int      `json:"preco_desbloquear_ouro"`
+	TrocaCooldownHoras       int      `json:"troca_cooldown_horas"`
+	PrecoTrocaAntecipadaOuro int      `json:"preco_troca_antecipada_ouro"`
+}
+
 // RespostaPersonagem é o corpo de GET e POST /api/personagem. Quem ainda não despertou
 // recebe só `existe: false`; os demais campos são ponteiros para sair do JSON nesse caso,
 // em vez de aparecerem zerados.
@@ -84,8 +99,9 @@ type RespostaPersonagem struct {
 	// Estilo do cenário equipado na Loja; vazio é o fundo padrão.
 	Cenario string `json:"cenario,omitempty"`
 	// Estilo da aura equipada na Loja; vazio é sem aura.
-	Aura     string             `json:"aura,omitempty"`
-	Estagios []EstagioStatusRPG `json:"estagios,omitempty"`
+	Aura     string                `json:"aura,omitempty"`
+	Estagios []EstagioStatusRPG    `json:"estagios,omitempty"`
+	Elenco   *ElencoPersonagemInfo `json:"elenco,omitempty"`
 	// Skins que o jogador possui: visuais desbloqueados por compra na Loja.
 	Skins []SkinPersonagem `json:"skins,omitempty"`
 	// Equipamento e atributos, só com ?completo=1: a barra superior não precisa deles.
@@ -343,22 +359,28 @@ func ValidarNomePersonagem(nome string) (string, error) {
 type PersonagemHandler struct{}
 
 type linhaPersonagemBanco struct {
-	Nome           string  `json:"nome"`
-	PersonagemBase string  `json:"personagem_base"`
-	CriadoEm       string  `json:"criado_em"`
-	VisualEquipado *string `json:"visual_equipado"`
+	Nome           string   `json:"nome"`
+	PersonagemBase string   `json:"personagem_base"`
+	CriadoEm       string   `json:"criado_em"`
+	VisualEquipado *string  `json:"visual_equipado"`
+	Desbloqueados  []string `json:"desbloqueados"`
+	UltimaTrocaEm  *string  `json:"ultima_troca_em"`
 }
 
 // lerPersonagem busca a linha do usuário. Devolve nil, sem erro, para quem não despertou.
 func lerPersonagem(dbClient *supabase.Client, userID string) (*linhaPersonagemBanco, error) {
 	dados, _, err := dbClient.From("rpg_personagens").
-		Select("nome,personagem_base,criado_em,visual_equipado", "", false).
+		Select("nome,personagem_base,criado_em,visual_equipado,desbloqueados,ultima_troca_em", "", false).
 		Eq("user_id", userID).
 		Execute()
 	if err != nil {
-		// A coluna visual_equipado vem do sql/068, aplicado à mão. Enquanto ele não roda, a
-		// leitura cai nas colunas antigas e o visual fica no automático, em vez de a tela
-		// inteira do personagem sair do ar.
+		// Fallback tolerante à ordem de aplicação dos SQLs (068 e 123).
+		dados, _, err = dbClient.From("rpg_personagens").
+			Select("nome,personagem_base,criado_em,visual_equipado", "", false).
+			Eq("user_id", userID).
+			Execute()
+	}
+	if err != nil {
 		dados, _, err = dbClient.From("rpg_personagens").
 			Select("nome,personagem_base,criado_em", "", false).
 			Eq("user_id", userID).
@@ -396,6 +418,58 @@ func carregarEstagiosRPG(dbClient *supabase.Client) []EstagioRPG {
 		return EstagiosPadrao()
 	}
 	return InterpretarEstagios(linhas[0].Value)
+}
+
+func interpretarInstanteRPG(bruto string) (time.Time, bool) {
+	limpo := strings.TrimSpace(bruto)
+	if limpo == "" {
+		return time.Time{}, false
+	}
+	for _, layout := range []string{time.RFC3339Nano, time.RFC3339} {
+		if t, err := time.Parse(layout, limpo); err == nil {
+			return t.UTC(), true
+		}
+	}
+	return time.Time{}, false
+}
+
+// calcularElencoInfo normaliza a lista de desbloqueados e calcula o fim da espera de 24h.
+func calcularElencoInfo(linha linhaPersonagemBanco, baseAtual string, agora time.Time) *ElencoPersonagemInfo {
+	base := strings.TrimSpace(baseAtual)
+	if base == "" {
+		base = personagemBasePadrao
+	}
+	visto := make(map[string]bool, len(linha.Desbloqueados)+1)
+	desbloqueados := make([]string, 0, len(linha.Desbloqueados)+1)
+	catalogo := PersonagensBase()
+	for _, id := range linha.Desbloqueados {
+		limpo := strings.TrimSpace(id)
+		if _, ok := catalogo[limpo]; !ok || visto[limpo] {
+			continue
+		}
+		visto[limpo] = true
+		desbloqueados = append(desbloqueados, limpo)
+	}
+	if !visto[base] {
+		desbloqueados = append(desbloqueados, base)
+	}
+
+	info := &ElencoPersonagemInfo{
+		Desbloqueados:            desbloqueados,
+		PrecoDesbloquearOuro:     precoDesbloquearPersonagem,
+		TrocaCooldownHoras:       trocaPersonagemCooldownHoras,
+		PrecoTrocaAntecipadaOuro: precoTrocaAntecipadaOuro,
+	}
+	if linha.UltimaTrocaEm != nil {
+		if ultima, ok := interpretarInstanteRPG(*linha.UltimaTrocaEm); ok {
+			info.UltimaTrocaEm = ultima.Format(time.RFC3339)
+			proxima := ultima.Add(time.Duration(trocaPersonagemCooldownHoras) * time.Hour)
+			if proxima.After(agora) {
+				info.ProximaTrocaEm = proxima.Format(time.RFC3339)
+			}
+		}
+	}
+	return info
 }
 
 // montarRespostaPersonagem junta identidade, progressão e jornada. Não toca no banco, o
@@ -447,6 +521,7 @@ func montarRespostaPersonagem(linha linhaPersonagemBanco, xpTotal int, ranks []F
 		ProximoEstagio: proximo,
 		Visual:         &visual,
 		Estagios:       jornada,
+		Elenco:         calcularElencoInfo(linha, base.ID, time.Now().UTC()),
 	}
 }
 
@@ -823,11 +898,26 @@ func (h *PersonagemHandler) HandleEquiparVisual(w http.ResponseWriter, r *http.R
 	responderJSON(w, http.StatusOK, ctx.resposta())
 }
 
-// HandleTrocarPersonagem troca o personagem do elenco. É livre e não custa nada: o nível,
-// os itens e os pontos são do jogador, não do personagem, e continuam. O visual fixado volta
-// ao automático, porque estágios e skins são de cada personagem. A gravação é pelo service
-// role depois de conferir a escolha, como a do visual.
-func (h *PersonagemHandler) HandleTrocarPersonagem(w http.ResponseWriter, r *http.Request) {
+func carregarRespostaCompletaPersonagem(dbClient *supabase.Client, userID string) (RespostaPersonagem, error) {
+	ctx, err := carregarContextoPersonagem(dbClient, userID)
+	if err != nil {
+		return RespostaPersonagem{}, err
+	}
+	if ctx.linha == nil {
+		return RespostaPersonagem{Existe: false}, nil
+	}
+	resposta := ctx.resposta()
+	if equipamento, errEq := equipamentoDoContexto(dbClient, userID, ctx); errEq == nil {
+		resposta.Equipamento = &equipamento
+	} else {
+		log.Printf("[PERSONAGEM] Falha ao ler equipamento (user=%s): %v", userID, errEq)
+	}
+	return resposta, nil
+}
+
+// HandleDesbloquearPersonagem libera um personagem adicional do elenco por 400 Ouro via
+// rpg_desbloquear_personagem (sql/123), com débito atômico em rpg_recursos.
+func (h *PersonagemHandler) HandleDesbloquearPersonagem(w http.ResponseWriter, r *http.Request) {
 	userID, ok := r.Context().Value(middleware.UserIDKey).(string)
 	token, tokenOk := r.Context().Value(middleware.TokenKey).(string)
 	if !ok || !tokenOk || userID == "" || token == "" {
@@ -857,34 +947,80 @@ func (h *PersonagemHandler) HandleTrocarPersonagem(w http.ResponseWriter, r *htt
 		responderErroJSON(w, http.StatusServiceUnavailable, "Banco indisponível no momento.")
 		return
 	}
-	linha, err := lerPersonagem(dbClient, userID)
-	if err != nil {
+
+	bruto := strings.TrimSpace(dbClient.Rpc("rpg_desbloquear_personagem", "", map[string]interface{}{
+		"p_base": base,
+	}))
+	erroDaRegra, falhou := lerRetornoRPG(bruto)
+	if falhou {
+		log.Printf("[PERSONAGEM] Falha ao desbloquear personagem (user=%s, base=%s): %s", userID, base, bruto)
+		responderErroJSON(w, http.StatusServiceUnavailable, "Não foi possível desbloquear o personagem agora.")
+		return
+	}
+	if erroDaRegra != "" {
+		responderErroJSON(w, http.StatusBadRequest, erroDaRegra)
+		return
+	}
+
+	resposta, err := carregarRespostaCompletaPersonagem(dbClient, userID)
+	if err != nil || !resposta.Existe {
 		responderErroJSON(w, http.StatusServiceUnavailable, "Banco indisponível no momento.")
 		return
 	}
-	if linha == nil {
-		responderErroJSON(w, http.StatusNotFound, "Desperte o seu personagem primeiro.")
+	responderJSON(w, http.StatusOK, resposta)
+}
+
+// HandleTrocarPersonagem troca para um personagem já desbloqueado do elenco. A troca é
+// gratuita a cada 24h; antes disso, exige `pagar_antecipado: true` (150 Ouro). Itens de
+// outra classe são desequipados pelo gatilho do banco, e o visual fixado volta ao automático.
+func (h *PersonagemHandler) HandleTrocarPersonagem(w http.ResponseWriter, r *http.Request) {
+	userID, ok := r.Context().Value(middleware.UserIDKey).(string)
+	token, tokenOk := r.Context().Value(middleware.TokenKey).(string)
+	if !ok || !tokenOk || userID == "" || token == "" {
+		responderErroJSON(w, http.StatusUnauthorized, "Não autenticado")
 		return
 	}
 
-	if linha.PersonagemBase != base {
-		servico, err := database.ServiceRoleClient()
-		if err != nil || servico == nil {
-			responderErroJSON(w, http.StatusServiceUnavailable, "Banco indisponível no momento.")
-			return
-		}
-		if _, _, err := servico.From("rpg_personagens").
-			Update(map[string]interface{}{"personagem_base": base, "visual_equipado": nil}, "minimal", "").
-			Eq("user_id", userID).
-			Execute(); err != nil {
-			// Sem o sql/080 aplicado, o CHECK da tabela só aceita o Espadachim.
-			log.Printf("[PERSONAGEM] Falha ao trocar personagem (user=%s): %v", userID, err)
-			responderErroJSON(w, http.StatusServiceUnavailable, "Não foi possível trocar o personagem agora.")
-			return
-		}
+	var corpo struct {
+		PersonagemBase  string `json:"personagem_base"`
+		PagarAntecipado bool   `json:"pagar_antecipado"`
+	}
+	if err := json.NewDecoder(http.MaxBytesReader(w, r.Body, 1024)).Decode(&corpo); err != nil {
+		responderErroJSON(w, http.StatusBadRequest, "Corpo inválido.")
+		return
+	}
+	if strings.TrimSpace(corpo.PersonagemBase) == "" {
+		responderErroJSON(w, http.StatusBadRequest, "Escolha um personagem.")
+		return
+	}
+	base, err := ValidarPersonagemBase(corpo.PersonagemBase)
+	if err != nil {
+		responderErroJSON(w, http.StatusBadRequest, err.Error())
+		return
 	}
 
-	resposta, err := carregarRespostaPersonagem(dbClient, userID)
+	dbClient, err := database.ClientWithToken(token)
+	if err != nil || dbClient == nil {
+		responderErroJSON(w, http.StatusServiceUnavailable, "Banco indisponível no momento.")
+		return
+	}
+
+	bruto := strings.TrimSpace(dbClient.Rpc("rpg_trocar_personagem", "", map[string]interface{}{
+		"p_base":       base,
+		"p_antecipado": corpo.PagarAntecipado,
+	}))
+	erroDaRegra, falhou := lerRetornoRPG(bruto)
+	if falhou {
+		log.Printf("[PERSONAGEM] Falha ao trocar personagem (user=%s, base=%s): %s", userID, base, bruto)
+		responderErroJSON(w, http.StatusServiceUnavailable, "Não foi possível trocar o personagem agora.")
+		return
+	}
+	if erroDaRegra != "" {
+		responderErroJSON(w, http.StatusBadRequest, erroDaRegra)
+		return
+	}
+
+	resposta, err := carregarRespostaCompletaPersonagem(dbClient, userID)
 	if err != nil || !resposta.Existe {
 		responderErroJSON(w, http.StatusServiceUnavailable, "Banco indisponível no momento.")
 		return

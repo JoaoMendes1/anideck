@@ -867,6 +867,7 @@ Motivo: o beta vai receber gente nova, e a primeira impressão decide se a pesso
 - [x] 18.9r **Equipamentos mais ricos:** Magia, Velocidade, Crítico, Dano Crítico e Esquiva nos itens; arma por classe; elmo e luvas; 7 conjuntos com bônus de 2 e 4 peças; 41 itens Épicos e Lendários com arte. `sql/121` (#295)
 - [x] 18.9s **Loja mais clara:** moedas explicadas em cada aba, Mercado separado em comprar agora, juntar Ouro, libera depois e já tem, com o motivo no botão. (#296)
 - [x] 18.9t **Forja do Brokk:** 11 materiais (vitória de expedição e masmorra completa, ou desmontar cópia repetida); 40 receitas Épicas e Lendárias por Ouro e materiais; vender cópia repetida por Ouro. `sql/122` (#297)
+- [x] 18.9u **Celestia Lendária, desbloqueio de elenco por Ouro e espera na troca:** ilustração Lendária da Paladina da Luz (`paladina-luz-lendario*.webp`), 1º personagem grátis no Despertar e demais por 400 Ouro (`POST /api/personagem/desbloquear`), troca gratuita a cada 24h ou antecipada por 150 Ouro (`PUT /api/personagem/base`), sincronizando peças desequipadas de outra classe. `sql/123` (#298)
 - [ ] 18.9g Insígnia de pioneiro da Temporada 0 (nome e critério de "ativo" a decidir) e captcha no cadastro
 - [ ] 18.9c Página de visitante com demonstração jogável e personagem que evolui com a rolagem
 - [ ] 18.9d Importação com regra de zero recompensa (origem marcada no banco) e interruptor no Painel Admin

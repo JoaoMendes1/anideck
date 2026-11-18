@@ -174,5 +174,17 @@
         "caminho": "/loja?secao=forja"
       }
     ]
+  },
+  {
+    "chave": "2026-11-18-celestia-lendaria-e-elenco",
+    "titulo": "Celestia Lendária chegou e o elenco agora é desbloqueável",
+    "categoria": "novidade",
+    "resumo": "A Paladina Celestia ganhou sua arte de estágio Lendário (nível 55+).\n\nO elenco também ganhou regras novas: o primeiro personagem segue grátis no Despertar, cada novo herói custa 400 de Ouro para desbloquear na conta e a troca entre heróis desbloqueados é gratuita a cada 24 horas (ou antecipada por 150 de Ouro). Contas antigas mantêm o personagem atual já desbloqueado.",
+    "links": [
+      {
+        "rotulo": "Ver Meu Personagem",
+        "caminho": "/personagem"
+      }
+    ]
   }
 ]

@@ -22,11 +22,15 @@ import {
   ALTURA_DA_ARTE,
   LARGURA_DA_ARTE,
   NOME_MAXIMO,
+  PRECO_DESBLOQUEAR_OURO,
+  PRECO_TROCA_ANTECIPADA_OURO,
   EVENTO_PERSONAGEM_ATUALIZADO,
   PERSONAGEM_BASE_PADRAO,
   arteDoEstagio,
+  desbloquearPersonagem,
   despertarPersonagem,
   equiparVisual,
+  formatarEsperaTroca,
   membroDoElenco,
   obterPersonagem,
   trocarPersonagem,
@@ -36,6 +40,7 @@ import {
   textoDoProximoEstagio,
   validarNomeDoPersonagem,
   visualEmUso,
+  type ElencoPersonagemInfo,
   type RespostaPersonagem,
 } from '../lib/personagem'
 
@@ -147,8 +152,8 @@ export function TelaDespertar({ aoDespertar }: { aoDespertar: (dados: RespostaPe
 
           <EscolhaDoElenco escolhido={base} aoEscolher={setBase} nomeDoGrupo="elenco-do-despertar" />
           <p className="text-xs leading-snug text-muted m-0" aria-live="polite">
-            <strong className="text-text">{escolhido.nome}</strong> · {escolhido.resumo} Dá para trocar de personagem
-            depois, sem perder o nível.
+            <strong className="text-text">{escolhido.nome}</strong> · {escolhido.resumo} O primeiro personagem é
+            gratuito; os demais podem ser desbloqueados depois com Ouro.
           </p>
 
           <div className="flex flex-col gap-2">
@@ -190,19 +195,57 @@ export function TelaDespertar({ aoDespertar }: { aoDespertar: (dados: RespostaPe
   )
 }
 
-// Troca do personagem do elenco, aberta pela ficha. O nível, os itens e os pontos são do
-// jogador e continuam; só a arte, a classe e as habilidades mudam.
-function TrocaDePersonagem({ atual, aoTrocar }: { atual: string; aoTrocar: (dados: RespostaPersonagem) => void }) {
+// Troca e desbloqueio de personagem do elenco. O progresso da conta continua; apenas
+// arte, classe, habilidades e peças exclusivas de outra classe mudam.
+function TrocaDePersonagem({
+  atual,
+  elenco,
+  ouro,
+  aoTrocar,
+}: {
+  atual: string
+  elenco?: ElencoPersonagemInfo
+  ouro?: number
+  aoTrocar: (dados: RespostaPersonagem) => void
+}) {
   const [escolhido, setEscolhido] = useState(atual)
   const [salvando, setSalvando] = useState(false)
   const [erro, setErro] = useState('')
+  const [agora, setAgora] = useState(() => Date.now())
+
+  useEffect(() => {
+    if (!elenco?.proxima_troca_em) return
+    const timer = window.setInterval(() => setAgora(Date.now()), 30_000)
+    return () => window.clearInterval(timer)
+  }, [elenco?.proxima_troca_em])
+
+  const desbloqueados = elenco?.desbloqueados ?? [atual]
+  const precoDesbloquear = elenco?.preco_desbloquear_ouro ?? PRECO_DESBLOQUEAR_OURO
+  const precoAntecipado = elenco?.preco_troca_antecipada_ouro ?? PRECO_TROCA_ANTECIPADA_OURO
+  const desbloqueado = desbloqueados.includes(escolhido)
+  const esperaRestante = formatarEsperaTroca(elenco?.proxima_troca_em, agora)
+  const faltaDesbloqueio = typeof ouro === 'number' && ouro < precoDesbloquear ? precoDesbloquear - ouro : 0
+  const faltaTrocaAntecipada = typeof ouro === 'number' && ouro < precoAntecipado ? precoAntecipado - ouro : 0
   const membro = membroDoElenco(escolhido)
 
-  const confirmar = async () => {
-    if (salvando || escolhido === atual) return
+  const desbloquear = async () => {
+    if (salvando || desbloqueado) return
     setErro('')
     setSalvando(true)
-    const resultado = await trocarPersonagem(escolhido)
+    const resultado = await desbloquearPersonagem(escolhido)
+    setSalvando(false)
+    if (resultado.dados) {
+      aoTrocar(resultado.dados)
+      return
+    }
+    setErro(resultado.erro ?? 'Não foi possível desbloquear o personagem agora.')
+  }
+
+  const confirmar = async (pagarAntecipado: boolean) => {
+    if (salvando || escolhido === atual || !desbloqueado) return
+    setErro('')
+    setSalvando(true)
+    const resultado = await trocarPersonagem(escolhido, pagarAntecipado)
     setSalvando(false)
     if (resultado.dados) {
       aoTrocar(resultado.dados)
@@ -213,27 +256,88 @@ function TrocaDePersonagem({ atual, aoTrocar }: { atual: string; aoTrocar: (dado
 
   return (
     <div id="troca-de-personagem" className="flex flex-col gap-3 rounded-2xl border border-line bg-panel-2 p-3">
-      <EscolhaDoElenco escolhido={escolhido} aoEscolher={setEscolhido} atual={atual} nomeDoGrupo="elenco-da-troca" />
+      <EscolhaDoElenco
+        escolhido={escolhido}
+        aoEscolher={(id) => {
+          setErro('')
+          setEscolhido(id)
+        }}
+        atual={atual}
+        desbloqueados={desbloqueados}
+        precoDesbloquear={precoDesbloquear}
+        nomeDoGrupo="elenco-da-troca"
+      />
       <p className="m-0 text-xs leading-snug text-muted" aria-live="polite">
         <strong className="text-text">{membro.nome}</strong> · {membro.resumo}
       </p>
       <p className="m-0 text-xs leading-snug text-muted">
-        A troca é livre. Nível, itens e pontos continuam; o visual volta ao do estágio, e os trajes da Loja só servem no
-        Espadachim de Éter.
+        Nível, inventário e pontos continuam. A troca gratuita libera a cada {elenco?.troca_cooldown_horas ?? 24}h; o
+        visual volta ao estágio e peças exclusivas de outra classe são desequipadas.
+        {typeof ouro === 'number' && (
+          <>
+            {' '}
+            Seu saldo: <strong className="text-gold">{ouro.toLocaleString('pt-BR')} Ouro</strong>.
+          </>
+        )}
       </p>
       {erro && (
         <p role="alert" className="m-0 text-xs font-bold text-coral">
           {erro}
         </p>
       )}
-      <button
-        type="button"
-        onClick={confirmar}
-        disabled={salvando || escolhido === atual}
-        className="h-10 cursor-pointer rounded-full bg-gradient-to-r from-holo-1 to-holo-3 px-4 text-xs font-extrabold text-void disabled:cursor-not-allowed disabled:opacity-50"
-      >
-        {salvando ? 'Trocando…' : escolhido === atual ? 'Este é o personagem em uso' : `Jogar com ${membro.nome}`}
-      </button>
+      {escolhido === atual ? (
+        <button
+          type="button"
+          disabled
+          className="h-10 rounded-full bg-gradient-to-r from-holo-1 to-holo-3 px-4 text-xs font-extrabold text-void disabled:cursor-not-allowed disabled:opacity-50"
+        >
+          Este é o personagem em uso
+        </button>
+      ) : !desbloqueado ? (
+        <div className="flex flex-col gap-1.5">
+          <button
+            type="button"
+            onClick={desbloquear}
+            disabled={salvando || faltaDesbloqueio > 0}
+            className="h-10 cursor-pointer rounded-full bg-gradient-to-r from-gold to-holo-3 px-4 text-xs font-extrabold text-void disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            {salvando ? 'Desbloqueando…' : `Desbloquear por ${precoDesbloquear} Ouro`}
+          </button>
+          {faltaDesbloqueio > 0 && (
+            <p className="m-0 text-center font-mono text-xs text-coral">
+              Faltam {faltaDesbloqueio.toLocaleString('pt-BR')} de Ouro
+            </p>
+          )}
+        </div>
+      ) : !esperaRestante ? (
+        <button
+          type="button"
+          onClick={() => confirmar(false)}
+          disabled={salvando}
+          className="h-10 cursor-pointer rounded-full bg-gradient-to-r from-holo-1 to-holo-3 px-4 text-xs font-extrabold text-void disabled:cursor-wait disabled:opacity-50"
+        >
+          {salvando ? 'Trocando…' : `Trocar para ${membro.nome} (grátis)`}
+        </button>
+      ) : (
+        <div className="flex flex-col gap-1.5">
+          <p className="m-0 font-mono text-xs text-muted">
+            Troca gratuita disponível em <strong className="text-text">{esperaRestante}</strong>.
+          </p>
+          <button
+            type="button"
+            onClick={() => confirmar(true)}
+            disabled={salvando || faltaTrocaAntecipada > 0}
+            className="h-10 cursor-pointer rounded-full bg-gradient-to-r from-gold to-holo-3 px-4 text-xs font-extrabold text-void disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            {salvando ? 'Trocando…' : `Trocar agora por ${precoAntecipado} Ouro`}
+          </button>
+          {faltaTrocaAntecipada > 0 && (
+            <p className="m-0 text-center font-mono text-xs text-coral">
+              Faltam {faltaTrocaAntecipada.toLocaleString('pt-BR')} de Ouro
+            </p>
+          )}
+        </div>
+      )}
     </div>
   )
 }
@@ -426,10 +530,17 @@ function FichaDoPersonagem({
             {trocandoPersonagem && (
               <TrocaDePersonagem
                 atual={base}
+                elenco={dados.elenco}
+                ouro={equipamento?.ouro}
                 aoTrocar={(novos) => {
                   aoAtualizar(novos)
+                  if (novos.equipamento) {
+                    aoAtualizarEquipamento(novos.equipamento)
+                  }
                   setPrevia(null)
-                  setTrocandoPersonagem(false)
+                  if (novos.personagem?.personagem_base !== base) {
+                    setTrocandoPersonagem(false)
+                  }
                   window.dispatchEvent(new Event(EVENTO_PERSONAGEM_ATUALIZADO))
                 }}
               />

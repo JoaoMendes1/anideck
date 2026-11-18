@@ -67,3 +67,33 @@ func TestContextoDoEstado_InventarioQuebradoEhErro(t *testing.T) {
 		t.Fatal("inventário fora do formato deveria ser erro")
 	}
 }
+
+func TestContextoDoEstado_ComElencoETroca(t *testing.T) {
+	bruto := `{"ok":true,
+	  "personagem":{"nome":"Celestia","personagem_base":"paladina_luz","criado_em":"2026-11-01T00:00:00Z","desbloqueados":["paladina_luz","maga_agua"],"ultima_troca_em":"2026-11-18T10:00:00Z"},
+	  "xp_total":500,
+	  "inventario":[],
+	  "equipados":[],
+	  "ouro":450}`
+	e, ok := interpretarEstadoJogador(bruto)
+	if !ok {
+		t.Fatal("resposta válida rejeitada")
+	}
+	ctx, err := contextoDoEstado(e, configRPG{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	resp := ctx.resposta()
+	if resp.Elenco == nil {
+		t.Fatal("elenco ausente na resposta")
+	}
+	if len(resp.Elenco.Desbloqueados) != 2 || resp.Elenco.Desbloqueados[1] != "maga_agua" {
+		t.Errorf("desbloqueados inesperados: %+v", resp.Elenco.Desbloqueados)
+	}
+	if resp.Elenco.UltimaTrocaEm != "2026-11-18T10:00:00Z" {
+		t.Errorf("ultima_troca_em errada: %q", resp.Elenco.UltimaTrocaEm)
+	}
+	if resp.Elenco.PrecoDesbloquearOuro != 400 || resp.Elenco.TrocaCooldownHoras != 24 || resp.Elenco.PrecoTrocaAntecipadaOuro != 150 {
+		t.Errorf("preços inesperados: %+v", resp.Elenco)
+	}
+}
