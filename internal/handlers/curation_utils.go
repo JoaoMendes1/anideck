@@ -11,6 +11,7 @@ import (
 	"encoding/json"
 	"log"
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/JoaoMendes1/anideck/internal/anilist"
@@ -34,9 +35,10 @@ func AplicarCuradoria(anime *anilist.Anime, curado models.CuratedAnime) {
 	if curado.CustomSynopsis != "" {
 		anime.Synopsis = curado.CustomSynopsis
 	}
-	if curado.CustomStatus != "" {
-		anime.Status = curado.CustomStatus
-	}
+	// O status gravado na curadoria é uma cópia do dia em que o anime foi curado. Ele só
+	// vence o da AniList quando é mais avançado: status de exibição só anda para a frente
+	// (não lançado → em lançamento → finalizado), então o mais avançado é o atual.
+	anime.Status = StatusMaisAvancado(anime.Status, curado.CustomStatus)
 	if curado.CustomCoverImage != "" {
 		anime.Images.JPG.ImageURL = curado.CustomCoverImage
 	}
@@ -68,6 +70,7 @@ func AplicarCuradoria(anime *anilist.Anime, curado models.CuratedAnime) {
 	if proximoCurado := CalcularProximoEpisodioCurado(curado.CustomEpisodes, curado.CustomFirstAiredAt); proximoCurado != nil {
 		anime.NextAiringEpisode = proximoCurado
 	}
+	anime.Status = StatusPelosEpisodios(anime.Status, anime.NextAiringEpisode, len(anime.StreamingEpisodes), anime.Episodes)
 
 	// Duração só é sobrescrita quando é um número que faz sentido: zero ou negativo viraria
 	// tempo assistido zerado nas Estatísticas, pior do que a estimativa de 24 min do cache.
@@ -168,4 +171,41 @@ func AplicarCuradoriaEmLista(animes []anilist.Anime, curados map[int]models.Cura
 func ApplyCurationToAnimeList(animes []anilist.Anime) []anilist.Anime {
 	AplicarCuradoriaEmLista(animes, CarregarCuradoria(database.Client))
 	return animes
+}
+
+const statusFinalizado = "Finished Airing"
+
+func ordemDoStatus(s string) int {
+	switch strings.ToLower(strings.TrimSpace(s)) {
+	case "finished airing", "finished", "finalizado":
+		return 3
+	case "currently airing", "releasing", "em lançamento":
+		return 2
+	case "not yet aired", "not_yet_released", "em breve":
+		return 1
+	}
+	return 0
+}
+
+// StatusMaisAvancado escolhe entre o status da AniList e o da curadoria o que está mais
+// adiante na vida do anime. Vazio ou desconhecido perde para qualquer status conhecido.
+func StatusMaisAvancado(daAniList, curado string) string {
+	// No empate fica o texto da curadoria: é o mesmo status, escrito como o admin quis.
+	if curado != "" && ordemDoStatus(curado) >= ordemDoStatus(daAniList) {
+		return curado
+	}
+	if daAniList == "" {
+		return curado
+	}
+	return daAniList
+}
+
+// StatusPelosEpisodios fecha o anime que a curadoria acompanha episódio a episódio: ainda
+// "em lançamento", sem próximo episódio marcado e com todos os episódios já listados, ele
+// terminou. Sem o total de episódios conhecido, não dá para afirmar e o status fica.
+func StatusPelosEpisodios(status string, proximo *anilist.NextAiringEpisode, listados, total int) string {
+	if ordemDoStatus(status) == 2 && proximo == nil && total > 0 && listados >= total {
+		return statusFinalizado
+	}
+	return status
 }

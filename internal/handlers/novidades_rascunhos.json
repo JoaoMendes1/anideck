@@ -126,5 +126,17 @@
         "caminho": "/deck"
       }
     ]
+  },
+  {
+    "chave": "2026-11-18-status-finalizado",
+    "titulo": "Animes finalizados não aparecem mais como Em lançamento",
+    "categoria": "correcao",
+    "resumo": "Alguns animes que terminaram na temporada passada continuavam com a etiqueta Em lançamento. Agora o status se atualiza sozinho quando o anime termina.",
+    "links": [
+      {
+        "rotulo": "Ver Meu Deck",
+        "caminho": "/deck"
+      }
+    ]
   }
 ]
