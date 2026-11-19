@@ -536,7 +536,13 @@ export default function Expedicoes() {
                         </div>
                         <p className="m-0 font-mono text-xs text-muted">
                           {tipo.rotulo} · nível {m.nivel} · poder {m.poder}
+                          {m.regiao_nome ? ` · ${m.regiao_nome}` : ''}
                         </p>
+                        {m.familia && (
+                          <p className="m-0 mt-0.5 font-mono text-[11px] text-holo-3">
+                            Família: {m.familia}
+                          </p>
+                        )}
                         <p className="m-0 mt-1 line-clamp-2 text-xs leading-snug text-muted sm:line-clamp-none">{m.descricao}</p>
                       </div>
                     </div>

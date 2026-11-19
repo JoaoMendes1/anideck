@@ -198,5 +198,17 @@
         "caminho": "/expedicoes"
       }
     ]
+  },
+  {
+    "chave": "2026-11-18-bestiario-evolucoes-mapa-mundo",
+    "titulo": "56 novos monstros, linhas de evolução e Mapa-Múndi 2D interativo",
+    "categoria": "novidade",
+    "resumo": "O bestiário das Expedições saltou de 8 para 64 criaturas em sete regiões conectadas: Clareira Inicial, Bosque Sombrio, Fendas Vulcânicas, Picos Glaciais, Ruínas do Vazio, Santuário Astral e Cume Ancestral.\n\nAgora você explora um Mapa-Múndi 2D clicável com rotas entre as regiões e cenário dedicado para cada bioma. Várias famílias também ganharam linhas evolutivas: na ficha do monstro, toque em qualquer estágio para acompanhar a evolução e saltar direto para a região dela.",
+    "links": [
+      {
+        "rotulo": "Explorar Mapa-Múndi 2D",
+        "caminho": "/expedicoes"
+      }
+    ]
   }
 ]

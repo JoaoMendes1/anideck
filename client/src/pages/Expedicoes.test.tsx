@@ -187,15 +187,23 @@ describe('Expedições', () => {
     expect((await screen.findByRole('link', { name: 'Ir para o despertar' })).getAttribute('href')).toBe('/personagem')
   })
 
-  it('permite explorar o mapa 2D, inspecionar os 8 atributos, dica tática e alternar para lista', async () => {
+  it('permite explorar o mapa 2D, trocar de região, inspecionar os 8 atributos, dica tática e alternar para lista', async () => {
     const lobo = {
       id: 'lobo_sombrio', nome: 'Lobo Sombrio', descricao: 'Caça na neblina.', tipo: 'comum' as const, nivel: 10,
       vida: 380, ataque: 48, defesa: 24, magia: 10, eter: 16, velocidade: 11, critico_por_mil: 115, dano_critico: 155, esquiva_por_mil: 35,
       elemento: 'trevas', comportamento: 'Predador', regiao: 'bosque_sombrio', regiao_nome: 'Bosque Sombrio', habitat: 'Mata fechada.',
+      familia: 'Lobos das Sombras', estagio: 1, evolui_para: ['lobo_abissal'],
       bilhetes: 1, chance_item: 20, raridade_item: 'raro' as const, poder: 160, dificuldade: 'dificil' as const,
       bestiario: { vitorias: 2, marco: 0, faltam_marco: 8, bonus_ouro: 0 },
       dica_tatica: 'Personagem de Luz tem vantagem direta.',
       em_destaque: true,
+    }
+    const loboAbissal = {
+      ...lobo,
+      id: 'lobo_abissal', nome: 'Lobo Abissal', nivel: 24, poder: 420,
+      estagio: 2, evolui_de: 'lobo_sombrio', evolui_para: [],
+      regiao: 'ruinas_do_vazio', regiao_nome: 'Ruínas do Vazio',
+      dica_tatica: 'Evolução final da matilha; ataque antes da fúria.',
     }
     const base = estado()
     const comMapa: EstadoExpedicoes = {
@@ -203,27 +211,39 @@ describe('Expedições', () => {
       atributos: { vida: 130, ataque: 15, defesa: 9, magia: 8, velocidade: 10, critico_por_mil: 70, dano_critico: 150, esquiva_por_mil: 30, eter: 20, poder: 61 },
       regiao_destaque: 'bosque_sombrio',
       regioes: [
-        { id: 'clareira_inicial', nome: 'Clareira Inicial', subtitulo: 'Fronteira', bioma: 'Brisa de Éter', efeito_bioma: 'Campo aberto.', faixa_nivel: 'Nv 1–5', ordem: 1, monstros: ['slime_de_eter'] },
-        { id: 'bosque_sombrio', nome: 'Bosque Sombrio', subtitulo: 'Trilhas', bioma: 'Névoa Espessa', efeito_bioma: 'Feras velozes.', faixa_nivel: 'Nv 8–20', ordem: 2, monstros: ['lobo_sombrio'], em_destaque: true, bonus_destaque: '+1 material da Forja garantido na vitória' },
+        { id: 'clareira_inicial', nome: 'Clareira Inicial', subtitulo: 'Fronteira', bioma: 'Brisa de Éter', efeito_bioma: 'Campo aberto.', faixa_nivel: 'Nv 1–8', ordem: 1, x: 14, y: 74, conexoes: ['bosque_sombrio'], monstros: ['slime_de_eter'] },
+        { id: 'bosque_sombrio', nome: 'Bosque Sombrio', subtitulo: 'Trilhas', bioma: 'Névoa Espessa', efeito_bioma: 'Feras velozes.', faixa_nivel: 'Nv 10–25', ordem: 2, x: 32, y: 54, conexoes: ['clareira_inicial', 'ruinas_do_vazio'], monstros: ['lobo_sombrio'], em_destaque: true, bonus_destaque: '+1 material da Forja garantido na vitória' },
+        { id: 'ruinas_do_vazio', nome: 'Ruínas do Vazio', subtitulo: 'Salões', bioma: 'Ecos Arcanos', efeito_bioma: 'Espectros antigos.', faixa_nivel: 'Nv 16–41', ordem: 5, x: 56, y: 54, conexoes: ['bosque_sombrio'], monstros: ['lobo_abissal'] },
       ],
       monstros: [
         { ...base.monstros[0], comportamento: 'Instintivo', bestiario: { vitorias: 0, marco: 0, faltam_marco: 10, bonus_ouro: 0 } },
         lobo,
+        loboAbissal,
       ],
     }
     vi.mocked(obterExpedicoes).mockResolvedValue({ dados: comMapa })
     abrir()
 
-    await screen.findByText('Clareira Inicial')
+    await screen.findByRole('heading', { name: 'Clareira Inicial' })
     expect(screen.getByText(/Destaque de hoje:/)).toBeTruthy()
     expect(screen.getByText(/Vença 1 vez para desbloquear a dica tática/)).toBeTruthy()
+
+    fireEvent.click(screen.getByRole('button', { name: 'Explorar Bosque Sombrio (Nv 10–25)' }))
+    await screen.findByRole('heading', { name: 'Bosque Sombrio' })
 
     fireEvent.click(screen.getByRole('button', { name: 'Inspecionar Lobo Sombrio (nível 10)' }))
     expect(screen.getByText(/IA: Predador/)).toBeTruthy()
     expect(screen.getByText('Personagem de Luz tem vantagem direta.')).toBeTruthy()
+    expect(screen.getByText('Linha de Evolução')).toBeTruthy()
     expect(screen.getByRole('button', { name: 'Enfrentar Lobo Sombrio' })).toBeTruthy()
 
+    // Clicar na evolução dentro da ficha seleciona a nova forma e salta para a região dela no mapa 2D.
+    fireEvent.click(screen.getByRole('button', { name: 'Ver forma Lobo Abissal (nível 24)' }))
+    await screen.findByRole('heading', { name: 'Ruínas do Vazio' })
+    expect(screen.getByRole('button', { name: 'Enfrentar Lobo Abissal' })).toBeTruthy()
+
     fireEvent.click(screen.getByRole('button', { name: 'Lista' }))
-    expect(screen.getAllByRole('button', { name: /^Enfrentar / }).length).toBe(2)
+    expect(screen.getAllByRole('button', { name: /^Enfrentar / }).length).toBe(3)
   })
 })
+

@@ -1,9 +1,13 @@
 // client/src/components/rpg/MapaExpedicoes.tsx
-// Mapa 2D conectado das regiões de exploração + folha completa de inspeção do monstro selecionado.
+// Mapa-múndi 2D interativo das regiões conectadas + cenário da região ativa + folha de inspeção com linha evolutiva.
+import { useEffect, useState } from 'react'
 import {
+  ArrowRight,
   Brain,
   Compass,
   Crown,
+  Flame,
+  GitBranch,
   Hammer,
   Heart,
   Landmark,
@@ -12,6 +16,7 @@ import {
   MoonStar,
   Mountain,
   Shield,
+  Snowflake,
   Sparkles,
   Swords,
   Ticket,
@@ -42,6 +47,10 @@ import BotaoEmGrupo from './BotaoEmGrupo'
 interface EstiloRegiao {
   card: string
   cabecalho: string
+  pinAtivo: string
+  pinInativo: string
+  pilulaAtiva: string
+  halo: string
   Icone: LucideIcon
 }
 
@@ -49,21 +58,64 @@ const ESTILO_DA_REGIAO: Record<string, EstiloRegiao> = {
   clareira_inicial: {
     card: 'border-green/35 bg-gradient-to-br from-green/10 via-panel to-panel-2',
     cabecalho: 'text-green',
+    pinAtivo: 'border-green bg-void text-text ring-2 ring-green/50 shadow-lg',
+    pinInativo: 'border-green/40 bg-void/85 text-muted hover:border-green hover:text-text',
+    pilulaAtiva: 'border-green/70 bg-green/15 text-green',
+    halo: 'bg-green/18',
     Icone: Trees,
   },
   bosque_sombrio: {
     card: 'border-holo-2/35 bg-gradient-to-br from-holo-2/12 via-panel to-panel-2',
     cabecalho: 'text-holo-2',
+    pinAtivo: 'border-holo-2 bg-void text-text ring-2 ring-holo-2/50 shadow-lg',
+    pinInativo: 'border-holo-2/40 bg-void/85 text-muted hover:border-holo-2 hover:text-text',
+    pilulaAtiva: 'border-holo-2/70 bg-holo-2/15 text-holo-2',
+    halo: 'bg-holo-2/18',
     Icone: MoonStar,
+  },
+  forja_vulcanica: {
+    card: 'border-coral/40 bg-gradient-to-br from-coral/12 via-panel to-panel-2',
+    cabecalho: 'text-coral',
+    pinAtivo: 'border-coral bg-void text-text ring-2 ring-coral/50 shadow-lg',
+    pinInativo: 'border-coral/40 bg-void/85 text-muted hover:border-coral hover:text-text',
+    pilulaAtiva: 'border-coral/70 bg-coral/15 text-coral',
+    halo: 'bg-coral/18',
+    Icone: Flame,
+  },
+  mares_e_geada: {
+    card: 'border-holo-3/40 bg-gradient-to-br from-holo-3/12 via-panel to-panel-2',
+    cabecalho: 'text-holo-3',
+    pinAtivo: 'border-holo-3 bg-void text-text ring-2 ring-holo-3/50 shadow-lg',
+    pinInativo: 'border-holo-3/40 bg-void/85 text-muted hover:border-holo-3 hover:text-text',
+    pilulaAtiva: 'border-holo-3/70 bg-holo-3/15 text-holo-3',
+    halo: 'bg-holo-3/18',
+    Icone: Snowflake,
   },
   ruinas_do_vazio: {
     card: 'border-holo-1/35 bg-gradient-to-br from-holo-1/12 via-panel to-panel-2',
     cabecalho: 'text-holo-1',
+    pinAtivo: 'border-holo-1 bg-void text-text ring-2 ring-holo-1/50 shadow-lg',
+    pinInativo: 'border-holo-1/40 bg-void/85 text-muted hover:border-holo-1 hover:text-text',
+    pilulaAtiva: 'border-holo-1/70 bg-holo-1/15 text-holo-1',
+    halo: 'bg-holo-1/18',
     Icone: Landmark,
   },
-  cume_ancestral: {
+  santuario_astral: {
     card: 'border-gold/40 bg-gradient-to-br from-gold/12 via-panel to-panel-2',
     cabecalho: 'text-gold',
+    pinAtivo: 'border-gold bg-void text-text ring-2 ring-gold/50 shadow-lg',
+    pinInativo: 'border-gold/40 bg-void/85 text-muted hover:border-gold hover:text-text',
+    pilulaAtiva: 'border-gold/70 bg-gold/15 text-gold',
+    halo: 'bg-gold/18',
+    Icone: Sparkles,
+  },
+  cume_ancestral: {
+    card: 'border-gold/50 bg-gradient-to-br from-gold/15 via-panel to-panel-2',
+    cabecalho: 'text-gold',
+    pinAtivo: 'border-gold bg-void text-text ring-2 ring-gold/60 shadow-lg',
+    pinInativo: 'border-gold/45 bg-void/85 text-muted hover:border-gold hover:text-text',
+    pilulaAtiva: 'border-gold/75 bg-gold/15 text-gold',
+    halo: 'bg-gold/20',
     Icone: Mountain,
   },
 }
@@ -71,7 +123,21 @@ const ESTILO_DA_REGIAO: Record<string, EstiloRegiao> = {
 const ESTILO_REGIAO_PADRAO: EstiloRegiao = {
   card: 'border-line bg-gradient-to-br from-panel to-panel-2',
   cabecalho: 'text-holo-3',
+  pinAtivo: 'border-holo-3 bg-void text-text ring-2 ring-holo-3/50 shadow-lg',
+  pinInativo: 'border-line bg-void/85 text-muted hover:border-holo-3 hover:text-text',
+  pilulaAtiva: 'border-holo-3/70 bg-holo-3/15 text-holo-3',
+  halo: 'bg-holo-3/15',
   Icone: Compass,
+}
+
+const COORDENADAS_PADRAO: Record<string, { x: number; y: number }> = {
+  clareira_inicial: { x: 14, y: 74 },
+  bosque_sombrio: { x: 32, y: 54 },
+  forja_vulcanica: { x: 42, y: 82 },
+  mares_e_geada: { x: 26, y: 22 },
+  ruinas_do_vazio: { x: 56, y: 54 },
+  santuario_astral: { x: 66, y: 22 },
+  cume_ancestral: { x: 85, y: 44 },
 }
 
 const COR_BARRA_DIFICULDADE: Record<Dificuldade, string> = {
@@ -79,6 +145,60 @@ const COR_BARRA_DIFICULDADE: Record<Dificuldade, string> = {
   equilibrada: 'bg-holo-3',
   dificil: 'bg-gold',
   perigosa: 'bg-coral',
+}
+
+const ESTAGIOS_ROMANOS = ['', 'I', 'II', 'III', 'IV', 'V']
+
+function coordenadasDaRegiao(regiao: RegiaoMapa, idx: number, total: number): { x: number; y: number } {
+  if (typeof regiao.x === 'number' && typeof regiao.y === 'number' && (regiao.x > 0 || regiao.y > 0)) {
+    return { x: regiao.x, y: regiao.y }
+  }
+  if (COORDENADAS_PADRAO[regiao.id]) return COORDENADAS_PADRAO[regiao.id]
+  const x = total <= 1 ? 50 : Math.round(18 + (idx / (total - 1)) * 64)
+  const y = idx % 2 === 0 ? 62 : 34
+  return { x, y }
+}
+
+/** Coleta toda a linhagem evolutiva conectada ao monstro (por família ou grafo evolui_de/evolui_para). */
+function coletarLinhaEvolutiva(monstro: MonstroNaLista, porId: Map<string, MonstroNaLista>): MonstroNaLista[] {
+  const visitados = new Set<string>()
+  const resultado: MonstroNaLista[] = []
+
+  if (monstro.familia) {
+    for (const candidato of porId.values()) {
+      if (candidato.familia === monstro.familia && !visitados.has(candidato.id)) {
+        visitados.add(candidato.id)
+        resultado.push(candidato)
+      }
+    }
+  }
+
+  // Garante também elos diretos mesmo se algum mock omitir o nome da família.
+  const fila: string[] = [monstro.id]
+  if (monstro.evolui_de) fila.push(monstro.evolui_de)
+  for (const prox of monstro.evolui_para ?? []) fila.push(prox)
+
+  while (fila.length > 0) {
+    const atualId = fila.shift()!
+    const atual = porId.get(atualId)
+    if (!atual) continue
+    if (!visitados.has(atual.id)) {
+      visitados.add(atual.id)
+      resultado.push(atual)
+    }
+    if (atual.evolui_de && !visitados.has(atual.evolui_de)) fila.push(atual.evolui_de)
+    for (const prox of atual.evolui_para ?? []) {
+      if (!visitados.has(prox)) fila.push(prox)
+    }
+  }
+
+  return resultado.sort((a, b) => {
+    const estA = a.estagio ?? 99
+    const estB = b.estagio ?? 99
+    if (estA !== estB) return estA - estB
+    if (a.nivel !== b.nivel) return a.nivel - b.nivel
+    return a.nome.localeCompare(b.nome, 'pt-BR')
+  })
 }
 
 interface LinhaAtributo {
@@ -134,17 +254,21 @@ function montarComparacaoAtributos(m: MonstroNaLista, j: AtributosRPG): LinhaAtr
 
 export function FolhaInspecaoMonstro({
   monstro,
+  porId,
   atributosJogador,
   custoMana,
   lutando,
   bloqueado,
+  aoSelecionar,
   aoEnfrentar,
 }: {
   monstro: MonstroNaLista
+  porId?: Map<string, MonstroNaLista>
   atributosJogador: AtributosRPG
   custoMana?: number
   lutando: string | null
   bloqueado: boolean
+  aoSelecionar?: (id: string) => void
   aoEnfrentar: (id: string) => void
 }) {
   const tipo = ESTILO_DO_TIPO[monstro.tipo] ?? ESTILO_DO_TIPO.comum
@@ -152,6 +276,10 @@ export function FolhaInspecaoMonstro({
   const item = estiloDaRaridade(monstro.raridade_item)
   const estiloEl = ESTILO_DO_ELEMENTO[monstro.elemento ?? 'eter'] ?? ESTILO_DO_ELEMENTO.eter
   const comparacao = montarComparacaoAtributos(monstro, atributosJogador)
+
+  const mapaMonstros = porId ?? new Map([[monstro.id, monstro]])
+  const temFamilia = Boolean(monstro.familia || monstro.evolui_de || (monstro.evolui_para?.length ?? 0) > 0)
+  const linhaEvolutiva = temFamilia ? coletarLinhaEvolutiva(monstro, mapaMonstros) : []
 
   return (
     <aside
@@ -209,6 +337,60 @@ export function FolhaInspecaoMonstro({
         <p className="m-0 text-xs leading-relaxed text-text">{monstro.descricao}</p>
         {monstro.habitat && <p className="m-0 text-xs leading-relaxed text-muted">{monstro.habitat}</p>}
       </div>
+
+      {linhaEvolutiva.length > 1 && (
+        <div className="flex flex-col gap-2 rounded-xl border border-line bg-void/45 p-3">
+          <div className="flex flex-wrap items-center justify-between gap-1.5">
+            <h3 className="m-0 inline-flex items-center gap-1.5 font-mono text-xs font-semibold uppercase tracking-wider text-muted">
+              <GitBranch size={12} className="text-holo-3" aria-hidden="true" />
+              Linha de Evolução
+            </h3>
+            {monstro.familia && (
+              <span className="rounded-full border border-holo-3/40 bg-holo-3/10 px-2 py-0.5 font-mono text-[11px] text-holo-3">
+                {monstro.familia}
+              </span>
+            )}
+          </div>
+          <ul className="m-0 flex list-none flex-wrap gap-1.5 p-0" aria-label={`Evoluções de ${monstro.nome}`}>
+            {linhaEvolutiva.map((elo) => {
+              const ehAtual = elo.id === monstro.id
+              const ehPre = monstro.evolui_de === elo.id
+              const ehProx = monstro.evolui_para?.includes(elo.id) ?? false
+              const romano = ESTAGIOS_ROMANOS[elo.estagio ?? 0] || ''
+              const relacao = ehAtual ? 'Atual' : ehPre ? 'Forma anterior' : ehProx ? 'Evolução' : elo.regiao_nome || ''
+
+              return (
+                <li key={elo.id}>
+                  <button
+                    type="button"
+                    disabled={!aoSelecionar || ehAtual}
+                    onClick={() => aoSelecionar?.(elo.id)}
+                    aria-label={`Ver forma ${elo.nome} (nível ${elo.nivel})`}
+                    aria-current={ehAtual ? 'step' : undefined}
+                    className={`flex min-w-0 items-center gap-2 rounded-xl border px-2 py-1.5 text-left transition ${
+                      ehAtual
+                        ? 'border-holo-3 bg-holo-3/15 text-text ring-1 ring-holo-3/40'
+                        : 'cursor-pointer border-line bg-panel-2/65 text-muted hover:border-holo-1/60 hover:text-text'
+                    }`}
+                  >
+                    <IconeDoMonstro monstro={elo} tamanho="h-9 w-9" iconeTamanho={16} />
+                    <span className="min-w-0">
+                      <span className="block truncate text-xs font-bold leading-tight text-text">
+                        {romano ? `${romano} · ` : ''}
+                        {elo.nome}
+                      </span>
+                      <span className="block truncate font-mono text-[11px] text-muted">
+                        Nv {elo.nivel}
+                        {relacao ? ` · ${relacao}` : ''}
+                      </span>
+                    </span>
+                  </button>
+                </li>
+              )
+            })}
+          </ul>
+        </div>
+      )}
 
       <div className="flex flex-col gap-1.5">
         <div className="flex items-baseline justify-between gap-2">
@@ -335,126 +517,301 @@ export default function MapaExpedicoes({
   const regioes = regioesDoMapa({ regioes: regioesBrutas, monstros })
   const porId = new Map(monstros.map((m) => [m.id, m]))
   const selecionado = porId.get(selecionadoId) ?? monstros[0]
-  if (!selecionado) return null
+
+  const regiaoDoSelecionado =
+    regioes.find((r) => selecionado && (r.monstros.includes(selecionado.id) || r.id === selecionado.regiao))?.id ??
+    regioes[0]?.id ??
+    ''
+
+  const [regiaoAtivaId, setRegiaoAtivaId] = useState(regiaoDoSelecionado)
+
+  useEffect(() => {
+    if (regiaoDoSelecionado) setRegiaoAtivaId(regiaoDoSelecionado)
+  }, [regiaoDoSelecionado])
+
+  if (!selecionado || regioes.length === 0) return null
+
+  const regiaoPorId = new Map(regioes.map((r) => [r.id, r]))
+  const regiaoAtiva = regiaoPorId.get(regiaoAtivaId) ?? regioes[0]
+  const coordsPorId = new Map(
+    regioes.map((r, idx) => [r.id, coordenadasDaRegiao(r, idx, regioes.length)]),
+  )
+
+  // Monta arestas únicas entre regiões conectadas; se o payload não enviar conexões, liga em sequência.
+  const arestas: { de: string; para: string; destacada: boolean }[] = []
+  const vistas = new Set<string>()
+  regioes.forEach((r, idx) => {
+    const destinos = r.conexoes && r.conexoes.length > 0
+      ? r.conexoes
+      : idx + 1 < regioes.length
+        ? [regioes[idx + 1].id]
+        : []
+    for (const dest of destinos) {
+      if (!regiaoPorId.has(dest)) continue
+      const chave = r.id < dest ? `${r.id}--${dest}` : `${dest}--${r.id}`
+      if (vistas.has(chave)) continue
+      vistas.add(chave)
+      arestas.push({
+        de: r.id,
+        para: dest,
+        destacada: r.id === regiaoAtiva.id || dest === regiaoAtiva.id,
+      })
+    }
+  })
+
+  const estiloAtiva = ESTILO_DA_REGIAO[regiaoAtiva.id] ?? ESTILO_REGIAO_PADRAO
+  const IconeAtiva = estiloAtiva.Icone
+  const monstrosDaRegiao = regiaoAtiva.monstros
+    .map((id) => porId.get(id))
+    .filter((m): m is MonstroNaLista => Boolean(m))
+  const conexoesDaAtiva = (regiaoAtiva.conexoes ?? [])
+    .map((id) => regiaoPorId.get(id))
+    .filter((r): r is RegiaoMapa => Boolean(r))
 
   return (
     <div className="grid grid-cols-1 gap-4 lg:grid-cols-12 lg:items-start">
       <section aria-label="Mapa de regiões" className="flex flex-col gap-3 lg:col-span-7">
-        {regioes.map((regiao, idx) => {
-          const monstrosDaRegiao = regiao.monstros.map((id) => porId.get(id)).filter((m): m is MonstroNaLista => Boolean(m))
-          if (monstrosDaRegiao.length === 0) return null
-          const estilo = ESTILO_DA_REGIAO[regiao.id] ?? ESTILO_REGIAO_PADRAO
-          const IconeRegiao = estilo.Icone
+        {/* Mapa-múndi 2D interativo */}
+        <div className="overflow-hidden rounded-2xl border border-line bg-panel p-3 sm:p-4">
+          <div className="mb-2.5 flex flex-wrap items-center justify-between gap-2">
+            <div className="flex items-center gap-2">
+              <Compass size={16} className="text-holo-3" aria-hidden="true" />
+              <h2 className="m-0 font-anton text-base uppercase tracking-wide text-text">Mapa-Múndi de Éter</h2>
+            </div>
+            <span className="font-mono text-xs text-muted">{regioes.length} regiões · {monstros.length} criaturas</span>
+          </div>
 
-          return (
-            <div key={regiao.id} className="relative flex flex-col gap-3">
-              {idx > 0 && (
-                <div aria-hidden="true" className="mx-auto flex h-4 items-center justify-center">
-                  <span className="h-full w-0.5 rounded-full bg-gradient-to-b from-holo-3/60 to-holo-1/60" />
-                </div>
-              )}
+          <div
+            aria-label="Mapa interativo das regiões"
+            className="relative h-64 w-full overflow-hidden rounded-2xl border border-line bg-void sm:h-88"
+          >
+            {/* Grade cartográfica e manchas de bioma em camadas estáticas */}
+            <div aria-hidden="true" className="pointer-events-none absolute inset-0 opacity-45">
+              <div className="absolute top-[12%] left-[12%] h-32 w-32 rounded-full bg-holo-3/12 blur-2xl" />
+              <div className="absolute top-[14%] right-[12%] h-32 w-32 rounded-full bg-gold/12 blur-2xl" />
+              <div className="absolute bottom-[10%] left-[25%] h-36 w-44 rounded-full bg-coral/10 blur-2xl" />
+              <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(255,255,255,0.06)_1px,transparent_1px)] [background-size:20px_20px]" />
+            </div>
 
-              <div className={`flex flex-col gap-3 rounded-2xl border p-3.5 sm:p-4 ${estilo.card} ${regiao.em_destaque ? 'ring-1 ring-gold/60' : ''}`}>
-                <div className="flex flex-wrap items-start justify-between gap-2">
-                  <div className="flex min-w-0 items-start gap-2.5">
-                    <span className={`mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-line bg-void/70 ${estilo.cabecalho}`}>
-                      <IconeRegiao size={18} aria-hidden="true" />
+            <svg
+              viewBox="0 0 100 100"
+              preserveAspectRatio="none"
+              aria-hidden="true"
+              className="pointer-events-none absolute inset-0 h-full w-full"
+            >
+              {arestas.map((a) => {
+                const p1 = coordsPorId.get(a.de)
+                const p2 = coordsPorId.get(a.para)
+                if (!p1 || !p2) return null
+                return (
+                  <line
+                    key={`${a.de}-${a.para}`}
+                    x1={p1.x}
+                    y1={p1.y}
+                    x2={p2.x}
+                    y2={p2.y}
+                    className={a.destacada ? 'stroke-holo-3' : 'stroke-line'}
+                    strokeWidth={a.destacada ? 0.9 : 0.6}
+                    strokeOpacity={a.destacada ? 0.85 : 0.7}
+                    strokeDasharray={a.destacada ? undefined : '2 1.6'}
+                  />
+                )
+              })}
+            </svg>
+
+            {regioes.map((regiao) => {
+              const coord = coordsPorId.get(regiao.id) ?? { x: 50, y: 50 }
+              const estilo = ESTILO_DA_REGIAO[regiao.id] ?? ESTILO_REGIAO_PADRAO
+              const IconeRegiao = estilo.Icone
+              const ativa = regiao.id === regiaoAtiva.id
+              const qtd = regiao.monstros.filter((id) => porId.has(id)).length
+
+              return (
+                <button
+                  key={regiao.id}
+                  type="button"
+                  onClick={() => setRegiaoAtivaId(regiao.id)}
+                  aria-pressed={ativa}
+                  aria-label={`Explorar ${regiao.nome} (${regiao.faixa_nivel})`}
+                  style={{ left: `${coord.x}%`, top: `${coord.y}%` }}
+                  className={`absolute flex -translate-x-1/2 -translate-y-1/2 cursor-pointer items-center gap-1.5 rounded-xl border px-2 py-1 text-left transition sm:gap-2 sm:px-2.5 sm:py-1.5 ${
+                    ativa ? `z-20 scale-105 ${estilo.pinAtivo}` : `z-10 ${estilo.pinInativo}`
+                  }`}
+                >
+                  <span className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-lg bg-panel-2 sm:h-7 sm:w-7 ${estilo.cabecalho}`}>
+                    <IconeRegiao size={14} aria-hidden="true" />
+                  </span>
+                  <span className="hidden min-w-0 sm:block">
+                    <span className="block max-w-[110px] truncate text-xs font-bold leading-tight text-text">
+                      {regiao.nome}
                     </span>
-                    <div className="min-w-0">
-                      <div className="flex flex-wrap items-center gap-2">
-                        <span className="font-mono text-xs text-muted">0{regiao.ordem}</span>
-                        <h3 className="m-0 font-anton text-lg uppercase leading-none tracking-wide text-text">{regiao.nome}</h3>
-                        <span className="rounded-full border border-line bg-void/60 px-2 py-0.5 font-mono text-xs text-muted">
-                          {regiao.faixa_nivel}
-                        </span>
-                      </div>
-                      <p className="m-0 mt-1 text-xs text-muted">
-                        <strong className="text-text">{regiao.bioma}:</strong> {regiao.efeito_bioma}
-                      </p>
-                    </div>
-                  </div>
-
+                    <span className="block font-mono text-[10px] leading-tight text-muted">
+                      {regiao.faixa_nivel} · {qtd}
+                    </span>
+                  </span>
+                  <span className="font-mono text-[11px] font-bold sm:hidden">0{regiao.ordem}</span>
                   {regiao.em_destaque && (
-                    <span className="inline-flex shrink-0 items-center gap-1 rounded-full border border-gold/60 bg-gold/15 px-2.5 py-1 text-xs font-bold text-gold">
-                      <Sparkles size={12} aria-hidden="true" />
-                      {regiao.bonus_destaque || '+1 material da Forja'}
-                    </span>
+                    <Sparkles size={12} className="shrink-0 text-gold" aria-hidden="true" />
                   )}
+                </button>
+              )
+            })}
+          </div>
+
+          {/* Barra de atalho entre regiões, ótima em telas menores */}
+          <div className="mt-2.5 flex gap-1.5 overflow-x-auto pb-1">
+            {regioes.map((regiao) => {
+              const estilo = ESTILO_DA_REGIAO[regiao.id] ?? ESTILO_REGIAO_PADRAO
+              const ativa = regiao.id === regiaoAtiva.id
+              const qtd = regiao.monstros.filter((id) => porId.has(id)).length
+              return (
+                <button
+                  key={regiao.id}
+                  type="button"
+                  onClick={() => setRegiaoAtivaId(regiao.id)}
+                  className={`inline-flex shrink-0 cursor-pointer items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs font-semibold transition ${
+                    ativa ? estilo.pilulaAtiva : 'border-line bg-void/60 text-muted hover:text-text'
+                  }`}
+                >
+                  <span className="font-mono text-[11px]">0{regiao.ordem}</span>
+                  <span>{regiao.nome}</span>
+                  <span className="font-mono text-[11px] opacity-75">({qtd})</span>
+                  {regiao.em_destaque && <Sparkles size={11} className="text-gold" aria-hidden="true" />}
+                </button>
+              )
+            })}
+          </div>
+        </div>
+
+        {/* Cenário da região selecionada */}
+        <div
+          aria-label={`Região ${regiaoAtiva.nome}`}
+          className={`flex flex-col gap-3 rounded-2xl border p-3.5 sm:p-4 ${estiloAtiva.card} ${regiaoAtiva.em_destaque ? 'ring-1 ring-gold/60' : ''}`}
+        >
+          <div className="flex flex-wrap items-start justify-between gap-2">
+            <div className="flex min-w-0 items-start gap-2.5">
+              <span className={`mt-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-line bg-void/70 ${estiloAtiva.cabecalho}`}>
+                <IconeAtiva size={20} aria-hidden="true" />
+              </span>
+              <div className="min-w-0">
+                <div className="flex flex-wrap items-center gap-2">
+                  <span className="font-mono text-xs text-muted">0{regiaoAtiva.ordem}</span>
+                  <h3 className="m-0 font-anton text-xl uppercase leading-none tracking-wide text-text">{regiaoAtiva.nome}</h3>
+                  <span className="rounded-full border border-line bg-void/60 px-2 py-0.5 font-mono text-xs text-muted">
+                    {regiaoAtiva.faixa_nivel}
+                  </span>
                 </div>
-
-                <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-2">
-                  {monstrosDaRegiao.map((m) => {
-                    const ativo = m.id === selecionado.id
-                    const tipo = ESTILO_DO_TIPO[m.tipo] ?? ESTILO_DO_TIPO.comum
-                    const barraDif = COR_BARRA_DIFICULDADE[m.dificuldade] ?? 'bg-holo-3'
-                    const estiloEl = ESTILO_DO_ELEMENTO[m.elemento ?? 'eter'] ?? ESTILO_DO_ELEMENTO.eter
-                    const vitorias = m.bestiario?.vitorias ?? 0
-
-                    return (
-                      <button
-                        key={m.id}
-                        type="button"
-                        onClick={() => aoSelecionar(m.id)}
-                        aria-pressed={ativo}
-                        aria-label={`Inspecionar ${m.nome} (nível ${m.nivel})`}
-                        className={`group flex min-w-0 cursor-pointer items-center gap-3 rounded-2xl border p-2.5 text-left transition ${
-                          ativo
-                            ? 'border-holo-3 bg-void/90 ring-2 ring-holo-3/40'
-                            : 'border-line bg-void/55 hover:border-holo-1/60 hover:bg-void/80'
-                        }`}
-                      >
-                        <div className="relative shrink-0">
-                          <IconeDoMonstro monstro={m} tamanho="h-20 w-20 sm:h-24 sm:w-24" destaque={ativo || m.tipo === 'chefe'} iconeTamanho={34} />
-                          {m.tipo === 'chefe' && (
-                            <span
-                              title="Chefão"
-                              className="absolute -top-1.5 -right-1.5 flex h-6 w-6 items-center justify-center rounded-full border border-gold/70 bg-void text-gold"
-                            >
-                              <Crown size={12} aria-hidden="true" />
-                            </span>
-                          )}
-                        </div>
-
-                        <div className="flex min-w-0 flex-1 flex-col gap-1">
-                          <div className="flex items-center gap-1.5">
-                            <span className={`h-2 w-2 shrink-0 rounded-full ${barraDif}`} aria-hidden="true" />
-                            <span className="truncate text-sm font-bold text-text">{m.nome}</span>
-                          </div>
-                          <div className="flex flex-wrap items-center gap-1.5 font-mono text-xs text-muted">
-                            <span>Nv {m.nivel}</span>
-                            <span>·</span>
-                            <span>{tipo.rotulo}</span>
-                            {m.elemento && <span>{estiloEl.simbolo}</span>}
-                          </div>
-                          <div className="flex flex-wrap items-center gap-2 font-mono text-xs text-muted">
-                            <span>Poder {m.poder}</span>
-                            <span>·</span>
-                            <span className="inline-flex items-center gap-1 text-gold">
-                              <Trophy size={11} aria-hidden="true" />
-                              {vitorias}
-                            </span>
-                          </div>
-                        </div>
-                      </button>
-                    )
-                  })}
-                </div>
+                <p className="m-0 mt-1 text-xs text-muted">
+                  <strong className="text-text">{regiaoAtiva.bioma}:</strong> {regiaoAtiva.efeito_bioma}
+                </p>
               </div>
             </div>
-          )
-        })}
+
+            {regiaoAtiva.em_destaque && (
+              <span className="inline-flex shrink-0 items-center gap-1 rounded-full border border-gold/60 bg-gold/15 px-2.5 py-1 text-xs font-bold text-gold">
+                <Sparkles size={12} aria-hidden="true" />
+                {regiaoAtiva.bonus_destaque || '+1 material da Forja'}
+              </span>
+            )}
+          </div>
+
+          {conexoesDaAtiva.length > 0 && (
+            <div className="flex flex-wrap items-center gap-1.5 text-xs">
+              <span className="font-mono text-muted">Rotas vizinhas:</span>
+              {conexoesDaAtiva.map((vizinha) => (
+                <button
+                  key={vizinha.id}
+                  type="button"
+                  onClick={() => setRegiaoAtivaId(vizinha.id)}
+                  className="inline-flex cursor-pointer items-center gap-1 rounded-full border border-line bg-void/60 px-2.5 py-0.5 font-mono text-xs text-muted hover:border-holo-3/60 hover:text-text"
+                >
+                  <ArrowRight size={11} aria-hidden="true" />
+                  {vizinha.nome}
+                </button>
+              ))}
+            </div>
+          )}
+
+          <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-2">
+            {monstrosDaRegiao.map((m) => {
+              const ativo = m.id === selecionado.id
+              const tipo = ESTILO_DO_TIPO[m.tipo] ?? ESTILO_DO_TIPO.comum
+              const barraDif = COR_BARRA_DIFICULDADE[m.dificuldade] ?? 'bg-holo-3'
+              const estiloEl = ESTILO_DO_ELEMENTO[m.elemento ?? 'eter'] ?? ESTILO_DO_ELEMENTO.eter
+              const vitorias = m.bestiario?.vitorias ?? 0
+              const romano = ESTAGIOS_ROMANOS[m.estagio ?? 0] || ''
+
+              return (
+                <button
+                  key={m.id}
+                  type="button"
+                  onClick={() => aoSelecionar(m.id)}
+                  aria-pressed={ativo}
+                  aria-label={`Inspecionar ${m.nome} (nível ${m.nivel})`}
+                  className={`group flex min-w-0 cursor-pointer items-center gap-3 rounded-2xl border p-2.5 text-left transition ${
+                    ativo
+                      ? 'border-holo-3 bg-void/90 ring-2 ring-holo-3/40'
+                      : 'border-line bg-void/55 hover:border-holo-1/60 hover:bg-void/80'
+                  }`}
+                >
+                  <div className="relative shrink-0">
+                    <IconeDoMonstro monstro={m} tamanho="h-24 w-24" destaque={ativo || m.tipo === 'chefe'} iconeTamanho={36} />
+                    {m.tipo === 'chefe' && (
+                      <span
+                        title="Chefão"
+                        className="absolute -top-1.5 -right-1.5 flex h-6 w-6 items-center justify-center rounded-full border border-gold/70 bg-void text-gold"
+                      >
+                        <Crown size={12} aria-hidden="true" />
+                      </span>
+                    )}
+                  </div>
+
+                  <div className="flex min-w-0 flex-1 flex-col gap-1">
+                    <div className="flex items-center gap-1.5">
+                      <span className={`h-2 w-2 shrink-0 rounded-full ${barraDif}`} aria-hidden="true" />
+                      <span className="truncate text-sm font-bold text-text">{m.nome}</span>
+                    </div>
+                    <div className="flex flex-wrap items-center gap-1.5 font-mono text-xs text-muted">
+                      <span>Nv {m.nivel}</span>
+                      <span>·</span>
+                      <span>{tipo.rotulo}</span>
+                      {m.elemento && <span>{estiloEl.simbolo}</span>}
+                    </div>
+                    <div className="flex flex-wrap items-center gap-2 font-mono text-xs text-muted">
+                      <span>Poder {m.poder}</span>
+                      <span>·</span>
+                      <span className="inline-flex items-center gap-1 text-gold">
+                        <Trophy size={11} aria-hidden="true" />
+                        {vitorias}
+                      </span>
+                      {romano && (
+                        <span className="inline-flex items-center gap-0.5 rounded-full border border-holo-3/35 bg-holo-3/10 px-1.5 py-0.5 text-[10px] text-holo-3">
+                          <GitBranch size={10} aria-hidden="true" />
+                          {romano}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                </button>
+              )
+            })}
+          </div>
+        </div>
       </section>
 
       <div className="lg:sticky lg:top-6 lg:col-span-5">
         <FolhaInspecaoMonstro
           monstro={selecionado}
+          porId={porId}
           atributosJogador={atributosJogador}
           custoMana={custoMana}
           lutando={lutando}
           bloqueado={bloqueado}
+          aoSelecionar={aoSelecionar}
           aoEnfrentar={aoEnfrentar}
         />
       </div>
     </div>
   )
 }
+

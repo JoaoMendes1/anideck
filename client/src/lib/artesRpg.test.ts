@@ -22,6 +22,29 @@ const ITENS = [
 const MONSTROS = [
   'slime_de_eter', 'goblin_batedor', 'lobo_sombrio', 'golem_de_runas',
   'espectro_do_vazio', 'cavaleiro_caido', 'dragao_de_eter', 'primordial_esquecido',
+  // Clareira Inicial
+  'slime_espinhoso', 'cogumelo_esporifero', 'vespa_eletrica', 'golem_musgoso',
+  // Bosque Sombrio
+  'arvore_de_esporos', 'slime_de_cranios', 'planta_carnivora', 'druida_da_floresta',
+  'centopeia_toxica', 'ent_apodrecido', 'alquimista_da_praga', 'wyvern_esmeralda',
+  // Fendas Vulcânicas
+  'javali_vulcanico', 'aranha_rubra', 'cao_de_magma', 'fera_de_obsidiana',
+  'golem_de_magma', 'beemote_de_lava', 'fenix_solar',
+  // Picos Glaciais
+  'serpente_marinha', 'revena_glacial', 'grifo_glacial', 'aranha_glacial',
+  'golem_de_gelo', 'yeti_glacial', 'leviata_relampago', 'cavaleiro_da_geada',
+  'colosso_glacial', 'dragao_glacial', 'lorde_da_geada',
+  // Ruínas do Vazio
+  'espectro_acorrentado', 'fragmento_do_olho', 'fantasma_do_vazio', 'lobo_abissal',
+  'golem_flutuante', 'beemote_fungico', 'ceifador_sombrio', 'vortex_do_olho',
+  'slime_do_vazio', 'ceifador_espectral', 'colosso_runico', 'golem_do_vazio',
+  // Santuário Astral
+  'beholder_abissal', 'lich_das_sombras', 'dragao_esqueleto', 'grifo_dourado',
+  'serpente_espectral', 'rei_lich', 'draconato_do_trovao', 'serafim_celestial',
+  'kraken_abissal',
+  // Cume Ancestral
+  'dragao_tempestade', 'dragao_do_vazio', 'senhor_infernal', 'arcanjo_blindado',
+  'horror_da_fenda',
 ]
 
 describe('artes de monstros e itens', () => {

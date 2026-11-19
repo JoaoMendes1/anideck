@@ -2,6 +2,10 @@ package handlers
 
 import (
 	"math/rand"
+	"os"
+	"regexp"
+	"strconv"
+	"strings"
 	"testing"
 	"time"
 )
@@ -167,13 +171,40 @@ func TestCombateAvancado_Queda(t *testing.T) {
 
 func TestRegioesMapa_DestaqueEDicaTatica(t *testing.T) {
 	regioes := CatalogoRegioes()
-	if len(regioes) != 4 {
-		t.Fatalf("esperava 4 regiões no mapa, veio %d", len(regioes))
+	if len(regioes) != 7 {
+		t.Fatalf("esperava 7 regiões no mapa, veio %d", len(regioes))
 	}
-	vistos := map[string]bool{}
+	regiaoPorID := map[string]RegiaoMapa{}
 	for _, r := range regioes {
+		regiaoPorID[r.ID] = r
+		if r.X <= 0 || r.X >= 100 || r.Y <= 0 || r.Y >= 100 {
+			t.Errorf("coordenadas 2D da região %s fora da área útil (0..100): (%d, %d)", r.ID, r.X, r.Y)
+		}
+		if len(r.Conexoes) == 0 {
+			t.Errorf("região %s sem conexões no mapa 2D", r.ID)
+		}
+	}
+	vistos := map[string]int{}
+	for _, r := range regioes {
+		for _, cid := range r.Conexoes {
+			alvo, ok := regiaoPorID[cid]
+			if !ok {
+				t.Errorf("região %s conecta a região inexistente %q", r.ID, cid)
+				continue
+			}
+			simetrica := false
+			for _, volta := range alvo.Conexoes {
+				if volta == r.ID {
+					simetrica = true
+					break
+				}
+			}
+			if !simetrica {
+				t.Errorf("conexão %s -> %s não é simétrica", r.ID, cid)
+			}
+		}
 		for _, id := range r.MonstroIDs {
-			vistos[id] = true
+			vistos[id]++
 			if tip := DicaTaticaDoMonstro(id, 0); tip != "" {
 				t.Errorf("%s não deveria liberar dica tática com 0 vitórias, veio %q", id, tip)
 			}
@@ -185,19 +216,195 @@ func TestRegioesMapa_DestaqueEDicaTatica(t *testing.T) {
 			if m.Eter == 0 || m.Magia == 0 || m.Comportamento == "" || m.Regiao != r.ID || m.Habitat == "" {
 				t.Errorf("monstro %s não foi enriquecido corretamente: %+v", id, m)
 			}
+			if m.Elemento == "" || m.Elemento == elementoNeutro {
+				t.Errorf("monstro %s do catálogo veio com elemento %q", id, m.Elemento)
+			}
 		}
 	}
-	if len(vistos) != 8 {
-		t.Errorf("esperava os 8 monstros no mapa, vieram %d", len(vistos))
+	if len(vistos) != 64 {
+		t.Errorf("esperava os 64 monstros no mapa, vieram %d", len(vistos))
+	}
+	for id, n := range vistos {
+		if n != 1 {
+			t.Errorf("monstro %s apareceu %d vezes nas regiões", id, n)
+		}
 	}
 
 	dia1 := time.Date(2026, 11, 18, 12, 0, 0, 0, fusoGuilda)
 	destaques := map[string]bool{}
-	for d := range 4 {
+	for d := range 7 {
 		destaques[RegiaoEmDestaqueEm(dia1.AddDate(0, 0, d))] = true
 	}
-	if len(destaques) != 4 {
-		t.Errorf("rotação diária deveria cobrir todas as 4 regiões, cobriu %d", len(destaques))
+	if len(destaques) != 7 {
+		t.Errorf("rotação diária deveria cobrir todas as 7 regiões, cobriu %d", len(destaques))
+	}
+}
+
+func lerMonstrosSQL124(t *testing.T) []MonstroRPG {
+	t.Helper()
+	bruto, err := os.ReadFile("../../sql/124_rpg_novos_monstros.sql")
+	if err != nil {
+		t.Fatalf("falha ao ler sql/124_rpg_novos_monstros.sql: %v", err)
+	}
+	re := regexp.MustCompile(`\(\s*'([^']+)',\s*'([^']+)',\s*'([^']+)',\s*'([^']+)',\s*(\d+),\s*(\d+),\s*(\d+),\s*(\d+),\s*(\d+),\s*(\d+),\s*'([^']+)',\s*(\d+)\s*\)`)
+	matches := re.FindAllStringSubmatch(string(bruto), -1)
+	if len(matches) != 56 {
+		t.Fatalf("esperava 56 monstros no sql/124, encontrei %d", len(matches))
+	}
+	lista := make([]MonstroRPG, 0, len(matches))
+	for _, m := range matches {
+		atoi := func(s string) int {
+			v, err := strconv.Atoi(s)
+			if err != nil {
+				t.Fatalf("número inválido %q em %s: %v", s, m[1], err)
+			}
+			return v
+		}
+		mon := MonstroRPG{
+			ID:           m[1],
+			Nome:         m[2],
+			Descricao:    m[3],
+			Tipo:         m[4],
+			Nivel:        atoi(m[5]),
+			Vida:         atoi(m[6]),
+			Ataque:       atoi(m[7]),
+			Defesa:       atoi(m[8]),
+			Bilhetes:     atoi(m[9]),
+			ChanceItem:   atoi(m[10]),
+			RaridadeItem: m[11],
+			Ordem:        atoi(m[12]),
+		}
+		EnriquecerMonstro(&mon)
+		lista = append(lista, mon)
+	}
+	return lista
+}
+
+func TestCatalogoExpandido_IntegridadeEEvolucoes(t *testing.T) {
+	novos := lerMonstrosSQL124(t)
+	originais := []string{
+		"slime_de_eter", "goblin_batedor", "lobo_sombrio", "golem_de_runas",
+		"espectro_do_vazio", "cavaleiro_caido", "dragao_de_eter", "primordial_esquecido",
+	}
+	todosIDs := map[string]bool{}
+	for _, id := range originais {
+		todosIDs[id] = true
+	}
+	for _, m := range novos {
+		if todosIDs[m.ID] {
+			t.Errorf("id duplicado entre originais e sql/124: %s", m.ID)
+		}
+		todosIDs[m.ID] = true
+		if m.RaridadeItem == "comum" && m.ChanceItem != 0 {
+			t.Errorf("Armadilha #34: %s tem raridade comum e chance_item=%d (esperava 0)", m.ID, m.ChanceItem)
+		}
+		if _, nomeReg := RegiaoDoMonstroID(m.ID); nomeReg == "" {
+			t.Errorf("%s do sql/124 não está em nenhuma região do mapa", m.ID)
+		}
+	}
+	if len(todosIDs) != 64 {
+		t.Fatalf("esperava 64 monstros únicos no catálogo, veio %d", len(todosIDs))
+	}
+
+	// Confere simetria e consistência de todas as cadeias de evolução.
+	for id, p := range perfisDosMonstros {
+		if !todosIDs[id] {
+			t.Errorf("perfil %s não existe entre os 64 monstros", id)
+		}
+		if p.Familia != "" && p.Estagio <= 0 {
+			t.Errorf("%s tem família %q sem estágio > 0", id, p.Familia)
+		}
+		if p.EvoluiDe != "" {
+			if !todosIDs[p.EvoluiDe] {
+				t.Errorf("%s evolui de %q inexistente", id, p.EvoluiDe)
+			}
+			pai := perfisDosMonstros[p.EvoluiDe]
+			if pai.Familia != p.Familia {
+				t.Errorf("%s (família %q) evolui de %s (família %q)", id, p.Familia, p.EvoluiDe, pai.Familia)
+			}
+			if pai.Estagio >= p.Estagio {
+				t.Errorf("%s (estágio %d) deveria ter estágio maior que %s (%d)", id, p.Estagio, p.EvoluiDe, pai.Estagio)
+			}
+			achouVolta := false
+			for _, filho := range pai.EvoluiPara {
+				if filho == id {
+					achouVolta = true
+					break
+				}
+			}
+			if !achouVolta {
+				t.Errorf("%s aponta evolui_de=%s, mas %s não lista %s em evolui_para", id, p.EvoluiDe, p.EvoluiDe, id)
+			}
+		}
+		for _, filhoID := range p.EvoluiPara {
+			if !todosIDs[filhoID] {
+				t.Errorf("%s aponta evolui_para=%q inexistente", id, filhoID)
+			}
+			filho := perfisDosMonstros[filhoID]
+			if filho.Familia != p.Familia {
+				t.Errorf("%s (família %q) evolui para %s (família %q)", id, p.Familia, filhoID, filho.Familia)
+			}
+			if filho.Estagio <= p.Estagio {
+				t.Errorf("%s (estágio %d) deveria evoluir para estágio maior em %s (%d)", id, p.Estagio, filhoID, filho.Estagio)
+			}
+			if filho.EvoluiDe != id {
+				t.Logf("nota: convergência evolutiva %s -> %s (evolui_de=%s)", id, filhoID, filho.EvoluiDe)
+			}
+		}
+	}
+	for id := range elementoDosMonstros {
+		if !todosIDs[id] {
+			t.Errorf("elemento %s sobrando fora dos 64 monstros", id)
+		}
+	}
+	for id := range poderesDosMonstros {
+		if !todosIDs[id] {
+			t.Errorf("poder de %s sobrando fora dos 64 monstros", id)
+		}
+	}
+}
+
+func TestCatalogoExpandido_Equilibrio56Novos(t *testing.T) {
+	novos := lerMonstrosSQL124(t)
+	comum := ItemRPG{Vida: 20, Ataque: 4, Defesa: 2}
+	raro := ItemRPG{Vida: 90, Ataque: 15, Defesa: 11}
+	epico := ItemRPG{Vida: 220, Ataque: 34, Defesa: 27}
+	lendario := ItemRPG{Vida: 400, Ataque: 60, Defesa: 40}
+
+	equipPara := func(nivel int) ItemRPG {
+		switch {
+		case nivel <= 9:
+			return comum
+		case nivel <= 20:
+			return raro
+		case nivel <= 39:
+			return epico
+		default:
+			return lendario
+		}
+	}
+
+	for _, m := range novos {
+		item := equipPara(m.Nivel)
+		for base, pb := range PersonagensBase() {
+			j := jogadorDoElenco(base, m.Nivel, item)
+			j.Elemento = pb.Elemento
+			taxa := taxaDeVitoria(j, m, 200)
+			minimo := 0.65
+			switch RelacaoElemental(pb.Elemento, m.Elemento) {
+			case "vantagem":
+				minimo = 0.85
+			case "desvantagem":
+				minimo = 0.25
+			}
+			if strings.Contains(m.ID, "horror") && m.Nivel >= 58 {
+				minimo = 0.15
+			}
+			if taxa < minimo {
+				t.Errorf("%s vs %s (Nv %d, %s): vitória %.0f%% abaixo do mínimo %.0f%%",
+					base, m.ID, m.Nivel, m.Elemento, taxa*100, minimo*100)
+			}
+		}
 	}
 }
 

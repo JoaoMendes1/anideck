@@ -334,6 +334,10 @@ export interface MonstroRPG {
   regiao?: string
   regiao_nome?: string
   habitat?: string
+  familia?: string
+  estagio?: number
+  evolui_de?: string
+  evolui_para?: string[]
   poderes?: PoderDoMonstro[]
 }
 
@@ -412,6 +416,9 @@ export interface RegiaoMapa {
   efeito_bioma: string
   faixa_nivel: string
   ordem: number
+  x?: number
+  y?: number
+  conexoes?: string[]
   monstros: string[]
   em_destaque?: boolean
   bonus_destaque?: string
@@ -478,6 +485,118 @@ export interface EstadoExpedicoes {
 
 export function regioesDoMapa(estado: Pick<EstadoExpedicoes, 'regioes' | 'monstros'>): RegiaoMapa[] {
   if (estado.regioes && estado.regioes.length > 0) return estado.regioes
+  const ids = new Set(estado.monstros.map((m) => m.id))
+  const padrao: RegiaoMapa[] = [
+    {
+      id: 'clareira_inicial',
+      nome: 'Clareira Inicial',
+      subtitulo: 'Primeiros passos na fronteira',
+      bioma: 'Brisa de Éter',
+      efeito_bioma: 'Campo aberto onde formas iniciais de slimes, fungos e insetos despertam.',
+      faixa_nivel: 'Nv 1–8',
+      ordem: 1,
+      x: 14,
+      y: 74,
+      conexoes: ['bosque_sombrio', 'forja_vulcanica'],
+      monstros: ['slime_de_eter', 'slime_espinhoso', 'cogumelo_esporifero', 'goblin_batedor', 'vespa_eletrica', 'golem_musgoso'].filter((id) => ids.has(id)),
+    },
+    {
+      id: 'bosque_sombrio',
+      nome: 'Bosque Sombrio',
+      subtitulo: 'Trilhas fechadas e raízes rúnicas',
+      bioma: 'Névoa Espessa',
+      efeito_bioma: 'Feras velozes, esporos evoluídos e guardiões antigos protegem a mata.',
+      faixa_nivel: 'Nv 10–25',
+      ordem: 2,
+      x: 32,
+      y: 54,
+      conexoes: ['clareira_inicial', 'mares_e_geada', 'ruinas_do_vazio'],
+      monstros: [
+        'lobo_sombrio', 'arvore_de_esporos', 'slime_de_cranios', 'planta_carnivora', 'druida_da_floresta',
+        'centopeia_toxica', 'golem_de_runas', 'ent_apodrecido', 'alquimista_da_praga', 'wyvern_esmeralda',
+      ].filter((id) => ids.has(id)),
+    },
+    {
+      id: 'forja_vulcanica',
+      nome: 'Fendas Vulcânicas',
+      subtitulo: 'Rios de lava e rocha viva',
+      bioma: 'Cinzas Incandescentes',
+      efeito_bioma: 'Feras de magma e a Fênix Solar dominam as crateras ferventes.',
+      faixa_nivel: 'Nv 14–42',
+      ordem: 3,
+      x: 42,
+      y: 82,
+      conexoes: ['clareira_inicial', 'ruinas_do_vazio', 'cume_ancestral'],
+      monstros: ['javali_vulcanico', 'aranha_rubra', 'cao_de_magma', 'fera_de_obsidiana', 'golem_de_magma', 'beemote_de_lava', 'fenix_solar'].filter((id) => ids.has(id)),
+    },
+    {
+      id: 'mares_e_geada',
+      nome: 'Picos Glaciais',
+      subtitulo: 'Marés congeladas e geleiras',
+      bioma: 'Ventos Cortantes',
+      efeito_bioma: 'Serpentes marinhas evoluem ao lado de colossos e cavaleiros de gelo.',
+      faixa_nivel: 'Nv 17–46',
+      ordem: 4,
+      x: 26,
+      y: 22,
+      conexoes: ['bosque_sombrio', 'santuario_astral'],
+      monstros: [
+        'serpente_marinha', 'revena_glacial', 'grifo_glacial', 'aranha_glacial', 'golem_de_gelo', 'yeti_glacial',
+        'leviata_relampago', 'cavaleiro_da_geada', 'colosso_glacial', 'dragao_glacial', 'lorde_da_geada',
+      ].filter((id) => ids.has(id)),
+    },
+    {
+      id: 'ruinas_do_vazio',
+      nome: 'Ruínas do Vazio',
+      subtitulo: 'Salões de um reino esquecido',
+      bioma: 'Ecos Arcanos',
+      efeito_bioma: 'Energia instável desperta espectros, olhos orbitais e colossos rúnicos.',
+      faixa_nivel: 'Nv 16–41',
+      ordem: 5,
+      x: 56,
+      y: 54,
+      conexoes: ['bosque_sombrio', 'forja_vulcanica', 'santuario_astral', 'cume_ancestral'],
+      monstros: [
+        'espectro_acorrentado', 'fragmento_do_olho', 'fantasma_do_vazio', 'lobo_abissal', 'golem_flutuante',
+        'espectro_do_vazio', 'beemote_fungico', 'ceifador_sombrio', 'vortex_do_olho', 'slime_do_vazio',
+        'cavaleiro_caido', 'ceifador_espectral', 'colosso_runico', 'golem_do_vazio',
+      ].filter((id) => ids.has(id)),
+    },
+    {
+      id: 'santuario_astral',
+      nome: 'Santuário Astral',
+      subtitulo: 'Onde luz e abismo se cruzam',
+      bioma: 'Fronteira Astral',
+      efeito_bioma: 'Serafins celestiais, Reis Lich e o Kraken disputam a ascensão final.',
+      faixa_nivel: 'Nv 42–54',
+      ordem: 6,
+      x: 66,
+      y: 22,
+      conexoes: ['mares_e_geada', 'ruinas_do_vazio', 'cume_ancestral'],
+      monstros: [
+        'beholder_abissal', 'lich_das_sombras', 'dragao_esqueleto', 'grifo_dourado', 'serpente_espectral',
+        'rei_lich', 'draconato_do_trovao', 'serafim_celestial', 'kraken_abissal',
+      ].filter((id) => ids.has(id)),
+    },
+    {
+      id: 'cume_ancestral',
+      nome: 'Cume Ancestral',
+      subtitulo: 'Altar das tempestades primordiais',
+      bioma: 'Tempestade Etérea',
+      efeito_bioma: 'Os soberanos finais concentram Éter puro, luz sagrada e fome dimensional.',
+      faixa_nivel: 'Nv 48–60+',
+      ordem: 7,
+      x: 85,
+      y: 44,
+      conexoes: ['forja_vulcanica', 'ruinas_do_vazio', 'santuario_astral'],
+      monstros: [
+        'dragao_tempestade', 'dragao_de_eter', 'dragao_do_vazio', 'senhor_infernal',
+        'arcanjo_blindado', 'horror_da_fenda', 'primordial_esquecido',
+      ].filter((id) => ids.has(id)),
+    },
+  ].filter((r) => r.monstros.length > 0)
+
+  if (padrao.length > 0) return padrao
   return [
     {
       id: 'rota_expedicoes',
@@ -487,6 +606,8 @@ export function regioesDoMapa(estado: Pick<EstadoExpedicoes, 'regioes' | 'monstr
       efeito_bioma: 'Região padrão quando o mapa detalhado não foi enviado.',
       faixa_nivel: 'Todos os níveis',
       ordem: 1,
+      x: 50,
+      y: 50,
       monstros: estado.monstros.map((m) => m.id),
     },
   ]

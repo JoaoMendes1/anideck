@@ -48,6 +48,10 @@ type MonstroRPG struct {
 	Regiao        string         `json:"regiao,omitempty"`
 	RegiaoNome    string         `json:"regiao_nome,omitempty"`
 	Habitat       string         `json:"habitat,omitempty"`
+	Familia       string         `json:"familia,omitempty"`
+	Estagio       int            `json:"estagio,omitempty"`
+	EvoluiDe      string         `json:"evolui_de,omitempty"`
+	EvoluiPara    []string       `json:"evolui_para,omitempty"`
 	Poderes       []PoderMonstro `json:"poderes,omitempty"`
 }
 
