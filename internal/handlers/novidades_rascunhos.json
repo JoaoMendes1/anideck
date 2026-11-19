@@ -230,5 +230,21 @@
         "caminho": "/personagem"
       }
     ]
+  },
+  {
+    "chave": "2026-11-19-guilda-organizada-mapa-vertical",
+    "titulo": "Guilda em abas, 6 cartas no celular e Mapa-Múndi vertical",
+    "categoria": "layout",
+    "resumo": "A Guilda foi organizada em quatro abas (Aventura, Coleção, Extrato e Progresso) para acabar com a rolagem longa e traz atalhos diretos para Expedições, Masmorras, Evento da Temporada e Chefão na própria tela.\n\nNo celular, a Coleção de Cartas agora exibe 6 cartas por página e o Mapa-Múndi das Expedições ganhou uma ilustração vertical dedicada com emblemas compactos que deixam o mapa livre para explorar.",
+    "links": [
+      {
+        "rotulo": "Abrir Guilda",
+        "caminho": "/guilda"
+      },
+      {
+        "rotulo": "Ver Mapa-Múndi",
+        "caminho": "/expedicoes"
+      }
+    ]
   }
 ]

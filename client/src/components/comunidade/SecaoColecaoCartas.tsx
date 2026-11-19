@@ -5,9 +5,11 @@ import { useSearchParams } from 'react-router-dom'
 import { Sparkles, Star, Search, Flame, Layers, ArrowUpDown } from 'lucide-react'
 import CardCartaColecao from './CardCartaColecao'
 import Paginacao from '../ui/Paginacao'
+import { useMidia } from '../../hooks/useMidia'
 import type { CartaColecao } from '../../lib/cartas'
 
-const CARTAS_POR_PAGINA = 24
+const CARTAS_POR_PAGINA_DESKTOP = 24
+const CARTAS_POR_PAGINA_MOBILE = 6
 
 type OrdemCarta = 'recentes' | 'nota' | 'raridade'
 
@@ -44,6 +46,8 @@ export default function SecaoColecaoCartas({
   const [ordem, setOrdem] = useState<OrdemCarta>('recentes')
   const [capasLote, setCapasLote] = useState<Record<number, { imagem_url: string; titulo?: string }>>({})
   const idsConsultadosRef = useRef<Set<number>>(new Set())
+  const ehMobile = useMidia('(max-width: 639px)')
+  const porPagina = ehMobile ? CARTAS_POR_PAGINA_MOBILE : CARTAS_POR_PAGINA_DESKTOP
 
   const paginaUrl = Number.parseInt(searchParams.get('cartas') || '1', 10)
   const paginaBruta = Number.isFinite(paginaUrl) && paginaUrl >= 1 ? paginaUrl : 1
@@ -106,13 +110,13 @@ export default function SecaoColecaoCartas({
     return copia
   }, [cartasHidratadas, filtro, busca, ordem])
 
-  const totalPaginas = Math.max(1, Math.ceil(cartasFiltradas.length / CARTAS_POR_PAGINA))
+  const totalPaginas = Math.max(1, Math.ceil(cartasFiltradas.length / porPagina))
   const paginaSegura = Math.min(paginaBruta, totalPaginas)
 
   const cartasDaPagina = useMemo(() => {
-    const inicio = (paginaSegura - 1) * CARTAS_POR_PAGINA
-    return cartasFiltradas.slice(inicio, inicio + CARTAS_POR_PAGINA)
-  }, [cartasFiltradas, paginaSegura])
+    const inicio = (paginaSegura - 1) * porPagina
+    return cartasFiltradas.slice(inicio, inicio + porPagina)
+  }, [cartasFiltradas, paginaSegura, porPagina])
 
   useEffect(() => {
     const visiveisSemCapa = cartasDaPagina
@@ -323,7 +327,7 @@ export default function SecaoColecaoCartas({
             pagina={paginaSegura}
             totalPaginas={totalPaginas}
             totalItens={cartasFiltradas.length}
-            porPagina={CARTAS_POR_PAGINA}
+            porPagina={porPagina}
             aoMudar={mudarPagina}
           />
         </>

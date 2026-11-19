@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react'
 import {
   ArrowRight,
   Brain,
+  Check,
   Compass,
   Crown,
   Flame,
@@ -41,9 +42,11 @@ import {
 } from '../../lib/rpg'
 import { ESTILO_DO_TIPO } from '../../lib/monstrosVisual'
 import { rotuloDoElemento } from '../../lib/personagem'
+import { useMidia } from '../../hooks/useMidia'
 import IconeDoMonstro from './IconeDoMonstro'
 import BotaoEmGrupo from './BotaoEmGrupo'
 import mapaMundiImg from '../../assets/rpg/mapa-mundi.webp'
+import mapaMundiVerticalImg from '../../assets/rpg/mapa-mundi-vertical.webp'
 
 interface EstiloRegiao {
   card: string
@@ -141,6 +144,16 @@ const COORDENADAS_PADRAO: Record<string, { x: number; y: number }> = {
   cume_ancestral: { x: 88, y: 50 },
 }
 
+const COORDENADAS_VERTICAIS: Record<string, { x: number; y: number }> = {
+  clareira_inicial: { x: 43, y: 83 },
+  bosque_sombrio: { x: 24, y: 63 },
+  forja_vulcanica: { x: 78, y: 62 },
+  ruinas_do_vazio: { x: 52, y: 47 },
+  mares_e_geada: { x: 24, y: 31 },
+  santuario_astral: { x: 80, y: 29 },
+  cume_ancestral: { x: 51, y: 15 },
+}
+
 const COR_BARRA_DIFICULDADE: Record<Dificuldade, string> = {
   facil: 'bg-green',
   equilibrada: 'bg-holo-3',
@@ -150,7 +163,18 @@ const COR_BARRA_DIFICULDADE: Record<Dificuldade, string> = {
 
 const ESTAGIOS_ROMANOS = ['', 'I', 'II', 'III', 'IV', 'V']
 
-function coordenadasDaRegiao(regiao: RegiaoMapa, idx: number, total: number): { x: number; y: number } {
+function coordenadasDaRegiao(
+  regiao: RegiaoMapa,
+  idx: number,
+  total: number,
+  vertical: boolean,
+): { x: number; y: number } {
+  if (vertical) {
+    if (COORDENADAS_VERTICAIS[regiao.id]) return COORDENADAS_VERTICAIS[regiao.id]
+    const x = idx % 2 === 0 ? 30 : 70
+    const y = total <= 1 ? 50 : Math.round(82 - (idx / (total - 1)) * 66)
+    return { x, y }
+  }
   if (typeof regiao.x === 'number' && typeof regiao.y === 'number' && (regiao.x > 0 || regiao.y > 0)) {
     return { x: regiao.x, y: regiao.y }
   }
@@ -525,6 +549,8 @@ export default function MapaExpedicoes({
     ''
 
   const [regiaoAtivaId, setRegiaoAtivaId] = useState(regiaoDoSelecionado)
+  const ehDesktop = useMidia('(min-width: 640px)')
+  const mapaVertical = !ehDesktop
 
   useEffect(() => {
     if (regiaoDoSelecionado) setRegiaoAtivaId(regiaoDoSelecionado)
@@ -535,7 +561,7 @@ export default function MapaExpedicoes({
   const regiaoPorId = new Map(regioes.map((r) => [r.id, r]))
   const regiaoAtiva = regiaoPorId.get(regiaoAtivaId) ?? regioes[0]
   const coordsPorId = new Map(
-    regioes.map((r, idx) => [r.id, coordenadasDaRegiao(r, idx, regioes.length)]),
+    regioes.map((r, idx) => [r.id, coordenadasDaRegiao(r, idx, regioes.length, mapaVertical)]),
   )
 
   // Monta arestas únicas entre regiões conectadas; se o payload não enviar conexões, liga em sequência.
@@ -590,7 +616,7 @@ export default function MapaExpedicoes({
           </div>
 
           <div className="mb-2.5 flex flex-col gap-1 rounded-xl border border-line/70 bg-panel-2/60 px-3 py-2">
-            <div className="flex items-center justify-between gap-2 font-mono text-[11px]">
+            <div className="flex items-center justify-between gap-2 font-mono text-xs">
               <span className="text-muted">Bestiário Global</span>
               <span className="font-bold text-text">
                 {descobertosGlobal} / {totalGlobal} descobertos · {pctGlobal}%
@@ -606,17 +632,19 @@ export default function MapaExpedicoes({
 
           <div
             aria-label="Mapa interativo das regiões"
-            className="relative aspect-video w-full overflow-hidden rounded-2xl border border-line bg-void"
+            className={`relative w-full overflow-hidden rounded-2xl border border-line bg-void ${
+              mapaVertical ? 'aspect-[3/4]' : 'aspect-video'
+            }`}
           >
             <img
-              src={mapaMundiImg}
+              src={mapaVertical ? mapaMundiVerticalImg : mapaMundiImg}
               alt=""
               aria-hidden="true"
-              className="pointer-events-none absolute inset-0 h-full w-full object-cover opacity-85"
+              className="pointer-events-none absolute inset-0 h-full w-full object-cover opacity-95"
             />
             <div
               aria-hidden="true"
-              className="pointer-events-none absolute inset-0 bg-gradient-to-t from-void/70 via-void/20 to-void/40"
+              className="pointer-events-none absolute inset-0 bg-gradient-to-t from-void/45 via-transparent to-void/15"
             />
 
             <svg
@@ -637,8 +665,8 @@ export default function MapaExpedicoes({
                     x2={p2.x}
                     y2={p2.y}
                     className={a.destacada ? 'stroke-holo-3' : 'stroke-line'}
-                    strokeWidth={a.destacada ? 0.9 : 0.6}
-                    strokeOpacity={a.destacada ? 0.9 : 0.7}
+                    strokeWidth={a.destacada ? 0.85 : 0.5}
+                    strokeOpacity={a.destacada ? 0.85 : 0.45}
                     strokeDasharray={a.destacada ? undefined : '2 1.6'}
                   />
                 )
@@ -656,6 +684,41 @@ export default function MapaExpedicoes({
               const qtd = monstrosRegiao.length
               const dominada = qtd > 0 && monstrosRegiao.every((m) => (m.bestiario?.vitorias ?? 0) > 0)
 
+              if (mapaVertical) {
+                return (
+                  <button
+                    key={regiao.id}
+                    type="button"
+                    onClick={() => setRegiaoAtivaId(regiao.id)}
+                    aria-pressed={ativa}
+                    aria-label={`Explorar ${regiao.nome} (${regiao.faixa_nivel})`}
+                    style={{ left: `${coord.x}%`, top: `${coord.y}%` }}
+                    className={`absolute flex h-11 w-11 -translate-x-1/2 -translate-y-1/2 cursor-pointer items-center justify-center rounded-2xl border-2 backdrop-blur-sm transition ${
+                      ativa ? `z-20 scale-110 ${estilo.pinAtivo}` : `z-10 ${estilo.pinInativo}`
+                    }`}
+                  >
+                    <IconeRegiao size={18} className={estilo.cabecalho} aria-hidden="true" />
+                    <span className="absolute -top-1.5 -left-1.5 flex h-4 min-w-4 items-center justify-center rounded-full border border-line bg-void px-1 font-mono text-[10px] font-bold leading-none text-text">
+                      {regiao.ordem}
+                    </span>
+                    {regiao.em_destaque ? (
+                      <span className="absolute -top-1.5 -right-1.5 flex h-4 w-4 items-center justify-center rounded-full border border-gold/70 bg-void text-gold">
+                        <Sparkles size={10} aria-hidden="true" />
+                      </span>
+                    ) : dominada ? (
+                      <span className="absolute -top-1.5 -right-1.5 flex h-4 w-4 items-center justify-center rounded-full border border-green/70 bg-void text-green">
+                        <Check size={10} aria-hidden="true" />
+                      </span>
+                    ) : null}
+                    {ativa && (
+                      <span className="pointer-events-none absolute top-full left-1/2 mt-1 -translate-x-1/2 whitespace-nowrap rounded-full border border-line bg-void/95 px-2.5 py-0.5 text-xs font-bold leading-tight text-text shadow-lg">
+                        {regiao.nome}
+                      </span>
+                    )}
+                  </button>
+                )
+              }
+
               return (
                 <button
                   key={regiao.id}
@@ -664,18 +727,15 @@ export default function MapaExpedicoes({
                   aria-pressed={ativa}
                   aria-label={`Explorar ${regiao.nome} (${regiao.faixa_nivel})`}
                   style={{ left: `${coord.x}%`, top: `${coord.y}%` }}
-                  className={`absolute flex -translate-x-1/2 -translate-y-1/2 cursor-pointer items-center gap-1 rounded-xl border px-1.5 py-1 text-left backdrop-blur-sm transition sm:gap-2 sm:px-2.5 sm:py-1.5 ${
+                  className={`absolute flex -translate-x-1/2 -translate-y-1/2 cursor-pointer items-center gap-2 rounded-xl border px-2.5 py-1.5 text-left backdrop-blur-sm transition ${
                     ativa ? `z-20 scale-105 ${estilo.pinAtivo}` : `z-10 ${estilo.pinInativo}`
                   }`}
                 >
-                  <span className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-lg bg-panel-2 sm:h-7 sm:w-7 ${estilo.cabecalho}`}>
-                    <IconeRegiao size={13} aria-hidden="true" />
+                  <span className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-panel-2 ${estilo.cabecalho}`}>
+                    <IconeRegiao size={14} aria-hidden="true" />
                   </span>
-                  <span className="max-w-[74px] truncate text-[10px] font-bold leading-tight text-text sm:hidden">
-                    {regiao.nome}
-                  </span>
-                  <span className="hidden min-w-0 sm:block">
-                    <span className="block max-w-[115px] truncate text-xs font-bold leading-tight text-text">
+                  <span className="min-w-0">
+                    <span className="block whitespace-nowrap text-xs font-bold leading-tight text-text">
                       {regiao.nome}
                     </span>
                     <span className="block font-mono text-[10px] leading-tight text-muted">

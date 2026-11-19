@@ -5,14 +5,17 @@
 import { useEffect, useState } from 'react'
 
 export function useMidia(consulta: string): boolean {
-  const [casa, setCasa] = useState(() => typeof window !== 'undefined' && window.matchMedia(consulta).matches)
+  const [casa, setCasa] = useState(
+    () => typeof window !== 'undefined' && typeof window.matchMedia === 'function' && window.matchMedia(consulta).matches,
+  )
 
   useEffect(() => {
+    if (typeof window === 'undefined' || typeof window.matchMedia !== 'function') return
     const midia = window.matchMedia(consulta)
     const aoMudar = () => setCasa(midia.matches)
     aoMudar()
-    midia.addEventListener('change', aoMudar)
-    return () => midia.removeEventListener('change', aoMudar)
+    midia.addEventListener?.('change', aoMudar)
+    return () => midia.removeEventListener?.('change', aoMudar)
   }, [consulta])
 
   return casa

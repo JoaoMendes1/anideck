@@ -69,4 +69,35 @@ describe('SecaoColecaoCartas e CardCartaColecao (#232)', () => {
     expect(screen.getByText('Anime Teste 1')).toBeTruthy()
     expect(screen.queryByRole('navigation', { name: 'Paginação' })).toBeNull()
   })
+
+  it('no celular exibe 6 cartas por página para evitar rolagem excessiva', () => {
+    const original = window.matchMedia
+    window.matchMedia = ((query: string) => ({
+      matches: query === '(max-width: 639px)',
+      media: query,
+      addEventListener: () => {},
+      removeEventListener: () => {},
+      onchange: null,
+      addListener: () => {},
+      removeListener: () => {},
+      dispatchEvent: () => false,
+    })) as unknown as typeof window.matchMedia
+
+    try {
+      const cartas = gerarCartas(14)
+      render(
+        <MemoryRouter>
+          <SecaoColecaoCartas cartas={cartas} />
+        </MemoryRouter>,
+      )
+
+      expect(screen.getByText('Anime Teste 1')).toBeTruthy()
+      expect(screen.getByText('Anime Teste 6')).toBeTruthy()
+      expect(screen.queryByText('Anime Teste 7')).toBeNull()
+      expect(screen.getByRole('button', { name: 'Página 3' })).toBeTruthy()
+    } finally {
+      window.matchMedia = original
+    }
+  })
 })
+
