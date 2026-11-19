@@ -65,7 +65,7 @@ import { textoDosMateriais } from '../lib/forja'
 import IconeOuro from '../components/IconeOuro'
 
 const ROTULO_DE_SECAO = 'font-mono text-xs font-semibold uppercase tracking-widest text-muted m-0'
-const CONTAINER = 'w-full min-w-0 max-w-[1100px] mx-auto px-4 sm:px-6 lg:px-10 pt-3 sm:pt-6 pb-24'
+const CONTAINER = 'w-full min-w-0 max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-10 pt-3 sm:pt-6 pb-24'
 
 function querMovimentoReduzido(): boolean {
   return typeof window !== 'undefined' && typeof window.matchMedia === 'function'
@@ -502,37 +502,41 @@ export default function Expedicoes() {
             )}
           </div>
 
-          <dl className="m-0 grid grid-cols-4 gap-1.5 sm:gap-2.5">
-            <div className="flex min-w-0 flex-col gap-1 rounded-xl border border-line bg-panel p-2 sm:p-3">
-              <dt className="flex min-w-0 items-center gap-1 truncate text-[11px] font-semibold text-muted sm:gap-1.5 sm:text-xs">
-                <Zap size={13} className="text-holo-2" aria-hidden="true" /> Poder
-              </dt>
-              <dd className="m-0 font-anton text-lg leading-none sm:text-2xl">{estado.atributos.poder}</dd>
-            </div>
-            <div className="flex min-w-0 flex-col gap-1 rounded-xl border border-line bg-panel p-2 sm:p-3">
-              <dt className="flex min-w-0 items-center gap-1 truncate text-[11px] font-semibold text-muted sm:gap-1.5 sm:text-xs">
-                <Swords size={13} className="text-coral" aria-hidden="true" /> Hoje
-              </dt>
-              <dd className="m-0 font-anton text-lg leading-none sm:text-2xl">
-                {restantes}
-                <span className="font-mono text-xs text-muted"> de {estado.hoje.limite}</span>
-              </dd>
-            </div>
-            <div className="flex min-w-0 flex-col gap-1 rounded-xl border border-line bg-panel p-2 sm:p-3">
-              <dt className="flex min-w-0 items-center gap-1 truncate text-[11px] font-semibold text-muted sm:gap-1.5 sm:text-xs">
-                <Ticket size={13} className="text-gold" aria-hidden="true" /> Bilhetes
-              </dt>
-              <dd className="m-0 font-anton text-lg leading-none sm:text-2xl">{estado.hoje.bilhetes}</dd>
-            </div>
-            <div className="flex min-w-0 flex-col gap-1 rounded-xl border border-line bg-panel p-2 sm:p-3">
-              <dt className="flex min-w-0 items-center gap-1 truncate text-[11px] font-semibold text-muted sm:gap-1.5 sm:text-xs">
-                <IconeOuro size={13} /> Ouro
-              </dt>
-              <dd className="m-0 font-anton text-lg leading-none sm:text-2xl">{estado.hoje.ouro ?? 0}</dd>
-            </div>
-          </dl>
+          <div className="grid grid-cols-1 gap-3 lg:grid-cols-12 lg:items-stretch">
+            <dl className="m-0 grid grid-cols-4 gap-1.5 sm:gap-2.5 lg:col-span-6">
+              <div className="flex min-w-0 flex-col justify-between gap-1 rounded-2xl border border-line bg-panel p-2.5 sm:p-4">
+                <dt className="flex min-w-0 items-center gap-1 truncate text-[11px] font-semibold text-muted sm:gap-1.5 sm:text-xs">
+                  <Zap size={13} className="text-holo-2" aria-hidden="true" /> Poder
+                </dt>
+                <dd className="m-0 font-anton text-lg leading-none sm:text-2xl">{estado.atributos.poder}</dd>
+              </div>
+              <div className="flex min-w-0 flex-col justify-between gap-1 rounded-2xl border border-line bg-panel p-2.5 sm:p-4">
+                <dt className="flex min-w-0 items-center gap-1 truncate text-[11px] font-semibold text-muted sm:gap-1.5 sm:text-xs">
+                  <Swords size={13} className="text-coral" aria-hidden="true" /> Hoje
+                </dt>
+                <dd className="m-0 font-anton text-lg leading-none sm:text-2xl">
+                  {restantes}
+                  <span className="font-mono text-xs text-muted"> de {estado.hoje.limite}</span>
+                </dd>
+              </div>
+              <div className="flex min-w-0 flex-col justify-between gap-1 rounded-2xl border border-line bg-panel p-2.5 sm:p-4">
+                <dt className="flex min-w-0 items-center gap-1 truncate text-[11px] font-semibold text-muted sm:gap-1.5 sm:text-xs">
+                  <Ticket size={13} className="text-gold" aria-hidden="true" /> Bilhetes
+                </dt>
+                <dd className="m-0 font-anton text-lg leading-none sm:text-2xl">{estado.hoje.bilhetes}</dd>
+              </div>
+              <div className="flex min-w-0 flex-col justify-between gap-1 rounded-2xl border border-line bg-panel p-2.5 sm:p-4">
+                <dt className="flex min-w-0 items-center gap-1 truncate text-[11px] font-semibold text-muted sm:gap-1.5 sm:text-xs">
+                  <IconeOuro size={13} /> Ouro
+                </dt>
+                <dd className="m-0 font-anton text-lg leading-none sm:text-2xl">{estado.hoje.ouro ?? 0}</dd>
+              </div>
+            </dl>
 
-          <PainelDaVida estado={estado} recuperando={recuperando} aoRecuperar={recuperar} />
+            <div className="lg:col-span-6">
+              <PainelDaVida estado={estado} recuperando={recuperando} aoRecuperar={recuperar} />
+            </div>
+          </div>
 
           {exausto && (
             <p role="status" className="m-0 rounded-xl border border-coral/40 bg-coral/10 p-3 text-xs text-text">

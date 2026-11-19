@@ -246,5 +246,17 @@
         "caminho": "/expedicoes"
       }
     ]
+  },
+  {
+    "chave": "2026-11-19-mapa-mundi-amplo-e-navegavel",
+    "titulo": "Mapa-Múndi amplo no computador e navegável com zoom no celular",
+    "categoria": "layout",
+    "resumo": "O Mapa-Múndi de Éter nas Expedições agora ocupa toda a largura no computador com pinos em medalhão e rótulos limpos, deixando o continente inteiro visível sem poluição nem barra de rolagem cinza.\n\nNo celular, você explora o mesmo mapa panorâmico em alta definição arrastando com o dedo, ajustando o zoom por pinça ou pelos botões +, − e Visão geral.",
+    "links": [
+      {
+        "rotulo": "Explorar Mapa-Múndi",
+        "caminho": "/expedicoes"
+      }
+    ]
   }
 ]

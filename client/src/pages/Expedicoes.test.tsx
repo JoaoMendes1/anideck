@@ -333,7 +333,32 @@ describe('Expedições', () => {
     expect(screen.getByText('230')).toBeTruthy()
   })
 
-  it('no celular exibe o mapa-múndi vertical 3:4 com pins compactos sem poluir com vários rótulos', async () => {
+  it('no desktop exibe o mapa-múndi panorâmico em 1,0× e permite focar e ajustar zoom pelos controles', async () => {
+    const comRegioes: EstadoExpedicoes = {
+      ...estado(),
+      regioes: [
+        { id: 'clareira_inicial', nome: 'Clareira Inicial', subtitulo: 'Fronteira', bioma: 'Brisa', efeito_bioma: 'Campo aberto.', faixa_nivel: 'Nv 1–8', ordem: 1, x: 28, y: 75, conexoes: ['bosque_sombrio'], monstros: ['slime_de_eter'] },
+        { id: 'bosque_sombrio', nome: 'Bosque Sombrio', subtitulo: 'Trilhas', bioma: 'Névoa', efeito_bioma: 'Feras velozes.', faixa_nivel: 'Nv 10–25', ordem: 2, x: 19, y: 47, conexoes: ['clareira_inicial'], monstros: ['slime_de_eter'] },
+      ],
+    }
+    vi.mocked(obterExpedicoes).mockResolvedValue({ dados: comRegioes })
+    abrir()
+
+    await screen.findByRole('heading', { name: 'Clareira Inicial' })
+    expect(screen.getByText('1,0×')).toBeTruthy()
+
+    fireEvent.click(screen.getByRole('button', { name: 'Focar' }))
+    expect(screen.getByText('1,8×')).toBeTruthy()
+    expect(screen.getByRole('button', { name: 'Visão geral' })).toBeTruthy()
+
+    fireEvent.click(screen.getByRole('button', { name: 'Diminuir zoom do mapa' }))
+    expect(screen.getByText('1,4×')).toBeTruthy()
+
+    fireEvent.click(screen.getByRole('button', { name: 'Visão geral' }))
+    expect(screen.getByText('1,0×')).toBeTruthy()
+  })
+
+  it('no celular inicia o mapa-múndi em câmera aproximada (1,8×) e permite explorar regiões e voltar à visão geral', async () => {
     window.matchMedia = vi.fn((query: string) => ({
       matches: query !== '(min-width: 640px)',
       media: query,
@@ -352,10 +377,14 @@ describe('Expedições', () => {
     abrir()
 
     await screen.findByRole('heading', { name: 'Clareira Inicial' })
-    const mapa = screen.getByLabelText('Mapa interativo das regiões')
-    expect(mapa.className).toContain('aspect-[3/4]')
+    expect(screen.getByText('1,8×')).toBeTruthy()
+    expect(screen.getByRole('button', { name: 'Visão geral' })).toBeTruthy()
 
     fireEvent.click(screen.getByRole('button', { name: 'Explorar Bosque Sombrio (Nv 10–25)' }))
     await screen.findByRole('heading', { name: 'Bosque Sombrio' })
+
+    fireEvent.click(screen.getByRole('button', { name: 'Visão geral' }))
+    expect(screen.getByText('1,0×')).toBeTruthy()
+    expect(screen.getByRole('button', { name: 'Focar' })).toBeTruthy()
   })
 })

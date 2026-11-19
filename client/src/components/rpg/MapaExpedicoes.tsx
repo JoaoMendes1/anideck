@@ -1,6 +1,6 @@
 // client/src/components/rpg/MapaExpedicoes.tsx
 // Mapa-múndi 2D interativo das regiões conectadas + cenário da região ativa + folha de inspeção com linha evolutiva.
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState, type PointerEvent as ReactPointerEvent } from 'react'
 import {
   ArrowRight,
   Brain,
@@ -14,8 +14,11 @@ import {
   Landmark,
   Lock,
   MapPin,
+  Maximize2,
+  Minus,
   MoonStar,
   Mountain,
+  Plus,
   Shield,
   Snowflake,
   Sparkles,
@@ -46,7 +49,6 @@ import { useMidia } from '../../hooks/useMidia'
 import IconeDoMonstro from './IconeDoMonstro'
 import BotaoEmGrupo from './BotaoEmGrupo'
 import mapaMundiImg from '../../assets/rpg/mapa-mundi.webp'
-import mapaMundiVerticalImg from '../../assets/rpg/mapa-mundi-vertical.webp'
 
 interface EstiloRegiao {
   card: string
@@ -144,15 +146,10 @@ const COORDENADAS_PADRAO: Record<string, { x: number; y: number }> = {
   cume_ancestral: { x: 88, y: 50 },
 }
 
-const COORDENADAS_VERTICAIS: Record<string, { x: number; y: number }> = {
-  clareira_inicial: { x: 43, y: 83 },
-  bosque_sombrio: { x: 24, y: 63 },
-  forja_vulcanica: { x: 78, y: 62 },
-  ruinas_do_vazio: { x: 52, y: 47 },
-  mares_e_geada: { x: 24, y: 31 },
-  santuario_astral: { x: 80, y: 29 },
-  cume_ancestral: { x: 51, y: 15 },
-}
+const ZOOM_MINIMO = 1
+const ZOOM_MAXIMO = 2.6
+const ZOOM_PASSO = 0.4
+const ZOOM_PADRAO_MOBILE = 1.8
 
 const COR_BARRA_DIFICULDADE: Record<Dificuldade, string> = {
   facil: 'bg-green',
@@ -163,18 +160,7 @@ const COR_BARRA_DIFICULDADE: Record<Dificuldade, string> = {
 
 const ESTAGIOS_ROMANOS = ['', 'I', 'II', 'III', 'IV', 'V']
 
-function coordenadasDaRegiao(
-  regiao: RegiaoMapa,
-  idx: number,
-  total: number,
-  vertical: boolean,
-): { x: number; y: number } {
-  if (vertical) {
-    if (COORDENADAS_VERTICAIS[regiao.id]) return COORDENADAS_VERTICAIS[regiao.id]
-    const x = idx % 2 === 0 ? 30 : 70
-    const y = total <= 1 ? 50 : Math.round(82 - (idx / (total - 1)) * 66)
-    return { x, y }
-  }
+function coordenadasDaRegiao(regiao: RegiaoMapa, idx: number, total: number): { x: number; y: number } {
   if (typeof regiao.x === 'number' && typeof regiao.y === 'number' && (regiao.x > 0 || regiao.y > 0)) {
     return { x: regiao.x, y: regiao.y }
   }
@@ -182,6 +168,24 @@ function coordenadasDaRegiao(
   const x = total <= 1 ? 50 : Math.round(18 + (idx / (total - 1)) * 64)
   const y = idx % 2 === 0 ? 62 : 34
   return { x, y }
+}
+
+function limitarPan(x: number, y: number, vw: number, vh: number, z: number): { x: number; y: number } {
+  if (vw <= 0 || vh <= 0) return { x: 0, y: 0 }
+  const escalaW = vw * z
+  const escalaH = (vw * 9 / 16) * z
+  const clampX = escalaW <= vw ? (vw - escalaW) / 2 : Math.max(vw - escalaW, Math.min(0, x))
+  const clampY = escalaH <= vh ? (vh - escalaH) / 2 : Math.max(vh - escalaH, Math.min(0, y))
+  return { x: Math.round(clampX), y: Math.round(clampY) }
+}
+
+function panParaRegiao(coord: { x: number; y: number }, vw: number, vh: number, z: number): { x: number; y: number } {
+  if (vw <= 0 || vh <= 0) return { x: 0, y: 0 }
+  const escalaW = vw * z
+  const escalaH = (vw * 9 / 16) * z
+  const alvoX = vw / 2 - (coord.x / 100) * escalaW
+  const alvoY = vh / 2 - (coord.y / 100) * escalaH
+  return limitarPan(alvoX, alvoY, vw, vh, z)
 }
 
 /** Coleta toda a linhagem evolutiva conectada ao monstro (por família ou grafo evolui_de/evolui_para). */
@@ -548,21 +552,213 @@ export default function MapaExpedicoes({
     regioes[0]?.id ??
     ''
 
-  const [regiaoAtivaId, setRegiaoAtivaId] = useState(regiaoDoSelecionado)
   const ehDesktop = useMidia('(min-width: 640px)')
-  const mapaVertical = !ehDesktop
+  const ehMobile = !ehDesktop
+
+  const [regiaoAtivaId, setRegiaoAtivaId] = useState(regiaoDoSelecionado)
+  const [zoom, setZoom] = useState(() => (ehMobile ? ZOOM_PADRAO_MOBILE : ZOOM_MINIMO))
+  const [pan, setPan] = useState<{ x: number; y: number }>({ x: 0, y: 0 })
+  const [arrastando, setArrastando] = useState(false)
+  const [tamanhoTela, setTamanhoTela] = useState<{ w: number; h: number }>({ w: 0, h: 0 })
+
+  const containerMapaRef = useRef<HTMLDivElement | null>(null)
+  const arrasteRef = useRef<{
+    ativo: boolean
+    inicioX: number
+    inicioY: number
+    panX: number
+    panY: number
+    moveu: boolean
+  } | null>(null)
+  const ponteirosRef = useRef<Map<number, { x: number; y: number }>>(new Map())
+  const pincaRef = useRef<{ distInicial: number; zoomInicial: number } | null>(null)
+  const suprimirClickRef = useRef(false)
+  const inicializouCameraRef = useRef(false)
+  const ultimoModoMobileRef = useRef(ehMobile)
+  const ultimaRegiaoFocadaRef = useRef(regiaoDoSelecionado)
+
+  const coordsPorId = new Map(
+    regioes.map((r, idx) => [r.id, coordenadasDaRegiao(r, idx, regioes.length)]),
+  )
 
   useEffect(() => {
     if (regiaoDoSelecionado) setRegiaoAtivaId(regiaoDoSelecionado)
   }, [regiaoDoSelecionado])
 
+  useEffect(() => {
+    const el = containerMapaRef.current
+    if (!el) return
+    const atualizar = () => {
+      if (el.clientWidth > 0 && el.clientHeight > 0) {
+        setTamanhoTela({ w: el.clientWidth, h: el.clientHeight })
+      }
+    }
+    atualizar()
+    if (typeof ResizeObserver === 'undefined') return
+    const obs = new ResizeObserver(atualizar)
+    obs.observe(el)
+    return () => obs.disconnect()
+  }, [])
+
+  // Sincroniza zoom inicial e reenquadra quando a largura do viewport muda ou alterna desktop/celular.
+  useEffect(() => {
+    const mudouModo = ultimoModoMobileRef.current !== ehMobile
+    if (mudouModo) {
+      ultimoModoMobileRef.current = ehMobile
+      const novoZoom = ehMobile ? ZOOM_PADRAO_MOBILE : ZOOM_MINIMO
+      setZoom(novoZoom)
+      if (tamanhoTela.w > 0 && tamanhoTela.h > 0) {
+        const coord = coordsPorId.get(regiaoAtivaId) ?? { x: 50, y: 50 }
+        setPan(
+          novoZoom > ZOOM_MINIMO + 0.05
+            ? panParaRegiao(coord, tamanhoTela.w, tamanhoTela.h, novoZoom)
+            : limitarPan(0, 0, tamanhoTela.w, tamanhoTela.h, novoZoom),
+        )
+        inicializouCameraRef.current = true
+      }
+      return
+    }
+
+    if (tamanhoTela.w <= 0 || tamanhoTela.h <= 0) return
+
+    if (!inicializouCameraRef.current) {
+      inicializouCameraRef.current = true
+      const coord = coordsPorId.get(regiaoAtivaId) ?? { x: 50, y: 50 }
+      setPan(
+        zoom > ZOOM_MINIMO + 0.05
+          ? panParaRegiao(coord, tamanhoTela.w, tamanhoTela.h, zoom)
+          : limitarPan(0, 0, tamanhoTela.w, tamanhoTela.h, zoom),
+      )
+      return
+    }
+
+    setPan((atual) => limitarPan(atual.x, atual.y, tamanhoTela.w, tamanhoTela.h, zoom))
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [ehMobile, tamanhoTela.w, tamanhoTela.h])
+
+  // Ao trocar de região (por clique no pino, pílula, rota ou evolução), centraliza se houver zoom.
+  useEffect(() => {
+    if (regiaoAtivaId === ultimaRegiaoFocadaRef.current) return
+    ultimaRegiaoFocadaRef.current = regiaoAtivaId
+    if (zoom <= ZOOM_MINIMO + 0.05 || tamanhoTela.w <= 0 || tamanhoTela.h <= 0) return
+    const coord = coordsPorId.get(regiaoAtivaId) ?? { x: 50, y: 50 }
+    setPan(panParaRegiao(coord, tamanhoTela.w, tamanhoTela.h, zoom))
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [regiaoAtivaId])
+
   if (!selecionado || regioes.length === 0) return null
 
   const regiaoPorId = new Map(regioes.map((r) => [r.id, r]))
   const regiaoAtiva = regiaoPorId.get(regiaoAtivaId) ?? regioes[0]
-  const coordsPorId = new Map(
-    regioes.map((r, idx) => [r.id, coordenadasDaRegiao(r, idx, regioes.length, mapaVertical)]),
-  )
+
+  const aplicarZoom = (novoZoomBruto: number, opcoes?: { focarAtiva?: boolean; ancoraX?: number; ancoraY?: number }) => {
+    const novoZoom = Math.max(ZOOM_MINIMO, Math.min(ZOOM_MAXIMO, Number(novoZoomBruto.toFixed(2))))
+    setZoom(novoZoom)
+    if (tamanhoTela.w <= 0 || tamanhoTela.h <= 0) return
+
+    if (novoZoom <= ZOOM_MINIMO + 0.01) {
+      setPan(limitarPan(0, 0, tamanhoTela.w, tamanhoTela.h, ZOOM_MINIMO))
+      return
+    }
+
+    if (opcoes?.focarAtiva) {
+      const coord = coordsPorId.get(regiaoAtiva.id) ?? { x: 50, y: 50 }
+      setPan(panParaRegiao(coord, tamanhoTela.w, tamanhoTela.h, novoZoom))
+      return
+    }
+
+    const ax = opcoes?.ancoraX ?? tamanhoTela.w / 2
+    const ay = opcoes?.ancoraY ?? tamanhoTela.h / 2
+    setPan((atual) => {
+      const cx = (ax - atual.x) / zoom
+      const cy = (ay - atual.y) / zoom
+      return limitarPan(ax - cx * novoZoom, ay - cy * novoZoom, tamanhoTela.w, tamanhoTela.h, novoZoom)
+    })
+  }
+
+  const selecionarRegiao = (id: string) => {
+    setRegiaoAtivaId(id)
+    if (zoom > ZOOM_MINIMO + 0.05 && tamanhoTela.w > 0 && tamanhoTela.h > 0) {
+      const coord = coordsPorId.get(id) ?? { x: 50, y: 50 }
+      setPan(panParaRegiao(coord, tamanhoTela.w, tamanhoTela.h, zoom))
+      ultimaRegiaoFocadaRef.current = id
+    }
+  }
+
+  const aoIniciarPonteiro = (e: ReactPointerEvent<HTMLDivElement>) => {
+    ponteirosRef.current.set(e.pointerId, { x: e.clientX, y: e.clientY })
+    if (ponteirosRef.current.size === 2) {
+      const pts = Array.from(ponteirosRef.current.values())
+      const dist = Math.hypot(pts[1].x - pts[0].x, pts[1].y - pts[0].y)
+      pincaRef.current = { distInicial: Math.max(dist, 1), zoomInicial: zoom }
+      arrasteRef.current = null
+      setArrastando(true)
+      return
+    }
+    if (zoom <= ZOOM_MINIMO + 0.01 && !ehMobile) return
+    arrasteRef.current = {
+      ativo: true,
+      inicioX: e.clientX,
+      inicioY: e.clientY,
+      panX: pan.x,
+      panY: pan.y,
+      moveu: false,
+    }
+  }
+
+  const aoMoverPonteiro = (e: ReactPointerEvent<HTMLDivElement>) => {
+    if (ponteirosRef.current.has(e.pointerId)) {
+      ponteirosRef.current.set(e.pointerId, { x: e.clientX, y: e.clientY })
+    }
+    if (ponteirosRef.current.size === 2 && pincaRef.current) {
+      const pts = Array.from(ponteirosRef.current.values())
+      const dist = Math.hypot(pts[1].x - pts[0].x, pts[1].y - pts[0].y)
+      const novoZoom = pincaRef.current.zoomInicial * (dist / pincaRef.current.distInicial)
+      const rect = containerMapaRef.current?.getBoundingClientRect()
+      const midX = rect ? (pts[0].x + pts[1].x) / 2 - rect.left : undefined
+      const midY = rect ? (pts[0].y + pts[1].y) / 2 - rect.top : undefined
+      suprimirClickRef.current = true
+      aplicarZoom(novoZoom, { ancoraX: midX, ancoraY: midY })
+      return
+    }
+    const arraste = arrasteRef.current
+    if (!arraste?.ativo || tamanhoTela.w <= 0 || tamanhoTela.h <= 0) return
+    const dx = e.clientX - arraste.inicioX
+    const dy = e.clientY - arraste.inicioY
+    if (!arraste.moveu && Math.hypot(dx, dy) > 6) {
+      arraste.moveu = true
+      suprimirClickRef.current = true
+      setArrastando(true)
+      try {
+        e.currentTarget.setPointerCapture(e.pointerId)
+      } catch {
+        // jsdom pode não implementar setPointerCapture
+      }
+    }
+    if (!arraste.moveu) return
+    setPan(limitarPan(arraste.panX + dx, arraste.panY + dy, tamanhoTela.w, tamanhoTela.h, zoom))
+  }
+
+  const aoFinalizarPonteiro = (e: ReactPointerEvent<HTMLDivElement>) => {
+    ponteirosRef.current.delete(e.pointerId)
+    if (ponteirosRef.current.size < 2) pincaRef.current = null
+    const arraste = arrasteRef.current
+    if (arraste?.moveu) {
+      suprimirClickRef.current = true
+      window.setTimeout(() => {
+        suprimirClickRef.current = false
+      }, 0)
+    }
+    arrasteRef.current = null
+    setArrastando(false)
+    try {
+      if (e.currentTarget.hasPointerCapture?.(e.pointerId)) {
+        e.currentTarget.releasePointerCapture(e.pointerId)
+      }
+    } catch {
+      // ignora em ambiente sem captura
+    }
+  }
 
   // Monta arestas únicas entre regiões conectadas; se o payload não enviar conexões, liga em sequência.
   const arestas: { de: string; para: string; destacada: boolean }[] = []
@@ -601,46 +797,70 @@ export default function MapaExpedicoes({
 
   const derrotadosAtiva = monstrosDaRegiao.filter((m) => (m.bestiario?.vitorias ?? 0) > 0).length
   const dominadaAtiva = monstrosDaRegiao.length > 0 && derrotadosAtiva === monstrosDaRegiao.length
+  const zoomAmpliado = zoom > ZOOM_MINIMO + 0.05
+  const mostrarTodosNomes = ehDesktop || zoom >= 1.35
 
   return (
-    <div className="grid grid-cols-1 gap-4 lg:grid-cols-12 lg:items-start">
-      <section aria-label="Mapa de regiões" className="flex flex-col gap-3 lg:col-span-7">
-        {/* Mapa-múndi 2D interativo */}
-        <div className="overflow-hidden rounded-2xl border border-line bg-panel p-3 sm:p-4">
-          <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
-            <div className="flex items-center gap-2">
-              <Compass size={16} className="text-holo-3" aria-hidden="true" />
-              <h2 className="m-0 font-anton text-base uppercase tracking-wide text-text">Mapa-Múndi de Éter</h2>
-            </div>
-            <span className="font-mono text-xs text-muted">{regioes.length} regiões · {monstros.length} criaturas</span>
+    <div className="flex flex-col gap-4 sm:gap-5">
+      {/* Mapa-múndi panorâmico em largura total no desktop e navegável por câmera no celular */}
+      <section aria-label="Mapa de regiões" className="overflow-hidden rounded-2xl border border-line bg-panel p-3 sm:p-4">
+        <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
+          <div className="flex items-center gap-2">
+            <Compass size={16} className="text-holo-3" aria-hidden="true" />
+            <h2 className="m-0 font-anton text-base uppercase tracking-wide text-text sm:text-lg">Mapa-Múndi de Éter</h2>
           </div>
+          <span className="font-mono text-xs text-muted">{regioes.length} regiões · {monstros.length} criaturas</span>
+        </div>
 
-          <div className="mb-2.5 flex flex-col gap-1 rounded-xl border border-line/70 bg-panel-2/60 px-3 py-2">
-            <div className="flex items-center justify-between gap-2 font-mono text-xs">
-              <span className="text-muted">Bestiário Global</span>
-              <span className="font-bold text-text">
-                {descobertosGlobal} / {totalGlobal} descobertos · {pctGlobal}%
-              </span>
-            </div>
-            <div className="h-1.5 overflow-hidden rounded-full bg-void/80">
-              <div
-                className="h-full rounded-full bg-gradient-to-r from-holo-3 via-holo-2 to-gold transition-all"
-                style={{ width: `${pctGlobal}%` }}
-              />
-            </div>
+        <div className="mb-3 flex flex-col gap-1 rounded-xl border border-line/70 bg-panel-2/60 px-3 py-2">
+          <div className="flex items-center justify-between gap-2 font-mono text-xs">
+            <span className="text-muted">Bestiário Global</span>
+            <span className="font-bold text-text">
+              {descobertosGlobal} / {totalGlobal} descobertos · {pctGlobal}%
+            </span>
           </div>
+          <div className="h-1.5 overflow-hidden rounded-full bg-void/80">
+            <div
+              className="h-full rounded-full bg-gradient-to-r from-holo-3 via-holo-2 to-gold transition-all"
+              style={{ width: `${pctGlobal}%` }}
+            />
+          </div>
+        </div>
 
+        <div
+          ref={containerMapaRef}
+          aria-label="Mapa interativo das regiões"
+          onPointerDown={aoIniciarPonteiro}
+          onPointerMove={aoMoverPonteiro}
+          onPointerUp={aoFinalizarPonteiro}
+          onPointerCancel={aoFinalizarPonteiro}
+          onClickCapture={(e) => {
+            if (suprimirClickRef.current) {
+              e.stopPropagation()
+              e.preventDefault()
+              suprimirClickRef.current = false
+            }
+          }}
+          className={`relative h-[320px] w-full select-none overflow-hidden rounded-2xl border border-line bg-void sm:h-auto sm:aspect-video ${
+            ehMobile || zoomAmpliado ? 'touch-none' : 'touch-pan-y'
+          } ${zoomAmpliado ? (arrastando ? 'cursor-grabbing' : 'cursor-grab') : ''}`}
+        >
           <div
-            aria-label="Mapa interativo das regiões"
-            className={`relative w-full overflow-hidden rounded-2xl border border-line bg-void ${
-              mapaVertical ? 'aspect-[3/4]' : 'aspect-video'
+            style={
+              tamanhoTela.w > 0
+                ? { transform: `translate3d(${pan.x}px, ${pan.y}px, 0) scale(${zoom})` }
+                : undefined
+            }
+            className={`relative aspect-video w-full origin-top-left ${
+              arrastando ? '' : 'transition-transform duration-300 ease-out motion-reduce:transition-none'
             }`}
           >
             <img
-              src={mapaVertical ? mapaMundiVerticalImg : mapaMundiImg}
+              src={mapaMundiImg}
               alt=""
               aria-hidden="true"
-              className="pointer-events-none absolute inset-0 h-full w-full object-cover opacity-95"
+              draggable={false}
+              className="pointer-events-none absolute inset-0 h-full w-full select-none object-cover opacity-95"
             />
             <div
               aria-hidden="true"
@@ -665,7 +885,7 @@ export default function MapaExpedicoes({
                     x2={p2.x}
                     y2={p2.y}
                     className={a.destacada ? 'stroke-holo-3' : 'stroke-line'}
-                    strokeWidth={a.destacada ? 0.85 : 0.5}
+                    strokeWidth={a.destacada ? 0.75 : 0.45}
                     strokeOpacity={a.destacada ? 0.85 : 0.45}
                     strokeDasharray={a.destacada ? undefined : '2 1.6'}
                   />
@@ -684,101 +904,144 @@ export default function MapaExpedicoes({
               const qtd = monstrosRegiao.length
               const dominada = qtd > 0 && monstrosRegiao.every((m) => (m.bestiario?.vitorias ?? 0) > 0)
 
-              if (mapaVertical) {
-                return (
-                  <button
-                    key={regiao.id}
-                    type="button"
-                    onClick={() => setRegiaoAtivaId(regiao.id)}
-                    aria-pressed={ativa}
-                    aria-label={`Explorar ${regiao.nome} (${regiao.faixa_nivel})`}
-                    style={{ left: `${coord.x}%`, top: `${coord.y}%` }}
-                    className={`absolute flex h-11 w-11 -translate-x-1/2 -translate-y-1/2 cursor-pointer items-center justify-center rounded-2xl border-2 backdrop-blur-sm transition ${
-                      ativa ? `z-20 scale-110 ${estilo.pinAtivo}` : `z-10 ${estilo.pinInativo}`
-                    }`}
-                  >
-                    <IconeRegiao size={18} className={estilo.cabecalho} aria-hidden="true" />
-                    <span className="absolute -top-1.5 -left-1.5 flex h-4 min-w-4 items-center justify-center rounded-full border border-line bg-void px-1 font-mono text-[10px] font-bold leading-none text-text">
-                      {regiao.ordem}
-                    </span>
-                    {regiao.em_destaque ? (
-                      <span className="absolute -top-1.5 -right-1.5 flex h-4 w-4 items-center justify-center rounded-full border border-gold/70 bg-void text-gold">
-                        <Sparkles size={10} aria-hidden="true" />
-                      </span>
-                    ) : dominada ? (
-                      <span className="absolute -top-1.5 -right-1.5 flex h-4 w-4 items-center justify-center rounded-full border border-green/70 bg-void text-green">
-                        <Check size={10} aria-hidden="true" />
-                      </span>
-                    ) : null}
-                    {ativa && (
-                      <span className="pointer-events-none absolute top-full left-1/2 mt-1 -translate-x-1/2 whitespace-nowrap rounded-full border border-line bg-void/95 px-2.5 py-0.5 text-xs font-bold leading-tight text-text shadow-lg">
-                        {regiao.nome}
-                      </span>
-                    )}
-                  </button>
-                )
-              }
-
               return (
                 <button
                   key={regiao.id}
                   type="button"
-                  onClick={() => setRegiaoAtivaId(regiao.id)}
+                  onClick={() => selecionarRegiao(regiao.id)}
                   aria-pressed={ativa}
                   aria-label={`Explorar ${regiao.nome} (${regiao.faixa_nivel})`}
                   style={{ left: `${coord.x}%`, top: `${coord.y}%` }}
-                  className={`absolute flex -translate-x-1/2 -translate-y-1/2 cursor-pointer items-center gap-2 rounded-xl border px-2.5 py-1.5 text-left backdrop-blur-sm transition ${
-                    ativa ? `z-20 scale-105 ${estilo.pinAtivo}` : `z-10 ${estilo.pinInativo}`
+                  className={`group absolute flex -translate-x-1/2 -translate-y-1/2 cursor-pointer flex-col items-center ${
+                    ativa ? 'z-20' : 'z-10 hover:z-20'
                   }`}
                 >
-                  <span className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-panel-2 ${estilo.cabecalho}`}>
-                    <IconeRegiao size={14} aria-hidden="true" />
+                  <span
+                    className={`relative flex h-7 w-7 items-center justify-center rounded-full border-2 backdrop-blur-sm transition sm:h-11 sm:w-11 ${
+                      ativa ? `scale-110 ${estilo.pinAtivo}` : `${estilo.pinInativo} group-hover:scale-105`
+                    }`}
+                  >
+                    <IconeRegiao size={14} className={`${estilo.cabecalho} sm:hidden`} aria-hidden="true" />
+                    <IconeRegiao size={18} className={`${estilo.cabecalho} hidden sm:block`} aria-hidden="true" />
+
+                    <span className="absolute -top-1 -left-1 flex h-3.5 min-w-3.5 items-center justify-center rounded-full border border-line bg-void px-0.5 font-mono text-[8px] font-bold leading-none text-text sm:-top-1.5 sm:-left-1.5 sm:h-4 sm:min-w-4 sm:px-1 sm:text-[10px]">
+                      {regiao.ordem}
+                    </span>
+
+                    {regiao.em_destaque ? (
+                      <span
+                        title="Destaque de hoje"
+                        className="absolute -top-1 -right-1 flex h-3.5 w-3.5 items-center justify-center rounded-full border border-gold/70 bg-void text-gold sm:-top-1.5 sm:-right-1.5 sm:h-4 sm:w-4"
+                      >
+                        <Sparkles size={8} className="sm:hidden" aria-hidden="true" />
+                        <Sparkles size={10} className="hidden sm:block" aria-hidden="true" />
+                      </span>
+                    ) : dominada ? (
+                      <span
+                        title="Região dominada"
+                        className="absolute -top-1 -right-1 flex h-3.5 w-3.5 items-center justify-center rounded-full border border-green/70 bg-void text-green sm:-top-1.5 sm:-right-1.5 sm:h-4 sm:w-4"
+                      >
+                        <Check size={8} className="sm:hidden" aria-hidden="true" />
+                        <Check size={10} className="hidden sm:block" aria-hidden="true" />
+                      </span>
+                    ) : null}
                   </span>
-                  <span className="min-w-0">
-                    <span className="block whitespace-nowrap text-xs font-bold leading-tight text-text">
+
+                  {(mostrarTodosNomes || ativa) && (
+                    <span
+                      className={`pointer-events-none mt-1 whitespace-nowrap rounded-full border px-1.5 py-0.5 text-[9px] font-bold leading-tight shadow-lg sm:px-2.5 sm:text-xs ${
+                        ativa
+                          ? 'border-holo-3/70 bg-void/95 text-text'
+                          : 'border-line/80 bg-void/85 text-muted group-hover:text-text'
+                      }`}
+                    >
                       {regiao.nome}
                     </span>
-                    <span className="block font-mono text-[10px] leading-tight text-muted">
-                      {regiao.faixa_nivel} · {qtd}{dominada ? ' · ✓' : ''}
-                    </span>
-                  </span>
-                  {regiao.em_destaque && (
-                    <Sparkles size={11} className="shrink-0 text-gold" aria-hidden="true" />
                   )}
                 </button>
               )
             })}
           </div>
 
-          {/* Barra de atalho entre regiões, ótima em telas menores */}
-          <div className="mt-2.5 flex gap-1.5 overflow-x-auto pb-1">
-            {regioes.map((regiao) => {
-              const estilo = ESTILO_DA_REGIAO[regiao.id] ?? ESTILO_REGIAO_PADRAO
-              const ativa = regiao.id === regiaoAtiva.id
-              const qtd = regiao.monstros.filter((id) => porId.has(id)).length
-              return (
-                <button
-                  key={regiao.id}
-                  type="button"
-                  onClick={() => setRegiaoAtivaId(regiao.id)}
-                  className={`inline-flex shrink-0 cursor-pointer items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs font-semibold transition ${
-                    ativa ? estilo.pilulaAtiva : 'border-line bg-void/60 text-muted hover:text-text'
-                  }`}
-                >
-                  <span className="font-mono text-[11px]">0{regiao.ordem}</span>
-                  <span>{regiao.nome}</span>
-                  <span className="font-mono text-[11px] opacity-75">({qtd})</span>
-                  {regiao.em_destaque && <Sparkles size={11} className="text-gold" aria-hidden="true" />}
-                </button>
-              )
-            })}
+          {/* Controles de zoom e enquadramento da câmera */}
+          <div
+            role="group"
+            aria-label="Controles de zoom do mapa"
+            onPointerDown={(e) => e.stopPropagation()}
+            className="absolute top-2.5 right-2.5 z-30 flex items-center gap-1 rounded-full border border-line bg-void/90 p-1 shadow-lg backdrop-blur-sm"
+          >
+            <button
+              type="button"
+              onClick={() => aplicarZoom(zoom - ZOOM_PASSO)}
+              disabled={zoom <= ZOOM_MINIMO + 0.01}
+              aria-label="Diminuir zoom do mapa"
+              className="flex h-7 w-7 cursor-pointer items-center justify-center rounded-full text-text transition hover:bg-panel-2 disabled:cursor-not-allowed disabled:opacity-40"
+            >
+              <Minus size={13} aria-hidden="true" />
+            </button>
+            <span className="min-w-10 text-center font-mono text-[11px] font-bold text-text">
+              {zoom.toFixed(1).replace('.', ',')}×
+            </span>
+            <button
+              type="button"
+              onClick={() => aplicarZoom(zoom + ZOOM_PASSO)}
+              disabled={zoom >= ZOOM_MAXIMO - 0.01}
+              aria-label="Aumentar zoom do mapa"
+              className="flex h-7 w-7 cursor-pointer items-center justify-center rounded-full text-text transition hover:bg-panel-2 disabled:cursor-not-allowed disabled:opacity-40"
+            >
+              <Plus size={13} aria-hidden="true" />
+            </button>
+            <button
+              type="button"
+              onClick={() =>
+                zoomAmpliado
+                  ? aplicarZoom(ZOOM_MINIMO)
+                  : aplicarZoom(ZOOM_PADRAO_MOBILE, { focarAtiva: true })
+              }
+              className="inline-flex h-7 cursor-pointer items-center gap-1 rounded-full border border-line bg-panel-2 px-2.5 text-[11px] font-bold text-text transition hover:border-holo-3"
+            >
+              <Maximize2 size={11} aria-hidden="true" />
+              {zoomAmpliado ? 'Visão geral' : 'Focar'}
+            </button>
           </div>
+
+          {zoomAmpliado && (
+            <span className="pointer-events-none absolute bottom-2.5 left-2.5 z-20 rounded-full border border-line/80 bg-void/85 px-2.5 py-1 font-mono text-[10px] text-muted backdrop-blur-sm">
+              Arraste para explorar · pinça ou +/− ajusta o zoom
+            </span>
+          )}
         </div>
 
-        {/* Cenário da região selecionada */}
+        {/* Barra rápida de regiões sem barra de rolagem cinza no desktop */}
+        <div className="mt-3 flex gap-1.5 overflow-x-auto scrollbar-hide pb-0.5 sm:flex-wrap sm:overflow-visible sm:pb-0">
+          {regioes.map((regiao) => {
+            const estilo = ESTILO_DA_REGIAO[regiao.id] ?? ESTILO_REGIAO_PADRAO
+            const ativa = regiao.id === regiaoAtiva.id
+            const qtd = regiao.monstros.filter((id) => porId.has(id)).length
+            return (
+              <button
+                key={regiao.id}
+                type="button"
+                onClick={() => selecionarRegiao(regiao.id)}
+                className={`inline-flex shrink-0 cursor-pointer items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs font-semibold transition ${
+                  ativa ? estilo.pilulaAtiva : 'border-line bg-void/60 text-muted hover:text-text'
+                }`}
+              >
+                <span className="font-mono text-[11px]">0{regiao.ordem}</span>
+                <span>{regiao.nome}</span>
+                <span className="font-mono text-[11px] opacity-75">({qtd})</span>
+                {regiao.em_destaque && <Sparkles size={11} className="text-gold" aria-hidden="true" />}
+              </button>
+            )
+          })}
+        </div>
+      </section>
+
+      {/* Abaixo do mapa: criatura da região à esquerda e folha de inspeção fixa à direita */}
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-12 lg:items-start">
         <div
           aria-label={`Região ${regiaoAtiva.nome}`}
-          className={`flex flex-col gap-3 rounded-2xl border p-3.5 sm:p-4 ${estiloAtiva.card} ${regiaoAtiva.em_destaque ? 'ring-1 ring-gold/60' : ''}`}
+          className={`flex flex-col gap-3 rounded-2xl border p-3.5 sm:p-4 lg:col-span-7 ${estiloAtiva.card} ${regiaoAtiva.em_destaque ? 'ring-1 ring-gold/60' : ''}`}
         >
           <div className="flex flex-wrap items-start justify-between gap-2">
             <div className="flex min-w-0 items-start gap-2.5">
@@ -822,7 +1085,7 @@ export default function MapaExpedicoes({
                 <button
                   key={vizinha.id}
                   type="button"
-                  onClick={() => setRegiaoAtivaId(vizinha.id)}
+                  onClick={() => selecionarRegiao(vizinha.id)}
                   className="inline-flex cursor-pointer items-center gap-1 rounded-full border border-line bg-void/60 px-2.5 py-0.5 font-mono text-xs text-muted hover:border-holo-3/60 hover:text-text"
                 >
                   <ArrowRight size={11} aria-hidden="true" />
@@ -897,21 +1160,22 @@ export default function MapaExpedicoes({
             })}
           </div>
         </div>
-      </section>
 
-      <div className="lg:sticky lg:top-6 lg:col-span-5">
-        <FolhaInspecaoMonstro
-          monstro={selecionado}
-          porId={porId}
-          atributosJogador={atributosJogador}
-          custoMana={custoMana}
-          lutando={lutando}
-          bloqueado={bloqueado}
-          aoSelecionar={aoSelecionar}
-          aoEnfrentar={aoEnfrentar}
-        />
+        <div className="lg:sticky lg:top-6 lg:col-span-5">
+          <FolhaInspecaoMonstro
+            monstro={selecionado}
+            porId={porId}
+            atributosJogador={atributosJogador}
+            custoMana={custoMana}
+            lutando={lutando}
+            bloqueado={bloqueado}
+            aoSelecionar={aoSelecionar}
+            aoEnfrentar={aoEnfrentar}
+          />
+        </div>
       </div>
     </div>
   )
 }
+
 
