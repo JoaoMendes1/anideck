@@ -149,6 +149,14 @@ describe('atributos primários e registro da luta', () => {
       texto: 'Lobo ataca, e você esquiva',
       valor: '0',
     })
+    expect(descreverTurno({ ...base, atacante: 'jogador', dano: 0, esquiva: true }, 'Goblin')).toEqual({
+      texto: 'Você golpeia, e Goblin esquiva',
+      valor: '0',
+    })
+    expect(descreverTurno({ ...base, atacante: 'jogador', habilidade: 'Corte Duplo', dano: 0, esquiva: true }, 'Goblin')).toEqual({
+      texto: 'Você usa Corte Duplo, e Goblin esquiva',
+      valor: '0',
+    })
   })
 })
 

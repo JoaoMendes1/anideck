@@ -3,6 +3,7 @@ package handlers
 import (
 	"math/rand"
 	"testing"
+	"time"
 )
 
 func TestRelacaoElemental(t *testing.T) {
@@ -163,3 +164,101 @@ func TestCombateAvancado_Queda(t *testing.T) {
 		t.Errorf("derrota por tempo não é queda: venceu=%v caiu=%v", r.Venceu, r.Caiu)
 	}
 }
+
+func TestRegioesMapa_DestaqueEDicaTatica(t *testing.T) {
+	regioes := CatalogoRegioes()
+	if len(regioes) != 4 {
+		t.Fatalf("esperava 4 regiões no mapa, veio %d", len(regioes))
+	}
+	vistos := map[string]bool{}
+	for _, r := range regioes {
+		for _, id := range r.MonstroIDs {
+			vistos[id] = true
+			if tip := DicaTaticaDoMonstro(id, 0); tip != "" {
+				t.Errorf("%s não deveria liberar dica tática com 0 vitórias, veio %q", id, tip)
+			}
+			if tip := DicaTaticaDoMonstro(id, 1); tip == "" {
+				t.Errorf("%s deveria liberar dica tática após a 1ª vitória", id)
+			}
+			m := MonstroRPG{ID: id, Nivel: 10, Vida: 100, Ataque: 10, Defesa: 5}
+			EnriquecerMonstro(&m)
+			if m.Eter == 0 || m.Magia == 0 || m.Comportamento == "" || m.Regiao != r.ID || m.Habitat == "" {
+				t.Errorf("monstro %s não foi enriquecido corretamente: %+v", id, m)
+			}
+		}
+	}
+	if len(vistos) != 8 {
+		t.Errorf("esperava os 8 monstros no mapa, vieram %d", len(vistos))
+	}
+
+	dia1 := time.Date(2026, 11, 18, 12, 0, 0, 0, fusoGuilda)
+	destaques := map[string]bool{}
+	for d := range 4 {
+		destaques[RegiaoEmDestaqueEm(dia1.AddDate(0, 0, d))] = true
+	}
+	if len(destaques) != 4 {
+		t.Errorf("rotação diária deveria cobrir todas as 4 regiões, cobriu %d", len(destaques))
+	}
+}
+
+func TestIATatica_NaoDesperdicaESemEterNaoUsaPoder(t *testing.T) {
+	diario := []TurnoBatalha{}
+	base := &lutaEmAndamento{
+		j:   CombatenteRPG{Atributos: AtributosRPG{Vida: 1000, Ataque: 100, Defesa: 50}},
+		m:   MonstroRPG{ID: "cavaleiro_caido", Vida: 2000, Ataque: 140, Eter: 40, Poderes: []PoderMonstro{
+			{ID: "escudo", Nome: "Escudo", Tipo: poderEscudo, CustoEter: 10, ChancePorMil: 1000, Fator: 0.4, Rodadas: 2},
+			{ID: "furia", Nome: "Fúria", Tipo: poderFuria, CustoEter: 10, ChancePorMil: 1000, Fator: 1.15},
+			{ID: "invocar", Nome: "Invocar", Tipo: poderInvocar, CustoEter: 10, ChancePorMil: 1000, Ajudante: "Guarda", AjudanteVidaPct: 10, AjudanteAtqPct: 10},
+		}},
+		mon: &estadoDoMonstro{
+			vida: 2000, eter: 40, rodada: 3, usosPoder: map[string]int{},
+			rodadasEscudo: 1, furia: 1.15, ajudantes: []AjudanteNaLuta{{Nome: "Guarda", Vida: 10}},
+		},
+		rng:    rand.New(rand.NewSource(1)),
+		diario: &diario,
+	}
+	if p := base.escolherPoder(); p != nil {
+		t.Fatalf("não deveria usar escudo/fúria/invocação já ativos, escolheu %q", p.ID)
+	}
+
+	// Sem Éter suficiente, poder com CustoEter não é escolhido.
+	semEter := *base
+	semEter.mon = &estadoDoMonstro{vida: 2000, eter: 4, rodada: 3, usosPoder: map[string]int{}}
+	if p := semEter.escolherPoder(); p != nil {
+		t.Fatalf("sem Éter não deveria escolher poder, escolheu %q", p.ID)
+	}
+}
+
+func TestMonstro_EsquivaEDanoArcano(t *testing.T) {
+	diario := []TurnoBatalha{}
+	l := &lutaEmAndamento{
+		j:   CombatenteRPG{Atributos: AtributosRPG{Vida: 1000, Ataque: 100, Defesa: 100}},
+		m:   MonstroRPG{ID: "teste", Vida: 500, Ataque: 80, Defesa: 20, EsquivaPorMil: 1000},
+		mon: &estadoDoMonstro{vida: 500, usosPoder: map[string]int{}},
+		rng: rand.New(rand.NewSource(2)), vidaJogador: 1000, diario: &diario,
+	}
+	if caiu := l.vezDoJogador(); caiu || len(diario) != 1 || !diario[0].Esquiva || diario[0].Dano != 0 {
+		t.Fatalf("esperava esquiva do monstro com dano 0, veio %+v", diario)
+	}
+
+	// Golpe arcano reduz a defesa efetiva do jogador (de 200 para 150) e causa mais dano médio que físico.
+	somaFis, somaArc := 0, 0
+	for s := int64(0); s < 100; s++ {
+		lF := &lutaEmAndamento{
+			j: CombatenteRPG{Atributos: AtributosRPG{Vida: 10000, Defesa: 200}}, m: MonstroRPG{CriticoPorMil: 100, DanoCritico: 150},
+			mon: &estadoDoMonstro{}, rng: rand.New(rand.NewSource(s)), vidaJogador: 10000,
+		}
+		dF, _ := lF.golpeNoJogadorComTipo(120, false)
+		lA := &lutaEmAndamento{
+			j: CombatenteRPG{Atributos: AtributosRPG{Vida: 10000, Defesa: 200}}, m: MonstroRPG{CriticoPorMil: 100, DanoCritico: 150},
+			mon: &estadoDoMonstro{}, rng: rand.New(rand.NewSource(s)), vidaJogador: 10000,
+		}
+		dA, _ := lA.golpeNoJogadorComTipo(120, true)
+		somaFis += dF.valor
+		somaArc += dA.valor
+	}
+	if somaArc <= somaFis {
+		t.Errorf("golpe arcano (%d) deveria causar mais dano que físico (%d) contra Defesa alta", somaArc, somaFis)
+	}
+}
+

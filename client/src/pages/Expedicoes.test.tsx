@@ -68,7 +68,7 @@ describe('Expedições', () => {
     vi.mocked(obterExpedicoes).mockResolvedValue({ dados: estado() })
     abrir()
 
-    await screen.findByText('Slime de Éter')
+    await screen.findAllByText('Slime de Éter')
     expect(screen.getByText('Fácil')).toBeTruthy()
     expect(screen.getByText('15% de item comum')).toBeTruthy()
     expect(screen.getByText('4')).toBeTruthy()
@@ -89,7 +89,7 @@ describe('Expedições', () => {
     expect(screen.getByText('Botas do Batedor')).toBeTruthy()
   })
 
-  it('mostra o bestiário na lista e o novo marco na vitória', async () => {
+  it('mostra o bestiário e o novo marco na vitória', async () => {
     vi.mocked(obterExpedicoes).mockResolvedValue({ dados: estado() })
     vi.mocked(batalhar).mockResolvedValue({
       dados: { ...vitoria, bestiario: { vitorias: 10, marco: 1, faltam_marco: 40, bonus_ouro: 10, novo_marco: true } },
@@ -185,5 +185,45 @@ describe('Expedições', () => {
     abrir()
 
     expect((await screen.findByRole('link', { name: 'Ir para o despertar' })).getAttribute('href')).toBe('/personagem')
+  })
+
+  it('permite explorar o mapa 2D, inspecionar os 8 atributos, dica tática e alternar para lista', async () => {
+    const lobo = {
+      id: 'lobo_sombrio', nome: 'Lobo Sombrio', descricao: 'Caça na neblina.', tipo: 'comum' as const, nivel: 10,
+      vida: 380, ataque: 48, defesa: 24, magia: 10, eter: 16, velocidade: 11, critico_por_mil: 115, dano_critico: 155, esquiva_por_mil: 35,
+      elemento: 'trevas', comportamento: 'Predador', regiao: 'bosque_sombrio', regiao_nome: 'Bosque Sombrio', habitat: 'Mata fechada.',
+      bilhetes: 1, chance_item: 20, raridade_item: 'raro' as const, poder: 160, dificuldade: 'dificil' as const,
+      bestiario: { vitorias: 2, marco: 0, faltam_marco: 8, bonus_ouro: 0 },
+      dica_tatica: 'Personagem de Luz tem vantagem direta.',
+      em_destaque: true,
+    }
+    const base = estado()
+    const comMapa: EstadoExpedicoes = {
+      ...base,
+      atributos: { vida: 130, ataque: 15, defesa: 9, magia: 8, velocidade: 10, critico_por_mil: 70, dano_critico: 150, esquiva_por_mil: 30, eter: 20, poder: 61 },
+      regiao_destaque: 'bosque_sombrio',
+      regioes: [
+        { id: 'clareira_inicial', nome: 'Clareira Inicial', subtitulo: 'Fronteira', bioma: 'Brisa de Éter', efeito_bioma: 'Campo aberto.', faixa_nivel: 'Nv 1–5', ordem: 1, monstros: ['slime_de_eter'] },
+        { id: 'bosque_sombrio', nome: 'Bosque Sombrio', subtitulo: 'Trilhas', bioma: 'Névoa Espessa', efeito_bioma: 'Feras velozes.', faixa_nivel: 'Nv 8–20', ordem: 2, monstros: ['lobo_sombrio'], em_destaque: true, bonus_destaque: '+1 material da Forja garantido na vitória' },
+      ],
+      monstros: [
+        { ...base.monstros[0], comportamento: 'Instintivo', bestiario: { vitorias: 0, marco: 0, faltam_marco: 10, bonus_ouro: 0 } },
+        lobo,
+      ],
+    }
+    vi.mocked(obterExpedicoes).mockResolvedValue({ dados: comMapa })
+    abrir()
+
+    await screen.findByText('Clareira Inicial')
+    expect(screen.getByText(/Destaque de hoje:/)).toBeTruthy()
+    expect(screen.getByText(/Vença 1 vez para desbloquear a dica tática/)).toBeTruthy()
+
+    fireEvent.click(screen.getByRole('button', { name: 'Inspecionar Lobo Sombrio (nível 10)' }))
+    expect(screen.getByText(/IA: Predador/)).toBeTruthy()
+    expect(screen.getByText('Personagem de Luz tem vantagem direta.')).toBeTruthy()
+    expect(screen.getByRole('button', { name: 'Enfrentar Lobo Sombrio' })).toBeTruthy()
+
+    fireEvent.click(screen.getByRole('button', { name: 'Lista' }))
+    expect(screen.getAllByRole('button', { name: /^Enfrentar / }).length).toBe(2)
   })
 })

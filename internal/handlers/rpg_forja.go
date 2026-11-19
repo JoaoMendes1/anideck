@@ -72,6 +72,20 @@ func SortearMateriaisDaExpedicao(rng *rand.Rand, venceu bool) map[string]int {
 	return map[string]int{sortearUm(rng, sorteioDaExpedicao): 1}
 }
 
+// SortearMateriaisDaExpedicaoEmDestaque soma +1 material da Forja garantido quando a vitória
+// ocorre na região em destaque do dia.
+func SortearMateriaisDaExpedicaoEmDestaque(rng *rand.Rand, venceu, emDestaque bool) map[string]int {
+	ganhos := SortearMateriaisDaExpedicao(rng, venceu)
+	if !venceu || !emDestaque {
+		return ganhos
+	}
+	if ganhos == nil {
+		ganhos = map[string]int{}
+	}
+	ganhos[sortearUm(rng, sorteioDaExpedicao)]++
+	return ganhos
+}
+
 // SortearMateriaisDaMasmorra: só quem completa a masmorra ganha, e ganha sempre.
 func SortearMateriaisDaMasmorra(rng *rand.Rand, completou bool) map[string]int {
 	if !completou {

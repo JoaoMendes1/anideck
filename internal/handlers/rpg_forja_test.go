@@ -90,3 +90,21 @@ func TestEntregarMateriais_SemNadaNaoChamaOBanco(t *testing.T) {
 		t.Errorf("sem material não entrega: %v", got)
 	}
 }
+
+func TestSortearMateriaisDaExpedicaoEmDestaque(t *testing.T) {
+	rng := rand.New(rand.NewSource(7))
+	if m := SortearMateriaisDaExpedicaoEmDestaque(rng, false, true); m != nil {
+		t.Fatalf("derrota não dá material mesmo em região em destaque: %v", m)
+	}
+	for range 200 {
+		m := SortearMateriaisDaExpedicaoEmDestaque(rng, true, true)
+		total := 0
+		for _, q := range m {
+			total += q
+		}
+		if total < 1 || total > 2 {
+			t.Fatalf("região em destaque na vitória dá 1 ou 2 materiais, veio %d (%v)", total, m)
+		}
+	}
+}
+

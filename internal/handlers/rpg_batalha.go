@@ -11,6 +11,7 @@ import (
 	"sort"
 	"strings"
 	"sync"
+	"time"
 
 	"github.com/JoaoMendes1/anideck/internal/database"
 	supabase "github.com/supabase-community/supabase-go"
@@ -34,11 +35,20 @@ type MonstroRPG struct {
 	ChanceItem   int    `json:"chance_item"`
 	RaridadeItem string `json:"raridade_item"`
 	Ordem        int    `json:"ordem"`
-	// Velocidade não é coluna: vem do nível e do tipo (VelocidadeDoMonstro).
-	Velocidade int `json:"velocidade"`
-	// Elemento e poderes também não: vêm do código (rpg_combate_avancado.go).
-	Elemento string         `json:"elemento"`
-	Poderes  []PoderMonstro `json:"poderes,omitempty"`
+	// Os atributos e dados táticos abaixo vêm do código (rpg_combate_avancado.go) e completam
+	// os 8 atributos de combate alinhados com o jogador.
+	Magia         int            `json:"magia"`
+	Eter          int            `json:"eter"`
+	Velocidade    int            `json:"velocidade"`
+	CriticoPorMil int            `json:"critico_por_mil"`
+	DanoCritico   int            `json:"dano_critico"`
+	EsquivaPorMil int            `json:"esquiva_por_mil"`
+	Elemento      string         `json:"elemento"`
+	Comportamento string         `json:"comportamento,omitempty"`
+	Regiao        string         `json:"regiao,omitempty"`
+	RegiaoNome    string         `json:"regiao_nome,omitempty"`
+	Habitat       string         `json:"habitat,omitempty"`
+	Poderes       []PoderMonstro `json:"poderes,omitempty"`
 }
 
 // VelocidadeDoMonstro cresce um pouco abaixo da do jogador do mesmo nível: quem investe em
@@ -56,7 +66,7 @@ func VelocidadeDoMonstro(m MonstroRPG) int {
 
 // PoderDoMonstro usa a mesma conta do jogador, para a comparação ser justa.
 func PoderDoMonstro(m MonstroRPG) int {
-	return CalcularPoder(AtributosRPG{Vida: m.Vida, Ataque: m.Ataque, Defesa: m.Defesa, Velocidade: VelocidadeDoMonstro(m)})
+	return CalcularPoder(AtributosRPG{Vida: m.Vida, Ataque: m.Ataque, Defesa: m.Defesa, Magia: m.Magia, Velocidade: VelocidadeDoMonstro(m)})
 }
 
 // TurnoBatalha é uma ação, para a tela reproduzir a luta.
@@ -161,6 +171,7 @@ const (
 // grupo: cada herói tem a sua lutaEmAndamento, e todas apontam para o mesmo monstro.
 type estadoDoMonstro struct {
 	vida          int
+	eter          int
 	rodada        int
 	usosPoder     map[string]int
 	ajudantes     []AjudanteNaLuta
@@ -273,6 +284,13 @@ func (l *lutaEmAndamento) vezDoJogador() bool {
 		}
 	}
 
+	ofensiva := h == nil || h.Efeito != efeitoCura
+	if ofensiva && l.ajudanteVivo() == nil && !l.ignorarDefesa && l.m.EsquivaPorMil > 0 && l.rng.Intn(1000) < l.m.EsquivaPorMil {
+		t.Esquiva = true
+		l.registrar(t)
+		return false
+	}
+
 	switch {
 	case h == nil:
 		t.Dano, t.Critico = l.golpeDoJogador(a.Ataque)
@@ -315,6 +333,9 @@ func (l *lutaEmAndamento) vezDoMonstro() bool {
 	fator := 1.0
 	if poder != nil {
 		l.mon.usosPoder[poder.ID]++
+		if l.m.Eter > 0 && poder.CustoEter > 0 {
+			l.mon.eter = max(0, l.mon.eter-poder.CustoEter)
+		}
 		t.Poder = poder.Nome
 	}
 	switch {
@@ -335,7 +356,13 @@ func (l *lutaEmAndamento) vezDoMonstro() bool {
 		if poder != nil {
 			fator = poder.Fator
 		}
-		dano, esquivou := l.golpeNoJogador(int(float64(l.m.Ataque)*fator + 0.5))
+		ataque := int(float64(l.m.Ataque)*fator + 0.5)
+		arcano := false
+		if poder != nil && poder.Arcano {
+			ataque = int(float64(l.m.Ataque)*fator + float64(l.m.Magia)*poder.FatorMagia + 0.5)
+			arcano = true
+		}
+		dano, esquivou := l.golpeNoJogadorComTipo(ataque, arcano)
 		t.Dano, t.Critico, t.Esquiva = dano.valor, dano.critico, esquivou
 		if poder != nil && poder.Tipo == poderDrenar && t.Dano > 0 {
 			t.Cura = min(t.Dano/2, l.m.Vida-l.mon.vida)
@@ -384,15 +411,7 @@ func (l *lutaEmAndamento) vezDoMonstro() bool {
 // (empate favorece o jogador). As habilidades são usadas sozinhas. É uma função pura: o
 // mesmo gerador dá sempre a mesma luta, o que permite testar e auditar.
 func SimularBatalha(jogador CombatenteRPG, monstro MonstroRPG, rng *rand.Rand) ResultadoSimulado {
-	if monstro.Velocidade == 0 {
-		monstro.Velocidade = VelocidadeDoMonstro(monstro)
-	}
-	if monstro.Elemento == "" {
-		monstro.Elemento = ElementoDoMonstro(monstro.ID)
-	}
-	if monstro.Poderes == nil {
-		monstro.Poderes = PoderesDoMonstro(monstro.ID)
-	}
+	EnriquecerMonstro(&monstro)
 	vidaInicial := jogador.Atributos.Vida
 	if jogador.VidaInicial > 0 && jogador.VidaInicial < vidaInicial {
 		vidaInicial = jogador.VidaInicial
@@ -400,7 +419,7 @@ func SimularBatalha(jogador CombatenteRPG, monstro MonstroRPG, rng *rand.Rand) R
 	diario := make([]TurnoBatalha, 0, maxTurnosBatalha*2)
 	l := &lutaEmAndamento{
 		j: jogador, m: monstro, rng: rng,
-		mon:         &estadoDoMonstro{vida: monstro.Vida, usosPoder: map[string]int{}},
+		mon:         &estadoDoMonstro{vida: monstro.Vida, eter: monstro.Eter, usosPoder: map[string]int{}},
 		vidaJogador: vidaInicial,
 		eter:        jogador.Atributos.Eter,
 		recargas:    map[string]int{},
@@ -433,6 +452,9 @@ func SimularBatalha(jogador CombatenteRPG, monstro MonstroRPG, rng *rand.Rand) R
 			}
 		}
 		l.eter = min(jogador.Atributos.Eter, l.eter+eterPorRodada)
+		if monstro.Eter > 0 {
+			l.mon.eter = min(monstro.Eter, l.mon.eter+eterPorRodada)
+		}
 		if l.rodadasReducao > 0 {
 			l.rodadasReducao--
 		}
@@ -496,6 +518,9 @@ type MonstroNaLista struct {
 	Bestiario   BestiarioDoMonstro `json:"bestiario"`
 	// Elemental: relação do elemento do jogador com o do monstro.
 	Elemental string `json:"elemental"`
+	// DicaTatica libera após a primeira vitória registrada no bestiário.
+	DicaTatica string `json:"dica_tatica,omitempty"`
+	EmDestaque bool   `json:"em_destaque,omitempty"`
 }
 
 // HojeRPG é o limite de batalhas, os saldos e a Vida guardada (sql/081).
@@ -523,6 +548,9 @@ type EstadoExpedicoes struct {
 	Custos    CustosRecuperacao `json:"custos"`
 	Hoje      HojeRPG           `json:"hoje"`
 	Monstros  []MonstroNaLista  `json:"monstros"`
+	// Regioes e RegiaoDestaque montam o mapa 2D de exploração.
+	Regioes        []RegiaoMapa `json:"regioes,omitempty"`
+	RegiaoDestaque string       `json:"regiao_destaque,omitempty"`
 	// Mana de cada tipo de luta (sql/118).
 	CustosMana CustosManaRPG `json:"custos_mana"`
 }
@@ -563,9 +591,7 @@ func lerMonstros(dbClient *supabase.Client) ([]MonstroRPG, error) {
 	}
 	sort.SliceStable(monstros, func(i, j int) bool { return monstros[i].Ordem < monstros[j].Ordem })
 	for i := range monstros {
-		monstros[i].Velocidade = VelocidadeDoMonstro(monstros[i])
-		monstros[i].Elemento = ElementoDoMonstro(monstros[i].ID)
-		monstros[i].Poderes = PoderesDoMonstro(monstros[i].ID)
+		EnriquecerMonstro(&monstros[i])
 	}
 	return monstros, nil
 }
@@ -626,25 +652,39 @@ func (h *RPGHandler) HandleGetExpedicoes(w http.ResponseWriter, r *http.Request)
 	}
 
 	elemento := elementoDoJogador(sessao.ctx)
+	regiaoDestaque := RegiaoEmDestaqueEm(time.Now())
+	regioes := CatalogoRegioes()
+	for i := range regioes {
+		if regioes[i].ID == regiaoDestaque {
+			regioes[i].EmDestaque = true
+			regioes[i].BonusDestaque = "+1 material da Forja garantido na vitória"
+		}
+	}
+
 	lista := make([]MonstroNaLista, 0, len(monstros))
 	for _, m := range monstros {
+		vitorias := hoje.Vitorias[m.ID]
 		lista = append(lista, MonstroNaLista{
 			MonstroRPG:  m,
 			Poder:       PoderDoMonstro(m),
 			Dificuldade: DificuldadeContra(equipamento.Atributos, m),
-			Bestiario:   MontarBestiario(hoje.Vitorias[m.ID]),
+			Bestiario:   MontarBestiario(vitorias),
 			Elemental:   RelacaoElemental(elemento, m.Elemento),
+			DicaTatica:  DicaTaticaDoMonstro(m.ID, vitorias),
+			EmDestaque:  m.Regiao != "" && m.Regiao == regiaoDestaque,
 		})
 	}
 	hoje.Regras = hoje.Regras.ComPadroes()
 	responderJSON(w, http.StatusOK, EstadoExpedicoes{
-		Atributos:  equipamento.Atributos,
-		Elemento:   elemento,
-		Vida:       MontarVida(equipamento.Atributos.Vida, hoje.VidaPerdida),
-		Custos:     CustosPara(sessao.nivel),
-		Hoje:       hoje,
-		Monstros:   lista,
-		CustosMana: CustosDeMana(sessao.nivel, lerRegrasComunidade(sessao.dbClient)),
+		Atributos:      equipamento.Atributos,
+		Elemento:       elemento,
+		Vida:           MontarVida(equipamento.Atributos.Vida, hoje.VidaPerdida),
+		Custos:         CustosPara(sessao.nivel),
+		Hoje:           hoje,
+		Monstros:       lista,
+		Regioes:        regioes,
+		RegiaoDestaque: regiaoDestaque,
+		CustosMana:     CustosDeMana(sessao.nivel, lerRegrasComunidade(sessao.dbClient)),
 	})
 }
 
@@ -813,7 +853,8 @@ func (h *RPGHandler) HandleBatalhar(w http.ResponseWriter, r *http.Request) {
 	if registro.ItemID != nil && itemSorteado != nil && *registro.ItemID == itemSorteado.ID {
 		recompensa.Item = itemSorteado
 	}
-	recompensa.Materiais = entregarMateriais(servico, sessao.userID, SortearMateriaisDaExpedicao(rng, resultado.Venceu))
+	emDestaque := monstro.Regiao != "" && monstro.Regiao == RegiaoEmDestaqueEm(time.Now())
+	recompensa.Materiais = entregarMateriais(servico, sessao.userID, SortearMateriaisDaExpedicaoEmDestaque(rng, resultado.Venceu, emDestaque))
 
 	responderJSON(w, http.StatusOK, RespostaBatalha{
 		Monstro:    *monstro,
@@ -853,9 +894,14 @@ type danoDeGolpe struct {
 	critico bool
 }
 
-// golpeNoJogador resolve um golpe do lado do monstro (dele ou de um ajudante): esquiva,
-// fúria, elemento e a redução da habilidade única. Devolve o dano e se o jogador esquivou.
+// golpeNoJogador resolve um golpe físico do lado do monstro (dele ou de um ajudante).
 func (l *lutaEmAndamento) golpeNoJogador(ataque int) (danoDeGolpe, bool) {
+	return l.golpeNoJogadorComTipo(ataque, false)
+}
+
+// golpeNoJogadorComTipo resolve um golpe físico ou arcano do monstro: esquiva, fúria,
+// crítico próprio do monstro, elemento e a redução da habilidade única.
+func (l *lutaEmAndamento) golpeNoJogadorComTipo(ataque int, arcano bool) (danoDeGolpe, bool) {
 	switch {
 	case l.esquivasCertas > 0:
 		l.esquivasCertas--
@@ -866,7 +912,19 @@ func (l *lutaEmAndamento) golpeNoJogador(ataque int) (danoDeGolpe, bool) {
 	if l.mon.furia > 0 {
 		ataque = int(float64(ataque)*l.mon.furia + 0.5)
 	}
-	valor, critico := golpe(l.rng, ataque, l.j.Atributos.Defesa, critMonstroPorMil, multCritMonstro)
+	defesa := l.j.Atributos.Defesa
+	if arcano {
+		defesa = defesa * 3 / 4
+	}
+	critPorMil := l.m.CriticoPorMil
+	if critPorMil <= 0 {
+		critPorMil = critMonstroPorMil
+	}
+	multCrit := float64(l.m.DanoCritico) / 100
+	if multCrit < 1 {
+		multCrit = multCritMonstro
+	}
+	valor, critico := golpe(l.rng, ataque, defesa, critPorMil, multCrit)
 	if m := MultiplicadorElemental(l.m.Elemento, l.j.Elemento); m != 1 {
 		valor = max(1, int(float64(valor)*m+0.5))
 	}
@@ -877,9 +935,21 @@ func (l *lutaEmAndamento) golpeNoJogador(ataque int) (danoDeGolpe, bool) {
 	return danoDeGolpe{valor, critico}, false
 }
 
-// escolherPoder decide se o monstro usa um poder nesta vez: o primeiro, na ordem do
-// catálogo, cujas condições valem e cuja chance sai. Sem poder, golpe comum (nil).
+// escolherPoder decide a ação tática do monstro pelo contexto da rodada: evita desperdício
+// (escudo com escudo ativo, fúria repetida, invocação com ajudante vivo), respeita Éter e
+// prioriza conforme Vida restante e ameaça do oponente.
 func (l *lutaEmAndamento) escolherPoder() *PoderMonstro {
+	type candidato struct {
+		poder  *PoderMonstro
+		prio   int
+		chance int
+		ordem  int
+	}
+	var cands []candidato
+	jogadorVidaBaixa := l.j.Atributos.Vida > 0 && l.vidaJogador*100 < l.j.Atributos.Vida*35
+	jogadorDefesaAlta := l.j.Atributos.Defesa > l.m.Ataque/2
+	monstroFerido := l.m.Vida > 0 && l.mon.vida*100 < l.m.Vida*70
+
 	for i := range l.m.Poderes {
 		p := &l.m.Poderes[i]
 		if p.MaxUsos > 0 && l.mon.usosPoder[p.ID] >= p.MaxUsos {
@@ -891,8 +961,66 @@ func (l *lutaEmAndamento) escolherPoder() *PoderMonstro {
 		if p.AbaixoDePct > 0 && l.mon.vida*100 >= l.m.Vida*p.AbaixoDePct {
 			continue
 		}
-		if l.rng.Intn(1000) < p.ChancePorMil {
-			return p
+		if l.m.Eter > 0 && p.CustoEter > 0 && l.mon.eter < p.CustoEter {
+			continue
+		}
+		// Travas táticas para não desperdiçar turno nem usos.
+		if p.Tipo == poderEscudo && l.mon.rodadasEscudo > 0 {
+			continue
+		}
+		if p.Tipo == poderFuria && l.mon.furia > 0 {
+			continue
+		}
+		if p.Tipo == poderInvocar && l.ajudanteVivo() != nil {
+			continue
+		}
+
+		prio := 50
+		chance := p.ChancePorMil
+		switch p.Tipo {
+		case poderFuria:
+			prio = 100
+		case poderInvocar:
+			prio = 90
+		case poderEscudo:
+			if jogadorVidaBaixa {
+				prio = 20
+			} else {
+				prio = 80
+				if monstroFerido {
+					chance = min(1000, chance+60)
+				}
+			}
+		case poderDrenar:
+			prio = 70
+			if monstroFerido {
+				prio = 85
+				chance = min(1000, chance+50)
+			}
+		case poderGolpe:
+			prio = 60
+			if jogadorVidaBaixa {
+				prio = 95
+				chance = min(1000, chance+70)
+			} else if p.Arcano && jogadorDefesaAlta {
+				prio = 75
+				chance = min(1000, chance+50)
+			}
+		}
+		cands = append(cands, candidato{poder: p, prio: prio, chance: chance, ordem: i})
+	}
+	if len(cands) == 0 {
+		return nil
+	}
+	sort.Slice(cands, func(i, j int) bool {
+		if cands[i].prio != cands[j].prio {
+			return cands[i].prio > cands[j].prio
+		}
+		return cands[i].ordem < cands[j].ordem
+	})
+	for _, c := range cands {
+		if l.rng.Intn(1000) < c.chance {
+			return c.poder
 		}
 	}
 	return nil

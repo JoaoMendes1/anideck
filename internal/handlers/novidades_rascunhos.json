@@ -186,5 +186,17 @@
         "caminho": "/personagem"
       }
     ]
+  },
+  {
+    "chave": "2026-11-18-mapa-2d-e-ia-monstros",
+    "titulo": "Mapa 2D nas Expedições e monstros mais táticos",
+    "categoria": "novidade",
+    "resumo": "As Expedições ganharam um mapa 2D conectando quatro regiões do mundo: Clareira Inicial, Bosque Sombrio, Ruínas do Vazio e Cume Ancestral, com artes ampliadas dos monstros e alternância rápida para o modo Lista.\n\nAo tocar em um monstro, você abre a ficha completa com habitat, poderes e os 8 atributos comparados aos seus. Vencer a primeira luta libera a dica tática dele no bestiário. Todos os dias uma região entra em destaque garantindo +1 material da Forja em cada vitória.\n\nEm combate, os monstros agora usam Magia, Éter, Crítico e Esquiva reais e reagem melhor ao momento da luta.",
+    "links": [
+      {
+        "rotulo": "Explorar o Mapa 2D",
+        "caminho": "/expedicoes"
+      }
+    ]
   }
 ]

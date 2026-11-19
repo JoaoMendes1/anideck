@@ -52,17 +52,9 @@ func SimularBatalhaEmGrupo(herois []CombatenteRPG, monstro MonstroRPG, rng *rand
 
 // simularGrupo aceita a lista de quem está fora (caído antes, na masmorra).
 func simularGrupo(herois []CombatenteRPG, fora []bool, monstro MonstroRPG, rng *rand.Rand) ResultadoEmGrupo {
-	if monstro.Velocidade == 0 {
-		monstro.Velocidade = VelocidadeDoMonstro(monstro)
-	}
-	if monstro.Elemento == "" {
-		monstro.Elemento = ElementoDoMonstro(monstro.ID)
-	}
-	if monstro.Poderes == nil {
-		monstro.Poderes = PoderesDoMonstro(monstro.ID)
-	}
+	EnriquecerMonstro(&monstro)
 	diario := make([]TurnoBatalha, 0, maxTurnosBatalha*len(herois)*2)
-	mon := &estadoDoMonstro{vida: monstro.Vida, usosPoder: map[string]int{}}
+	mon := &estadoDoMonstro{vida: monstro.Vida, eter: monstro.Eter, usosPoder: map[string]int{}}
 	lutas := make([]*lutaEmAndamento, len(herois))
 	res := ResultadoEmGrupo{Herois: make([]HeroiNoResultado, len(herois)), VidaMonstro: monstro.Vida}
 	for i, h := range herois {
@@ -151,6 +143,9 @@ func simularGrupo(herois []CombatenteRPG, fora []bool, monstro MonstroRPG, rng *
 		}
 		if mon.rodadasEscudo > 0 {
 			mon.rodadasEscudo--
+		}
+		if monstro.Eter > 0 {
+			mon.eter = min(monstro.Eter, mon.eter+eterPorRodada)
 		}
 	}
 	return fim(false, maxTurnosBatalha)

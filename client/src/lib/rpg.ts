@@ -322,8 +322,18 @@ export interface MonstroRPG {
   bilhetes: number
   chance_item: number
   raridade_item: Raridade
-  /** Elemento e poderes vêm do código do servidor (rpg_combate_avancado.go). */
+  /** Elemento, poderes e atributos complementares vêm do servidor (rpg_combate_avancado.go). */
+  magia?: number
+  eter?: number
+  velocidade?: number
+  critico_por_mil?: number
+  dano_critico?: number
+  esquiva_por_mil?: number
   elemento?: string
+  comportamento?: string
+  regiao?: string
+  regiao_nome?: string
+  habitat?: string
   poderes?: PoderDoMonstro[]
 }
 
@@ -332,6 +342,8 @@ export interface PoderDoMonstro {
   nome: string
   descricao: string
   tipo: 'golpe' | 'drenar' | 'escudo' | 'furia' | 'invocar'
+  arcano?: boolean
+  custo_eter?: number
 }
 
 export type RelacaoElemental = 'vantagem' | 'desvantagem' | 'neutro'
@@ -388,6 +400,21 @@ export interface MonstroNaLista extends MonstroRPG {
   dificuldade: Dificuldade
   bestiario?: BestiarioDoMonstro
   elemental?: RelacaoElemental
+  dica_tatica?: string
+  em_destaque?: boolean
+}
+
+export interface RegiaoMapa {
+  id: string
+  nome: string
+  subtitulo: string
+  bioma: string
+  efeito_bioma: string
+  faixa_nivel: string
+  ordem: number
+  monstros: string[]
+  em_destaque?: boolean
+  bonus_destaque?: string
 }
 
 /** Regras de recuperação da Vida, em por mil da Vida máxima (sql/081). */
@@ -443,8 +470,26 @@ export interface EstadoExpedicoes {
   custos?: CustosRecuperacao
   hoje: HojeRPG
   monstros: MonstroNaLista[]
+  regioes?: RegiaoMapa[]
+  regiao_destaque?: string
   /** Mana de cada luta (sql/118); ausente em servidor antigo. */
   custos_mana?: CustosManaRPG
+}
+
+export function regioesDoMapa(estado: Pick<EstadoExpedicoes, 'regioes' | 'monstros'>): RegiaoMapa[] {
+  if (estado.regioes && estado.regioes.length > 0) return estado.regioes
+  return [
+    {
+      id: 'rota_expedicoes',
+      nome: 'Fronteira de Éter',
+      subtitulo: 'Território de exploração',
+      bioma: 'Campo Aberto',
+      efeito_bioma: 'Região padrão quando o mapa detalhado não foi enviado.',
+      faixa_nivel: 'Todos os níveis',
+      ordem: 1,
+      monstros: estado.monstros.map((m) => m.id),
+    },
+  ]
 }
 
 export interface CustosManaRPG {
@@ -514,6 +559,9 @@ export function descreverTurno(turno: TurnoBatalha, nomeDoMonstro: string): { te
     if (turno.esquiva) return { texto: `${como}, e você esquiva`, valor: '0' }
     if (turno.cura) return { texto: `${como} e recupera ${turno.cura} de Vida`, valor: `−${turno.dano}` }
     return { texto: como, valor: `−${turno.dano}` }
+  }
+  if (turno.esquiva) {
+    return { texto: `${turno.habilidade ? `Você usa ${turno.habilidade}` : 'Você golpeia'}, e ${nomeDoMonstro} esquiva`, valor: '0' }
   }
   if (turno.alvo && turno.dano) {
     return { texto: `${turno.habilidade ? `Você usa ${turno.habilidade}` : 'Você golpeia'} em ${turno.alvo}`, valor: `−${turno.dano}` }
