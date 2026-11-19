@@ -5,6 +5,7 @@ import { ArrowDown, ArrowUp, ChevronsDownUp, ChevronsUpDown, Eye, EyeOff, Rotate
 import {
   CATALOGO_SECOES_INICIO,
   FONTES_DESTAQUE,
+  SECAO_HUD_INICIO,
   SECOES_LATERAIS,
   SECOES_PRINCIPAIS,
   alternarItemSecao,
@@ -13,6 +14,7 @@ import {
   type ConfigInicio,
   type FonteDestaqueInicio,
   type SecaoInicioId,
+  type SecaoMinimizavelInicioId,
 } from '../../lib/inicioPreferencias'
 
 interface Props {
@@ -155,12 +157,14 @@ export default function OrganizarInicioModal({
     })
   }
 
-  const alternarMinimizada = (id: SecaoInicioId) => {
+  const alternarMinimizada = (id: SecaoMinimizavelInicioId) => {
     aoAtualizar({
       ...config,
       minimizadas: alternarItemSecao(config.minimizadas, id),
     })
   }
+
+  const hudMinimizado = config.minimizadas.includes(SECAO_HUD_INICIO)
 
   const mudarFonteDestaque = (fonte: FonteDestaqueInicio) => {
     aoAtualizar({
@@ -206,6 +210,35 @@ export default function OrganizarInicioModal({
         </div>
 
         <div className="p-5 overflow-y-auto custom-scrollbar space-y-6">
+          <div className="rounded-xl border border-line bg-panel-2/80 p-3 flex items-center justify-between gap-3">
+            <div className="min-w-0 flex-1">
+              <div className="flex items-center gap-2 flex-wrap">
+                <span className="font-bold text-sm text-text">Painel do herói (topo)</span>
+                {hudMinimizado && (
+                  <span className="font-mono text-xs px-1.5 py-0.5 rounded bg-holo-2/10 border border-holo-2/30 text-holo-2">
+                    Minimizado
+                  </span>
+                )}
+              </div>
+              <p className="text-xs text-muted m-0 mt-0.5">
+                Recolha para ir direto aos seus animes ao abrir o app
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={() => alternarMinimizada(SECAO_HUD_INICIO)}
+              aria-label={hudMinimizado ? 'Expandir Painel do herói' : 'Minimizar Painel do herói'}
+              className={`h-8 px-2.5 rounded-lg border flex items-center justify-center gap-1 text-xs font-bold cursor-pointer shrink-0 ${
+                hudMinimizado
+                  ? 'bg-holo-2/15 border-holo-2/40 text-holo-2'
+                  : 'bg-panel border-line hover:border-holo-2 text-muted hover:text-text'
+              }`}
+            >
+              {hudMinimizado ? <ChevronsUpDown size={14} /> : <ChevronsDownUp size={14} />}
+              <span>{hudMinimizado ? 'Expandir' : 'Recolher'}</span>
+            </button>
+          </div>
+
           <div>
             <p className="font-mono text-xs uppercase tracking-widest text-holo-1 m-0 mb-2">
               Fonte do bloco &ldquo;Em destaque&rdquo;

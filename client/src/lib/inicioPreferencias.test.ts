@@ -67,10 +67,19 @@ describe('inicioPreferencias', () => {
     expect(moverSecaoNaOrdem(base, 'continuar', -1, SECOES_PRINCIPAIS)).toEqual(base)
   })
 
-  it('alterna visibilidade e minimização sem duplicar IDs', () => {
+  it('alterna visibilidade e minimização sem duplicar IDs e permite minimizar o painel do herói', () => {
     const ocultas1 = alternarItemSecao([], 'ranking')
     expect(ocultas1).toEqual(['ranking'])
     expect(alternarItemSecao(ocultas1, 'ranking')).toEqual([])
+
+    const cfg = normalizarConfigInicio({
+      ordem: ['hud', 'continuar'],
+      ocultas: ['hud'],
+      minimizadas: ['hud', 'hud', 'trilhas'],
+    })
+    expect(cfg.ordem).not.toContain('hud')
+    expect(cfg.ocultas).not.toContain('hud')
+    expect(cfg.minimizadas).toEqual(['hud', 'trilhas'])
   })
 
   it('ordena missões priorizando prontas para resgate, depois em andamento, depois não iniciadas e por fim coletadas', () => {

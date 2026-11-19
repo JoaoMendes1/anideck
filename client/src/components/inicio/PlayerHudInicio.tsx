@@ -4,7 +4,7 @@
 // O mesmo bloco de identidade serve as duas larguras: no celular ele fica por cima da arte
 // (mesma célula do grid); no desktop ganha coluna própria, ao lado da insígnia e do palco.
 import { Link } from 'react-router-dom'
-import { ChevronRight, SlidersHorizontal, Sparkles, Target } from 'lucide-react'
+import { ChevronDown, ChevronRight, ChevronUp, Coins, Flame, Heart, SlidersHorizontal, Sparkles, Target } from 'lucide-react'
 import BarraVital from '../hud/BarraVital'
 import FlamulaRank from '../hud/FlamulaRank'
 import InsigniaRank from '../hud/InsigniaRank'
@@ -30,6 +30,8 @@ interface Props {
   nome: string | null
   dataHoje: string
   aoAbrirGosto: () => void
+  minimizada?: boolean
+  aoAlternarMinimizar?: () => void
 }
 
 // Cantos cortados em diagonal: a assinatura visual do palco.
@@ -43,18 +45,29 @@ const PARTICULAS = [
   { esquerda: '88%', baixo: 150, tamanho: 4, cor: '#3FE0F0', atraso: '5s' },
 ]
 
-function PainelCarregando() {
-  return <section className="mb-6 h-[560px] lg:h-[440px] rounded-3xl shimmer" aria-label="Carregando seu painel" />
+function PainelCarregando({ minimizada }: { minimizada: boolean }) {
+  return (
+    <section
+      className={`mb-6 rounded-3xl shimmer ${minimizada ? 'h-24' : 'h-[560px] lg:h-[440px]'}`}
+      aria-label="Carregando seu painel"
+    />
+  )
 }
 
-export default function PlayerHudInicio({ nome, dataHoje, aoAbrirGosto }: Props) {
+export default function PlayerHudInicio({
+  nome,
+  dataHoje,
+  aoAbrirGosto,
+  minimizada = false,
+  aoAlternarMinimizar,
+}: Props) {
   const status = useResumoGuilda()
   const { estado, indisponivel } = useComunidade()
   const { saldo, carregando: carregandoCarteira } = useCarteira()
   const { concluidas, total, todasResgatadas } = useMissoesHoje()
   const { dados: personagem } = usePersonagem()
 
-  if (!status) return <PainelCarregando />
+  if (!status) return <PainelCarregando minimizada={minimizada} />
 
   const heroi = personagem?.existe ? personagem : null
   const base = heroi?.personagem?.personagem_base ?? PERSONAGEM_BASE_PADRAO
@@ -71,6 +84,100 @@ export default function PlayerHudInicio({ nome, dataHoje, aoAbrirGosto }: Props)
 
   const rolarParaMissoes = () => {
     document.getElementById('missoes-diarias-card')?.scrollIntoView({ behavior: 'smooth', block: 'center' })
+  }
+
+  if (minimizada) {
+    return (
+      <section
+        aria-label="Painel do herói minimizado"
+        className="mb-4 rounded-2xl border border-holo-3/30 bg-gradient-to-r from-[#171034] to-[#0d0a1d] px-3.5 py-3 sm:px-5"
+      >
+        <div className="flex flex-wrap items-center justify-between gap-2.5">
+          <div className="flex min-w-0 flex-1 items-center gap-2.5">
+            <Link
+              to="/guilda"
+              aria-label={`Rank ${status.rank}: ${status.titulo_rank}. Abrir a Guilda`}
+              className="shrink-0 rounded-lg focus-visible:outline-2 focus-visible:outline-holo-3"
+            >
+              <InsigniaRank rank={status.rank} tamanho={34} />
+            </Link>
+            <div className="min-w-0 flex-1">
+              <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5">
+                <h1 className="m-0 truncate font-anton text-lg uppercase leading-tight text-text sm:text-xl">
+                  {nome ?? 'Sua central'}
+                </h1>
+                <span className="font-mono text-[11px] font-bold uppercase tracking-wider text-holo-3">
+                  Rank {status.rank} · Nv {status.nivel}
+                </span>
+              </div>
+              <div className="mt-1 flex items-center gap-2">
+                <BarraVital tipo="xp" pct={status.progresso_pct} className="h-1.5 max-w-[160px] flex-1" />
+                <span className="font-mono text-[11px] text-muted tabular-nums">
+                  {status.xp_no_nivel}/{status.xp_para_proximo} XP
+                </span>
+              </div>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-2 shrink-0">
+            <button
+              type="button"
+              onClick={aoAlternarMinimizar}
+              aria-label="Expandir painel do herói"
+              aria-expanded={false}
+              className="inline-flex h-8 cursor-pointer items-center gap-1 rounded-full border border-holo-3/40 bg-panel/80 px-3 text-xs font-bold text-holo-3 transition-colors hover:bg-holo-3/15"
+            >
+              <ChevronDown size={14} aria-hidden="true" />
+              <span>Expandir</span>
+            </button>
+          </div>
+        </div>
+
+        <div className="mt-2.5 flex flex-wrap items-center justify-between gap-2 border-t border-holo-3/15 pt-2.5">
+          <div className="flex flex-wrap items-center gap-x-3 gap-y-1 font-mono text-xs tabular-nums">
+            {estado && (
+              <>
+                <Link to="/guilda" className="inline-flex items-center gap-1 text-coral hover:underline">
+                  <Heart size={12} aria-hidden="true" />
+                  <span>{hpEscalado.atual}/{hpEscalado.maximo}</span>
+                </Link>
+                <Link to="/guilda" className="inline-flex items-center gap-1 text-mana hover:underline">
+                  <Flame size={12} aria-hidden="true" />
+                  <span>{mana}/{mpMax}</span>
+                </Link>
+              </>
+            )}
+            <Link to="/loja" className="inline-flex items-center gap-1 text-gold hover:underline">
+              <Coins size={12} aria-hidden="true" />
+              <span>{carregandoCarteira ? '…' : `${saldo} ₳`}</span>
+            </Link>
+          </div>
+
+          <div className="flex items-center gap-1.5">
+            <button
+              type="button"
+              onClick={rolarParaMissoes}
+              className="inline-flex h-7 cursor-pointer items-center gap-1 rounded-lg border border-gold/35 bg-gold/10 px-2 text-[11px] font-bold text-gold hover:bg-gold/20"
+            >
+              Missões <span className="font-mono tabular-nums">{concluidas}/{total}</span>
+            </button>
+            <Link
+              to="/meu-gosto"
+              className="inline-flex h-7 items-center rounded-lg border border-holo-2/40 bg-holo-2/15 px-2 text-[11px] font-bold text-[#c7b8ff] hover:bg-holo-2/25"
+            >
+              Meu Gosto
+            </Link>
+            <button
+              type="button"
+              onClick={aoAbrirGosto}
+              className="inline-flex h-7 cursor-pointer items-center rounded-lg border border-line bg-panel-2 px-2 text-[11px] font-bold text-text hover:border-holo-2"
+            >
+              Ajustar
+            </button>
+          </div>
+        </div>
+      </section>
+    )
   }
 
   return (
@@ -143,7 +250,7 @@ export default function PlayerHudInicio({ nome, dataHoje, aoAbrirGosto }: Props)
 
           {/* Identidade */}
           <div className="relative z-10 col-start-1 row-start-1 lg:col-start-3 flex flex-col gap-4 p-4 sm:p-6 lg:pl-6 lg:pr-8 lg:pt-7 min-h-[340px] lg:min-h-0">
-            <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-3">
+            <div className="flex items-start justify-between gap-2 lg:gap-3">
               <div className="flex flex-col items-start gap-2 min-w-0 max-w-[230px] sm:max-w-sm lg:max-w-none">
                 <Link to="/guilda" className="lg:hidden rounded-lg focus-visible:outline-2 focus-visible:outline-holo-3" aria-label={`Rank ${status.rank}: ${status.titulo_rank}. Abrir a Guilda`}>
                   <FlamulaRank rank={status.rank} titulo={status.titulo_rank} tamanho={46} />
@@ -169,11 +276,25 @@ export default function PlayerHudInicio({ nome, dataHoje, aoAbrirGosto }: Props)
                   </span>
                 )}
               </div>
-              {status.streak_atual > 0 && (
-                <div className="hidden lg:block shrink-0">
-                  <SeloStreak dias={status.streak_atual} />
-                </div>
-              )}
+              <div className="flex flex-col items-end gap-2 shrink-0">
+                {aoAlternarMinimizar && (
+                  <button
+                    type="button"
+                    onClick={aoAlternarMinimizar}
+                    aria-label="Minimizar painel do herói"
+                    aria-expanded={true}
+                    className="inline-flex h-8 cursor-pointer items-center gap-1 rounded-full border border-line bg-void/70 backdrop-blur-sm px-2.5 text-xs font-bold text-muted transition-colors hover:border-holo-3 hover:text-text"
+                  >
+                    <ChevronUp size={14} aria-hidden="true" />
+                    <span>Minimizar</span>
+                  </button>
+                )}
+                {status.streak_atual > 0 && (
+                  <div className="hidden lg:block shrink-0">
+                    <SeloStreak dias={status.streak_atual} />
+                  </div>
+                )}
+              </div>
             </div>
 
             <div className="mt-auto lg:mt-2 flex items-end gap-3 lg:gap-4">

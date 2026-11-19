@@ -72,15 +72,16 @@ const ROTULO_DE_SECAO = 'font-mono text-xs font-semibold uppercase tracking-wide
 
 function Cabecalho() {
   return (
-    <header className="mb-4 hidden items-center gap-1 select-none md:flex">
+    <header className="mb-3 sm:mb-4 flex items-center gap-2.5 select-none">
       <Link
         to="/guilda"
         aria-label="Voltar para a Guilda"
-        className="-ml-2 flex h-10 w-11 items-center justify-center rounded-full text-muted hover:text-text transition-colors"
+        className="inline-flex h-9 items-center gap-1 rounded-full border border-line bg-panel px-3 text-xs font-bold text-text transition-colors hover:border-holo-3/60 hover:text-holo-3"
       >
-        <ChevronLeft size={22} />
+        <ChevronLeft size={16} aria-hidden="true" />
+        <span>Voltar</span>
       </Link>
-      <p className={ROTULO_DE_SECAO}>Personagem</p>
+      <p className={ROTULO_DE_SECAO}>Guilda · Personagem</p>
     </header>
   )
 }

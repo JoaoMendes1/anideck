@@ -52,11 +52,16 @@ export default function ExpedicaoDoCla() {
 
   return (
     <div className={CONTAINER}>
-      <header className="mb-4 hidden items-center gap-1 select-none md:flex">
-        <Link to="/clas" aria-label="Voltar para os clãs" className="-ml-2 flex h-10 w-11 items-center justify-center rounded-full text-muted hover:text-text">
-          <ChevronLeft size={22} />
+      <header className="mb-3 sm:mb-4 flex items-center gap-2.5 select-none">
+        <Link
+          to="/clas"
+          aria-label="Voltar para os clãs"
+          className="inline-flex h-9 items-center gap-1 rounded-full border border-line bg-panel px-3 text-xs font-bold text-text transition-colors hover:border-holo-3/60 hover:text-holo-3"
+        >
+          <ChevronLeft size={16} aria-hidden="true" />
+          <span>Voltar</span>
         </Link>
-        <p className={ROTULO_DE_SECAO}>Expedição do clã</p>
+        <p className={ROTULO_DE_SECAO}>Clãs · Expedição do clã</p>
       </header>
 
       {carregando ? (
@@ -94,7 +99,7 @@ export default function ExpedicaoDoCla() {
                 <IconeDoMonstro monstro={chefe.monstro} tamanho="h-16 w-16" />
                 <div className="min-w-0 flex-1">
                   <h2 className="m-0 text-lg font-bold">{chefe.monstro.nome}</h2>
-                  <p className="m-0 font-mono text-xs text-muted line-clamp-2 sm:line-clamp-none">nível {chefe.monstro.nivel} · {chefe.derrotado ? 'derrotado' : 'de pé'}</p>
+                  <p className="m-0 font-mono text-xs text-muted">nível {chefe.monstro.nivel} · {chefe.derrotado ? 'derrotado' : 'de pé'}</p>
                 </div>
               </div>
               <div>

@@ -258,5 +258,29 @@
         "caminho": "/expedicoes"
       }
     ]
+  },
+  {
+    "chave": "2026-11-19-voltar-celular-bottomnav-painel-inicio",
+    "titulo": "Botão Voltar nas telas do jogo, atalhos na barra inferior e painel recolhível na Início",
+    "categoria": "layout",
+    "resumo": "As telas de Expedições, Masmorras, Personagem, Invocação, Duelos, Chefão e Expedição do Clã agora exibem um botão Voltar visível no celular para navegar sem esforço.\n\nA barra inferior do celular ganhou atalhos diretos para Guilda e Personagem, a tela de Masmorras ficou mais limpa sem barra cinza nem textos cortados, e o painel do herói no topo da Início agora pode ser minimizado com um toque para economizar espaço.",
+    "links": [
+      {
+        "rotulo": "Ver Início",
+        "caminho": "/"
+      },
+      {
+        "rotulo": "Abrir Guilda",
+        "caminho": "/guilda"
+      },
+      {
+        "rotulo": "Ver Personagem",
+        "caminho": "/personagem"
+      },
+      {
+        "rotulo": "Ver Masmorras",
+        "caminho": "/masmorras"
+      }
+    ]
   }
 ]

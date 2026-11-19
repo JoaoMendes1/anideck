@@ -45,6 +45,24 @@ func TestNormalizarConfigInicio_AceitaFontesValidas(t *testing.T) {
 	}
 }
 
+func TestNormalizarConfigInicio_PermiteHudApenasEmMinimizadas(t *testing.T) {
+	cfg := NormalizarConfigInicio(ConfigInicio{
+		Ordem:       []string{"hud", "continuar"},
+		Ocultas:     []string{"hud"},
+		Minimizadas: []string{"hud", "hud", "trilhas"},
+	})
+
+	if len(cfg.Ordem) != len(SecoesInicioPadrao) || cfg.Ordem[0] != "continuar" {
+		t.Fatalf("hud não deve entrar na ordem das seções: %v", cfg.Ordem)
+	}
+	if len(cfg.Ocultas) != 0 {
+		t.Fatalf("hud não deve ser aceito em ocultas: %v", cfg.Ocultas)
+	}
+	if !reflect.DeepEqual(cfg.Minimizadas, []string{"hud", "trilhas"}) {
+		t.Fatalf("esperava [hud trilhas] em minimizadas, obteve %v", cfg.Minimizadas)
+	}
+}
+
 func TestHandleGetPreferencias_SemAutenticacaoRetorna401(t *testing.T) {
 	h := &InicioPreferenciasHandler{}
 	req := httptest.NewRequest(http.MethodGet, "/api/inicio/preferencias", nil)

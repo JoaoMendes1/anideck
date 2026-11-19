@@ -53,11 +53,21 @@ func ConfigInicioPadrao() ConfigInicio {
 	}
 }
 
+// SecaoHudInicio identifica o painel do herói no topo da Início, que pode ser minimizado
+// pelo usuário sem entrar na lista reordenável ou ocultável das seções abaixo dele.
+const SecaoHudInicio = "hud"
+
 func NormalizarConfigInicio(c ConfigInicio) ConfigInicio {
 	secoesValidas := make(map[string]bool, len(SecoesInicioPadrao))
 	for _, s := range SecoesInicioPadrao {
 		secoesValidas[s] = true
 	}
+
+	secoesMinimizaveis := make(map[string]bool, len(SecoesInicioPadrao)+1)
+	for _, s := range SecoesInicioPadrao {
+		secoesMinimizaveis[s] = true
+	}
+	secoesMinimizaveis[SecaoHudInicio] = true
 
 	vistosOrdem := make(map[string]bool, len(SecoesInicioPadrao))
 	ordem := make([]string, 0, len(SecoesInicioPadrao))
@@ -74,11 +84,11 @@ func NormalizarConfigInicio(c ConfigInicio) ConfigInicio {
 		}
 	}
 
-	filtrarUnicas := func(origem []string) []string {
+	filtrarUnicas := func(origem []string, permitidas map[string]bool) []string {
 		vistos := make(map[string]bool, len(origem))
 		saida := make([]string, 0, len(origem))
 		for _, id := range origem {
-			if secoesValidas[id] && !vistos[id] {
+			if permitidas[id] && !vistos[id] {
 				vistos[id] = true
 				saida = append(saida, id)
 			}
@@ -93,8 +103,8 @@ func NormalizarConfigInicio(c ConfigInicio) ConfigInicio {
 
 	return ConfigInicio{
 		Ordem:         ordem,
-		Ocultas:       filtrarUnicas(c.Ocultas),
-		Minimizadas:   filtrarUnicas(c.Minimizadas),
+		Ocultas:       filtrarUnicas(c.Ocultas, secoesValidas),
+		Minimizadas:   filtrarUnicas(c.Minimizadas, secoesMinimizaveis),
 		DestaqueFonte: fonte,
 	}
 }

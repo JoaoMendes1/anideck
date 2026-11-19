@@ -94,11 +94,16 @@ export default function Invocacao() {
 
   return (
     <div className={CONTAINER}>
-      <header className="mb-4 hidden items-center gap-1 select-none md:flex">
-        <Link to="/personagem" aria-label="Voltar para o personagem" className="-ml-2 flex h-10 w-11 items-center justify-center rounded-full text-muted hover:text-text">
-          <ChevronLeft size={22} />
+      <header className="mb-3 sm:mb-4 flex items-center gap-2.5 select-none">
+        <Link
+          to="/personagem"
+          aria-label="Voltar para o personagem"
+          className="inline-flex h-9 items-center gap-1 rounded-full border border-line bg-panel px-3 text-xs font-bold text-text transition-colors hover:border-holo-3/60 hover:text-holo-3"
+        >
+          <ChevronLeft size={16} aria-hidden="true" />
+          <span>Voltar</span>
         </Link>
-        <p className={ROTULO_DE_SECAO}>Invocação</p>
+        <p className={ROTULO_DE_SECAO}>Personagem · Invocação</p>
       </header>
 
       {carregando ? (
@@ -128,7 +133,7 @@ export default function Invocacao() {
             >
               <Sparkles size={40} className="text-gold motion-safe:animate-pulse" aria-hidden="true" />
               <h1 className="m-0 font-anton text-[1.75rem] sm:text-[2.6rem] uppercase leading-none">Círculo de Invocação</h1>
-              <p className="m-0 max-w-md text-sm text-muted line-clamp-2 sm:line-clamp-none">
+              <p className="m-0 max-w-md text-xs sm:text-sm leading-relaxed text-muted">
                 Troque bilhetes de expedição por uma chance de equipamento. Quando não vem item, vem Ouro. Repetidos se acumulam no inventário.
               </p>
               <p className="m-0 inline-flex items-center gap-2 rounded-full border border-gold/50 bg-void/60 px-4 py-1.5 font-mono text-sm font-bold text-gold">

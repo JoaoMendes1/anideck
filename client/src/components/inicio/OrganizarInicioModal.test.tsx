@@ -47,6 +47,11 @@ describe('OrganizarInicioModal', () => {
       expect.objectContaining({ minimizadas: ['trilhas'] }),
     )
 
+    fireEvent.click(screen.getByRole('button', { name: 'Minimizar Painel do herói' }))
+    expect(aoAtualizar).toHaveBeenLastCalledWith(
+      expect.objectContaining({ minimizadas: ['hud'] }),
+    )
+
     fireEvent.click(screen.getByRole('button', { name: 'Restaurar padrão' }))
     expect(aoAtualizar).toHaveBeenLastCalledWith(padrao)
   })

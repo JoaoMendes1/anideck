@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import {
+  ChevronLeft,
   Swords,
   Trophy,
   ShieldAlert,
@@ -54,18 +55,38 @@ export default function Chefao() {
     }
   }, [session?.access_token])
 
+  const cabecalhoVoltar = (
+    <header className="mb-3 sm:mb-4 flex items-center gap-2.5 select-none">
+      <Link
+        to="/guilda"
+        aria-label="Voltar para a Guilda"
+        className="inline-flex h-9 items-center gap-1 rounded-full border border-line bg-panel px-3 text-xs font-bold text-text transition-colors hover:border-holo-3/60 hover:text-holo-3"
+      >
+        <ChevronLeft size={16} aria-hidden="true" />
+        <span>Voltar</span>
+      </Link>
+      <p className="font-mono text-xs font-semibold uppercase tracking-widest text-muted m-0">
+        Guilda · Chefão da temporada
+      </p>
+    </header>
+  )
+
   if (carregando) {
     return (
-      <div className="min-h-screen pt-28 pb-16 px-4 max-w-4xl mx-auto flex flex-col items-center justify-center">
-        <div className="w-10 h-10 rounded-full border-2 border-coral border-t-transparent animate-spin mb-4" />
-        <p className="text-muted text-sm font-mono tracking-wider uppercase">Conectando à Raid da Temporada...</p>
+      <div className="pt-3 sm:pt-6 pb-24 px-4 sm:px-6 lg:px-10 max-w-4xl mx-auto">
+        {cabecalhoVoltar}
+        <div className="min-h-[320px] flex flex-col items-center justify-center">
+          <div className="w-10 h-10 rounded-full border-2 border-coral border-t-transparent animate-spin mb-4" />
+          <p className="text-muted text-sm font-mono tracking-wider uppercase">Conectando à Raid da Temporada...</p>
+        </div>
       </div>
     )
   }
 
   if (!chefao || !chefao.ativo) {
     return (
-      <div className="min-h-screen pt-28 pb-16 px-4 max-w-2xl mx-auto text-center">
+      <div className="pt-3 sm:pt-6 pb-24 px-4 sm:px-6 lg:px-10 max-w-2xl mx-auto text-center">
+        <div className="text-left">{cabecalhoVoltar}</div>
         <div className="p-8 rounded-3xl bg-panel border border-line shadow-xl">
           <div className="w-16 h-16 rounded-2xl bg-panel-2 border border-line flex items-center justify-center text-3xl mx-auto mb-4">
             🐉
@@ -94,7 +115,8 @@ export default function Chefao() {
   const participacaoRaidPct = danoTotal > 0 ? Math.min(100, Math.round((meuDano / danoTotal) * 1000) / 10) : 0
 
   return (
-    <div className="min-h-screen pt-24 pb-20 px-4 max-w-4xl mx-auto">
+    <div className="pt-3 sm:pt-6 pb-24 px-4 sm:px-6 lg:px-10 max-w-4xl mx-auto">
+      {cabecalhoVoltar}
       {/* BANNER PRINCIPAL DO CHEFÃO */}
       <div className="relative p-6 sm:p-8 rounded-3xl bg-gradient-to-b from-panel-2 via-panel to-void border border-coral/30 overflow-hidden shadow-2xl mb-8">
         {/* Glow dinâmico */}

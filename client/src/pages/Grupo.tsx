@@ -216,7 +216,7 @@ export default function Grupo() {
                 className="h-10 w-full rounded-full border border-line bg-panel-2 pl-8 pr-3 text-sm text-text outline-none focus:border-holo-2"
               />
             </label>
-            <div className="-mx-1 flex gap-1 overflow-x-auto px-1">
+            <div className="-mx-1 flex gap-1 overflow-x-auto scrollbar-hide px-1">
               {(['todos', 'amigos', 'cla', 'online'] as Filtro[]).map((f) => (
                 <button
                   key={f}

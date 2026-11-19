@@ -23,6 +23,7 @@ import {
   type AnimeResumido, type EntradaDoDeck, type ProgressoDoAnime,
 } from '../lib/inicio'
 import {
+  SECAO_HUD_INICIO,
   SECOES_LATERAIS,
   SECOES_PRINCIPAIS,
   alternarItemSecao,
@@ -35,6 +36,7 @@ import {
   type ConfigInicio,
   type FonteDestaqueInicio,
   type SecaoInicioId,
+  type SecaoMinimizavelInicioId,
 } from '../lib/inicioPreferencias'
 import SuaSemana from '../components/inicio/SuaSemana'
 import HeroProximoEpisodio from '../components/inicio/HeroProximoEpisodio'
@@ -435,7 +437,7 @@ export default function Inicio() {
     }
   }
 
-  const alternarMinimizar = (id: SecaoInicioId) => {
+  const alternarMinimizar = (id: SecaoMinimizavelInicioId) => {
     void atualizarConfigInicio({
       ...configInicio,
       minimizadas: alternarItemSecao(configInicio.minimizadas, id),
@@ -904,6 +906,8 @@ export default function Inicio() {
       <PlayerHudInicio
         nome={nome}
         dataHoje={dataDeHoje}
+        minimizada={minimizadasSet.has(SECAO_HUD_INICIO)}
+        aoAlternarMinimizar={() => alternarMinimizar(SECAO_HUD_INICIO)}
         aoAbrirGosto={() => setModalGostoAberto(true)}
       />
 

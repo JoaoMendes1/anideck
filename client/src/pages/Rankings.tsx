@@ -284,7 +284,7 @@ export default function Rankings() {
                 <AbasDescobrir />
 
                 {/* --- SELETOR DE MODO DO RANKING --- */}
-                <div className="-mx-4 flex gap-1.5 overflow-x-auto px-4 mb-3 sm:mx-0 sm:flex-wrap sm:gap-2 sm:px-0 sm:mb-6 select-none border-b border-line pb-3 sm:pb-4 [&>button]:shrink-0 [&>button]:whitespace-nowrap" role="tablist" aria-label="Modo do Ranking">
+                <div className="-mx-4 flex gap-1.5 overflow-x-auto scrollbar-hide px-4 mb-3 sm:mx-0 sm:flex-wrap sm:gap-2 sm:px-0 sm:mb-6 select-none border-b border-line pb-3 sm:pb-4 [&>button]:shrink-0 [&>button]:whitespace-nowrap" role="tablist" aria-label="Modo do Ranking">
                     <button
                         type="button"
                         onClick={() => {

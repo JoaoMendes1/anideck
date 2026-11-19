@@ -105,11 +105,16 @@ export default function Duelos() {
 
   return (
     <div className={CONTAINER}>
-      <header className="mb-4 hidden items-center gap-1 select-none md:flex">
-        <Link to="/personagem" aria-label="Voltar para o personagem" className="-ml-2 flex h-10 w-11 items-center justify-center rounded-full text-muted hover:text-text">
-          <ChevronLeft size={22} />
+      <header className="mb-3 sm:mb-4 flex items-center gap-2.5 select-none">
+        <Link
+          to="/personagem"
+          aria-label="Voltar para o personagem"
+          className="inline-flex h-9 items-center gap-1 rounded-full border border-line bg-panel px-3 text-xs font-bold text-text transition-colors hover:border-holo-3/60 hover:text-holo-3"
+        >
+          <ChevronLeft size={16} aria-hidden="true" />
+          <span>Voltar</span>
         </Link>
-        <p className={ROTULO_DE_SECAO}>Duelos</p>
+        <p className={ROTULO_DE_SECAO}>Personagem · Duelos</p>
       </header>
 
       {carregando ? (
@@ -136,7 +141,7 @@ export default function Duelos() {
           <div className="flex min-w-0 flex-col gap-4">
             <div className="flex flex-col gap-2">
               <h1 className="m-0 font-anton text-[1.75rem] sm:text-[2.6rem] uppercase leading-none">Duelos</h1>
-              <p className="m-0 text-sm text-muted line-clamp-2 sm:line-clamp-none">
+              <p className="m-0 text-xs sm:text-sm leading-relaxed text-muted">
                 Desafie a ficha de outro jogador: atributos, habilidades e elemento dele contra os seus. Até {estado.limite} duelos por dia, um por oponente.
                 Vitória dá pontos de duelo e Ouro; quem perde, não perde nada.
               </p>

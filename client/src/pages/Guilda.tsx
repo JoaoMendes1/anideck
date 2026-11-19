@@ -300,7 +300,7 @@ export default function Guilda() {
               Rank mede sua constância presente; Especialista de Gênero reconhece sua bagagem acumulada.
             </p>
           </div>
-          <div className="-mx-4 flex w-[calc(100%+2rem)] items-center gap-2 overflow-x-auto px-4 pb-1 sm:mx-0 sm:w-auto sm:flex-wrap sm:overflow-visible sm:px-0 sm:pb-0 [&>a]:shrink-0 [&>a]:whitespace-nowrap">
+          <div className="-mx-4 flex w-[calc(100%+2rem)] items-center gap-2 overflow-x-auto scrollbar-hide px-4 pb-1 sm:mx-0 sm:w-auto sm:flex-wrap sm:overflow-visible sm:px-0 sm:pb-0 [&>a]:shrink-0 [&>a]:whitespace-nowrap">
             <Link
               to="/expedicoes"
               className="inline-flex items-center gap-1.5 px-3 py-1.5 sm:px-4 sm:py-2 rounded-full bg-holo-2/15 border border-holo-2/40 hover:bg-holo-2/25 text-xs font-bold text-holo-2 transition-colors"

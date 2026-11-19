@@ -59,9 +59,13 @@ describe('Masmorras', () => {
     vi.mocked(obterMasmorras).mockResolvedValue({ dados: estado() })
     abrir()
     expect(((await screen.findByRole('button', { name: 'Entrar em Bosque Sombrio' })) as HTMLButtonElement).disabled).toBe(false)
+    expect(screen.getByRole('link', { name: 'Voltar para a Guilda' }).getAttribute('href')).toBe('/guilda')
     expect((screen.getByRole('button', { name: 'Entrar em Trono Primordial' }) as HTMLButtonElement).disabled).toBe(true)
     expect(screen.getByText('nível 60')).toBeTruthy()
     expect(screen.getAllByText('Lobo Sombrio').length).toBeGreaterThan(0)
+    const andares = screen.getAllByRole('list', { name: 'Andares' })[0]
+    expect(andares.className).toContain('flex-wrap')
+    expect(andares.className).not.toContain('overflow-x-auto')
   })
 
   it('depois da masmorra do dia, ou abaixo de 30% de Vida, tudo fica fechado', async () => {

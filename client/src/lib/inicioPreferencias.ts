@@ -33,6 +33,10 @@ export const ORDEM_INICIO_PADRAO = [
 
 export type SecaoInicioId = (typeof ORDEM_INICIO_PADRAO)[number]
 
+/** O painel do herói no topo da Início é fixo no topo, mas pode ser minimizado pelo usuário. */
+export const SECAO_HUD_INICIO = 'hud' as const
+export type SecaoMinimizavelInicioId = SecaoInicioId | typeof SECAO_HUD_INICIO
+
 export const FONTES_DESTAQUE = [
   { id: 'curadoria', rotulo: 'Curadoria', subtitulo: 'Curadoria do AniDeck' },
   { id: 'lancamento', rotulo: 'Em lançamento', subtitulo: 'Animes com episódios novos no ar' },
@@ -45,7 +49,7 @@ export type FonteDestaqueInicio = (typeof FONTES_DESTAQUE)[number]['id']
 export interface ConfigInicio {
   ordem: SecaoInicioId[]
   ocultas: SecaoInicioId[]
-  minimizadas: SecaoInicioId[]
+  minimizadas: SecaoMinimizavelInicioId[]
   destaque_fonte: FonteDestaqueInicio
 }
 
@@ -136,6 +140,10 @@ export function ehSecaoInicioValida(valor: unknown): valor is SecaoInicioId {
   return typeof valor === 'string' && CONJUNTO_SECOES.has(valor)
 }
 
+export function ehMinimizavelInicioValida(valor: unknown): valor is SecaoMinimizavelInicioId {
+  return valor === SECAO_HUD_INICIO || ehSecaoInicioValida(valor)
+}
+
 export function normalizarConfigInicio(bruto: unknown): ConfigInicio {
   if (!bruto || typeof bruto !== 'object') {
     return configInicioPadrao()
@@ -159,12 +167,12 @@ export function normalizarConfigInicio(bruto: unknown): ConfigInicio {
     }
   }
 
-  const filtrarUnicos = (valor: unknown): SecaoInicioId[] => {
+  const filtrarUnicos = <T extends string>(valor: unknown, validar: (v: unknown) => v is T): T[] => {
     if (!Array.isArray(valor)) return []
-    const vistos = new Set<SecaoInicioId>()
-    const saida: SecaoInicioId[] = []
+    const vistos = new Set<T>()
+    const saida: T[] = []
     for (const item of valor) {
-      if (ehSecaoInicioValida(item) && !vistos.has(item)) {
+      if (validar(item) && !vistos.has(item)) {
         vistos.add(item)
         saida.push(item)
       }
@@ -179,8 +187,8 @@ export function normalizarConfigInicio(bruto: unknown): ConfigInicio {
 
   return {
     ordem,
-    ocultas: filtrarUnicos(obj.ocultas),
-    minimizadas: filtrarUnicos(obj.minimizadas),
+    ocultas: filtrarUnicos(obj.ocultas, ehSecaoInicioValida),
+    minimizadas: filtrarUnicos(obj.minimizadas, ehMinimizavelInicioValida),
     destaque_fonte,
   }
 }
@@ -214,10 +222,10 @@ export function moverSecaoNaOrdem(
   return copia
 }
 
-export function alternarItemSecao(
-  lista: readonly SecaoInicioId[],
-  id: SecaoInicioId,
-): SecaoInicioId[] {
+export function alternarItemSecao<T extends string>(
+  lista: readonly T[],
+  id: T,
+): T[] {
   return lista.includes(id) ? lista.filter(item => item !== id) : [...lista, id]
 }
 
