@@ -5,9 +5,11 @@
 // Mobile-first: no celular a arte vem em cima e a ficha embaixo; a partir de `lg` as duas
 // ficam lado a lado. Nível, XP e rank são os da Guilda: o personagem não tem XP próprio.
 import { useCallback, useEffect, useState, type FormEvent } from 'react'
-import { Link, useSearchParams } from 'react-router-dom'
-import { DoorOpen, ChevronLeft, Image, Lock, Orbit, Repeat, Sparkles, Sword, Swords } from 'lucide-react'
+import { Link, useLocation, useSearchParams } from 'react-router-dom'
+import { Award, DoorOpen, ChevronLeft, Image, Lock, Orbit, Repeat, Sparkles, Sword, Swords } from 'lucide-react'
 import { obterFundoDoCenario } from '../lib/cosmeticos'
+import CartaoEspecialidade from '../components/hud/CartaoEspecialidade'
+import { obterClasseCartaInsignia } from '../lib/guilda'
 import CamadaDaAura from '../components/personagem/CamadaDaAura'
 import PainelEquipamentos from '../components/personagem/PainelEquipamentos'
 import SlotsDoPersonagem from '../components/personagem/SlotsDoPersonagem'
@@ -78,7 +80,7 @@ function Cabecalho() {
       >
         <ChevronLeft size={22} />
       </Link>
-      <p className={ROTULO_DE_SECAO}>Meu Personagem</p>
+      <p className={ROTULO_DE_SECAO}>Personagem</p>
     </header>
   )
 }
@@ -361,7 +363,16 @@ function FichaDoPersonagem({
   aoAtualizarEquipamento: (estado: EstadoEquipamento) => void
 }) {
   const [searchParams, setSearchParams] = useSearchParams()
+  const location = useLocation()
   const abaAtiva = lerAbaDaUrl(searchParams.get('aba'))
+
+  useEffect(() => {
+    const hash = location.hash.replace(/^#/, '')
+    if (hash === 'especialidade' || hash === 'insignias') {
+      const el = document.getElementById(hash)
+      el?.scrollIntoView?.({ behavior: 'smooth', block: 'start' })
+    }
+  }, [location.hash])
 
   const selecionarAba = (novaAba: AbaCombate) => {
     setSearchParams(
@@ -882,6 +893,88 @@ function FichaDoPersonagem({
               <PainelEquipamentos estado={equipamento} />
             ))}
         </div>
+      </div>
+
+      {/* LINHA 3: Especialidade com passiva RPG e Insígnias colecionáveis */}
+      <div className="mt-6 grid grid-cols-1 gap-6 lg:grid-cols-2 lg:items-start">
+        <section
+          id="especialidade"
+          aria-labelledby="titulo-especialidade-personagem"
+          className="scroll-mt-24 rounded-2xl border border-line bg-panel p-4 sm:p-5"
+        >
+          <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+            <div>
+              <p className="m-0 font-mono text-xs uppercase tracking-widest text-muted-2">// afinidade de acervo</p>
+              <h2 id="titulo-especialidade-personagem" className="m-0 mt-0.5 font-anton text-lg uppercase">
+                Especialidade
+              </h2>
+            </div>
+            <Link to="/guilda#especialidade" className="font-mono text-xs text-holo-3 hover:underline">
+              Ver na Guilda →
+            </Link>
+          </div>
+          <CartaoEspecialidade
+            especialidade={dados.especialidade}
+            passiva={dados.passiva_especialidade}
+            vazio="Assista a 3 animes do mesmo gênero (Assistindo, Em Dia ou Completo) para conquistar sua especialidade e ativar sua passiva no RPG."
+          />
+        </section>
+
+        <section
+          id="insignias"
+          aria-labelledby="titulo-insignias-personagem"
+          className="scroll-mt-24 rounded-2xl border border-line bg-panel p-4 sm:p-5"
+        >
+          <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+            <div>
+              <p className="m-0 font-mono text-xs uppercase tracking-widest text-muted-2">// coleção de cartas</p>
+              <h2 id="titulo-insignias-personagem" className="m-0 mt-0.5 font-anton text-lg uppercase">
+                Insígnias
+              </h2>
+            </div>
+            {dados.insignias && (
+              <span className="rounded-full border border-gold/35 bg-gold/12 px-2.5 py-0.5 font-mono text-xs font-bold text-gold">
+                {dados.insignias.filter((i) => i.desbloqueada).length} / {dados.insignias.length}
+              </span>
+            )}
+          </div>
+          {dados.insignias && dados.insignias.length > 0 ? (
+            <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+              {dados.insignias.map((ins, idx) => (
+                <div
+                  key={ins.id}
+                  className={`relative flex aspect-[3/4] flex-col justify-between overflow-hidden rounded-xl border p-3 ${obterClasseCartaInsignia(ins, idx)}`}
+                >
+                  <div className="flex items-center justify-between">
+                    <span className="text-2xl leading-none">{ins.icone}</span>
+                    {ins.desbloqueada ? (
+                      <Award size={14} className="shrink-0 text-gold" aria-hidden="true" />
+                    ) : (
+                      <Lock size={13} className="shrink-0 text-muted-2" aria-hidden="true" />
+                    )}
+                  </div>
+                  <div>
+                    <div className="mb-1 text-xs font-bold leading-tight">{ins.nome}</div>
+                    <div className="text-xs leading-snug opacity-85">{ins.descricao}</div>
+                    <div className="mt-2 flex items-center justify-between border-t border-white/15 pt-1.5 font-mono text-xs">
+                      <span>{ins.desbloqueada ? 'CONQUISTADA' : 'PROGRESSO'}</span>
+                      <b>
+                        {Math.min(ins.progresso_atual, ins.meta)}/{ins.meta}
+                      </b>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <p className="m-0 text-sm text-muted">
+              Suas cartas colecionáveis aparecem aqui conforme você completa conquistas no AniDeck.{' '}
+              <Link to="/guilda#insignias" className="text-holo-3 hover:underline">
+                Ver detalhes na Guilda
+              </Link>
+            </p>
+          )}
+        </section>
       </div>
     </div>
   )

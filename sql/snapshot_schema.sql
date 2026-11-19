@@ -573,6 +573,15 @@
 --     bilhetes                     integer NOT NULL
 --     criado_em                    timestamp with time zone NOT NULL
 
+-- rpg_contratos_resgatados
+--     user_id                      uuid NOT NULL
+--     semana                       date NOT NULL
+--     contrato_id                  text NOT NULL
+--     ouro                         integer NOT NULL
+--     bilhetes                     integer NOT NULL
+--     materiais                    jsonb NOT NULL
+--     resgatado_em                 timestamp with time zone NOT NULL
+
 -- rpg_duelos
 --     id                           bigint NOT NULL
 --     desafiante_id                uuid NOT NULL
@@ -881,6 +890,7 @@
 -- rpg_cla_ataques           | RLS: t     | policies: 1
 -- rpg_cla_chefes            | RLS: t     | policies: 1
 -- rpg_cla_recompensas       | RLS: t     | policies: 1
+-- rpg_contratos_resgatados  | RLS: t     | policies: 1
 -- rpg_duelos                | RLS: t     | policies: 1
 -- rpg_equipados             | RLS: t     | policies: 1
 -- rpg_evento_batalhas       | RLS: t     | policies: 1
@@ -1542,6 +1552,10 @@ CREATE OR REPLACE VIEW public.view_user_year_distribution WITH (security_invoker
 --     USING:  (( SELECT auth.uid() AS uid) = user_id)
 --     CHECK:  -
 
+-- rpg_contratos_resgatados | rpg_contratos_le_o_proprio                 | SELECT | authenticated     
+--     USING:  (( SELECT auth.uid() AS uid) = user_id)
+--     CHECK:  -
+
 -- rpg_duelos             | rpg_duelos_le_os_proprios                     | SELECT | authenticated     
 --     USING:  ((( SELECT auth.uid() AS uid) = desafiante_id) OR (( SELECT auth.uid() AS uid) = oponente_id))
 --     CHECK:  -
@@ -1868,6 +1882,7 @@ CREATE OR REPLACE VIEW public.view_user_year_distribution WITH (security_invoker
 -- rpg_registrar_duelo            | definer: t     | anon: f     | auth: f     | service: t     | search_path=public, pg_temp
 -- rpg_registrar_maestria         | definer: t     | anon: f     | auth: f     | service: t     | search_path=public, pg_temp
 -- rpg_regras_vida                | definer: f     | anon: f     | auth: t     | service: t     | search_path=public, pg_temp
+-- rpg_resgatar_contrato          | definer: t     | anon: f     | auth: f     | service: t     | search_path=public, pg_temp
 -- rpg_semana_atual               | definer: f     | anon: f     | auth: t     | service: t     | search_path=public, pg_temp
 -- rpg_trocar_personagem          | definer: t     | anon: f     | auth: t     | service: t     | search_path=public, pg_temp
 -- rpg_vida_perdida_agora         | definer: f     | anon: f     | auth: t     | service: t     | search_path=public, pg_temp

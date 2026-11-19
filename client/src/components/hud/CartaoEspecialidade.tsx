@@ -1,14 +1,16 @@
 // client/src/components/hud/CartaoEspecialidade.tsx
 // Especialidade do jogador: o gênero que ele mais assiste, mostrado como título de classe.
-import type { Especialidade } from '../../lib/guilda'
+import type { Especialidade, PassivaEspecialidade } from '../../lib/guilda'
 
 interface Props {
   especialidade: Especialidade | null | undefined
+  /** Bônus passivo de RPG aplicado em combate quando disponível. */
+  passiva?: PassivaEspecialidade | null
   /** Texto quando ainda não há especialidade; sem ele, o cartão não aparece. */
   vazio?: string
 }
 
-export default function CartaoEspecialidade({ especialidade: e, vazio }: Props) {
+export default function CartaoEspecialidade({ especialidade: e, passiva, vazio }: Props) {
   if (!e) {
     if (!vazio) return null
     return (
@@ -47,6 +49,12 @@ export default function CartaoEspecialidade({ especialidade: e, vazio }: Props) 
           <p className="text-xs text-muted italic mt-1 mb-0">{e.lema}</p>
         </div>
       </div>
+      {passiva && (
+        <div className="relative mt-3 rounded-lg border border-holo-3/35 bg-void/55 px-3 py-1.5 text-xs">
+          <span className="font-mono font-bold text-holo-3">Passiva RPG · {passiva.nome}:</span>{' '}
+          <span className="text-text">{passiva.resumo}</span>
+        </div>
+      )}
       <div className="relative mt-3">
         <div className="h-1.5 rounded-full bg-void/70 overflow-hidden border border-line/50">
           <div className="h-full rounded-full bg-gradient-to-r from-holo-1 to-holo-2" style={{ width: `${pct}%` }} />

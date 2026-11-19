@@ -68,32 +68,67 @@ func EventoEm(t time.Time) EventoDaTemporada {
 // crescem na proporção do nível.
 func MonstroDoEvento(evento EventoDaTemporada, nivel int, catalogo []MonstroRPG) MonstroRPG {
 	nivel = max(1, nivel)
-	pontos := []MonstroRPG{}
+	type faixaNivel struct {
+		nivel  int
+		vida   float64
+		ataque float64
+		defesa float64
+		qtd    float64
+	}
+	porNivel := map[int]*faixaNivel{}
 	for _, m := range catalogo {
 		if m.Nivel >= 10 {
-			pontos = append(pontos, m)
+			f := porNivel[m.Nivel]
+			if f == nil {
+				f = &faixaNivel{nivel: m.Nivel}
+				porNivel[m.Nivel] = f
+			}
+			f.vida += float64(m.Vida)
+			f.ataque += float64(m.Ataque)
+			f.defesa += float64(m.Defesa)
+			f.qtd++
 		}
 	}
-	sort.Slice(pontos, func(i, j int) bool { return pontos[i].Nivel < pontos[j].Nivel })
+	pontos := make([]faixaNivel, 0, len(porNivel))
+	for _, f := range porNivel {
+		pontos = append(pontos, faixaNivel{
+			nivel:  f.nivel,
+			vida:   f.vida / f.qtd,
+			ataque: f.ataque / f.qtd,
+			defesa: f.defesa / f.qtd,
+		})
+	}
+	sort.Slice(pontos, func(i, j int) bool { return pontos[i].nivel < pontos[j].nivel })
+	for i := 1; i < len(pontos); i++ {
+		if pontos[i].vida < pontos[i-1].vida {
+			pontos[i].vida = pontos[i-1].vida
+		}
+		if pontos[i].ataque < pontos[i-1].ataque {
+			pontos[i].ataque = pontos[i-1].ataque
+		}
+		if pontos[i].defesa < pontos[i-1].defesa {
+			pontos[i].defesa = pontos[i-1].defesa
+		}
+	}
 	var vida, ataque, defesa float64
 	switch {
 	case len(pontos) == 0:
 		vida, ataque, defesa = float64(38*nivel), float64(5*nivel), float64(2*nivel)
-	case nivel <= pontos[0].Nivel:
-		f := float64(nivel) / float64(pontos[0].Nivel)
-		vida, ataque, defesa = float64(pontos[0].Vida)*f, float64(pontos[0].Ataque)*f, float64(pontos[0].Defesa)*f
-	case nivel >= pontos[len(pontos)-1].Nivel:
+	case nivel <= pontos[0].nivel:
+		f := float64(nivel) / float64(pontos[0].nivel)
+		vida, ataque, defesa = pontos[0].vida*f, pontos[0].ataque*f, pontos[0].defesa*f
+	case nivel >= pontos[len(pontos)-1].nivel:
 		u := pontos[len(pontos)-1]
-		f := float64(nivel) / float64(u.Nivel)
-		vida, ataque, defesa = float64(u.Vida)*f, float64(u.Ataque)*f, float64(u.Defesa)*f
+		f := float64(nivel) / float64(u.nivel)
+		vida, ataque, defesa = u.vida*f, u.ataque*f, u.defesa*f
 	default:
 		for i := 1; i < len(pontos); i++ {
 			a, b := pontos[i-1], pontos[i]
-			if nivel <= b.Nivel {
-				f := float64(nivel-a.Nivel) / float64(b.Nivel-a.Nivel)
-				vida = float64(a.Vida) + f*float64(b.Vida-a.Vida)
-				ataque = float64(a.Ataque) + f*float64(b.Ataque-a.Ataque)
-				defesa = float64(a.Defesa) + f*float64(b.Defesa-a.Defesa)
+			if nivel <= b.nivel {
+				f := float64(nivel-a.nivel) / float64(b.nivel-a.nivel)
+				vida = a.vida + f*(b.vida-a.vida)
+				ataque = a.ataque + f*(b.ataque-a.ataque)
+				defesa = a.defesa + f*(b.defesa-a.defesa)
 				break
 			}
 		}

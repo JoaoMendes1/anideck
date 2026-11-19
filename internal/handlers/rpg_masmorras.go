@@ -40,14 +40,22 @@ const (
 // CatalogoMasmorras devolve as masmorras na ordem da tela.
 func CatalogoMasmorras() []Masmorra {
 	return []Masmorra{
-		{ID: "bosque_sombrio", Nome: "Bosque Sombrio", Descricao: "Goblins na trilha e um lobo no fim dela.", NivelMinimo: 8,
-			Andares: []string{"goblin_batedor", "goblin_batedor", "lobo_sombrio"}},
-		{ID: "ruinas_runicas", Nome: "Ruínas Rúnicas", Descricao: "Corredores guardados por pedra viva.", NivelMinimo: 18,
-			Andares: []string{"lobo_sombrio", "golem_de_runas", "golem_de_runas"}},
-		{ID: "fenda_do_vazio", Nome: "Fenda do Vazio", Descricao: "Onde os aventureiros perdidos ainda vagam.", NivelMinimo: 28,
-			Andares: []string{"golem_de_runas", "espectro_do_vazio", "espectro_do_vazio"}},
+		{ID: "bosque_sombrio", Nome: "Bosque Sombrio", Descricao: "Goblins na trilha, pedras vivas e um lobo no fim dela.", NivelMinimo: 8,
+			Andares: []string{"goblin_batedor", "golem_musgoso", "lobo_sombrio"}},
+		{ID: "jardim_dos_esporos", Nome: "Jardim dos Esporos", Descricao: "Raízes vivas e druidas corrompidos nas clareiras úmidas.", NivelMinimo: 14,
+			Andares: []string{"arvore_de_esporos", "planta_carnivora", "druida_da_floresta"}},
+		{ID: "ruinas_runicas", Nome: "Ruínas Rúnicas", Descricao: "Almas acorrentadas e guardiões de pedra antiga.", NivelMinimo: 18,
+			Andares: []string{"lobo_sombrio", "espectro_acorrentado", "golem_de_runas"}},
+		{ID: "forja_de_obsidiana", Nome: "Forja de Obsidiana", Descricao: "Encostas ardentes guardadas por feras de magma.", NivelMinimo: 26,
+			Andares: []string{"javali_vulcanico", "aranha_rubra", "cao_de_magma"}},
+		{ID: "fenda_do_vazio", Nome: "Fenda do Vazio", Descricao: "Onde sentinelas abissais e espectros ainda vagam.", NivelMinimo: 28,
+			Andares: []string{"fragmento_do_olho", "fantasma_do_vazio", "espectro_do_vazio"}},
+		{ID: "cidadela_glacial", Nome: "Cidadela Glacial", Descricao: "Muralhas de gelo eterno defendidas pela guarda congelada e pelo Leviatã.", NivelMinimo: 32,
+			Andares: []string{"serpente_marinha", "golem_de_gelo", "leviata_relampago"}},
 		{ID: "fortaleza_caida", Nome: "Fortaleza Caída", Descricao: "O último posto de um reino que não existe mais.", NivelMinimo: 36,
-			Andares: []string{"espectro_do_vazio", "cavaleiro_caido"}},
+			Andares: []string{"ceifador_sombrio", "cavaleiro_caido"}},
+		{ID: "santuario_astral_profundo", Nome: "Santuário Astral", Descricao: "Salões celestes vigiados pelo Vórtex e pelo Beholder Abissal.", NivelMinimo: 46,
+			Andares: []string{"vortex_do_olho", "beholder_abissal"}},
 		{ID: "ninho_do_dragao", Nome: "Ninho do Dragão", Descricao: "O cavaleiro guarda a entrada; o dragão, o tesouro.", NivelMinimo: 51,
 			Andares: []string{"cavaleiro_caido", "dragao_de_eter"}},
 		{ID: "trono_primordial", Nome: "Trono Primordial", Descricao: "A prova final. Poucos chegam ao trono.", NivelMinimo: 60,
@@ -85,6 +93,7 @@ func SimularMasmorra(jogador CombatenteRPG, monstros []MonstroRPG, rng *rand.Ran
 		}
 		j := jogador
 		j.VidaInicial = vida
+		j.SemBioma = true
 		res := SimularBatalha(j, m, rng)
 		r.Andares = append(r.Andares, AndarDaMasmorra{Monstro: m, Resultado: res})
 		for id, n := range res.Usos {
@@ -264,16 +273,18 @@ func (h *RPGHandler) HandleEntrarNaMasmorra(w http.ResponseWriter, r *http.Reque
 		equipamento       EstadoEquipamento
 		catalogo          []MonstroRPG
 		hoje              HojeRPG
+		passiva           *PassivaEspecialidade
 		errEq, errM, errH error
 		wg                sync.WaitGroup
 	)
-	wg.Add(3)
+	wg.Add(4)
 	go func() {
 		defer wg.Done()
 		equipamento, errEq = equipamentoDoContexto(sessao.dbClient, sessao.userID, sessao.ctx)
 	}()
 	go func() { defer wg.Done(); catalogo, errM = lerMonstros(sessao.dbClient) }()
 	go func() { defer wg.Done(); hoje, errH = lerHojeRPG(sessao.dbClient) }()
+	go func() { defer wg.Done(); _, passiva = carregarEspecialidadeDoUsuario(sessao.dbClient) }()
 	wg.Wait()
 	if errEq != nil || errM != nil || errH != nil {
 		responderErroJSON(w, http.StatusServiceUnavailable, "Masmorras indisponíveis no momento.")
@@ -294,6 +305,7 @@ func (h *RPGHandler) HandleEntrarNaMasmorra(w http.ResponseWriter, r *http.Reque
 	combatente := CombatenteDoEstado(equipamento)
 	combatente.VidaInicial = vida.Atual
 	combatente.Elemento = elementoDoJogador(sessao.ctx)
+	combatente.Passiva = passiva
 	expedicao := SimularMasmorra(combatente, monstros, rng)
 
 	var itemSorteado *ItemRPG

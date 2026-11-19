@@ -36,3 +36,24 @@ func TestTemasDeEspecialidade_CobremOsGenerosDasMissoes(t *testing.T) {
 		}
 	}
 }
+
+func TestPassivaDaEspecialidade(t *testing.T) {
+	if PassivaDaEspecialidade(nil) != nil {
+		t.Fatal("sem especialidade não há passiva")
+	}
+	if PassivaDaEspecialidade(&Especialidade{Genero: "Ação", Nivel: 0}) != nil {
+		t.Fatal("N0 não gera passiva")
+	}
+	pAcao := PassivaDaEspecialidade(&Especialidade{Genero: "Ação", Nivel: 3})
+	if pAcao == nil || pAcao.Tipo != "ataque" || pAcao.ValorPct != 4 {
+		t.Fatalf("passiva de Ação N3 incorreta: %+v", pAcao)
+	}
+	pTerror := PassivaDaEspecialidade(&Especialidade{Genero: "Terror", Nivel: 5})
+	if pTerror == nil || pTerror.Tipo != "esquiva" || pTerror.ValorPct != 3 {
+		t.Fatalf("passiva de Terror N5 incorreta: %+v", pTerror)
+	}
+	pNovo := PassivaDaEspecialidade(&Especialidade{Genero: "Outro", Nivel: 1})
+	if pNovo == nil || pNovo.Tipo != "ataque" || pNovo.ValorPct != 2 {
+		t.Fatalf("fallback para gênero novo falhou: %+v", pNovo)
+	}
+}

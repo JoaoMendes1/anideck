@@ -9,6 +9,7 @@ import (
 	"sort"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/JoaoMendes1/anideck/internal/database"
@@ -1168,6 +1169,9 @@ func (h *GuildaHandler) HandleGetGuilda(w http.ResponseWriter, r *http.Request) 
 		NivelAtual:    status.Nivel,
 	}, catalogoInsignias)
 
+	especialidade := CalcularEspecialidade(especialistas)
+	passiva := PassivaDaEspecialidade(especialidade)
+
 	// Monta a primeira página (20 itens mais recentes) do extrato com títulos resolvidos pela curadoria/cache.
 	limiteExtrato := tamanhoPaginaExtratoGuilda
 	if len(linhasLedger) < limiteExtrato {
@@ -1188,12 +1192,131 @@ func (h *GuildaHandler) HandleGetGuilda(w http.ResponseWriter, r *http.Request) 
 		"xp_pendente_total":     totalPendenteXP,
 		"pendentes_total_eps":   totalPendenteEps,
 		"especialistas":         especialistas,
-		"especialidade":         CalcularEspecialidade(especialistas),
+		"especialidade":         especialidade,
+		"passiva_especialidade": passiva,
 		"insignias":             insignias,
 	}
 
 	w.Header().Set("Content-Type", "application/json")
 	_ = json.NewEncoder(w).Encode(resposta)
+}
+
+// carregarEspecialidadeDoUsuario lê a especialidade e sua passiva tática para o RPG.
+func carregarEspecialidadeDoUsuario(dbClient *supabase.Client) (*Especialidade, *PassivaEspecialidade) {
+	if dbClient == nil {
+		return nil, nil
+	}
+	var afinidades []AfinidadeGeneroInput
+	if afBytes, _, errAf := dbClient.From("view_user_genre_affinity").Select("*", "", false).Execute(); errAf == nil {
+		_ = json.Unmarshal(afBytes, &afinidades)
+	}
+	especialistas := CalcularEspecialistasGenero(afinidades)
+	esp := CalcularEspecialidade(especialistas)
+	return esp, PassivaDaEspecialidade(esp)
+}
+
+// carregarEspecialidadeEInsigniasDoUsuario carrega Especialidade, Passiva e Insígnias para /api/personagem?completo=1.
+func carregarEspecialidadeEInsigniasDoUsuario(dbClient *supabase.Client, userID string, nivel int) (*Especialidade, *PassivaEspecialidade, []InsigniaStatus) {
+	if dbClient == nil {
+		return nil, nil, nil
+	}
+	var (
+		afinidades        []AfinidadeGeneroInput
+		datasRows         []struct{ Dia string `json:"dia"` }
+		tsRows            []map[string]interface{}
+		entriesRows       []struct {
+			MalID  int    `json:"mal_id"`
+			Status string `json:"status"`
+		}
+		catalogoInsignias []InsigniaConfig
+		curados           map[int]models.CuratedAnime
+		linhasLedger      []linhaLedgerBanco
+		wg                sync.WaitGroup
+	)
+	wg.Add(6)
+	go func() {
+		defer wg.Done()
+		if afBytes, _, err := dbClient.From("view_user_genre_affinity").Select("*", "", false).Execute(); err == nil {
+			_ = json.Unmarshal(afBytes, &afinidades)
+		}
+	}()
+	go func() {
+		defer wg.Done()
+		if dBytes, _, err := dbClient.From("view_user_watch_dates").Select("dia", "", false).Execute(); err == nil {
+			_ = json.Unmarshal(dBytes, &datasRows)
+		}
+	}()
+	go func() {
+		defer wg.Done()
+		if tsBytes, _, err := dbClient.From("view_user_watch_timestamps").Select("watched_at", "", false).Execute(); err == nil {
+			_ = json.Unmarshal(tsBytes, &tsRows)
+		}
+	}()
+	go func() {
+		defer wg.Done()
+		if eBytes, _, err := dbClient.From("media_entries").Select("mal_id,status", "", false).Eq("user_id", userID).Execute(); err == nil {
+			_ = json.Unmarshal(eBytes, &entriesRows)
+		}
+	}()
+	go func() {
+		defer wg.Done()
+		_, _, catalogoInsignias = carregarConfigGuilda(dbClient)
+	}()
+	go func() {
+		defer wg.Done()
+		curados = CarregarCuradoria(dbClient)
+		linhasLedger = carregarLedgerUsuario(dbClient, userID)
+	}()
+	wg.Wait()
+
+	especialistas := CalcularEspecialistasGenero(afinidades)
+	esp := CalcularEspecialidade(especialistas)
+	passiva := PassivaDaEspecialidade(esp)
+
+	datas := make([]string, 0, len(datasRows))
+	for _, d := range datasRows {
+		if d.Dia != "" {
+			datas = append(datas, d.Dia)
+		}
+	}
+	_, maiorStreak := CalculateStreak(datas, time.Now().UTC().In(fusoGuilda))
+	cedoMarcados := 0
+	for _, l := range linhasLedger {
+		if strings.Contains(l.Reason, "antes do próximo sair") {
+			cedoMarcados++
+		}
+	}
+	generosN3 := 0
+	for _, e := range especialistas {
+		if e.Nivel >= 3 {
+			generosN3++
+		}
+	}
+	madrugadas := 0
+	for _, ts := range parseTimestamps(tsRows) {
+		if hora := ts.In(fusoGuilda).Hour(); hora >= 0 && hora < 6 {
+			madrugadas++
+		}
+	}
+	curadosVistos := 0
+	for _, e := range entriesRows {
+		if e.Status == "Completo" || e.Status == "Em Dia" || e.Status == "Assistindo" {
+			if _, ok := curados[e.MalID]; ok {
+				curadosVistos++
+			}
+		}
+	}
+
+	insignias := AvaliarInsignias(MetricasUsuarioGuilda{
+		Madrugadas:    madrugadas,
+		CuradosVistos: curadosVistos,
+		MaiorStreak:   maiorStreak,
+		CedoMarcados:  cedoMarcados,
+		GenerosN3Mais: generosN3,
+		NivelAtual:    nivel,
+	}, catalogoInsignias)
+
+	return esp, passiva, insignias
 }
 
 const tamanhoPaginaExtratoGuilda = 20

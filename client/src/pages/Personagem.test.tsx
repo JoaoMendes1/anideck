@@ -440,3 +440,59 @@ describe('Personagem - elenco, desbloqueio e espera na troca', () => {
   })
 })
 
+describe('Personagem - especialidade e insígnias', () => {
+  it('exibe #especialidade com passiva RPG e #insignias mantendo uma única chamada ao servidor', async () => {
+    const comExtras: RespostaPersonagem = {
+      ...personagemNoNivel(12, { id: 'aventureiro', automatico: true }),
+      equipamento: {
+        nivel: 12,
+        base: { vida: 320, ataque: 43, defesa: 27, poder: 172 },
+        atributos: { vida: 320, ataque: 47, defesa: 27, poder: 180 },
+        slots: [{ slot: 'arma' }],
+        inventario: [],
+      },
+      especialidade: {
+        genero: 'Ação',
+        epiteto: 'Duelista',
+        icone: '⚔️',
+        lema: 'Vive pelas lutas que ninguém esquece',
+        nivel: 2,
+        rotulo_nivel: 'N2',
+        titulo_nivel: 'Veterano',
+        total_vistos: 10,
+        proximo_alvo: 15,
+      },
+      passiva_especialidade: {
+        id: 'golpe_protagonista',
+        nome: 'Golpe Protagonista',
+        genero: 'Ação',
+        resumo: '+7% Ataque nas batalhas',
+        tipo: 'ataque',
+        valor_pct: 7,
+      },
+      insignias: [
+        {
+          id: 'maratona_10',
+          icone: '🔥',
+          nome: 'Maratonista',
+          descricao: 'Assistiu 10 episódios no mês',
+          regra: '10 eps',
+          estilo: 'foil1',
+          desbloqueada: true,
+          progresso_atual: 10,
+          meta: 10,
+        },
+      ],
+    }
+    vi.mocked(obterPersonagem).mockResolvedValue(comExtras)
+    abrir()
+
+    expect(await screen.findByText('Duelista')).toBeTruthy()
+    expect(screen.getByText(/Passiva RPG · Golpe Protagonista:/)).toBeTruthy()
+    expect(screen.getByText('+7% Ataque nas batalhas')).toBeTruthy()
+    expect(screen.getByText('Maratonista')).toBeTruthy()
+    expect(screen.getByText('1 / 1')).toBeTruthy()
+    expect(obterPersonagem).toHaveBeenCalledTimes(1)
+  })
+})
+

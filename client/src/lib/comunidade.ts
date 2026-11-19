@@ -22,6 +22,11 @@ export interface RegrasComunidade {
   mp_custo_masmorra_pct?: number
   mp_pocao_pct?: number
   ouro_recompensa_pct?: number
+  hp_por_episodio_pct?: number
+  hp_episodios_por_dia?: number
+  hp_regen_hora_pct?: number
+  hp_pocao_pct?: number
+  bilhete_bonus_pct?: number
 }
 
 export const REGRAS_COMUNIDADE_PADRAO: RegrasComunidade = {
@@ -41,6 +46,11 @@ export const REGRAS_COMUNIDADE_PADRAO: RegrasComunidade = {
   mp_custo_masmorra_pct: 12,
   mp_pocao_pct: 40,
   ouro_recompensa_pct: 200,
+  hp_por_episodio_pct: 8,
+  hp_episodios_por_dia: 5,
+  hp_regen_hora_pct: 5,
+  hp_pocao_pct: 30,
+  bilhete_bonus_pct: 100,
 }
 
 export interface PerfilProprio {

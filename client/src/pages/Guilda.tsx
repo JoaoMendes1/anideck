@@ -11,6 +11,7 @@ import SeloStreak from '../components/hud/SeloStreak'
 import BarraVital from '../components/hud/BarraVital'
 import ModalTransferirAniCoins from '../components/ModalTransferirAniCoins'
 import CardMissoesDiarias from '../components/inicio/CardMissoesDiarias'
+import CardContratosSemanais from '../components/rpg/CardContratosSemanais'
 import CartaoEspecialidade from '../components/hud/CartaoEspecialidade'
 import CardChefao from '../components/chefao/CardChefao'
 import AvisoTemporada0 from '../components/AvisoTemporada0'
@@ -168,7 +169,7 @@ export default function Guilda() {
               to="/personagem"
               className="inline-flex items-center gap-1.5 px-3 py-1.5 sm:px-4 sm:py-2 rounded-full bg-gold/15 border border-gold/40 hover:bg-gold/25 text-xs font-bold text-gold transition-colors"
             >
-              <UserRound size={13} /> Meu Personagem →
+              <UserRound size={13} /> Personagem →
             </Link>
             <Link
               to="/loja"
@@ -272,6 +273,9 @@ export default function Guilda() {
 
           {/* MISSÕES DIÁRIAS (Fase 16, #168) */}
           <CardMissoesDiarias />
+
+          {/* CONTRATOS SEMANAIS DO RPG */}
+          <CardContratosSemanais />
 
           {/* COLEÇÃO DE CARTAS (Fase 16, #172) */}
           <SecaoColecaoCartas cartas={cartas} />
@@ -555,6 +559,7 @@ export default function Guilda() {
             <div className="mb-4">
               <CartaoEspecialidade
                 especialidade={especialidade}
+                passiva={dados.passiva_especialidade}
                 vazio="Assista a 3 animes do mesmo gênero (Assistindo, Em Dia ou Completo) para conquistar sua especialidade."
               />
             </div>

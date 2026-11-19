@@ -75,6 +75,16 @@ export interface Especialidade {
   secundario?: string
 }
 
+/** Bônus passivo de combate derivado da Especialidade de Gênero do jogador. */
+export interface PassivaEspecialidade {
+  id: string
+  nome: string
+  genero: string
+  resumo: string
+  tipo: string
+  valor_pct: number
+}
+
 export interface InsigniaStatus {
   id: string
   icone: string
@@ -128,6 +138,7 @@ export interface DadosDaGuilda {
   especialistas: EspecialistaGenero[]
   /** Ausente (null) enquanto nenhum gênero chega a N1. */
   especialidade?: Especialidade | null
+  passiva_especialidade?: PassivaEspecialidade | null
   insignias: InsigniaStatus[]
 }
 

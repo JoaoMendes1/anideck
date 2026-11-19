@@ -2,15 +2,19 @@ package handlers
 
 import (
 	"math/rand"
+	"os"
+	"regexp"
+	"strconv"
 	"testing"
 )
 
-// Os números do sql/078, por id, para montar as masmorras nos testes.
-func catalogoParaMasmorras() []MonstroRPG {
+// Os números do sql/078 e sql/124, por id, para montar as masmorras nos testes.
+func catalogoParaMasmorras(t *testing.T) []MonstroRPG {
+	t.Helper()
 	mk := func(id string, nivel int, tipo string, v, a, d, bil, chance int, rar string) MonstroRPG {
 		return MonstroRPG{ID: id, Nome: id, Tipo: tipo, Nivel: nivel, Vida: v, Ataque: a, Defesa: d, Bilhetes: bil, ChanceItem: chance, RaridadeItem: rar}
 	}
-	return []MonstroRPG{
+	lista := []MonstroRPG{
 		mk("slime_de_eter", 1, "comum", 60, 8, 3, 1, 0, "comum"),
 		mk("goblin_batedor", 4, "comum", 120, 14, 6, 1, 0, "comum"),
 		mk("lobo_sombrio", 10, "comum", 380, 48, 24, 1, 20, "raro"),
@@ -20,6 +24,21 @@ func catalogoParaMasmorras() []MonstroRPG {
 		mk("dragao_de_eter", 50, "chefe", 3600, 210, 120, 2, 25, "lendario"),
 		mk("primordial_esquecido", 60, "chefe", 4800, 255, 155, 3, 35, "lendario"),
 	}
+	bruto, err := os.ReadFile("../../sql/124_rpg_novos_monstros.sql")
+	if err != nil {
+		t.Fatalf("falha ao ler sql/124_rpg_novos_monstros.sql: %v", err)
+	}
+	re := regexp.MustCompile(`\(\s*'([^']+)',\s*'([^']+)',\s*'([^']+)',\s*'([^']+)',\s*(\d+),\s*(\d+),\s*(\d+),\s*(\d+),\s*(\d+),\s*(\d+),\s*'([^']+)',\s*(\d+)\s*\)`)
+	for _, m := range re.FindAllStringSubmatch(string(bruto), -1) {
+		nivel, _ := strconv.Atoi(m[5])
+		vida, _ := strconv.Atoi(m[6])
+		ataque, _ := strconv.Atoi(m[7])
+		defesa, _ := strconv.Atoi(m[8])
+		bilhetes, _ := strconv.Atoi(m[9])
+		chance, _ := strconv.Atoi(m[10])
+		lista = append(lista, mk(m[1], nivel, m[4], vida, ataque, defesa, bilhetes, chance, m[11]))
+	}
+	return lista
 }
 
 func itemDaFaixa(nivel int) ItemRPG {
@@ -34,17 +53,25 @@ func itemDaFaixa(nivel int) ItemRPG {
 }
 
 func TestMasmorras_CatalogoValido(t *testing.T) {
+	catalogo := catalogoParaMasmorras(t)
 	ids := map[string]bool{}
 	for _, m := range CatalogoMasmorras() {
 		if ids[m.ID] || len(m.Andares) < 2 {
 			t.Errorf("masmorra %s repetida ou com menos de 2 andares", m.ID)
 		}
 		ids[m.ID] = true
-		if _, ok := monstrosDosAndares(m, catalogoParaMasmorras()); !ok {
+		andaresVistos := map[string]bool{}
+		for _, a := range m.Andares {
+			if andaresVistos[a] {
+				t.Errorf("masmorra %s repete o monstro %s em andares seguidos", m.ID, a)
+			}
+			andaresVistos[a] = true
+		}
+		if _, ok := monstrosDosAndares(m, catalogo); !ok {
 			t.Errorf("masmorra %s tem andar fora do catálogo", m.ID)
 		}
 	}
-	if _, ok := monstrosDosAndares(CatalogoMasmorras()[0], catalogoParaMasmorras()[:2]); ok {
+	if _, ok := monstrosDosAndares(CatalogoMasmorras()[0], catalogo[:2]); ok {
 		t.Error("masmorra com monstro desativado deveria ficar fora")
 	}
 }
@@ -52,8 +79,9 @@ func TestMasmorras_CatalogoValido(t *testing.T) {
 // No nível mínimo, cada masmorra é possível para todo o elenco (desvantagem de elemento
 // incluída, ao menos 20%); o trono é a prova final.
 func TestMasmorras_Equilibrio(t *testing.T) {
+	catalogo := catalogoParaMasmorras(t)
 	for _, m := range CatalogoMasmorras() {
-		monstros, _ := monstrosDosAndares(m, catalogoParaMasmorras())
+		monstros, _ := monstrosDosAndares(m, catalogo)
 		for base, pb := range PersonagensBase() {
 			j := jogadorDoElenco(base, m.NivelMinimo, itemDaFaixa(m.NivelMinimo))
 			j.Elemento = pb.Elemento
@@ -68,7 +96,7 @@ func TestMasmorras_Equilibrio(t *testing.T) {
 			if m.ID == "trono_primordial" {
 				minimo, maximo = 0.005, 0.40
 			}
-			t.Logf("%-18s %-16s nível %2d: %3.0f%%", m.ID, base, m.NivelMinimo, taxa*100)
+			t.Logf("%-25s %-16s nível %2d: %3.0f%%", m.ID, base, m.NivelMinimo, taxa*100)
 			if taxa < minimo || taxa > maximo {
 				t.Errorf("%s com %s no nível %d: completou %.0f%%, esperava entre %.0f%% e %.0f%%", m.ID, base, m.NivelMinimo, taxa*100, minimo*100, maximo*100)
 			}
@@ -78,7 +106,8 @@ func TestMasmorras_Equilibrio(t *testing.T) {
 
 // A Vida passa de um andar para o outro, e a masmorra para no primeiro andar perdido.
 func TestSimularMasmorra_VidaPassaEParaNaDerrota(t *testing.T) {
-	monstros, _ := monstrosDosAndares(CatalogoMasmorras()[0], catalogoParaMasmorras())
+	catalogo := catalogoParaMasmorras(t)
+	monstros, _ := monstrosDosAndares(CatalogoMasmorras()[0], catalogo)
 	j := jogadorDoElenco("espadachim_eter", 12, itemDaFaixa(12))
 	r := SimularMasmorra(j, monstros, rand.New(rand.NewSource(1)))
 	for i := 1; i < len(r.Andares); i++ {

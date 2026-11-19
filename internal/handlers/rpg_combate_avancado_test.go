@@ -469,3 +469,45 @@ func TestMonstro_EsquivaEDanoArcano(t *testing.T) {
 	}
 }
 
+func TestCombateAvancado_BiomasEPassiva(t *testing.T) {
+	base := CombatenteRPG{
+		Atributos: AtributosRPG{Vida: 1000, Ataque: 100, Defesa: 80, Magia: 100, Velocidade: 50, CriticoPorMil: 100, EsquivaPorMil: 50},
+		Elemento:  "fogo",
+	}
+	monstro := MonstroRPG{ID: "lobo_sombrio", Regiao: "bosque_sombrio", Elemento: "trevas", Ataque: 100, Defesa: 80, Magia: 100, Velocidade: 50, CriticoPorMil: 100, EsquivaPorMil: 30}
+
+	aplicarEfeitoBioma(&base, &monstro)
+	if base.Atributos.Vida != 1000 {
+		t.Errorf("bioma nunca deve alterar Vida máxima, veio %d", base.Atributos.Vida)
+	}
+	if base.Atributos.EsquivaPorMil != 65 || monstro.EsquivaPorMil != 45 {
+		t.Errorf("bosque_sombrio deveria somar +15 por mil de esquiva, veio j=%d m=%d", base.Atributos.EsquivaPorMil, monstro.EsquivaPorMil)
+	}
+	if base.Atributos.Ataque != 103 {
+		t.Errorf("Fogo no Bosque Sombrio deveria ganhar +3%% de ataque, veio %d", base.Atributos.Ataque)
+	}
+
+	// Passiva de Vida eleva a Vida máxima e a Vida inicial cheia sem quebrar luta sem passiva.
+	comPassiva := CombatenteRPG{
+		Atributos: AtributosRPG{Vida: 1000, Ataque: 1, Defesa: 1000, Velocidade: 1},
+		Passiva:   &PassivaEspecialidade{ID: "folego_cotidiano", Nome: "Fôlego Cotidiano", Tipo: "vida", ValorPct: 5},
+	}
+	tanqueMonstro := monstroDoNivel(1, "comum", 100000, 1, 100000)
+	res := SimularBatalha(comPassiva, tanqueMonstro, rand.New(rand.NewSource(1)))
+	if res.VidaInicial != 1050 {
+		t.Errorf("passiva de +5%% de Vida deveria iniciar luta cheia com 1050, veio %d", res.VidaInicial)
+	}
+
+	// Passiva de ataque eleva o dano contra adversário sintético.
+	semP := CombatenteRPG{Atributos: AtributosRPG{Vida: 2000, Ataque: 100, Defesa: 50, Velocidade: 20}}
+	comP := semP
+	comP.Passiva = &PassivaEspecialidade{ID: "golpe_protagonista", Nome: "Golpe Protagonista", Tipo: "ataque", ValorPct: 6}
+	alvo := monstroDoNivel(10, "comum", 2000, 10, 40)
+	rSem := SimularBatalha(semP, alvo, rand.New(rand.NewSource(7)))
+	rCom := SimularBatalha(comP, alvo, rand.New(rand.NewSource(7)))
+	if rCom.Turnos[0].Dano <= rSem.Turnos[0].Dano {
+		t.Errorf("passiva de ataque (+6%%) deveria aumentar primeiro golpe (%d vs %d)", rCom.Turnos[0].Dano, rSem.Turnos[0].Dano)
+	}
+}
+
+

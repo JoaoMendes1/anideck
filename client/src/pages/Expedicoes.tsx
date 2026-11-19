@@ -10,12 +10,13 @@
 //
 // Arte e mapa 2D: usa os retratos por id em client/src/assets/rpg/monstros/.
 import BotaoEmGrupo from '../components/rpg/BotaoEmGrupo'
+import CardContratosSemanais from '../components/rpg/CardContratosSemanais'
 import ControleDeVelocidade from '../components/rpg/ControleDeVelocidade'
 import MapaExpedicoes from '../components/rpg/MapaExpedicoes'
 import { intervaloDaVelocidade, lerVelocidade, salvarVelocidade, type Velocidade } from '../lib/velocidadeBatalha'
 import { useComunidade } from '../hooks/useComunidade'
 import { useEffect, useRef, useState } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useLocation } from 'react-router-dom'
 import {
   BedDouble,
   Brain,
@@ -26,6 +27,8 @@ import {
   Heart,
   LayoutGrid,
   Map as MapIcon,
+  RotateCcw,
+  Search,
   Sparkles,
   Swords,
   Ticket,
@@ -42,6 +45,7 @@ import {
   obterExpedicoes,
   porMilEmPorcento,
   recuperarVida,
+  regioesDoMapa,
   resumoDoItem,
   rotuloDaDificuldade,
   abaixoDaVidaMinima,
@@ -49,6 +53,7 @@ import {
   textoDaRelacao,
   textoDoBestiario,
   type EstadoExpedicoes,
+  type MonstroNaLista,
   type RespostaBatalha,
   type TipoRecuperacao,
 } from '../lib/rpg'
@@ -92,7 +97,19 @@ function BarraDeVida({ rotulo, atual, maximo, cor }: { rotulo: string; atual: nu
   )
 }
 
-function TelaDeBatalha({ batalha, aoVoltar }: { batalha: RespostaBatalha; aoVoltar: () => void }) {
+function TelaDeBatalha({
+  batalha,
+  monstros,
+  bloqueado,
+  aoEnfrentarNova,
+  aoVoltar,
+}: {
+  batalha: RespostaBatalha
+  monstros: MonstroNaLista[]
+  bloqueado: boolean
+  aoEnfrentarNova: (monstroId: string) => void
+  aoVoltar: () => void
+}) {
   const { monstro, jogador, resultado, recompensa } = batalha
   const total = resultado.turnos.length
   const [mostrados, setMostrados] = useState(() => (querMovimentoReduzido() ? total : 0))
@@ -109,6 +126,9 @@ function TelaDeBatalha({ batalha, aoVoltar }: { batalha: RespostaBatalha; aoVolt
   const vidaJogador = ultimo?.vida_jogador ?? resultado.vida_inicial ?? jogador.vida
   const vidaMonstro = ultimo?.vida_monstro ?? monstro.vida
   const recentes = resultado.turnos.slice(Math.max(0, mostrados - 6), mostrados).reverse()
+  const proximaEvolucao = monstro.evolui_para
+    ?.map((id) => monstros.find((m) => m.id === id))
+    .find((m): m is MonstroNaLista => Boolean(m))
 
   return (
     <section aria-label={`Batalha contra ${monstro.nome}`} className="flex flex-col gap-4">
@@ -219,6 +239,26 @@ function TelaDeBatalha({ batalha, aoVoltar }: { batalha: RespostaBatalha; aoVolt
             >
               Voltar às expedições
             </button>
+            <button
+              type="button"
+              onClick={() => aoEnfrentarNova(monstro.id)}
+              disabled={bloqueado}
+              className="inline-flex h-10 cursor-pointer items-center gap-1.5 rounded-full border border-holo-3/60 bg-panel-2 px-4 text-xs font-bold text-text hover:border-holo-3 disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              <RotateCcw size={13} aria-hidden="true" />
+              Enfrentar novamente
+            </button>
+            {proximaEvolucao && (
+              <button
+                type="button"
+                onClick={() => aoEnfrentarNova(proximaEvolucao.id)}
+                disabled={bloqueado}
+                className="inline-flex h-10 cursor-pointer items-center gap-1.5 rounded-full border border-holo-2/60 bg-holo-2/15 px-4 text-xs font-bold text-holo-2 hover:bg-holo-2/25 disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                <Swords size={13} aria-hidden="true" />
+                Desafiar {proximaEvolucao.nome}
+              </button>
+            )}
             {recompensa.bilhetes > 0 && (
               <Link to="/invocacao" className="inline-flex h-10 items-center rounded-full border border-gold/60 px-5 text-xs font-bold text-gold">
                 Usar bilhetes
@@ -308,16 +348,22 @@ function PainelDaVida({
 }
 
 export default function Expedicoes() {
+  const location = useLocation()
   const [estado, setEstado] = useState<EstadoExpedicoes | null>(null)
   const [erro, setErro] = useState('')
   const [semPersonagem, setSemPersonagem] = useState(false)
   const [carregando, setCarregando] = useState(true)
   const [lutando, setLutando] = useState<string | null>(null)
   const [batalha, setBatalha] = useState<RespostaBatalha | null>(null)
+  const [batalhaSeq, setBatalhaSeq] = useState(0)
   const [erroDaLuta, setErroDaLuta] = useState('')
   const [recuperando, setRecuperando] = useState<TipoRecuperacao | null>(null)
   const [modo, setModo] = useState<'mapa' | 'lista'>('mapa')
   const [selecionadoId, setSelecionadoId] = useState('')
+  const [filtroRegiao, setFiltroRegiao] = useState('todas')
+  const [busca, setBusca] = useState('')
+  const [soSemVitoria, setSoSemVitoria] = useState(false)
+  const [soComEvolucao, setSoComEvolucao] = useState(false)
   const topo = useRef<HTMLDivElement>(null)
 
   const carregar = () => {
@@ -337,6 +383,14 @@ export default function Expedicoes() {
 
   useEffect(carregar, [])
 
+  useEffect(() => {
+    if (carregando || !location.hash) return
+    const id = location.hash.replace(/^#/, '')
+    if (id === 'evento' || id === 'contratos') {
+      document.getElementById(id)?.scrollIntoView?.({ behavior: 'smooth', block: 'start' })
+    }
+  }, [carregando, location.hash])
+
   const enfrentar = async (monstroId: string) => {
     if (lutando) return
     setErroDaLuta('')
@@ -346,7 +400,8 @@ export default function Expedicoes() {
     if (r.dados) {
       const dados = r.dados
       setBatalha(dados)
-      setEstado((atual) => (atual ? { ...atual, hoje: dados.hoje, vida: dados.vida ?? atual.vida } : atual))
+      setBatalhaSeq((s) => s + 1)
+      setEstado((atual) => (atual ? { ...atual, hoje: dados.hoje, vida: dados.vida ?? atual.vida, passiva: dados.passiva ?? atual.passiva } : atual))
       topo.current?.scrollIntoView?.({ block: 'start' })
       return
     }
@@ -375,13 +430,22 @@ export default function Expedicoes() {
   const restantes = batalhasRestantes(estado?.hoje)
   const exausto = abaixoDaVidaMinima(estado?.vida, estado?.hoje.regras)
   const regiaoEmDestaque = estado?.regioes?.find((r) => r.em_destaque)
+  const regioesDisponiveis = estado ? regioesDoMapa({ regioes: estado.regioes, monstros: estado.monstros }) : []
+  const termo = busca.trim().toLowerCase()
+  const monstrosFiltrados = (estado?.monstros ?? []).filter((m) => {
+    if (filtroRegiao !== 'todas' && m.regiao !== filtroRegiao) return false
+    if (soSemVitoria && (m.bestiario?.vitorias ?? 0) > 0) return false
+    if (soComEvolucao && !(m.evolui_para && m.evolui_para.length > 0)) return false
+    if (termo && !m.nome.toLowerCase().includes(termo) && !(m.familia ?? '').toLowerCase().includes(termo)) return false
+    return true
+  })
 
   return (
     <div ref={topo} className={CONTAINER}>
       <header className="mb-4 hidden items-center gap-1 select-none md:flex">
         <Link
-          to="/personagem"
-          aria-label="Voltar para o personagem"
+          to="/guilda"
+          aria-label="Voltar para a Guilda"
           className="-ml-2 flex h-10 w-11 items-center justify-center rounded-full text-muted hover:text-text"
         >
           <ChevronLeft size={22} />
@@ -408,7 +472,17 @@ export default function Expedicoes() {
           </button>
         </div>
       ) : batalha ? (
-        <TelaDeBatalha key={batalha.resultado.turnos.length + batalha.monstro.id} batalha={batalha} aoVoltar={() => { setBatalha(null); carregar() }} />
+        <TelaDeBatalha
+          key={`${batalhaSeq}-${batalha.monstro.id}`}
+          batalha={batalha}
+          monstros={estado.monstros}
+          bloqueado={restantes === 0 || exausto || lutando !== null}
+          aoEnfrentarNova={enfrentar}
+          aoVoltar={() => {
+            setBatalha(null)
+            carregar()
+          }}
+        />
       ) : (
         <div className="flex flex-col gap-3 sm:gap-5">
           <div className="flex flex-col gap-2">
@@ -418,6 +492,14 @@ export default function Expedicoes() {
               {estado.custos_mana ? `Cada batalha gasta ${estado.custos_mana.expedicao} de Mana. ` : ''}
               XP só vem dos animes.
             </p>
+            {estado.passiva && (
+              <p className="m-0 inline-flex flex-wrap items-center gap-1.5 self-start rounded-full border border-holo-3/40 bg-holo-3/10 px-3 py-1 font-mono text-xs text-holo-3">
+                <Sparkles size={12} aria-hidden="true" />
+                <span>
+                  Passiva ativa · <strong className="text-text">{estado.passiva.nome}:</strong> {estado.passiva.resumo}
+                </span>
+              </p>
+            )}
           </div>
 
           <dl className="m-0 grid grid-cols-4 gap-1.5 sm:gap-2.5">
@@ -520,106 +602,182 @@ export default function Expedicoes() {
               aoEnfrentar={enfrentar}
             />
           ) : (
-            <ul className="m-0 grid list-none grid-cols-1 gap-3 p-0 md:grid-cols-2">
-              {estado.monstros.map((m) => {
-                const tipo = ESTILO_DO_TIPO[m.tipo] ?? ESTILO_DO_TIPO.comum
-                const dificuldade = rotuloDaDificuldade(m.dificuldade)
-                const item = estiloDaRaridade(m.raridade_item)
-                return (
-                  <li key={m.id} className={`flex flex-col gap-2 rounded-2xl border bg-panel p-3 sm:gap-3 sm:p-4 ${tipo.borda}`}>
-                    <div className="flex items-start gap-3">
-                      <IconeDoMonstro monstro={m} tamanho="h-20 w-20 sm:h-24 sm:w-24" destaque iconeTamanho={34} />
-                      <div className="min-w-0 flex-1">
-                        <div className="flex flex-wrap items-center gap-2">
-                          <h2 className="m-0 text-base font-bold leading-tight">{m.nome}</h2>
-                          <span className={`rounded-full border px-2 py-0.5 font-mono text-xs ${dificuldade.classe}`}>{dificuldade.rotulo}</span>
+            <div className="flex flex-col gap-3">
+              <div className="flex flex-wrap items-center gap-2 rounded-2xl border border-line bg-panel p-3">
+                <label className="relative min-w-[180px] flex-1">
+                  <Search size={14} className="pointer-events-none absolute top-1/2 left-3 -translate-y-1/2 text-muted" aria-hidden="true" />
+                  <input
+                    type="search"
+                    value={busca}
+                    onChange={(e) => setBusca(e.target.value)}
+                    placeholder="Buscar monstro ou família…"
+                    aria-label="Buscar monstro ou família"
+                    className="h-9 w-full rounded-xl border border-line bg-panel-2 pr-3 pl-8 text-xs text-text placeholder:text-muted-2 focus:border-holo-3 focus:outline-none"
+                  />
+                </label>
+
+                <select
+                  aria-label="Filtrar por região"
+                  value={filtroRegiao}
+                  onChange={(e) => setFiltroRegiao(e.target.value)}
+                  className="h-9 cursor-pointer rounded-xl border border-line bg-panel-2 px-3 text-xs font-semibold text-text focus:border-holo-3 focus:outline-none"
+                >
+                  <option value="todas">Todas as regiões</option>
+                  {regioesDisponiveis.map((r) => (
+                    <option key={r.id} value={r.id}>
+                      {r.nome} ({r.faixa_nivel})
+                    </option>
+                  ))}
+                </select>
+
+                <button
+                  type="button"
+                  onClick={() => setSoSemVitoria((v) => !v)}
+                  aria-pressed={soSemVitoria}
+                  className={`h-9 cursor-pointer rounded-xl border px-3 text-xs font-bold transition ${
+                    soSemVitoria ? 'border-gold/60 bg-gold/15 text-gold' : 'border-line bg-panel-2 text-muted hover:text-text'
+                  }`}
+                >
+                  Falta 1ª vitória
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setSoComEvolucao((v) => !v)}
+                  aria-pressed={soComEvolucao}
+                  className={`h-9 cursor-pointer rounded-xl border px-3 text-xs font-bold transition ${
+                    soComEvolucao ? 'border-holo-3/60 bg-holo-3/15 text-holo-3' : 'border-line bg-panel-2 text-muted hover:text-text'
+                  }`}
+                >
+                  Com evolução
+                </button>
+              </div>
+
+              {monstrosFiltrados.length === 0 ? (
+                <div className="rounded-2xl border border-line bg-panel p-6 text-center">
+                  <p className="m-0 mb-3 text-sm text-muted">Nenhum monstro encontrado com estes filtros.</p>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setBusca('')
+                      setFiltroRegiao('todas')
+                      setSoSemVitoria(false)
+                      setSoComEvolucao(false)
+                    }}
+                    className="h-9 cursor-pointer rounded-full border border-line px-4 text-xs font-bold text-text hover:border-holo-3"
+                  >
+                    Limpar filtros
+                  </button>
+                </div>
+              ) : (
+                <ul className="m-0 grid list-none grid-cols-1 gap-3 p-0 md:grid-cols-2">
+                  {monstrosFiltrados.map((m) => {
+                    const tipo = ESTILO_DO_TIPO[m.tipo] ?? ESTILO_DO_TIPO.comum
+                    const dificuldade = rotuloDaDificuldade(m.dificuldade)
+                    const item = estiloDaRaridade(m.raridade_item)
+                    return (
+                      <li key={m.id} className={`flex flex-col gap-2 rounded-2xl border bg-panel p-3 sm:gap-3 sm:p-4 ${tipo.borda}`}>
+                        <div className="flex items-start gap-3">
+                          <IconeDoMonstro monstro={m} tamanho="h-20 w-20 sm:h-24 sm:w-24" destaque iconeTamanho={34} />
+                          <div className="min-w-0 flex-1">
+                            <div className="flex flex-wrap items-center gap-2">
+                              <h2 className="m-0 text-base font-bold leading-tight">{m.nome}</h2>
+                              <span className={`rounded-full border px-2 py-0.5 font-mono text-xs ${dificuldade.classe}`}>{dificuldade.rotulo}</span>
+                            </div>
+                            <p className="m-0 font-mono text-xs text-muted">
+                              {tipo.rotulo} · nível {m.nivel} · poder {m.poder}
+                              {m.regiao_nome ? ` · ${m.regiao_nome}` : ''}
+                            </p>
+                            {m.familia && (
+                              <p className="m-0 mt-0.5 font-mono text-[11px] text-holo-3">
+                                Família: {m.familia}
+                              </p>
+                            )}
+                            <p className="m-0 mt-1 line-clamp-2 text-xs leading-snug text-muted sm:line-clamp-none">{m.descricao}</p>
+                          </div>
                         </div>
-                        <p className="m-0 font-mono text-xs text-muted">
-                          {tipo.rotulo} · nível {m.nivel} · poder {m.poder}
-                          {m.regiao_nome ? ` · ${m.regiao_nome}` : ''}
-                        </p>
-                        {m.familia && (
-                          <p className="m-0 mt-0.5 font-mono text-[11px] text-holo-3">
-                            Família: {m.familia}
-                          </p>
+                        {(m.elemento || m.comportamento || (m.poderes?.length ?? 0) > 0) && (
+                          <div className="flex flex-col gap-1.5">
+                            <p className="m-0 flex flex-wrap items-center gap-2 text-xs">
+                              {m.elemento && (
+                                <span className={`rounded-full border px-2 py-0.5 font-mono ${(ESTILO_DO_ELEMENTO[m.elemento] ?? ESTILO_DO_ELEMENTO.eter).classe}`}>
+                                  {(ESTILO_DO_ELEMENTO[m.elemento] ?? ESTILO_DO_ELEMENTO.eter).simbolo} {rotuloDoElemento(m.elemento)}
+                                </span>
+                              )}
+                              {m.comportamento && (
+                                <span className="inline-flex items-center gap-1 rounded-full border border-holo-2/40 bg-holo-2/10 px-2 py-0.5 font-mono text-holo-2">
+                                  <Brain size={11} aria-hidden="true" />
+                                  {m.comportamento}
+                                </span>
+                              )}
+                              {textoDaRelacao(m.elemental) && (
+                                <span className={m.elemental === 'vantagem' ? 'font-bold text-green' : 'font-bold text-coral'}>{textoDaRelacao(m.elemental)}</span>
+                              )}
+                            </p>
+                            {m.poderes?.map((p) => (
+                              <p key={p.id} className="m-0 text-xs leading-snug text-muted">
+                                <strong className="text-text">{p.nome}:</strong> {p.descricao}
+                              </p>
+                            ))}
+                          </div>
                         )}
-                        <p className="m-0 mt-1 line-clamp-2 text-xs leading-snug text-muted sm:line-clamp-none">{m.descricao}</p>
-                      </div>
-                    </div>
-                    {(m.elemento || m.comportamento || (m.poderes?.length ?? 0) > 0) && (
-                      <div className="flex flex-col gap-1.5">
-                        <p className="m-0 flex flex-wrap items-center gap-2 text-xs">
-                          {m.elemento && (
-                            <span className={`rounded-full border px-2 py-0.5 font-mono ${(ESTILO_DO_ELEMENTO[m.elemento] ?? ESTILO_DO_ELEMENTO.eter).classe}`}>
-                              {(ESTILO_DO_ELEMENTO[m.elemento] ?? ESTILO_DO_ELEMENTO.eter).simbolo} {rotuloDoElemento(m.elemento)}
+                        <div className="flex flex-wrap items-center gap-x-3 gap-y-1 font-mono text-xs text-muted">
+                          <span className="inline-flex items-center gap-1">
+                            <Heart size={12} className="text-coral" aria-hidden="true" /> {m.vida}
+                          </span>
+                          <span className="inline-flex items-center gap-1">
+                            <Ticket size={12} className="text-gold" aria-hidden="true" /> {m.bilhetes}
+                          </span>
+                          {m.chance_item > 0 && (
+                            <span className={item.texto}>
+                              {m.chance_item}% de item {item.rotulo.toLowerCase()}
                             </span>
                           )}
-                          {m.comportamento && (
-                            <span className="inline-flex items-center gap-1 rounded-full border border-holo-2/40 bg-holo-2/10 px-2 py-0.5 font-mono text-holo-2">
-                              <Brain size={11} aria-hidden="true" />
-                              {m.comportamento}
-                            </span>
-                          )}
-                          {textoDaRelacao(m.elemental) && (
-                            <span className={m.elemental === 'vantagem' ? 'font-bold text-green' : 'font-bold text-coral'}>{textoDaRelacao(m.elemental)}</span>
-                          )}
-                        </p>
-                        {m.poderes?.map((p) => (
-                          <p key={p.id} className="m-0 text-xs leading-snug text-muted">
-                            <strong className="text-text">{p.nome}:</strong> {p.descricao}
+                        </div>
+                        {m.bestiario && (
+                          <p className="m-0 inline-flex items-start gap-1.5 font-mono text-xs text-muted">
+                            <Trophy size={12} className="mt-0.5 shrink-0 text-gold" aria-hidden="true" />
+                            {textoDoBestiario(m.bestiario)}
                           </p>
-                        ))}
-                      </div>
-                    )}
-                    <div className="flex flex-wrap items-center gap-x-3 gap-y-1 font-mono text-xs text-muted">
-                      <span className="inline-flex items-center gap-1">
-                        <Heart size={12} className="text-coral" aria-hidden="true" /> {m.vida}
-                      </span>
-                      <span className="inline-flex items-center gap-1">
-                        <Ticket size={12} className="text-gold" aria-hidden="true" /> {m.bilhetes}
-                      </span>
-                      {m.chance_item > 0 && (
-                        <span className={item.texto}>
-                          {m.chance_item}% de item {item.rotulo.toLowerCase()}
-                        </span>
-                      )}
-                    </div>
-                    {m.bestiario && (
-                      <p className="m-0 inline-flex items-start gap-1.5 font-mono text-xs text-muted">
-                        <Trophy size={12} className="mt-0.5 shrink-0 text-gold" aria-hidden="true" />
-                        {textoDoBestiario(m.bestiario)}
-                      </p>
-                    )}
-                    <div className="flex flex-wrap gap-2">
-                      <button
-                        type="button"
-                        onClick={() => enfrentar(m.id)}
-                        disabled={restantes === 0 || lutando !== null || exausto}
-                        aria-label={`Enfrentar ${m.nome}`}
-                        className="h-10 cursor-pointer rounded-full bg-gradient-to-r from-holo-1 to-holo-3 px-5 text-xs font-extrabold text-void disabled:cursor-not-allowed disabled:opacity-50"
-                      >
-                        {lutando === m.id ? 'Batalhando…' : 'Enfrentar'}
-                        {lutando !== m.id && estado.custos_mana && (
-                          <span className="ml-1 font-mono text-[11px] font-semibold opacity-80">· {estado.custos_mana.expedicao} MP</span>
                         )}
-                      </button>
-                      <BotaoEmGrupo tipo="monstro" alvoId={m.id} nome={m.nome} desativado={restantes === 0 || lutando !== null || exausto} />
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setSelecionadoId(m.id)
-                          setModo('mapa')
-                        }}
-                        className="inline-flex h-10 cursor-pointer items-center gap-1 rounded-full border border-line px-3.5 text-xs font-bold text-muted hover:border-holo-3/60 hover:text-text"
-                      >
-                        Inspecionar
-                      </button>
-                    </div>
-                  </li>
-                )
-              })}
-            </ul>
+                        <div className="flex flex-wrap gap-2">
+                          <button
+                            type="button"
+                            onClick={() => enfrentar(m.id)}
+                            disabled={restantes === 0 || lutando !== null || exausto}
+                            aria-label={`Enfrentar ${m.nome}`}
+                            className="h-10 cursor-pointer rounded-full bg-gradient-to-r from-holo-1 to-holo-3 px-5 text-xs font-extrabold text-void disabled:cursor-not-allowed disabled:opacity-50"
+                          >
+                            {lutando === m.id ? 'Batalhando…' : 'Enfrentar'}
+                            {lutando !== m.id && estado.custos_mana && (
+                              <span className="ml-1 font-mono text-[11px] font-semibold opacity-80">· {estado.custos_mana.expedicao} MP</span>
+                            )}
+                          </button>
+                          <BotaoEmGrupo tipo="monstro" alvoId={m.id} nome={m.nome} desativado={restantes === 0 || lutando !== null || exausto} />
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setSelecionadoId(m.id)
+                              setModo('mapa')
+                            }}
+                            className="inline-flex h-10 cursor-pointer items-center gap-1 rounded-full border border-line px-3.5 text-xs font-bold text-muted hover:border-holo-3/60 hover:text-text"
+                          >
+                            Inspecionar
+                          </button>
+                        </div>
+                      </li>
+                    )
+                  })}
+                </ul>
+              )}
+            </div>
           )}
+
+          <CardContratosSemanais
+            aoResgatar={(res) => {
+              setEstado((atual) => (atual ? { ...atual, hoje: { ...atual.hoje, ouro: res.ouro, bilhetes: res.bilhetes } } : atual))
+            }}
+          />
 
           <CartaoEvento />
         </div>

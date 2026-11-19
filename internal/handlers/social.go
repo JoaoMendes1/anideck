@@ -246,6 +246,8 @@ type ResumoSocial struct {
 	Seguidores      int  `json:"seguidores"`
 	Seguindo        int  `json:"seguindo"`
 	EuSigo          bool `json:"eu_sigo"`
+	EleMeSegue      bool `json:"ele_me_segue"`
+	Amigos          bool `json:"amigos"`
 	SouEu           bool `json:"sou_eu"`
 	MostraAtividade bool `json:"mostra_atividade"`
 }

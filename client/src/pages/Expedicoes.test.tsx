@@ -7,11 +7,18 @@ import type { EstadoExpedicoes, RespostaBatalha } from '../lib/rpg'
 
 vi.mock('../lib/rpg', async (original) => {
   const real = await original<typeof import('../lib/rpg')>()
-  return { ...real, obterExpedicoes: vi.fn(), batalhar: vi.fn(), recuperarVida: vi.fn() }
+  return {
+    ...real,
+    obterExpedicoes: vi.fn(),
+    batalhar: vi.fn(),
+    recuperarVida: vi.fn(),
+    obterContratosSemanais: vi.fn(),
+    resgatarContratoSemanal: vi.fn(),
+  }
 })
 
 import Expedicoes from './Expedicoes'
-import { batalhar, obterExpedicoes, recuperarVida } from '../lib/rpg'
+import { batalhar, obterContratosSemanais, obterExpedicoes, recuperarVida, resgatarContratoSemanal } from '../lib/rpg'
 
 const slime = {
   id: 'slime_de_eter', nome: 'Slime de Éter', descricao: 'Uma gota.', tipo: 'comum' as const, nivel: 1,
@@ -58,6 +65,9 @@ beforeEach(() => {
   vi.mocked(obterExpedicoes).mockReset()
   vi.mocked(batalhar).mockReset()
   vi.mocked(recuperarVida).mockReset()
+  vi.mocked(obterContratosSemanais).mockReset()
+  vi.mocked(obterContratosSemanais).mockResolvedValue({})
+  vi.mocked(resgatarContratoSemanal).mockReset()
   // Movimento reduzido: a luta aparece inteira, sem esperar os golpes.
   window.matchMedia = vi.fn().mockReturnValue({ matches: true, addEventListener: vi.fn(), removeEventListener: vi.fn() })
 })
@@ -69,6 +79,7 @@ describe('Expedições', () => {
     abrir()
 
     await screen.findAllByText('Slime de Éter')
+    expect(screen.getByRole('link', { name: 'Voltar para a Guilda' }).getAttribute('href')).toBe('/guilda')
     expect(screen.getByText('Fácil')).toBeTruthy()
     expect(screen.getByText('15% de item comum')).toBeTruthy()
     expect(screen.getByText('4')).toBeTruthy()
@@ -187,7 +198,7 @@ describe('Expedições', () => {
     expect((await screen.findByRole('link', { name: 'Ir para o despertar' })).getAttribute('href')).toBe('/personagem')
   })
 
-  it('permite explorar o mapa 2D, trocar de região, inspecionar os 8 atributos, dica tática e alternar para lista', async () => {
+  it('permite explorar o mapa 2D, trocar de região, inspecionar os 8 atributos, dica tática, filtros da lista e bestiário global', async () => {
     const lobo = {
       id: 'lobo_sombrio', nome: 'Lobo Sombrio', descricao: 'Caça na neblina.', tipo: 'comum' as const, nivel: 10,
       vida: 380, ataque: 48, defesa: 24, magia: 10, eter: 16, velocidade: 11, critico_por_mil: 115, dano_critico: 155, esquiva_por_mil: 35,
@@ -209,11 +220,12 @@ describe('Expedições', () => {
     const comMapa: EstadoExpedicoes = {
       ...base,
       atributos: { vida: 130, ataque: 15, defesa: 9, magia: 8, velocidade: 10, critico_por_mil: 70, dano_critico: 150, esquiva_por_mil: 30, eter: 20, poder: 61 },
+      passiva: { id: 'golpe_protagonista', nome: 'Golpe Protagonista', genero: 'Ação', resumo: '+7% Ataque nas batalhas', tipo: 'ataque', valor_pct: 7 },
       regiao_destaque: 'bosque_sombrio',
       regioes: [
-        { id: 'clareira_inicial', nome: 'Clareira Inicial', subtitulo: 'Fronteira', bioma: 'Brisa de Éter', efeito_bioma: 'Campo aberto.', faixa_nivel: 'Nv 1–8', ordem: 1, x: 14, y: 74, conexoes: ['bosque_sombrio'], monstros: ['slime_de_eter'] },
-        { id: 'bosque_sombrio', nome: 'Bosque Sombrio', subtitulo: 'Trilhas', bioma: 'Névoa Espessa', efeito_bioma: 'Feras velozes.', faixa_nivel: 'Nv 10–25', ordem: 2, x: 32, y: 54, conexoes: ['clareira_inicial', 'ruinas_do_vazio'], monstros: ['lobo_sombrio'], em_destaque: true, bonus_destaque: '+1 material da Forja garantido na vitória' },
-        { id: 'ruinas_do_vazio', nome: 'Ruínas do Vazio', subtitulo: 'Salões', bioma: 'Ecos Arcanos', efeito_bioma: 'Espectros antigos.', faixa_nivel: 'Nv 16–41', ordem: 5, x: 56, y: 54, conexoes: ['bosque_sombrio'], monstros: ['lobo_abissal'] },
+        { id: 'clareira_inicial', nome: 'Clareira Inicial', subtitulo: 'Fronteira', bioma: 'Brisa de Éter', efeito_bioma: 'Campo aberto.', faixa_nivel: 'Nv 1–8', ordem: 1, x: 28, y: 75, conexoes: ['bosque_sombrio'], monstros: ['slime_de_eter'] },
+        { id: 'bosque_sombrio', nome: 'Bosque Sombrio', subtitulo: 'Trilhas', bioma: 'Névoa Espessa', efeito_bioma: 'Feras velozes.', faixa_nivel: 'Nv 10–25', ordem: 2, x: 19, y: 47, conexoes: ['clareira_inicial', 'ruinas_do_vazio'], monstros: ['lobo_sombrio'], em_destaque: true, bonus_destaque: '+1 material da Forja garantido na vitória' },
+        { id: 'ruinas_do_vazio', nome: 'Ruínas do Vazio', subtitulo: 'Salões', bioma: 'Ecos Arcanos', efeito_bioma: 'Espectros antigos.', faixa_nivel: 'Nv 16–41', ordem: 5, x: 50, y: 49, conexoes: ['bosque_sombrio'], monstros: ['lobo_abissal'] },
       ],
       monstros: [
         { ...base.monstros[0], comportamento: 'Instintivo', bestiario: { vitorias: 0, marco: 0, faltam_marco: 10, bonus_ouro: 0 } },
@@ -222,14 +234,18 @@ describe('Expedições', () => {
       ],
     }
     vi.mocked(obterExpedicoes).mockResolvedValue({ dados: comMapa })
+    vi.mocked(batalhar).mockResolvedValue({ dados: { ...vitoria, monstro: lobo } })
     abrir()
 
     await screen.findByRole('heading', { name: 'Clareira Inicial' })
+    expect(screen.getByText('2 / 3 descobertos · 67%')).toBeTruthy()
+    expect(screen.getByText(/Golpe Protagonista:/)).toBeTruthy()
     expect(screen.getByText(/Destaque de hoje:/)).toBeTruthy()
     expect(screen.getByText(/Vença 1 vez para desbloquear a dica tática/)).toBeTruthy()
 
     fireEvent.click(screen.getByRole('button', { name: 'Explorar Bosque Sombrio (Nv 10–25)' }))
     await screen.findByRole('heading', { name: 'Bosque Sombrio' })
+    expect(screen.getByText('Dominada')).toBeTruthy()
 
     fireEvent.click(screen.getByRole('button', { name: 'Inspecionar Lobo Sombrio (nível 10)' }))
     expect(screen.getByText(/IA: Predador/)).toBeTruthy()
@@ -244,6 +260,78 @@ describe('Expedições', () => {
 
     fireEvent.click(screen.getByRole('button', { name: 'Lista' }))
     expect(screen.getAllByRole('button', { name: /^Enfrentar / }).length).toBe(3)
+
+    // Filtra por "Falta 1ª vitória" e depois limpa para lutar e validar rematch + próxima evolução.
+    fireEvent.click(screen.getByRole('button', { name: 'Falta 1ª vitória' }))
+    expect(screen.getAllByRole('button', { name: /^Enfrentar / }).length).toBe(1)
+    fireEvent.click(screen.getByRole('button', { name: 'Falta 1ª vitória' }))
+
+    fireEvent.click(screen.getByRole('button', { name: 'Com evolução' }))
+    expect(screen.getAllByRole('button', { name: /^Enfrentar / }).length).toBe(1)
+    fireEvent.click(screen.getByRole('button', { name: 'Enfrentar Lobo Sombrio' }))
+
+    await screen.findByText('Vitória')
+    expect(screen.getByRole('button', { name: 'Enfrentar novamente' })).toBeTruthy()
+    fireEvent.click(screen.getByRole('button', { name: 'Desafiar Lobo Abissal' }))
+    await waitFor(() => expect(batalhar).toHaveBeenCalledWith('lobo_abissal'))
+  })
+
+  it('mostra e resgata contratos semanais atualizando Ouro e Bilhetes', async () => {
+    vi.mocked(obterExpedicoes).mockResolvedValue({ dados: estado(1, 100, 100) })
+    vi.mocked(obterContratosSemanais).mockResolvedValue({
+      dados: {
+        semana: '2026-11-16',
+        expira_em: '2026-11-22',
+        contratos: [
+          {
+            id: 'vitorias_semana',
+            titulo: 'Maratona da Fronteira',
+            descricao: 'Alcance 10 vitórias em expedições nesta semana.',
+            progresso: 10,
+            meta: 10,
+            ouro: 130,
+            bilhetes: 2,
+            concluido: true,
+            resgatado: false,
+          },
+        ],
+      },
+    })
+    vi.mocked(resgatarContratoSemanal).mockResolvedValue({
+      dados: {
+        contrato_id: 'vitorias_semana',
+        ouro_ganho: 130,
+        bilhetes_ganhos: 2,
+        ouro: 230,
+        bilhetes: 5,
+        estado: {
+          semana: '2026-11-16',
+          expira_em: '2026-11-22',
+          contratos: [
+            {
+              id: 'vitorias_semana',
+              titulo: 'Maratona da Fronteira',
+              descricao: 'Alcance 10 vitórias em expedições nesta semana.',
+              progresso: 10,
+              meta: 10,
+              ouro: 130,
+              bilhetes: 2,
+              concluido: true,
+              resgatado: true,
+            },
+          ],
+        },
+      },
+    })
+
+    abrir()
+    await screen.findByText('Contratos Semanais')
+    fireEvent.click(screen.getByRole('button', { name: 'Resgatar' }))
+
+    await waitFor(() => expect(resgatarContratoSemanal).toHaveBeenCalledWith('vitorias_semana'))
+    expect(await screen.findByText('Resgatado')).toBeTruthy()
+    expect(screen.getByText('230')).toBeTruthy()
   })
 })
+
 

@@ -10,7 +10,7 @@ describe('busca do AniDeck', () => {
   it('acha pela palavra que o jogador usa', () => {
     expect(titulos('pousada')[0]).toBe('Recuperar HP e Mana')
     expect(titulos('poção')[0]).toBe('Recuperar HP e Mana')
-    expect(titulos('trocar arma')).toContain('Meu Personagem')
+    expect(titulos('trocar arma')).toContain('Personagem')
     expect(titulos('gacha')[0]).toBe('Invocação')
     expect(titulos('quando sai')[0]).toBe('Agenda')
   })

@@ -413,11 +413,11 @@ func CatalogoRegioes() []RegiaoMapa {
 			Nome:        "Clareira Inicial",
 			Subtitulo:   "Primeiros passos na fronteira",
 			Bioma:       "Brisa de Éter",
-			EfeitoBioma: "Campo aberto onde formas iniciais de slimes, fungos e insetos despertam.",
+			EfeitoBioma: "Efeito do bioma: +3% de Ataque para Éter e Terra em campo aberto.",
 			FaixaNivel:  "Nv 1–8",
 			Ordem:       1,
-			X:           14,
-			Y:           74,
+			X:           28,
+			Y:           75,
 			Conexoes:    []string{"bosque_sombrio", "forja_vulcanica"},
 			MonstroIDs:  []string{"slime_de_eter", "slime_espinhoso", "cogumelo_esporifero", "goblin_batedor", "vespa_eletrica", "golem_musgoso"},
 		},
@@ -426,11 +426,11 @@ func CatalogoRegioes() []RegiaoMapa {
 			Nome:        "Bosque Sombrio",
 			Subtitulo:   "Trilhas fechadas e raízes rúnicas",
 			Bioma:       "Névoa Espessa",
-			EfeitoBioma: "Feras velozes, esporos evoluídos e guardiões antigos protegem a mata.",
+			EfeitoBioma: "Efeito do bioma: +1,5% de Esquiva para ambos; Fogo ganha +3% de Ataque.",
 			FaixaNivel:  "Nv 10–25",
 			Ordem:       2,
-			X:           32,
-			Y:           54,
+			X:           19,
+			Y:           47,
 			Conexoes:    []string{"clareira_inicial", "mares_e_geada", "ruinas_do_vazio"},
 			MonstroIDs:  []string{"lobo_sombrio", "arvore_de_esporos", "slime_de_cranios", "planta_carnivora", "druida_da_floresta", "centopeia_toxica", "golem_de_runas", "ent_apodrecido", "alquimista_da_praga", "wyvern_esmeralda"},
 		},
@@ -439,11 +439,11 @@ func CatalogoRegioes() []RegiaoMapa {
 			Nome:        "Fendas Vulcânicas",
 			Subtitulo:   "Rios de lava e rocha viva",
 			Bioma:       "Cinzas Incandescentes",
-			EfeitoBioma: "Feras de magma e a Fênix Solar dominam as crateras ferventes.",
+			EfeitoBioma: "Efeito do bioma: +3% de Ataque para ambos; Água recebe +3% de Defesa.",
 			FaixaNivel:  "Nv 14–42",
 			Ordem:       3,
-			X:           42,
-			Y:           82,
+			X:           63,
+			Y:           75,
 			Conexoes:    []string{"clareira_inicial", "ruinas_do_vazio", "cume_ancestral"},
 			MonstroIDs:  []string{"javali_vulcanico", "aranha_rubra", "cao_de_magma", "fera_de_obsidiana", "golem_de_magma", "beemote_de_lava", "fenix_solar"},
 		},
@@ -452,10 +452,10 @@ func CatalogoRegioes() []RegiaoMapa {
 			Nome:        "Picos Glaciais",
 			Subtitulo:   "Marés congeladas e geleiras",
 			Bioma:       "Ventos Cortantes",
-			EfeitoBioma: "Serpentes marinhas evoluem ao lado de colossos e cavaleiros de gelo.",
+			EfeitoBioma: "Efeito do bioma: +2% de Crítico para ambos; Raio ganha +3% de Ataque.",
 			FaixaNivel:  "Nv 17–46",
 			Ordem:       4,
-			X:           26,
+			X:           35,
 			Y:           22,
 			Conexoes:    []string{"bosque_sombrio", "santuario_astral"},
 			MonstroIDs:  []string{"serpente_marinha", "revena_glacial", "grifo_glacial", "aranha_glacial", "golem_de_gelo", "yeti_glacial", "leviata_relampago", "cavaleiro_da_geada", "colosso_glacial", "dragao_glacial", "lorde_da_geada"},
@@ -465,11 +465,11 @@ func CatalogoRegioes() []RegiaoMapa {
 			Nome:        "Ruínas do Vazio",
 			Subtitulo:   "Salões de um reino esquecido",
 			Bioma:       "Ecos Arcanos",
-			EfeitoBioma: "Energia instável desperta espectros, olhos orbitais e colossos rúnicos.",
+			EfeitoBioma: "Efeito do bioma: +3% de Magia para ambos; Luz recebe +3% de Defesa.",
 			FaixaNivel:  "Nv 16–41",
 			Ordem:       5,
-			X:           56,
-			Y:           54,
+			X:           50,
+			Y:           49,
 			Conexoes:    []string{"bosque_sombrio", "forja_vulcanica", "santuario_astral", "cume_ancestral"},
 			MonstroIDs:  []string{"espectro_acorrentado", "fragmento_do_olho", "fantasma_do_vazio", "lobo_abissal", "golem_flutuante", "espectro_do_vazio", "beemote_fungico", "ceifador_sombrio", "vortex_do_olho", "slime_do_vazio", "cavaleiro_caido", "ceifador_espectral", "colosso_runico", "golem_do_vazio"},
 		},
@@ -478,11 +478,11 @@ func CatalogoRegioes() []RegiaoMapa {
 			Nome:        "Santuário Astral",
 			Subtitulo:   "Onde luz e abismo se cruzam",
 			Bioma:       "Fronteira Astral",
-			EfeitoBioma: "Serafins celestiais, Reis Lich e o Kraken disputam a ascensão final.",
+			EfeitoBioma: "Efeito do bioma: +2% de Crítico para ambos; Luz e Trevas ganham +2% de Ataque.",
 			FaixaNivel:  "Nv 42–54",
 			Ordem:       6,
-			X:           66,
-			Y:           22,
+			X:           69,
+			Y:           21,
 			Conexoes:    []string{"mares_e_geada", "ruinas_do_vazio", "cume_ancestral"},
 			MonstroIDs:  []string{"beholder_abissal", "lich_das_sombras", "dragao_esqueleto", "grifo_dourado", "serpente_espectral", "rei_lich", "draconato_do_trovao", "serafim_celestial", "kraken_abissal"},
 		},
@@ -491,11 +491,11 @@ func CatalogoRegioes() []RegiaoMapa {
 			Nome:        "Cume Ancestral",
 			Subtitulo:   "Altar das tempestades primordiais",
 			Bioma:       "Tempestade Etérea",
-			EfeitoBioma: "Os soberanos finais concentram Éter puro, luz sagrada e fome dimensional.",
+			EfeitoBioma: "Efeito do bioma: +3% de Velocidade e +3% de Magia para ambos; Éter ganha +3% de Defesa.",
 			FaixaNivel:  "Nv 48–60+",
 			Ordem:       7,
-			X:           85,
-			Y:           44,
+			X:           88,
+			Y:           50,
 			Conexoes:    []string{"forja_vulcanica", "ruinas_do_vazio", "santuario_astral"},
 			MonstroIDs:  []string{"dragao_tempestade", "dragao_de_eter", "dragao_do_vazio", "senhor_infernal", "arcanjo_blindado", "horror_da_fenda", "primordial_esquecido"},
 		},
@@ -1057,3 +1057,108 @@ type AjudanteNaLuta struct {
 	Ataque int
 	Defesa int
 }
+
+func somarPercentual(valor, pct int) int {
+	if valor <= 0 || pct <= 0 {
+		return valor
+	}
+	return valor + max(1, (valor*pct+50)/100)
+}
+
+// aplicarEfeitoBioma aplica os modificadores táticos sutis do bioma da região do monstro.
+// Nunca altera Vida máxima para manter a referência de PerdaPorMil entre batalhas.
+func aplicarEfeitoBioma(jogador *CombatenteRPG, monstro *MonstroRPG) {
+	if monstro == nil || monstro.Regiao == "" || jogador == nil {
+		return
+	}
+	switch monstro.Regiao {
+	case "clareira_inicial":
+		if jogador.Elemento == "eter" || jogador.Elemento == "terra" {
+			jogador.Atributos.Ataque = somarPercentual(jogador.Atributos.Ataque, 3)
+		}
+		if monstro.Elemento == "eter" || monstro.Elemento == "terra" {
+			monstro.Ataque = somarPercentual(monstro.Ataque, 3)
+		}
+	case "bosque_sombrio":
+		jogador.Atributos.EsquivaPorMil += 15
+		monstro.EsquivaPorMil += 15
+		if jogador.Elemento == "fogo" {
+			jogador.Atributos.Ataque = somarPercentual(jogador.Atributos.Ataque, 3)
+		}
+		if monstro.Elemento == "fogo" {
+			monstro.Ataque = somarPercentual(monstro.Ataque, 3)
+		}
+	case "forja_vulcanica":
+		jogador.Atributos.Ataque = somarPercentual(jogador.Atributos.Ataque, 3)
+		monstro.Ataque = somarPercentual(monstro.Ataque, 3)
+		if jogador.Elemento == "agua" {
+			jogador.Atributos.Defesa = somarPercentual(jogador.Atributos.Defesa, 3)
+		}
+		if monstro.Elemento == "agua" {
+			monstro.Defesa = somarPercentual(monstro.Defesa, 3)
+		}
+	case "mares_e_geada":
+		jogador.Atributos.CriticoPorMil += 20
+		monstro.CriticoPorMil += 20
+		if jogador.Elemento == "raio" {
+			jogador.Atributos.Ataque = somarPercentual(jogador.Atributos.Ataque, 3)
+		}
+		if monstro.Elemento == "raio" {
+			monstro.Ataque = somarPercentual(monstro.Ataque, 3)
+		}
+	case "ruinas_do_vazio":
+		jogador.Atributos.Magia = somarPercentual(jogador.Atributos.Magia, 3)
+		monstro.Magia = somarPercentual(monstro.Magia, 3)
+		if jogador.Elemento == "luz" {
+			jogador.Atributos.Defesa = somarPercentual(jogador.Atributos.Defesa, 3)
+		}
+		if monstro.Elemento == "luz" {
+			monstro.Defesa = somarPercentual(monstro.Defesa, 3)
+		}
+	case "santuario_astral":
+		jogador.Atributos.CriticoPorMil += 20
+		monstro.CriticoPorMil += 20
+		if jogador.Elemento == "luz" || jogador.Elemento == "trevas" {
+			jogador.Atributos.Ataque = somarPercentual(jogador.Atributos.Ataque, 2)
+		}
+		if monstro.Elemento == "luz" || monstro.Elemento == "trevas" {
+			monstro.Ataque = somarPercentual(monstro.Ataque, 2)
+		}
+	case "cume_ancestral":
+		jogador.Atributos.Velocidade = somarPercentual(jogador.Atributos.Velocidade, 3)
+		monstro.Velocidade = somarPercentual(monstro.Velocidade, 3)
+		jogador.Atributos.Magia = somarPercentual(jogador.Atributos.Magia, 3)
+		monstro.Magia = somarPercentual(monstro.Magia, 3)
+		if jogador.Elemento == "eter" {
+			jogador.Atributos.Defesa = somarPercentual(jogador.Atributos.Defesa, 3)
+		}
+		if monstro.Elemento == "eter" {
+			monstro.Defesa = somarPercentual(monstro.Defesa, 3)
+		}
+	}
+}
+
+// aplicarPassivaEspecialidade aplica o bônus passivo da Especialidade de Gênero do jogador.
+func aplicarPassivaEspecialidade(jogador *CombatenteRPG) {
+	if jogador == nil || jogador.Passiva == nil || jogador.Passiva.ValorPct <= 0 {
+		return
+	}
+	pct := jogador.Passiva.ValorPct
+	switch jogador.Passiva.Tipo {
+	case "ataque":
+		jogador.Atributos.Ataque = somarPercentual(jogador.Atributos.Ataque, pct)
+	case "magia":
+		jogador.Atributos.Magia = somarPercentual(jogador.Atributos.Magia, pct)
+	case "velocidade":
+		jogador.Atributos.Velocidade = somarPercentual(jogador.Atributos.Velocidade, pct)
+	case "defesa":
+		jogador.Atributos.Defesa = somarPercentual(jogador.Atributos.Defesa, pct)
+	case "vida":
+		jogador.Atributos.Vida = somarPercentual(jogador.Atributos.Vida, pct)
+	case "critico":
+		jogador.Atributos.CriticoPorMil += pct * 10
+	case "esquiva":
+		jogador.Atributos.EsquivaPorMil += pct * 10
+	}
+}
+

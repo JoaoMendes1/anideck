@@ -43,6 +43,7 @@ import { ESTILO_DO_TIPO } from '../../lib/monstrosVisual'
 import { rotuloDoElemento } from '../../lib/personagem'
 import IconeDoMonstro from './IconeDoMonstro'
 import BotaoEmGrupo from './BotaoEmGrupo'
+import mapaMundiImg from '../../assets/rpg/mapa-mundi.webp'
 
 interface EstiloRegiao {
   card: string
@@ -131,13 +132,13 @@ const ESTILO_REGIAO_PADRAO: EstiloRegiao = {
 }
 
 const COORDENADAS_PADRAO: Record<string, { x: number; y: number }> = {
-  clareira_inicial: { x: 14, y: 74 },
-  bosque_sombrio: { x: 32, y: 54 },
-  forja_vulcanica: { x: 42, y: 82 },
-  mares_e_geada: { x: 26, y: 22 },
-  ruinas_do_vazio: { x: 56, y: 54 },
-  santuario_astral: { x: 66, y: 22 },
-  cume_ancestral: { x: 85, y: 44 },
+  clareira_inicial: { x: 28, y: 75 },
+  bosque_sombrio: { x: 19, y: 47 },
+  forja_vulcanica: { x: 63, y: 75 },
+  mares_e_geada: { x: 35, y: 22 },
+  ruinas_do_vazio: { x: 50, y: 49 },
+  santuario_astral: { x: 69, y: 21 },
+  cume_ancestral: { x: 88, y: 50 },
 }
 
 const COR_BARRA_DIFICULDADE: Record<Dificuldade, string> = {
@@ -568,12 +569,19 @@ export default function MapaExpedicoes({
     .map((id) => regiaoPorId.get(id))
     .filter((r): r is RegiaoMapa => Boolean(r))
 
+  const descobertosGlobal = monstros.filter((m) => (m.bestiario?.vitorias ?? 0) > 0).length
+  const totalGlobal = monstros.length
+  const pctGlobal = totalGlobal > 0 ? Math.round((descobertosGlobal / totalGlobal) * 100) : 0
+
+  const derrotadosAtiva = monstrosDaRegiao.filter((m) => (m.bestiario?.vitorias ?? 0) > 0).length
+  const dominadaAtiva = monstrosDaRegiao.length > 0 && derrotadosAtiva === monstrosDaRegiao.length
+
   return (
     <div className="grid grid-cols-1 gap-4 lg:grid-cols-12 lg:items-start">
       <section aria-label="Mapa de regiões" className="flex flex-col gap-3 lg:col-span-7">
         {/* Mapa-múndi 2D interativo */}
         <div className="overflow-hidden rounded-2xl border border-line bg-panel p-3 sm:p-4">
-          <div className="mb-2.5 flex flex-wrap items-center justify-between gap-2">
+          <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
             <div className="flex items-center gap-2">
               <Compass size={16} className="text-holo-3" aria-hidden="true" />
               <h2 className="m-0 font-anton text-base uppercase tracking-wide text-text">Mapa-Múndi de Éter</h2>
@@ -581,17 +589,35 @@ export default function MapaExpedicoes({
             <span className="font-mono text-xs text-muted">{regioes.length} regiões · {monstros.length} criaturas</span>
           </div>
 
+          <div className="mb-2.5 flex flex-col gap-1 rounded-xl border border-line/70 bg-panel-2/60 px-3 py-2">
+            <div className="flex items-center justify-between gap-2 font-mono text-[11px]">
+              <span className="text-muted">Bestiário Global</span>
+              <span className="font-bold text-text">
+                {descobertosGlobal} / {totalGlobal} descobertos · {pctGlobal}%
+              </span>
+            </div>
+            <div className="h-1.5 overflow-hidden rounded-full bg-void/80">
+              <div
+                className="h-full rounded-full bg-gradient-to-r from-holo-3 via-holo-2 to-gold transition-all"
+                style={{ width: `${pctGlobal}%` }}
+              />
+            </div>
+          </div>
+
           <div
             aria-label="Mapa interativo das regiões"
-            className="relative h-64 w-full overflow-hidden rounded-2xl border border-line bg-void sm:h-88"
+            className="relative aspect-video w-full overflow-hidden rounded-2xl border border-line bg-void"
           >
-            {/* Grade cartográfica e manchas de bioma em camadas estáticas */}
-            <div aria-hidden="true" className="pointer-events-none absolute inset-0 opacity-45">
-              <div className="absolute top-[12%] left-[12%] h-32 w-32 rounded-full bg-holo-3/12 blur-2xl" />
-              <div className="absolute top-[14%] right-[12%] h-32 w-32 rounded-full bg-gold/12 blur-2xl" />
-              <div className="absolute bottom-[10%] left-[25%] h-36 w-44 rounded-full bg-coral/10 blur-2xl" />
-              <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(255,255,255,0.06)_1px,transparent_1px)] [background-size:20px_20px]" />
-            </div>
+            <img
+              src={mapaMundiImg}
+              alt=""
+              aria-hidden="true"
+              className="pointer-events-none absolute inset-0 h-full w-full object-cover opacity-85"
+            />
+            <div
+              aria-hidden="true"
+              className="pointer-events-none absolute inset-0 bg-gradient-to-t from-void/70 via-void/20 to-void/40"
+            />
 
             <svg
               viewBox="0 0 100 100"
@@ -612,7 +638,7 @@ export default function MapaExpedicoes({
                     y2={p2.y}
                     className={a.destacada ? 'stroke-holo-3' : 'stroke-line'}
                     strokeWidth={a.destacada ? 0.9 : 0.6}
-                    strokeOpacity={a.destacada ? 0.85 : 0.7}
+                    strokeOpacity={a.destacada ? 0.9 : 0.7}
                     strokeDasharray={a.destacada ? undefined : '2 1.6'}
                   />
                 )
@@ -624,7 +650,11 @@ export default function MapaExpedicoes({
               const estilo = ESTILO_DA_REGIAO[regiao.id] ?? ESTILO_REGIAO_PADRAO
               const IconeRegiao = estilo.Icone
               const ativa = regiao.id === regiaoAtiva.id
-              const qtd = regiao.monstros.filter((id) => porId.has(id)).length
+              const monstrosRegiao = regiao.monstros
+                .map((id) => porId.get(id))
+                .filter((m): m is MonstroNaLista => Boolean(m))
+              const qtd = monstrosRegiao.length
+              const dominada = qtd > 0 && monstrosRegiao.every((m) => (m.bestiario?.vitorias ?? 0) > 0)
 
               return (
                 <button
@@ -634,24 +664,26 @@ export default function MapaExpedicoes({
                   aria-pressed={ativa}
                   aria-label={`Explorar ${regiao.nome} (${regiao.faixa_nivel})`}
                   style={{ left: `${coord.x}%`, top: `${coord.y}%` }}
-                  className={`absolute flex -translate-x-1/2 -translate-y-1/2 cursor-pointer items-center gap-1.5 rounded-xl border px-2 py-1 text-left transition sm:gap-2 sm:px-2.5 sm:py-1.5 ${
+                  className={`absolute flex -translate-x-1/2 -translate-y-1/2 cursor-pointer items-center gap-1 rounded-xl border px-1.5 py-1 text-left backdrop-blur-sm transition sm:gap-2 sm:px-2.5 sm:py-1.5 ${
                     ativa ? `z-20 scale-105 ${estilo.pinAtivo}` : `z-10 ${estilo.pinInativo}`
                   }`}
                 >
-                  <span className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-lg bg-panel-2 sm:h-7 sm:w-7 ${estilo.cabecalho}`}>
-                    <IconeRegiao size={14} aria-hidden="true" />
+                  <span className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-lg bg-panel-2 sm:h-7 sm:w-7 ${estilo.cabecalho}`}>
+                    <IconeRegiao size={13} aria-hidden="true" />
+                  </span>
+                  <span className="max-w-[74px] truncate text-[10px] font-bold leading-tight text-text sm:hidden">
+                    {regiao.nome}
                   </span>
                   <span className="hidden min-w-0 sm:block">
-                    <span className="block max-w-[110px] truncate text-xs font-bold leading-tight text-text">
+                    <span className="block max-w-[115px] truncate text-xs font-bold leading-tight text-text">
                       {regiao.nome}
                     </span>
                     <span className="block font-mono text-[10px] leading-tight text-muted">
-                      {regiao.faixa_nivel} · {qtd}
+                      {regiao.faixa_nivel} · {qtd}{dominada ? ' · ✓' : ''}
                     </span>
                   </span>
-                  <span className="font-mono text-[11px] font-bold sm:hidden">0{regiao.ordem}</span>
                   {regiao.em_destaque && (
-                    <Sparkles size={12} className="shrink-0 text-gold" aria-hidden="true" />
+                    <Sparkles size={11} className="shrink-0 text-gold" aria-hidden="true" />
                   )}
                 </button>
               )
@@ -700,6 +732,14 @@ export default function MapaExpedicoes({
                   <span className="rounded-full border border-line bg-void/60 px-2 py-0.5 font-mono text-xs text-muted">
                     {regiaoAtiva.faixa_nivel}
                   </span>
+                  <span className="rounded-full border border-line bg-void/60 px-2 py-0.5 font-mono text-xs text-muted">
+                    {derrotadosAtiva}/{monstrosDaRegiao.length} dominados
+                  </span>
+                  {dominadaAtiva && (
+                    <span className="inline-flex items-center gap-1 rounded-full border border-green/50 bg-green/15 px-2 py-0.5 font-mono text-xs font-bold text-green">
+                      <Trophy size={11} aria-hidden="true" /> Dominada
+                    </span>
+                  )}
                 </div>
                 <p className="m-0 mt-1 text-xs text-muted">
                   <strong className="text-text">{regiaoAtiva.bioma}:</strong> {regiaoAtiva.efeito_bioma}

@@ -144,7 +144,7 @@ export default function Masmorras() {
   return (
     <div className={CONTAINER}>
       <header className="mb-4 hidden items-center gap-1 select-none md:flex">
-        <Link to="/personagem" aria-label="Voltar para o personagem" className="-ml-2 flex h-10 w-11 items-center justify-center rounded-full text-muted hover:text-text">
+        <Link to="/guilda" aria-label="Voltar para a Guilda" className="-ml-2 flex h-10 w-11 items-center justify-center rounded-full text-muted hover:text-text">
           <ChevronLeft size={22} />
         </Link>
         <p className={ROTULO_DE_SECAO}>Masmorras</p>

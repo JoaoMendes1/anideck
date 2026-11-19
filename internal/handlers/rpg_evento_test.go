@@ -29,9 +29,14 @@ func TestEventoEm_EstacoesDasTemporadas(t *testing.T) {
 }
 
 func TestMonstroDoEvento_EscalaPeloNivel(t *testing.T) {
-	cat := catalogoParaMasmorras()
+	cat := catalogoParaMasmorras(t)
 	e := EventoEm(time.Date(2026, 11, 17, 12, 0, 0, 0, fusoGuilda))
-	no18 := MonstroDoEvento(e, 18, cat)
+	// Nos monstros de referência (nível único), o arauto mantém 85% exatos dos números.
+	marcos := []MonstroRPG{
+		{ID: "lobo_sombrio", Nivel: 10, Vida: 380, Ataque: 48, Defesa: 24},
+		{ID: "golem_de_runas", Nivel: 18, Vida: 900, Ataque: 70, Defesa: 50},
+	}
+	no18 := MonstroDoEvento(e, 18, marcos)
 	if no18.Vida != 765 || no18.Ataque != 60 || no18.Defesa != 43 || no18.Elemento != "raio" {
 		t.Errorf("no nível do golem, 85%% dos números dele: %+v", no18)
 	}
@@ -47,7 +52,7 @@ func TestMonstroDoEvento_EscalaPeloNivel(t *testing.T) {
 
 // O arauto é vencível na maior parte das vezes em qualquer nível, sem ser trivial no fim.
 func TestMonstroDoEvento_Equilibrio(t *testing.T) {
-	cat := catalogoParaMasmorras()
+	cat := catalogoParaMasmorras(t)
 	e := EventoEm(time.Date(2026, 11, 17, 12, 0, 0, 0, fusoGuilda))
 	for _, nivel := range []int{10, 18, 26, 35, 50, 60} {
 		for base, pb := range PersonagensBase() {

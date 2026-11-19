@@ -5,6 +5,7 @@
 // do arquivo acontece aqui. Trocar uma ilustração, ou mudar onde elas ficam guardadas,
 // não mexe em regra de jogo.
 import { supabase } from './supabase'
+import type { Especialidade, InsigniaStatus, PassivaEspecialidade } from './guilda'
 import type { EstadoEquipamento } from './rpg'
 
 // Todas as ilustrações do elenco, como URL. O nome do arquivo diz de quem e de qual estágio
@@ -78,6 +79,9 @@ export interface RespostaPersonagem {
   skins?: SkinPersonagem[]
   /** Só com `completo`: equipamento e atributos, na mesma resposta. */
   equipamento?: EstadoEquipamento
+  especialidade?: Especialidade | null
+  passiva_especialidade?: PassivaEspecialidade | null
+  insignias?: InsigniaStatus[]
 }
 
 // Disparado quando o personagem muda (despertar, troca de visual), para a barra superior

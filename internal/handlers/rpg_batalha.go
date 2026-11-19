@@ -108,6 +108,10 @@ type CombatenteRPG struct {
 	VidaInicial int
 	// Elemento do personagem do elenco; vazio é neutro.
 	Elemento string
+	// Passiva opcional derivada da Especialidade de Gênero do jogador.
+	Passiva *PassivaEspecialidade
+	// SemBioma desativa modificadores de bioma de mapa aberto (usado nas masmorras).
+	SemBioma bool
 }
 
 // CombatenteDoEstado separa do livro só as habilidades liberadas.
@@ -416,9 +420,18 @@ func (l *lutaEmAndamento) vezDoMonstro() bool {
 // mesmo gerador dá sempre a mesma luta, o que permite testar e auditar.
 func SimularBatalha(jogador CombatenteRPG, monstro MonstroRPG, rng *rand.Rand) ResultadoSimulado {
 	EnriquecerMonstro(&monstro)
+	vidaBase := jogador.Atributos.Vida
+	aplicarPassivaEspecialidade(&jogador)
+	if !jogador.SemBioma && monstro.Regiao != "" {
+		aplicarEfeitoBioma(&jogador, &monstro)
+	}
 	vidaInicial := jogador.Atributos.Vida
-	if jogador.VidaInicial > 0 && jogador.VidaInicial < vidaInicial {
-		vidaInicial = jogador.VidaInicial
+	if jogador.VidaInicial > 0 && jogador.VidaInicial < vidaBase {
+		if vidaBase > 0 {
+			vidaInicial = min(jogador.Atributos.Vida, jogador.VidaInicial*jogador.Atributos.Vida/vidaBase)
+		} else {
+			vidaInicial = jogador.VidaInicial
+		}
 	}
 	diario := make([]TurnoBatalha, 0, maxTurnosBatalha*2)
 	l := &lutaEmAndamento{
@@ -556,7 +569,8 @@ type EstadoExpedicoes struct {
 	Regioes        []RegiaoMapa `json:"regioes,omitempty"`
 	RegiaoDestaque string       `json:"regiao_destaque,omitempty"`
 	// Mana de cada tipo de luta (sql/118).
-	CustosMana CustosManaRPG `json:"custos_mana"`
+	CustosMana CustosManaRPG         `json:"custos_mana"`
+	Passiva    *PassivaEspecialidade `json:"passiva,omitempty"`
 }
 
 // RecompensaBatalha é o que a vitória deu.
@@ -572,13 +586,14 @@ type RecompensaBatalha struct {
 
 // RespostaBatalha é o corpo de POST /api/rpg/batalhas.
 type RespostaBatalha struct {
-	Monstro    MonstroRPG         `json:"monstro"`
-	Jogador    AtributosRPG       `json:"jogador"`
-	Resultado  ResultadoSimulado  `json:"resultado"`
-	Recompensa RecompensaBatalha  `json:"recompensa"`
-	Vida       VidaRPG            `json:"vida"`
-	Bestiario  BestiarioDoMonstro `json:"bestiario"`
-	Hoje       HojeRPG            `json:"hoje"`
+	Monstro    MonstroRPG            `json:"monstro"`
+	Jogador    AtributosRPG          `json:"jogador"`
+	Resultado  ResultadoSimulado     `json:"resultado"`
+	Recompensa RecompensaBatalha     `json:"recompensa"`
+	Vida       VidaRPG               `json:"vida"`
+	Bestiario  BestiarioDoMonstro    `json:"bestiario"`
+	Hoje       HojeRPG               `json:"hoje"`
+	Passiva    *PassivaEspecialidade `json:"passiva,omitempty"`
 }
 
 func lerMonstros(dbClient *supabase.Client) ([]MonstroRPG, error) {
@@ -629,21 +644,23 @@ func (h *RPGHandler) HandleGetExpedicoes(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
-	// As três leituras não dependem uma da outra: vão em paralelo.
+	// As leituras não dependem uma da outra: vão em paralelo.
 	var (
 		equipamento       EstadoEquipamento
 		monstros          []MonstroRPG
 		hoje              HojeRPG
+		passiva           *PassivaEspecialidade
 		errEq, errM, errH error
 		wg                sync.WaitGroup
 	)
-	wg.Add(3)
+	wg.Add(4)
 	go func() {
 		defer wg.Done()
 		equipamento, errEq = equipamentoDoContexto(sessao.dbClient, sessao.userID, sessao.ctx)
 	}()
 	go func() { defer wg.Done(); monstros, errM = lerMonstros(sessao.dbClient) }()
 	go func() { defer wg.Done(); hoje, errH = lerHojeRPG(sessao.dbClient) }()
+	go func() { defer wg.Done(); _, passiva = carregarEspecialidadeDoUsuario(sessao.dbClient) }()
 	wg.Wait()
 	if errEq != nil || errM != nil {
 		log.Printf("[RPG] Falha ao ler expedições (user=%s): equipamento=%v monstros=%v", sessao.userID, errEq, errM)
@@ -689,6 +706,7 @@ func (h *RPGHandler) HandleGetExpedicoes(w http.ResponseWriter, r *http.Request)
 		Regioes:        regioes,
 		RegiaoDestaque: regiaoDestaque,
 		CustosMana:     CustosDeMana(sessao.nivel, lerRegrasComunidade(sessao.dbClient)),
+		Passiva:        passiva,
 	})
 }
 
@@ -716,16 +734,18 @@ func (h *RPGHandler) HandleBatalhar(w http.ResponseWriter, r *http.Request) {
 		monstros          []MonstroRPG
 		hoje              HojeRPG
 		equipamento       EstadoEquipamento
+		passiva           *PassivaEspecialidade
 		errM, errH, errEq error
 		wg                sync.WaitGroup
 	)
-	wg.Add(3)
+	wg.Add(4)
 	go func() { defer wg.Done(); monstros, errM = lerMonstros(sessao.dbClient) }()
 	go func() { defer wg.Done(); hoje, errH = lerHojeRPG(sessao.dbClient) }()
 	go func() {
 		defer wg.Done()
 		equipamento, errEq = equipamentoDoContexto(sessao.dbClient, sessao.userID, sessao.ctx)
 	}()
+	go func() { defer wg.Done(); _, passiva = carregarEspecialidadeDoUsuario(sessao.dbClient) }()
 	wg.Wait()
 	// Sem o dia lido não há a Vida guardada, e a batalha começaria com a Vida cheia.
 	if errM != nil || errEq != nil || errH != nil {
@@ -760,6 +780,7 @@ func (h *RPGHandler) HandleBatalhar(w http.ResponseWriter, r *http.Request) {
 	combatente := CombatenteDoEstado(equipamento)
 	combatente.VidaInicial = vida.Atual
 	combatente.Elemento = elementoDoJogador(sessao.ctx)
+	combatente.Passiva = passiva
 	vitoriasAntes := hoje.Vitorias[monstro.ID]
 	resultado := SimularBatalha(combatente, *monstro, rng)
 	perdaFinal := PerdaPorMil(equipamento.Atributos.Vida, resultado.VidaFinal)
@@ -872,6 +893,7 @@ func (h *RPGHandler) HandleBatalhar(w http.ResponseWriter, r *http.Request) {
 			Ouro: registro.Ouro, VidaPerdida: registro.VidaPerdida,
 			PousadaLivreEm: hoje.PousadaLivreEm, EpisodiosHoje: hoje.EpisodiosHoje, Regras: hoje.Regras.ComPadroes(),
 		},
+		Passiva: passiva,
 	})
 }
 

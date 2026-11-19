@@ -72,15 +72,20 @@ func TestValidarRegrasComunidade(t *testing.T) {
 		t.Fatalf("o padrão deveria valer: %s", msg)
 	}
 	ruins := map[string]func(r *RegrasComunidade){
-		"mana máxima":     func(r *RegrasComunidade) { r.MPMax = 0 },
-		"mana por nível":  func(r *RegrasComunidade) { r.MPPorNivel = -1 },
-		"teto menor base": func(r *RegrasComunidade) { r.MPMaxTeto = 40 },
-		"recarga":         func(r *RegrasComunidade) { r.MPRegenDia = 999 },
-		"custo":           func(r *RegrasComunidade) { r.MPCustoComentario = -1 },
-		"janela":          func(r *RegrasComunidade) { r.HPJanelaDias = 3 },
-		"dias para cheio": func(r *RegrasComunidade) { r.HPDiasParaCheio = r.HPJanelaDias + 1 },
-		"piso":            func(r *RegrasComunidade) { r.HPPiso = 95 },
-		"descanso":        func(r *RegrasComunidade) { r.DescansoMaxDias = 0 },
+		"mana máxima":          func(r *RegrasComunidade) { r.MPMax = 0 },
+		"mana por nível":       func(r *RegrasComunidade) { r.MPPorNivel = -1 },
+		"teto menor base":      func(r *RegrasComunidade) { r.MPMaxTeto = 40 },
+		"recarga":              func(r *RegrasComunidade) { r.MPRegenDia = 999 },
+		"custo":                func(r *RegrasComunidade) { r.MPCustoComentario = -1 },
+		"janela":               func(r *RegrasComunidade) { r.HPJanelaDias = 3 },
+		"dias para cheio":      func(r *RegrasComunidade) { r.HPDiasParaCheio = r.HPJanelaDias + 1 },
+		"piso":                 func(r *RegrasComunidade) { r.HPPiso = 95 },
+		"descanso":             func(r *RegrasComunidade) { r.DescansoMaxDias = 0 },
+		"hp por episódio":      func(r *RegrasComunidade) { r.HPPorEpisodioPct = 0 },
+		"hp episódios por dia": func(r *RegrasComunidade) { r.HPEpisodiosPorDia = 51 },
+		"hp regen por hora":    func(r *RegrasComunidade) { r.HPRegenHoraPct = -1 },
+		"poção de hp":          func(r *RegrasComunidade) { r.HPPocaoPct = 4 },
+		"bônus de bilhetes":    func(r *RegrasComunidade) { r.BilheteBonusPct = 40 },
 	}
 	for nome, estragar := range ruins {
 		r := RegrasComunidadePadrao()

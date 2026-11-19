@@ -70,6 +70,11 @@ type ChaveRegraNumerica =
   | 'mp_custo_masmorra_pct'
   | 'mp_pocao_pct'
   | 'ouro_recompensa_pct'
+  | 'hp_por_episodio_pct'
+  | 'hp_episodios_por_dia'
+  | 'hp_regen_hora_pct'
+  | 'hp_pocao_pct'
+  | 'bilhete_bonus_pct'
 
 const CAMPOS_REGRAS: { chave: ChaveRegraNumerica; rotulo: string; ajuda: string }[] = [
   { chave: 'mp_max', rotulo: 'Mana máxima (Nível 1)', ajuda: 'Base da barra azul no nível 1 (120 padrão).' },
@@ -83,6 +88,11 @@ const CAMPOS_REGRAS: { chave: ChaveRegraNumerica; rotulo: string; ajuda: string 
   { chave: 'mp_custo_masmorra_pct', rotulo: 'Masmorra (% da Mana)', ajuda: '12% padrão. 0 desliga o custo.' },
   { chave: 'mp_pocao_pct', rotulo: 'Poção de Mana (% da Mana)', ajuda: 'Quanto a poção devolve (40% padrão).' },
   { chave: 'ouro_recompensa_pct', rotulo: 'Ouro das recompensas (%)', ajuda: '100% é o valor base; 200% padrão.' },
+  { chave: 'bilhete_bonus_pct', rotulo: 'Bilhetes das recompensas (%)', ajuda: '100% padrão; 200% dobra os bilhetes ganhos.' },
+  { chave: 'hp_por_episodio_pct', rotulo: 'HP por episódio (%)', ajuda: 'Quanto cada episódio assistido cura (8% padrão).' },
+  { chave: 'hp_episodios_por_dia', rotulo: 'Episódios com cura/dia', ajuda: 'Quantos episódios por dia curam HP (5 padrão).' },
+  { chave: 'hp_regen_hora_pct', rotulo: 'Regeneração de HP/hora (%)', ajuda: 'Cura automática por hora (5% padrão).' },
+  { chave: 'hp_pocao_pct', rotulo: 'Poção de HP (%)', ajuda: 'Quanto a Poção de HP cura (30% padrão).' },
   { chave: 'hp_janela_dias', rotulo: 'Janela da Vitalidade (dias)', ajuda: 'Quantos dias para trás contam.' },
   { chave: 'hp_dias_para_cheio', rotulo: 'Dias ativos para encher', ajuda: 'Dentro da janela.' },
   { chave: 'hp_piso', rotulo: 'Piso da Vitalidade', ajuda: 'Nunca cai abaixo disso.' },

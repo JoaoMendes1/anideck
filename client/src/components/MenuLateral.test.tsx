@@ -31,8 +31,8 @@ describe('MenuLateral', () => {
 
   it('abre sozinho o submenu da página atual e marca o subitem', () => {
     montar('/expedicoes')
-    expect(screen.getByLabelText('Fechar atalhos de Meu Personagem').getAttribute('aria-expanded')).toBe('true')
-    expect(screen.getByLabelText('Abrir atalhos de Guilda').getAttribute('aria-expanded')).toBe('false')
+    expect(screen.getByLabelText('Fechar atalhos de Guilda').getAttribute('aria-expanded')).toBe('true')
+    expect(screen.getByLabelText('Abrir atalhos de Personagem').getAttribute('aria-expanded')).toBe('false')
     expect(screen.getByText('Expedições').getAttribute('aria-current')).toBe('page')
   })
 

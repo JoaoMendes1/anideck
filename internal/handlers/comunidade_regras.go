@@ -34,11 +34,17 @@ type RegrasComunidade struct {
 	MPCustoMasmorraPct  int `json:"mp_custo_masmorra_pct"`
 	MPPocaoPct          int `json:"mp_pocao_pct"`
 	OuroRecompensaPct   int `json:"ouro_recompensa_pct"`
+	// Regras de recuperação de HP e multiplicador de bilhetes (sql/125).
+	HPPorEpisodioPct  int `json:"hp_por_episodio_pct"`
+	HPEpisodiosPorDia int `json:"hp_episodios_por_dia"`
+	HPRegenHoraPct    int `json:"hp_regen_hora_pct"`
+	HPPocaoPct        int `json:"hp_pocao_pct"`
+	BilheteBonusPct   int `json:"bilhete_bonus_pct"`
 }
 
 const chaveRegrasComunidade = "comunidade_regras"
 
-// RegrasComunidadePadrao espelha o valor gravado pelo sql/118 (escala nova da Mana e do Ouro).
+// RegrasComunidadePadrao espelha os valores padrão das regras da comunidade (sql/118 e sql/125).
 func RegrasComunidadePadrao() RegrasComunidade {
 	return RegrasComunidade{
 		MPMax:             120,
@@ -58,6 +64,11 @@ func RegrasComunidadePadrao() RegrasComunidade {
 		MPCustoMasmorraPct:  12,
 		MPPocaoPct:          40,
 		OuroRecompensaPct:   200,
+		HPPorEpisodioPct:    8,
+		HPEpisodiosPorDia:   5,
+		HPRegenHoraPct:      5,
+		HPPocaoPct:          30,
+		BilheteBonusPct:     100,
 	}
 }
 
@@ -127,6 +138,16 @@ func validarRegrasComunidade(r RegrasComunidade) string {
 		return "A Poção de Mana vai de 5% a 100% da Mana máxima."
 	case foraDe(r.OuroRecompensaPct, 50, 500):
 		return "O Ouro das recompensas vai de 50% a 500%."
+	case foraDe(r.HPPorEpisodioPct, 1, 100):
+		return "O HP recuperado por episódio vai de 1% a 100%."
+	case foraDe(r.HPEpisodiosPorDia, 0, 50):
+		return "O máximo de episódios que curam HP por dia vai de 0 a 50."
+	case foraDe(r.HPRegenHoraPct, 0, 50):
+		return "A regeneração passiva de HP por hora vai de 0% a 50%."
+	case foraDe(r.HPPocaoPct, 5, 100):
+		return "A Poção de HP vai de 5% a 100% da Vida máxima."
+	case foraDe(r.BilheteBonusPct, 50, 500):
+		return "Os bilhetes das recompensas vão de 50% a 500%."
 	}
 	return ""
 }

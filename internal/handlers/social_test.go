@@ -68,7 +68,7 @@ func TestCursorValido(t *testing.T) {
 }
 
 func TestResumoDaResposta(t *testing.T) {
-	if r, ok := resumoDaResposta(`{"seguidores":3,"seguindo":1,"eu_sigo":true,"sou_eu":false,"mostra_atividade":true}`); !ok || r.Seguidores != 3 || !r.EuSigo {
+	if r, ok := resumoDaResposta(`{"seguidores":3,"seguindo":1,"eu_sigo":true,"ele_me_segue":true,"amigos":true,"sou_eu":false,"mostra_atividade":true}`); !ok || r.Seguidores != 3 || !r.EuSigo || !r.EleMeSegue || !r.Amigos {
 		t.Errorf("resumo válido mal lido: %+v %v", r, ok)
 	}
 	for _, bruto := range []string{"null", "", `{"code":"P0002","message":"Membro não encontrado."}`, "[]"} {

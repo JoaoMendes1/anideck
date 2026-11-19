@@ -233,13 +233,25 @@ export default function PerfilMembro() {
               {perfil.cla_tag && <TagCla tag={perfil.cla_tag} />}
               {renderizarEmblema(perfil.emblema, 'md')}
             </div>
-            <p className="font-mono text-[12px] text-muted mt-1 mb-0">
-              @{perfil.handle} · <span className="text-text">{perfil.titulo_rank}</span>
+            <p className="font-mono text-[12px] text-muted mt-1 mb-0 flex flex-wrap items-center gap-x-2 gap-y-1">
+              <span>
+                @{perfil.handle} · <span className="text-text">{perfil.titulo_rank}</span>
+              </span>
               {social && (
-                <>
-                  {' · '}<b className="text-text">{social.seguidores.toLocaleString('pt-BR')}</b> {social.seguidores === 1 ? 'seguidor' : 'seguidores'}
+                <span>
+                  {'· '}<b className="text-text">{social.seguidores.toLocaleString('pt-BR')}</b> {social.seguidores === 1 ? 'seguidor' : 'seguidores'}
                   {' · '}<b className="text-text">{social.seguindo.toLocaleString('pt-BR')}</b> seguindo
-                </>
+                </span>
+              )}
+              {social && !social.sou_eu && !souEu && social.amigos && (
+                <span className="inline-flex items-center gap-1 rounded-full border border-green/45 bg-green/15 px-2 py-0.5 font-mono text-[11px] font-bold text-green">
+                  Amigos
+                </span>
+              )}
+              {social && !social.sou_eu && !souEu && !social.amigos && social.ele_me_segue && (
+                <span className="inline-flex items-center gap-1 rounded-full border border-holo-3/45 bg-holo-3/12 px-2 py-0.5 font-mono text-[11px] font-bold text-holo-3">
+                  Segue você
+                </span>
               )}
             </p>
             {perfil.bio && <p className="text-[14px] text-text/85 mt-3 mb-0 max-w-xl whitespace-pre-wrap break-words">{perfil.bio}</p>}
@@ -264,7 +276,7 @@ export default function PerfilMembro() {
                     }`}
                   >
                     {social.eu_sigo ? <UserCheck size={13} aria-hidden /> : <UserPlus size={13} aria-hidden />}
-                    {social.eu_sigo ? 'Seguindo' : 'Seguir'}
+                    {social.eu_sigo ? 'Seguindo' : social.ele_me_segue ? 'Seguir de volta' : 'Seguir'}
                   </button>
                 )}
                 {token && estado?.perfil.existe && (

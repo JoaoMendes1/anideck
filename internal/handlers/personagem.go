@@ -105,7 +105,10 @@ type RespostaPersonagem struct {
 	// Skins que o jogador possui: visuais desbloqueados por compra na Loja.
 	Skins []SkinPersonagem `json:"skins,omitempty"`
 	// Equipamento e atributos, só com ?completo=1: a barra superior não precisa deles.
-	Equipamento *EstadoEquipamento `json:"equipamento,omitempty"`
+	Equipamento          *EstadoEquipamento    `json:"equipamento,omitempty"`
+	Especialidade        *Especialidade        `json:"especialidade,omitempty"`
+	PassivaEspecialidade *PassivaEspecialidade `json:"passiva_especialidade,omitempty"`
+	Insignias            []InsigniaStatus      `json:"insignias,omitempty"`
 }
 
 // SkinPersonagem é um traje comprado na Loja. O id é o próprio visual.
@@ -736,14 +739,22 @@ func (h *PersonagemHandler) HandleGetPersonagem(w http.ResponseWriter, r *http.R
 		return
 	}
 	resposta := ctx.resposta()
-	// ?completo=1 é a tela do personagem: leva o equipamento na mesma resposta, para a página
-	// fazer uma chamada só. Falha no equipamento não derruba o resto.
+	// ?completo=1 é a tela do personagem: leva equipamento, especialidade, passiva e insígnias na
+	// mesma resposta, para a página fazer uma chamada só. Falha parcial não derruba o resto.
 	if r.URL.Query().Get("completo") == "1" {
 		if equipamento, errEq := equipamentoDoContexto(dbClient, userID, ctx); errEq == nil {
 			resposta.Equipamento = &equipamento
 		} else {
 			log.Printf("[PERSONAGEM] Falha ao ler equipamento (user=%s): %v", userID, errEq)
 		}
+		nivel := 1
+		if resposta.Progressao != nil && resposta.Progressao.Nivel > 0 {
+			nivel = resposta.Progressao.Nivel
+		}
+		esp, passiva, insignias := carregarEspecialidadeEInsigniasDoUsuario(dbClient, userID, nivel)
+		resposta.Especialidade = esp
+		resposta.PassivaEspecialidade = passiva
+		resposta.Insignias = insignias
 	}
 	responderJSON(w, http.StatusOK, resposta)
 }
@@ -912,6 +923,14 @@ func carregarRespostaCompletaPersonagem(dbClient *supabase.Client, userID string
 	} else {
 		log.Printf("[PERSONAGEM] Falha ao ler equipamento (user=%s): %v", userID, errEq)
 	}
+	nivel := 1
+	if resposta.Progressao != nil && resposta.Progressao.Nivel > 0 {
+		nivel = resposta.Progressao.Nivel
+	}
+	esp, passiva, insignias := carregarEspecialidadeEInsigniasDoUsuario(dbClient, userID, nivel)
+	resposta.Especialidade = esp
+	resposta.PassivaEspecialidade = passiva
+	resposta.Insignias = insignias
 	return resposta, nil
 }
 

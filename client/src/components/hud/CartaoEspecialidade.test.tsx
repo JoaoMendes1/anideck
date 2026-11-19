@@ -26,4 +26,22 @@ describe('CartaoEspecialidade', () => {
     rerender(<CartaoEspecialidade especialidade={null} vazio="Ainda sem especialidade" />)
     expect(screen.getByText('Ainda sem especialidade')).toBeTruthy()
   })
+
+  it('mostra a passiva de RPG quando fornecida', () => {
+    render(
+      <CartaoEspecialidade
+        especialidade={arcanista}
+        passiva={{
+          id: 'canalizacao_arcana',
+          nome: 'Canalização Arcana',
+          genero: 'Fantasia',
+          resumo: '+8% Magia nas batalhas',
+          tipo: 'magia',
+          valor_pct: 8,
+        }}
+      />,
+    )
+    expect(screen.getByText(/Passiva RPG · Canalização Arcana:/)).toBeTruthy()
+    expect(screen.getByText('+8% Magia nas batalhas')).toBeTruthy()
+  })
 })

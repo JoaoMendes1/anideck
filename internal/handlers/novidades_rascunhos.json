@@ -210,5 +210,25 @@
         "caminho": "/expedicoes"
       }
     ]
+  },
+  {
+    "chave": "2026-11-19-mapa-contratos-passivas-amigos",
+    "titulo": "Mapa-Múndi ilustrado, Contratos Semanais, Biomas, Passiva e Amigos",
+    "categoria": "novidade",
+    "resumo": "O Mapa-Múndi 2D das Expedições ganhou mapa ilustrado completo, barra de Bestiário Global e progresso por região com selo Dominada. As lutas no mundo aberto agora aplicam bônus táticos de cada bioma, as Masmorras ficaram temáticas com criaturas de todas as regiões e a sua Passiva de Especialidade passa a valer direto em combate.\n\nTambém chegaram os Contratos de Caça Semanais (com Ouro, bilhetes e AniCoins extras), filtros e atalhos pós-luta nas Expedições (Enfrentar novamente ou Desafiar a próxima evolução), além do menu reorganizado entre Guilda e Personagem e o reconhecimento de Amigos quando dois jogadores se seguem mutuamente.",
+    "links": [
+      {
+        "rotulo": "Explorar Mapa-Múndi 2D",
+        "caminho": "/expedicoes"
+      },
+      {
+        "rotulo": "Ver Contratos na Guilda",
+        "caminho": "/guilda"
+      },
+      {
+        "rotulo": "Abrir Personagem",
+        "caminho": "/personagem"
+      }
+    ]
   }
 ]

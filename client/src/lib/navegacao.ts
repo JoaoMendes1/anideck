@@ -58,21 +58,21 @@ export function montarMenu({ handle = '', isAdmin = false, ano = new Date().getF
           para: '/guilda', rotulo: 'Guilda', Icone: Swords, cor: 'text-holo-2',
           subitens: [
             { para: '/guilda#missoes-diarias-card', rotulo: 'Missões' },
-            { para: '/guilda#especialidade', rotulo: 'Especialidade' },
-            { para: '/guilda#extrato', rotulo: 'Extrato de XP' },
-            { para: '/guilda#insignias', rotulo: 'Insígnias' },
-            { para: '/chefao', rotulo: 'Chefão da temporada' },
-          ],
-        },
-        {
-          para: '/personagem', rotulo: 'Meu Personagem', Icone: UserRound, cor: 'text-gold',
-          subitens: [
-            { para: '/personagem?aba=atributos', rotulo: 'Atributos' },
-            { para: '/personagem?aba=habilidades', rotulo: 'Habilidades' },
             { para: '/expedicoes', rotulo: 'Expedições' },
             { para: '/masmorras', rotulo: 'Masmorras' },
             { para: '/expedicoes#evento', rotulo: 'Evento da temporada' },
+            { para: '/chefao', rotulo: 'Chefão da temporada' },
+            { para: '/guilda#extrato', rotulo: 'Extrato de XP' },
+          ],
+        },
+        {
+          para: '/personagem', rotulo: 'Personagem', Icone: UserRound, cor: 'text-gold',
+          subitens: [
+            { para: '/personagem?aba=atributos', rotulo: 'Atributos' },
+            { para: '/personagem?aba=habilidades', rotulo: 'Habilidades' },
             { para: '/invocacao', rotulo: 'Invocação' },
+            { para: '/personagem#especialidade', rotulo: 'Especialidade' },
+            { para: '/personagem#insignias', rotulo: 'Insígnias' },
           ],
         },
         {

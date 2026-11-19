@@ -20,7 +20,7 @@ func TestMedianaDosNiveis(t *testing.T) {
 }
 
 func TestEscolherChefeDoCla(t *testing.T) {
-	cat := catalogoParaMasmorras()
+	cat := catalogoParaMasmorras(t)
 	casos := map[int]string{1: "lobo_sombrio", 15: "golem_de_runas", 24: "espectro_do_vazio", 33: "cavaleiro_caido", 48: "dragao_de_eter", 70: "primordial_esquecido"}
 	for mediana, quer := range casos {
 		m, ok := EscolherChefeDoCla(mediana, cat)

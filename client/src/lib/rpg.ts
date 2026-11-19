@@ -4,6 +4,7 @@
 // Os números de combate (Vida, Ataque, Defesa) são calculados no servidor a partir do nível
 // e dos itens equipados. A tela só mostra; nada daqui é enviado de volta como atributo.
 import { Footprints, Gem, HandFist, HardHat, Shield, Shirt, Sword, type LucideIcon } from 'lucide-react'
+import type { PassivaEspecialidade } from './guilda'
 import { supabase } from './supabase'
 import { avisarOuroMudou } from './hud'
 
@@ -481,6 +482,7 @@ export interface EstadoExpedicoes {
   regiao_destaque?: string
   /** Mana de cada luta (sql/118); ausente em servidor antigo. */
   custos_mana?: CustosManaRPG
+  passiva?: PassivaEspecialidade
 }
 
 export function regioesDoMapa(estado: Pick<EstadoExpedicoes, 'regioes' | 'monstros'>): RegiaoMapa[] {
@@ -495,8 +497,8 @@ export function regioesDoMapa(estado: Pick<EstadoExpedicoes, 'regioes' | 'monstr
       efeito_bioma: 'Campo aberto onde formas iniciais de slimes, fungos e insetos despertam.',
       faixa_nivel: 'Nv 1–8',
       ordem: 1,
-      x: 14,
-      y: 74,
+      x: 28,
+      y: 75,
       conexoes: ['bosque_sombrio', 'forja_vulcanica'],
       monstros: ['slime_de_eter', 'slime_espinhoso', 'cogumelo_esporifero', 'goblin_batedor', 'vespa_eletrica', 'golem_musgoso'].filter((id) => ids.has(id)),
     },
@@ -508,8 +510,8 @@ export function regioesDoMapa(estado: Pick<EstadoExpedicoes, 'regioes' | 'monstr
       efeito_bioma: 'Feras velozes, esporos evoluídos e guardiões antigos protegem a mata.',
       faixa_nivel: 'Nv 10–25',
       ordem: 2,
-      x: 32,
-      y: 54,
+      x: 19,
+      y: 47,
       conexoes: ['clareira_inicial', 'mares_e_geada', 'ruinas_do_vazio'],
       monstros: [
         'lobo_sombrio', 'arvore_de_esporos', 'slime_de_cranios', 'planta_carnivora', 'druida_da_floresta',
@@ -524,8 +526,8 @@ export function regioesDoMapa(estado: Pick<EstadoExpedicoes, 'regioes' | 'monstr
       efeito_bioma: 'Feras de magma e a Fênix Solar dominam as crateras ferventes.',
       faixa_nivel: 'Nv 14–42',
       ordem: 3,
-      x: 42,
-      y: 82,
+      x: 63,
+      y: 75,
       conexoes: ['clareira_inicial', 'ruinas_do_vazio', 'cume_ancestral'],
       monstros: ['javali_vulcanico', 'aranha_rubra', 'cao_de_magma', 'fera_de_obsidiana', 'golem_de_magma', 'beemote_de_lava', 'fenix_solar'].filter((id) => ids.has(id)),
     },
@@ -537,7 +539,7 @@ export function regioesDoMapa(estado: Pick<EstadoExpedicoes, 'regioes' | 'monstr
       efeito_bioma: 'Serpentes marinhas evoluem ao lado de colossos e cavaleiros de gelo.',
       faixa_nivel: 'Nv 17–46',
       ordem: 4,
-      x: 26,
+      x: 35,
       y: 22,
       conexoes: ['bosque_sombrio', 'santuario_astral'],
       monstros: [
@@ -553,8 +555,8 @@ export function regioesDoMapa(estado: Pick<EstadoExpedicoes, 'regioes' | 'monstr
       efeito_bioma: 'Energia instável desperta espectros, olhos orbitais e colossos rúnicos.',
       faixa_nivel: 'Nv 16–41',
       ordem: 5,
-      x: 56,
-      y: 54,
+      x: 50,
+      y: 49,
       conexoes: ['bosque_sombrio', 'forja_vulcanica', 'santuario_astral', 'cume_ancestral'],
       monstros: [
         'espectro_acorrentado', 'fragmento_do_olho', 'fantasma_do_vazio', 'lobo_abissal', 'golem_flutuante',
@@ -570,8 +572,8 @@ export function regioesDoMapa(estado: Pick<EstadoExpedicoes, 'regioes' | 'monstr
       efeito_bioma: 'Serafins celestiais, Reis Lich e o Kraken disputam a ascensão final.',
       faixa_nivel: 'Nv 42–54',
       ordem: 6,
-      x: 66,
-      y: 22,
+      x: 69,
+      y: 21,
       conexoes: ['mares_e_geada', 'ruinas_do_vazio', 'cume_ancestral'],
       monstros: [
         'beholder_abissal', 'lich_das_sombras', 'dragao_esqueleto', 'grifo_dourado', 'serpente_espectral',
@@ -586,8 +588,8 @@ export function regioesDoMapa(estado: Pick<EstadoExpedicoes, 'regioes' | 'monstr
       efeito_bioma: 'Os soberanos finais concentram Éter puro, luz sagrada e fome dimensional.',
       faixa_nivel: 'Nv 48–60+',
       ordem: 7,
-      x: 85,
-      y: 44,
+      x: 88,
+      y: 50,
       conexoes: ['forja_vulcanica', 'ruinas_do_vazio', 'santuario_astral'],
       monstros: [
         'dragao_tempestade', 'dragao_de_eter', 'dragao_do_vazio', 'senhor_infernal',
@@ -658,6 +660,7 @@ export interface RespostaBatalha {
   vida?: VidaRPG
   bestiario?: BestiarioDoMonstro
   hoje: HojeRPG
+  passiva?: PassivaEspecialidade
 }
 
 /** Texto de uma linha do registro da luta e o número ao lado (dano ou cura). */
@@ -1111,3 +1114,70 @@ export async function lutarNoEvento(): Promise<{ dados?: RespostaEvento; erro?: 
     return { erro: falha }
   }
 }
+
+// --- Contratos semanais de caça (sql/125) -------------------------------------------------
+
+export interface ContratoSemanal {
+  id: string
+  titulo: string
+  descricao: string
+  regiao?: string
+  regiao_nome?: string
+  progresso: number
+  meta: number
+  ouro: number
+  bilhetes: number
+  materiais?: Record<string, number>
+  concluido: boolean
+  resgatado: boolean
+}
+
+export interface RespostaContratosRPG {
+  semana: string
+  expira_em: string
+  contratos: ContratoSemanal[]
+}
+
+export interface RespostaResgatarContrato {
+  contrato_id: string
+  ouro_ganho: number
+  bilhetes_ganhos: number
+  materiais?: Record<string, number>
+  ouro: number
+  bilhetes: number
+  estado: RespostaContratosRPG
+}
+
+export async function obterContratosSemanais(): Promise<{ dados?: RespostaContratosRPG; erro?: string }> {
+  try {
+    const res = await fetch('/api/rpg/contratos', { headers: await cabecalhoDeAutenticacao() })
+    const json = (await res.json().catch(() => null)) as (RespostaContratosRPG & { error?: string }) | null
+    if (!res.ok || !json || !Array.isArray(json.contratos)) {
+      return { erro: json?.error || 'Contratos indisponíveis no momento.' }
+    }
+    return { dados: json }
+  } catch {
+    return { erro: 'Contratos indisponíveis no momento.' }
+  }
+}
+
+export async function resgatarContratoSemanal(
+  contratoId: string,
+): Promise<{ dados?: RespostaResgatarContrato; erro?: string }> {
+  const falha = 'Não foi possível resgatar o contrato agora.'
+  try {
+    const res = await fetch('/api/rpg/contratos/resgatar', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', ...(await cabecalhoDeAutenticacao()) },
+      body: JSON.stringify({ contrato_id: contratoId }),
+    })
+    const json = (await res.json().catch(() => null)) as (RespostaResgatarContrato & { error?: string }) | null
+    if (!res.ok) return { erro: json?.error || falha }
+    if (!json || !json.estado) return { erro: falha }
+    avisarOuroMudou()
+    return { dados: json }
+  } catch {
+    return { erro: falha }
+  }
+}
+

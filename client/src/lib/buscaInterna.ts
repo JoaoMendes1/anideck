@@ -12,10 +12,12 @@ export interface Destino {
 }
 
 export const DESTINOS: Destino[] = [
-  { titulo: 'Meu Personagem', descricao: 'Equipamento, atributos e habilidades', caminho: '/personagem', grupo: 'Jogo', palavras: ['heroi', 'ficha', 'equipar', 'equipamento', 'arma', 'armadura', 'joia', 'anel', 'botas', 'capa', 'trocar item', 'inventario', 'aprimorar'] },
+  { titulo: 'Personagem', descricao: 'Equipamento, atributos e habilidades', caminho: '/personagem', grupo: 'Jogo', palavras: ['meu personagem', 'heroi', 'ficha', 'equipar', 'equipamento', 'arma', 'armadura', 'joia', 'anel', 'botas', 'capa', 'trocar item', 'inventario', 'aprimorar'] },
   { titulo: 'Atributos', descricao: 'Distribuir pontos de força, vida e defesa', caminho: '/personagem?aba=atributos', grupo: 'Jogo', palavras: ['pontos', 'distribuir', 'forca', 'constituicao', 'agilidade', 'status'] },
   { titulo: 'Habilidades', descricao: 'Golpes do personagem e maestria', caminho: '/personagem?aba=habilidades', grupo: 'Jogo', palavras: ['golpes', 'skills', 'maestria', 'despertar'] },
+  { titulo: 'Especialidade', descricao: 'Seu gênero principal, título de classe e bônus passivo', caminho: '/personagem#especialidade', grupo: 'Jogo', palavras: ['especialista', 'genero', 'subclasse', 'passiva', 'bonus'] },
   { titulo: 'Expedições', descricao: 'Lutar contra monstros por Ouro, bilhetes e itens', caminho: '/expedicoes', grupo: 'Jogo', palavras: ['lutar', 'batalha', 'monstro', 'combate', 'farmar', 'ouro', 'bilhete'] },
+  { titulo: 'Contratos semanais', descricao: 'Metas de caça da semana com Ouro e bilhetes', caminho: '/expedicoes#contratos', grupo: 'Jogo', palavras: ['contrato', 'contratos', 'semanal', 'caca', 'recompensa'] },
   { titulo: 'Recuperar HP e Mana', descricao: 'Pousada, Fonte termal e poções', caminho: '/expedicoes#vida', grupo: 'Jogo', palavras: ['pousada', 'fonte', 'termal', 'pocao', 'curar', 'cura', 'vida', 'hp', 'mana', 'mp', 'descansar', 'recuperar'] },
   { titulo: 'Masmorras', descricao: 'Andares seguidos com baú no fim', caminho: '/masmorras', grupo: 'Jogo', palavras: ['dungeon', 'andar', 'bau', 'chefe'] },
   { titulo: 'Luta em grupo', descricao: 'Chamar amigos para enfrentar um monstro', caminho: '/expedicoes', grupo: 'Jogo', palavras: ['grupo', 'dupla', 'party', 'convidar', 'amigos', 'coop', 'juntos'] },
@@ -27,7 +29,7 @@ export const DESTINOS: Destino[] = [
   { titulo: 'Expedição do clã', descricao: 'Chefe enfrentado pelo clã inteiro', caminho: '/expedicao-do-cla', grupo: 'Comunidade', palavras: ['chefe do cla', 'raid', 'boss'] },
   { titulo: 'Guilda', descricao: 'Rank, nível, missões e XP', caminho: '/guilda', grupo: 'Jogo', palavras: ['rank', 'nivel', 'xp', 'experiencia', 'progresso', 'titulo'] },
   { titulo: 'Missões diárias', descricao: 'O que dá XP extra hoje', caminho: '/guilda#missoes-diarias-card', grupo: 'Jogo', palavras: ['missao', 'diaria', 'tarefa', 'objetivo'] },
-  { titulo: 'Insígnias', descricao: 'Conquistas do perfil', caminho: '/guilda#insignias', grupo: 'Jogo', palavras: ['conquista', 'medalha', 'insignia', 'trofeu'] },
+  { titulo: 'Insígnias', descricao: 'Conquistas do perfil', caminho: '/personagem#insignias', grupo: 'Jogo', palavras: ['conquista', 'medalha', 'insignia', 'trofeu'] },
   { titulo: 'Extrato de XP', descricao: 'De onde veio cada XP', caminho: '/guilda#extrato', grupo: 'Jogo', palavras: ['historico', 'extrato', 'xp ganho'] },
   { titulo: 'Chefão da temporada', descricao: 'O chefe que todos enfrentam juntos', caminho: '/chefao', grupo: 'Jogo', palavras: ['chefao', 'boss', 'temporada', 'evento'] },
   { titulo: 'Meu Deck', descricao: 'Sua lista de animes', caminho: '/deck', grupo: 'Animes', palavras: ['lista', 'colecao', 'assistindo', 'meus animes', 'deck'] },

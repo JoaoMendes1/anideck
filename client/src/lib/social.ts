@@ -52,6 +52,8 @@ export interface ResumoSocial {
   seguidores: number
   seguindo: number
   eu_sigo: boolean
+  ele_me_segue?: boolean
+  amigos?: boolean
   sou_eu: boolean
   mostra_atividade: boolean
 }

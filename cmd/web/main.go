@@ -210,6 +210,8 @@ func main() {
 		protegido.Put("/api/personagem/atributos", rpgHandler.HandleDistribuirPontos)
 		protegido.Get("/api/rpg/batalhas", rpgHandler.HandleGetExpedicoes)
 		protegido.Post("/api/rpg/batalhas", rpgHandler.HandleBatalhar)
+		protegido.Get("/api/rpg/contratos", rpgHandler.HandleGetContratos)
+		protegido.Post("/api/rpg/contratos/resgatar", rpgHandler.HandleResgatarContrato)
 		protegido.Get("/api/rpg/masmorras", rpgHandler.HandleGetMasmorras)
 		protegido.Post("/api/rpg/masmorras", rpgHandler.HandleEntrarNaMasmorra)
 		protegido.Get("/api/rpg/duelos", rpgHandler.HandleGetDuelos)
