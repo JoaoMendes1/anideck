@@ -19,6 +19,15 @@ const ITENS = [
   'machado_de_granito', 'maca_da_alvorada', 'katana_do_eter', 'sabre_relampago', 'anel_veloz',
   'colar_do_cacador', 'anel_de_brasa', 'pingente_da_mare', 'anel_do_trovao', 'amuleto_de_rocha',
   'broche_solar', 'talisma_do_eter',
+  // sql/129 (packs 4 e 5)
+  'capa_glacial', 'anel_glacial', 'manoplas_carmesim', 'botas_carmesim', 'colar_carmesim',
+  'elmo_da_aurora', 'capa_da_aurora', 'medalhao_da_aurora', 'armadura_sombria', 'capa_sombria',
+  'anel_sombrio', 'luvas_arcanas', 'botas_arcanas', 'amuleto_arcano', 'capa_de_pedra',
+  'anel_de_pedra', 'armadura_silvestre', 'luvas_silvestres', 'capa_silvestre', 'botas_silvestres',
+  'colar_silvestre', 'couraca_de_brasa', 'capa_de_brasa', 'botas_de_brasa', 'tunica_da_mare',
+  'capa_da_mare', 'botas_da_mare', 'couraca_do_trovao', 'capa_do_trovao', 'botas_do_trovao',
+  'couraca_de_rocha', 'manto_de_rocha', 'botas_de_rocha', 'couraca_da_alvorada', 'capa_da_alvorada',
+  'botas_da_alvorada', 'veste_da_nevoa', 'capa_da_nevoa', 'botas_da_nevoa',
   // sql/121
   'lamina_glacial', 'espada_carmesim', 'espada_solar', 'adaga_abissal', 'foice_do_vazio',
   'lanca_da_tempestade', 'cajado_arcano', 'grimorio_sombrio', 'orbe_arcano', 'arco_silvestre',
