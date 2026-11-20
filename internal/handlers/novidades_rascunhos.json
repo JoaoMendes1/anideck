@@ -310,5 +310,17 @@
         "caminho": "/expedicoes"
       }
     ]
+  },
+  {
+    "chave": "2026-11-20-sintonia-elemental",
+    "titulo": "Sintonia elemental nos equipamentos",
+    "categoria": "novidade",
+    "resumo": "Agora o elemento dos equipamentos importa. Cada peça do mesmo elemento do seu herói rende 15% a mais (um cajado de Água na Mizuki, por exemplo). Com 4 peças do elemento dele em uso, você ativa a Ressonância: mais 5% de Vida, Ataque e Magia. Os itens em sintonia aparecem marcados na lista, e a aba Status mostra quanto falta.",
+    "links": [
+      {
+        "rotulo": "Ver Meu Personagem",
+        "caminho": "/personagem"
+      }
+    ]
   }
 ]
