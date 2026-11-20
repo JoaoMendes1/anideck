@@ -8,6 +8,17 @@ const ITENS = [
   'lamina_de_eter', 'cota_de_malha', 'capa_das_runas', 'botas_do_batedor', 'amuleto_de_eter',
   'espada_da_aurora', 'armadura_do_veterano', 'manto_estelar', 'grevas_de_ferro_negro', 'selo_do_guardiao',
   'lamina_primordial', 'egide_primordial',
+  // sql/119, sql/126 e sql/127 (packs de 20/11)
+  'varinha_de_aprendiz', 'cajado_de_safira', 'lanca_de_madeira', 'adaga_simples', 'adaga_sombria',
+  'maca_consagrada', 'machado_de_lenhador', 'machado_de_ferro', 'machado_de_guerra', 'sabre_do_mercenario',
+  'anel_de_prata', 'botas_ferradas', 'capa_de_couro_reforcado', 'peitoral_de_aco', 'brunea_reforcada',
+  'capuz_de_couro', 'elmo_de_ferro', 'tiara_de_brasas', 'capuz_da_mare', 'elmo_do_trovao',
+  'diadema_solar', 'mascara_de_eter', 'luvas_de_couro', 'braceletes_de_ferro', 'manoplas_de_brasa',
+  'luvas_da_corrente', 'luvas_estaticas', 'manoplas_consagradas', 'luvas_do_eter', 'lanca_de_brasa',
+  'lanca_vulcanica', 'adagas_gemeas_do_trovao', 'tomo_da_mare', 'cajado_da_mare', 'martelo_de_pedra',
+  'machado_de_granito', 'maca_da_alvorada', 'katana_do_eter', 'sabre_relampago', 'anel_veloz',
+  'colar_do_cacador', 'anel_de_brasa', 'pingente_da_mare', 'anel_do_trovao', 'amuleto_de_rocha',
+  'broche_solar', 'talisma_do_eter',
   // sql/121
   'lamina_glacial', 'espada_carmesim', 'espada_solar', 'adaga_abissal', 'foice_do_vazio',
   'lanca_da_tempestade', 'cajado_arcano', 'grimorio_sombrio', 'orbe_arcano', 'arco_silvestre',
