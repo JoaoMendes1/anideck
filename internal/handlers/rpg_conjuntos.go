@@ -7,23 +7,32 @@ import (
 )
 
 // conjuntoRPG é um conjunto de equipamentos: peças com o mesmo `conjunto` em rpg_itens
-// (sql/121) dão bônus com 2 e com 4 peças em uso. O bônus de 4 soma ao de 2.
+// (sql/121 e sql/129) dão bônus com 2, 4 e 6 peças em uso. Cada faixa soma às anteriores.
 type conjuntoRPG struct {
 	nome       string
 	duasPecas  ItemRPG
 	quatroPeca ItemRPG
+	seisPecas  ItemRPG
 }
 
 // conjuntosRPG é a única fonte dos bônus: o banco guarda só o id do conjunto em cada item.
 // Os bônus são atributos, como os dos itens, para o combate não precisar de regra nova.
 var conjuntosRPG = map[string]conjuntoRPG{
-	"glacial":   {nome: "Glacial", duasPecas: ItemRPG{Defesa: 6}, quatroPeca: ItemRPG{Velocidade: 5, CriticoPorMil: 40}},
-	"carmesim":  {nome: "Carmesim", duasPecas: ItemRPG{Ataque: 8}, quatroPeca: ItemRPG{DanoCritico: 25}},
-	"aurora":    {nome: "Aurora", duasPecas: ItemRPG{Vida: 80}, quatroPeca: ItemRPG{Vida: 120, Defesa: 10}},
-	"sombrio":   {nome: "Sombrio", duasPecas: ItemRPG{EsquivaPorMil: 40}, quatroPeca: ItemRPG{CriticoPorMil: 60, Velocidade: 4}},
-	"arcano":    {nome: "Arcano", duasPecas: ItemRPG{Magia: 10}, quatroPeca: ItemRPG{Magia: 20}},
-	"silvestre": {nome: "Silvestre", duasPecas: ItemRPG{Vida: 60, EsquivaPorMil: 20}},
-	"terra":     {nome: "Terra", duasPecas: ItemRPG{Defesa: 8}, quatroPeca: ItemRPG{Vida: 150, Defesa: 8}},
+	// Épicos e Lendários (sql/121), completos no sql/129.
+	"glacial":   {nome: "Glacial", duasPecas: ItemRPG{Defesa: 6}, quatroPeca: ItemRPG{Velocidade: 5, CriticoPorMil: 40}, seisPecas: ItemRPG{Magia: 15, Vida: 100}},
+	"carmesim":  {nome: "Carmesim", duasPecas: ItemRPG{Ataque: 8}, quatroPeca: ItemRPG{DanoCritico: 25}, seisPecas: ItemRPG{Ataque: 15, CriticoPorMil: 40}},
+	"aurora":    {nome: "Aurora", duasPecas: ItemRPG{Vida: 80}, quatroPeca: ItemRPG{Vida: 120, Defesa: 10}, seisPecas: ItemRPG{Vida: 200, Defesa: 10}},
+	"sombrio":   {nome: "Sombrio", duasPecas: ItemRPG{EsquivaPorMil: 40}, quatroPeca: ItemRPG{CriticoPorMil: 60, Velocidade: 4}, seisPecas: ItemRPG{DanoCritico: 30, EsquivaPorMil: 30}},
+	"arcano":    {nome: "Arcano", duasPecas: ItemRPG{Magia: 10}, quatroPeca: ItemRPG{Magia: 20}, seisPecas: ItemRPG{Magia: 25, Velocidade: 4}},
+	"silvestre": {nome: "Silvestre", duasPecas: ItemRPG{Vida: 60, EsquivaPorMil: 20}, quatroPeca: ItemRPG{Velocidade: 5, EsquivaPorMil: 30}, seisPecas: ItemRPG{Velocidade: 6, CriticoPorMil: 40}},
+	"terra":     {nome: "Terra", duasPecas: ItemRPG{Defesa: 8}, quatroPeca: ItemRPG{Vida: 150, Defesa: 8}, seisPecas: ItemRPG{Defesa: 15, Vida: 150}},
+	// De entrada, Raros (sql/129): bônus menores, para o começo do jogo.
+	"brasa":    {nome: "Brasa", duasPecas: ItemRPG{Ataque: 4}, quatroPeca: ItemRPG{DanoCritico: 10}, seisPecas: ItemRPG{Ataque: 8, CriticoPorMil: 20}},
+	"mare":     {nome: "Maré", duasPecas: ItemRPG{Magia: 4}, quatroPeca: ItemRPG{Vida: 60}, seisPecas: ItemRPG{Magia: 10, Velocidade: 2}},
+	"trovao":   {nome: "Trovão", duasPecas: ItemRPG{Velocidade: 2}, quatroPeca: ItemRPG{CriticoPorMil: 30}, seisPecas: ItemRPG{Velocidade: 3, DanoCritico: 12}},
+	"rocha":    {nome: "Rocha", duasPecas: ItemRPG{Defesa: 4}, quatroPeca: ItemRPG{Vida: 80}, seisPecas: ItemRPG{Defesa: 8, Vida: 60}},
+	"alvorada": {nome: "Alvorada", duasPecas: ItemRPG{Vida: 40}, quatroPeca: ItemRPG{Defesa: 5}, seisPecas: ItemRPG{Vida: 100, Defesa: 5}},
+	"nevoa":    {nome: "Névoa", duasPecas: ItemRPG{EsquivaPorMil: 20}, quatroPeca: ItemRPG{Ataque: 4, Magia: 4}, seisPecas: ItemRPG{CriticoPorMil: 30, EsquivaPorMil: 20}},
 }
 
 // ConjuntoEmUso é o que a tela mostra de um conjunto com ao menos uma peça em uso.
@@ -34,8 +43,10 @@ type ConjuntoEmUso struct {
 	// Bonus2 e Bonus4 descrevem cada faixa; Ativo2 e Ativo4 dizem se já valem.
 	Bonus2 string `json:"bonus_2"`
 	Bonus4 string `json:"bonus_4,omitempty"`
+	Bonus6 string `json:"bonus_6,omitempty"`
 	Ativo2 bool   `json:"ativo_2"`
 	Ativo4 bool   `json:"ativo_4"`
+	Ativo6 bool   `json:"ativo_6"`
 	// bonusAtivo é a soma das faixas que valem, para SomarAtributos.
 	bonusAtivo ItemRPG
 }
@@ -52,14 +63,18 @@ func ConjuntosEmUso(itens []ItemRPG) []ConjuntoEmUso {
 	saida := make([]ConjuntoEmUso, 0, len(pecas))
 	for id, n := range pecas {
 		c := conjuntosRPG[id]
-		uso := ConjuntoEmUso{ID: id, Nome: c.nome, Pecas: n, Ativo2: n >= 2, Ativo4: n >= 4,
+		uso := ConjuntoEmUso{ID: id, Nome: c.nome, Pecas: n, Ativo2: n >= 2, Ativo4: n >= 4, Ativo6: n >= 6,
 			Bonus2: DescreverBonus(c.duasPecas)}
 		uso.Bonus4 = DescreverBonus(c.quatroPeca)
+		uso.Bonus6 = DescreverBonus(c.seisPecas)
 		if uso.Ativo2 {
 			uso.bonusAtivo = somarBonus(uso.bonusAtivo, c.duasPecas)
 		}
 		if uso.Ativo4 {
 			uso.bonusAtivo = somarBonus(uso.bonusAtivo, c.quatroPeca)
+		}
+		if uso.Ativo6 {
+			uso.bonusAtivo = somarBonus(uso.bonusAtivo, c.seisPecas)
 		}
 		saida = append(saida, uso)
 	}

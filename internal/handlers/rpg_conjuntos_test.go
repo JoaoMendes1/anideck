@@ -122,10 +122,22 @@ func TestConjuntos(t *testing.T) {
 		}
 	})
 
-	t.Run("conjunto só de 2 peças não tem faixa de 4", func(t *testing.T) {
-		c := ConjuntosEmUso([]ItemRPG{{Conjunto: "silvestre"}, {Conjunto: "silvestre"}})
-		if len(c) != 1 || c[0].Bonus4 != "" || !c[0].Ativo2 {
-			t.Errorf("silvestre errado: %+v", c)
+	t.Run("seis peças somam as três faixas", func(t *testing.T) {
+		pecas := []ItemRPG{peca("arma"), peca("elmo"), peca("armadura"), peca("luvas"), peca("capa"), peca("botas")}
+		total := SomarAtributos(base, pecas)
+		if total.Ataque != base.Ataque+8+15 || total.DanoCritico != base.DanoCritico+25 || total.CriticoPorMil != base.CriticoPorMil+40 {
+			t.Errorf("bônus de 6 errado: %+v", total)
+		}
+		c := ConjuntosEmUso(pecas)
+		if !c[0].Ativo6 || c[0].Bonus6 != "+15 Ataque · +4% Crítico" {
+			t.Errorf("faixa de 6 errada: %+v", c)
+		}
+	})
+
+	t.Run("cinco peças ainda não ativam a faixa de 6", func(t *testing.T) {
+		c := ConjuntosEmUso([]ItemRPG{peca("arma"), peca("elmo"), peca("armadura"), peca("luvas"), peca("capa")})
+		if c[0].Ativo6 || !c[0].Ativo4 {
+			t.Errorf("faixas erradas com 5 peças: %+v", c)
 		}
 	})
 }
@@ -139,11 +151,18 @@ func TestDescreverBonus(t *testing.T) {
 	}
 }
 
-// Todo conjunto que o catálogo usa precisa existir no Go, senão a peça não dá bônus nenhum.
+// Todo conjunto que o catálogo usa (sql/121 e sql/129) precisa existir no Go, senão a peça não
+// dá bônus nenhum. Todo conjunto tem as três faixas.
 func TestConjuntosDoCatalogo(t *testing.T) {
-	for _, id := range []string{"glacial", "carmesim", "aurora", "sombrio", "arcano", "silvestre", "terra"} {
-		if _, ok := conjuntosRPG[id]; !ok {
+	for _, id := range []string{"glacial", "carmesim", "aurora", "sombrio", "arcano", "silvestre", "terra",
+		"brasa", "mare", "trovao", "rocha", "alvorada", "nevoa"} {
+		c, ok := conjuntosRPG[id]
+		if !ok {
 			t.Errorf("conjunto %s sem bônus no Go", id)
+			continue
+		}
+		if DescreverBonus(c.duasPecas) == "" || DescreverBonus(c.quatroPeca) == "" || DescreverBonus(c.seisPecas) == "" {
+			t.Errorf("conjunto %s sem alguma das faixas", id)
 		}
 	}
 }

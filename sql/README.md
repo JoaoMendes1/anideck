@@ -158,6 +158,7 @@ SELECT pg_get_viewdef('nome_da_view'::regclass, true);
 | `126_rpg_sem_kit_inicial_armas_e_atributos.sql` | Sem kit inicial gratuito (`inicial = false`, `rpg_garantir_kit_inicial` sem entrega), `rpg_itens.elemento`, restrição de classe em espadas/machados com limpeza de slots incompatíveis, 8 armas conquistáveis de entrada/médio nível por classe no Mercado/drops e `rpg_distribuir_pontos` com 2 pontos por nível ganho (`(nivel - 1) * 2`), além de definições vivas de `rpg_estado_jogador`, `rpg_ficha_de_duelo`, `rpg_mercado` e `rpg_forja`. **Depois do `123`, antes de promover** | — |
 | `127_rpg_mais_equipamentos.sql` | 32 equipamentos com elemento: 7 elmos e 7 luvas comuns e raros (níveis 1 a 18), 10 armas no elemento da classe (7 raras no Mercado, 3 épicas na Forja, com receita), 8 joias (uma por elemento). Só dados, sem função. **Depois do `122` e do `126`** | — |
 | `128_rpg_lutas_extras.sql` | Lutas extras com Ouro: `rpg_lutas_extras`; `rpg_comprar_luta_extra` e `rpg_lutas_extras_hoje` (autenticado); `rpg_contar_batalhas_hoje` desconta as expedições compradas; masmorra sem UNIQUE(user_id, dia), conferida contra 1 + compradas em `rpg_concluir_masmorra`. **Depois do `125`** | — |
+| `129_rpg_conjuntos_completos.sql` | Conjuntos completos: peças do `127` ganham conjunto (Brasa, Maré, Trovão, Rocha, Alvorada, Névoa); 18 Raras (armadura, capa, botas) no Mercado; 21 Épicas que completam os 7 conjuntos antigos, com receita na Forja. Só dados. **Depois do `127`** | — |
 
 Datas com `~` são a data do commit, não da aplicação no Supabase.
 

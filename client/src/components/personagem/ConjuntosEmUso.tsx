@@ -1,5 +1,5 @@
 // client/src/components/personagem/ConjuntosEmUso.tsx
-// Os conjuntos com peças em uso e o bônus de cada faixa (2 e 4 peças). A conta é do servidor:
+// Os conjuntos com peças em uso e o bônus de cada faixa (2, 4 e 6 peças). A conta é do servidor:
 // a tela só mostra o que já vale e o que falta.
 import { Layers } from 'lucide-react'
 import type { EstadoEquipamento } from '../../lib/rpg'
@@ -33,6 +33,7 @@ export default function ConjuntosEmUso({ estado }: { estado: EstadoEquipamento }
             <ul className="m-0 flex list-none flex-col gap-0.5 p-0">
               <Faixa pecas={2} bonus={c.bonus_2} ativo={c.ativo_2} />
               {c.bonus_4 && <Faixa pecas={4} bonus={c.bonus_4} ativo={c.ativo_4} />}
+              {c.bonus_6 && <Faixa pecas={6} bonus={c.bonus_6} ativo={Boolean(c.ativo_6)} />}
             </ul>
           </li>
         ))}

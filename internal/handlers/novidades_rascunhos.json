@@ -346,5 +346,17 @@
         "caminho": "/expedicoes"
       }
     ]
+  },
+  {
+    "chave": "2026-11-20-conjuntos-completos",
+    "titulo": "Conjuntos completos e bônus de 6 peças",
+    "categoria": "novidade",
+    "resumo": "Todos os conjuntos agora têm uma peça para cada espaço, da arma à joia. Chegaram seis conjuntos de entrada, um por elemento (Brasa, Maré, Trovão, Rocha, Alvorada e Névoa), com as peças no Mercado. Os conjuntos Épicos ganharam as peças que faltavam, feitas na Forja. E fechar 6 peças de um mesmo conjunto agora dá um terceiro bônus.",
+    "links": [
+      {
+        "rotulo": "Ver Meu Personagem",
+        "caminho": "/personagem"
+      }
+    ]
   }
 ]

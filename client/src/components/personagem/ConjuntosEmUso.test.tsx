@@ -20,12 +20,13 @@ describe('ConjuntosEmUso', () => {
   it('mostra as faixas e marca a que ainda não vale', () => {
     render(
       <ConjuntosEmUso
-        estado={estado([{ id: 'carmesim', nome: 'Carmesim', pecas: 2, bonus_2: '+8 Ataque', bonus_4: '+25% Dano Crítico', ativo_2: true, ativo_4: false }])}
+        estado={estado([{ id: 'carmesim', nome: 'Carmesim', pecas: 2, bonus_2: '+8 Ataque', bonus_4: '+25% Dano Crítico', bonus_6: '+15 Ataque', ativo_2: true, ativo_4: false, ativo_6: false }])}
       />,
     )
     expect(screen.getByText('Carmesim')).toBeTruthy()
     expect(screen.getByText('2 em uso')).toBeTruthy()
     expect(screen.getByText(/\+8 Ataque/).className).toContain('text-green')
     expect(screen.getByText(/\+25% Dano Crítico/).closest('li')?.className).toContain('text-muted')
+    expect(screen.getByText(/\+15 Ataque/).closest('li')?.className).toContain('text-muted')
   })
 })

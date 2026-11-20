@@ -132,8 +132,10 @@ export interface ConjuntoEmUso {
   pecas: number
   bonus_2: string
   bonus_4?: string
+  bonus_6?: string
   ativo_2: boolean
   ativo_4: boolean
+  ativo_6?: boolean
 }
 
 /** Nome de cada classe, para o aviso de quem usa o item. Repete as classes de PersonagensBase (Go). */
