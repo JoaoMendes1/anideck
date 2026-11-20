@@ -24,7 +24,8 @@ function semInteresse(r: RespostaMaratona): boolean {
     m.includes('pelo menos 6') ||
     m.includes('até 30') ||
     m.includes('completou') ||
-    m.includes('desmarque')
+    m.includes('desmarque') ||
+    m.includes('pausada')
 }
 
 export default function CartaoMaratona({ malId }: { malId: number }) {
@@ -124,6 +125,15 @@ export default function CartaoMaratona({ malId }: { malId: number }) {
               </li>
             ))}
           </ul>
+          {(resp.semana_limite ?? 0) > 0 && (
+            <p className="m-0 text-xs text-muted">
+              Maratonas concluídas nesta semana:{' '}
+              <strong className="text-text">
+                {Math.min(resp.semana_feitas ?? 0, resp.semana_limite ?? 0)} de {resp.semana_limite}
+              </strong>{' '}
+              (renova na segunda-feira).
+            </p>
+          )}
           {resp.pode ? (
             <button
               type="button"

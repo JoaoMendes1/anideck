@@ -75,6 +75,7 @@ type ChaveRegraNumerica =
   | 'hp_regen_hora_pct'
   | 'hp_pocao_pct'
   | 'bilhete_bonus_pct'
+  | 'maratonas_por_semana'
 
 const CAMPOS_REGRAS: { chave: ChaveRegraNumerica; rotulo: string; ajuda: string }[] = [
   { chave: 'mp_max', rotulo: 'Mana máxima (Nível 1)', ajuda: 'Base da barra azul no nível 1 (120 padrão).' },
@@ -89,6 +90,7 @@ const CAMPOS_REGRAS: { chave: ChaveRegraNumerica; rotulo: string; ajuda: string 
   { chave: 'mp_pocao_pct', rotulo: 'Poção de Mana (% da Mana)', ajuda: 'Quanto a poção devolve (40% padrão).' },
   { chave: 'ouro_recompensa_pct', rotulo: 'Ouro das recompensas (%)', ajuda: '100% é o valor base; 200% padrão.' },
   { chave: 'bilhete_bonus_pct', rotulo: 'Bilhetes das recompensas (%)', ajuda: '100% padrão; 200% dobra os bilhetes ganhos.' },
+  { chave: 'maratonas_por_semana', rotulo: 'Maratonas por semana', ajuda: 'Concluídas por jogador, de segunda a domingo (2 padrão). 0 pausa a maratona.' },
   { chave: 'hp_por_episodio_pct', rotulo: 'HP por episódio (%)', ajuda: 'Quanto cada episódio assistido cura (8% padrão).' },
   { chave: 'hp_episodios_por_dia', rotulo: 'Episódios com cura/dia', ajuda: 'Quantos episódios por dia curam HP (5 padrão).' },
   { chave: 'hp_regen_hora_pct', rotulo: 'Regeneração de HP/hora (%)', ajuda: 'Cura automática por hora (5% padrão).' },

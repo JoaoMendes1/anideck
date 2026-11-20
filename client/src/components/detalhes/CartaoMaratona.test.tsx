@@ -72,4 +72,21 @@ describe('CartaoMaratona', () => {
     await vi.waitFor(() => expect(obterMaratona).toHaveBeenCalled())
     expect(container.innerHTML).toBe('')
   })
+
+  it('mostra quantas maratonas a semana ainda permite e explica o limite', async () => {
+    vi.mocked(obterMaratona).mockResolvedValue({
+      dados: { ...base, pode: false, semana_feitas: 2, semana_limite: 2, motivo: 'Você já concluiu as 2 maratonas desta semana. As próximas liberam na segunda-feira.' },
+    })
+    render(<CartaoMaratona malId={1} />)
+    expect((await screen.findByText(/Maratonas concluídas nesta semana/)).textContent).toContain('2 de 2')
+    expect(screen.getByText(/As próximas liberam na segunda-feira/)).toBeTruthy()
+    expect(screen.queryByRole('button', { name: 'Iniciar maratona' })).toBeNull()
+  })
+
+  it('some com a maratona pausada no painel', async () => {
+    vi.mocked(obterMaratona).mockResolvedValue({ dados: { ...base, pode: false, semana_limite: 0, motivo: 'A missão de maratona está pausada no momento.' } })
+    const { container } = render(<CartaoMaratona malId={1} />)
+    await vi.waitFor(() => expect(obterMaratona).toHaveBeenCalled())
+    expect(container.innerHTML).toBe('')
+  })
 })

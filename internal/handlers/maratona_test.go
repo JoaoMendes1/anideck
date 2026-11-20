@@ -84,3 +84,37 @@ func TestMaratona_Prazos(t *testing.T) {
 		t.Errorf("depois de 24h falha por tempo: %+v", m)
 	}
 }
+
+func TestMaratonasNaSemana(t *testing.T) {
+	// Sexta, 20/11/2026, 20h de Brasília; a semana começou segunda, 16/11, 00:00.
+	agora := time.Date(2026, 11, 20, 23, 0, 0, 0, time.UTC)
+	em := func(s string) *time.Time { v, _ := time.Parse(time.RFC3339, s); return &v }
+	ms := []MaratonaRPG{
+		{Status: "concluida", TerminadaEm: em("2026-11-16T03:00:00Z")}, // segunda 00:00 de Brasília: conta
+		{Status: "concluida", TerminadaEm: em("2026-11-16T02:59:00Z")}, // domingo 23:59: semana passada
+		{Status: "falhou", TerminadaEm: em("2026-11-18T12:00:00Z")},    // perdida não conta
+		{Status: "ativa"},
+		{Status: "concluida", TerminadaEm: em("2026-11-20T10:00:00Z")},
+	}
+	if n := MaratonasNaSemana(ms, agora); n != 2 {
+		t.Errorf("concluídas na semana = %d, quer 2", n)
+	}
+}
+
+func TestMotivoDoLimiteSemanal(t *testing.T) {
+	casos := []struct {
+		feitas, limite int
+		trecho         string
+	}{
+		{0, 0, "pausada"},
+		{1, 2, ""},
+		{2, 2, "as 2 maratonas"},
+		{1, 1, "a maratona desta semana"},
+	}
+	for _, c := range casos {
+		m := MotivoDoLimiteSemanal(c.feitas, c.limite)
+		if (c.trecho == "") != (m == "") || !strings.Contains(m, c.trecho) {
+			t.Errorf("MotivoDoLimiteSemanal(%d, %d) = %q, quer %q", c.feitas, c.limite, m, c.trecho)
+		}
+	}
+}

@@ -43,6 +43,9 @@ export interface RespostaMaratona {
   faixas: FaixaMaratona[]
   maratona?: MaratonaRPG
   outra_ativa?: number
+  /** Concluídas nesta semana e o limite do Painel Admin (0 = pausada). */
+  semana_feitas?: number
+  semana_limite?: number
 }
 
 /** O que a marcação de episódio devolve sobre a maratona. */

@@ -27,6 +27,7 @@ export interface RegrasComunidade {
   hp_regen_hora_pct?: number
   hp_pocao_pct?: number
   bilhete_bonus_pct?: number
+  maratonas_por_semana?: number
 }
 
 export const REGRAS_COMUNIDADE_PADRAO: RegrasComunidade = {
@@ -51,6 +52,7 @@ export const REGRAS_COMUNIDADE_PADRAO: RegrasComunidade = {
   hp_regen_hora_pct: 5,
   hp_pocao_pct: 30,
   bilhete_bonus_pct: 100,
+  maratonas_por_semana: 2,
 }
 
 export interface PerfilProprio {

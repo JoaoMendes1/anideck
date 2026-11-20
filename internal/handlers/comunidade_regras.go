@@ -40,6 +40,8 @@ type RegrasComunidade struct {
 	HPRegenHoraPct    int `json:"hp_regen_hora_pct"`
 	HPPocaoPct        int `json:"hp_pocao_pct"`
 	BilheteBonusPct   int `json:"bilhete_bonus_pct"`
+	// Maratonas concluídas por semana por jogador; 0 pausa a missão (sql/135).
+	MaratonasPorSemana int `json:"maratonas_por_semana"`
 }
 
 const chaveRegrasComunidade = "comunidade_regras"
@@ -69,6 +71,7 @@ func RegrasComunidadePadrao() RegrasComunidade {
 		HPRegenHoraPct:      5,
 		HPPocaoPct:          30,
 		BilheteBonusPct:     100,
+		MaratonasPorSemana:  2,
 	}
 }
 
@@ -148,6 +151,8 @@ func validarRegrasComunidade(r RegrasComunidade) string {
 		return "A Poção de HP vai de 5% a 100% da Vida máxima."
 	case foraDe(r.BilheteBonusPct, 50, 500):
 		return "Os bilhetes das recompensas vão de 50% a 500%."
+	case foraDe(r.MaratonasPorSemana, 0, 7):
+		return "As maratonas por semana vão de 0 (pausada) a 7."
 	}
 	return ""
 }

@@ -3,6 +3,7 @@ package handlers
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"log"
 	"net/http"
 	"strconv"
@@ -142,6 +143,37 @@ type RespostaMaratona struct {
 	Maratona     *MaratonaRPG    `json:"maratona,omitempty"`
 	// OutraAtiva é o mal_id da maratona em andamento em outro anime, quando há.
 	OutraAtiva int `json:"outra_ativa,omitempty"`
+	// Maratonas concluídas nesta semana e o limite do Painel Admin (0 = pausada).
+	SemanaFeitas int `json:"semana_feitas"`
+	SemanaLimite int `json:"semana_limite"`
+}
+
+// MaratonasNaSemana conta as concluídas desde segunda 00:00 de Brasília, a mesma semana das
+// missões semanais. O banco faz a mesma conta ao iniciar (sql/135); esta serve para explicar.
+func MaratonasNaSemana(ms []MaratonaRPG, agora time.Time) int {
+	inicio := inicioDaSemanaBrasilia(agora)
+	n := 0
+	for _, m := range ms {
+		if m.Status == "concluida" && m.TerminadaEm != nil && !m.TerminadaEm.Before(inicio) {
+			n++
+		}
+	}
+	return n
+}
+
+// MotivoDoLimiteSemanal explica por que o limite da semana impede uma nova maratona, ou
+// devolve vazio quando ainda cabe.
+func MotivoDoLimiteSemanal(feitas, limite int) string {
+	switch {
+	case limite <= 0:
+		return "A missão de maratona está pausada no momento."
+	case feitas < limite:
+		return ""
+	case limite == 1:
+		return "Você já concluiu a maratona desta semana. A próxima libera na segunda-feira."
+	default:
+		return fmt.Sprintf("Você já concluiu as %d maratonas desta semana. As próximas liberam na segunda-feira.", limite)
+	}
 }
 
 type MaratonaHandler struct {
@@ -232,7 +264,10 @@ func (h *MaratonaHandler) montarResposta(ctx context.Context, dbClient *supabase
 			resp.Faixas[i].XP = 0
 		}
 	}
-	for _, m := range lerMaratonas(dbClient, userID) {
+	maratonas := lerMaratonas(dbClient, userID)
+	resp.SemanaFeitas = MaratonasNaSemana(maratonas, time.Now())
+	resp.SemanaLimite = lerRegrasComunidade(dbClient).MaratonasPorSemana
+	for _, m := range maratonas {
 		m := m
 		if m.MalID == malID {
 			resp.Maratona = &m
@@ -246,6 +281,9 @@ func (h *MaratonaHandler) montarResposta(ctx context.Context, dbClient *supabase
 	}
 	if resp.Motivo == "" && resp.Maratona != nil && resp.Maratona.Status == "concluida" {
 		resp.Motivo = "Você já fez a maratona deste anime."
+	}
+	if resp.Motivo == "" {
+		resp.Motivo = MotivoDoLimiteSemanal(resp.SemanaFeitas, resp.SemanaLimite)
 	}
 	resp.Pode = resp.Motivo == ""
 	return resp, true
