@@ -322,5 +322,17 @@
         "caminho": "/personagem"
       }
     ]
+  },
+  {
+    "chave": "2026-11-20-mais-equipamentos",
+    "titulo": "32 equipamentos novos: elmos, luvas, armas e joias",
+    "categoria": "novidade",
+    "resumo": "Chegaram elmos e luvas desde o nível 1, armas novas no elemento de cada classe (como o Tomo da Maré da Maga e a Lança de Brasa do Lanceiro) e joias com bônus variados. Os comuns e raros estão no Mercado; as armas épicas saem da Forja. Com elmo, luvas, joia e arma do elemento do seu herói, você ativa a Ressonância.",
+    "links": [
+      {
+        "rotulo": "Abrir o Mercado",
+        "caminho": "/loja"
+      }
+    ]
   }
 ]
