@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import { useToast } from '../contexts/ToastContext'
 import SolicitarConviteBetaModal from '../components/SolicitarConviteBetaModal'
+import ContinuarComoConta from '../components/ContinuarComoConta'
 
 export default function Auth() {
   const { showToast } = useToast()
@@ -150,6 +151,8 @@ export default function Auth() {
               Solicitar convite Beta →
             </button>
           </div>
+
+          {isLogin && <ContinuarComoConta />}
 
           {error && (
             <div className="bg-coral/10 border border-coral/30 text-coral p-3 rounded-lg text-sm mb-4 text-center">

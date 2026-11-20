@@ -5,6 +5,7 @@
 import { createContext, useContext, useEffect, useMemo, useRef, useState, useCallback, type ReactNode } from 'react'
 import type { Session } from '@supabase/supabase-js'
 import { supabase } from '../lib/supabase'
+import { esquecerConta, lembrarSessao } from '../lib/contasSalvas'
 
 type Sessao = {
     session: Session | null
@@ -62,6 +63,7 @@ export function SessaoProvider({ children }: { children: ReactNode }) {
             setSession(data.session)
             setCarregando(false)
             verificarAdmin(data.session)
+            lembrarSessao(data.session)
         })
 
         const { data: { subscription } } = supabase.auth.onAuthStateChange((_evento, novaSessao) => {
@@ -69,6 +71,8 @@ export function SessaoProvider({ children }: { children: ReactNode }) {
             setSession(novaSessao)
             setCarregando(false)
             verificarAdmin(novaSessao)
+            // A cada renovação de token, a conta guardada para a troca rápida fica atualizada.
+            lembrarSessao(novaSessao)
         })
 
         return () => {
@@ -77,8 +81,11 @@ export function SessaoProvider({ children }: { children: ReactNode }) {
         }
     }, [])
 
+    // Sair encerra a sessão no servidor: a conta sai também da troca rápida.
     const sair = useCallback(async () => {
+        const { data } = await supabase.auth.getSession()
         await supabase.auth.signOut()
+        if (data.session) esquecerConta(data.session.user.id)
     }, [])
 
     // useMemo evita recriar o objeto a cada render, o que forçaria todas as

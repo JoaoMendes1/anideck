@@ -3,7 +3,10 @@
 // fora. Os itens vêm de lib/navegacao.ts, a mesma fonte do menu lateral: no desktop com
 // menu lateral (xl para cima) a navegação some daqui e só a conta fica, para não repetir.
 import { Link } from 'react-router-dom'
-import { LogOut } from 'lucide-react'
+import { LogOut, UserPlus, Users } from 'lucide-react'
+import { useState } from 'react'
+import { lerContas, prepararNovaConta, trocarPara, type ContaSalva } from '../lib/contasSalvas'
+import { useToast } from '../contexts/ToastContext'
 import { useSessao } from '../contexts/SessaoContext'
 import { useComunidade } from '../hooks/useComunidade'
 import { TEMAS, aplicarTema, useTema } from '../lib/temas'
@@ -48,6 +51,59 @@ function LinhaDoItem({ item, onNavegar, comSubitens }: { item: ItemDoMenu; onNav
                 </div>
             )}
         </>
+    )
+}
+
+// Troca rápida de conta: as outras contas que já entraram neste aparelho. Trocar recarrega a
+// página para nenhuma tela ficar com dados da conta anterior.
+function TrocaDeConta({ onNavegar }: { onNavegar: () => void }) {
+    const { session } = useSessao()
+    const { showToast } = useToast()
+    const [trocando, setTrocando] = useState('')
+    const outras = lerContas().filter((c) => c.user_id !== session?.user.id)
+
+    const trocar = async (conta: ContaSalva) => {
+        setTrocando(conta.user_id)
+        const r = await trocarPara(conta)
+        if (r.erro) {
+            setTrocando('')
+            showToast(r.erro, 'error')
+            return
+        }
+        window.location.assign('/')
+    }
+
+    return (
+        <div className="px-1">
+            <div className="px-3 pt-1.5 pb-1 font-mono text-xs font-bold tracking-[0.16em] text-muted-2">CONTAS</div>
+            {outras.map((c) => (
+                <button
+                    key={c.user_id}
+                    type="button"
+                    onClick={() => trocar(c)}
+                    disabled={trocando !== ''}
+                    className={`${base} text-text hover:bg-panel-2 disabled:opacity-60`}
+                >
+                    <Users size={16} className="text-holo-3" aria-hidden />
+                    <span className="min-w-0 flex-1 truncate">
+                        {trocando === c.user_id ? 'Trocando…' : `Trocar para ${c.nome || c.email}`}
+                        {c.nome && c.email && <span className="block truncate font-mono text-xs font-normal text-muted">{c.email}</span>}
+                    </span>
+                </button>
+            ))}
+            <button
+                type="button"
+                onClick={() => {
+                    onNavegar()
+                    prepararNovaConta(session)
+                    window.location.assign('/login')
+                }}
+                className={`${base} text-muted hover:bg-panel-2 hover:text-text`}
+            >
+                <UserPlus size={16} aria-hidden />
+                Adicionar outra conta
+            </button>
+        </div>
     )
 }
 
@@ -104,6 +160,9 @@ export default function ItensPerfil({ onNavegar, comMenuLateral = false }: Props
                     ))}
                 </div>
             </div>
+
+            <div className="h-px bg-line my-1.5" />
+            <TrocaDeConta onNavegar={onNavegar} />
 
             <div className="h-px bg-line my-1.5" />
 
