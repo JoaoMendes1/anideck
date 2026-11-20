@@ -254,7 +254,7 @@ export default function Detalhes() {
 
   useEffect(() => {
     const aoAtualizar = (ev: Event) => {
-      const d = (ev as CustomEvent<{ malId?: number; episodeNumber?: number; watched?: boolean }>).detail
+      const d = (ev as CustomEvent<{ malId?: number; episodeNumber?: number; watched?: boolean; concluiu?: boolean }>).detail
       if (d?.malId !== Number(id) || typeof d.episodeNumber !== 'number') return
       const n = d.episodeNumber
       let mudouStatus = false
@@ -268,7 +268,12 @@ export default function Detalhes() {
         return proximo
       })
       const atual = entradaAtual.current
-      if (d.watched && atual?.status === 'Quero Assistir') {
+      // O servidor já moveu para Completo ao marcar o último episódio de uma obra que terminou.
+      if (d.watched && d.concluiu && atual && atual.status !== 'Completo') {
+        setMinhaEntrada({ ...atual, status: 'Completo' })
+        showToast('Você viu todos os episódios: movido para Completo!')
+        mudouStatus = true
+      } else if (d.watched && atual?.status === 'Quero Assistir') {
         setMinhaEntrada({ ...atual, status: 'Assistindo' })
         showToast('Movido para Assistindo!')
         mudouStatus = true

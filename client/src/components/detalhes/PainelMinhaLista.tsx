@@ -187,14 +187,16 @@ export default function PainelMinhaLista({ malId, entrada, assistidos, ultimoDis
     try {
       const res = await fetch(`/api/entries/${malId}/episodes/${episodio}`, { method: 'POST', headers: cabecalho })
       if (!res.ok) throw new Error()
+      let concluiu = false
       try {
-        const corpo = (await res.json()) as { xp_earned?: number; reason?: string }
+        const corpo = (await res.json()) as { xp_earned?: number; reason?: string; concluiu?: boolean }
+        concluiu = Boolean(corpo.concluiu)
         showToast(corpo.xp_earned ? `Ep ${episodio} visto · +${corpo.xp_earned} XP na Guilda` : `Ep ${episodio} marcado como visto`)
       } catch {
         showToast(`Ep ${episodio} marcado como visto`)
       }
       invalidarCachesDoDeck(session?.user.id)
-      window.dispatchEvent(new CustomEvent('anideck:episodio-atualizado', { detail: { malId, episodeNumber: episodio, watched: true } }))
+      window.dispatchEvent(new CustomEvent('anideck:episodio-atualizado', { detail: { malId, episodeNumber: episodio, watched: true, concluiu } }))
     } catch {
       showToast('Não foi possível marcar o episódio.', 'error')
     } finally {
@@ -305,9 +307,14 @@ export default function PainelMinhaLista({ malId, entrada, assistidos, ultimoDis
     </div>
   )
 
-  const avisoCompleto = obraTerminou && entrada.status === 'Em Dia' && (
+  // Quem viu tudo de uma obra que terminou recebe o convite; marcar o último episódio já move
+  // sozinho, e o convite cobre quem chegou ao fim antes disso.
+  const viuTudo = ultimoDisponivel > 0 && assistidos.length >= ultimoDisponivel
+  const avisoCompleto = obraTerminou && (entrada.status === 'Em Dia' || (entrada.status === 'Assistindo' && viuTudo)) && (
     <div className="flex flex-wrap items-center justify-between gap-2 p-3 rounded-xl bg-holo-1/10 border border-holo-1/35 text-[12.5px]">
-      <span className="text-text">A obra terminou. Você está em dia, então já completou.</span>
+      <span className="text-text">
+        {entrada.status === 'Em Dia' ? 'A obra terminou. Você está em dia, então já completou.' : 'A obra terminou e você viu todos os episódios.'}
+      </span>
       <button type="button" onClick={() => escolherStatus('Completo')} className="px-3 py-1.5 rounded-full text-[12px] font-extrabold text-void bg-gradient-to-r from-holo-1 to-holo-2 cursor-pointer">
         Mover para Completo
       </button>

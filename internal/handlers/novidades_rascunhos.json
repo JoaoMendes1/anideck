@@ -418,5 +418,17 @@
         "caminho": "/expedicoes"
       }
     ]
+  },
+  {
+    "chave": "2026-11-20-conclusao-automatica",
+    "titulo": "Anime vai para Completo quando você vê o último episódio",
+    "categoria": "correcao",
+    "resumo": "Antes, um anime que já tinha terminado continuava em Assistindo mesmo com todos os episódios marcados. Agora, ao marcar o último episódio de uma obra que terminou, ela vai sozinha para Completo. Se você já tinha visto tudo antes desta mudança, a página do anime mostra o botão Mover para Completo.",
+    "links": [
+      {
+        "rotulo": "Ver meu Deck",
+        "caminho": "/deck"
+      }
+    ]
   }
 ]

@@ -107,9 +107,11 @@ export default function EpisodeGrid({ malId, totalEpisodes, streamingEpisodes = 
       })
 
       if (!response.ok) throw new Error()
+      let concluiu = false
       if (!isWatched) {
         try {
-          const payload = (await response.json()) as { xp_earned?: number; reason?: string }
+          const payload = (await response.json()) as { xp_earned?: number; reason?: string; concluiu?: boolean }
+          concluiu = Boolean(payload.concluiu)
           if (typeof payload.xp_earned === 'number' && payload.xp_earned > 0) {
             showToast(`+${payload.xp_earned} XP na Guilda (${payload.reason || 'episódio assistido'})`, 'success')
           }
@@ -120,7 +122,7 @@ export default function EpisodeGrid({ malId, totalEpisodes, streamingEpisodes = 
       invalidarCachesDoDeck(session.user.id)
       window.dispatchEvent(
         new CustomEvent('anideck:episodio-atualizado', {
-          detail: { malId, episodeNumber, watched: !isWatched },
+          detail: { malId, episodeNumber, watched: !isWatched, concluiu },
         })
       )
       if (!isWatched) {

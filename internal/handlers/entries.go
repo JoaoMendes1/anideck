@@ -386,11 +386,13 @@ func (h *EntriesHandler) HandleMarkEpisode(w http.ResponseWriter, r *http.Reques
 		if strings.Contains(err.Error(), "duplicate key value violates unique constraint") || strings.Contains(err.Error(), "23505") {
 			promoverQueroAssistirParaAssistindo(dbClient, userID, malID)
 			marcarNotificacaoDoEpisodioComoLida(dbClient, userID, malID, episodeNumber)
+			concluiu := concluirSeAssistiuTudo(dbClient, userID, malID, curadoRef)
 			w.Header().Set("Content-Type", "application/json")
 			w.WriteHeader(http.StatusOK)
 			_ = json.NewEncoder(w).Encode(map[string]interface{}{
 				"xp_earned": 0,
 				"reason":    "episódio já marcado",
+				"concluiu":  concluiu,
 			})
 			return
 		}
@@ -402,12 +404,15 @@ func (h *EntriesHandler) HandleMarkEpisode(w http.ResponseWriter, r *http.Reques
 	promoverQueroAssistirParaAssistindo(dbClient, userID, malID)
 	marcarNotificacaoDoEpisodioComoLida(dbClient, userID, malID, episodeNumber)
 	xpGanho, motivoXP := RegistrarXPEpisodio(dbClient, userID, malID, episodeNumber, curadoRef)
+	// Depois do XP: o episódio conta antes de o anime virar Completo.
+	concluiu := concluirSeAssistiuTudo(dbClient, userID, malID, curadoRef)
 
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusCreated)
 	_ = json.NewEncoder(w).Encode(map[string]interface{}{
 		"xp_earned": xpGanho,
 		"reason":    motivoXP,
+		"concluiu":  concluiu,
 	})
 }
 
