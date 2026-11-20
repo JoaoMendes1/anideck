@@ -28,11 +28,11 @@ const ITENS = [
   'capa_da_mare', 'botas_da_mare', 'couraca_do_trovao', 'capa_do_trovao', 'botas_do_trovao',
   'couraca_de_rocha', 'manto_de_rocha', 'botas_de_rocha', 'couraca_da_alvorada', 'capa_da_alvorada',
   'botas_da_alvorada', 'veste_da_nevoa', 'capa_da_nevoa', 'botas_da_nevoa',
-  // sql/130 (packs 6 e 7; faltam as Luvas do Arquimago)
+  // sql/130 (packs 6 e 7)
   'diadema_primordial', 'manoplas_primordiais', 'manto_primordial', 'grevas_primordiais',
   'olho_primordial', 'garras_do_inverno', 'botas_da_nevasca', 'lagrima_glacial', 'manto_da_fenix',
   'coracao_de_magma', 'asas_da_aurora', 'sandalias_solares', 'veu_da_noite_eterna',
-  'garras_do_eclipse', 'vestes_do_arquimago', 'passos_do_vento', 'coroa_de_folhas_antigas',
+  'garras_do_eclipse', 'luvas_do_arquimago', 'vestes_do_arquimago', 'passos_do_vento', 'coroa_de_folhas_antigas',
   'elmo_do_tita', 'couraca_do_colosso', 'cajado_de_aprendiz', 'adaga_de_ferro',
   'maca_de_treino', 'chapeu_de_aprendiz', 'bandana_de_couro',
   'colete_de_couro', 'veste_de_aprendiz', 'peitoral_de_bronze', 'luvas_de_tecido',
