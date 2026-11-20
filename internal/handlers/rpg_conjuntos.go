@@ -33,6 +33,8 @@ var conjuntosRPG = map[string]conjuntoRPG{
 	"rocha":    {nome: "Rocha", duasPecas: ItemRPG{Defesa: 4}, quatroPeca: ItemRPG{Vida: 80}, seisPecas: ItemRPG{Defesa: 8, Vida: 60}},
 	"alvorada": {nome: "Alvorada", duasPecas: ItemRPG{Vida: 40}, quatroPeca: ItemRPG{Defesa: 5}, seisPecas: ItemRPG{Vida: 100, Defesa: 5}},
 	"nevoa":    {nome: "Névoa", duasPecas: ItemRPG{EsquivaPorMil: 20}, quatroPeca: ItemRPG{Ataque: 4, Magia: 4}, seisPecas: ItemRPG{CriticoPorMil: 30, EsquivaPorMil: 20}},
+	// Primordial (sql/130): Lendário de nível 55, o topo da Forja.
+	"primordial": {nome: "Primordial", duasPecas: ItemRPG{Vida: 100}, quatroPeca: ItemRPG{Ataque: 10, Magia: 10}, seisPecas: ItemRPG{CriticoPorMil: 50, DanoCritico: 20}},
 }
 
 // ConjuntoEmUso é o que a tela mostra de um conjunto com ao menos uma peça em uso.
