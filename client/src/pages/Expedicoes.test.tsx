@@ -358,7 +358,7 @@ describe('Expedições', () => {
     expect(screen.getByText('1,0×')).toBeTruthy()
   })
 
-  it('no celular inicia o mapa-múndi em câmera aproximada (1,8×) e permite explorar regiões e voltar à visão geral', async () => {
+  it('no celular mostra o mapa inteiro (1,0×), abre a gaveta da região e aproxima pelo Focar', async () => {
     window.matchMedia = vi.fn((query: string) => ({
       matches: query !== '(min-width: 640px)',
       media: query,
@@ -378,8 +378,8 @@ describe('Expedições', () => {
 
     // No celular a região ativa aparece numa barra; o painel completo fica na gaveta.
     await screen.findByRole('button', { name: /Clareira Inicial.*Ver criaturas/s })
-    expect(screen.getByText('1,8×')).toBeTruthy()
-    expect(screen.getByRole('button', { name: 'Visão geral' })).toBeTruthy()
+    expect(screen.getByText('1,0×')).toBeTruthy()
+    expect(screen.getByRole('button', { name: 'Focar' })).toBeTruthy()
     expect(screen.queryByRole('dialog')).toBeNull()
 
     fireEvent.click(screen.getByRole('button', { name: /^Explorar Bosque Sombrio \(Nv 10–25,/ }))
@@ -391,8 +391,9 @@ describe('Expedições', () => {
     fireEvent.click(within(gaveta).getByRole('button', { name: 'Fechar' }))
     expect(screen.queryByRole('dialog')).toBeNull()
 
+    fireEvent.click(screen.getByRole('button', { name: 'Focar' }))
+    expect(screen.getByText('1,8×')).toBeTruthy()
     fireEvent.click(screen.getByRole('button', { name: 'Visão geral' }))
     expect(screen.getByText('1,0×')).toBeTruthy()
-    expect(screen.getByRole('button', { name: 'Focar' })).toBeTruthy()
   })
 })

@@ -557,17 +557,14 @@ export default function MapaExpedicoes({
   const ehMobile = !ehDesktop
 
   const [regiaoAtivaId, setRegiaoAtivaId] = useState(regiaoDoSelecionado)
-  const [zoom, setZoom] = useState(() => (ehMobile ? ZOOM_PADRAO_MOBILE : ZOOM_MINIMO))
+  const [zoom, setZoom] = useState(ZOOM_MINIMO)
   const [pan, setPan] = useState<{ x: number; y: number }>({ x: 0, y: 0 })
   const [arrastando, setArrastando] = useState(false)
   const [tamanhoTela, setTamanhoTela] = useState<{ w: number; h: number }>({ w: 0, h: 0 })
 
-  // No celular o quadro é mais alto que a imagem 16:9: abaixo deste zoom sobraria uma faixa
-  // vazia embaixo do mapa.
-  const zoomMin =
-    ehMobile && tamanhoTela.w > 0 && tamanhoTela.h > 0
-      ? Math.max(ZOOM_MINIMO, Number((tamanhoTela.h / ((tamanhoTela.w * 9) / 16)).toFixed(2)))
-      : ZOOM_MINIMO
+  // O quadro tem o formato da imagem (16:9) em qualquer tela: em 1× o mapa aparece inteiro,
+  // sem faixa vazia, e o zoom só aproxima.
+  const zoomMin = ZOOM_MINIMO
   // Gaveta da região no celular: abre ao tocar num pino, sem precisar rolar a página.
   const [gavetaAberta, setGavetaAberta] = useState(false)
   const gavetaRef = useRef<HTMLDivElement | null>(null)
@@ -617,7 +614,7 @@ export default function MapaExpedicoes({
     const mudouModo = ultimoModoMobileRef.current !== ehMobile
     if (mudouModo) {
       ultimoModoMobileRef.current = ehMobile
-      const novoZoom = ehMobile ? Math.max(ZOOM_PADRAO_MOBILE, zoomMin) : ZOOM_MINIMO
+      const novoZoom = ZOOM_MINIMO
       setZoom(novoZoom)
       if (tamanhoTela.w > 0 && tamanhoTela.h > 0) {
         const coord = coordsPorId.get(regiaoAtivaId) ?? { x: 50, y: 50 }
@@ -657,12 +654,6 @@ export default function MapaExpedicoes({
     setPan(panParaRegiao(coord, tamanhoTela.w, tamanhoTela.h, zoom))
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [regiaoAtivaId])
-
-  // O zoom nunca fica abaixo do mínimo do quadro (o mínimo muda com a largura da tela).
-  useEffect(() => {
-    if (zoom < zoomMin) setZoom(zoomMin)
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [zoomMin])
 
   useEffect(() => {
     if (!gavetaAberta) return
@@ -831,7 +822,8 @@ export default function MapaExpedicoes({
   const derrotadosAtiva = monstrosDaRegiao.filter((m) => (m.bestiario?.vitorias ?? 0) > 0).length
   const dominadaAtiva = monstrosDaRegiao.length > 0 && derrotadosAtiva === monstrosDaRegiao.length
   const zoomAmpliado = zoom > zoomMin + 0.05
-  const mostrarTodosNomes = ehDesktop || zoom >= 1.35
+  // No celular os nomes se amontoam: só a ativa aparece, a não ser com zoom (as pílulas abaixo têm todos).
+  const mostrarTodosNomes = ehDesktop || zoom >= 1.8
 
   // Escolher uma criatura na gaveta rola a própria gaveta até a ficha, que fica logo abaixo.
   const escolherMonstro = (id: string, naGaveta: boolean) => {
@@ -985,6 +977,51 @@ export default function MapaExpedicoes({
     </div>
   )
 
+  const controlesZoom = (
+    <div
+      role="group"
+      aria-label="Controles de zoom do mapa"
+      onPointerDown={(e) => e.stopPropagation()}
+      className={`z-30 flex items-center gap-1 rounded-full border border-line bg-void/90 p-1 shadow-lg backdrop-blur-sm ${
+        ehMobile ? 'relative' : 'absolute top-2.5 right-2.5'
+      }`}
+    >
+      <button
+        type="button"
+        onClick={() => aplicarZoom(zoom - ZOOM_PASSO)}
+        disabled={zoom <= zoomMin + 0.01}
+        aria-label="Diminuir zoom do mapa"
+        className="flex h-7 w-7 cursor-pointer items-center justify-center rounded-full text-text transition hover:bg-panel-2 disabled:cursor-not-allowed disabled:opacity-40"
+      >
+        <Minus size={13} aria-hidden="true" />
+      </button>
+      <span className="min-w-10 text-center font-mono text-[11px] font-bold text-text">
+        {zoom.toFixed(1).replace('.', ',')}×
+      </span>
+      <button
+        type="button"
+        onClick={() => aplicarZoom(zoom + ZOOM_PASSO)}
+        disabled={zoom >= ZOOM_MAXIMO - 0.01}
+        aria-label="Aumentar zoom do mapa"
+        className="flex h-7 w-7 cursor-pointer items-center justify-center rounded-full text-text transition hover:bg-panel-2 disabled:cursor-not-allowed disabled:opacity-40"
+      >
+        <Plus size={13} aria-hidden="true" />
+      </button>
+      <button
+        type="button"
+        onClick={() =>
+          zoomAmpliado
+            ? aplicarZoom(zoomMin)
+            : aplicarZoom(ZOOM_PADRAO_MOBILE, { focarAtiva: true })
+        }
+        className="inline-flex h-7 cursor-pointer items-center gap-1 rounded-full border border-line bg-panel-2 px-2.5 text-[11px] font-bold text-text transition hover:border-holo-3"
+      >
+        <Maximize2 size={11} aria-hidden="true" />
+        {zoomAmpliado ? 'Visão geral' : 'Focar'}
+      </button>
+    </div>
+  )
+
   return (
     <div className="flex flex-col gap-4 sm:gap-5 lg:grid lg:grid-cols-[minmax(0,1fr)_400px] lg:items-start">
       {/* Mapa-múndi panorâmico em largura total no desktop e navegável por câmera no celular */}
@@ -1026,7 +1063,7 @@ export default function MapaExpedicoes({
               suprimirClickRef.current = false
             }
           }}
-          className={`relative h-[320px] w-full select-none overflow-hidden rounded-2xl border border-line bg-void sm:h-auto sm:aspect-video ${
+          className={`relative aspect-video w-full select-none overflow-hidden rounded-2xl border border-line bg-void ${
             ehMobile || zoomAmpliado ? 'touch-none' : 'touch-pan-y'
           } ${zoomAmpliado ? (arrastando ? 'cursor-grabbing' : 'cursor-grab') : ''}`}
         >
@@ -1097,8 +1134,9 @@ export default function MapaExpedicoes({
                   onClick={() => selecionarRegiao(regiao.id)}
                   aria-pressed={ativa}
                   aria-label={`Explorar ${regiao.nome} (${regiao.faixa_nivel}, ${derrotadosRegiao} de ${qtd} criaturas derrotadas)`}
-                  style={{ left: `${coord.x}%`, top: `${coord.y}%` }}
-                  className={`group absolute flex -translate-x-1/2 -translate-y-1/2 cursor-pointer flex-col items-center ${
+                  // Escala inversa ao zoom: aproximar afasta os pinos sem inflar pino e nome.
+                  style={{ left: `${coord.x}%`, top: `${coord.y}%`, transform: `translate(-50%, -50%) scale(${1 / zoom})` }}
+                  className={`group absolute flex cursor-pointer flex-col items-center ${
                     ativa ? 'z-20' : 'z-10 hover:z-20'
                   }`}
                 >
@@ -1161,54 +1199,17 @@ export default function MapaExpedicoes({
             })}
           </div>
 
-          {/* Controles de zoom e enquadramento da câmera */}
-          <div
-            role="group"
-            aria-label="Controles de zoom do mapa"
-            onPointerDown={(e) => e.stopPropagation()}
-            className="absolute top-2.5 right-2.5 z-30 flex items-center gap-1 rounded-full border border-line bg-void/90 p-1 shadow-lg backdrop-blur-sm"
-          >
-            <button
-              type="button"
-              onClick={() => aplicarZoom(zoom - ZOOM_PASSO)}
-              disabled={zoom <= zoomMin + 0.01}
-              aria-label="Diminuir zoom do mapa"
-              className="flex h-7 w-7 cursor-pointer items-center justify-center rounded-full text-text transition hover:bg-panel-2 disabled:cursor-not-allowed disabled:opacity-40"
-            >
-              <Minus size={13} aria-hidden="true" />
-            </button>
-            <span className="min-w-10 text-center font-mono text-[11px] font-bold text-text">
-              {zoom.toFixed(1).replace('.', ',')}×
-            </span>
-            <button
-              type="button"
-              onClick={() => aplicarZoom(zoom + ZOOM_PASSO)}
-              disabled={zoom >= ZOOM_MAXIMO - 0.01}
-              aria-label="Aumentar zoom do mapa"
-              className="flex h-7 w-7 cursor-pointer items-center justify-center rounded-full text-text transition hover:bg-panel-2 disabled:cursor-not-allowed disabled:opacity-40"
-            >
-              <Plus size={13} aria-hidden="true" />
-            </button>
-            <button
-              type="button"
-              onClick={() =>
-                zoomAmpliado
-                  ? aplicarZoom(zoomMin)
-                  : aplicarZoom(ZOOM_PADRAO_MOBILE, { focarAtiva: true })
-              }
-              className="inline-flex h-7 cursor-pointer items-center gap-1 rounded-full border border-line bg-panel-2 px-2.5 text-[11px] font-bold text-text transition hover:border-holo-3"
-            >
-              <Maximize2 size={11} aria-hidden="true" />
-              {zoomAmpliado ? 'Visão geral' : 'Focar'}
-            </button>
-          </div>
+          {/* Controles de zoom: sobre o mapa no computador; abaixo dele no celular. */}
+          {!ehMobile && controlesZoom}
 
-          {zoomAmpliado && (
+          {zoomAmpliado && !ehMobile && (
             <span className="pointer-events-none absolute bottom-2.5 left-2.5 z-20 rounded-full border border-line/80 bg-void/85 px-2.5 py-1 font-mono text-[10px] text-muted backdrop-blur-sm">
               Arraste para explorar · pinça ou +/− ajusta o zoom
             </span>
           )}
         </div>
+
+        {ehMobile && <div className="mt-2 flex justify-end">{controlesZoom}</div>}
 
         {/* Barra rápida de regiões sem barra de rolagem cinza no desktop */}
         <div className="mt-3 flex gap-1.5 overflow-x-auto scrollbar-hide pb-0.5 sm:flex-wrap sm:overflow-visible sm:pb-0">
