@@ -26,7 +26,7 @@ export default function BotaoEmGrupo({ tipo, alvoId, nome, desativado }: { tipo:
       onClick={abrir}
       disabled={abrindo || desativado}
       aria-label={`Lutar em grupo contra ${nome}`}
-      className="inline-flex h-10 cursor-pointer items-center justify-center gap-1.5 rounded-full border border-holo-2/50 px-4 text-xs font-bold text-holo-2 hover:bg-holo-2/10 disabled:cursor-not-allowed disabled:opacity-50"
+      className="inline-flex h-9 cursor-pointer items-center justify-center gap-1.5 rounded-full border border-holo-2/50 px-3.5 text-xs font-bold text-holo-2 hover:bg-holo-2/10 disabled:cursor-not-allowed disabled:opacity-50"
     >
       <Users size={14} aria-hidden="true" /> {abrindo ? 'Abrindo…' : 'Em grupo'}
     </button>

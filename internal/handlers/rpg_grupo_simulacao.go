@@ -58,6 +58,7 @@ func simularGrupo(herois []CombatenteRPG, fora []bool, monstro MonstroRPG, rng *
 	lutas := make([]*lutaEmAndamento, len(herois))
 	res := ResultadoEmGrupo{Herois: make([]HeroiNoResultado, len(herois)), VidaMonstro: monstro.Vida}
 	for i, h := range herois {
+		aplicarPostura(&h)
 		vida := h.Atributos.Vida
 		if h.VidaInicial > 0 && h.VidaInicial < vida {
 			vida = h.VidaInicial

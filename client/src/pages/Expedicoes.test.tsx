@@ -93,7 +93,7 @@ describe('Expedições', () => {
     fireEvent.click(await screen.findByRole('button', { name: 'Enfrentar Slime de Éter' }))
 
     await screen.findByText('Vitória')
-    expect(batalhar).toHaveBeenCalledWith('slime_de_eter')
+    expect(batalhar).toHaveBeenCalledWith('slime_de_eter', 'equilibrada')
     expect(screen.getByText('Crítico!')).toBeTruthy()
     expect(screen.getByText('1 bilhete de invocação')).toBeTruthy()
     expect(screen.getByText('7 de Ouro')).toBeTruthy()
@@ -273,7 +273,7 @@ describe('Expedições', () => {
     await screen.findByText('Vitória')
     expect(screen.getByRole('button', { name: 'Enfrentar novamente' })).toBeTruthy()
     fireEvent.click(screen.getByRole('button', { name: 'Desafiar Lobo Abissal' }))
-    await waitFor(() => expect(batalhar).toHaveBeenCalledWith('lobo_abissal'))
+    await waitFor(() => expect(batalhar).toHaveBeenCalledWith('lobo_abissal', 'equilibrada'))
   })
 
   it('mostra e resgata contratos semanais atualizando Ouro e Bilhetes', async () => {
@@ -386,7 +386,7 @@ describe('Expedições', () => {
     const gaveta = await screen.findByRole('dialog', { name: 'Região Bosque Sombrio' })
     expect(within(gaveta).getByRole('heading', { name: 'Bosque Sombrio' })).toBeTruthy()
     expect(within(gaveta).getAllByRole('button', { name: /^Inspecionar / }).length).toBeGreaterThan(0)
-    expect(within(gaveta).getAllByRole('button', { name: /^Enfrentar / }).length).toBeGreaterThan(0)
+    expect(within(gaveta).getByRole('button', { name: /^Lutar contra / })).toBeTruthy()
 
     fireEvent.click(within(gaveta).getByRole('button', { name: 'Fechar' }))
     expect(screen.queryByRole('dialog')).toBeNull()

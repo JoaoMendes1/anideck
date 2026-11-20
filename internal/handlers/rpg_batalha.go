@@ -122,6 +122,8 @@ type CombatenteRPG struct {
 	Passiva *PassivaEspecialidade
 	// SemBioma desativa modificadores de bioma de mapa aberto (usado nas masmorras).
 	SemBioma bool
+	// Postura escolhida antes da luta (rpg_postura.go); vazia é a Equilibrada.
+	Postura string
 }
 
 // CombatenteDoEstado separa do livro só as habilidades liberadas.
@@ -248,7 +250,7 @@ func (l *lutaEmAndamento) pronta(h HabilidadeRPG) bool {
 // metade para baixo; senão, a habilidade de ataque de nível mais alto que o Éter paga;
 // senão, ataque comum (nil).
 func (l *lutaEmAndamento) escolher() *HabilidadeRPG {
-	if l.vidaJogador*2 < l.j.Atributos.Vida {
+	if l.vidaJogador*100 < l.j.Atributos.Vida*limiarDeCuraPct(l.j.Postura) {
 		for i := range l.j.Habilidades {
 			if h := &l.j.Habilidades[i]; h.Efeito == efeitoCura && l.pronta(*h) {
 				return h
@@ -352,7 +354,7 @@ func (l *lutaEmAndamento) vezDoJogador() bool {
 		t.Alvo = aj.Nome
 	} else if t.Dano > 0 {
 		if l.mon.rodadasEscudo > 0 {
-			t.Dano = max(1, int(float64(t.Dano)*(1-l.mon.escudo)+0.5))
+			t.Dano = max(1, int(float64(t.Dano)*(1-escudoContraPostura(l.mon.escudo, l.j.Postura))+0.5))
 		}
 		l.mon.vida = max(0, l.mon.vida-t.Dano)
 		if l.mon.vida > 0 {
@@ -440,7 +442,7 @@ func (l *lutaEmAndamento) vezDoMonstro() bool {
 			t.Cura = min(t.Dano/2, l.m.Vida-l.mon.vida)
 			l.mon.vida += t.Cura
 		}
-		if t.Dano > 0 && l.vidaJogador > 0 {
+		if t.Dano > 0 && l.vidaJogador > 0 && !resisteAEfeito(l.j.Postura, l.rng) {
 			if ef, ok := l.status.tentarAplicar(l.rng, l.m.Elemento, l.m.Ataque, poder != nil, true); ok {
 				t.Efeito = ef.Nome
 				if ef.ID == efeitoDrenoDeEter {
@@ -495,6 +497,7 @@ func SimularBatalha(jogador CombatenteRPG, monstro MonstroRPG, rng *rand.Rand) R
 	EnriquecerMonstro(&monstro)
 	vidaBase := jogador.Atributos.Vida
 	aplicarPassivaEspecialidade(&jogador)
+	aplicarPostura(&jogador)
 	if !jogador.SemBioma && monstro.Regiao != "" {
 		aplicarEfeitoBioma(&jogador, &monstro)
 	}
@@ -638,12 +641,14 @@ type HojeRPG struct {
 
 // EstadoExpedicoes é o corpo de GET /api/rpg/batalhas.
 type EstadoExpedicoes struct {
-	Atributos AtributosRPG      `json:"atributos"`
-	Elemento  string            `json:"elemento"`
-	Vida      VidaRPG           `json:"vida"`
-	Custos    CustosRecuperacao `json:"custos"`
-	Hoje      HojeRPG           `json:"hoje"`
-	Monstros  []MonstroNaLista  `json:"monstros"`
+	Atributos AtributosRPG `json:"atributos"`
+	Elemento  string       `json:"elemento"`
+	// EfeitoDoElemento é o efeito de status que os golpes do herói podem deixar.
+	EfeitoDoElemento *EfeitoDeElemento `json:"efeito_do_elemento,omitempty"`
+	Vida             VidaRPG           `json:"vida"`
+	Custos           CustosRecuperacao `json:"custos"`
+	Hoje             HojeRPG           `json:"hoje"`
+	Monstros         []MonstroNaLista  `json:"monstros"`
 	// Regioes e RegiaoDestaque montam o mapa 2D de exploração.
 	Regioes        []RegiaoMapa `json:"regioes,omitempty"`
 	RegiaoDestaque string       `json:"regiao_destaque,omitempty"`
@@ -776,16 +781,17 @@ func (h *RPGHandler) HandleGetExpedicoes(w http.ResponseWriter, r *http.Request)
 	}
 	hoje.Regras = hoje.Regras.ComPadroes()
 	responderJSON(w, http.StatusOK, EstadoExpedicoes{
-		Atributos:      equipamento.Atributos,
-		Elemento:       elemento,
-		Vida:           MontarVida(equipamento.Atributos.Vida, hoje.VidaPerdida),
-		Custos:         CustosPara(sessao.nivel),
-		Hoje:           hoje,
-		Monstros:       lista,
-		Regioes:        regioes,
-		RegiaoDestaque: regiaoDestaque,
-		CustosMana:     CustosDeMana(sessao.nivel, lerRegrasComunidade(sessao.dbClient)),
-		Passiva:        passiva,
+		Atributos:        equipamento.Atributos,
+		Elemento:         elemento,
+		EfeitoDoElemento: efeitoDoHeroi(elemento),
+		Vida:             MontarVida(equipamento.Atributos.Vida, hoje.VidaPerdida),
+		Custos:           CustosPara(sessao.nivel),
+		Hoje:             hoje,
+		Monstros:         lista,
+		Regioes:          regioes,
+		RegiaoDestaque:   regiaoDestaque,
+		CustosMana:       CustosDeMana(sessao.nivel, lerRegrasComunidade(sessao.dbClient)),
+		Passiva:          passiva,
 	})
 }
 
@@ -794,6 +800,7 @@ func (h *RPGHandler) HandleGetExpedicoes(w http.ResponseWriter, r *http.Request)
 func (h *RPGHandler) HandleBatalhar(w http.ResponseWriter, r *http.Request) {
 	var corpo struct {
 		MonstroID string `json:"monstro_id"`
+		Postura   string `json:"postura"`
 	}
 	if r.Body == nil || json.NewDecoder(r.Body).Decode(&corpo) != nil {
 		corpo.MonstroID = ""
@@ -860,6 +867,7 @@ func (h *RPGHandler) HandleBatalhar(w http.ResponseWriter, r *http.Request) {
 	combatente.VidaInicial = vida.Atual
 	combatente.Elemento = elementoDoJogador(sessao.ctx)
 	combatente.Passiva = passiva
+	combatente.Postura = PosturaValida(corpo.Postura)
 	vitoriasAntes := hoje.Vitorias[monstro.ID]
 	resultado := SimularBatalha(combatente, *monstro, rng)
 	perdaFinal := PerdaPorMil(equipamento.Atributos.Vida, resultado.VidaFinal)
@@ -1029,6 +1037,7 @@ func (l *lutaEmAndamento) golpeNoJogadorComTipo(ataque int, arcano bool) (danoDe
 	if multCrit < 1 {
 		multCrit = multCritMonstro
 	}
+	multCrit = multCriticoContraPostura(multCrit, l.j.Postura)
 	valor, critico := golpe(l.rng, ataque, defesa, critPorMil, multCrit)
 	valor = l.mon.status.danoCausado(valor)
 	if m := MultiplicadorElemental(l.m.Elemento, l.j.Elemento); m != 1 {

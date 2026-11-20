@@ -242,6 +242,13 @@ func (h *RPGHandler) HandleGetEvento(w http.ResponseWriter, r *http.Request) {
 
 // HandleLutarNoEvento faz a luta do dia contra o arauto e grava pelo service role.
 func (h *RPGHandler) HandleLutarNoEvento(w http.ResponseWriter, r *http.Request) {
+	// A postura é opcional: corpo vazio ou inválido luta na Equilibrada.
+	var corpo struct {
+		Postura string `json:"postura"`
+	}
+	if r.Body != nil {
+		_ = json.NewDecoder(r.Body).Decode(&corpo)
+	}
 	sessao, ok := abrirSessaoRPG(w, r)
 	if !ok {
 		return
@@ -269,6 +276,7 @@ func (h *RPGHandler) HandleLutarNoEvento(w http.ResponseWriter, r *http.Request)
 	}
 	jogador := CombatenteDoEstado(equipamento)
 	jogador.Elemento = elementoDoJogador(sessao.ctx)
+	jogador.Postura = PosturaValida(corpo.Postura)
 	resultado := SimularBatalha(jogador, estado.Monstro, novoGeradorDeBatalha())
 	// O evento não usa a Vida guardada nem tem queda: o resultado só diz quem venceu.
 	resultado.Caiu = false

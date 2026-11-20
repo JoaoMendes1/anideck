@@ -7,7 +7,7 @@ export type Velocidade = (typeof VELOCIDADES)[number]
 
 const CHAVE = 'anideck:velocidade-batalha'
 /** Tempo entre um golpe e outro na velocidade 1x. */
-export const INTERVALO_BASE_MS = 380
+export const INTERVALO_BASE_MS = 900
 
 export function lerVelocidade(): Velocidade {
   try {

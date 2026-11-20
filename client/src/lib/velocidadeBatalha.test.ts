@@ -13,8 +13,8 @@ describe('velocidade da batalha', () => {
     expect(lerVelocidade()).toBe(1)
   })
   it('intervalo encurta com a velocidade', () => {
-    expect(intervaloDaVelocidade(1)).toBe(380)
-    expect(intervaloDaVelocidade(2)).toBe(190)
-    expect(intervaloDaVelocidade(4)).toBe(95)
+    expect(intervaloDaVelocidade(1)).toBe(900)
+    expect(intervaloDaVelocidade(2)).toBe(450)
+    expect(intervaloDaVelocidade(4)).toBe(225)
   })
 })

@@ -430,5 +430,41 @@
         "caminho": "/deck"
       }
     ]
+  },
+  {
+    "chave": "2026-11-20-postura-e-confronto",
+    "titulo": "Escolha a postura antes de lutar",
+    "categoria": "novidade",
+    "resumo": "Antes de cada luta nas Expedições e no evento da temporada, escolha a postura. A Agressiva bate mais forte e quebra o escudo dos monstros, mas defende menos. A Defensiva aguenta mais, resiste aos efeitos dos monstros e se cura mais cedo. A Equilibrada fica no meio. A ficha de cada monstro também ficou mais clara: o bloco Confronto mostra quem tem vantagem de elemento, a fraqueza do monstro e o que os golpes de cada lado podem causar.",
+    "links": [
+      {
+        "rotulo": "Ir às Expedições",
+        "caminho": "/expedicoes"
+      }
+    ]
+  },
+  {
+    "chave": "2026-11-20-lutas-mais-legiveis",
+    "titulo": "Lutas no ritmo certo",
+    "categoria": "layout",
+    "resumo": "A reprodução das lutas ficou mais calma na velocidade 1×, e as opções 2× e 4× continuam lá para quem tem pressa. A luta do evento da temporada agora também mostra os golpes um a um. No mapa, a ficha da criatura ficou mais compacta, os botões de luta ficam no rodapé, e o filtro de regiões da lista virou botões.",
+    "links": [
+      {
+        "rotulo": "Ir às Expedições",
+        "caminho": "/expedicoes"
+      }
+    ]
+  },
+  {
+    "chave": "2026-11-20-agenda-adicionar-ao-deck",
+    "titulo": "Adicione animes ao Deck pela Agenda",
+    "categoria": "novidade",
+    "resumo": "A Agenda ganhou o mesmo botão do Descobrir: toque no + sobre a capa para pôr o anime no seu Deck. O ✓ mostra os que já estão nele.",
+    "links": [
+      {
+        "rotulo": "Abrir a Agenda",
+        "caminho": "/calendario"
+      }
+    ]
   }
 ]

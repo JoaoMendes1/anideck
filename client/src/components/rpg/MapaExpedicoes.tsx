@@ -37,18 +37,20 @@ import {
   porMilEmPorcento,
   regioesDoMapa,
   rotuloDaDificuldade,
-  textoDaRelacao,
   textoDoBestiario,
   type AtributosRPG,
   type Dificuldade,
   type MonstroNaLista,
   type RegiaoMapa,
+  type EfeitoDeElemento,
 } from '../../lib/rpg'
 import { ESTILO_DO_TIPO } from '../../lib/monstrosVisual'
 import { rotuloDoElemento } from '../../lib/personagem'
 import { useMidia } from '../../hooks/useMidia'
 import IconeDoMonstro from './IconeDoMonstro'
 import BotaoEmGrupo from './BotaoEmGrupo'
+import ConfrontoElemental from './ConfrontoElemental'
+import EscolhaDePostura from './EscolhaDePostura'
 import mapaMundiImg from '../../assets/rpg/mapa-mundi.webp'
 
 interface EstiloRegiao {
@@ -291,8 +293,15 @@ export function FolhaInspecaoMonstro({
   bloqueado,
   aoSelecionar,
   aoEnfrentar,
+  elementoHeroi,
+  efeitoHeroi,
+  semAcoes = false,
 }: {
   monstro: MonstroNaLista
+  elementoHeroi?: string
+  efeitoHeroi?: EfeitoDeElemento
+  /** Na gaveta do celular os botões ficam no rodapé fixo; a ficha não repete. */
+  semAcoes?: boolean
   porId?: Map<string, MonstroNaLista>
   atributosJogador: AtributosRPG
   custoMana?: number
@@ -316,10 +325,10 @@ export function FolhaInspecaoMonstro({
       aria-label={`Detalhes de ${monstro.nome}`}
       className={`flex flex-col gap-3 rounded-2xl border bg-panel p-4 shadow-lg ${tipo.borda}`}
     >
-      <div className="flex flex-col items-center gap-3 text-center sm:flex-row sm:items-start sm:text-left">
-        <IconeDoMonstro monstro={monstro} tamanho="h-28 w-28 sm:h-32 sm:w-32" destaque iconeTamanho={44} />
+      <div className={`flex gap-3 ${semAcoes ? 'flex-row items-start text-left' : 'flex-col items-center text-center sm:flex-row sm:items-start sm:text-left'}`}>
+        <IconeDoMonstro monstro={monstro} tamanho={semAcoes ? 'h-20 w-20' : 'h-28 w-28 sm:h-32 sm:w-32'} destaque iconeTamanho={semAcoes ? 30 : 44} />
         <div className="flex min-w-0 flex-1 flex-col gap-1.5">
-          <div className="flex flex-wrap items-center justify-center gap-1.5 sm:justify-start">
+          <div className={`flex flex-wrap items-center gap-1.5 ${semAcoes ? 'justify-start' : 'justify-center sm:justify-start'}`}>
             {monstro.regiao_nome && (
               <span className="inline-flex items-center gap-1 rounded-full border border-line bg-panel-2 px-2 py-0.5 text-xs text-muted">
                 <MapPin size={11} aria-hidden="true" />
@@ -341,7 +350,7 @@ export function FolhaInspecaoMonstro({
             {tipo.rotulo} · nível {monstro.nivel} · poder {monstro.poder}
           </p>
 
-          <div className="flex flex-wrap items-center justify-center gap-1.5 sm:justify-start">
+          <div className={`flex flex-wrap items-center gap-1.5 ${semAcoes ? 'justify-start' : 'justify-center sm:justify-start'}`}>
             {monstro.elemento && (
               <span className={`rounded-full border px-2 py-0.5 font-mono text-xs ${estiloEl.classe}`}>
                 {estiloEl.simbolo} {rotuloDoElemento(monstro.elemento)}
@@ -355,13 +364,18 @@ export function FolhaInspecaoMonstro({
             )}
           </div>
 
-          {textoDaRelacao(monstro.elemental) && (
-            <p className={`m-0 text-xs font-bold ${monstro.elemental === 'vantagem' ? 'text-green' : 'text-coral'}`}>
-              {textoDaRelacao(monstro.elemental)}
-            </p>
-          )}
         </div>
       </div>
+
+      <ConfrontoElemental
+        nomeDoMonstro={monstro.nome}
+        elementoMonstro={monstro.elemento}
+        efeitoMonstro={monstro.efeito}
+        elementoHeroi={elementoHeroi}
+        efeitoHeroi={efeitoHeroi}
+      />
+
+      <EscolhaDePostura />
 
       <div className="flex flex-col gap-1 rounded-xl border border-line bg-panel-2/60 p-3">
         <p className="m-0 text-xs leading-relaxed text-text">{monstro.descricao}</p>
@@ -484,13 +498,6 @@ export function FolhaInspecaoMonstro({
         </span>
       </div>
 
-      {monstro.efeito && (
-        <p className="m-0 rounded-lg border border-coral/35 bg-coral/10 px-2.5 py-1.5 text-xs leading-snug text-text">
-          <strong className="text-coral">Golpes podem causar {monstro.efeito.nome}: </strong>
-          {monstro.efeito.descricao}
-        </p>
-      )}
-
       {monstro.bestiario && (
         <div className="flex flex-col gap-1.5 rounded-xl border border-line bg-panel-2/40 px-3 py-2.5">
           <p className="m-0 inline-flex items-start gap-1.5 font-mono text-xs text-muted">
@@ -499,7 +506,7 @@ export function FolhaInspecaoMonstro({
           </p>
           {monstro.dica_tatica ? (
             <p className="m-0 rounded-lg border border-gold/35 bg-gold/10 px-2.5 py-1.5 text-xs leading-snug text-text">
-              <strong className="text-gold">Dica tática: </strong>
+              <strong className="text-gold">Dica do bestiário sobre {monstro.nome}: </strong>
               {monstro.dica_tatica}
             </p>
           ) : (
@@ -511,21 +518,23 @@ export function FolhaInspecaoMonstro({
         </div>
       )}
 
-      <div className="flex flex-wrap gap-2 pt-1">
-        <button
-          type="button"
-          onClick={() => aoEnfrentar(monstro.id)}
-          disabled={bloqueado || lutando !== null}
-          aria-label={`Enfrentar ${monstro.nome}`}
-          className="h-11 flex-1 cursor-pointer rounded-full bg-gradient-to-r from-holo-1 to-holo-3 px-5 text-xs font-extrabold text-void disabled:cursor-not-allowed disabled:opacity-50"
-        >
-          {lutando === monstro.id ? 'Batalhando…' : 'Enfrentar'}
-          {lutando !== monstro.id && custoMana !== undefined && (
-            <span className="ml-1 font-mono text-xs font-semibold opacity-80">· {custoMana} MP</span>
-          )}
-        </button>
-        <BotaoEmGrupo tipo="monstro" alvoId={monstro.id} nome={monstro.nome} desativado={bloqueado || lutando !== null} />
-      </div>
+      {!semAcoes && (
+        <div className="flex flex-wrap items-center gap-2">
+          <button
+            type="button"
+            onClick={() => aoEnfrentar(monstro.id)}
+            disabled={bloqueado || lutando !== null}
+            aria-label={`Enfrentar ${monstro.nome}`}
+            className="h-9 cursor-pointer rounded-full bg-gradient-to-r from-holo-1 to-holo-3 px-4 text-xs font-extrabold text-void disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            {lutando === monstro.id ? 'Batalhando…' : 'Enfrentar'}
+            {lutando !== monstro.id && custoMana !== undefined && (
+              <span className="ml-1 font-mono text-xs font-semibold opacity-80">· {custoMana} MP</span>
+            )}
+          </button>
+          <BotaoEmGrupo tipo="monstro" alvoId={monstro.id} nome={monstro.nome} desativado={bloqueado || lutando !== null} />
+        </div>
+      )}
     </aside>
   )
 }
@@ -540,8 +549,12 @@ export default function MapaExpedicoes({
   bloqueado,
   aoSelecionar,
   aoEnfrentar,
+  elementoHeroi,
+  efeitoHeroi,
 }: {
   monstros: MonstroNaLista[]
+  elementoHeroi?: string
+  efeitoHeroi?: EfeitoDeElemento
   regioesBrutas?: RegiaoMapa[]
   atributosJogador: AtributosRPG
   custoMana?: number
@@ -850,6 +863,23 @@ export default function MapaExpedicoes({
       bloqueado={bloqueado}
       aoSelecionar={aoSelecionar}
       aoEnfrentar={aoEnfrentar}
+      elementoHeroi={elementoHeroi}
+      efeitoHeroi={efeitoHeroi}
+    />
+  )
+  const fichaDaGaveta = selecionado && (
+    <FolhaInspecaoMonstro
+      monstro={selecionado}
+      porId={porId}
+      atributosJogador={atributosJogador}
+      custoMana={custoMana}
+      lutando={lutando}
+      bloqueado={bloqueado}
+      aoSelecionar={aoSelecionar}
+      aoEnfrentar={aoEnfrentar}
+      elementoHeroi={elementoHeroi}
+      efeitoHeroi={efeitoHeroi}
+      semAcoes
     />
   )
 
@@ -1283,11 +1313,14 @@ export default function MapaExpedicoes({
             aria-modal="true"
             aria-label={`Região ${regiaoAtiva.nome}`}
             tabIndex={-1}
-            className="relative flex max-h-[88dvh] flex-col gap-3 overflow-y-auto rounded-t-3xl border-t border-line bg-panel px-3 pt-2 pb-[max(1rem,env(safe-area-inset-bottom))] outline-none"
+            className="relative flex max-h-[90dvh] flex-col gap-3 overflow-y-auto rounded-t-3xl border-t border-line bg-panel px-3 pt-0 pb-0 outline-none"
           >
-            <div className="sticky top-0 z-10 -mx-3 flex items-center justify-between bg-panel/95 px-3 pt-1 pb-2 backdrop-blur">
+            <div className="sticky top-0 z-10 -mx-3 flex items-center justify-between gap-2 bg-panel px-3 pt-3 pb-2 shadow-[0_6px_12px_-8px_rgba(0,0,0,0.6)]">
               <span aria-hidden="true" className="absolute top-1 left-1/2 h-1 w-10 -translate-x-1/2 rounded-full bg-line" />
-              <span className="mt-2 font-mono text-xs text-muted">Toque numa criatura para ver a ficha</span>
+              <span className="mt-1 min-w-0 truncate text-sm font-bold text-text">
+                {selecionado ? selecionado.nome : regiaoAtiva.nome}
+                <span className="ml-1.5 font-mono text-xs font-normal text-muted">toque numa criatura para trocar</span>
+              </span>
               <button
                 type="button"
                 onClick={() => setGavetaAberta(false)}
@@ -1299,21 +1332,24 @@ export default function MapaExpedicoes({
             </div>
             {painelDaRegiao(true)}
             <div ref={fichaNaGavetaRef} className="scroll-mt-14">
-              {ficha}
+              {fichaDaGaveta}
             </div>
             {/* Atalho fixo: lutar sem rolar até o fim da ficha. */}
-            <div className="sticky bottom-0 -mx-3 -mb-4 border-t border-line bg-panel/95 px-3 pt-2 pb-[max(0.75rem,env(safe-area-inset-bottom))] backdrop-blur">
-              <button
-                type="button"
-                onClick={() => aoEnfrentar(selecionado.id)}
-                disabled={bloqueado || lutando !== null}
-                className="h-12 w-full cursor-pointer rounded-full bg-gradient-to-r from-holo-1 to-holo-3 px-5 text-sm font-extrabold text-void disabled:cursor-not-allowed disabled:opacity-50"
-              >
-                {lutando === selecionado.id ? 'Batalhando…' : `Lutar contra ${selecionado.nome}`}
-                {lutando !== selecionado.id && custoMana !== undefined && (
-                  <span className="ml-1 font-mono text-xs font-semibold opacity-80">· {custoMana} MP</span>
-                )}
-              </button>
+            <div className="sticky bottom-0 -mx-3 border-t border-line bg-panel px-3 pt-2 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => aoEnfrentar(selecionado.id)}
+                  disabled={bloqueado || lutando !== null}
+                  className="h-10 min-w-0 flex-1 cursor-pointer truncate rounded-full bg-gradient-to-r from-holo-1 to-holo-3 px-4 text-xs font-extrabold text-void disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  {lutando === selecionado.id ? 'Batalhando…' : `Lutar contra ${selecionado.nome}`}
+                  {lutando !== selecionado.id && custoMana !== undefined && (
+                    <span className="ml-1 font-mono text-xs font-semibold opacity-80">· {custoMana} MP</span>
+                  )}
+                </button>
+                <BotaoEmGrupo tipo="monstro" alvoId={selecionado.id} nome={selecionado.nome} desativado={bloqueado || lutando !== null} />
+              </div>
             </div>
           </div>
         </div>

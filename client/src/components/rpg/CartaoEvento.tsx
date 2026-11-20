@@ -3,8 +3,11 @@
 // Some sozinho quando o evento não responde (SQL ainda não aplicado, por exemplo).
 import { useEffect, useState } from 'react'
 import { CalendarClock, Crown, Swords } from 'lucide-react'
+import { lerPostura } from '../../lib/postura'
+import EscolhaDePostura from './EscolhaDePostura'
+import ReplayCompacto from './ReplayCompacto'
 import IconeDoMonstro from './IconeDoMonstro'
-import { ESTILO_DO_ELEMENTO, descreverTurno, lutarNoEvento, obterEvento, textoDaRelacao, type EstadoEvento, type RespostaEvento } from '../../lib/rpg'
+import { ESTILO_DO_ELEMENTO, lutarNoEvento, obterEvento, textoDaRelacao, type EstadoEvento, type RespostaEvento } from '../../lib/rpg'
 import { textoDoPrazo } from '../../lib/missoes'
 import { rotuloDoElemento } from '../../lib/personagem'
 
@@ -28,7 +31,7 @@ export default function CartaoEvento() {
   const lutar = async () => {
     setLutando(true)
     setErro('')
-    const r = await lutarNoEvento()
+    const r = await lutarNoEvento(lerPostura())
     setLutando(false)
     if (r.dados) {
       setResposta(r.dados)
@@ -68,22 +71,16 @@ export default function CartaoEvento() {
 
       {resposta && (
         <div role="status" className={`flex flex-col gap-1.5 rounded-xl border p-3 text-sm ${resposta.resultado.venceu ? 'border-gold/50 bg-gold/10' : 'border-coral/40 bg-coral/10'}`}>
-          <strong>{resposta.resultado.venceu ? 'Vitória! +1 marca.' : 'O arauto venceu hoje. Sem perda: tente amanhã.'}</strong>
-          {resposta.premiado_agora && <strong className="text-gold">Meta alcançada: o título “{evento.titulo}” é seu, e o Ouro já está na carteira.</strong>}
-          <details className="text-xs">
-            <summary className="cursor-pointer text-muted hover:text-text">Ver os golpes</summary>
-            <ol className="m-0 mt-2 flex list-none flex-col gap-1 p-0">
-              {resposta.resultado.turnos.map((t, i) => {
-                const { texto, valor } = descreverTurno(t, monstro.nome)
-                return (
-                  <li key={i} className="flex justify-between gap-2 rounded-lg border border-line/60 px-2.5 py-1">
-                    <span className="min-w-0 truncate">{texto}</span>
-                    <span className="shrink-0 font-mono">{valor}</span>
-                  </li>
-                )
-              })}
-            </ol>
-          </details>
+          <ReplayCompacto
+            turnos={resposta.resultado.turnos}
+            nomeDoMonstro={monstro.nome}
+            desfecho={
+              <>
+                <strong>{resposta.resultado.venceu ? 'Vitória! +1 marca.' : 'O arauto venceu hoje. Sem perda: tente amanhã.'}</strong>
+                {resposta.premiado_agora && <strong className="text-gold">Meta alcançada: o título “{evento.titulo}” é seu, e o Ouro já está na carteira.</strong>}
+              </>
+            }
+          />
         </div>
       )}
       {erro && <p role="alert" className="m-0 text-xs font-bold text-coral">{erro}</p>}
@@ -91,6 +88,7 @@ export default function CartaoEvento() {
       {estado.premiado && !resposta?.premiado_agora ? (
         <p className="m-0 text-xs font-bold text-gold">Você já conquistou o título desta temporada. As lutas seguem valendo para treinar.</p>
       ) : null}
+      {!estado.lutou_hoje && <EscolhaDePostura />}
       <button
         type="button"
         onClick={lutar}

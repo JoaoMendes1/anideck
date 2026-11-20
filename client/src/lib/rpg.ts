@@ -444,6 +444,12 @@ export function relacaoElemental(atacante: string | undefined, defensor: string 
   return 'neutro'
 }
 
+/** O elemento que vence o indicado (a fraqueza dele), ou vazio quando nenhum vence. */
+export function elementoQueVence(elemento: string | undefined): string {
+  if (!elemento) return ''
+  return Object.keys(VENCE).find((atacante) => VENCE[atacante] === elemento) ?? ''
+}
+
 /** Frase da relação de elemento entre você e o monstro, ou vazio quando é neutra. */
 export function textoDaRelacao(relacao: string | undefined): string {
   if (relacao === 'vantagem') return 'Vantagem de elemento: você bate 10% mais forte'
@@ -544,6 +550,8 @@ export interface EstadoExpedicoes {
   atributos: AtributosRPG
   /** Elemento do seu personagem. */
   elemento?: string
+  /** Efeito de status que os golpes do seu herói podem deixar. */
+  efeito_do_elemento?: EfeitoDeElemento
   vida?: VidaRPG
   custos?: CustosRecuperacao
   hoje: HojeRPG
@@ -839,13 +847,13 @@ export async function obterExpedicoes(): Promise<{ dados?: EstadoExpedicoes; err
   }
 }
 
-export async function batalhar(monstroId: string): Promise<{ dados?: RespostaBatalha; erro?: string }> {
+export async function batalhar(monstroId: string, postura?: string): Promise<{ dados?: RespostaBatalha; erro?: string }> {
   const falha = 'Não foi possível batalhar agora.'
   try {
     const res = await fetch('/api/rpg/batalhas', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', ...(await cabecalhoDeAutenticacao()) },
-      body: JSON.stringify({ monstro_id: monstroId }),
+      body: JSON.stringify({ monstro_id: monstroId, postura }),
     })
     const json = (await res.json().catch(() => null)) as (RespostaBatalha & { error?: string }) | null
     if (!res.ok) return { erro: json?.error || falha }
@@ -1196,10 +1204,14 @@ export async function obterEvento(): Promise<{ dados?: EstadoEvento; erro?: stri
   }
 }
 
-export async function lutarNoEvento(): Promise<{ dados?: RespostaEvento; erro?: string }> {
+export async function lutarNoEvento(postura?: string): Promise<{ dados?: RespostaEvento; erro?: string }> {
   const falha = 'Não foi possível lutar agora.'
   try {
-    const res = await fetch('/api/rpg/evento', { method: 'POST', headers: await cabecalhoDeAutenticacao() })
+    const res = await fetch('/api/rpg/evento', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', ...(await cabecalhoDeAutenticacao()) },
+      body: JSON.stringify({ postura }),
+    })
     const json = (await res.json().catch(() => null)) as (RespostaEvento & { error?: string }) | null
     if (!res.ok) return { erro: json?.error || falha }
     if (!json || !json.estado || !json.resultado) return { erro: falha }

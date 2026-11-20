@@ -15,6 +15,7 @@ import ControleDeVelocidade from '../components/rpg/ControleDeVelocidade'
 import MapaExpedicoes from '../components/rpg/MapaExpedicoes'
 import ComprarLutaExtra from '../components/rpg/ComprarLutaExtra'
 import { intervaloDaVelocidade, lerVelocidade, salvarVelocidade, type Velocidade } from '../lib/velocidadeBatalha'
+import { lerPostura } from '../lib/postura'
 import { useComunidade } from '../hooks/useComunidade'
 import { useEffect, useRef, useState } from 'react'
 import { Link, useLocation } from 'react-router-dom'
@@ -396,7 +397,7 @@ export default function Expedicoes() {
     if (lutando) return
     setErroDaLuta('')
     setLutando(monstroId)
-    const r = await batalhar(monstroId)
+    const r = await batalhar(monstroId, lerPostura())
     setLutando(null)
     if (r.dados) {
       const dados = r.dados
@@ -596,6 +597,8 @@ export default function Expedicoes() {
               monstros={estado.monstros}
               regioesBrutas={estado.regioes}
               atributosJogador={estado.atributos}
+              elementoHeroi={estado.elemento}
+              efeitoHeroi={estado.efeito_do_elemento}
               custoMana={estado.custos_mana?.expedicao}
               selecionadoId={selecionadoId}
               lutando={lutando}
@@ -618,19 +621,23 @@ export default function Expedicoes() {
                   />
                 </label>
 
-                <select
-                  aria-label="Filtrar por região"
-                  value={filtroRegiao}
-                  onChange={(e) => setFiltroRegiao(e.target.value)}
-                  className="h-9 cursor-pointer rounded-xl border border-line bg-panel-2 px-3 text-xs font-semibold text-text focus:border-holo-3 focus:outline-none"
-                >
-                  <option value="todas">Todas as regiões</option>
-                  {regioesDisponiveis.map((r) => (
-                    <option key={r.id} value={r.id}>
-                      {r.nome} ({r.faixa_nivel})
-                    </option>
+                <div role="radiogroup" aria-label="Filtrar por região" className="-mx-1 flex w-full gap-1.5 overflow-x-auto px-1 pb-0.5 [scrollbar-width:none]">
+                  {[{ id: 'todas', nome: 'Todas', faixa_nivel: '' }, ...regioesDisponiveis].map((r) => (
+                    <button
+                      key={r.id}
+                      type="button"
+                      role="radio"
+                      aria-checked={filtroRegiao === r.id}
+                      onClick={() => setFiltroRegiao(r.id)}
+                      className={`h-8 shrink-0 cursor-pointer rounded-full border px-3 text-xs font-bold whitespace-nowrap ${
+                        filtroRegiao === r.id ? 'border-holo-3 bg-holo-3/15 text-holo-3' : 'border-line bg-panel-2 text-muted hover:text-text'
+                      }`}
+                    >
+                      {r.nome}
+                      {r.faixa_nivel && <span className="ml-1 font-mono font-normal opacity-70">{r.faixa_nivel}</span>}
+                    </button>
                   ))}
-                </select>
+                </div>
 
                 <button
                   type="button"
