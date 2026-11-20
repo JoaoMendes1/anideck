@@ -10,6 +10,7 @@ import {
   PRIMARIOS_RPG,
   PRIMARIOS_ZERADOS,
   distribuirPontos,
+  itensAfetadosPelosPontos,
   somaDosPontos,
   type EstadoEquipamento,
   type PrimarioId,
@@ -55,6 +56,7 @@ export default function PainelAtributos({
   const usados = somaDosPontos(rascunho)
   const livres = disponiveis - usados
   const mudou = PRIMARIOS_RPG.some(({ id }) => rascunho[id] !== salvos[id])
+  const afetados = mudou ? itensAfetadosPelosPontos(estado, rascunho) : { desativam: [], reativam: [] }
 
   const ajustar = (id: PrimarioId, passo: 1 | -1) => {
     setErro('')
@@ -138,6 +140,25 @@ export default function PainelAtributos({
               ? 'Os primeiros 2 pontos chegam no nível 2, e depois 2 a cada novo nível.'
               : `Você tem ${disponiveis} ${disponiveis === 1 ? 'ponto disponível' : 'pontos disponíveis'} pelo nível ${estado.nivel} (2 por nível ganho). Redistribuir é livre.`}
           </p>
+
+          {afetados.desativam.length > 0 && (
+            <div role="status" className="rounded-lg border border-coral/50 bg-coral/10 p-2.5 text-xs leading-relaxed text-coral">
+              <p className="m-0 font-bold">Ao salvar, ficam inativos (sem bônus):</p>
+              <ul className="m-0 list-disc pl-4">
+                {afetados.desativam.map((i) => (
+                  <li key={i.nome}>
+                    {i.nome}: exige {i.requisito}
+                  </li>
+                ))}
+              </ul>
+              <p className="m-0 mt-1 text-muted">Eles continuam equipados e voltam a valer quando você cumprir o requisito.</p>
+            </div>
+          )}
+          {afetados.reativam.length > 0 && (
+            <p role="status" className="m-0 rounded-lg border border-green/50 bg-green/10 p-2.5 text-xs font-bold text-green">
+              Voltam a valer: {afetados.reativam.join(', ')}
+            </p>
+          )}
 
           {mudou && (
             <div className="flex flex-wrap items-center gap-2 pt-1">

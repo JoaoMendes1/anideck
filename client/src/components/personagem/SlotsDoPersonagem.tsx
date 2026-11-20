@@ -22,7 +22,7 @@ export default function SlotsDoPersonagem({
   // Sem os dados (carregando ou indisponível), a arte fica limpa: o painel explica o motivo.
   if (!estado) return null
 
-  const itemNoSlot = (slot: SlotId) => estado.slots.find((s) => s.slot === slot)?.item
+  const noSlot = (slot: SlotId) => estado.slots.find((s) => s.slot === slot)
 
   const coluna = (ids: SlotId[], lado: string) => (
     <ul className={`absolute top-16 m-0 flex list-none flex-col gap-2 p-0 lg:top-20 lg:gap-3 ${lado}`}>
@@ -30,7 +30,9 @@ export default function SlotsDoPersonagem({
         const slot = SLOTS_RPG.find((s) => s.id === id)
         if (!slot) return null
         const { rotulo } = slot
-        const item = itemNoSlot(id)
+        const ocupado = noSlot(id)
+        const item = ocupado?.item
+        const inativo = Boolean(item && ocupado?.inativo)
         const estilo = estiloDaRaridade(item?.raridade)
         const aberto = slotAberto === id
         return (
@@ -40,8 +42,10 @@ export default function SlotsDoPersonagem({
               data-slot-rpg={id}
               onClick={() => aoEscolher(id)}
               aria-expanded={aberto}
-              aria-label={item ? `${rotulo}: ${item.nome}. Trocar` : `${rotulo}: vazio. Equipar`}
-              title={item ? `${rotulo}: ${item.nome}` : `${rotulo}: vazio`}
+              aria-label={
+                item ? `${rotulo}: ${item.nome}${inativo ? `, inativo (${ocupado?.motivo ?? 'sem bônus'})` : ''}. Trocar` : `${rotulo}: vazio. Equipar`
+              }
+              title={item ? `${rotulo}: ${item.nome}${inativo ? ` · inativo: ${ocupado?.motivo ?? 'sem bônus'}` : ''}` : `${rotulo}: vazio`}
               className={`relative flex h-12 w-12 cursor-pointer items-center justify-center overflow-hidden rounded-xl border-2 backdrop-blur-sm lg:h-16 lg:w-16 ${
                 aberto
                   ? 'border-holo-3 bg-void/80 text-holo-3 ring-2 ring-holo-3/40'
@@ -50,7 +54,14 @@ export default function SlotsDoPersonagem({
                     : 'border-dashed border-line bg-void/50 text-muted'
               }`}
             >
-              <IconeDoItem id={item?.id} slot={id} tamanho={22} />
+              <span className={inativo ? 'opacity-35 grayscale' : undefined}>
+                <IconeDoItem id={item?.id} slot={id} tamanho={22} />
+              </span>
+              {inativo && (
+                <span className="absolute top-0.5 right-0.5 flex h-4 w-4 items-center justify-center rounded-full bg-coral font-mono text-[10px] font-bold text-void" aria-hidden="true">
+                  !
+                </span>
+              )}
               {(item?.aprimoramento ?? 0) > 0 && (
                 <span className="absolute right-0.5 bottom-0.5 rounded bg-void/85 px-1 font-mono text-[10px] leading-tight font-bold text-gold">
                   +{item?.aprimoramento}

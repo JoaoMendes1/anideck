@@ -394,5 +394,17 @@
         "caminho": "/personagem"
       }
     ]
+  },
+  {
+    "chave": "2026-11-20-requisito-de-atributo",
+    "titulo": "Equipamentos agora pedem atributos",
+    "categoria": "novidade",
+    "resumo": "Itens Raros, Épicos e Lendários passam a pedir um mínimo de atributo para valer: armas pedem Força (ou Inteligência, no caso da maga), armaduras pedem Constituição, botas e capas pedem Agilidade, e itens de crítico pedem Destreza. Um item sem o atributo continua equipado, mas fica inativo até você cumprir o requisito. Na hora de redistribuir os pontos, a tela avisa antes quais itens vão ficar inativos.",
+    "links": [
+      {
+        "rotulo": "Ver meus equipamentos",
+        "caminho": "/personagem"
+      }
+    ]
   }
 ]

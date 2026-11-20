@@ -16,6 +16,7 @@ import {
   obterEquipamentos,
   estiloDaRaridade,
   resumoDoItem,
+  textoDosRequisitos,
   SINTONIA,
   textoDasClasses,
   type EstadoEquipamento,
@@ -204,6 +205,11 @@ export default function EscolhaDeItem({
                   {classes && (
                     <p className={`m-0 text-xs ${item.nao_serve ? 'text-coral' : 'text-muted'}`}>Só para {classes}</p>
                   )}
+                  {item.requisitos && textoDosRequisitos(item.requisitos) && (
+                    <p className={`m-0 text-xs ${item.falta_requisito ? 'font-bold text-coral' : 'text-muted'}`}>
+                      {item.falta_requisito ?? `Requisito: ${textoDosRequisitos(item.requisitos)}`}
+                    </p>
+                  )}
                   {item.em_sintonia && (
                     <p className="m-0 inline-flex items-center gap-1 text-xs font-bold text-gold">
                       <Sparkles size={11} aria-hidden="true" /> Sintonia: +{SINTONIA.bonusPct}% no seu herói
@@ -216,7 +222,7 @@ export default function EscolhaDeItem({
                       {conjunto ? ` · ${conjunto.pecas} em uso` : ''}
                     </p>
                   )}
-                  {!item.equipado && !item.bloqueado && !item.nao_serve && (
+                  {!item.equipado && !item.bloqueado && !item.nao_serve && !item.falta_requisito && (
                     <p className="m-0 flex flex-wrap gap-x-2 font-mono text-xs">
                       <Diferenca valor={dif.vida} rotulo="Vida" />
                       <Diferenca valor={dif.ataque} rotulo="Ataque" />
@@ -229,6 +235,10 @@ export default function EscolhaDeItem({
                 {item.nao_serve && !item.equipado ? (
                   <span className="inline-flex shrink-0 items-center gap-1 font-mono text-xs text-coral">
                     <Ban size={12} aria-hidden="true" /> outra classe
+                  </span>
+                ) : item.falta_requisito && !item.equipado ? (
+                  <span className="inline-flex shrink-0 items-center gap-1 font-mono text-xs text-coral">
+                    <Lock size={12} aria-hidden="true" /> falta atributo
                   </span>
                 ) : item.bloqueado ? (
                   <span className="inline-flex shrink-0 items-center gap-1 font-mono text-xs text-muted">

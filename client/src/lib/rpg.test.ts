@@ -10,6 +10,9 @@ import {
   resumoDoItem,
   somaDosPontos,
   textoDasClasses,
+  itensAfetadosPelosPontos,
+  textoDosRequisitos,
+  type EstadoEquipamento,
 } from './rpg'
 
 describe('rpg - equipamentos', () => {
@@ -190,5 +193,37 @@ describe('relacaoElemental', () => {
     expect(relacaoElemental('trevas', 'luz')).toBe('vantagem')
     expect(relacaoElemental('eter', 'fogo')).toBe('neutro')
     expect(relacaoElemental(undefined, 'eter')).toBe('neutro')
+  })
+})
+
+describe('requisitos de atributo', () => {
+  const base = { forca: 16, inteligencia: 8, constituicao: 16, agilidade: 10, destreza: 10, sorte: 7 }
+  const espada = { id: 'e', slot: 'arma', nome: 'Espada', descricao: '', raridade: 'raro', vida: 0, ataque: 17, defesa: 0, nivel_minimo: 12, requisitos: { forca: 19 } } as const
+  const estado = (pontos: Partial<Record<string, number>>) =>
+    ({
+      nivel: 12,
+      base: {},
+      atributos: {},
+      slots: [{ slot: 'arma', item: espada }],
+      inventario: [],
+      primarios_base: base,
+      pontos: { forca: 0, inteligencia: 0, constituicao: 0, agilidade: 0, destreza: 0, sorte: 0, ...pontos },
+      pontos_disponiveis: 22,
+    }) as unknown as EstadoEquipamento
+
+  it('escreve os requisitos na ordem da tela', () => {
+    expect(textoDosRequisitos({ destreza: 20, forca: 30 })).toBe('Força 30 e Destreza 20')
+    expect(textoDosRequisitos(undefined)).toBe('')
+  })
+
+  it('avisa quem fica inativo e quem volta a valer ao mudar os pontos', () => {
+    const zerado = { forca: 0, inteligencia: 0, constituicao: 0, agilidade: 0, destreza: 0, sorte: 0 }
+    const comForca = estado({ forca: 3 })
+    expect(itensAfetadosPelosPontos(comForca, { ...zerado, constituicao: 3 })).toEqual({
+      desativam: [{ nome: 'Espada', requisito: 'Força 19' }],
+      reativam: [],
+    })
+    expect(itensAfetadosPelosPontos(estado({}), { ...zerado, forca: 3 })).toEqual({ desativam: [], reativam: ['Espada'] })
+    expect(itensAfetadosPelosPontos(comForca, { ...zerado, forca: 5 })).toEqual({ desativam: [], reativam: [] })
   })
 })

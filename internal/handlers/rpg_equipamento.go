@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"encoding/json"
+	"fmt"
 	"log"
 	"net/http"
 	"sort"
@@ -60,6 +61,9 @@ type ItemRPG struct {
 	PersonagemExclusivo string `json:"personagem_exclusivo,omitempty"`
 	Conjunto            string `json:"conjunto,omitempty"`
 	Elemento            string `json:"elemento,omitempty"`
+	// Requisitos: o mínimo de cada primário para o item valer (rpg_requisitos.go). Só vem
+	// preenchido no estado de equipamento do jogador; ausente é sem requisito.
+	Requisitos *PrimariosRPG `json:"requisitos,omitempty"`
 	// Aprimoramento é de 0 a 10 (sql/083). Vida, Ataque, Defesa e Magia já vêm com ele somado
 	// quando o item é do jogador; no catálogo, é sempre 0.
 	Aprimoramento int `json:"aprimoramento"`
@@ -76,6 +80,8 @@ type ItemDoInventario struct {
 	NaoServe bool `json:"nao_serve"`
 	// EmSintonia: o item é do elemento do personagem e rende mais quando em uso.
 	EmSintonia bool `json:"em_sintonia"`
+	// FaltaRequisito diz o atributo que falta para o item valer; vazio é que serve.
+	FaltaRequisito string `json:"falta_requisito,omitempty"`
 	// AprimoramentoMaximo é o teto da raridade; CustoAprimorar é o preço em Ouro do próximo
 	// nível, 0 quando já está no teto.
 	AprimoramentoMaximo int `json:"aprimoramento_maximo"`
@@ -86,6 +92,10 @@ type ItemDoInventario struct {
 type SlotRPG struct {
 	Slot string   `json:"slot"`
 	Item *ItemRPG `json:"item,omitempty"`
+	// Inativo: o item está no slot mas não soma nada (nível, classe ou atributo); Motivo diz
+	// por quê. Ele volta a valer sozinho quando o motivo some.
+	Inativo bool   `json:"inativo,omitempty"`
+	Motivo  string `json:"motivo,omitempty"`
 }
 
 // EstadoEquipamento é o corpo de GET e PUT /api/personagem/equipamentos.
@@ -236,9 +246,21 @@ func MontarEstadoEquipamento(nivel int, personagemBase string, inventario []linh
 	if nivel < 1 {
 		nivel = 1
 	}
+	disponiveis := PontosDisponiveis(nivel)
+	pontos = LimitarPontos(pontos, disponiveis)
+	primariosBase := PrimariosBase(nivel)
+	primarios := primariosBase.Somar(pontos)
+
+	// O requisito sai do item do catálogo: aprimorar não muda o que ele pede.
 	porID := make(map[string]ItemRPG, len(inventario))
+	faltaDoItem := make(map[string]string, len(inventario))
 	for _, l := range inventario {
-		porID[l.Item.ID] = AplicarAprimoramento(*l.Item, l.Aprimoramento)
+		item := AplicarAprimoramento(*l.Item, l.Aprimoramento)
+		if req := RequisitosDoItem(*l.Item); temRequisito(req) {
+			item.Requisitos = &req
+			faltaDoItem[l.Item.ID] = FaltaDeRequisito(req, primarios)
+		}
+		porID[l.Item.ID] = item
 	}
 
 	elemento := ElementoDoPersonagem(personagemBase)
@@ -253,9 +275,18 @@ func MontarEstadoEquipamento(nivel int, personagemBase string, inventario []linh
 			continue
 		}
 		copia := item
-		slots = append(slots, SlotRPG{Slot: slot, Item: &copia})
 		equipadoNoSlot[item.ID] = true
-		if nivel >= item.NivelMinimo && ItemServe(item, personagemBase) {
+		motivo := ""
+		switch {
+		case nivel < item.NivelMinimo:
+			motivo = fmt.Sprintf("Exige nível %d", item.NivelMinimo)
+		case !ItemServe(item, personagemBase):
+			motivo = "Não serve para a sua classe"
+		default:
+			motivo = faltaDoItem[item.ID]
+		}
+		slots = append(slots, SlotRPG{Slot: slot, Item: &copia, Inativo: motivo != "", Motivo: motivo})
+		if motivo == "" {
 			emUso = append(emUso, AplicarSintonia(item, elemento))
 			if EmSintonia(item, elemento) {
 				pecasEmSintonia++
@@ -281,6 +312,7 @@ func MontarEstadoEquipamento(nivel int, personagemBase string, inventario []linh
 			Bloqueado:           nivel < l.Item.NivelMinimo,
 			NaoServe:            !ItemServe(*l.Item, personagemBase),
 			EmSintonia:          EmSintonia(*l.Item, elemento),
+			FaltaRequisito:      faltaDoItem[l.Item.ID],
 			AprimoramentoMaximo: teto,
 			CustoAprimorar:      custo,
 		})
@@ -295,9 +327,6 @@ func MontarEstadoEquipamento(nivel int, personagemBase string, inventario []linh
 		return lista[i].Nome < lista[j].Nome
 	})
 
-	disponiveis := PontosDisponiveis(nivel)
-	pontos = LimitarPontos(pontos, disponiveis)
-	primariosBase := PrimariosBase(nivel)
 	base := AplicarBonusDosPontos(DerivarAtributos(nivel, primariosBase.Somar(pontos)), pontos)
 	return EstadoEquipamento{
 		Nivel:             nivel,
@@ -452,6 +481,21 @@ func (h *RPGHandler) HandleEquiparItemRPG(w http.ResponseWriter, r *http.Request
 		return
 	}
 
+	// O requisito de atributo é conferido aqui: o banco não conhece os primários derivados.
+	// Quem passasse por fora só teria o item no slot, inativo.
+	if itemID != "" {
+		atual, err := equipamentoDoContexto(sessao.dbClient, sessao.userID, sessao.ctx)
+		if err != nil {
+			log.Printf("[RPG] Falha ao ler equipamentos para equipar (user=%s): %v", sessao.userID, err)
+			responderErroJSON(w, http.StatusServiceUnavailable, "Não foi possível trocar o equipamento agora.")
+			return
+		}
+		if falta := FaltaParaEquipar(atual, itemID); falta != "" {
+			responderErroJSON(w, http.StatusBadRequest, falta+".")
+			return
+		}
+	}
+
 	bruto := strings.TrimSpace(sessao.dbClient.Rpc("rpg_equipar_item", "", map[string]interface{}{
 		"p_slot":    slot,
 		"p_item_id": itemID,
@@ -479,6 +523,17 @@ func (h *RPGHandler) HandleEquiparItemRPG(w http.ResponseWriter, r *http.Request
 		return
 	}
 	responderJSON(w, http.StatusOK, estado)
+}
+
+// FaltaParaEquipar devolve o requisito de atributo que o jogador não cumpre para o item, ou
+// vazio. Item fora do inventário fica para o banco recusar.
+func FaltaParaEquipar(estado EstadoEquipamento, itemID string) string {
+	for _, it := range estado.Inventario {
+		if it.ID == itemID {
+			return it.FaltaRequisito
+		}
+	}
+	return ""
 }
 
 // lerRetornoRPG interpreta o JSON que as funções rpg_* devolvem: {"ok":true,...} ou

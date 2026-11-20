@@ -82,6 +82,8 @@ export interface ItemRPG {
   personagem_exclusivo?: string
   conjunto?: string
   elemento?: string
+  /** Mínimo de cada primário para o item valer; ausente é sem requisito. */
+  requisitos?: Partial<PrimariosRPG>
 }
 
 export interface ItemDoInventario extends ItemRPG {
@@ -96,11 +98,16 @@ export interface ItemDoInventario extends ItemRPG {
   aprimoramento_maximo?: number
   /** Preço em Ouro do próximo nível; 0 quando já está no teto. */
   custo_aprimorar?: number
+  /** O atributo que falta para o item valer ("Exige Força 30 (você tem 25)"). */
+  falta_requisito?: string
 }
 
 export interface SlotRPG {
   slot: SlotId
   item?: ItemRPG
+  /** O item está no slot mas não soma nada; motivo diz por quê (nível, classe ou atributo). */
+  inativo?: boolean
+  motivo?: string
 }
 
 export interface EstadoEquipamento {
@@ -165,6 +172,45 @@ export const PRIMARIOS_RPG: { id: PrimarioId; rotulo: string; efeito: string }[]
   { id: 'destreza', rotulo: 'Destreza', efeito: 'Crítico' },
   { id: 'sorte', rotulo: 'Sorte', efeito: 'Chance de item' },
 ]
+
+/** "Força 30 e Destreza 20": os requisitos de um item, na ordem da tela. */
+export function textoDosRequisitos(req: Partial<PrimariosRPG> | undefined): string {
+  if (!req) return ''
+  return PRIMARIOS_RPG.filter(({ id }) => (req[id] ?? 0) > 0)
+    .map(({ id, rotulo }) => `${rotulo} ${req[id]}`)
+    .join(' e ')
+}
+
+function cumpre(req: Partial<PrimariosRPG>, tem: PrimariosRPG): boolean {
+  return PRIMARIOS_RPG.every(({ id }) => (tem[id] ?? 0) >= (req[id] ?? 0))
+}
+
+/**
+ * Itens equipados que mudam de estado se a distribuição de pontos virar o rascunho: os que
+ * deixam de cumprir o requisito de atributo e os que voltam a cumprir. A conta é a mesma do
+ * servidor (base do nível mais os pontos contra o requisito do item).
+ */
+export function itensAfetadosPelosPontos(
+  estado: EstadoEquipamento,
+  rascunho: PrimariosRPG,
+): { desativam: { nome: string; requisito: string }[]; reativam: string[] } {
+  const base = estado.primarios_base ?? PRIMARIOS_ZERADOS
+  const salvos = estado.pontos ?? PRIMARIOS_ZERADOS
+  const total = (p: PrimariosRPG): PrimariosRPG =>
+    Object.fromEntries(PRIMARIOS_RPG.map(({ id }) => [id, (base[id] ?? 0) + (p[id] ?? 0)])) as unknown as PrimariosRPG
+  const antes = total(salvos)
+  const depois = total(rascunho)
+  const desativam: { nome: string; requisito: string }[] = []
+  const reativam: string[] = []
+  for (const { item } of estado.slots) {
+    if (!item?.requisitos) continue
+    const cumpriaAntes = cumpre(item.requisitos, antes)
+    const cumpreDepois = cumpre(item.requisitos, depois)
+    if (cumpriaAntes && !cumpreDepois) desativam.push({ nome: item.nome, requisito: textoDosRequisitos(item.requisitos) })
+    if (!cumpriaAntes && cumpreDepois) reativam.push(item.nome)
+  }
+  return { desativam, reativam }
+}
 
 export const PRIMARIOS_ZERADOS: PrimariosRPG = { forca: 0, inteligencia: 0, constituicao: 0, agilidade: 0, destreza: 0, sorte: 0 }
 
