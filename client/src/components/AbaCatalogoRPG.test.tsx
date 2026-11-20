@@ -4,6 +4,12 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import AbaCatalogoRPG from './AbaCatalogoRPG'
 
+// Só a Lança da Tempestade tem arte neste teste.
+vi.mock('../lib/artesRpg', () => ({
+  arteDoItem: (id: string | undefined) => (id === 'lanca_da_tempestade' ? '/arte.webp' : undefined),
+  arteDoMonstro: () => undefined,
+}))
+
 vi.mock('../lib/supabase', () => ({
   supabase: {
     auth: {
@@ -81,5 +87,29 @@ describe('AbaCatalogoRPG', () => {
       expect(screen.queryByText('Lança de Treino')).toBeNull()
       expect(screen.getByText('Armadura Carmesim')).toBeTruthy()
     })
+  })
+
+  it('filtra os sem arte, mostra a cobertura e limpa os filtros', async () => {
+    render(<AbaCatalogoRPG />)
+    await screen.findByText('Lança de Treino')
+
+    fireEvent.click(screen.getByRole('button', { name: /^Sem arte/ }))
+    await waitFor(() => {
+      expect(screen.queryByText('Lança da Tempestade')).toBeNull()
+      expect(screen.getByText('Lança de Treino')).toBeTruthy()
+      expect(screen.getByText('Armadura Carmesim')).toBeTruthy()
+    })
+
+    // Elmo comum não existe no catálogo: a cobertura mostra zero.
+    expect(screen.getByRole('button', { name: 'Elmo Comum: 0' })).toBeTruthy()
+    fireEvent.click(screen.getByRole('button', { name: 'Arma Épico: 1' }))
+    fireEvent.click(screen.getByRole('button', { name: /^Sem arte/ }))
+    await waitFor(() => {
+      expect(screen.getByText('Lança da Tempestade')).toBeTruthy()
+      expect(screen.queryByText('Lança de Treino')).toBeNull()
+    })
+
+    fireEvent.click(screen.getByRole('button', { name: 'Limpar filtros' }))
+    await waitFor(() => expect(screen.getByText('Lança de Treino')).toBeTruthy())
   })
 })
