@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { describe, it, expect, afterEach, beforeEach, vi } from 'vitest'
-import { render, cleanup, screen, fireEvent, waitFor } from '@testing-library/react'
+import { render, cleanup, screen, fireEvent, waitFor, within } from '@testing-library/react'
 import { MemoryRouter } from 'react-router-dom'
 import { ToastProvider } from '../contexts/ToastContext'
 import type { EstadoExpedicoes, RespostaBatalha } from '../lib/rpg'
@@ -243,7 +243,7 @@ describe('Expedições', () => {
     expect(screen.getByText(/Destaque de hoje:/)).toBeTruthy()
     expect(screen.getByText(/Vença 1 vez para desbloquear a dica tática/)).toBeTruthy()
 
-    fireEvent.click(screen.getByRole('button', { name: 'Explorar Bosque Sombrio (Nv 10–25)' }))
+    fireEvent.click(screen.getByRole('button', { name: /^Explorar Bosque Sombrio \(Nv 10–25, 1 de 1 criaturas derrotadas\)/ }))
     await screen.findByRole('heading', { name: 'Bosque Sombrio' })
     expect(screen.getByText('Dominada')).toBeTruthy()
 
@@ -376,12 +376,20 @@ describe('Expedições', () => {
     vi.mocked(obterExpedicoes).mockResolvedValue({ dados: comRegioes })
     abrir()
 
-    await screen.findByRole('heading', { name: 'Clareira Inicial' })
+    // No celular a região ativa aparece numa barra; o painel completo fica na gaveta.
+    await screen.findByRole('button', { name: /Clareira Inicial.*Ver criaturas/s })
     expect(screen.getByText('1,8×')).toBeTruthy()
     expect(screen.getByRole('button', { name: 'Visão geral' })).toBeTruthy()
+    expect(screen.queryByRole('dialog')).toBeNull()
 
-    fireEvent.click(screen.getByRole('button', { name: 'Explorar Bosque Sombrio (Nv 10–25)' }))
-    await screen.findByRole('heading', { name: 'Bosque Sombrio' })
+    fireEvent.click(screen.getByRole('button', { name: /^Explorar Bosque Sombrio \(Nv 10–25,/ }))
+    const gaveta = await screen.findByRole('dialog', { name: 'Região Bosque Sombrio' })
+    expect(within(gaveta).getByRole('heading', { name: 'Bosque Sombrio' })).toBeTruthy()
+    expect(within(gaveta).getAllByRole('button', { name: /^Inspecionar / }).length).toBeGreaterThan(0)
+    expect(within(gaveta).getAllByRole('button', { name: /^Enfrentar / }).length).toBeGreaterThan(0)
+
+    fireEvent.click(within(gaveta).getByRole('button', { name: 'Fechar' }))
+    expect(screen.queryByRole('dialog')).toBeNull()
 
     fireEvent.click(screen.getByRole('button', { name: 'Visão geral' }))
     expect(screen.getByText('1,0×')).toBeTruthy()

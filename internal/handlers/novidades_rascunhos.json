@@ -298,5 +298,17 @@
         "caminho": "/loja?secao=mercado"
       }
     ]
+  },
+  {
+    "chave": "2026-11-20-mapa-gaveta-da-regiao",
+    "titulo": "Mapa-Múndi mais fácil no celular",
+    "categoria": "layout",
+    "resumo": "Tocar numa região do Mapa-Múndi agora abre uma gaveta por cima do mapa, com as criaturas, a ficha e o botão de lutar, sem precisar rolar a página. No computador, a região fica ao lado do mapa. E cada região mostra no próprio pino quanto do bestiário você já derrotou.",
+    "links": [
+      {
+        "rotulo": "Abrir o Mapa-Múndi",
+        "caminho": "/expedicoes"
+      }
+    ]
   }
 ]
