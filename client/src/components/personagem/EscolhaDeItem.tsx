@@ -7,7 +7,7 @@
 // Fecha no X, no Esc e no toque fora. A troca é conferida e gravada no servidor.
 import { useEffect, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
-import { Ban, Coins, Hammer, Layers, Lock, Recycle, X } from 'lucide-react'
+import { Ban, Coins, Hammer, Layers, Lock, Recycle, Sparkles, X } from 'lucide-react'
 import {
   SLOTS_RPG,
   aprimorarItem,
@@ -16,6 +16,7 @@ import {
   obterEquipamentos,
   estiloDaRaridade,
   resumoDoItem,
+  SINTONIA,
   textoDasClasses,
   type EstadoEquipamento,
   type SlotId,
@@ -202,6 +203,11 @@ export default function EscolhaDeItem({
                   {item.descricao && <p className="m-0 text-xs text-muted/80 italic">{item.descricao}</p>}
                   {classes && (
                     <p className={`m-0 text-xs ${item.nao_serve ? 'text-coral' : 'text-muted'}`}>Só para {classes}</p>
+                  )}
+                  {item.em_sintonia && (
+                    <p className="m-0 inline-flex items-center gap-1 text-xs font-bold text-gold">
+                      <Sparkles size={11} aria-hidden="true" /> Sintonia: +{SINTONIA.bonusPct}% no seu herói
+                    </p>
                   )}
                   {item.conjunto && (
                     <p className="m-0 inline-flex items-center gap-1 text-xs text-holo-2">

@@ -90,6 +90,8 @@ export interface ItemDoInventario extends ItemRPG {
   bloqueado: boolean
   /** A classe do personagem não usa este item: aparece, mas não equipa. */
   nao_serve?: boolean
+  /** Item do elemento do personagem: rende mais quando em uso. */
+  em_sintonia?: boolean
   /** Teto de aprimoramento da raridade. */
   aprimoramento_maximo?: number
   /** Preço em Ouro do próximo nível; 0 quando já está no teto. */
@@ -115,7 +117,14 @@ export interface EstadoEquipamento {
   ouro?: number
   /** Conjuntos com ao menos uma peça em uso. */
   conjuntos?: ConjuntoEmUso[]
+  /** Sintonia elemental: elemento do personagem, peças em uso dele e se a Ressonância vale. */
+  elemento?: string
+  pecas_em_sintonia?: number
+  ressonancia?: boolean
 }
+
+/** Regras da sintonia, iguais às do Go (rpg_sintonia.go), para a tela explicar. */
+export const SINTONIA = { bonusPct: 15, pecasRessonancia: 4, ressonanciaPct: 5 } as const
 
 export interface ConjuntoEmUso {
   id: string

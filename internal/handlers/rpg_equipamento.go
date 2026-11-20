@@ -74,6 +74,8 @@ type ItemDoInventario struct {
 	Bloqueado  bool `json:"bloqueado"`
 	// NaoServe é o item que a classe do personagem não usa: aparece na lista, mas não equipa.
 	NaoServe bool `json:"nao_serve"`
+	// EmSintonia: o item é do elemento do personagem e rende mais quando em uso.
+	EmSintonia bool `json:"em_sintonia"`
 	// AprimoramentoMaximo é o teto da raridade; CustoAprimorar é o preço em Ouro do próximo
 	// nível, 0 quando já está no teto.
 	AprimoramentoMaximo int `json:"aprimoramento_maximo"`
@@ -104,6 +106,11 @@ type EstadoEquipamento struct {
 	Ouro int `json:"ouro"`
 	// Conjuntos com ao menos uma peça em uso, com o bônus de cada faixa.
 	Conjuntos []ConjuntoEmUso `json:"conjuntos"`
+	// Sintonia elemental (rpg_sintonia.go): o elemento do personagem, quantas peças em uso
+	// são dele e se a Ressonância está ativa.
+	Elemento        string `json:"elemento"`
+	PecasEmSintonia int    `json:"pecas_em_sintonia"`
+	Ressonancia     bool   `json:"ressonancia"`
 }
 
 // SlotsRPG devolve os slots na ordem em que a tela os mostra. A lista repete o CHECK de
@@ -234,6 +241,8 @@ func MontarEstadoEquipamento(nivel int, personagemBase string, inventario []linh
 		porID[l.Item.ID] = AplicarAprimoramento(*l.Item, l.Aprimoramento)
 	}
 
+	elemento := ElementoDoPersonagem(personagemBase)
+	pecasEmSintonia := 0
 	slots := make([]SlotRPG, 0, len(SlotsRPG()))
 	emUso := make([]ItemRPG, 0, len(SlotsRPG()))
 	equipadoNoSlot := make(map[string]bool, len(SlotsRPG()))
@@ -247,7 +256,10 @@ func MontarEstadoEquipamento(nivel int, personagemBase string, inventario []linh
 		slots = append(slots, SlotRPG{Slot: slot, Item: &copia})
 		equipadoNoSlot[item.ID] = true
 		if nivel >= item.NivelMinimo && ItemServe(item, personagemBase) {
-			emUso = append(emUso, item)
+			emUso = append(emUso, AplicarSintonia(item, elemento))
+			if EmSintonia(item, elemento) {
+				pecasEmSintonia++
+			}
 		}
 	}
 
@@ -268,6 +280,7 @@ func MontarEstadoEquipamento(nivel int, personagemBase string, inventario []linh
 			Equipado:            equipadoNoSlot[l.Item.ID],
 			Bloqueado:           nivel < l.Item.NivelMinimo,
 			NaoServe:            !ItemServe(*l.Item, personagemBase),
+			EmSintonia:          EmSintonia(*l.Item, elemento),
 			AprimoramentoMaximo: teto,
 			CustoAprimorar:      custo,
 		})
@@ -289,13 +302,16 @@ func MontarEstadoEquipamento(nivel int, personagemBase string, inventario []linh
 	return EstadoEquipamento{
 		Nivel:             nivel,
 		Base:              base,
-		Atributos:         SomarAtributos(base, emUso),
+		Atributos:         AplicarRessonancia(SomarAtributos(base, emUso), pecasEmSintonia),
 		PrimariosBase:     primariosBase,
 		Pontos:            pontos,
 		PontosDisponiveis: disponiveis,
 		Slots:             slots,
 		Inventario:        lista,
 		Conjuntos:         ConjuntosEmUso(emUso),
+		Elemento:          elemento,
+		PecasEmSintonia:   pecasEmSintonia,
+		Ressonancia:       pecasEmSintonia >= pecasDaRessonancia,
 	}
 }
 
