@@ -69,10 +69,11 @@ const ROTULO_CLASSE: Record<string, string> = {
   maga: 'Maga',
   guerreiro: 'Guerreiro',
   paladina: 'Paladina',
+  arqueiro: 'Arqueiro',
   generico: 'Genérico (todas)',
 }
 
-const ORDEM_CLASSES = ['espadachim', 'lanceiro', 'assassina', 'maga', 'guerreiro', 'paladina', 'generico']
+const ORDEM_CLASSES = ['espadachim', 'lanceiro', 'assassina', 'maga', 'guerreiro', 'paladina', 'arqueiro', 'generico']
 const ORDEM_ELEMENTOS = ['fogo', 'agua', 'terra', 'vento', 'raio', 'luz', 'trevas', 'eter', 'neutro']
 const ORDEM_RARIDADES: Raridade[] = ['comum', 'raro', 'epico', 'lendario']
 

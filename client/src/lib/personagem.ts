@@ -206,6 +206,7 @@ export const ELENCO: MembroDoElenco[] = [
   { id: 'maga_agua', nome: 'Mizuki', classe: 'maga', elemento: 'agua', resumo: 'Magia arcana que ignora a força bruta. A maré ancestral cura muito.' },
   { id: 'guerreiro_terra', nome: 'Brokk', classe: 'guerreiro', elemento: 'terra', resumo: 'O ferreiro das montanhas. Aguenta o tranco e recebe metade do dano.' },
   { id: 'paladina_luz', nome: 'Celestia', classe: 'paladina', elemento: 'luz', resumo: 'Proteção e cura. A Égide bloqueia golpes e reduz o dano recebido.' },
+  { id: 'arqueiro_trevas', nome: 'Yoru', classe: 'arqueiro', elemento: 'trevas', resumo: 'O arqueiro do Éter Sombrio. Ataca de longe, some nas sombras e a flecha atravessa a defesa.' },
 ]
 
 /** Membro do elenco pelo id; id desconhecido cai no padrão. */
@@ -225,6 +226,7 @@ const ROTULOS_DE_CLASSE: Record<string, string> = {
   maga: 'Maga',
   guerreiro: 'Guerreiro',
   paladina: 'Paladina',
+  arqueiro: 'Arqueiro',
 }
 
 const ROTULOS_DE_ELEMENTO: Record<string, string> = {

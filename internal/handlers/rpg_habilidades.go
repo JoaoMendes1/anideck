@@ -97,6 +97,14 @@ func habilidadesDaClasse(classe string) []HabilidadeRPG {
 			hab("julgamento_da_luz", "Julgamento da Luz", "A espada brilha: soma Ataque e Magia num golpe.", 25, 18, 0, efeitoArcano, 1.0, 1.4),
 			hab("luz_da_esperanca", "Luz da Esperança", "Um raio de luz sobre o inimigo: 2,7x o Ataque.", 40, 30, 3, efeitoDano, 2.7, 0),
 		}
+	case "arqueiro":
+		return []HabilidadeRPG{
+			hab("flecha_certeira", "Flecha Certeira", "Uma flecha no ponto fraco: 1,5x o Ataque.", 1, 7, 0, efeitoDano, 1.5, 0),
+			hab("disparo_duplo", "Disparo Duplo", "Duas flechas no mesmo arco, cada uma com quase todo o Ataque.", 8, 14, 0, efeitoGolpeDuplo, 0.95, 0),
+			hab("recuo_nas_sombras", "Recuo nas Sombras", "Some entre as sombras e recupera 20% da Vida quando ela passa da metade para baixo.", 15, 12, 3, efeitoCura, 0.20, 0),
+			hab("flecha_do_eter_sombrio", "Flecha do Éter Sombrio", "A flecha carrega o Éter Sombrio: soma Ataque e Magia num disparo.", 25, 18, 0, efeitoArcano, 1.2, 1.0),
+			hab("chuva_de_flechas", "Chuva de Flechas", "Uma saraivada de flechas violeta: 2,8x o Ataque.", 40, 30, 3, efeitoDano, 2.8, 0),
+		}
 	}
 	return nil
 }
@@ -125,6 +133,9 @@ func habilidadeUnica(personagemBase string) *HabilidadeRPG {
 	case "paladina_luz":
 		u.ID, u.Nome, u.Fator, u.Fator2, u.Esquivas, u.Reducao, u.Rodadas = "egide_da_aurora", "Égide da Aurora", 0.25, 1.5, 1, 0.3, 3
 		u.Descricao = "Uma vez por luta, ao cair abaixo de metade da Vida, recupera 25% dela, bloqueia o próximo golpe, recebe 30% menos dano por 3 rodadas e o próximo ataque causa 1,5x."
+	case "arqueiro_trevas":
+		u.ID, u.Nome, u.Fator, u.Fator2, u.Esquivas, u.IgnoraDefesa = "veu_do_eclipse", "Véu do Eclipse", 0.15, 1.8, 1, true
+		u.Descricao = "Uma vez por luta, ao cair abaixo de metade da Vida, recupera 15% dela, some nas sombras e desvia do próximo golpe, e a próxima flecha atravessa a defesa com 1,8x."
 	default:
 		return nil
 	}

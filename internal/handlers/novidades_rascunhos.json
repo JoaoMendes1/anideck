@@ -382,5 +382,17 @@
         "caminho": "/personagem"
       }
     ]
+  },
+  {
+    "chave": "2026-11-20-yoru-arqueiro",
+    "titulo": "Novo herói: Yoru, o Arqueiro das Sombras",
+    "categoria": "novidade",
+    "resumo": "O sétimo herói do elenco chegou. Yoru é um arqueiro de Trevas que ataca de longe e, quando a luta aperta, some nas sombras: desvia do próximo golpe e a flecha seguinte atravessa a defesa. A nova classe Arqueiro tem arcos em todas as raridades, e Yoru tem um conjunto Lendário só dele, o Caçador Violeta, feito na Forja.",
+    "links": [
+      {
+        "rotulo": "Ver o elenco",
+        "caminho": "/personagem"
+      }
+    ]
   }
 ]

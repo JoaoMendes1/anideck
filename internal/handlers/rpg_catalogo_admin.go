@@ -89,7 +89,7 @@ type RespostaCatalogoRPGAdmin struct {
 	Itens  []ItemCatalogoAdmin    `json:"itens"`
 }
 
-var classesCatalogoRPG = []string{"espadachim", "lanceiro", "assassina", "maga", "guerreiro", "paladina"}
+var classesCatalogoRPG = []string{"espadachim", "lanceiro", "assassina", "maga", "guerreiro", "paladina", "arqueiro"}
 var elementosCatalogoRPG = []string{"fogo", "agua", "terra", "vento", "raio", "luz", "trevas", "eter", "neutro"}
 
 // InferirElementoItem resolve o elemento salvo ou o deriva do conjunto/id antes do sql/126.

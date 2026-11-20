@@ -240,6 +240,7 @@ func PersonagensBase() map[string]PersonagemBase {
 		"maga_agua":          {ID: "maga_agua", Classe: "maga", Elemento: "agua"},
 		"guerreiro_terra":    {ID: "guerreiro_terra", Classe: "guerreiro", Elemento: "terra"},
 		"paladina_luz":       {ID: "paladina_luz", Classe: "paladina", Elemento: "luz"},
+		"arqueiro_trevas":    {ID: "arqueiro_trevas", Classe: "arqueiro", Elemento: "trevas"},
 	}
 }
 

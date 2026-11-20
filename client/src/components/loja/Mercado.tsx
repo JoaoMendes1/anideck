@@ -40,6 +40,7 @@ const ROTULO_CLASSE_MERCADO: Record<string, string> = {
   maga: 'Maga',
   guerreiro: 'Guerreiro',
   paladina: 'Paladina',
+  arqueiro: 'Arqueiro',
 }
 
 function CartaoDoItem({

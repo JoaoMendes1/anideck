@@ -151,11 +151,11 @@ func TestDescreverBonus(t *testing.T) {
 	}
 }
 
-// Todo conjunto que o catálogo usa (sql/121, sql/129 e sql/130) precisa existir no Go, senão a peça não
+// Todo conjunto que o catálogo usa (sql/121, sql/129, sql/130 e sql/132) precisa existir no Go, senão a peça não
 // dá bônus nenhum. Todo conjunto tem as três faixas.
 func TestConjuntosDoCatalogo(t *testing.T) {
 	for _, id := range []string{"glacial", "carmesim", "aurora", "sombrio", "arcano", "silvestre", "terra",
-		"brasa", "mare", "trovao", "rocha", "alvorada", "nevoa", "primordial"} {
+		"brasa", "mare", "trovao", "rocha", "alvorada", "nevoa", "primordial", "cacador_violeta"} {
 		c, ok := conjuntosRPG[id]
 		if !ok {
 			t.Errorf("conjunto %s sem bônus no Go", id)

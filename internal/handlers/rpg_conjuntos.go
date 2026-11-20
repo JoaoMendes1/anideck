@@ -35,6 +35,8 @@ var conjuntosRPG = map[string]conjuntoRPG{
 	"nevoa":    {nome: "Névoa", duasPecas: ItemRPG{EsquivaPorMil: 20}, quatroPeca: ItemRPG{Ataque: 4, Magia: 4}, seisPecas: ItemRPG{CriticoPorMil: 30, EsquivaPorMil: 20}},
 	// Primordial (sql/130): Lendário de nível 55, o topo da Forja.
 	"primordial": {nome: "Primordial", duasPecas: ItemRPG{Vida: 100}, quatroPeca: ItemRPG{Ataque: 10, Magia: 10}, seisPecas: ItemRPG{CriticoPorMil: 50, DanoCritico: 20}},
+	// Caçador Violeta (sql/132): exclusivo do Yoru, o Arqueiro das Sombras.
+	"cacador_violeta": {nome: "Caçador Violeta", duasPecas: ItemRPG{CriticoPorMil: 40}, quatroPeca: ItemRPG{Velocidade: 5, DanoCritico: 15}, seisPecas: ItemRPG{Ataque: 15, EsquivaPorMil: 40}},
 }
 
 // ConjuntoEmUso é o que a tela mostra de um conjunto com ao menos uma peça em uso.

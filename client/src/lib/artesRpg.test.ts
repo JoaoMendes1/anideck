@@ -39,6 +39,9 @@ const ITENS = [
   'munhequeiras_de_bronze', 'capa_de_la', 'capa_de_cacador', 'manto_de_aprendiz',
   'sandalias_de_viagem', 'botas_de_cano_alto', 'botas_de_feltro', 'pingente_de_quartzo',
   'anel_de_osso',
+  // sql/132 (Yoru)
+  'arco_do_eter_sombrio', 'capuz_do_cacador_violeta', 'couraca_das_sombras', 'manoplas_do_cacador',
+  'manto_violeta', 'botas_das_sombras', 'colar_da_flecha_sombria', 'anel_do_eter_sombrio',
   // sql/121
   'lamina_glacial', 'espada_carmesim', 'espada_solar', 'adaga_abissal', 'foice_do_vazio',
   'lanca_da_tempestade', 'cajado_arcano', 'grimorio_sombrio', 'orbe_arcano', 'arco_silvestre',

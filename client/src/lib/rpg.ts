@@ -146,6 +146,7 @@ export const ROTULO_DA_CLASSE: Record<string, string> = {
   maga: 'Maga',
   guerreiro: 'Guerreiro',
   paladina: 'Paladina',
+  arqueiro: 'Arqueiro',
 }
 
 /** "Espadachim e Paladina", ou vazio quando o item serve a todos. */
