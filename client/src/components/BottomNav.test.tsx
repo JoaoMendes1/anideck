@@ -25,26 +25,38 @@ function montar(rota: string) {
 }
 
 describe('BottomNav', () => {
-  it('exibe os 7 itens incluindo Guilda e Personagem para usuário logado', () => {
+  it('exibe os 8 itens na ordem atual incluindo Herói, Guilda e Agenda para usuário logado', () => {
     montar('/')
-    expect(screen.getByRole('link', { name: 'Início' }).getAttribute('href')).toBe('/')
-    expect(screen.getByRole('link', { name: 'Deck' }).getAttribute('href')).toBe('/deck')
-    expect(screen.getByRole('link', { name: 'Guilda' }).getAttribute('href')).toBe('/guilda')
-    expect(screen.getByRole('link', { name: 'Personagem' }).getAttribute('href')).toBe('/personagem')
-    expect(screen.getByRole('link', { name: 'Feed' }).getAttribute('href')).toBe('/feed')
-    expect(screen.getByRole('link', { name: 'Rankings' }).getAttribute('href')).toBe('/rankings')
+    const links = screen.getAllByRole('link').map((el) => ({
+      texto: el.textContent,
+      href: el.getAttribute('href'),
+    }))
+    expect(links).toEqual([
+      { texto: 'Início', href: '/' },
+      { texto: 'Herói', href: '/personagem' },
+      { texto: 'Guilda', href: '/guilda' },
+      { texto: 'Deck', href: '/deck' },
+      { texto: 'Agenda', href: '/calendario' },
+      { texto: 'Feed', href: '/feed' },
+      { texto: 'Rankings', href: '/rankings' },
+    ])
     expect(screen.getByRole('button', { name: /Perfil/ })).toBeTruthy()
   })
 
-  it('acende Guilda nas subrotas de masmorras e expedições, e Personagem em duelos', () => {
+  it('acende Guilda nas subrotas de masmorras, Herói em duelos e Agenda no calendário', () => {
     montar('/masmorras')
     expect(screen.getByRole('link', { name: 'Guilda' }).className).toContain('text-holo-3')
-    expect(screen.getByRole('link', { name: 'Personagem' }).className).toContain('text-muted')
+    expect(screen.getByRole('link', { name: 'Herói' }).className).toContain('text-muted')
 
     cleanup()
     montar('/duelos')
-    expect(screen.getByRole('link', { name: 'Personagem' }).className).toContain('text-holo-3')
+    expect(screen.getByRole('link', { name: 'Herói' }).className).toContain('text-holo-3')
     expect(screen.getByRole('link', { name: 'Guilda' }).className).toContain('text-muted')
+
+    cleanup()
+    montar('/calendario')
+    expect(screen.getByRole('link', { name: 'Agenda' }).className).toContain('text-holo-3')
+    expect(screen.getByRole('link', { name: 'Deck' }).className).toContain('text-muted')
   })
 
   it('exibe apenas Início, Rankings e Entrar quando deslogado', () => {
@@ -54,6 +66,7 @@ describe('BottomNav', () => {
     expect(screen.getByRole('link', { name: 'Rankings' })).toBeTruthy()
     expect(screen.getByRole('link', { name: 'Entrar' })).toBeTruthy()
     expect(screen.queryByRole('link', { name: 'Guilda' })).toBeNull()
-    expect(screen.queryByRole('link', { name: 'Personagem' })).toBeNull()
+    expect(screen.queryByRole('link', { name: 'Herói' })).toBeNull()
+    expect(screen.queryByRole('link', { name: 'Agenda' })).toBeNull()
   })
 })
