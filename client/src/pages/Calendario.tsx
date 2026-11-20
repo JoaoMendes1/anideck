@@ -11,6 +11,8 @@ import type { AnimeDaApi } from '../types/anime'
 import { gradienteDoCard, getStatusTheme, obterTextoDiaLancamento } from '../lib/deckHelpers'
 import { escolherLinkStreaming } from '../lib/inicio'
 import { listarSalasAoVivo, type SalaEstreia } from '../lib/salasEstreia'
+import { useSalvarNoDeck } from '../hooks/useSalvarNoDeck'
+import BotaoSalvarNoDeck from '../components/BotaoSalvarNoDeck'
 
 interface Entrada {
     mal_id: number
@@ -44,6 +46,7 @@ export default function Calendario() {
     const [error, setError] = useState<string | null>(null)
     const [agora, setAgora] = useState(() => Math.floor(Date.now() / 1000))
     const [abaAtiva, setAbaAtiva] = useState<'meus' | 'todos'>('meus')
+    const deck = useSalvarNoDeck()
     const [salasAoVivo, setSalasAoVivo] = useState<SalaEstreia[]>([])
 
     const { session } = useSessao()
@@ -365,6 +368,18 @@ export default function Calendario() {
                                                         </div>
                                                     )}
                                                 </Link>
+                                                {/* Mesmo botão do Descobrir; aqui ele só adiciona (ver BotaoSalvarNoDeck). */}
+                                                <div className="absolute top-2 left-2 z-10">
+                                                    <BotaoSalvarNoDeck
+                                                        salvo={deck.estaSalvo(anime.mal_id)}
+                                                        salvando={deck.estaSalvando(anime.mal_id)}
+                                                        podeRemover={false}
+                                                        aoClicar={(e) => {
+                                                            e.preventDefault()
+                                                            deck.alternar(anime.mal_id, false)
+                                                        }}
+                                                    />
+                                                </div>
 
                                                 <div className="min-w-0 flex-1 flex flex-col justify-between p-3.5 sm:p-4">
                                                     <div>

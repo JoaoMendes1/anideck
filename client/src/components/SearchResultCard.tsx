@@ -1,6 +1,6 @@
 // client/src/components/SearchResultCard.tsx
 // Adapta um resultado de busca (formato AniList) pro <AnimeCard>.
-import { Check } from 'lucide-react'
+import BotaoSalvarNoDeck from './BotaoSalvarNoDeck'
 import AnimeCard from './AnimeCard'
 
 interface Anime {
@@ -40,27 +40,7 @@ export default function SearchResultCard({
                     {statusLabel}
                 </span>
             }
-            topRightAction={
-                <button
-                    onClick={(e) => onToggleSave(e, anime.mal_id)}
-                    disabled={isSaving}
-                    aria-label={isSaved ? 'Remover do Deck' : 'Adicionar ao Deck'}
-                    /* BOTÃO SEMPRE VISÍVEL: Removido qualquer 'opacity-0' ou hover para esconder */
-                    className={`w-8 h-8 rounded-full border-[1.5px] flex items-center justify-center font-bold backdrop-blur-md transition-all select-none shadow-lg active:scale-90 ${
-                        isSaved
-                            ? 'bg-green/20 border-green text-green hover:bg-coral/20 hover:border-coral hover:text-coral cursor-pointer'
-                            : 'bg-void/80 border-white/40 text-white hover:bg-gradient-to-r hover:from-holo-1 hover:to-holo-2 hover:border-transparent cursor-pointer opacity-90 hover:opacity-100'
-                    }`}
-                >
-                    {isSaving ? (
-                        <div className="w-3 h-3 border-2 border-current border-t-transparent rounded-full animate-spin" />
-                    ) : isSaved ? (
-                        <Check size={16} strokeWidth={3} />
-                    ) : (
-                        '+'
-                    )}
-                </button>
-            }
+            topRightAction={<BotaoSalvarNoDeck salvo={isSaved} salvando={isSaving} aoClicar={(e) => onToggleSave(e, anime.mal_id)} />}
         />
     )
 }
