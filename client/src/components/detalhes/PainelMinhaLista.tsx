@@ -9,6 +9,9 @@ import { useToast } from '../../contexts/ToastContext'
 import { invalidarCachesDoDeck } from '../../lib/cacheDeTela'
 import { STATUS_DO_DECK, ajustarNota, formatarNota, lerNotaDigitada, proximoEpisodio, rotuloDaNota, type EntradaNoDeck, type EscolhaSaidaCompleto, type ResumoSaidaCompleto } from '../../lib/detalhes'
 import ModalSaidaCompleto from '../ModalSaidaCompleto'
+import { useConfirmacao } from '../../hooks/useConfirmacao'
+import { confirmarMarcacaoNaMaratona } from '../../lib/avisoDaMaratona'
+import { anotarMarcacao, mensagemDaMaratona, type ResultadoMaratonaEpisodio } from '../../lib/maratona'
 
 interface Props {
   malId: number
@@ -30,6 +33,7 @@ export default function PainelMinhaLista({ malId, entrada, assistidos, ultimoDis
   const { session } = useSessao()
   const token = session?.access_token
   const { showToast } = useToast()
+  const { confirmar, dialogo } = useConfirmacao()
   const [salvo, setSalvo] = useState<Salvo>('parado')
   const [statusPendente, setStatusPendente] = useState<string | null>(null)
   const [confirmarQueroAssistir, setConfirmarQueroAssistir] = useState(false)
@@ -183,14 +187,18 @@ export default function PainelMinhaLista({ malId, entrada, assistidos, ultimoDis
   }
 
   const marcarProximo = async (episodio: number) => {
+    if (!(await confirmarMarcacaoNaMaratona(malId, episodio, confirmar))) return
     setMarcandoEp(true)
     try {
       const res = await fetch(`/api/entries/${malId}/episodes/${episodio}`, { method: 'POST', headers: cabecalho })
       if (!res.ok) throw new Error()
       let concluiu = false
       try {
-        const corpo = (await res.json()) as { xp_earned?: number; reason?: string; concluiu?: boolean }
+        const corpo = (await res.json()) as { xp_earned?: number; reason?: string; concluiu?: boolean; maratona?: ResultadoMaratonaEpisodio }
         concluiu = Boolean(corpo.concluiu)
+        anotarMarcacao(malId, episodio, corpo.maratona)
+        const avisoMaratona = mensagemDaMaratona(corpo.maratona)
+        if (avisoMaratona) showToast(avisoMaratona.texto, avisoMaratona.tipo)
         showToast(corpo.xp_earned ? `Ep ${episodio} visto · +${corpo.xp_earned} XP na Guilda` : `Ep ${episodio} marcado como visto`)
       } catch {
         showToast(`Ep ${episodio} marcado como visto`)
@@ -487,6 +495,7 @@ export default function PainelMinhaLista({ malId, entrada, assistidos, ultimoDis
   return (
     <>
       {modalSaidaCompleto}
+      {dialogo}
       <div className="rounded-2xl border border-holo-3/30 bg-gradient-to-br from-panel to-panel-2 p-4 space-y-4">
         <div className="flex items-center justify-between gap-2">
           <span className="font-mono text-xs text-muted-2 uppercase tracking-widest">Na sua lista</span>

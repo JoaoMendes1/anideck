@@ -162,6 +162,7 @@ SELECT pg_get_viewdef('nome_da_view'::regclass, true);
 | `130_rpg_lendarios_e_comuns.sql` | Elemento nas peças dos 7 conjuntos de 18/11; conjunto Primordial (Lâmina e Égide + 5 peças, nível 55); 15 Lendários dos conjuntos antigos; 18 Comuns no Mercado com elemento (inclui a arma Comum da Paladina); receitas da Forja. Só dados. **Depois do `129`** | — |
 | `131_rpg_monstros_mais_fortes.sql` | Monstros acima do nível 15 com Vida, Ataque e Defesa até +40% (nível 60), menos o Primordial. Cada UPDATE só vale se o monstro ainda tiver os números de antes. Só dados. **Depois do `124`** | — |
 | `132_rpg_yoru_arqueiro_das_sombras.sql` | Yoru (`arqueiro_trevas`) no elenco: `rpg_personagem_existe()` como lista única, CHECK, despertar/desbloquear/trocar usando a função, classe `arqueiro`; Arco Silvestre ativo, Arco Curto e Arco Longo de Freixo; conjunto exclusivo Caçador Violeta (8 Lendárias) com receitas. **Depois do `123` e do `130`** | — |
+| `133_maratona.sql` | Missão especial de maratona: tabela `rpg_maratonas` (uma ativa por jogador, uma por anime), `rpg_iniciar_maratona` e `rpg_maratona_episodio` (intervalo mínimo, prazo de 24h, faixa paga em `rpg_recursos` no último episódio), só para `service_role`. **Depois do `081`** (Ouro em `rpg_recursos`) | — |
 
 Datas com `~` são a data do commit, não da aplicação no Supabase.
 

@@ -11,6 +11,7 @@ import ReactMarkdown from 'react-markdown'
 import EpisodeGrid from '../components/EpisodeGrid'
 import ConversaDoAnime from '../components/comunidade/ConversaDoAnime'
 import CardPrevisoes from '../components/previsoes/CardPrevisoes'
+import CartaoMaratona from '../components/detalhes/CartaoMaratona'
 import PainelMinhaLista from '../components/detalhes/PainelMinhaLista'
 import AvaliacoesDaObra from '../components/detalhes/AvaliacoesDaObra'
 import FerramentasCuradoria from '../components/detalhes/FerramentasCuradoria'
@@ -414,6 +415,7 @@ export default function Detalhes() {
   ]
 
   const painel = (compacto: boolean) => (
+    <div className="flex flex-col gap-3">
     <PainelMinhaLista
       compacto={compacto}
       malId={anime.mal_id}
@@ -436,6 +438,8 @@ export default function Detalhes() {
         }
       }}
     />
+    <CartaoMaratona malId={anime.mal_id} />
+    </div>
   )
 
   return (

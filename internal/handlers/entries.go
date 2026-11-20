@@ -404,6 +404,8 @@ func (h *EntriesHandler) HandleMarkEpisode(w http.ResponseWriter, r *http.Reques
 	promoverQueroAssistirParaAssistindo(dbClient, userID, malID)
 	marcarNotificacaoDoEpisodioComoLida(dbClient, userID, malID, episodeNumber)
 	xpGanho, motivoXP := RegistrarXPEpisodio(dbClient, userID, malID, episodeNumber, curadoRef)
+	// Antes da conclusão: a maratona conta este episódio pela hora em que foi marcado.
+	maratona := registrarEpisodioNaMaratona(userID, malID, episodeNumber)
 	// Depois do XP: o episódio conta antes de o anime virar Completo.
 	concluiu := concluirSeAssistiuTudo(dbClient, userID, malID, curadoRef)
 
@@ -413,6 +415,7 @@ func (h *EntriesHandler) HandleMarkEpisode(w http.ResponseWriter, r *http.Reques
 		"xp_earned": xpGanho,
 		"reason":    motivoXP,
 		"concluiu":  concluiu,
+		"maratona":  maratona,
 	})
 }
 

@@ -67,6 +67,7 @@ func main() {
 
 	searchHandler := &handlers.SearchHandler{AniListClient: anilistService}
 	animeHandler := &handlers.AnimeHandler{AniListClient: anilistService}
+	maratonaHandler := &handlers.MaratonaHandler{AniListClient: anilistService}
 
 	// AQUI ESTAVA O ERRO NO MAIN.GO: Voltando ao normal!
 	entriesHandler := &handlers.EntriesHandler{}
@@ -180,6 +181,8 @@ func main() {
 		protegido.Get("/api/entries/{mal_id}/episodes", entriesHandler.HandleGetEpisodes)
 		protegido.Post("/api/entries/{mal_id}/episodes/{number}", entriesHandler.HandleMarkEpisode)
 		protegido.Delete("/api/entries/{mal_id}/episodes/{number}", entriesHandler.HandleUnmarkEpisode)
+		protegido.Get("/api/maratona/{mal_id}", maratonaHandler.HandleObter)
+		protegido.Post("/api/maratona/{mal_id}", maratonaHandler.HandleIniciar)
 		protegido.Delete("/api/entries/{mal_id}/episodes", entriesHandler.HandleClearEpisodes)
 		protegido.Get("/api/entries/{mal_id}/saida-completo", entriesHandler.HandlePreviaSaidaCompleto)
 		protegido.Post("/api/entries/{mal_id}/saida-completo", entriesHandler.HandleExecutarSaidaCompleto)

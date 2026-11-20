@@ -485,5 +485,12 @@
     "categoria": "novidade",
     "resumo": "Usa mais de uma conta? No menu do seu perfil, toque em Adicionar outra conta e entre nela. Depois disso, Trocar para… alterna entre as contas sem pedir senha de novo neste aparelho. Na tela de login, as contas guardadas aparecem em Continuar como.",
     "links": []
+  },
+  {
+    "chave": "2026-11-20-maratona",
+    "titulo": "Missão especial: maratona",
+    "categoria": "novidade",
+    "resumo": "Animes que já terminaram (de 6 a 30 episódios) agora têm uma maratona na página do anime. Toque em Iniciar maratona e veja tudo em até 24 horas, marcando cada episódio ao terminar. Quanto mais rápido, maior o prêmio em Ouro e bilhetes. O card mostra o cronômetro e quando o próximo episódio libera; marcar antes do tempo perde a maratona, e o app avisa antes.",
+    "links": []
   }
 ]

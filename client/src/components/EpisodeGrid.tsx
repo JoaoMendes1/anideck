@@ -5,6 +5,9 @@ import { supabase } from '../lib/supabase'
 import { useToast } from '../contexts/ToastContext'
 import { invalidarCachesDoDeck } from '../lib/cacheDeTela'
 import { obterTextoDiaLancamento } from '../lib/deckHelpers'
+import { useConfirmacao } from '../hooks/useConfirmacao'
+import { confirmarMarcacaoNaMaratona } from '../lib/avisoDaMaratona'
+import { anotarMarcacao, mensagemDaMaratona, type ResultadoMaratonaEpisodio } from '../lib/maratona'
 
 interface StreamingEpisode {
   title: string
@@ -31,6 +34,7 @@ interface EpisodeGridProps {
 
 export default function EpisodeGrid({ malId, totalEpisodes, streamingEpisodes = [], initialWatched, isLoggedIn, isAdmin = false, status, nextAiringEpisode, startDate, firstAiredAt, onEpisodeMarkedWatched }: EpisodeGridProps) {
   const { showToast } = useToast()
+  const { confirmar, dialogo } = useConfirmacao()
   const [watched, setWatched] = useState<number[]>(initialWatched)
   const [visibleCount, setVisibleCount] = useState(24)
   // Relógio lido uma vez na montagem, pelo mesmo motivo do AnimeCard (pureza do render).
@@ -93,6 +97,7 @@ export default function EpisodeGrid({ malId, totalEpisodes, streamingEpisodes = 
       showToast('🔒 Este episódio ainda não foi lançado. Marcação bloqueada para proteger suas estatísticas.', 'error')
       return
     }
+    if (!isWatched && !(await confirmarMarcacaoNaMaratona(malId, episodeNumber, confirmar))) return
 
     setWatched(prev => isWatched ? prev.filter(num => num !== episodeNumber) : [...prev, episodeNumber])
 
@@ -110,8 +115,11 @@ export default function EpisodeGrid({ malId, totalEpisodes, streamingEpisodes = 
       let concluiu = false
       if (!isWatched) {
         try {
-          const payload = (await response.json()) as { xp_earned?: number; reason?: string; concluiu?: boolean }
+          const payload = (await response.json()) as { xp_earned?: number; reason?: string; concluiu?: boolean; maratona?: ResultadoMaratonaEpisodio }
           concluiu = Boolean(payload.concluiu)
+          anotarMarcacao(malId, episodeNumber, payload.maratona)
+          const avisoMaratona = mensagemDaMaratona(payload.maratona)
+          if (avisoMaratona) showToast(avisoMaratona.texto, avisoMaratona.tipo)
           if (typeof payload.xp_earned === 'number' && payload.xp_earned > 0) {
             showToast(`+${payload.xp_earned} XP na Guilda (${payload.reason || 'episódio assistido'})`, 'success')
           }
@@ -179,6 +187,7 @@ export default function EpisodeGrid({ malId, totalEpisodes, streamingEpisodes = 
 
   return (
     <section id="episodios" className="mb-10">
+      {dialogo}
       <div className="flex flex-wrap items-center justify-between gap-2 mb-4">
         <div className="flex flex-wrap items-center gap-2.5 select-none">
           <h2 className="font-anton text-base uppercase flex items-center gap-2 m-0">
