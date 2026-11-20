@@ -160,6 +160,7 @@ SELECT pg_get_viewdef('nome_da_view'::regclass, true);
 | `128_rpg_lutas_extras.sql` | Lutas extras com Ouro: `rpg_lutas_extras`; `rpg_comprar_luta_extra` e `rpg_lutas_extras_hoje` (autenticado); `rpg_contar_batalhas_hoje` desconta as expedições compradas; masmorra sem UNIQUE(user_id, dia), conferida contra 1 + compradas em `rpg_concluir_masmorra`. **Depois do `125`** | — |
 | `129_rpg_conjuntos_completos.sql` | Conjuntos completos: peças do `127` ganham conjunto (Brasa, Maré, Trovão, Rocha, Alvorada, Névoa); 18 Raras (armadura, capa, botas) no Mercado; 21 Épicas que completam os 7 conjuntos antigos, com receita na Forja. Só dados. **Depois do `127`** | — |
 | `130_rpg_lendarios_e_comuns.sql` | Elemento nas peças dos 7 conjuntos de 18/11; conjunto Primordial (Lâmina e Égide + 5 peças, nível 55); 15 Lendários dos conjuntos antigos; 18 Comuns no Mercado com elemento (inclui a arma Comum da Paladina); receitas da Forja. Só dados. **Depois do `129`** | — |
+| `131_rpg_monstros_mais_fortes.sql` | Monstros acima do nível 15 com Vida, Ataque e Defesa até +40% (nível 60), menos o Primordial. Cada UPDATE só vale se o monstro ainda tiver os números de antes. Só dados. **Depois do `124`** | — |
 
 Datas com `~` são a data do commit, não da aplicação no Supabase.
 

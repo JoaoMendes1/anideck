@@ -370,5 +370,17 @@
         "caminho": "/loja?secao=forja"
       }
     ]
+  },
+  {
+    "chave": "2026-11-20-monstros-mais-fortes",
+    "titulo": "Monstros mais fortes e Agilidade e Destreza valendo mais",
+    "categoria": "balanceamento",
+    "resumo": "Com 2 pontos de atributo por nível, os monstros ficaram fáceis demais. Agora eles crescem com o nível: iguais até o 15 e até 40% mais fortes no 60. Em troca, cada ponto que você põe em Agilidade ou Destreza vale 0,7% de Esquiva ou Crítico, em vez de 0,2%, para builds além da Força valerem a pena.",
+    "links": [
+      {
+        "rotulo": "Distribuir atributos",
+        "caminho": "/personagem"
+      }
+    ]
   }
 ]

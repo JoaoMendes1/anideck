@@ -112,6 +112,28 @@ func DerivarAtributos(nivel int, p PrimariosRPG) AtributosRPG {
 	return a
 }
 
+// Tetos de Esquiva e Crítico com o bônus dos pontos (sql/131). Sem pontos, valem os tetos de
+// DerivarAtributos (25% e 40%).
+const (
+	tetoEsquivaComPontos = 350
+	tetoCriticoComPontos = 500
+)
+
+// AplicarBonusDosPontos soma o que os pontos distribuídos em Agilidade e Destreza dão além da
+// conta da base: +0,5% de Esquiva e de Crítico por ponto, 0,7% no total. Com 2 pontos por
+// nível, a 0,2% por ponto elas ficavam muito atrás da Força. Só os pontos ganham o extra: a
+// base do nível continua a mesma, e com ela a calibração dos monstros e do chefe final.
+func AplicarBonusDosPontos(a AtributosRPG, pontos PrimariosRPG) AtributosRPG {
+	if pontos.Agilidade > 0 {
+		a.EsquivaPorMil = min(tetoEsquivaComPontos, a.EsquivaPorMil+pontos.Agilidade*5)
+	}
+	if pontos.Destreza > 0 {
+		a.CriticoPorMil = min(tetoCriticoComPontos, a.CriticoPorMil+pontos.Destreza*5)
+	}
+	a.Poder = CalcularPoder(a)
+	return a
+}
+
 // ValidarDistribuicao confere os pontos antes de ir ao banco: nenhum negativo e o total
 // dentro do que o nível dá. O banco confere de novo (rpg_distribuir_pontos), com o nível
 // calculado lá.

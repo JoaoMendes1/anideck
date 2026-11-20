@@ -298,7 +298,7 @@ func MontarEstadoEquipamento(nivel int, personagemBase string, inventario []linh
 	disponiveis := PontosDisponiveis(nivel)
 	pontos = LimitarPontos(pontos, disponiveis)
 	primariosBase := PrimariosBase(nivel)
-	base := DerivarAtributos(nivel, primariosBase.Somar(pontos))
+	base := AplicarBonusDosPontos(DerivarAtributos(nivel, primariosBase.Somar(pontos)), pontos)
 	return EstadoEquipamento{
 		Nivel:             nivel,
 		Base:              base,

@@ -132,3 +132,19 @@ func TestHandleDistribuirPontos_RecusaAntesDoBanco(t *testing.T) {
 		t.Errorf("sem token: esperava 401, veio %d", rec.Code)
 	}
 }
+
+// Pontos em Agilidade e Destreza valem 0,7% cada; a base do nível continua com 0,2%.
+func TestAplicarBonusDosPontos(t *testing.T) {
+	base := DerivarAtributos(30, PrimariosBase(30).Somar(PrimariosRPG{Agilidade: 10, Destreza: 10}))
+	com := AplicarBonusDosPontos(base, PrimariosRPG{Agilidade: 10, Destreza: 10})
+	if com.EsquivaPorMil != base.EsquivaPorMil+50 || com.CriticoPorMil != base.CriticoPorMil+50 {
+		t.Errorf("10 pontos deveriam somar +5%% de Esquiva e de Crítico: %+v -> %+v", base, com)
+	}
+	if sem := AplicarBonusDosPontos(base, PrimariosRPG{Forca: 10}); sem != base {
+		t.Error("pontos fora de Agilidade e Destreza não mudam nada")
+	}
+	teto := AplicarBonusDosPontos(base, PrimariosRPG{Agilidade: 500, Destreza: 500})
+	if teto.EsquivaPorMil != 350 || teto.CriticoPorMil != 500 {
+		t.Errorf("tetos de 35%% e 50%%: %+v", teto)
+	}
+}
