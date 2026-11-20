@@ -27,6 +27,18 @@ func TestMaratona_Faixas(t *testing.T) {
 	if f[0].Ouro != 360 || f[1].Ouro != 240 || f[2].Ouro != 144 || f[0].Bilhetes != 3 {
 		t.Errorf("prêmios: %+v", f)
 	}
+	// O pacote cai junto em todas as moedas: mais rápido paga mais de tudo.
+	if f[0].XP != 180 || f[1].XP != 120 || f[2].XP != 72 {
+		t.Errorf("XP por faixa = %d/%d/%d, quer 180/120/72", f[0].XP, f[1].XP, f[2].XP)
+	}
+	if f[0].AniCoins != 120 || f[1].AniCoins != 84 || f[2].AniCoins != 48 {
+		t.Errorf("AniCoins por faixa = %d/%d/%d, quer 120/84/48", f[0].AniCoins, f[1].AniCoins, f[2].AniCoins)
+	}
+	for k := 1; k < len(f); k++ {
+		if f[k].Ouro >= f[k-1].Ouro || f[k].XP >= f[k-1].XP || f[k].AniCoins >= f[k-1].AniCoins || f[k].Bilhetes >= f[k-1].Bilhetes {
+			t.Errorf("faixa %s não paga menos que %s em tudo", f[k].ID, f[k-1].ID)
+		}
+	}
 	// 30 de 24 min = 12h: Maratona passaria de 24h e some.
 	if g := FaixasDaMaratona(30, 24); len(g) != 2 || g[0].ID != "relampago" || g[1].ID != "folego" {
 		t.Errorf("faixas de 30 episódios: %+v", g)

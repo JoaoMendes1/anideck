@@ -163,6 +163,7 @@ SELECT pg_get_viewdef('nome_da_view'::regclass, true);
 | `131_rpg_monstros_mais_fortes.sql` | Monstros acima do nível 15 com Vida, Ataque e Defesa até +40% (nível 60), menos o Primordial. Cada UPDATE só vale se o monstro ainda tiver os números de antes. Só dados. **Depois do `124`** | — |
 | `132_rpg_yoru_arqueiro_das_sombras.sql` | Yoru (`arqueiro_trevas`) no elenco: `rpg_personagem_existe()` como lista única, CHECK, despertar/desbloquear/trocar usando a função, classe `arqueiro`; Arco Silvestre ativo, Arco Curto e Arco Longo de Freixo; conjunto exclusivo Caçador Violeta (8 Lendárias) com receitas. **Depois do `123` e do `130`** | — |
 | `133_maratona.sql` | Missão especial de maratona: tabela `rpg_maratonas` (uma ativa por jogador, uma por anime), `rpg_iniciar_maratona` e `rpg_maratona_episodio` (intervalo mínimo, prazo de 24h, faixa paga em `rpg_recursos` no último episódio), só para `service_role`. **Depois do `081`** (Ouro em `rpg_recursos`) | — |
+| `134_maratona_xp_e_anicoins.sql` | Prêmio da maratona como pacote: colunas `xp` e `anicoins` em `rpg_maratonas`; `rpg_maratona_episodio` paga AniCoins (`creditar_cristais`, motivo `maratona`) e XP (`conceder_xp_extra`, fora do teto diário) na mesma transação do Ouro. **Depois do `133`, `045` e `087`** | — |
 
 Datas com `~` são a data do commit, não da aplicação no Supabase.
 

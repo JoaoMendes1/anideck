@@ -30,13 +30,16 @@ const (
 	maratonaDuracaoPadrao = 24
 )
 
-// FaixaMaratona é um degrau do prêmio: terminar até AteSeg depois do início paga Ouro e Bilhetes.
+// FaixaMaratona é um degrau do prêmio: terminar até AteSeg depois do início paga Ouro,
+// Bilhetes, XP e AniCoins (o banco paga tudo junto, sql/134).
 type FaixaMaratona struct {
 	ID       string `json:"id"`
 	Nome     string `json:"nome"`
 	AteSeg   int    `json:"ate_seg"`
 	Ouro     int    `json:"ouro"`
 	Bilhetes int    `json:"bilhetes"`
+	XP       int    `json:"xp"`
+	AniCoins int    `json:"anicoins"`
 }
 
 // IntervaloDaMaratona é o tempo mínimo, em segundos, entre duas marcações: 90% da duração do
@@ -52,7 +55,9 @@ func IntervaloDaMaratona(duracaoMin int) int {
 
 // FaixasDaMaratona monta os degraus pelo tempo do anime (episódios × duração): Relâmpago até
 // 1,5 vez esse tempo, Maratona até 2,5 vezes e Fôlego até as 24 horas. Um degrau que passaria
-// das 24 horas some. O Ouro é por episódio, para o prêmio acompanhar o tamanho da obra.
+// das 24 horas some. Ouro, XP e AniCoins são por episódio, para o prêmio acompanhar o tamanho
+// da obra. O XP entra fora do teto diário (como o das missões): a maratona de 12 episódios já
+// enche o teto com o XP de cada episódio, e o prêmio não pode virar zero por causa dele.
 func FaixasDaMaratona(total, duracaoMin int) []FaixaMaratona {
 	if duracaoMin <= 0 {
 		duracaoMin = maratonaDuracaoPadrao
@@ -60,14 +65,14 @@ func FaixasDaMaratona(total, duracaoMin int) []FaixaMaratona {
 	tempo := total * min(duracaoMin, 90) * 60
 	faixas := make([]FaixaMaratona, 0, 3)
 	for _, f := range []FaixaMaratona{
-		{ID: "relampago", Nome: "Relâmpago", AteSeg: tempo * 3 / 2, Ouro: 30 * total, Bilhetes: 3},
-		{ID: "maratona", Nome: "Maratona", AteSeg: tempo * 5 / 2, Ouro: 20 * total, Bilhetes: 2},
+		{ID: "relampago", Nome: "Relâmpago", AteSeg: tempo * 3 / 2, Ouro: 30 * total, Bilhetes: 3, XP: 15 * total, AniCoins: 10 * total},
+		{ID: "maratona", Nome: "Maratona", AteSeg: tempo * 5 / 2, Ouro: 20 * total, Bilhetes: 2, XP: 10 * total, AniCoins: 7 * total},
 	} {
 		if f.AteSeg < maratonaJanelaSeg {
 			faixas = append(faixas, f)
 		}
 	}
-	return append(faixas, FaixaMaratona{ID: "folego", Nome: "Fôlego", AteSeg: maratonaJanelaSeg, Ouro: 12 * total, Bilhetes: 1})
+	return append(faixas, FaixaMaratona{ID: "folego", Nome: "Fôlego", AteSeg: maratonaJanelaSeg, Ouro: 12 * total, Bilhetes: 1, XP: 6 * total, AniCoins: 4 * total})
 }
 
 // MotivoSemMaratona diz por que a maratona não pode começar; vazio é que pode.
@@ -103,6 +108,8 @@ type MaratonaRPG struct {
 	Faixa        *string         `json:"faixa"`
 	Ouro         int             `json:"ouro"`
 	Bilhetes     int             `json:"bilhetes"`
+	XP           int             `json:"xp"`
+	AniCoins     int             `json:"anicoins"`
 	TerminadaEm  *time.Time      `json:"terminada_em"`
 	// Calculados no Go para a tela: quando acaba o prazo e quando o próximo episódio libera.
 	PrazoEm   time.Time `json:"prazo_em"`
@@ -219,6 +226,12 @@ func (h *MaratonaHandler) montarResposta(ctx context.Context, dbClient *supabase
 		IntervaloSeg: IntervaloDaMaratona(duracao),
 		Faixas:       FaixasDaMaratona(total, duracao),
 	}
+	// Gamificação pausada pelo admin: a maratona não promete XP, como as missões.
+	if economia, _, _ := carregarConfigGuilda(dbClient); !economia.Ativo {
+		for i := range resp.Faixas {
+			resp.Faixas[i].XP = 0
+		}
+	}
 	for _, m := range lerMaratonas(dbClient, userID) {
 		m := m
 		if m.MalID == malID {
@@ -319,6 +332,8 @@ type ResultadoMaratonaEpisodio struct {
 	Faixa    string `json:"faixa,omitempty"`
 	Ouro     int    `json:"ouro,omitempty"`
 	Bilhetes int    `json:"bilhetes,omitempty"`
+	XP       int    `json:"xp,omitempty"`
+	AniCoins int    `json:"anicoins,omitempty"`
 }
 
 // registrarEpisodioNaMaratona avisa a maratona do anime, se houver uma ativa. nil quando não
@@ -338,7 +353,7 @@ func registrarEpisodioNaMaratona(userID string, malID, episodio int) *ResultadoM
 		return nil
 	}
 	m := retorno.Maratona
-	res := &ResultadoMaratonaEpisodio{Status: m.Status, Marcados: len(m.Episodios), Total: m.Total, Ouro: m.Ouro, Bilhetes: m.Bilhetes}
+	res := &ResultadoMaratonaEpisodio{Status: m.Status, Marcados: len(m.Episodios), Total: m.Total, Ouro: m.Ouro, Bilhetes: m.Bilhetes, XP: m.XP, AniCoins: m.AniCoins}
 	if m.Motivo != nil {
 		res.Motivo = *m.Motivo
 	}

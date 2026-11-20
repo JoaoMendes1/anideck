@@ -14,8 +14,8 @@ import CartaoMaratona from './CartaoMaratona'
 import { iniciarMaratona, obterMaratona } from '../../lib/maratona'
 
 const faixas = [
-  { id: 'relampago', nome: 'Relâmpago', ate_seg: 25920, ouro: 360, bilhetes: 3 },
-  { id: 'folego', nome: 'Fôlego', ate_seg: 86400, ouro: 144, bilhetes: 1 },
+  { id: 'relampago', nome: 'Relâmpago', ate_seg: 25920, ouro: 360, bilhetes: 3, xp: 180, anicoins: 120 },
+  { id: 'folego', nome: 'Fôlego', ate_seg: 86400, ouro: 144, bilhetes: 1, xp: 72, anicoins: 48 },
 ]
 const base: RespostaMaratona = { pode: true, total: 12, duracao_min: 24, intervalo_seg: 1296, faixas }
 const agora = Date.now()
@@ -25,7 +25,7 @@ const ativa: RespostaMaratona = {
   maratona: {
     mal_id: 1, total: 12, intervalo_seg: 1296, faixas, iniciada_em: new Date(agora - 3_600_000).toISOString(),
     ultimo_em: new Date(agora - 60_000).toISOString(), episodios: [1, 2], status: 'ativa', motivo: null, faixa: null,
-    ouro: 0, bilhetes: 0, terminada_em: null, prazo_em: new Date(agora + 82_800_000).toISOString(),
+    ouro: 0, bilhetes: 0, xp: 0, anicoins: 0, terminada_em: null, prazo_em: new Date(agora + 82_800_000).toISOString(),
     proximo_em: new Date(agora + 1_236_000).toISOString(),
   },
 }
@@ -44,6 +44,7 @@ describe('CartaoMaratona', () => {
     render(<CartaoMaratona malId={1} />)
     expect(await screen.findByText('Relâmpago')).toBeTruthy()
     expect(screen.getByText(/até 7h12/)).toBeTruthy()
+    expect(screen.getByLabelText('+360 Ouro · +180 XP · +120 AniCoins · +3 bilhetes')).toBeTruthy()
     fireEvent.click(screen.getByRole('button', { name: 'Iniciar maratona' }))
     expect(await screen.findByText('2 / 12 episódios')).toBeTruthy()
     expect(showToast).toHaveBeenCalledWith(expect.stringContaining('Maratona iniciada'), 'success')

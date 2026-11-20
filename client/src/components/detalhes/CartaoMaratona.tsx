@@ -9,6 +9,8 @@ import {
   formatarDuracao,
   iniciarMaratona,
   obterMaratona,
+  pacoteEmPartes,
+  pacoteEmTexto,
   type RespostaMaratona,
 } from '../../lib/maratona'
 import { useToast } from '../../contexts/ToastContext'
@@ -83,7 +85,7 @@ export default function CartaoMaratona({ malId }: { malId: number }) {
           <span>
             Concluída em {formatarDuracao((Date.parse(m.terminada_em ?? m.iniciada_em) - Date.parse(m.iniciada_em)) / 1000)}
             {' · '}
-            {m.faixas.find((f) => f.id === m.faixa)?.nome}: +{m.ouro} Ouro e +{m.bilhetes} bilhetes.
+            {m.faixas.find((f) => f.id === m.faixa)?.nome}: {pacoteEmTexto(m)}.
           </span>
         </p>
       )}
@@ -104,16 +106,20 @@ export default function CartaoMaratona({ malId }: { malId: number }) {
           <p className="m-0 text-xs leading-relaxed text-muted">
             Veja os {resp.total} episódios em até 24 horas, marcando cada um ao terminar. Entre uma marcação e outra
             precisam passar pelo menos {formatarDuracao(resp.intervalo_seg)}; marcar antes perde a maratona (o app avisa).
-            Quanto mais rápido terminar, maior o prêmio:
+            Quanto mais rápido terminar, maior o pacote (o XP vem além do teto diário):
           </p>
           <ul className="m-0 flex list-none flex-col gap-1 p-0 text-xs">
             {resp.faixas.map((f) => (
-              <li key={f.id} className="flex justify-between gap-2 rounded-lg border border-line bg-void/40 px-2.5 py-1.5">
+              <li key={f.id} className="flex flex-col gap-0.5 rounded-lg border border-line bg-void/40 px-2.5 py-1.5">
                 <span>
                   <strong>{f.nome}</strong> · até {formatarDuracao(f.ate_seg)}
                 </span>
-                <span className="font-mono text-gold">
-                  +{f.ouro} Ouro · +{f.bilhetes} bilhetes
+                <span className="flex flex-wrap gap-1" aria-label={pacoteEmTexto(f)}>
+                  {pacoteEmPartes(f).map((parte) => (
+                    <span key={parte} aria-hidden="true" className="whitespace-nowrap rounded-full bg-gold/10 px-2 py-0.5 font-mono text-[11px] text-gold">
+                      {parte}
+                    </span>
+                  ))}
                 </span>
               </li>
             ))}
@@ -161,7 +167,7 @@ function MaratonaEmAndamento({ resp, agora }: { resp: RespostaMaratona; agora: n
       </p>
       {faixa && (
         <p className="m-0 text-xs text-text">
-          Valendo agora: <strong className="text-gold">{faixa.nome}</strong> (+{faixa.ouro} Ouro, +{faixa.bilhetes} bilhetes)
+          Valendo agora: <strong className="text-gold">{faixa.nome}</strong> ({pacoteEmTexto(faixa)})
           {seguinte ? ` · cai para ${seguinte.nome} em ${formatarDuracao(faixa.ate_seg - decorrido)}` : ''}
         </p>
       )}

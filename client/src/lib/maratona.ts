@@ -10,6 +10,8 @@ export interface FaixaMaratona {
   ate_seg: number
   ouro: number
   bilhetes: number
+  xp: number
+  anicoins: number
 }
 
 export interface MaratonaRPG {
@@ -25,6 +27,8 @@ export interface MaratonaRPG {
   faixa: string | null
   ouro: number
   bilhetes: number
+  xp: number
+  anicoins: number
   terminada_em: string | null
   prazo_em: string
   proximo_em: string
@@ -50,6 +54,8 @@ export interface ResultadoMaratonaEpisodio {
   faixa?: string
   ouro?: number
   bilhetes?: number
+  xp?: number
+  anicoins?: number
 }
 
 // Última resposta por anime: o aviso antes de marcar lê daqui, sem nova consulta.
@@ -75,6 +81,26 @@ export function segundosParaLiberar(malId: number, episodio: number, agora = Dat
   const m = ultimas.get(malId)?.maratona
   if (!m || m.status !== 'ativa' || m.episodios.includes(episodio)) return 0
   return Math.max(0, Math.ceil((Date.parse(m.proximo_em) - agora) / 1000))
+}
+
+type Pacote = { ouro?: number; xp?: number; anicoins?: number; bilhetes?: number }
+
+/** As partes do pacote, sem as moedas zeradas: ["+360 Ouro", "+180 XP", ...]. */
+export function pacoteEmPartes(p: Pacote): string[] {
+  const partes: [number | undefined, string][] = [
+    [p.ouro, 'Ouro'],
+    [p.xp, 'XP'],
+    [p.anicoins, 'AniCoins'],
+    [p.bilhetes, p.bilhetes === 1 ? 'bilhete' : 'bilhetes'],
+  ]
+  return partes
+    .filter(([n]) => (n ?? 0) > 0)
+    .map(([n, nome]) => `+${n} ${nome}`)
+}
+
+/** O pacote em uma linha: "+360 Ouro · +180 XP · +120 AniCoins · +3 bilhetes". */
+export function pacoteEmTexto(p: Pacote): string {
+  return pacoteEmPartes(p).join(' · ')
 }
 
 /** "7h12", "45 min" ou "50 s". */
@@ -124,7 +150,7 @@ export function anotarMarcacao(malId: number, episodio: number, r: ResultadoMara
 /** Aviso curto para a marcação de episódio, ou vazio quando não há o que dizer. */
 export function mensagemDaMaratona(r: ResultadoMaratonaEpisodio | null | undefined): { texto: string; tipo: 'success' | 'error' } | null {
   if (!r) return null
-  if (r.status === 'concluida') return { texto: `Maratona concluída! +${r.ouro ?? 0} Ouro e +${r.bilhetes ?? 0} bilhetes.`, tipo: 'success' }
+  if (r.status === 'concluida') return { texto: `Maratona concluída! ${pacoteEmTexto(r)}.`, tipo: 'success' }
   if (r.status === 'falhou') {
     return {
       texto: r.motivo === 'cedo' ? 'Maratona perdida: o episódio foi marcado antes do tempo mínimo.' : 'Maratona perdida: passaram as 24 horas.',
