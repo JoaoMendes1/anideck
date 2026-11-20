@@ -14,6 +14,7 @@ import (
 	"time"
 
 	"github.com/JoaoMendes1/anideck/internal/database"
+	"github.com/supabase-community/postgrest-go"
 )
 
 // Masmorra é uma sequência de andares. Fica no código pelo mesmo motivo dos poderes: a
@@ -169,12 +170,15 @@ func monstrosDosAndares(m Masmorra, catalogo []MonstroRPG) ([]MonstroRPG, bool) 
 }
 
 // masmorraFeitaHoje lê, com o token do usuário, a masmorra de hoje (RLS: só a própria).
+// Devolve a última feita só quando as entradas do dia acabaram: uma, mais as compradas
+// (sql/128). Antes do sql/128, a leitura das compras falha e conta como zero.
 func masmorraFeitaHoje(sessao sessaoRPG) string {
 	dia := time.Now().In(fusoGuilda).Format("2006-01-02")
 	dados, _, err := sessao.dbClient.From("rpg_masmorras_execucoes").
 		Select("masmorra_id", "", false).
 		Eq("user_id", sessao.userID).
 		Eq("dia", dia).
+		Order("criado_em", &postgrest.OrderOpts{Ascending: true}).
 		Execute()
 	if err != nil {
 		return ""
@@ -185,7 +189,30 @@ func masmorraFeitaHoje(sessao sessaoRPG) string {
 	if json.Unmarshal(dados, &linhas) != nil || len(linhas) == 0 {
 		return ""
 	}
-	return linhas[0].MasmorraID
+	if len(linhas) < 1+extrasDeHoje(sessao, "masmorra", dia) {
+		return ""
+	}
+	return linhas[len(linhas)-1].MasmorraID
+}
+
+// extrasDeHoje lê quantas lutas extras do tipo o jogador comprou hoje (sql/128).
+func extrasDeHoje(sessao sessaoRPG, tipo, dia string) int {
+	dados, _, err := sessao.dbClient.From("rpg_lutas_extras").
+		Select("quantidade", "", false).
+		Eq("user_id", sessao.userID).
+		Eq("dia", dia).
+		Eq("tipo", tipo).
+		Execute()
+	if err != nil {
+		return 0
+	}
+	var linhas []struct {
+		Quantidade int `json:"quantidade"`
+	}
+	if json.Unmarshal(dados, &linhas) != nil || len(linhas) == 0 {
+		return 0
+	}
+	return linhas[0].Quantidade
 }
 
 // dificuldadeDaMasmorra usa o andar mais forte.

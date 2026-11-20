@@ -2,6 +2,7 @@
 // Masmorras (Fase 18.4d): andares seguidos com monstros do catálogo, uma por dia. A luta inteira
 // é decidida no servidor; a tela mostra o resultado de cada andar, com o registro dos golpes.
 import BotaoEmGrupo from '../components/rpg/BotaoEmGrupo'
+import ComprarLutaExtra from '../components/rpg/ComprarLutaExtra'
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { ChevronLeft, Hammer, ChevronRight, DoorOpen, Lock, Sparkles, Ticket, Trophy } from 'lucide-react'
@@ -209,6 +210,7 @@ export default function Masmorras() {
               Você está abaixo de 30% de Vida. <Link to="/expedicoes" className="font-bold text-holo-3">Recupere nas Expedições</Link> antes de entrar.
             </p>
           )}
+          {feita && <ComprarLutaExtra tipo="masmorra" aoComprar={carregar} />}
           {erroDaEntrada && <p role="alert" className="m-0 text-xs font-bold text-coral">{erroDaEntrada}</p>}
 
           <ul className="m-0 grid list-none grid-cols-1 gap-3 p-0 md:grid-cols-2">

@@ -13,6 +13,7 @@ import BotaoEmGrupo from '../components/rpg/BotaoEmGrupo'
 import CardContratosSemanais from '../components/rpg/CardContratosSemanais'
 import ControleDeVelocidade from '../components/rpg/ControleDeVelocidade'
 import MapaExpedicoes from '../components/rpg/MapaExpedicoes'
+import ComprarLutaExtra from '../components/rpg/ComprarLutaExtra'
 import { intervaloDaVelocidade, lerVelocidade, salvarVelocidade, type Velocidade } from '../lib/velocidadeBatalha'
 import { useComunidade } from '../hooks/useComunidade'
 import { useEffect, useRef, useState } from 'react'
@@ -544,11 +545,7 @@ export default function Expedicoes() {
               Seu personagem está abaixo de 30% de Vida. Descanse, assista a um episódio ou use a Pousada para voltar às batalhas.
             </p>
           )}
-          {restantes === 0 && (
-            <p role="status" className="m-0 rounded-xl border border-gold/40 bg-gold/10 p-3 text-xs text-text">
-              Você já fez todas as batalhas de hoje. As expedições voltam amanhã.
-            </p>
-          )}
+          {restantes === 0 && <ComprarLutaExtra tipo="expedicao" aoComprar={carregar} />}
           {erroDaLuta && (
             <p role="alert" className="m-0 text-xs font-bold text-coral">
               {erroDaLuta}

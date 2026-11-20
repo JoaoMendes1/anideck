@@ -334,5 +334,17 @@
         "caminho": "/loja"
       }
     ]
+  },
+  {
+    "chave": "2026-11-20-lutas-extras",
+    "titulo": "Mais batalhas e masmorras depois do limite do dia",
+    "categoria": "novidade",
+    "resumo": "Acabaram as batalhas do dia? Agora dá para comprar mais com Ouro: até 5 batalhas de expedição e até 2 entradas de masmorra por dia. O preço depende do seu nível e sobe a cada compra no mesmo dia.",
+    "links": [
+      {
+        "rotulo": "Ir às Expedições",
+        "caminho": "/expedicoes"
+      }
+    ]
   }
 ]
