@@ -39,6 +39,9 @@ func (f FichaDeGrupo) Combatente() CombatenteRPG {
 		Habilidades: AplicarMaestria(LivroDeHabilidades(f.Personagem, f.Nivel), f.Maestria),
 	})
 	c.Elemento = f.Elemento
+	if pb, ok := PersonagensBase()[f.Personagem]; ok {
+		c.Classe = pb.Classe
+	}
 	c.VidaInicial = f.VidaInicial
 	return c
 }

@@ -379,9 +379,19 @@ export interface EfeitoDeElemento {
   descricao: string
 }
 
+/** Traço do corpo do monstro (rpg_tracos.go); fator_classe é o multiplicador do seu dano. */
+export interface TracoMonstro {
+  id: string
+  nome: string
+  descricao: string
+  fator_classe?: number
+}
+
 export interface MonstroRPG {
   /** Efeito de status que os golpes do monstro podem deixar. */
   efeito?: EfeitoDeElemento
+  /** Traços que favorecem ou atrapalham classes. */
+  tracos?: TracoMonstro[]
   id: string
   nome: string
   descricao: string
@@ -550,6 +560,8 @@ export interface EstadoExpedicoes {
   atributos: AtributosRPG
   /** Elemento do seu personagem. */
   elemento?: string
+  /** Classe do seu personagem. */
+  classe?: string
   /** Efeito de status que os golpes do seu herói podem deixar. */
   efeito_do_elemento?: EfeitoDeElemento
   vida?: VidaRPG

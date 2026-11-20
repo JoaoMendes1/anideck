@@ -598,6 +598,7 @@ export default function Expedicoes() {
               regioesBrutas={estado.regioes}
               atributosJogador={estado.atributos}
               elementoHeroi={estado.elemento}
+              classeHeroi={estado.classe}
               efeitoHeroi={estado.efeito_do_elemento}
               custoMana={estado.custos_mana?.expedicao}
               selecionadoId={selecionadoId}

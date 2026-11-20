@@ -281,6 +281,7 @@ func (h *RPGHandler) HandleAtacarChefeDoCla(w http.ResponseWriter, r *http.Reque
 
 	jogador := CombatenteDoEstado(equipamento)
 	jogador.Elemento = elementoDoJogador(sessao.ctx)
+	jogador.Classe = classeDoJogador(sessao.ctx)
 	dano, resultado := SimularAtaqueAoChefe(jogador, *monstro, novoGeradorDeBatalha())
 	ouro, bilhetes := RecompensaDoChefeDoCla(*monstro)
 

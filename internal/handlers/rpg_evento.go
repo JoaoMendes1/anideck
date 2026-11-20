@@ -276,6 +276,7 @@ func (h *RPGHandler) HandleLutarNoEvento(w http.ResponseWriter, r *http.Request)
 	}
 	jogador := CombatenteDoEstado(equipamento)
 	jogador.Elemento = elementoDoJogador(sessao.ctx)
+	jogador.Classe = classeDoJogador(sessao.ctx)
 	jogador.Postura = PosturaValida(corpo.Postura)
 	resultado := SimularBatalha(jogador, estado.Monstro, novoGeradorDeBatalha())
 	// O evento não usa a Vida guardada nem tem queda: o resultado só diz quem venceu.

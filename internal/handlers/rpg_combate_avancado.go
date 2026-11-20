@@ -995,6 +995,9 @@ func EnriquecerMonstro(m *MonstroRPG) {
 	if ef, ok := EfeitoDoElemento(m.Elemento); ok && m.Efeito == nil {
 		m.Efeito = &ef
 	}
+	if m.Tracos == nil {
+		m.Tracos = TracosDoMonstro(m.ID)
+	}
 	if m.Poderes == nil {
 		m.Poderes = PoderesDoMonstro(m.ID)
 	}

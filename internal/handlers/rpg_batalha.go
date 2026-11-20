@@ -55,6 +55,8 @@ type MonstroRPG struct {
 	Poderes       []PoderMonstro `json:"poderes,omitempty"`
 	// Efeito de status que os golpes do monstro podem deixar (vem do elemento).
 	Efeito *EfeitoDeElemento `json:"efeito,omitempty"`
+	// Traços do corpo do monstro, que favorecem ou atrapalham classes (rpg_tracos.go).
+	Tracos []TracoMonstro `json:"tracos,omitempty"`
 }
 
 // VelocidadeDoMonstro cresce um pouco abaixo da do jogador do mesmo nível: quem investe em
@@ -124,6 +126,8 @@ type CombatenteRPG struct {
 	SemBioma bool
 	// Postura escolhida antes da luta (rpg_postura.go); vazia é a Equilibrada.
 	Postura string
+	// Classe do personagem do elenco, para os traços do monstro; vazia é neutra.
+	Classe string
 }
 
 // CombatenteDoEstado separa do livro só as habilidades liberadas.
@@ -290,6 +294,9 @@ func (l *lutaEmAndamento) golpeDoJogador(ataque int) (int, bool) {
 	dano = l.status.danoCausado(dano)
 	if m := MultiplicadorElemental(l.j.Elemento, l.m.Elemento); m != 1 {
 		dano = max(1, int(float64(dano)*m+0.5))
+	}
+	if f := FatorDeClasse(l.j.Classe, l.m.Tracos); f != 1 {
+		dano = max(1, int(float64(dano)*f+0.5))
 	}
 	if l.multProximo > 0 {
 		dano = int(float64(dano)*l.multProximo + 0.5)
@@ -643,6 +650,8 @@ type HojeRPG struct {
 type EstadoExpedicoes struct {
 	Atributos AtributosRPG `json:"atributos"`
 	Elemento  string       `json:"elemento"`
+	// Classe do personagem, para a ficha dizer o efeito dos traços do monstro nele.
+	Classe string `json:"classe,omitempty"`
 	// EfeitoDoElemento é o efeito de status que os golpes do herói podem deixar.
 	EfeitoDoElemento *EfeitoDeElemento `json:"efeito_do_elemento,omitempty"`
 	Vida             VidaRPG           `json:"vida"`
@@ -757,6 +766,7 @@ func (h *RPGHandler) HandleGetExpedicoes(w http.ResponseWriter, r *http.Request)
 	}
 
 	elemento := elementoDoJogador(sessao.ctx)
+	classe := classeDoJogador(sessao.ctx)
 	regiaoDestaque := RegiaoEmDestaqueEm(time.Now())
 	regioes := CatalogoRegioes()
 	for i := range regioes {
@@ -769,6 +779,15 @@ func (h *RPGHandler) HandleGetExpedicoes(w http.ResponseWriter, r *http.Request)
 	lista := make([]MonstroNaLista, 0, len(monstros))
 	for _, m := range monstros {
 		vitorias := hoje.Vitorias[m.ID]
+		// Cópia dos traços com o fator da classe do jogador, para a ficha dizer o efeito nele.
+		if len(m.Tracos) > 0 {
+			tracos := make([]TracoMonstro, len(m.Tracos))
+			for i, t := range m.Tracos {
+				t.FatorClasse = FatorDeClasse(classe, []TracoMonstro{t})
+				tracos[i] = t
+			}
+			m.Tracos = tracos
+		}
 		lista = append(lista, MonstroNaLista{
 			MonstroRPG:  m,
 			Poder:       PoderDoMonstro(m),
@@ -784,6 +803,7 @@ func (h *RPGHandler) HandleGetExpedicoes(w http.ResponseWriter, r *http.Request)
 		Atributos:        equipamento.Atributos,
 		Elemento:         elemento,
 		EfeitoDoElemento: efeitoDoHeroi(elemento),
+		Classe:           classe,
 		Vida:             MontarVida(equipamento.Atributos.Vida, hoje.VidaPerdida),
 		Custos:           CustosPara(sessao.nivel),
 		Hoje:             hoje,
@@ -866,6 +886,7 @@ func (h *RPGHandler) HandleBatalhar(w http.ResponseWriter, r *http.Request) {
 	combatente := CombatenteDoEstado(equipamento)
 	combatente.VidaInicial = vida.Atual
 	combatente.Elemento = elementoDoJogador(sessao.ctx)
+	combatente.Classe = classeDoJogador(sessao.ctx)
 	combatente.Passiva = passiva
 	combatente.Postura = PosturaValida(corpo.Postura)
 	vitoriasAntes := hoje.Vitorias[monstro.ID]

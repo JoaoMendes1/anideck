@@ -295,9 +295,11 @@ export function FolhaInspecaoMonstro({
   aoEnfrentar,
   elementoHeroi,
   efeitoHeroi,
+  classeHeroi,
   semAcoes = false,
 }: {
   monstro: MonstroNaLista
+  classeHeroi?: string
   elementoHeroi?: string
   efeitoHeroi?: EfeitoDeElemento
   /** Na gaveta do celular os botões ficam no rodapé fixo; a ficha não repete. */
@@ -373,6 +375,8 @@ export function FolhaInspecaoMonstro({
         efeitoMonstro={monstro.efeito}
         elementoHeroi={elementoHeroi}
         efeitoHeroi={efeitoHeroi}
+        tracos={monstro.tracos}
+        classeHeroi={classeHeroi}
       />
 
       <EscolhaDePostura />
@@ -551,8 +555,10 @@ export default function MapaExpedicoes({
   aoEnfrentar,
   elementoHeroi,
   efeitoHeroi,
+  classeHeroi,
 }: {
   monstros: MonstroNaLista[]
+  classeHeroi?: string
   elementoHeroi?: string
   efeitoHeroi?: EfeitoDeElemento
   regioesBrutas?: RegiaoMapa[]
@@ -865,6 +871,7 @@ export default function MapaExpedicoes({
       aoEnfrentar={aoEnfrentar}
       elementoHeroi={elementoHeroi}
       efeitoHeroi={efeitoHeroi}
+      classeHeroi={classeHeroi}
     />
   )
   const fichaDaGaveta = selecionado && (
@@ -879,6 +886,7 @@ export default function MapaExpedicoes({
       aoEnfrentar={aoEnfrentar}
       elementoHeroi={elementoHeroi}
       efeitoHeroi={efeitoHeroi}
+      classeHeroi={classeHeroi}
       semAcoes
     />
   )

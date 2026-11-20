@@ -1,10 +1,10 @@
 // client/src/components/rpg/ConfrontoElemental.tsx
 // O confronto entre o herói e o monstro, dito do ponto de vista do jogador: quem leva vantagem
-// de elemento, a fraqueza do monstro e o efeito que os golpes de cada lado deixam. A classe do
-// herói não entra: no combate, só o elemento muda o dano.
-import { Check, Minus, ShieldAlert, Swords, X } from 'lucide-react'
-import { elementoQueVence, relacaoElemental, type EfeitoDeElemento } from '../../lib/rpg'
-import { rotuloDoElemento } from '../../lib/personagem'
+// de elemento, a fraqueza do monstro, o efeito que os golpes de cada lado deixam e os traços do
+// monstro que favorecem ou atrapalham a classe do herói.
+import { Check, Feather, Minus, ShieldAlert, Swords, X } from 'lucide-react'
+import { elementoQueVence, relacaoElemental, type EfeitoDeElemento, type TracoMonstro } from '../../lib/rpg'
+import { rotuloDaClasse, rotuloDoElemento } from '../../lib/personagem'
 
 export default function ConfrontoElemental({
   nomeDoMonstro,
@@ -12,13 +12,18 @@ export default function ConfrontoElemental({
   efeitoMonstro,
   elementoHeroi,
   efeitoHeroi,
+  tracos,
+  classeHeroi,
 }: {
   nomeDoMonstro: string
   elementoMonstro?: string
   efeitoMonstro?: EfeitoDeElemento
   elementoHeroi?: string
   efeitoHeroi?: EfeitoDeElemento
+  tracos?: TracoMonstro[]
+  classeHeroi?: string
 }) {
+  const classe = rotuloDaClasse(classeHeroi)
   const relacao = relacaoElemental(elementoHeroi, elementoMonstro)
   const fraqueza = elementoQueVence(elementoMonstro)
   const seu = rotuloDoElemento(elementoHeroi) || 'neutro'
@@ -45,6 +50,21 @@ export default function ConfrontoElemental({
           ? `Fraqueza de ${nomeDoMonstro}: heróis de ${rotuloDoElemento(fraqueza)}${fraqueza === elementoHeroi ? ' (o seu)' : ''}.`
           : `${nomeDoMonstro} não tem fraqueza de elemento.`}
       </p>
+      {(tracos ?? []).map((t) => {
+        const fator = t.fator_classe ?? 1
+        const pct = Math.round((fator - 1) * 100)
+        const efeito = pct > 0 ? `você causa ${pct}% mais dano` : pct < 0 ? `você causa ${-pct}% menos dano` : 'sem diferença para você'
+        return (
+          <p key={t.id} className="m-0 flex items-start gap-1.5 text-text">
+            <Feather size={13} className={`mt-0.5 shrink-0 ${pct > 0 ? 'text-green' : pct < 0 ? 'text-coral' : 'text-muted'}`} aria-hidden="true" />
+            <span>
+              <strong>{t.nome}: </strong>
+              {t.descricao}{' '}
+              {classe && <strong className={pct > 0 ? 'text-green' : pct < 0 ? 'text-coral' : 'text-muted'}>Você ({classe}): {efeito}.</strong>}
+            </span>
+          </p>
+        )
+      })}
       {efeitoHeroi && (
         <p className="m-0 flex items-start gap-1.5 text-text">
           <Swords size={13} className="mt-0.5 shrink-0 text-holo-3" aria-hidden="true" />

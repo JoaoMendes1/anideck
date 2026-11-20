@@ -466,5 +466,24 @@
         "caminho": "/calendario"
       }
     ]
+  },
+  {
+    "chave": "2026-11-20-tracos-de-monstro",
+    "titulo": "Monstros com traços: a sua classe agora pesa",
+    "categoria": "novidade",
+    "resumo": "Muitos monstros ganharam um traço. Contra Voadores, arqueiros e magas causam mais dano, e quem luta de perto causa menos. Contra Blindados, martelos, lanças e magia passam melhor que lâminas leves. Quem é Resistente à magia pune a maga, e os Etéreos deixam o golpe físico atravessar. A ficha de cada monstro mostra o traço e quanto ele muda o dano da sua classe.",
+    "links": [
+      {
+        "rotulo": "Ir às Expedições",
+        "caminho": "/expedicoes"
+      }
+    ]
+  },
+  {
+    "chave": "2026-11-20-troca-de-conta",
+    "titulo": "Troque de conta com um toque",
+    "categoria": "novidade",
+    "resumo": "Usa mais de uma conta? No menu do seu perfil, toque em Adicionar outra conta e entre nela. Depois disso, Trocar para… alterna entre as contas sem pedir senha de novo neste aparelho. Na tela de login, as contas guardadas aparecem em Continuar como.",
+    "links": []
   }
 ]

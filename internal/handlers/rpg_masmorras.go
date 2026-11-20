@@ -332,6 +332,7 @@ func (h *RPGHandler) HandleEntrarNaMasmorra(w http.ResponseWriter, r *http.Reque
 	combatente := CombatenteDoEstado(equipamento)
 	combatente.VidaInicial = vida.Atual
 	combatente.Elemento = elementoDoJogador(sessao.ctx)
+	combatente.Classe = classeDoJogador(sessao.ctx)
 	combatente.Passiva = passiva
 	expedicao := SimularMasmorra(combatente, monstros, rng)
 
