@@ -6,6 +6,7 @@ import { supabase } from '../lib/supabase'
 import { useToast } from '../contexts/ToastContext'
 import IconeAniCoin from './IconeAniCoin'
 import CampoNumerico from './CampoNumerico'
+import PainelRecompensasMissoesAdmin from './PainelRecompensasMissoesAdmin'
 
 interface RegrasEconomia {
   ativo: boolean
@@ -442,24 +443,7 @@ export default function AbaEconomia() {
               </div>
             </label>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div>
-                <label htmlFor="aba-economia-missao-diaria" className="block font-mono text-xs text-muted uppercase mb-1">
-                  Missão diária (₳)
-                </label>
-                <CampoNumerico
-                  id="aba-economia-missao-diaria"
-                  min={1}
-                  value={regras.ganho_missao_diaria || regras.cristais_por_missao_diaria || 15}
-                  aoMudar={(valor) => {
-                    const v = valor
-                    setRegras({ ...regras, ganho_missao_diaria: v, cristais_por_missao_diaria: v })
-                  }}
-                  className="w-full bg-panel-2 border border-line rounded-xl px-3 py-2 text-sm text-text outline-none focus:border-holo-3 font-mono"
-                  required
-                />
-              </div>
-
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
               <div>
                 <label htmlFor="aba-economia-teto-diario" className="block font-mono text-xs text-muted uppercase mb-1">
                   Teto diário (₳)
@@ -676,6 +660,9 @@ export default function AbaEconomia() {
           </form>
         </section>
       </div>
+
+      {/* RECOMPENSAS INDIVIDUAIS DAS MISSÕES */}
+      <PainelRecompensasMissoesAdmin />
 
       {/* APOIO COMUNITÁRIO (FASE 16.5 · ISSUE #178) */}
       <section className="p-6 rounded-2xl bg-panel border border-line">

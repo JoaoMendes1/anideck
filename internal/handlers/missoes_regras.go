@@ -493,3 +493,89 @@ func AvaliarMissao(m ItemCatalogoMissao, genero string, inicio time.Time, a Ativ
 	}
 	return progresso
 }
+
+// AjusteMissao guarda as recompensas customizadas pelo Painel Admin para uma missão.
+type AjusteMissao struct {
+	Recompensa int `json:"recompensa"`
+	XP         int `json:"xp"`
+}
+
+func mapaMissoesPadrao() map[string]ItemCatalogoMissao {
+	diarias := CatalogoMissoesDiarias()
+	semanais := CatalogoMissoesSemanais()
+	mapa := make(map[string]ItemCatalogoMissao, len(diarias)+len(semanais))
+	for _, m := range diarias {
+		mapa[m.ID] = m
+	}
+	for _, m := range semanais {
+		mapa[m.ID] = m
+	}
+	return mapa
+}
+
+// ValidarAjustesMissoes confere se todos os IDs existem no catálogo e se os valores
+// de AniCoins e XP estão entre 0 e 5000.
+func ValidarAjustesMissoes(ajustes map[string]AjusteMissao) string {
+	padrao := mapaMissoesPadrao()
+	for id, aj := range ajustes {
+		item, ok := padrao[id]
+		if !ok {
+			return "Missão desconhecida: " + id
+		}
+		if aj.Recompensa < 0 || aj.Recompensa > 5000 {
+			return "AniCoins da missão '" + item.Titulo + "' devem estar entre 0 e 5000."
+		}
+		if aj.XP < 0 || aj.XP > 5000 {
+			return "XP da missão '" + item.Titulo + "' deve estar entre 0 e 5000."
+		}
+	}
+	return ""
+}
+
+// NormalizarAjustesMissoes remove entradas idênticas ao padrão do código, mantendo só
+// as missões alteradas pelo Admin.
+func NormalizarAjustesMissoes(ajustes map[string]AjusteMissao) map[string]AjusteMissao {
+	padrao := mapaMissoesPadrao()
+	limpo := make(map[string]AjusteMissao)
+	for id, aj := range ajustes {
+		item, ok := padrao[id]
+		if !ok {
+			continue
+		}
+		if aj.Recompensa < 0 {
+			aj.Recompensa = 0
+		} else if aj.Recompensa > 5000 {
+			aj.Recompensa = 5000
+		}
+		if aj.XP < 0 {
+			aj.XP = 0
+		} else if aj.XP > 5000 {
+			aj.XP = 5000
+		}
+		if aj.Recompensa == item.Recompensa && aj.XP == item.XP {
+			continue
+		}
+		limpo[id] = aj
+	}
+	return limpo
+}
+
+// AplicarAjustesMissoes devolve cópia do catálogo com os ajustes do Admin aplicados.
+func AplicarAjustesMissoes(catalogo []ItemCatalogoMissao, ajustes map[string]AjusteMissao) []ItemCatalogoMissao {
+	saida := make([]ItemCatalogoMissao, len(catalogo))
+	copy(saida, catalogo)
+	if len(ajustes) == 0 {
+		return saida
+	}
+	for i := range saida {
+		if aj, ok := ajustes[saida[i].ID]; ok {
+			if aj.Recompensa >= 0 && aj.Recompensa <= 5000 {
+				saida[i].Recompensa = aj.Recompensa
+			}
+			if aj.XP >= 0 && aj.XP <= 5000 {
+				saida[i].XP = aj.XP
+			}
+		}
+	}
+	return saida
+}

@@ -33,6 +33,15 @@ function Ganho({ valor, rotulo }: { valor: number; rotulo: string }) {
   )
 }
 
+const ROTULO_CLASSE_MERCADO: Record<string, string> = {
+  espadachim: 'Espadachim',
+  lanceiro: 'Lanceiro',
+  assassina: 'Assassina',
+  maga: 'Maga',
+  guerreiro: 'Guerreiro',
+  paladina: 'Paladina',
+}
+
 function CartaoDoItem({
   item,
   estado,
@@ -49,6 +58,9 @@ function CartaoDoItem({
   const ganho = ganhoDaCompra(item, noSlot)
   const situacao = situacaoDaCompra(item, estado.ouro)
   const rotuloSlot = SLOTS_RPG.find((s) => s.id === item.slot)?.rotulo ?? ''
+  const classesTexto = Array.isArray(item.classes) && item.classes.length > 0
+    ? item.classes.map((c) => ROTULO_CLASSE_MERCADO[c] ?? c).join(' · ')
+    : null
   return (
     <li className={`flex flex-col gap-2.5 rounded-2xl border p-3 ${estilo.borda} ${estilo.fundo}`}>
       <div className="flex items-start gap-3">
@@ -60,6 +72,11 @@ function CartaoDoItem({
           <p className="m-0 mt-0.5 text-xs text-muted">
             {estilo.rotulo} · {rotuloSlot} · nível {item.nivel_minimo}
           </p>
+          {classesTexto && (
+            <p className={`m-0 mt-0.5 text-xs font-semibold ${item.serve === false ? 'text-coral' : 'text-holo-3'}`}>
+              {classesTexto}{item.serve === false ? ' (outra classe)' : ''}
+            </p>
+          )}
           <p className="m-0 mt-0.5 text-xs text-text">{resumoDoItem(item)}</p>
         </div>
       </div>

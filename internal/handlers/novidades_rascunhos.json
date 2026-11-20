@@ -282,5 +282,21 @@
         "caminho": "/masmorras"
       }
     ]
+  },
+  {
+    "chave": "2026-11-19-atributos-sem-kit-inicial-armas-admin",
+    "titulo": "2 atributos por nível, progresso sem kit grátis e armas de classe no Mercado",
+    "categoria": "balanceamento",
+    "resumo": "Agora você recebe 2 pontos de atributo livres a cada nível ganho (a partir do nível 2), deixando cada subida de nível muito mais recompensadora na aba Atributos.\n\nQuem desperta um personagem também começa sem equipamentos prontos — tudo passa a ser conquistado jogando —, as espadas passaram a respeitar as classes certas (Lanceiro não equipa mais espada) e chegaram novas armas comuns e raras para Lanceiro, Maga, Assassina, Guerreiro e Paladina no Mercado e nas vitórias.",
+    "links": [
+      {
+        "rotulo": "Abrir Personagem",
+        "caminho": "/personagem"
+      },
+      {
+        "rotulo": "Ver Mercado",
+        "caminho": "/loja?secao=mercado"
+      }
+    ]
   }
 ]

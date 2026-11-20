@@ -22,7 +22,7 @@ func catalogoParaMasmorras(t *testing.T) []MonstroRPG {
 		mk("espectro_do_vazio", 26, "raro", 1400, 120, 62, 1, 20, "epico"),
 		mk("cavaleiro_caido", 35, "chefe", 2100, 145, 80, 2, 30, "epico"),
 		mk("dragao_de_eter", 50, "chefe", 3600, 210, 120, 2, 25, "lendario"),
-		mk("primordial_esquecido", 60, "chefe", 4800, 255, 155, 3, 35, "lendario"),
+		mk("primordial_esquecido", 60, "chefe", 6380, 320, 192, 3, 35, "lendario"),
 	}
 	bruto, err := os.ReadFile("../../sql/124_rpg_novos_monstros.sql")
 	if err != nil {

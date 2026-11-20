@@ -20,7 +20,7 @@ func taxaContraOPrimordial(base string, noMaximo bool) float64 {
 		}
 		jogador.Habilidades = AplicarMaestria(jogador.Habilidades, usos)
 	}
-	primordial := monstroDoNivel(60, "chefe", 4800, 255, 155)
+	primordial := monstroDoNivel(60, "chefe", 6380, 320, 192)
 	vitorias := 0
 	for semente := int64(0); semente < 300; semente++ {
 		if SimularBatalha(jogador, primordial, rand.New(rand.NewSource(semente))).Venceu {

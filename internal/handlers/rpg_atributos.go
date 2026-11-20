@@ -38,14 +38,13 @@ func (p PrimariosRPG) Somar(o PrimariosRPG) PrimariosRPG {
 	}
 }
 
-// PontosDisponiveis é quantos pontos o nível dá: 1 a cada 2 níveis. A mesma conta está em
-// rpg_distribuir_pontos (sql/077). Um ponto por nível dobrava o ataque de quem pusesse tudo
-// em Força, e os monstros foram calibrados sem pontos.
+// PontosDisponiveis é quantos pontos o nível dá: 2 a cada nível ganho (nível 1 = 0). A mesma
+// conta está em rpg_distribuir_pontos (sql/126).
 func PontosDisponiveis(nivel int) int {
-	if nivel < 1 {
+	if nivel <= 1 {
 		return 0
 	}
-	return nivel / 2
+	return (nivel - 1) * 2
 }
 
 // PrimariosBase é o que o nível dá sozinho ao Espadachim. Força e Constituição crescem um

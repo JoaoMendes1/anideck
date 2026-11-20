@@ -23,6 +23,7 @@ import AbaGuilda from '../components/AbaGuilda'
 import AbaModeracao from '../components/AbaModeracao'
 import AbaEconomia from '../components/AbaEconomia'
 import AbaNovidades from '../components/AbaNovidades'
+import AbaCatalogoRPG from '../components/AbaCatalogoRPG'
 import type { SugestaoPendente } from '../hooks/useOlheiro'
 import CampoNumerico from '../components/CampoNumerico'
 import LimiteDeErro from '../components/LimiteDeErro'
@@ -77,13 +78,14 @@ const montarHash = (c: CamposDoFormulario) => JSON.stringify([
 
 // Menu do painel agrupado por assunto. As seções do Controle viram itens próprios, para
 // não haver um segundo menu dentro da aba.
-type AbaDoMenu = 'curadoria' | 'controle' | 'trilhas' | 'revisao_ia' | 'guilda' | 'moderacao' | 'economia' | 'novidades'
+type AbaDoMenu = 'curadoria' | 'controle' | 'trilhas' | 'revisao_ia' | 'guilda' | 'moderacao' | 'economia' | 'novidades' | 'rpg_catalogo'
 interface ItemDoMenu { id: string; nome: string; aba: AbaDoMenu; secao?: string }
 const GRUPOS_ADMIN: { titulo: string; itens: ItemDoMenu[] }[] = [
   { titulo: 'Catálogo', itens: [
     { id: 'curadoria', nome: 'Obras curadas', aba: 'curadoria' },
     { id: 'trilhas', nome: 'Trilhas', aba: 'trilhas' },
     { id: 'controle:rotulos', nome: 'Rótulos', aba: 'controle', secao: 'rotulos' },
+    { id: 'rpg_catalogo', nome: 'Catálogo RPG', aba: 'rpg_catalogo' },
   ] },
   { titulo: 'Inteligência artificial', itens: [
     { id: 'revisao_ia', nome: 'Fila de revisão', aba: 'revisao_ia' },
@@ -157,7 +159,7 @@ export default function PainelAdmin() {
   const [searchParams, setSearchParams] = useSearchParams()
   const abaParam = searchParams.get('aba')
   const abaAtiva: AbaAdmin =
-    abaParam === 'controle' || abaParam === 'trilhas' || abaParam === 'revisao_ia' || abaParam === 'guilda' || abaParam === 'moderacao' || abaParam === 'economia' || abaParam === 'novidades'
+    abaParam === 'controle' || abaParam === 'trilhas' || abaParam === 'revisao_ia' || abaParam === 'guilda' || abaParam === 'moderacao' || abaParam === 'economia' || abaParam === 'novidades' || abaParam === 'rpg_catalogo'
       ? abaParam
       : abaParam === 'comunidade'
         ? 'moderacao'
@@ -1227,9 +1229,19 @@ export default function PainelAdmin() {
           <>
             <div className="mb-8 min-w-0">
               <h1 className="font-anton text-3xl uppercase">Economia & AniCoins</h1>
-              <p className="text-muted text-sm mt-1">Monitore os AniCoins em circulação, configure tetos, faça ajustes manuais e audite o livro-razão.</p>
+              <p className="text-muted text-sm mt-1">Monitore os AniCoins em circulação, configure tetos, ajuste recompensas individuais das missões e audite o livro-razão.</p>
             </div>
             <AbaEconomia />
+          </>
+        )}
+
+        {abaAtiva === 'rpg_catalogo' && (
+          <>
+            <div className="mb-8 min-w-0">
+              <h1 className="font-anton text-3xl uppercase">Catálogo de Equipamentos RPG</h1>
+              <p className="text-muted text-sm mt-1">Visualize todos os equipamentos e armas do jogo por classe, elemento, slot, raridade e fonte de obtenção.</p>
+            </div>
+            <AbaCatalogoRPG />
           </>
         )}
 

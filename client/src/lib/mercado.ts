@@ -16,6 +16,9 @@ export interface ItemDoMercado {
   defesa: number
   nivel_minimo: number
   preco_ouro: number
+  classes?: string[] | null
+  elemento?: string | null
+  serve?: boolean
   possui: boolean
   bloqueado: boolean
 }

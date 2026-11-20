@@ -65,8 +65,36 @@ type missaoSorteada struct {
 	referencia string
 }
 
-// missoesDoUsuario monta as missões do dia e da semana de agora para o usuário.
-func missoesDoUsuario(userID string, agora time.Time) (diarias, semanais []missaoSorteada) {
+// ChaveMissoesRecompensas guarda em app_settings os ajustes individuais de AniCoins e XP por missão.
+const ChaveMissoesRecompensas = "missoes_recompensas"
+
+func carregarAjustesMissoes(dbClient *supabase.Client) map[string]AjusteMissao {
+	if dbClient == nil {
+		return nil
+	}
+	dados, _, err := dbClient.From("app_settings").
+		Select("value", "", false).
+		Eq("key", ChaveMissoesRecompensas).
+		Execute()
+	if err != nil {
+		return nil
+	}
+	var linhas []struct {
+		Value string `json:"value"`
+	}
+	if json.Unmarshal(dados, &linhas) != nil || len(linhas) == 0 {
+		return nil
+	}
+	var aj map[string]AjusteMissao
+	if json.Unmarshal([]byte(linhas[0].Value), &aj) != nil {
+		return nil
+	}
+	return aj
+}
+
+// missoesDoUsuario monta as missões do dia e da semana de agora para o usuário,
+// aplicando as recompensas customizadas no Painel Admin quando existirem.
+func missoesDoUsuario(userID string, agora time.Time, ajustes map[string]AjusteMissao) (diarias, semanais []missaoSorteada) {
 	dataStr := agora.In(fusoGuilda).Format("2006-01-02")
 	inicioDia := inicioDoDiaBrasilia(agora)
 	inicioSemana := inicioDaSemanaBrasilia(agora)
@@ -74,13 +102,16 @@ func missoesDoUsuario(userID string, agora time.Time) (diarias, semanais []missa
 	generoDia := GeneroDoPeriodo(userID, "dia", indiceDoDia(agora))
 	generoSemana := GeneroDoPeriodo(userID, "semana", indiceDaSemana(agora))
 
-	for _, m := range SortearMissoesDoDia(CatalogoMissoesDiarias(), userID, agora) {
+	catalogoDiarias := AplicarAjustesMissoes(CatalogoMissoesDiarias(), ajustes)
+	catalogoSemanais := AplicarAjustesMissoes(CatalogoMissoesSemanais(), ajustes)
+
+	for _, m := range SortearMissoesDoDia(catalogoDiarias, userID, agora) {
 		diarias = append(diarias, missaoSorteada{
 			ItemCatalogoMissao: comGenero(m, generoDia), periodo: "dia", genero: generoDia, inicio: inicioDia,
 			motivo: motivoMissaoDiaria, referencia: fmt.Sprintf("missao:%s:%s", dataStr, m.ID),
 		})
 	}
-	for _, m := range SortearMissoesDaSemana(CatalogoMissoesSemanais(), userID, agora) {
+	for _, m := range SortearMissoesDaSemana(catalogoSemanais, userID, agora) {
 		semanais = append(semanais, missaoSorteada{
 			ItemCatalogoMissao: comGenero(m, generoSemana), periodo: "semana", genero: generoSemana, inicio: inicioSemana,
 			motivo: motivoMissaoSemanal, referencia: fmt.Sprintf("semana:%s:%s", semanaStr, m.ID),
@@ -410,7 +441,8 @@ func (h *MissoesHandler) HandleGetMissoesHoje(w http.ResponseWriter, r *http.Req
 	}
 
 	agora := time.Now()
-	diarias, semanais := missoesDoUsuario(userID, agora)
+	ajustes := carregarAjustesMissoes(dbClient)
+	diarias, semanais := missoesDoUsuario(userID, agora, ajustes)
 	atividade := carregarAtividadeMissoes(dbClient, userID, agora)
 	economia, _, _ := carregarConfigGuilda(dbClient)
 
@@ -696,7 +728,8 @@ func (h *MissoesHandler) HandleResgatarMissao(w http.ResponseWriter, r *http.Req
 	}
 
 	agora := time.Now()
-	diarias, semanais := missoesDoUsuario(userID, agora)
+	ajustes := carregarAjustesMissoes(dbClient)
+	diarias, semanais := missoesDoUsuario(userID, agora, ajustes)
 	var alvo *missaoSorteada
 	for i := range diarias {
 		if diarias[i].ID == missaoID {
@@ -769,4 +802,109 @@ func (h *MissoesHandler) HandleResgatarMissao(w http.ResponseWriter, r *http.Req
 		"xp":         res.XP,
 		"mensagem":   mensagem,
 	})
+}
+
+// ItemMissaoAdmin descreve uma missão para edição individual no Painel Admin.
+type ItemMissaoAdmin struct {
+	ID               string `json:"id"`
+	Periodo          string `json:"periodo"`
+	Titulo           string `json:"titulo"`
+	Descricao        string `json:"descricao"`
+	Meta             int    `json:"meta"`
+	Recompensa       int    `json:"recompensa"`
+	XP               int    `json:"xp"`
+	PadraoRecompensa int    `json:"padrao_recompensa"`
+	PadraoXP         int    `json:"padrao_xp"`
+}
+
+func montarListaMissoesAdmin(ajustes map[string]AjusteMissao) map[string]interface{} {
+	diariasPadrao := CatalogoMissoesDiarias()
+	semanaisPadrao := CatalogoMissoesSemanais()
+	diariasAplicadas := AplicarAjustesMissoes(diariasPadrao, ajustes)
+	semanaisAplicadas := AplicarAjustesMissoes(semanaisPadrao, ajustes)
+
+	diarias := make([]ItemMissaoAdmin, 0, len(diariasPadrao))
+	for i, pad := range diariasPadrao {
+		at := diariasAplicadas[i]
+		diarias = append(diarias, ItemMissaoAdmin{
+			ID: pad.ID, Periodo: "dia", Titulo: pad.Titulo, Descricao: pad.Descricao, Meta: pad.Meta,
+			Recompensa: at.Recompensa, XP: at.XP, PadraoRecompensa: pad.Recompensa, PadraoXP: pad.XP,
+		})
+	}
+	semanais := make([]ItemMissaoAdmin, 0, len(semanaisPadrao))
+	for i, pad := range semanaisPadrao {
+		at := semanaisAplicadas[i]
+		semanais = append(semanais, ItemMissaoAdmin{
+			ID: pad.ID, Periodo: "semana", Titulo: pad.Titulo, Descricao: pad.Descricao, Meta: pad.Meta,
+			Recompensa: at.Recompensa, XP: at.XP, PadraoRecompensa: pad.Recompensa, PadraoXP: pad.XP,
+		})
+	}
+	return map[string]interface{}{
+		"diarias":  diarias,
+		"semanais": semanais,
+	}
+}
+
+// HandleGetAdminMissoesRecompensas lista as missões diárias e semanais com valores padrão e atuais.
+func (h *MissoesHandler) HandleGetAdminMissoesRecompensas(w http.ResponseWriter, r *http.Request) {
+	token, ok := r.Context().Value(middleware.TokenKey).(string)
+	if !ok || token == "" {
+		responderErroJSON(w, http.StatusUnauthorized, "Não autorizado")
+		return
+	}
+	dbClient, err := database.ClientWithToken(token)
+	if err != nil {
+		responderErroJSON(w, http.StatusInternalServerError, "Erro interno de conexão")
+		return
+	}
+	ajustes := carregarAjustesMissoes(dbClient)
+	responderJSON(w, http.StatusOK, montarListaMissoesAdmin(ajustes))
+}
+
+// HandleSaveAdminMissoesRecompensas valida e grava recompensas individuais em app_settings.
+func (h *MissoesHandler) HandleSaveAdminMissoesRecompensas(w http.ResponseWriter, r *http.Request) {
+	token, ok := r.Context().Value(middleware.TokenKey).(string)
+	if !ok || token == "" {
+		responderErroJSON(w, http.StatusUnauthorized, "Não autorizado")
+		return
+	}
+
+	var payload struct {
+		Missoes map[string]AjusteMissao `json:"missoes"`
+	}
+	dec := json.NewDecoder(http.MaxBytesReader(w, r.Body, 64*1024))
+	if err := dec.Decode(&payload); err != nil {
+		responderErroJSON(w, http.StatusBadRequest, "Corpo inválido")
+		return
+	}
+	if payload.Missoes == nil {
+		payload.Missoes = map[string]AjusteMissao{}
+	}
+	if motivo := ValidarAjustesMissoes(payload.Missoes); motivo != "" {
+		responderErroJSON(w, http.StatusBadRequest, motivo)
+		return
+	}
+	limpo := NormalizarAjustesMissoes(payload.Missoes)
+	valorBytes, err := json.Marshal(limpo)
+	if err != nil {
+		responderErroJSON(w, http.StatusInternalServerError, "Erro ao serializar recompensas")
+		return
+	}
+
+	dbClient, err := database.ClientWithToken(token)
+	if err != nil {
+		responderErroJSON(w, http.StatusInternalServerError, "Erro interno de conexão")
+		return
+	}
+	linha := map[string]interface{}{
+		"key":        ChaveMissoesRecompensas,
+		"value":      string(valorBytes),
+		"updated_at": time.Now().Format(time.RFC3339),
+	}
+	if _, _, err = dbClient.From("app_settings").Upsert(linha, "key", "minimal", "").Execute(); err != nil {
+		log.Printf("[MISSOES] erro ao salvar recompensas no Admin: %v", err)
+		responderErroJSON(w, http.StatusInternalServerError, "Erro ao salvar recompensas das missões")
+		return
+	}
+	responderJSON(w, http.StatusOK, montarListaMissoesAdmin(limpo))
 }

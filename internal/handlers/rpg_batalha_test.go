@@ -187,7 +187,7 @@ func TestBalanceamentoInicial(t *testing.T) {
 	}
 
 	// Caso próprio do chefe final: Primordial Esquecido no nível 60 com lendários fica entre 10% e 50%.
-	primordial := monstroDoNivel(60, "chefe", 4800, 255, 155)
+	primordial := monstroDoNivel(60, "chefe", 6380, 320, 192)
 	jogador60 := montarJogador(60, AtributosRPG{Vida: 400, Ataque: 60, Defesa: 40})
 	vitoriasPrimordial := 0
 	for semente := int64(0); semente < 300; semente++ {

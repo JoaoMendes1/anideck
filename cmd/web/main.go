@@ -374,10 +374,13 @@ func main() {
 		// Guilda & Gamificação: economia de XP, faixas F→SS, insígnias e auditoria
 		admin.Get("/api/admin/guilda", guildaHandler.HandleGetAdminGuilda)
 		admin.Put("/api/admin/guilda", guildaHandler.HandleSaveAdminGuilda)
+		admin.Get("/api/admin/rpg/catalogo", rpgHandler.HandleGetAdminCatalogoRPG)
 
 		// Economia de AniCoins: carteira global, auditoria, ajuste manual e transferência (exclusivo admin)
 		admin.Get("/api/admin/economia", economiaHandler.HandleGetAdminEconomia)
 		admin.Put("/api/admin/economia", economiaHandler.HandleSaveAdminEconomia)
+		admin.Get("/api/admin/missoes/recompensas", missoesHandler.HandleGetAdminMissoesRecompensas)
+		admin.Put("/api/admin/missoes/recompensas", missoesHandler.HandleSaveAdminMissoesRecompensas)
 		admin.Post("/api/admin/economia/ajuste", economiaHandler.HandleAjusteManual)
 		admin.Post("/api/admin/economia/caixa/sacar", economiaHandler.HandleSacarCaixaLoja)
 		admin.Post("/api/admin/economia/transferir", economiaHandler.HandleTransferirAniCoins)

@@ -11,7 +11,7 @@ import (
 )
 
 func TestPontosDisponiveis(t *testing.T) {
-	casos := map[int]int{0: 0, 1: 0, 2: 1, 3: 1, 10: 5, 55: 27}
+	casos := map[int]int{0: 0, 1: 0, 2: 2, 3: 4, 5: 8, 10: 18, 55: 108}
 	for nivel, esperado := range casos {
 		if p := PontosDisponiveis(nivel); p != esperado {
 			t.Errorf("nível %d: esperava %d pontos, veio %d", nivel, esperado, p)
@@ -62,11 +62,11 @@ func TestLimitarPontos(t *testing.T) {
 }
 
 func TestValidarDistribuicao(t *testing.T) {
-	if msg := ValidarDistribuicao(PrimariosRPG{Forca: 3, Agilidade: 2}, 10); msg != "" {
-		t.Errorf("5 pontos no nível 10 é válido: %s", msg)
+	if msg := ValidarDistribuicao(PrimariosRPG{Forca: 10, Agilidade: 8}, 10); msg != "" {
+		t.Errorf("18 pontos no nível 10 é válido: %s", msg)
 	}
-	if msg := ValidarDistribuicao(PrimariosRPG{Forca: 6}, 10); msg == "" {
-		t.Error("6 pontos no nível 10 passa do limite")
+	if msg := ValidarDistribuicao(PrimariosRPG{Forca: 19}, 10); msg == "" {
+		t.Error("19 pontos no nível 10 passa do limite")
 	}
 	if msg := ValidarDistribuicao(PrimariosRPG{Forca: 2, Sorte: -1}, 10); msg == "" {
 		t.Error("ponto negativo deveria ser recusado")
@@ -74,13 +74,13 @@ func TestValidarDistribuicao(t *testing.T) {
 }
 
 func TestMontarEstadoEquipamento_ComPontos(t *testing.T) {
-	estado := MontarEstadoEquipamento(10, "", nil, nil, PrimariosRPG{Forca: 4, Sorte: 9})
-	// 5 disponíveis: a Sorte é cortada até caber.
-	if estado.PontosDisponiveis != 5 || estado.Pontos != (PrimariosRPG{Forca: 4, Sorte: 1}) {
+	estado := MontarEstadoEquipamento(10, "", nil, nil, PrimariosRPG{Forca: 10, Sorte: 12})
+	// 18 disponíveis: a Sorte é cortada até caber.
+	if estado.PontosDisponiveis != 18 || estado.Pontos != (PrimariosRPG{Forca: 10, Sorte: 8}) {
 		t.Fatalf("pontos não foram limitados: %+v", estado.Pontos)
 	}
-	if estado.Atributos.Ataque != AtributosBase(10).Ataque+8 {
-		t.Errorf("4 de Força deveriam dar +8 de Ataque: %d", estado.Atributos.Ataque)
+	if estado.Atributos.Ataque != AtributosBase(10).Ataque+20 {
+		t.Errorf("10 de Força deveriam dar +20 de Ataque: %d", estado.Atributos.Ataque)
 	}
 }
 

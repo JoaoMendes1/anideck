@@ -340,3 +340,50 @@ func TestEvidenciasDaMissao_CapturaAcoesExatas(t *testing.T) {
 		t.Errorf("Evidência de avaliação de episódio incorreta: %+v", evsAvEp)
 	}
 }
+
+func TestAjustesMissoes_ValidacaoNormalizacaoEAplicacao(t *testing.T) {
+	if msg := ValidarAjustesMissoes(map[string]AjusteMissao{"nao_existe": {Recompensa: 10, XP: 5}}); msg == "" {
+		t.Error("ID desconhecido deveria ser recusado")
+	}
+	if msg := ValidarAjustesMissoes(map[string]AjusteMissao{"ep_hoje": {Recompensa: -1, XP: 5}}); msg == "" {
+		t.Error("AniCoins negativos deveriam ser recusados")
+	}
+	if msg := ValidarAjustesMissoes(map[string]AjusteMissao{"ep_hoje": {Recompensa: 10, XP: 6000}}); msg == "" {
+		t.Error("XP acima de 5000 deveria ser recusado")
+	}
+
+	bruto := map[string]AjusteMissao{
+		"ep_hoje":  {Recompensa: 25, XP: 12}, // alterado
+		"maratona": {Recompensa: 20, XP: 10}, // idêntico ao padrão: sai na normalização
+	}
+	if msg := ValidarAjustesMissoes(bruto); msg != "" {
+		t.Fatalf("payload válido recusado: %s", msg)
+	}
+	norm := NormalizarAjustesMissoes(bruto)
+	if len(norm) != 1 || norm["ep_hoje"].Recompensa != 25 || norm["ep_hoje"].XP != 12 {
+		t.Fatalf("normalização inesperada: %+v", norm)
+	}
+
+	aplicadas := AplicarAjustesMissoes(CatalogoMissoesDiarias(), norm)
+	if aplicadas[0].ID != "ep_hoje" || aplicadas[0].Recompensa != 25 || aplicadas[0].XP != 12 {
+		t.Errorf("ajuste não aplicado no catálogo: %+v", aplicadas[0])
+	}
+	if aplicadas[1].ID != "maratona" || aplicadas[1].Recompensa != 20 || aplicadas[1].XP != 10 {
+		t.Errorf("missão sem ajuste perdeu padrão: %+v", aplicadas[1])
+	}
+}
+
+func TestAdminMissoesRecompensas_SemAuthRetorna401(t *testing.T) {
+	h := &MissoesHandler{}
+	rec := httptest.NewRecorder()
+	h.HandleGetAdminMissoesRecompensas(rec, httptest.NewRequest(http.MethodGet, "/api/admin/missoes/recompensas", nil))
+	if rec.Code != http.StatusUnauthorized {
+		t.Fatalf("GET sem auth esperava 401, veio %d", rec.Code)
+	}
+
+	rec2 := httptest.NewRecorder()
+	h.HandleSaveAdminMissoesRecompensas(rec2, httptest.NewRequest(http.MethodPut, "/api/admin/missoes/recompensas", nil))
+	if rec2.Code != http.StatusUnauthorized {
+		t.Fatalf("PUT sem auth esperava 401, veio %d", rec2.Code)
+	}
+}

@@ -135,8 +135,8 @@ export default function PainelAtributos({
 
           <p className="m-0 text-xs leading-relaxed text-muted">
             {disponiveis === 0
-              ? 'O primeiro ponto chega no nível 2, e depois um a cada dois níveis.'
-              : `Você tem ${disponiveis} ${disponiveis === 1 ? 'ponto disponível' : 'pontos disponíveis'} pelo nível ${estado.nivel}. Redistribuir é livre.`}
+              ? 'Os primeiros 2 pontos chegam no nível 2, e depois 2 a cada novo nível.'
+              : `Você tem ${disponiveis} ${disponiveis === 1 ? 'ponto disponível' : 'pontos disponíveis'} pelo nível ${estado.nivel} (2 por nível ganho). Redistribuir é livre.`}
           </p>
 
           {mudou && (

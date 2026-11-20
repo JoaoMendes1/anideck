@@ -79,7 +79,7 @@ func TestCombateAvancado_EquilibrioNoCatalogo(t *testing.T) {
 		}
 		j := jogadorDoElenco(base, 60, ItemRPG{Vida: 400, Ataque: 60, Defesa: 40})
 		j.Elemento = pb.Elemento
-		primordial := MonstroRPG{ID: "primordial_esquecido", Tipo: "chefe", Nivel: 60, Vida: 4800, Ataque: 255, Defesa: 155}
+		primordial := MonstroRPG{ID: "primordial_esquecido", Tipo: "chefe", Nivel: 60, Vida: 6380, Ataque: 320, Defesa: 192}
 		if taxa := taxaDeVitoria(j, primordial, 300); taxa < 0.03 || taxa > 0.50 {
 			t.Errorf("%s contra o chefe final real: venceu %.0f%%, esperava entre 3%% e 50%%", base, taxa*100)
 		}

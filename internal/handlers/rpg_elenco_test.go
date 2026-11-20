@@ -16,7 +16,11 @@ import (
 // Constituição, itens da faixa e o livro de habilidades da classe.
 func jogadorDoElenco(base string, nivel int, item ItemRPG) CombatenteRPG {
 	p := PontosDisponiveis(nivel)
-	est := MontarEstadoEquipamento(nivel, "", nil, nil, PrimariosRPG{Forca: p / 2, Constituicao: p - p/2})
+	prim := PrimariosRPG{Forca: p / 2, Constituicao: p - p/2}
+	if base == "maga_agua" {
+		prim = PrimariosRPG{Inteligencia: p / 2, Constituicao: p - p/2}
+	}
+	est := MontarEstadoEquipamento(nivel, "", nil, nil, prim)
 	return CombatenteDoEstado(EstadoEquipamento{
 		Atributos:   SomarAtributos(est.Base, []ItemRPG{item}),
 		Habilidades: LivroDeHabilidades(base, nivel),
@@ -35,7 +39,7 @@ func TestElenco_BalanceamentoPorPersonagem(t *testing.T) {
 		{monstroDoNivel(35, "chefe", 2100, 145, 80), ItemRPG{Vida: 220, Ataque: 34, Defesa: 27}},
 		{monstroDoNivel(50, "chefe", 3600, 210, 120), ItemRPG{Vida: 400, Ataque: 60, Defesa: 40}},
 	}
-	primordial := monstroDoNivel(60, "chefe", 4800, 255, 155)
+	primordial := monstroDoNivel(60, "chefe", 6380, 320, 192)
 	for base := range PersonagensBase() {
 		for _, c := range casos {
 			jogador := jogadorDoElenco(base, c.monstro.Nivel, c.item)

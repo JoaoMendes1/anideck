@@ -214,9 +214,9 @@ func carregarContextoPersonagemAntigo(dbClient *supabase.Client, userID string) 
 	}, nil
 }
 
-// equipamentoDoContexto monta o estado de equipamento. Quando o contexto veio da leitura
-// única, não há consulta nova, a não ser na primeira visita: inventário vazio é quem ainda
-// não recebeu o kit, e só então o kit é entregue e lido de novo.
+// equipamentoDoContexto monta o estado de equipamento a partir da leitura única do banco.
+// Quem começa não recebe kit inicial gratuito: inventário vazio segue vazio até o jogador
+// conquistar equipamentos jogando.
 func equipamentoDoContexto(dbClient *supabase.Client, userID string, ctx contextoPersonagem) (EstadoEquipamento, error) {
 	nivel := CalcularNivelERank(ctx.xpTotal, ctx.ranks).Nivel
 	base := ""
@@ -224,10 +224,9 @@ func equipamentoDoContexto(dbClient *supabase.Client, userID string, ctx context
 		base = ctx.linha.PersonagemBase
 	}
 	var estado EstadoEquipamento
-	if ctx.inventarioLido && len(ctx.inventario) > 0 {
+	if ctx.inventarioLido {
 		estado = MontarEstadoEquipamento(nivel, base, ctx.inventario, ctx.equipados, ctx.pontos)
 	} else {
-		dbClient.Rpc("rpg_garantir_kit_inicial", "", map[string]interface{}{})
 		var err error
 		if estado, err = carregarEstadoEquipamento(dbClient, userID, base, nivel, ctx.pontos); err != nil {
 			return EstadoEquipamento{}, err

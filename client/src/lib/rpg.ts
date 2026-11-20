@@ -81,6 +81,7 @@ export interface ItemRPG {
   classes?: string[] | null
   personagem_exclusivo?: string
   conjunto?: string
+  elemento?: string
 }
 
 export interface ItemDoInventario extends ItemRPG {

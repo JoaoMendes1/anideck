@@ -59,6 +59,7 @@ type ItemRPG struct {
 	// PersonagemExclusivo, quando preenchido, vale no lugar das classes.
 	PersonagemExclusivo string `json:"personagem_exclusivo,omitempty"`
 	Conjunto            string `json:"conjunto,omitempty"`
+	Elemento            string `json:"elemento,omitempty"`
 	// Aprimoramento é de 0 a 10 (sql/083). Vida, Ataque, Defesa e Magia já vêm com ele somado
 	// quando o item é do jogador; no catálogo, é sempre 0.
 	Aprimoramento int `json:"aprimoramento"`
