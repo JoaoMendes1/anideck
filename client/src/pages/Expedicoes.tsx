@@ -312,12 +312,12 @@ function PainelDaVida({
   if (pocaoMana > 0) opcoes.push({ tipo: 'pocao_mana', nome: 'Poção de Mana', efeito: `+${pctPocaoMana}% da Mana`, Icone: FlaskConical, cor: 'text-mana', preco: `${pocaoMana} de Ouro`, desligado: ouro < pocaoMana, fazendo: 'Bebendo…' })
 
   return (
-    <section id="vida" aria-labelledby="titulo-da-vida" className="flex scroll-mt-20 flex-col gap-2.5 rounded-2xl border border-line bg-panel p-3 sm:p-4">
+    <section id="vida" aria-labelledby="titulo-da-vida" className="flex scroll-mt-20 flex-col gap-2 rounded-2xl border border-line bg-panel p-3 sm:px-4 sm:py-3">
       <h2 id="titulo-da-vida" className="sr-only">
         Seu HP
       </h2>
       <BarraDeVida rotulo="Seu HP" atual={vida.atual} maximo={vida.maxima} cor={corDaBarra} />
-      <div className="grid grid-cols-2 gap-1.5">
+      <div className="grid grid-cols-2 gap-1.5 sm:grid-cols-4">
         {opcoes.map((o) => (
           <button
             key={o.tipo}
@@ -325,20 +325,20 @@ function PainelDaVida({
             onClick={() => aoRecuperar(o.tipo)}
             disabled={o.desligado || recuperando !== null}
             aria-label={`${o.nome}: ${o.efeito}, ${o.preco}`}
-            className="flex min-w-0 cursor-pointer items-center gap-2 rounded-xl border border-line bg-panel-2/50 px-2.5 py-2 text-left disabled:cursor-not-allowed disabled:opacity-45"
+            className="flex min-w-0 cursor-pointer items-center gap-2 rounded-xl border border-line bg-panel-2/50 px-2.5 py-1.5 text-left transition-colors hover:border-holo-3/40 disabled:cursor-not-allowed disabled:opacity-45"
           >
-            <o.Icone size={16} className={`shrink-0 ${o.cor}`} aria-hidden="true" />
+            <o.Icone size={15} className={`shrink-0 ${o.cor}`} aria-hidden="true" />
             <span className="min-w-0 flex-1">
               <span className="block truncate text-xs font-bold leading-tight text-text">{recuperando === o.tipo ? o.fazendo : o.nome}</span>
-              <span className="block truncate text-[11px] leading-tight text-muted">{o.efeito}</span>
-              <span className="block truncate font-mono text-[11px] leading-tight text-gold">{o.preco}</span>
+              <span className="block truncate text-xs leading-tight text-muted">{o.efeito}</span>
+              <span className="block truncate font-mono text-xs leading-tight text-gold">{o.preco}</span>
             </span>
           </button>
         ))}
       </div>
       <details className="text-xs text-muted">
         <summary className="cursor-pointer select-none font-semibold text-muted hover:text-text">Como o HP funciona</summary>
-        <p className="m-0 mt-1.5 leading-snug">
+        <p className="m-0 mt-1 leading-snug">
           É o mesmo HP da barra do topo: o dano das batalhas fica nele. Volta {porMilEmPorcento(regras.regen_por_hora)} por hora e{' '}
           {porMilEmPorcento(regras.por_episodio)} a cada episódio assistido ({estado.hoje.episodios_hoje ?? 0} de {regras.episodios_por_dia} hoje).
           Para lutar, precisa de {porMilEmPorcento(regras.vida_minima_luta ?? 300)}; cair custa {regras.queda_ouro_pct ?? 10}% do Ouro.
@@ -444,7 +444,7 @@ export default function Expedicoes() {
 
   return (
     <div ref={topo} className={CONTAINER}>
-      <header className="mb-3 sm:mb-4 flex items-center gap-2.5 select-none">
+      <header className="mb-2 sm:mb-3 flex items-center gap-2.5 select-none">
         <Link
           to="/guilda"
           aria-label="Voltar para a Guilda"
@@ -487,86 +487,41 @@ export default function Expedicoes() {
           }}
         />
       ) : (
-        <div className="flex flex-col gap-3 sm:gap-5">
-          <div className="flex flex-col gap-2">
-            <h1 className="m-0 font-anton text-[1.75rem] sm:text-[2.6rem] uppercase leading-none">Expedições</h1>
-            <p className="m-0 text-xs sm:text-sm leading-relaxed text-muted">
-              Vitórias dão bilhetes, Ouro e, às vezes, um item.{' '}
-              {estado.custos_mana ? `Cada batalha gasta ${estado.custos_mana.expedicao} de Mana. ` : ''}
-              XP só vem dos animes.
-            </p>
-            {estado.passiva && (
-              <p className="m-0 inline-flex flex-wrap items-center gap-1.5 self-start rounded-full border border-holo-3/40 bg-holo-3/10 px-3 py-1 font-mono text-xs text-holo-3">
-                <Sparkles size={12} aria-hidden="true" />
-                <span>
-                  Passiva ativa · <strong className="text-text">{estado.passiva.nome}:</strong> {estado.passiva.resumo}
-                </span>
-              </p>
-            )}
-          </div>
-
-          <div className="grid grid-cols-1 gap-3 lg:grid-cols-12 lg:items-stretch">
-            <dl className="m-0 grid grid-cols-4 gap-1.5 sm:gap-2.5 lg:col-span-6">
-              <div className="flex min-w-0 flex-col justify-between gap-1 rounded-2xl border border-line bg-panel p-2.5 sm:p-4">
-                <dt className="flex min-w-0 items-center gap-1 truncate text-[11px] font-semibold text-muted sm:gap-1.5 sm:text-xs">
-                  <Zap size={13} className="text-holo-2" aria-hidden="true" /> Poder
-                </dt>
-                <dd className="m-0 font-anton text-lg leading-none sm:text-2xl">{estado.atributos.poder}</dd>
+        <div className="flex flex-col gap-3 sm:gap-4">
+          <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+            <div className="flex min-w-0 flex-1 flex-col gap-1.5">
+              <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
+                <h1 className="m-0 font-anton text-[1.75rem] sm:text-[2.15rem] uppercase leading-none">Expedições</h1>
+                <p className="m-0 text-xs sm:text-sm leading-snug text-muted">
+                  Vitórias dão bilhetes, Ouro e, às vezes, um item.{' '}
+                  {estado.custos_mana ? `Cada batalha gasta ${estado.custos_mana.expedicao} de Mana. ` : ''}
+                  XP só vem dos animes.
+                </p>
               </div>
-              <div className="flex min-w-0 flex-col justify-between gap-1 rounded-2xl border border-line bg-panel p-2.5 sm:p-4">
-                <dt className="flex min-w-0 items-center gap-1 truncate text-[11px] font-semibold text-muted sm:gap-1.5 sm:text-xs">
-                  <Swords size={13} className="text-coral" aria-hidden="true" /> Hoje
-                </dt>
-                <dd className="m-0 font-anton text-lg leading-none sm:text-2xl">
-                  {restantes}
-                  <span className="font-mono text-xs text-muted"> de {estado.hoje.limite}</span>
-                </dd>
-              </div>
-              <div className="flex min-w-0 flex-col justify-between gap-1 rounded-2xl border border-line bg-panel p-2.5 sm:p-4">
-                <dt className="flex min-w-0 items-center gap-1 truncate text-[11px] font-semibold text-muted sm:gap-1.5 sm:text-xs">
-                  <Ticket size={13} className="text-gold" aria-hidden="true" /> Bilhetes
-                </dt>
-                <dd className="m-0 font-anton text-lg leading-none sm:text-2xl">{estado.hoje.bilhetes}</dd>
-              </div>
-              <div className="flex min-w-0 flex-col justify-between gap-1 rounded-2xl border border-line bg-panel p-2.5 sm:p-4">
-                <dt className="flex min-w-0 items-center gap-1 truncate text-[11px] font-semibold text-muted sm:gap-1.5 sm:text-xs">
-                  <IconeOuro size={13} /> Ouro
-                </dt>
-                <dd className="m-0 font-anton text-lg leading-none sm:text-2xl">{estado.hoje.ouro ?? 0}</dd>
-              </div>
-            </dl>
-
-            <div className="lg:col-span-6">
-              <PainelDaVida estado={estado} recuperando={recuperando} aoRecuperar={recuperar} />
+              {(estado.passiva || regiaoEmDestaque) && (
+                <div className="flex flex-wrap items-center gap-1.5">
+                  {estado.passiva && (
+                    <p className="m-0 inline-flex flex-wrap items-center gap-1.5 rounded-full border border-holo-3/40 bg-holo-3/10 px-2.5 py-0.5 font-mono text-xs text-holo-3">
+                      <Sparkles size={12} aria-hidden="true" />
+                      <span>
+                        Passiva ativa · <strong className="text-text">{estado.passiva.nome}:</strong> {estado.passiva.resumo}
+                      </span>
+                    </p>
+                  )}
+                  {regiaoEmDestaque && (
+                    <p className="m-0 inline-flex flex-wrap items-center gap-1.5 rounded-full border border-gold/50 bg-gold/10 px-2.5 py-0.5 text-xs text-text">
+                      <Compass size={13} className="shrink-0 text-gold" aria-hidden="true" />
+                      <span>
+                        <strong className="text-gold">Destaque de hoje:</strong> {regiaoEmDestaque.nome} ({regiaoEmDestaque.bioma}) ·{' '}
+                        {regiaoEmDestaque.bonus_destaque || '+1 material da Forja garantido na vitória'}
+                      </span>
+                    </p>
+                  )}
+                </div>
+              )}
             </div>
-          </div>
 
-          {exausto && (
-            <p role="status" className="m-0 rounded-xl border border-coral/40 bg-coral/10 p-3 text-xs text-text">
-              Seu personagem está abaixo de 30% de Vida. Descanse, assista a um episódio ou use a Pousada para voltar às batalhas.
-            </p>
-          )}
-          {restantes === 0 && <ComprarLutaExtra tipo="expedicao" aoComprar={carregar} />}
-          {erroDaLuta && (
-            <p role="alert" className="m-0 text-xs font-bold text-coral">
-              {erroDaLuta}
-            </p>
-          )}
-
-          <div className="flex flex-wrap items-center justify-between gap-2.5">
-            {regiaoEmDestaque ? (
-              <p className="m-0 inline-flex items-center gap-1.5 rounded-full border border-gold/50 bg-gold/10 px-3 py-1.5 text-xs text-text">
-                <Compass size={14} className="shrink-0 text-gold" aria-hidden="true" />
-                <span>
-                  <strong className="text-gold">Destaque de hoje:</strong> {regiaoEmDestaque.nome} ({regiaoEmDestaque.bioma}) ·{' '}
-                  {regiaoEmDestaque.bonus_destaque || '+1 material da Forja garantido na vitória'}
-                </span>
-              </p>
-            ) : (
-              <span />
-            )}
-
-            <div role="group" aria-label="Modo de visualização" className="inline-flex rounded-full border border-line bg-panel p-1">
+            <div role="group" aria-label="Modo de visualização" className="inline-flex shrink-0 self-start rounded-full border border-line bg-panel p-1">
               <button
                 type="button"
                 onClick={() => setModo('mapa')}
@@ -591,6 +546,54 @@ export default function Expedicoes() {
               </button>
             </div>
           </div>
+
+          <div className="grid grid-cols-1 gap-2.5 lg:grid-cols-12 lg:items-center">
+            <dl className="m-0 grid grid-cols-4 gap-1.5 sm:gap-2 lg:col-span-5">
+              <div className="flex min-w-0 flex-col justify-between gap-1.5 rounded-2xl border border-line bg-panel p-2.5 sm:px-3.5 sm:py-3">
+                <dt className="flex min-w-0 items-center gap-1 truncate text-xs font-semibold text-muted sm:gap-1.5">
+                  <Zap size={13} className="shrink-0 text-holo-2" aria-hidden="true" /> Poder
+                </dt>
+                <dd className="m-0 font-anton text-lg leading-none sm:text-2xl">{estado.atributos.poder}</dd>
+              </div>
+              <div className="flex min-w-0 flex-col justify-between gap-1.5 rounded-2xl border border-line bg-panel p-2.5 sm:px-3.5 sm:py-3">
+                <dt className="flex min-w-0 items-center gap-1 truncate text-xs font-semibold text-muted sm:gap-1.5">
+                  <Swords size={13} className="shrink-0 text-coral" aria-hidden="true" /> Hoje
+                </dt>
+                <dd className="m-0 font-anton text-lg leading-none sm:text-2xl">
+                  {restantes}
+                  <span className="font-mono text-xs text-muted"> de {estado.hoje.limite}</span>
+                </dd>
+              </div>
+              <div className="flex min-w-0 flex-col justify-between gap-1.5 rounded-2xl border border-line bg-panel p-2.5 sm:px-3.5 sm:py-3">
+                <dt className="flex min-w-0 items-center gap-1 truncate text-xs font-semibold text-muted sm:gap-1.5">
+                  <Ticket size={13} className="shrink-0 text-gold" aria-hidden="true" /> Bilhetes
+                </dt>
+                <dd className="m-0 font-anton text-lg leading-none sm:text-2xl">{estado.hoje.bilhetes}</dd>
+              </div>
+              <div className="flex min-w-0 flex-col justify-between gap-1.5 rounded-2xl border border-line bg-panel p-2.5 sm:px-3.5 sm:py-3">
+                <dt className="flex min-w-0 items-center gap-1 truncate text-xs font-semibold text-muted sm:gap-1.5">
+                  <IconeOuro size={13} /> Ouro
+                </dt>
+                <dd className="m-0 font-anton text-lg leading-none sm:text-2xl">{estado.hoje.ouro ?? 0}</dd>
+              </div>
+            </dl>
+
+            <div className="lg:col-span-7">
+              <PainelDaVida estado={estado} recuperando={recuperando} aoRecuperar={recuperar} />
+            </div>
+          </div>
+
+          {exausto && (
+            <p role="status" className="m-0 rounded-xl border border-coral/40 bg-coral/10 p-3 text-xs text-text">
+              Seu personagem está abaixo de 30% de Vida. Descanse, assista a um episódio ou use a Pousada para voltar às batalhas.
+            </p>
+          )}
+          {restantes === 0 && <ComprarLutaExtra tipo="expedicao" aoComprar={carregar} />}
+          {erroDaLuta && (
+            <p role="alert" className="m-0 text-xs font-bold text-coral">
+              {erroDaLuta}
+            </p>
+          )}
 
           {modo === 'mapa' ? (
             <MapaExpedicoes

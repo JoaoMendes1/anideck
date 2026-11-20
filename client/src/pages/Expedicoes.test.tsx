@@ -396,4 +396,35 @@ describe('Expedições', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Visão geral' }))
     expect(screen.getByText('1,0×')).toBeTruthy()
   })
+
+  it('no desktop trocar de região seleciona automaticamente o primeiro monstro dela na ficha', async () => {
+    const base = estado()
+    const lobo = {
+      ...slime,
+      id: 'lobo_sombrio',
+      nome: 'Lobo Sombrio',
+      nivel: 10,
+      poder: 160,
+      dificuldade: 'dificil' as const,
+      regiao: 'bosque_sombrio',
+      regiao_nome: 'Bosque Sombrio',
+      bestiario: { vitorias: 0, marco: 0, faltam_marco: 10, bonus_ouro: 0 },
+    }
+    const comDuasRegioes: EstadoExpedicoes = {
+      ...base,
+      regioes: [
+        { id: 'clareira_inicial', nome: 'Clareira Inicial', subtitulo: 'Fronteira', bioma: 'Brisa', efeito_bioma: 'Campo aberto.', faixa_nivel: 'Nv 1–8', ordem: 1, x: 28, y: 75, conexoes: ['bosque_sombrio'], monstros: ['slime_de_eter'] },
+        { id: 'bosque_sombrio', nome: 'Bosque Sombrio', subtitulo: 'Trilhas', bioma: 'Névoa', efeito_bioma: 'Feras velozes.', faixa_nivel: 'Nv 10–25', ordem: 2, x: 19, y: 47, conexoes: ['clareira_inicial'], monstros: ['lobo_sombrio'] },
+      ],
+      monstros: [base.monstros[0], lobo],
+    }
+    vi.mocked(obterExpedicoes).mockResolvedValue({ dados: comDuasRegioes })
+    abrir()
+
+    expect(await screen.findByRole('button', { name: 'Enfrentar Slime de Éter' })).toBeTruthy()
+    fireEvent.click(screen.getByRole('button', { name: /^Explorar Bosque Sombrio \(Nv 10–25,/ }))
+
+    await screen.findByRole('heading', { name: 'Bosque Sombrio' })
+    expect(screen.getByRole('button', { name: 'Enfrentar Lobo Sombrio' })).toBeTruthy()
+  })
 })

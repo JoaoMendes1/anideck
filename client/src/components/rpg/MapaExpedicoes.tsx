@@ -323,15 +323,17 @@ export function FolhaInspecaoMonstro({
   const temFamilia = Boolean(monstro.familia || monstro.evolui_de || (monstro.evolui_para?.length ?? 0) > 0)
   const linhaEvolutiva = temFamilia ? coletarLinhaEvolutiva(monstro, mapaMonstros) : []
 
-  return (
-    <aside
-      aria-label={`Detalhes de ${monstro.nome}`}
-      className={`flex flex-col gap-3 rounded-2xl border bg-panel p-4 shadow-lg ${tipo.borda}`}
-    >
-      <div className={`flex gap-3 ${semAcoes ? 'flex-row items-start text-left' : 'flex-col items-center text-center sm:flex-row sm:items-start sm:text-left'}`}>
-        <IconeDoMonstro monstro={monstro} tamanho={semAcoes ? 'h-20 w-20' : 'h-28 w-28 sm:h-32 sm:w-32'} destaque iconeTamanho={semAcoes ? 30 : 44} />
-        <div className="flex min-w-0 flex-1 flex-col gap-1.5">
-          <div className={`flex flex-wrap items-center gap-1.5 ${semAcoes ? 'justify-start' : 'justify-center sm:justify-start'}`}>
+  const cabecalhoERecompensas = (
+    <>
+      <div className="flex flex-row items-start gap-3 text-left">
+        <IconeDoMonstro
+          monstro={monstro}
+          tamanho={semAcoes ? 'h-20 w-20' : 'h-20 w-20 sm:h-24 sm:w-24'}
+          destaque
+          iconeTamanho={semAcoes ? 30 : 36}
+        />
+        <div className="flex min-w-0 flex-1 flex-col gap-1">
+          <div className="flex flex-wrap items-center gap-1.5">
             {monstro.regiao_nome && (
               <span className="inline-flex items-center gap-1 rounded-full border border-line bg-panel-2 px-2 py-0.5 text-xs text-muted">
                 <MapPin size={11} aria-hidden="true" />
@@ -347,13 +349,13 @@ export function FolhaInspecaoMonstro({
             <span className={`rounded-full border px-2 py-0.5 font-mono text-xs ${dificuldade.classe}`}>{dificuldade.rotulo}</span>
           </div>
 
-          <h2 className="m-0 font-anton text-2xl uppercase leading-tight tracking-wide text-text">{monstro.nome}</h2>
+          <h2 className="m-0 font-anton text-xl uppercase leading-tight tracking-wide text-text sm:text-2xl">{monstro.nome}</h2>
 
           <p className="m-0 font-mono text-xs text-muted">
             {tipo.rotulo} · nível {monstro.nivel} · poder {monstro.poder}
           </p>
 
-          <div className={`flex flex-wrap items-center gap-1.5 ${semAcoes ? 'justify-start' : 'justify-center sm:justify-start'}`}>
+          <div className="flex flex-wrap items-center gap-1.5">
             {monstro.elemento && (
               <span className={`rounded-full border px-2 py-0.5 font-mono text-xs ${estiloEl.classe}`}>
                 {estiloEl.simbolo} {rotuloDoElemento(monstro.elemento)}
@@ -366,9 +368,30 @@ export function FolhaInspecaoMonstro({
               </span>
             )}
           </div>
-
         </div>
       </div>
+
+      <div className="mt-2.5 flex flex-wrap items-center gap-x-3 gap-y-1 rounded-xl border border-line bg-void/40 px-2.5 py-1.5 font-mono text-xs text-muted">
+        <span className="inline-flex items-center gap-1 text-text">
+          <Ticket size={13} className="text-gold" aria-hidden="true" />
+          {monstro.bilhetes} {monstro.bilhetes === 1 ? 'bilhete' : 'bilhetes'}
+        </span>
+        {monstro.chance_item > 0 && (
+          <span className={item.texto}>
+            {monstro.chance_item}% de item {item.rotulo.toLowerCase()}
+          </span>
+        )}
+        <span className="inline-flex items-center gap-1 text-holo-2">
+          <Hammer size={12} aria-hidden="true" />
+          {monstro.em_destaque ? '+1 material garantido hoje' : 'Materiais da Forja'}
+        </span>
+      </div>
+    </>
+  )
+
+  const corpoDaFicha = (
+    <>
+      <EscolhaDePostura />
 
       <ConfrontoElemental
         nomeDoMonstro={monstro.nome}
@@ -380,22 +403,59 @@ export function FolhaInspecaoMonstro({
         classeHeroi={classeHeroi}
       />
 
-      <EscolhaDePostura />
-
-      <div className="flex flex-col gap-1 rounded-xl border border-line bg-panel-2/60 p-3">
-        <p className="m-0 text-xs leading-relaxed text-text">{monstro.descricao}</p>
-        {monstro.habitat && <p className="m-0 text-xs leading-relaxed text-muted">{monstro.habitat}</p>}
+      <div className="flex flex-col gap-1.5">
+        <h3 className="m-0 font-mono text-xs font-semibold uppercase tracking-wider text-muted">Atributos (Monstro vs. Você)</h3>
+        <dl className="m-0 grid grid-cols-2 gap-1.5">
+          {comparacao.map((linha) => (
+            <div key={linha.rotulo} className="flex min-w-0 flex-col gap-0.5 rounded-xl border border-line bg-void/50 px-2.5 py-1">
+              <dt className="flex items-center gap-1 text-xs font-semibold text-muted">
+                <linha.Icone size={12} className={`shrink-0 ${linha.classeIcone}`} aria-hidden="true" />
+                <span className="truncate">{linha.rotulo}</span>
+              </dt>
+              <dd className="m-0 flex items-baseline justify-between gap-1 font-mono text-xs">
+                <span className={`font-bold ${linha.alerta ? 'text-coral' : 'text-text'}`}>{linha.monstro}</span>
+                <span className={linha.favoravel ? 'text-green' : 'text-muted'}>Você: {linha.jogador}</span>
+              </dd>
+            </div>
+          ))}
+        </dl>
       </div>
 
+      {(monstro.poderes?.length ?? 0) > 0 && (
+        <div className="flex flex-col gap-1.5">
+          <h3 className="m-0 font-mono text-xs font-semibold uppercase tracking-wider text-muted">Poderes & Padrões</h3>
+          <ul className="m-0 flex list-none flex-col gap-1.5 p-0">
+            {monstro.poderes?.map((p) => (
+              <li key={p.id} className="rounded-xl border border-line bg-panel-2/50 px-3 py-2 text-xs">
+                <div className="mb-0.5 flex flex-wrap items-center gap-1.5">
+                  <strong className="text-text">{p.nome}</strong>
+                  {p.arcano && (
+                    <span className="rounded-full border border-holo-2/50 bg-holo-2/10 px-2 py-0.5 font-mono text-xs text-holo-2">
+                      Arcano
+                    </span>
+                  )}
+                  {(p.custo_eter ?? 0) > 0 && (
+                    <span className="rounded-full border border-holo-3/40 bg-holo-3/10 px-2 py-0.5 font-mono text-xs text-holo-3">
+                      {p.custo_eter} Éter
+                    </span>
+                  )}
+                </div>
+                <p className="m-0 leading-snug text-muted">{p.descricao}</p>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+
       {linhaEvolutiva.length > 1 && (
-        <div className="flex flex-col gap-2 rounded-xl border border-line bg-void/45 p-3">
+        <div className="flex flex-col gap-2 rounded-xl border border-line bg-void/45 p-2.5">
           <div className="flex flex-wrap items-center justify-between gap-1.5">
             <h3 className="m-0 inline-flex items-center gap-1.5 font-mono text-xs font-semibold uppercase tracking-wider text-muted">
               <GitBranch size={12} className="text-holo-3" aria-hidden="true" />
               Linha de Evolução
             </h3>
             {monstro.familia && (
-              <span className="rounded-full border border-holo-3/40 bg-holo-3/10 px-2 py-0.5 font-mono text-[11px] text-holo-3">
+              <span className="rounded-full border border-holo-3/40 bg-holo-3/10 px-2 py-0.5 font-mono text-xs text-holo-3">
                 {monstro.familia}
               </span>
             )}
@@ -428,7 +488,7 @@ export function FolhaInspecaoMonstro({
                         {romano ? `${romano} · ` : ''}
                         {elo.nome}
                       </span>
-                      <span className="block truncate font-mono text-[11px] text-muted">
+                      <span className="block truncate font-mono text-xs text-muted">
                         Nv {elo.nivel}
                         {relacao ? ` · ${relacao}` : ''}
                       </span>
@@ -441,70 +501,13 @@ export function FolhaInspecaoMonstro({
         </div>
       )}
 
-      <div className="flex flex-col gap-1.5">
-        <div className="flex items-baseline justify-between gap-2">
-          <h3 className="m-0 font-mono text-xs font-semibold uppercase tracking-wider text-muted">Atributos (Monstro vs. Você)</h3>
-        </div>
-        <dl className="m-0 grid grid-cols-2 gap-1.5">
-          {comparacao.map((linha) => (
-            <div key={linha.rotulo} className="flex min-w-0 flex-col gap-0.5 rounded-xl border border-line bg-void/50 px-2.5 py-1.5">
-              <dt className="flex items-center gap-1 text-xs font-semibold text-muted">
-                <linha.Icone size={12} className={`shrink-0 ${linha.classeIcone}`} aria-hidden="true" />
-                <span className="truncate">{linha.rotulo}</span>
-              </dt>
-              <dd className="m-0 flex items-baseline justify-between gap-1 font-mono text-xs">
-                <span className={`font-bold ${linha.alerta ? 'text-coral' : 'text-text'}`}>{linha.monstro}</span>
-                <span className={linha.favoravel ? 'text-green' : 'text-muted'}>Você: {linha.jogador}</span>
-              </dd>
-            </div>
-          ))}
-        </dl>
-      </div>
-
-      {(monstro.poderes?.length ?? 0) > 0 && (
-        <div className="flex flex-col gap-1.5">
-          <h3 className="m-0 font-mono text-xs font-semibold uppercase tracking-wider text-muted">Poderes & Padrões</h3>
-          <ul className="m-0 flex list-none flex-col gap-1.5 p-0">
-            {monstro.poderes?.map((p) => (
-              <li key={p.id} className="rounded-xl border border-line bg-panel-2/50 px-3 py-2 text-xs">
-                <div className="mb-0.5 flex flex-wrap items-center gap-1.5">
-                  <strong className="text-text">{p.nome}</strong>
-                  {p.arcano && (
-                    <span className="rounded-full border border-holo-2/50 bg-holo-2/10 px-1.5 py-0.5 font-mono text-[11px] text-holo-2">
-                      Arcano
-                    </span>
-                  )}
-                  {(p.custo_eter ?? 0) > 0 && (
-                    <span className="rounded-full border border-holo-3/40 bg-holo-3/10 px-1.5 py-0.5 font-mono text-[11px] text-holo-3">
-                      {p.custo_eter} Éter
-                    </span>
-                  )}
-                </div>
-                <p className="m-0 leading-snug text-muted">{p.descricao}</p>
-              </li>
-            ))}
-          </ul>
-        </div>
-      )}
-
-      <div className="flex flex-wrap items-center gap-x-3 gap-y-1 rounded-xl border border-line bg-void/40 px-3 py-2 font-mono text-xs text-muted">
-        <span className="inline-flex items-center gap-1 text-text">
-          <Ticket size={13} className="text-gold" aria-hidden="true" />
-          {monstro.bilhetes} {monstro.bilhetes === 1 ? 'bilhete' : 'bilhetes'}
-        </span>
-        {monstro.chance_item > 0 && (
-          <span className={item.texto}>
-            {monstro.chance_item}% de item {item.rotulo.toLowerCase()}
-          </span>
-        )}
-        <span className="inline-flex items-center gap-1 text-holo-2">
-          <Hammer size={12} aria-hidden="true" />
-          {monstro.em_destaque ? '+1 material garantido hoje' : 'Materiais da Forja'}
-        </span>
+      <div className="flex flex-col gap-1 rounded-xl border border-line bg-panel-2/60 p-2.5">
+        <p className="m-0 text-xs leading-relaxed text-text">{monstro.descricao}</p>
+        {monstro.habitat && <p className="m-0 text-xs leading-relaxed text-muted">{monstro.habitat}</p>}
       </div>
 
       {monstro.bestiario && (
-        <div className="flex flex-col gap-1.5 rounded-xl border border-line bg-panel-2/40 px-3 py-2.5">
+        <div className="flex flex-col gap-1.5 rounded-xl border border-line bg-panel-2/40 px-3 py-2">
           <p className="m-0 inline-flex items-start gap-1.5 font-mono text-xs text-muted">
             <Trophy size={13} className="mt-0.5 shrink-0 text-gold" aria-hidden="true" />
             <span>{textoDoBestiario(monstro.bestiario)}</span>
@@ -522,25 +525,196 @@ export function FolhaInspecaoMonstro({
           )}
         </div>
       )}
+    </>
+  )
 
-      {!semAcoes && (
-        <div className="flex flex-wrap items-center gap-2">
-          <button
-            type="button"
-            onClick={() => aoEnfrentar(monstro.id)}
-            disabled={bloqueado || lutando !== null}
-            aria-label={`Enfrentar ${monstro.nome}`}
-            className="h-9 cursor-pointer rounded-full bg-gradient-to-r from-holo-1 to-holo-3 px-4 text-xs font-extrabold text-void disabled:cursor-not-allowed disabled:opacity-50"
-          >
-            {lutando === monstro.id ? 'Batalhando…' : 'Enfrentar'}
-            {lutando !== monstro.id && custoMana !== undefined && (
-              <span className="ml-1 font-mono text-xs font-semibold opacity-80">· {custoMana} MP</span>
-            )}
-          </button>
-          <BotaoEmGrupo tipo="monstro" alvoId={monstro.id} nome={monstro.nome} desativado={bloqueado || lutando !== null} />
+  if (semAcoes) {
+    return (
+      <aside aria-label={`Detalhes de ${monstro.nome}`} className={`flex flex-col gap-3 rounded-2xl border bg-panel p-3.5 shadow-lg ${tipo.borda}`}>
+        <div>{cabecalhoERecompensas}</div>
+        {corpoDaFicha}
+      </aside>
+    )
+  }
+
+  return (
+    <aside
+      aria-label={`Detalhes de ${monstro.nome}`}
+      className={`flex flex-col rounded-2xl border bg-panel shadow-lg lg:max-h-[calc(100dvh-7rem)] lg:overflow-hidden ${tipo.borda}`}
+    >
+      <div className="shrink-0 border-b border-line/70 p-3.5 pb-3">{cabecalhoERecompensas}</div>
+      <div className="flex flex-col gap-2.5 p-3.5 pt-3 lg:min-h-0 lg:flex-1 lg:overflow-y-auto">{corpoDaFicha}</div>
+      <div className="flex shrink-0 flex-wrap items-center gap-2 border-t border-line bg-panel px-3.5 py-2.5">
+        <button
+          type="button"
+          onClick={() => aoEnfrentar(monstro.id)}
+          disabled={bloqueado || lutando !== null}
+          aria-label={`Enfrentar ${monstro.nome}`}
+          className="h-10 min-w-0 flex-1 cursor-pointer truncate rounded-full bg-gradient-to-r from-holo-1 to-holo-3 px-4 text-xs font-extrabold text-void disabled:cursor-not-allowed disabled:opacity-50"
+        >
+          {lutando === monstro.id ? 'Batalhando…' : 'Enfrentar'}
+          {lutando !== monstro.id && custoMana !== undefined && (
+            <span className="ml-1 font-mono text-xs font-semibold opacity-80">· {custoMana} MP</span>
+          )}
+        </button>
+        <BotaoEmGrupo tipo="monstro" alvoId={monstro.id} nome={monstro.nome} desativado={bloqueado || lutando !== null} />
+      </div>
+    </aside>
+  )
+}
+
+function PainelDaRegiao({
+  regiaoAtiva,
+  estiloAtiva,
+  monstrosDaRegiao,
+  conexoesDaAtiva,
+  selecionadoId,
+  derrotadosAtiva,
+  dominadaAtiva,
+  carrossel,
+  aoSelecionarRegiao,
+  aoEscolherMonstro,
+}: {
+  regiaoAtiva: RegiaoMapa
+  estiloAtiva: EstiloRegiao
+  monstrosDaRegiao: MonstroNaLista[]
+  conexoesDaAtiva: RegiaoMapa[]
+  selecionadoId: string
+  derrotadosAtiva: number
+  dominadaAtiva: boolean
+  carrossel: boolean
+  aoSelecionarRegiao: (id: string) => void
+  aoEscolherMonstro: (id: string, naGaveta: boolean) => void
+}) {
+  const IconeAtiva = estiloAtiva.Icone
+  return (
+    <div
+      aria-label={`Região ${regiaoAtiva.nome}`}
+      className={`flex flex-col gap-3 rounded-2xl border p-3.5 sm:p-4 ${estiloAtiva.card} ${regiaoAtiva.em_destaque ? 'ring-1 ring-gold/60' : ''}`}
+    >
+      <div className="flex flex-wrap items-start justify-between gap-2">
+        <div className="flex min-w-0 items-start gap-2.5">
+          <span className={`mt-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-line bg-void/70 ${estiloAtiva.cabecalho}`}>
+            <IconeAtiva size={20} aria-hidden="true" />
+          </span>
+          <div className="min-w-0">
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="font-mono text-xs text-muted">0{regiaoAtiva.ordem}</span>
+              <h3 className="m-0 font-anton text-xl uppercase leading-none tracking-wide text-text">{regiaoAtiva.nome}</h3>
+              <span className="rounded-full border border-line bg-void/60 px-2 py-0.5 font-mono text-xs text-muted">
+                {regiaoAtiva.faixa_nivel}
+              </span>
+              <span className="rounded-full border border-line bg-void/60 px-2 py-0.5 font-mono text-xs text-muted">
+                {derrotadosAtiva}/{monstrosDaRegiao.length} dominados
+              </span>
+              {dominadaAtiva && (
+                <span className="inline-flex items-center gap-1 rounded-full border border-green/50 bg-green/15 px-2 py-0.5 font-mono text-xs font-bold text-green">
+                  <Trophy size={11} aria-hidden="true" /> Dominada
+                </span>
+              )}
+            </div>
+            <p className="m-0 mt-1 text-xs text-muted">
+              <strong className="text-text">{regiaoAtiva.bioma}:</strong> {regiaoAtiva.efeito_bioma}
+            </p>
+          </div>
+        </div>
+
+        {regiaoAtiva.em_destaque && (
+          <span className="inline-flex shrink-0 items-center gap-1 rounded-full border border-gold/60 bg-gold/15 px-2.5 py-1 text-xs font-bold text-gold">
+            <Sparkles size={12} aria-hidden="true" />
+            {regiaoAtiva.bonus_destaque || '+1 material da Forja'}
+          </span>
+        )}
+      </div>
+
+      {conexoesDaAtiva.length > 0 && (
+        <div className="flex flex-wrap items-center gap-1.5 text-xs">
+          <span className="font-mono text-muted">Rotas vizinhas:</span>
+          {conexoesDaAtiva.map((vizinha) => (
+            <button
+              key={vizinha.id}
+              type="button"
+              onClick={() => aoSelecionarRegiao(vizinha.id)}
+              className="inline-flex cursor-pointer items-center gap-1 rounded-full border border-line bg-void/60 px-2.5 py-0.5 font-mono text-xs text-muted hover:border-holo-3/60 hover:text-text"
+            >
+              <ArrowRight size={11} aria-hidden="true" />
+              {vizinha.nome}
+            </button>
+          ))}
         </div>
       )}
-    </aside>
+
+      <div
+        className={
+          carrossel
+            ? '-mx-3.5 flex snap-x gap-2.5 overflow-x-auto px-3.5 pb-1 scrollbar-hide'
+            : 'grid grid-cols-1 gap-2 sm:grid-cols-2 xl:grid-cols-3'
+        }
+      >
+        {monstrosDaRegiao.map((m) => {
+          const ativo = m.id === selecionadoId
+          const tipo = ESTILO_DO_TIPO[m.tipo] ?? ESTILO_DO_TIPO.comum
+          const barraDif = COR_BARRA_DIFICULDADE[m.dificuldade] ?? 'bg-holo-3'
+          const estiloEl = ESTILO_DO_ELEMENTO[m.elemento ?? 'eter'] ?? ESTILO_DO_ELEMENTO.eter
+          const vitorias = m.bestiario?.vitorias ?? 0
+          const romano = ESTAGIOS_ROMANOS[m.estagio ?? 0] || ''
+
+          return (
+            <button
+              key={m.id}
+              type="button"
+              onClick={() => aoEscolherMonstro(m.id, carrossel)}
+              aria-pressed={ativo}
+              aria-label={`Inspecionar ${m.nome} (nível ${m.nivel})`}
+              className={`group flex min-w-0 cursor-pointer items-center gap-2.5 rounded-2xl border p-2.5 text-left transition ${carrossel ? 'w-64 shrink-0 snap-start' : ''} ${
+                ativo
+                  ? 'border-holo-3 bg-void/90 ring-2 ring-holo-3/40'
+                  : 'border-line bg-void/55 hover:border-holo-1/60 hover:bg-void/80'
+              }`}
+            >
+              <div className="relative shrink-0">
+                <IconeDoMonstro monstro={m} tamanho={carrossel ? 'h-16 w-16' : 'h-14 w-14'} destaque={ativo || m.tipo === 'chefe'} iconeTamanho={carrossel ? 28 : 24} />
+                {m.tipo === 'chefe' && (
+                  <span
+                    title="Chefão"
+                    className="absolute -top-1.5 -right-1.5 flex h-6 w-6 items-center justify-center rounded-full border border-gold/70 bg-void text-gold"
+                  >
+                    <Crown size={12} aria-hidden="true" />
+                  </span>
+                )}
+              </div>
+
+              <div className="flex min-w-0 flex-1 flex-col gap-0.5">
+                <div className="flex items-center gap-1.5">
+                  <span className={`h-2 w-2 shrink-0 rounded-full ${barraDif}`} aria-hidden="true" />
+                  <span className="truncate text-sm font-bold text-text">{m.nome}</span>
+                </div>
+                <div className="flex flex-wrap items-center gap-1.5 font-mono text-xs text-muted">
+                  <span>Nv {m.nivel}</span>
+                  <span>·</span>
+                  <span>{tipo.rotulo}</span>
+                  {m.elemento && <span>{estiloEl.simbolo}</span>}
+                </div>
+                <div className="flex flex-wrap items-center gap-2 font-mono text-xs text-muted">
+                  <span>Poder {m.poder}</span>
+                  <span>·</span>
+                  <span className="inline-flex items-center gap-1 text-gold">
+                    <Trophy size={11} aria-hidden="true" />
+                    {vitorias}
+                  </span>
+                  {romano && (
+                    <span className="inline-flex items-center gap-0.5 rounded-full border border-holo-3/35 bg-holo-3/10 px-1.5 py-0.5 text-xs text-holo-3">
+                      <GitBranch size={10} aria-hidden="true" />
+                      {romano}
+                    </span>
+                  )}
+                </div>
+              </div>
+            </button>
+          )
+        })}
+      </div>
+    </div>
   )
 }
 
@@ -728,6 +902,11 @@ export default function MapaExpedicoes({
 
   const selecionarRegiao = (id: string) => {
     setRegiaoAtivaId(id)
+    const regiaoAlvo = regiaoPorId.get(id)
+    if (regiaoAlvo && (!selecionado || !regiaoAlvo.monstros.includes(selecionado.id))) {
+      const primeiroId = regiaoAlvo.monstros.find((mid) => porId.has(mid))
+      if (primeiroId) aoSelecionar(primeiroId)
+    }
     if (ehMobile) setGavetaAberta(true)
     if (zoom > zoomMin + 0.05 && tamanhoTela.w > 0 && tamanhoTela.h > 0) {
       const coord = coordsPorId.get(id) ?? { x: 50, y: 50 }
@@ -892,137 +1071,6 @@ export default function MapaExpedicoes({
     />
   )
 
-  // Painel da região: cabeçalho, rotas e criaturas. Na gaveta do celular as criaturas viram
-  // um carrossel, para a ficha caber logo abaixo sem rolar a página.
-  const painelDaRegiao = (carrossel: boolean) => (
-    <div
-      aria-label={`Região ${regiaoAtiva.nome}`}
-      className={`flex flex-col gap-3 rounded-2xl border p-3.5 sm:p-4 ${estiloAtiva.card} ${regiaoAtiva.em_destaque ? 'ring-1 ring-gold/60' : ''}`}
-    >
-          <div className="flex flex-wrap items-start justify-between gap-2">
-            <div className="flex min-w-0 items-start gap-2.5">
-              <span className={`mt-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-line bg-void/70 ${estiloAtiva.cabecalho}`}>
-                <IconeAtiva size={20} aria-hidden="true" />
-              </span>
-              <div className="min-w-0">
-                <div className="flex flex-wrap items-center gap-2">
-                  <span className="font-mono text-xs text-muted">0{regiaoAtiva.ordem}</span>
-                  <h3 className="m-0 font-anton text-xl uppercase leading-none tracking-wide text-text">{regiaoAtiva.nome}</h3>
-                  <span className="rounded-full border border-line bg-void/60 px-2 py-0.5 font-mono text-xs text-muted">
-                    {regiaoAtiva.faixa_nivel}
-                  </span>
-                  <span className="rounded-full border border-line bg-void/60 px-2 py-0.5 font-mono text-xs text-muted">
-                    {derrotadosAtiva}/{monstrosDaRegiao.length} dominados
-                  </span>
-                  {dominadaAtiva && (
-                    <span className="inline-flex items-center gap-1 rounded-full border border-green/50 bg-green/15 px-2 py-0.5 font-mono text-xs font-bold text-green">
-                      <Trophy size={11} aria-hidden="true" /> Dominada
-                    </span>
-                  )}
-                </div>
-                <p className="m-0 mt-1 text-xs text-muted">
-                  <strong className="text-text">{regiaoAtiva.bioma}:</strong> {regiaoAtiva.efeito_bioma}
-                </p>
-              </div>
-            </div>
-
-            {regiaoAtiva.em_destaque && (
-              <span className="inline-flex shrink-0 items-center gap-1 rounded-full border border-gold/60 bg-gold/15 px-2.5 py-1 text-xs font-bold text-gold">
-                <Sparkles size={12} aria-hidden="true" />
-                {regiaoAtiva.bonus_destaque || '+1 material da Forja'}
-              </span>
-            )}
-          </div>
-
-          {conexoesDaAtiva.length > 0 && (
-            <div className="flex flex-wrap items-center gap-1.5 text-xs">
-              <span className="font-mono text-muted">Rotas vizinhas:</span>
-              {conexoesDaAtiva.map((vizinha) => (
-                <button
-                  key={vizinha.id}
-                  type="button"
-                  onClick={() => selecionarRegiao(vizinha.id)}
-                  className="inline-flex cursor-pointer items-center gap-1 rounded-full border border-line bg-void/60 px-2.5 py-0.5 font-mono text-xs text-muted hover:border-holo-3/60 hover:text-text"
-                >
-                  <ArrowRight size={11} aria-hidden="true" />
-                  {vizinha.nome}
-                </button>
-              ))}
-            </div>
-          )}
-      <div
-        className={
-          carrossel
-            ? '-mx-3.5 flex snap-x gap-2.5 overflow-x-auto px-3.5 pb-1 scrollbar-hide'
-            : 'grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-1'
-        }
-      >
-        {monstrosDaRegiao.map((m) => {
-              const ativo = m.id === selecionado.id
-              const tipo = ESTILO_DO_TIPO[m.tipo] ?? ESTILO_DO_TIPO.comum
-              const barraDif = COR_BARRA_DIFICULDADE[m.dificuldade] ?? 'bg-holo-3'
-              const estiloEl = ESTILO_DO_ELEMENTO[m.elemento ?? 'eter'] ?? ESTILO_DO_ELEMENTO.eter
-              const vitorias = m.bestiario?.vitorias ?? 0
-              const romano = ESTAGIOS_ROMANOS[m.estagio ?? 0] || ''
-
-              return (
-                <button
-                  key={m.id}
-                  type="button"
-                  onClick={() => escolherMonstro(m.id, carrossel)}
-                  aria-pressed={ativo}
-                  aria-label={`Inspecionar ${m.nome} (nível ${m.nivel})`}
-                  className={`group flex min-w-0 cursor-pointer items-center gap-3 rounded-2xl border p-2.5 text-left transition ${carrossel ? 'w-64 shrink-0 snap-start' : ''} ${
-                    ativo
-                      ? 'border-holo-3 bg-void/90 ring-2 ring-holo-3/40'
-                      : 'border-line bg-void/55 hover:border-holo-1/60 hover:bg-void/80'
-                  }`}
-                >
-                  <div className="relative shrink-0">
-                    <IconeDoMonstro monstro={m} tamanho="h-16 w-16" destaque={ativo || m.tipo === 'chefe'} iconeTamanho={28} />
-                    {m.tipo === 'chefe' && (
-                      <span
-                        title="Chefão"
-                        className="absolute -top-1.5 -right-1.5 flex h-6 w-6 items-center justify-center rounded-full border border-gold/70 bg-void text-gold"
-                      >
-                        <Crown size={12} aria-hidden="true" />
-                      </span>
-                    )}
-                  </div>
-
-                  <div className="flex min-w-0 flex-1 flex-col gap-1">
-                    <div className="flex items-center gap-1.5">
-                      <span className={`h-2 w-2 shrink-0 rounded-full ${barraDif}`} aria-hidden="true" />
-                      <span className="truncate text-sm font-bold text-text">{m.nome}</span>
-                    </div>
-                    <div className="flex flex-wrap items-center gap-1.5 font-mono text-xs text-muted">
-                      <span>Nv {m.nivel}</span>
-                      <span>·</span>
-                      <span>{tipo.rotulo}</span>
-                      {m.elemento && <span>{estiloEl.simbolo}</span>}
-                    </div>
-                    <div className="flex flex-wrap items-center gap-2 font-mono text-xs text-muted">
-                      <span>Poder {m.poder}</span>
-                      <span>·</span>
-                      <span className="inline-flex items-center gap-1 text-gold">
-                        <Trophy size={11} aria-hidden="true" />
-                        {vitorias}
-                      </span>
-                      {romano && (
-                        <span className="inline-flex items-center gap-0.5 rounded-full border border-holo-3/35 bg-holo-3/10 px-1.5 py-0.5 text-[10px] text-holo-3">
-                          <GitBranch size={10} aria-hidden="true" />
-                          {romano}
-                        </span>
-                      )}
-                    </div>
-                  </div>
-                </button>
-              )
-            })}
-      </div>
-    </div>
-  )
-
   const controlesZoom = (
     <div
       role="group"
@@ -1069,29 +1117,32 @@ export default function MapaExpedicoes({
   )
 
   return (
-    <div className="flex flex-col gap-4 sm:gap-5 lg:grid lg:grid-cols-[minmax(0,1fr)_400px] lg:items-start">
-      {/* Mapa-múndi panorâmico em largura total no desktop e navegável por câmera no celular */}
+    <div className="flex flex-col gap-4 lg:grid lg:grid-cols-[minmax(0,1fr)_430px] xl:grid-cols-[minmax(0,1fr)_470px] lg:items-start">
+      <div className="flex min-w-0 flex-col gap-4">
+      {/* Mapa-múndi panorâmico na esquerda e navegável por câmera no celular */}
       <section aria-label="Mapa de regiões" className="overflow-hidden rounded-2xl border border-line bg-panel p-3 sm:p-4">
-        <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
-          <div className="flex items-center gap-2">
-            <Compass size={16} className="text-holo-3" aria-hidden="true" />
-            <h2 className="m-0 font-anton text-base uppercase tracking-wide text-text sm:text-lg">Mapa-Múndi de Éter</h2>
+        <div className="mb-2.5 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex flex-wrap items-center gap-x-2.5 gap-y-0.5">
+            <div className="flex items-center gap-2">
+              <Compass size={16} className="text-holo-3" aria-hidden="true" />
+              <h2 className="m-0 font-anton text-base uppercase tracking-wide text-text sm:text-lg">Mapa-Múndi de Éter</h2>
+            </div>
+            <span className="font-mono text-xs text-muted">{regioes.length} regiões · {monstros.length} criaturas</span>
           </div>
-          <span className="font-mono text-xs text-muted">{regioes.length} regiões · {monstros.length} criaturas</span>
-        </div>
 
-        <div className="mb-3 flex flex-col gap-1 rounded-xl border border-line/70 bg-panel-2/60 px-3 py-2">
-          <div className="flex items-center justify-between gap-2 font-mono text-xs">
-            <span className="text-muted">Bestiário Global</span>
-            <span className="font-bold text-text">
-              {descobertosGlobal} / {totalGlobal} descobertos · {pctGlobal}%
-            </span>
-          </div>
-          <div className="h-1.5 overflow-hidden rounded-full bg-void/80">
-            <div
-              className="h-full rounded-full bg-gradient-to-r from-holo-3 via-holo-2 to-gold transition-all"
-              style={{ width: `${pctGlobal}%` }}
-            />
+          <div className="flex flex-col gap-1 rounded-xl border border-line/70 bg-panel-2/60 px-3 py-1.5 sm:w-64 sm:shrink-0">
+            <div className="flex items-center justify-between gap-2 font-mono text-xs">
+              <span className="text-muted">Bestiário Global</span>
+              <span className="font-bold text-text">
+                {descobertosGlobal} / {totalGlobal} descobertos · {pctGlobal}%
+              </span>
+            </div>
+            <div className="h-1.5 overflow-hidden rounded-full bg-void/80">
+              <div
+                className="h-full rounded-full bg-gradient-to-r from-holo-3 via-holo-2 to-gold transition-all"
+                style={{ width: `${pctGlobal}%` }}
+              />
+            </div>
           </div>
         </div>
 
@@ -1282,12 +1333,28 @@ export default function MapaExpedicoes({
         </div>
       </section>
 
-      {/* Telas médias: painel da região e ficha abaixo do mapa. Telas grandes: ao lado do mapa. */}
+        {/* Telas médias e grandes: criaturas da região abaixo do mapa aproveitando a largura */}
+        {!ehMobile && (
+          <PainelDaRegiao
+            regiaoAtiva={regiaoAtiva}
+            estiloAtiva={estiloAtiva}
+            monstrosDaRegiao={monstrosDaRegiao}
+            conexoesDaAtiva={conexoesDaAtiva}
+            selecionadoId={selecionado.id}
+            derrotadosAtiva={derrotadosAtiva}
+            dominadaAtiva={dominadaAtiva}
+            carrossel={false}
+            aoSelecionarRegiao={selecionarRegiao}
+            aoEscolherMonstro={escolherMonstro}
+          />
+        )}
+      </div>
+
+      {/* Telas médias: ficha abaixo da região. Telas grandes: ficha inteira fixa ao lado do mapa. */}
       {!ehMobile && (
-        <aside className="flex flex-col gap-4 lg:sticky lg:top-4 lg:max-h-[calc(100dvh-2rem)] lg:overflow-y-auto lg:pr-1">
-          {painelDaRegiao(false)}
+        <div className="min-w-0 lg:sticky lg:top-24">
           {ficha}
-        </aside>
+        </div>
       )}
 
       {/* Celular: barra da região ativa abaixo do mapa; tocar abre a gaveta. */}
@@ -1343,7 +1410,18 @@ export default function MapaExpedicoes({
                 <X size={16} aria-hidden="true" />
               </button>
             </div>
-            {painelDaRegiao(true)}
+            <PainelDaRegiao
+              regiaoAtiva={regiaoAtiva}
+              estiloAtiva={estiloAtiva}
+              monstrosDaRegiao={monstrosDaRegiao}
+              conexoesDaAtiva={conexoesDaAtiva}
+              selecionadoId={selecionado.id}
+              derrotadosAtiva={derrotadosAtiva}
+              dominadaAtiva={dominadaAtiva}
+              carrossel
+              aoSelecionarRegiao={selecionarRegiao}
+              aoEscolherMonstro={escolherMonstro}
+            />
             <div ref={fichaNaGavetaRef} className="scroll-mt-14">
               {fichaDaGaveta}
             </div>

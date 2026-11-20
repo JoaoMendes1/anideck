@@ -492,5 +492,17 @@
     "categoria": "novidade",
     "resumo": "Animes que já terminaram (de 6 a 30 episódios) agora têm uma maratona na página do anime. Toque em Iniciar maratona e veja tudo em até 24 horas, marcando cada episódio ao terminar. Quanto mais rápido, maior o pacote: Ouro, XP além do limite do dia, AniCoins e bilhetes. Vale para 2 maratonas concluídas por semana. O card mostra o cronômetro e quando o próximo episódio libera; marcar antes do tempo perde a maratona, e o app avisa antes.",
     "links": []
+  },
+  {
+    "chave": "2026-11-20-expedicoes-desktop-direto",
+    "titulo": "Expedições mais diretas no computador",
+    "categoria": "layout",
+    "resumo": "No computador, a ficha do monstro agora fica inteira ao lado do Mapa-Múndi, com os botões de luta sempre fixos no rodapé, sem precisar rolar a lista de monstros antes. As criaturas da região ficam logo abaixo do mapa em grade, o topo ficou mais enxuto e trocar de região já carrega o primeiro monstro dela na ficha.",
+    "links": [
+      {
+        "rotulo": "Ir às Expedições",
+        "caminho": "/expedicoes"
+      }
+    ]
   }
 ]
