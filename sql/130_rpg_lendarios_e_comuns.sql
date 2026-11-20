@@ -7,7 +7,8 @@
 --    Arcano = éter, Silvestre = vento, Terra = terra
 -- 2. Conjunto Primordial (éter, nível 55): a Lâmina e a Égide Primordiais + 5 peças novas
 -- 3. 15 Lendários (nível 50) nos 7 conjuntos de 18/11: cada slot fica com 4 Lendários ou mais
--- 4. 20 Comuns no Mercado (nível 1 a 8): a primeira arma de cada classe e peças com elemento
+-- 4. 18 Comuns no Mercado (nível 1 a 8) com elemento, entre eles a primeira arma Comum da
+--    Paladina (as outras classes já tinham a sua, do sql/126)
 -- 5. Receitas da Forja: Lendários como as do sql/122; Primordiais mais caras
 --
 -- Os bônus do conjunto Primordial moram no Go (rpg_conjuntos.go). DO NOTHING preserva o que o
@@ -90,8 +91,6 @@ VALUES
   ('couraca_do_colosso', 'armadura', 'Couraça do Colosso', 'Placas de rocha viva que se fecham sobre as rachaduras.', 'lendario', 280, 0, 28, 0, 0, 0, 0, 0, 50, NULL, 'terra', 'terra', NULL, false, true, 419),
   ('cajado_de_aprendiz', 'arma', 'Cajado de Aprendiz', 'Madeira simples com uma gema azul na ponta; o primeiro cajado de toda maga.', 'comum', 0, 0, 0, 5, 0, 0, 0, 0, 1, ARRAY['maga']::TEXT[], NULL, 'agua', 40, false, true, 420),
   ('adaga_de_ferro', 'arma', 'Adaga de Ferro', 'Curta, leve e fácil de esconder.', 'comum', 0, 3, 0, 0, 0, 20, 0, 0, 1, ARRAY['assassina']::TEXT[], NULL, 'trevas', 40, false, true, 421),
-  ('lanca_de_madeira', 'arma', 'Lança de Madeira', 'Haste de freixo com ponta de ferro; alcança antes da espada.', 'comum', 0, 4, 0, 0, 1, 0, 0, 0, 1, ARRAY['lanceiro']::TEXT[], NULL, 'vento', 40, false, true, 422),
-  ('machado_de_lenhador', 'arma', 'Machado de Lenhador', 'Feito para cortar árvores, mas serve bem numa luta.', 'comum', 0, 5, 0, 0, 0, 0, 0, 0, 1, ARRAY['guerreiro']::TEXT[], NULL, 'terra', 40, false, true, 423),
   ('maca_de_treino', 'arma', 'Maça de Treino', 'Usada nos pátios do templo; pesada e honesta.', 'comum', 15, 3, 0, 0, 0, 0, 0, 0, 1, ARRAY['paladina']::TEXT[], NULL, 'luz', 40, false, true, 424),
   ('chapeu_de_aprendiz', 'elmo', 'Chapéu de Aprendiz', 'Pontudo e um pouco grande demais, como manda a tradição.', 'comum', 10, 0, 0, 2, 0, 0, 0, 0, 2, NULL, NULL, 'eter', 35, false, true, 425),
   ('bandana_de_couro', 'elmo', 'Bandana de Couro', 'Segura o cabelo e o suor longe dos olhos.', 'comum', 10, 0, 0, 0, 1, 0, 0, 0, 3, NULL, NULL, 'vento', 40, false, true, 426),

@@ -159,7 +159,7 @@ SELECT pg_get_viewdef('nome_da_view'::regclass, true);
 | `127_rpg_mais_equipamentos.sql` | 32 equipamentos com elemento: 7 elmos e 7 luvas comuns e raros (níveis 1 a 18), 10 armas no elemento da classe (7 raras no Mercado, 3 épicas na Forja, com receita), 8 joias (uma por elemento). Só dados, sem função. **Depois do `122` e do `126`** | — |
 | `128_rpg_lutas_extras.sql` | Lutas extras com Ouro: `rpg_lutas_extras`; `rpg_comprar_luta_extra` e `rpg_lutas_extras_hoje` (autenticado); `rpg_contar_batalhas_hoje` desconta as expedições compradas; masmorra sem UNIQUE(user_id, dia), conferida contra 1 + compradas em `rpg_concluir_masmorra`. **Depois do `125`** | — |
 | `129_rpg_conjuntos_completos.sql` | Conjuntos completos: peças do `127` ganham conjunto (Brasa, Maré, Trovão, Rocha, Alvorada, Névoa); 18 Raras (armadura, capa, botas) no Mercado; 21 Épicas que completam os 7 conjuntos antigos, com receita na Forja. Só dados. **Depois do `127`** | — |
-| `130_rpg_lendarios_e_comuns.sql` | Elemento nas peças dos 7 conjuntos de 18/11; conjunto Primordial (Lâmina e Égide + 5 peças, nível 55); 15 Lendários dos conjuntos antigos; 20 Comuns no Mercado (arma por classe e peças com elemento); receitas da Forja. Só dados. **Depois do `129`** | — |
+| `130_rpg_lendarios_e_comuns.sql` | Elemento nas peças dos 7 conjuntos de 18/11; conjunto Primordial (Lâmina e Égide + 5 peças, nível 55); 15 Lendários dos conjuntos antigos; 18 Comuns no Mercado com elemento (inclui a arma Comum da Paladina); receitas da Forja. Só dados. **Depois do `129`** | — |
 
 Datas com `~` são a data do commit, não da aplicação no Supabase.
 
