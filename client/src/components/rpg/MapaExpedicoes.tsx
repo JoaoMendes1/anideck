@@ -1,6 +1,7 @@
 // client/src/components/rpg/MapaExpedicoes.tsx
 // Mapa-múndi 2D interativo das regiões conectadas + cenário da região ativa + folha de inspeção com linha evolutiva.
 import { useEffect, useRef, useState, type PointerEvent as ReactPointerEvent } from 'react'
+import { createPortal } from 'react-dom'
 import {
   ArrowRight,
   Brain,
@@ -1307,7 +1308,11 @@ export default function MapaExpedicoes({
         </button>
       )}
 
-      {ehMobile && gavetaAberta && (
+      {/* No body, fora do contêiner da página: dentro dele o z-index da gaveta fica preso ao
+          contexto de empilhamento do pai, e o menu inferior cobria os botões de luta. */}
+      {ehMobile &&
+        gavetaAberta &&
+        createPortal(
         <div className="fixed inset-0 z-[60] flex flex-col justify-end">
           <button
             type="button"
@@ -1360,8 +1365,9 @@ export default function MapaExpedicoes({
               </div>
             </div>
           </div>
-        </div>
-      )}
+        </div>,
+          document.body,
+        )}
     </div>
   )
 }
