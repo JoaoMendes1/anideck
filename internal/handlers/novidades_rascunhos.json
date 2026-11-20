@@ -406,5 +406,17 @@
         "caminho": "/personagem"
       }
     ]
+  },
+  {
+    "chave": "2026-11-20-efeitos-de-status",
+    "titulo": "Batalhas com efeitos de status",
+    "categoria": "novidade",
+    "resumo": "Cada elemento agora tem um efeito de status. Fogo queima, Trevas envenena, Vento faz sangrar, Raio atordoa, Água congela, Terra racha a armadura, Luz ofusca e Éter drena o Éter do alvo. O seu herói aplica o efeito do elemento dele, e os monstros aplicam o deles. A ficha de cada monstro mostra o que ele pode causar, e o registro da luta conta tudo o que aconteceu.",
+    "links": [
+      {
+        "rotulo": "Ir às Expedições",
+        "caminho": "/expedicoes"
+      }
+    ]
   }
 ]

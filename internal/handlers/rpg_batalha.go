@@ -53,6 +53,8 @@ type MonstroRPG struct {
 	EvoluiDe      string         `json:"evolui_de,omitempty"`
 	EvoluiPara    []string       `json:"evolui_para,omitempty"`
 	Poderes       []PoderMonstro `json:"poderes,omitempty"`
+	// Efeito de status que os golpes do monstro podem deixar (vem do elemento).
+	Efeito *EfeitoDeElemento `json:"efeito,omitempty"`
 }
 
 // VelocidadeDoMonstro cresce um pouco abaixo da do jogador do mesmo nível: quem investe em
@@ -97,6 +99,14 @@ type TurnoBatalha struct {
 	// Heroi: na luta em grupo, a posição (a partir de 1) do herói que agiu ou foi atingido;
 	// VidaJogador e Eter são os dele. Ausente na luta solo.
 	Heroi int `json:"heroi,omitempty"`
+	// Efeito de status que o golpe deixou no alvo (rpg_efeitos.go).
+	Efeito string `json:"efeito,omitempty"`
+	// Tique: dano dos efeitos no fim da rodada, com os nomes; Atacante é quem os aplicou.
+	Tique string `json:"tique,omitempty"`
+	// PerdeuVez: o efeito que fez Atacante perder a ação.
+	PerdeuVez string `json:"perdeu_vez,omitempty"`
+	// Errou: o golpe de Atacante se perdeu por Ofuscamento.
+	Errou bool `json:"errou,omitempty"`
 }
 
 // CombatenteRPG é o jogador na luta: os números e as habilidades já liberadas.
@@ -186,6 +196,7 @@ type estadoDoMonstro struct {
 	furia         float64 // multiplica o ataque do monstro; 0 é nenhum
 	escudo        float64 // fração do dano dos heróis que o monstro absorve
 	rodadasEscudo int
+	status        statusNaLuta
 }
 
 // lutaEmAndamento guarda o que muda durante a luta, do lado de um herói.
@@ -209,6 +220,8 @@ type lutaEmAndamento struct {
 	diario *[]TurnoBatalha
 	// heroi é a posição do herói no grupo, a partir de 1; 0 na luta solo.
 	heroi int
+	// status são os efeitos que o monstro deixou neste herói.
+	status statusNaLuta
 }
 
 // ajudanteVivo devolve o primeiro ajudante de pé, que protege o monstro dos golpes.
@@ -260,14 +273,19 @@ func (l *lutaEmAndamento) escolher() *HabilidadeRPG {
 func (l *lutaEmAndamento) golpeDoJogador(ataque int) (int, bool) {
 	a := l.j.Atributos
 	defesa := l.m.Defesa
-	if aj := l.ajudanteVivo(); aj != nil {
+	aj := l.ajudanteVivo()
+	if aj != nil {
 		defesa = aj.Defesa
+	}
+	if aj == nil {
+		defesa = l.mon.status.defesaEfetiva(defesa)
 	}
 	if l.ignorarDefesa {
 		defesa = 0
 		l.ignorarDefesa = false
 	}
 	dano, critico := golpe(l.rng, ataque, defesa, a.CriticoPorMil, float64(a.DanoCritico)/100)
+	dano = l.status.danoCausado(dano)
 	if m := MultiplicadorElemental(l.j.Elemento, l.m.Elemento); m != 1 {
 		dano = max(1, int(float64(dano)*m+0.5))
 	}
@@ -281,6 +299,10 @@ func (l *lutaEmAndamento) golpeDoJogador(ataque int) (int, bool) {
 // vezDoJogador faz a ação do jogador. Devolve true quando o monstro cai.
 func (l *lutaEmAndamento) vezDoJogador() bool {
 	a := l.j.Atributos
+	if l.status.perderVez() {
+		l.registrar(TurnoBatalha{Atacante: "jogador", PerdeuVez: efeitosDosElementos["raio"].Nome})
+		return false
+	}
 	h := l.escolher()
 	t := TurnoBatalha{Atacante: "jogador"}
 	if h != nil {
@@ -295,6 +317,11 @@ func (l *lutaEmAndamento) vezDoJogador() bool {
 	ofensiva := h == nil || h.Efeito != efeitoCura
 	if ofensiva && l.ajudanteVivo() == nil && !l.ignorarDefesa && l.m.EsquivaPorMil > 0 && l.rng.Intn(1000) < l.m.EsquivaPorMil {
 		t.Esquiva = true
+		l.registrar(t)
+		return false
+	}
+	if ofensiva && l.status.errou(l.rng) {
+		t.Errou = true
 		l.registrar(t)
 		return false
 	}
@@ -328,14 +355,47 @@ func (l *lutaEmAndamento) vezDoJogador() bool {
 			t.Dano = max(1, int(float64(t.Dano)*(1-l.mon.escudo)+0.5))
 		}
 		l.mon.vida = max(0, l.mon.vida-t.Dano)
+		if l.mon.vida > 0 {
+			if ef, ok := l.mon.status.tentarAplicar(l.rng, l.j.Elemento, a.Ataque, h != nil, false); ok {
+				t.Efeito = ef.Nome
+				if ef.ID == efeitoDrenoDeEter {
+					l.mon.eter = max(0, l.mon.eter-eterDrenado)
+					l.eter = min(a.Eter, l.eter+eterDrenado)
+				}
+			}
+		}
 	}
 	l.registrar(t)
 	return l.mon.vida == 0
 }
 
+// efeitosNoMonstro aplica no fim da rodada o dano dos efeitos que os heróis deixaram no
+// monstro. Devolve true quando ele cai.
+func (l *lutaEmAndamento) efeitosNoMonstro() bool {
+	if dano, nomes := l.mon.status.fimDaRodada(); dano > 0 {
+		l.mon.vida = max(0, l.mon.vida-dano)
+		l.registrar(TurnoBatalha{Atacante: "jogador", Dano: dano, Tique: nomes})
+	}
+	return l.mon.vida == 0
+}
+
+// efeitosNoHeroi aplica no fim da rodada o dano dos efeitos que o monstro deixou no herói.
+// Devolve true quando o herói cai.
+func (l *lutaEmAndamento) efeitosNoHeroi() bool {
+	if dano, nomes := l.status.fimDaRodada(); dano > 0 {
+		l.vidaJogador = max(0, l.vidaJogador-dano)
+		l.registrar(TurnoBatalha{Atacante: "monstro", Dano: dano, Tique: nomes})
+	}
+	return l.vidaJogador == 0
+}
+
 // vezDoMonstro faz o golpe do monstro, com a chance de esquiva, e dispara o despertar.
 // Devolve true quando o jogador cai.
 func (l *lutaEmAndamento) vezDoMonstro() bool {
+	if l.mon.status.perderVez() {
+		l.registrar(TurnoBatalha{Atacante: "monstro", PerdeuVez: efeitosDosElementos["raio"].Nome})
+		return false
+	}
 	t := TurnoBatalha{Atacante: "monstro"}
 	poder := l.escolherPoder()
 	fator := 1.0
@@ -370,11 +430,24 @@ func (l *lutaEmAndamento) vezDoMonstro() bool {
 			ataque = int(float64(l.m.Ataque)*fator + float64(l.m.Magia)*poder.FatorMagia + 0.5)
 			arcano = true
 		}
+		if l.mon.status.errou(l.rng) {
+			t.Errou = true
+			break
+		}
 		dano, esquivou := l.golpeNoJogadorComTipo(ataque, arcano)
 		t.Dano, t.Critico, t.Esquiva = dano.valor, dano.critico, esquivou
 		if poder != nil && poder.Tipo == poderDrenar && t.Dano > 0 {
 			t.Cura = min(t.Dano/2, l.m.Vida-l.mon.vida)
 			l.mon.vida += t.Cura
+		}
+		if t.Dano > 0 && l.vidaJogador > 0 {
+			if ef, ok := l.status.tentarAplicar(l.rng, l.m.Elemento, l.m.Ataque, poder != nil, true); ok {
+				t.Efeito = ef.Nome
+				if ef.ID == efeitoDrenoDeEter {
+					l.eter = max(0, l.eter-eterDrenado)
+					l.mon.eter = min(l.m.Eter, l.mon.eter+eterDrenado)
+				}
+			}
 		}
 	}
 	l.registrar(t)
@@ -467,6 +540,12 @@ func SimularBatalha(jogador CombatenteRPG, monstro MonstroRPG, rng *rand.Rand) R
 			if l.vezDoJogador() {
 				return fim(true, rodada)
 			}
+		}
+		if l.efeitosNoMonstro() {
+			return fim(true, rodada)
+		}
+		if l.efeitosNoHeroi() {
+			return fim(false, rodada)
 		}
 		l.eter = min(jogador.Atributos.Eter, l.eter+eterPorRodada)
 		if monstro.Eter > 0 {
@@ -938,7 +1017,7 @@ func (l *lutaEmAndamento) golpeNoJogadorComTipo(ataque int, arcano bool) (danoDe
 	if l.mon.furia > 0 {
 		ataque = int(float64(ataque)*l.mon.furia + 0.5)
 	}
-	defesa := l.j.Atributos.Defesa
+	defesa := l.status.defesaEfetiva(l.j.Atributos.Defesa)
 	if arcano {
 		defesa = defesa * 3 / 4
 	}
@@ -951,6 +1030,7 @@ func (l *lutaEmAndamento) golpeNoJogadorComTipo(ataque int, arcano bool) (danoDe
 		multCrit = multCritMonstro
 	}
 	valor, critico := golpe(l.rng, ataque, defesa, critPorMil, multCrit)
+	valor = l.mon.status.danoCausado(valor)
 	if m := MultiplicadorElemental(l.m.Elemento, l.j.Elemento); m != 1 {
 		valor = max(1, int(float64(valor)*m+0.5))
 	}

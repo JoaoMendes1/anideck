@@ -484,6 +484,13 @@ export function FolhaInspecaoMonstro({
         </span>
       </div>
 
+      {monstro.efeito && (
+        <p className="m-0 rounded-lg border border-coral/35 bg-coral/10 px-2.5 py-1.5 text-xs leading-snug text-text">
+          <strong className="text-coral">Golpes podem causar {monstro.efeito.nome}: </strong>
+          {monstro.efeito.descricao}
+        </p>
+      )}
+
       {monstro.bestiario && (
         <div className="flex flex-col gap-1.5 rounded-xl border border-line bg-panel-2/40 px-3 py-2.5">
           <p className="m-0 inline-flex items-start gap-1.5 font-mono text-xs text-muted">

@@ -127,6 +127,19 @@ func simularGrupo(herois []CombatenteRPG, fora []bool, monstro MonstroRPG, rng *
 		if vezDosHerois(false) {
 			return fim(true, rodada)
 		}
+		// Efeitos no fim da rodada: os do monstro uma vez (o estado dele é um só), os de cada
+		// herói de pé.
+		if v := vivos(); len(v) > 0 && v[0].efeitosNoMonstro() {
+			return fim(true, rodada)
+		}
+		for _, l := range lutas {
+			if l.vidaJogador > 0 {
+				l.efeitosNoHeroi()
+			}
+		}
+		if len(vivos()) == 0 {
+			return fim(false, rodada)
+		}
 		for _, l := range lutas {
 			if l.vidaJogador == 0 {
 				continue

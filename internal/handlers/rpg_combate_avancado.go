@@ -992,6 +992,9 @@ func EnriquecerMonstro(m *MonstroRPG) {
 	if m.Elemento == "" {
 		m.Elemento = ElementoDoMonstro(m.ID)
 	}
+	if ef, ok := EfeitoDoElemento(m.Elemento); ok && m.Efeito == nil {
+		m.Efeito = &ef
+	}
 	if m.Poderes == nil {
 		m.Poderes = PoderesDoMonstro(m.ID)
 	}

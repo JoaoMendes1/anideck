@@ -13,6 +13,7 @@ import {
   itensAfetadosPelosPontos,
   textoDosRequisitos,
   type EstadoEquipamento,
+  type TurnoBatalha,
 } from './rpg'
 
 describe('rpg - equipamentos', () => {
@@ -225,5 +226,16 @@ describe('requisitos de atributo', () => {
     })
     expect(itensAfetadosPelosPontos(estado({}), { ...zerado, forca: 3 })).toEqual({ desativam: [], reativam: ['Espada'] })
     expect(itensAfetadosPelosPontos(comForca, { ...zerado, forca: 5 })).toEqual({ desativam: [], reativam: [] })
+  })
+})
+
+describe('efeitos de status no registro da luta', () => {
+  const t = (extra: Partial<TurnoBatalha>): TurnoBatalha => ({ atacante: 'jogador', dano: 0, critico: false, vida_jogador: 100, vida_monstro: 100, ...extra })
+  it('narra o efeito aplicado, o dano no fim da rodada, a vez perdida e o golpe errado', () => {
+    expect(descreverTurno(t({ dano: 40, efeito: 'Queimadura' }), 'Lobo')).toEqual({ texto: 'Você golpeia e causa Queimadura', valor: '−40' })
+    expect(descreverTurno(t({ dano: 12, tique: 'Queimadura e Veneno' }), 'Lobo')).toEqual({ texto: 'Lobo sofre Queimadura e Veneno', valor: '−12' })
+    expect(descreverTurno(t({ atacante: 'monstro', dano: 8, tique: 'Sangramento' }), 'Lobo')).toEqual({ texto: 'Você sofre Sangramento', valor: '−8' })
+    expect(descreverTurno(t({ atacante: 'monstro', perdeu_vez: 'Atordoamento' }), 'Lobo').texto).toBe('Lobo está sob Atordoamento e perde a vez')
+    expect(descreverTurno(t({ errou: true }), 'Lobo')).toEqual({ texto: 'Você golpeia, mas erra (Ofuscamento)', valor: '0' })
   })
 })

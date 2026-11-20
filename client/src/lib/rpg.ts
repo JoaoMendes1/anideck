@@ -128,6 +128,8 @@ export interface EstadoEquipamento {
   elemento?: string
   pecas_em_sintonia?: number
   ressonancia?: boolean
+  /** Efeito de status que os golpes do herói podem deixar (vem do elemento). */
+  efeito_do_elemento?: EfeitoDeElemento
 }
 
 /** Regras da sintonia, iguais às do Go (rpg_sintonia.go), para a tela explicar. */
@@ -370,7 +372,16 @@ export async function aprimorarItem(itemId: string): Promise<{ dados?: EstadoEqu
 export type TipoMonstro = 'comum' | 'raro' | 'chefe'
 export type Dificuldade = 'facil' | 'equilibrada' | 'dificil' | 'perigosa'
 
+/** Efeito de status de um elemento (rpg_efeitos.go). */
+export interface EfeitoDeElemento {
+  id: string
+  nome: string
+  descricao: string
+}
+
 export interface MonstroRPG {
+  /** Efeito de status que os golpes do monstro podem deixar. */
+  efeito?: EfeitoDeElemento
   id: string
   nome: string
   descricao: string
@@ -700,6 +711,14 @@ export interface TurnoBatalha {
   invocado?: string
   /** Luta em grupo: posição (a partir de 1) do herói que agiu ou foi atingido. */
   heroi?: number
+  /** Efeito de status que o golpe deixou no alvo ("Queimadura"). */
+  efeito?: string
+  /** Dano dos efeitos no fim da rodada; atacante é quem os aplicou. */
+  tique?: string
+  /** O efeito que fez o atacante perder a ação. */
+  perdeu_vez?: string
+  /** O golpe do atacante se perdeu por Ofuscamento. */
+  errou?: boolean
 }
 
 export interface RespostaBatalha {
@@ -724,6 +743,23 @@ export interface RespostaBatalha {
 
 /** Texto de uma linha do registro da luta e o número ao lado (dano ou cura). */
 export function descreverTurno(turno: TurnoBatalha, nomeDoMonstro: string): { texto: string; valor: string } {
+  const doHeroi = turno.atacante === 'jogador'
+  if (turno.perdeu_vez) {
+    return { texto: doHeroi ? `Você está sob ${turno.perdeu_vez} e perde a vez` : `${nomeDoMonstro} está sob ${turno.perdeu_vez} e perde a vez`, valor: '' }
+  }
+  if (turno.tique) {
+    return { texto: doHeroi ? `${nomeDoMonstro} sofre ${turno.tique}` : `Você sofre ${turno.tique}`, valor: `−${turno.dano}` }
+  }
+  if (turno.errou) {
+    const quem = doHeroi ? (turno.habilidade ? `Você usa ${turno.habilidade}` : 'Você golpeia') : `${nomeDoMonstro} ${turno.poder ? `usa ${turno.poder}` : 'ataca'}`
+    return { texto: `${quem}, mas erra (Ofuscamento)`, valor: '0' }
+  }
+  const base = descreverGolpe(turno, nomeDoMonstro)
+  if (turno.efeito) return { texto: `${base.texto} e causa ${turno.efeito}`, valor: base.valor }
+  return base
+}
+
+function descreverGolpe(turno: TurnoBatalha, nomeDoMonstro: string): { texto: string; valor: string } {
   if (turno.atacante === 'ajudante') {
     const quem = turno.alvo ?? 'O ajudante'
     if (turno.esquiva) return { texto: `${quem} ataca, e você esquiva`, valor: '0' }

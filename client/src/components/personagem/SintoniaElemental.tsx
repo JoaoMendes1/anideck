@@ -30,6 +30,12 @@ export default function SintoniaElemental({ estado }: { estado: EstadoEquipament
           ? `Ressonância ativa: +${SINTONIA.ressonanciaPct}% de Vida, Ataque e Magia.`
           : `Ressonância com ${SINTONIA.pecasRessonancia} peças (faltam ${faltam}): +${SINTONIA.ressonanciaPct}% de Vida, Ataque e Magia.`}
       </p>
+      {estado.efeito_do_elemento && (
+        <p className="m-0 text-xs text-text">
+          <strong className="text-holo-2">Golpes de {elemento}: {estado.efeito_do_elemento.nome}. </strong>
+          {estado.efeito_do_elemento.descricao}
+        </p>
+      )}
     </section>
   )
 }

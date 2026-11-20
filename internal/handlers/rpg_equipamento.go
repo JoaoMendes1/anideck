@@ -121,6 +121,8 @@ type EstadoEquipamento struct {
 	Elemento        string `json:"elemento"`
 	PecasEmSintonia int    `json:"pecas_em_sintonia"`
 	Ressonancia     bool   `json:"ressonancia"`
+	// EfeitoDoElemento é o efeito de status que os golpes do herói podem deixar.
+	EfeitoDoElemento *EfeitoDeElemento `json:"efeito_do_elemento,omitempty"`
 }
 
 // SlotsRPG devolve os slots na ordem em que a tela os mostra. A lista repete o CHECK de
@@ -339,6 +341,7 @@ func MontarEstadoEquipamento(nivel int, personagemBase string, inventario []linh
 		Inventario:        lista,
 		Conjuntos:         ConjuntosEmUso(emUso),
 		Elemento:          elemento,
+		EfeitoDoElemento:  efeitoDoHeroi(elemento),
 		PecasEmSintonia:   pecasEmSintonia,
 		Ressonancia:       pecasEmSintonia >= pecasDaRessonancia,
 	}
@@ -523,6 +526,14 @@ func (h *RPGHandler) HandleEquiparItemRPG(w http.ResponseWriter, r *http.Request
 		return
 	}
 	responderJSON(w, http.StatusOK, estado)
+}
+
+// efeitoDoHeroi devolve o efeito do elemento do personagem, ou nil para neutro.
+func efeitoDoHeroi(elemento string) *EfeitoDeElemento {
+	if ef, ok := EfeitoDoElemento(elemento); ok {
+		return &ef
+	}
+	return nil
 }
 
 // FaltaParaEquipar devolve o requisito de atributo que o jogador não cumpre para o item, ou
