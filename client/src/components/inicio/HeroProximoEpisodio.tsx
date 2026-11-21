@@ -130,26 +130,24 @@ export default function HeroProximoEpisodio({
   }
 
   return (
-    <section className="relative rounded-[24px] overflow-hidden border border-line bg-panel mb-10 min-h-[280px] sm:min-h-[320px] flex items-end shadow-2xl">
+    <section className="relative rounded-[24px] overflow-hidden border border-line bg-panel mb-10 min-h-[260px] sm:min-h-[296px] flex items-stretch shadow-2xl">
       {fundo && <img src={fundo} alt="" className="absolute inset-0 w-full h-full object-cover opacity-35 transition-transform duration-700 hover:scale-105" />}
       <div className="absolute inset-0 bg-gradient-to-r from-void via-void/90 to-void/40" />
       <div className="absolute inset-0 bg-gradient-to-t from-void via-void/50 to-transparent" />
 
-      <div className="relative z-10 w-full p-5 sm:p-6 xl:p-7 flex flex-col md:flex-row md:items-end gap-4 sm:gap-5 xl:gap-6">
-        <Link to={`/anime/${anime.mal_id}`} className="shrink-0 hidden sm:block group relative">
+      <div className="relative z-10 w-full flex flex-col sm:flex-row sm:items-stretch">
+        <Link to={`/anime/${anime.mal_id}`} className="hidden sm:block shrink-0 w-44 lg:w-48 relative overflow-hidden group border-r border-white/10 bg-panel-2">
           {anime.image_url ? (
             <img
               src={anime.image_url}
               alt={anime.title}
-              className="w-32 md:w-36 xl:w-40 aspect-[2/3] object-cover rounded-2xl border-2 border-white/15 shadow-2xl transition-transform group-hover:scale-[1.02]"
+              className="absolute inset-0 w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
             />
-          ) : (
-            <div className="w-32 md:w-36 xl:w-40 aspect-[2/3] rounded-2xl bg-panel-2 border border-line" />
-          )}
-          <div className="absolute inset-0 rounded-2xl ring-2 ring-holo-3/0 group-hover:ring-holo-3/40 transition-all pointer-events-none" />
+          ) : null}
+          <div className="absolute inset-0 ring-1 ring-inset ring-white/5 group-hover:ring-holo-3/40 transition-all pointer-events-none" />
         </Link>
 
-        <div className="flex-1 min-w-0">
+        <div className="flex-1 min-w-0 p-5 sm:px-6 sm:py-5 xl:px-7 xl:py-6 flex flex-col justify-end">
           {/* Cabeçalho do Card: Badge + Tags (desktop em linha única) e Controles do Carrossel */}
           <div className="flex items-center justify-between gap-2.5 mb-2.5">
             <div className="flex items-center gap-1.5 min-w-0 overflow-hidden">
