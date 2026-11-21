@@ -935,7 +935,7 @@ export default function Inicio() {
         </button>
       </div>
 
-      <div className={laterais.length > 0 ? 'xl:grid xl:grid-cols-[minmax(0,1fr)_340px] xl:gap-8 xl:items-start' : ''}>
+      <div className={laterais.length > 0 ? 'xl:grid xl:grid-cols-[minmax(0,1fr)_310px] 2xl:grid-cols-[minmax(0,1fr)_330px] xl:gap-6 xl:items-start' : ''}>
         <div className="min-w-0">
           {principais.map(id => (
             <div key={id}>{renderizarSecao(id, false)}</div>

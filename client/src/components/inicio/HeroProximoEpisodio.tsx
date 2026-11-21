@@ -135,31 +135,31 @@ export default function HeroProximoEpisodio({
       <div className="absolute inset-0 bg-gradient-to-r from-void via-void/90 to-void/40" />
       <div className="absolute inset-0 bg-gradient-to-t from-void via-void/50 to-transparent" />
 
-      <div className="relative z-10 w-full p-5 sm:p-8 flex flex-col md:flex-row md:items-end gap-5 md:gap-7">
+      <div className="relative z-10 w-full p-5 sm:p-6 xl:p-7 flex flex-col md:flex-row md:items-end gap-4 sm:gap-5 xl:gap-6">
         <Link to={`/anime/${anime.mal_id}`} className="shrink-0 hidden sm:block group relative">
           {anime.image_url ? (
             <img
               src={anime.image_url}
               alt={anime.title}
-              className="w-36 md:w-44 aspect-[2/3] object-cover rounded-2xl border-2 border-white/15 shadow-2xl transition-transform group-hover:scale-[1.02]"
+              className="w-32 md:w-36 xl:w-40 aspect-[2/3] object-cover rounded-2xl border-2 border-white/15 shadow-2xl transition-transform group-hover:scale-[1.02]"
             />
           ) : (
-            <div className="w-36 md:w-44 aspect-[2/3] rounded-2xl bg-panel-2 border border-line" />
+            <div className="w-32 md:w-36 xl:w-40 aspect-[2/3] rounded-2xl bg-panel-2 border border-line" />
           )}
           <div className="absolute inset-0 rounded-2xl ring-2 ring-holo-3/0 group-hover:ring-holo-3/40 transition-all pointer-events-none" />
         </Link>
 
         <div className="flex-1 min-w-0">
-          {/* Cabeçalho do Card: Badge + Tags (desktop) e Controles do Carrossel em linha */}
-          <div className="flex items-center justify-between gap-3 mb-2.5">
-            <div className="flex flex-wrap items-center gap-2 min-w-0">
-              <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-holo-1/15 border border-holo-1/35 text-holo-1 font-mono text-xs font-bold uppercase tracking-widest shrink-0">
+          {/* Cabeçalho do Card: Badge + Tags (desktop em linha única) e Controles do Carrossel */}
+          <div className="flex items-center justify-between gap-2.5 mb-2.5">
+            <div className="flex items-center gap-1.5 min-w-0 overflow-hidden">
+              <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-holo-1/15 border border-holo-1/35 text-holo-1 font-mono text-xs font-bold uppercase tracking-wider shrink-0">
                 <Play size={10} fill="currentColor" />
                 <span className="hidden sm:inline">Seu próximo episódio</span>
                 <span className="sm:hidden">Próximo ep.</span>
               </span>
               {anime.genres?.slice(0, 3).map((g) => (
-                <span key={g} className="hidden sm:inline-block px-2 py-0.5 rounded-full bg-panel-2/90 border border-line text-muted font-mono text-xs shrink-0">
+                <span key={g} className="hidden sm:inline-block px-2 py-0.5 rounded-full bg-panel-2/90 border border-line text-muted font-mono text-xs whitespace-nowrap shrink-0">
                   {g}
                 </span>
               ))}
@@ -217,7 +217,7 @@ export default function HeroProximoEpisodio({
           )}
 
           <Link to={`/anime/${anime.mal_id}`}>
-            <h2 className="font-anton text-2xl sm:text-4xl uppercase leading-tight text-text hover:text-holo-3 transition-colors line-clamp-2 m-0">
+            <h2 className="font-anton text-2xl sm:text-3xl xl:text-[2.15rem] uppercase leading-tight text-text hover:text-holo-3 transition-colors line-clamp-2 m-0">
               {anime.title}
             </h2>
           </Link>
@@ -280,9 +280,9 @@ export default function HeroProximoEpisodio({
             </div>
           )}
 
-          <div className="flex flex-wrap items-center gap-2.5 pt-1">
+          <div className="flex flex-wrap items-center gap-2 pt-1">
             {bloqueado ? (
-              <span className="inline-flex items-center gap-2 px-4 py-2.5 rounded-full bg-panel-2 border border-line text-muted-2 font-bold text-xs sm:text-sm">
+              <span className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-panel-2 border border-line text-muted-2 font-bold text-xs whitespace-nowrap">
                 <Lock size={14} className="text-gold" />
                 Ep. {episodio} ainda não saiu
                 {previsao && (
@@ -296,9 +296,9 @@ export default function HeroProximoEpisodio({
                 type="button"
                 disabled={marcando}
                 onClick={handleMarcar}
-                className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full bg-gradient-to-r from-holo-1 to-holo-2 text-void font-extrabold text-xs sm:text-sm uppercase tracking-wider shadow-lg hover:opacity-95 transition-opacity cursor-pointer disabled:opacity-60"
+                className="inline-flex items-center gap-1.5 h-10 px-4 rounded-full bg-gradient-to-r from-holo-1 to-holo-2 text-void font-extrabold text-xs uppercase tracking-wide whitespace-nowrap shadow-lg hover:opacity-95 transition-opacity cursor-pointer disabled:opacity-60"
               >
-                {jaMarcado ? <Check size={15} /> : <Plus size={15} />} Marcar ep. {episodio} visto
+                {jaMarcado ? <Check size={14} /> : <Plus size={14} />} Marcar ep. {episodio} visto
               </button>
             )}
 
@@ -307,15 +307,15 @@ export default function HeroProximoEpisodio({
                 href={streaming.url}
                 target="_blank"
                 rel="noreferrer"
-                className="inline-flex items-center gap-2 px-4 py-2.5 rounded-full bg-void/80 border border-line hover:border-holo-3 text-text font-bold text-xs sm:text-sm transition-colors"
+                className="inline-flex items-center gap-1.5 h-10 px-3.5 rounded-full bg-void/80 border border-line hover:border-holo-3 text-text font-bold text-xs whitespace-nowrap transition-colors"
               >
-                <Play size={13} fill="currentColor" /> Assistir {artigoStreaming(streaming.name)} {streaming.name}
+                <Play size={12} fill="currentColor" /> Assistir {artigoStreaming(streaming.name)} {streaming.name}
               </a>
             )}
 
             <Link
               to={`/anime/${anime.mal_id}`}
-              className="inline-flex items-center gap-1.5 px-3.5 py-2.5 rounded-full bg-panel-2/90 border border-line hover:border-holo-2 text-muted hover:text-text font-bold text-xs sm:text-sm transition-colors"
+              className="inline-flex items-center gap-1.5 h-10 px-3.5 rounded-full bg-panel-2/90 border border-line hover:border-holo-2 text-muted hover:text-text font-bold text-xs whitespace-nowrap transition-colors"
             >
               <Tv size={13} /> Ver detalhes
             </Link>
