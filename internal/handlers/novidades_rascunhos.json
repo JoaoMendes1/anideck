@@ -612,5 +612,17 @@
         "caminho": "/personagem"
       }
     ]
+  },
+  {
+    "chave": "2026-11-20-equipamentos-por-heroi",
+    "titulo": "Cada herói agora guarda os próprios equipamentos separados",
+    "categoria": "novidade",
+    "resumo": "Os 7 slots equipados (arma, elmo, armadura, luvas, capa, botas e joia) agora são salvos individualmente por herói!\n\nAo desbloquear e trocar para um segundo personagem, ele começa sem nenhum item vestido do primeiro, e ao voltar para o herói anterior todos os equipamentos dele continuam exatamente onde você deixou.",
+    "links": [
+      {
+        "rotulo": "Equipar seus heróis",
+        "caminho": "/personagem"
+      }
+    ]
   }
 ]

@@ -168,3 +168,43 @@ func TestMontarEsquadraoDoContexto_AtributosIndependentesPorHeroi(t *testing.T) 
 		t.Errorf("maga com +10 Inteligência deveria ter mais Magia que líder: maga=%d lider=%d", combatentes2[1].Atributos.Magia, combatentes2[0].Atributos.Magia)
 	}
 }
+
+func TestMontarEsquadraoDoContexto_EquipamentosIndependentesPorHeroi(t *testing.T) {
+	armadura := ItemRPG{ID: "armadura_1", Slot: "armadura", Nome: "Armadura", Defesa: 25, Vida: 80, NivelMinimo: 1}
+	cajado := ItemRPG{ID: "cajado_1", Slot: "arma", Nome: "Cajado", Magia: 30, NivelMinimo: 1, Classes: []string{"maga"}}
+	ctx := contextoPersonagem{
+		linha: &linhaPersonagemBanco{
+			Nome:           "Kael",
+			PersonagemBase: "espadachim_eter",
+			Desbloqueados:  []string{"espadachim_eter", "maga_agua"},
+			Esquadrao:      []string{"maga_agua"},
+		},
+		xpTotal:        2000,
+		ranks:          RanksPadrao(),
+		estagios:       EstagiosPadrao(),
+		inventario:     []linhaInventarioRPG{{Quantidade: 1, Item: &armadura}, {Quantidade: 1, Item: &cajado}},
+		equipados:      map[string]string{"armadura": "armadura_1"},
+		equipadosPorHeroi: map[string]map[string]string{
+			"espadachim_eter": {"armadura": "armadura_1"},
+		},
+		inventarioLido: true,
+	}
+
+	combatentes, _, err := MontarEsquadraoDoContexto(nil, "u1", ctx, 0, nil, "", nil)
+	if err != nil {
+		t.Fatalf("erro inesperado: %v", err)
+	}
+	if combatentes[0].Atributos.Defesa <= combatentes[1].Atributos.Defesa {
+		t.Errorf("aliada sem equipamento não deveria herdar armadura do líder: lider=%d ally=%d", combatentes[0].Atributos.Defesa, combatentes[1].Atributos.Defesa)
+	}
+
+	// Ao equipar cajado especificamente na Maga, ela ganha a Magia dele mantendo cada um com o seu set.
+	ctx.equipadosPorHeroi["maga_agua"] = map[string]string{"arma": "cajado_1"}
+	combatentes2, _, err := MontarEsquadraoDoContexto(nil, "u1", ctx, 0, nil, "", nil)
+	if err != nil {
+		t.Fatalf("erro inesperado: %v", err)
+	}
+	if combatentes2[1].Atributos.Magia <= combatentes2[0].Atributos.Magia {
+		t.Errorf("maga deveria somar apenas seu próprio cajado equipado: maga=%d lider=%d", combatentes2[1].Atributos.Magia, combatentes2[0].Atributos.Magia)
+	}
+}

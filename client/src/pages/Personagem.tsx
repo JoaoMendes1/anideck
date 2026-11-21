@@ -266,7 +266,7 @@ function TrocaDePersonagem({
         <strong className="text-text">{membro.nome}</strong> · {membro.resumo}
       </p>
       <p className="m-0 text-xs leading-snug text-muted">
-        Nível e inventário continuam, e cada herói mantém sua própria distribuição de atributos (herói novo começa zerado). A troca entre heróis desbloqueados é gratuita e imediata; o visual volta ao estágio e peças exclusivas de outra classe são desequipadas.
+        Nível e inventário continuam na conta, e cada herói mantém sua própria distribuição de atributos e seus próprios equipamentos (herói novo começa zerado e sem itens vestidos). A troca entre heróis desbloqueados é gratuita e imediata; o visual volta ao estágio.
         {typeof ouro === 'number' && (
           <>
             {' '}

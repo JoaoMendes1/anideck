@@ -214,10 +214,10 @@ func carregarInventarioBruto(dbClient *supabase.Client, userID string) ([]linhaI
 	return inventario, eq, nil
 }
 
-// EstadoParaBase calcula EstadoEquipamento para outro personagem desbloqueado da mesma conta.
-func EstadoParaBase(nivel int, base string, inventario []linhaInventarioRPG, equipadosAtuais map[string]string, pontos PrimariosRPG, maestria map[string]int) EstadoEquipamento {
-	slotsAliado := melhoresEquipadosParaBase(nivel, base, inventario, equipadosAtuais, pontos)
-	est := MontarEstadoEquipamento(nivel, base, inventario, slotsAliado, pontos)
+// EstadoParaBase calcula EstadoEquipamento para outro personagem desbloqueado usando
+// exclusivamente os slots equipados próprios daquele herói (nunca herdando do líder).
+func EstadoParaBase(nivel int, base string, inventario []linhaInventarioRPG, equipadosHeroi map[string]string, pontos PrimariosRPG, maestria map[string]int) EstadoEquipamento {
+	est := MontarEstadoEquipamento(nivel, base, inventario, equipadosHeroi, pontos)
 	est.Habilidades = AplicarMaestria(LivroDeHabilidades(base, nivel), maestria)
 	return est
 }
@@ -277,9 +277,9 @@ func MontarEsquadraoDoContexto(dbClient *supabase.Client, userID string, ctx con
 		return combatentes, fichas, nil
 	}
 
-	inv, eq := ctx.inventario, ctx.equipados
+	inv := ctx.inventario
 	if !ctx.inventarioLido {
-		inv, eq, err = carregarInventarioBruto(dbClient, userID)
+		inv, _, err = carregarInventarioBruto(dbClient, userID)
 		if err != nil {
 			return nil, nil, err
 		}
@@ -288,7 +288,7 @@ func MontarEsquadraoDoContexto(dbClient *supabase.Client, userID string, ctx con
 	fatorVida := float64(max(1, 1000-min(1000, max(0, vidaPerdidaPorMil)))) / 1000.0
 	for _, allyBase := range aliados {
 		pontosAlly := LimitarPontos(ctx.PontosDoHeroi(allyBase), PontosDisponiveis(nivel))
-		est := EstadoParaBase(nivel, allyBase, inv, eq, pontosAlly, ctx.maestria)
+		est := EstadoParaBase(nivel, allyBase, inv, ctx.EquipadosDoHeroi(allyBase), pontosAlly, ctx.maestria)
 		vidaAlly := max(1, int(float64(est.Atributos.Vida)*fatorVida+0.5))
 		c := CombatenteDoEstado(est)
 		c.VidaInicial = vidaAlly
@@ -330,10 +330,10 @@ func ResumoElencoEsquadrao(dbClient *supabase.Client, userID string, ctx context
 		salvos[a] = true
 	}
 
-	inv, eq := ctx.inventario, ctx.equipados
+	inv := ctx.inventario
 	if !ctx.inventarioLido && len(desbloqueados) > 1 {
-		if lInv, lEq, err := carregarInventarioBruto(dbClient, userID); err == nil {
-			inv, eq = lInv, lEq
+		if lInv, _, err := carregarInventarioBruto(dbClient, userID); err == nil {
+			inv = lInv
 		}
 	}
 
@@ -357,7 +357,7 @@ func ResumoElencoEsquadrao(dbClient *supabase.Client, userID string, ctx context
 			continue
 		}
 		pontosAlly := LimitarPontos(ctx.PontosDoHeroi(id), disponiveis)
-		est := EstadoParaBase(eqLider.Nivel, id, inv, eq, pontosAlly, ctx.maestria)
+		est := EstadoParaBase(eqLider.Nivel, id, inv, ctx.EquipadosDoHeroi(id), pontosAlly, ctx.maestria)
 		saida = append(saida, HeroiResumoEsquadrao{
 			ID:           id,
 			Nome:         NomePadraoElenco(id),

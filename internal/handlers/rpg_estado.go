@@ -63,10 +63,14 @@ type estadoJogadorBanco struct {
 	Personagem *linhaPersonagemBanco `json:"personagem"`
 	XPTotal    int                   `json:"xp_total"`
 	Inventario json.RawMessage       `json:"inventario"`
-	Equipados  []struct {
+	Equipados []struct {
 		Slot   string `json:"slot"`
 		ItemID string `json:"item_id"`
 	} `json:"equipados"`
+	EquipadosPorHeroi map[string][]struct {
+		Slot   string `json:"slot"`
+		ItemID string `json:"item_id"`
+	} `json:"equipados_por_heroi"`
 	Bilhetes int `json:"bilhetes"`
 	// Ouro (sql/083); ausente antes dele, e então zero.
 	Ouro int `json:"ouro"`
@@ -121,6 +125,19 @@ func contextoDoEstado(e estadoJogadorBanco, cfg configRPG) (contextoPersonagem, 
 	for _, eq := range e.Equipados {
 		ctx.equipados[eq.Slot] = eq.ItemID
 	}
+	if e.EquipadosPorHeroi != nil {
+		porHeroi := make(map[string]map[string]string, len(e.EquipadosPorHeroi))
+		for base, lista := range e.EquipadosPorHeroi {
+			slots := make(map[string]string, len(lista))
+			for _, eq := range lista {
+				if eq.Slot != "" && eq.ItemID != "" {
+					slots[eq.Slot] = eq.ItemID
+				}
+			}
+			porHeroi[base] = slots
+		}
+		ctx.equipadosPorHeroi = porHeroi
+	}
 	if e.Pontos != nil {
 		ctx.pontos, ctx.pontosLidos = *e.Pontos, true
 	}
@@ -173,6 +190,9 @@ func carregarContextoPersonagem(dbClient *supabase.Client, userID string) (conte
 	if ctx.pontosPorHeroi == nil {
 		ctx.pontosPorHeroi = lerPontosPorHeroi(dbClient, userID)
 	}
+	if ctx.equipadosPorHeroi == nil {
+		ctx.equipadosPorHeroi = lerEquipadosPorHeroi(dbClient, userID)
+	}
 	// As skins da Loja são trajes do Espadachim: com outro personagem, não valem.
 	if !aceitaSkins(ctx.linha.PersonagemBase) {
 		ctx.skins = nil
@@ -222,6 +242,36 @@ func lerPontosPorHeroi(dbClient *supabase.Client, userID string) map[string]Prim
 	return mapa
 }
 
+// lerEquipadosPorHeroi lê os equipamentos por personagem em rpg_equipados_herois (fallback sem RPC nova).
+func lerEquipadosPorHeroi(dbClient *supabase.Client, userID string) map[string]map[string]string {
+	dados, _, err := dbClient.From("rpg_equipados_herois").
+		Select("personagem_base,slot,item_id", "", false).
+		Eq("user_id", userID).
+		Execute()
+	if err != nil {
+		return nil
+	}
+	var linhas []struct {
+		PersonagemBase string `json:"personagem_base"`
+		Slot           string `json:"slot"`
+		ItemID         string `json:"item_id"`
+	}
+	if json.Unmarshal(dados, &linhas) != nil || len(linhas) == 0 {
+		return nil
+	}
+	mapa := make(map[string]map[string]string)
+	for _, l := range linhas {
+		if l.PersonagemBase == "" || l.Slot == "" || l.ItemID == "" {
+			continue
+		}
+		if mapa[l.PersonagemBase] == nil {
+			mapa[l.PersonagemBase] = make(map[string]string)
+		}
+		mapa[l.PersonagemBase][l.Slot] = l.ItemID
+	}
+	return mapa
+}
+
 // carregarContextoPersonagemAntigo é a leitura de antes do sql/076, mantida como reserva.
 func carregarContextoPersonagemAntigo(dbClient *supabase.Client, userID string) (contextoPersonagem, error) {
 	linha, err := lerPersonagem(dbClient, userID)
@@ -262,7 +312,7 @@ func equipamentoDoContexto(dbClient *supabase.Client, userID string, ctx context
 
 	var estado EstadoEquipamento
 	if ctx.inventarioLido {
-		estado = MontarEstadoEquipamento(nivel, base, ctx.inventario, ctx.equipados, pontosHeroi)
+		estado = MontarEstadoEquipamento(nivel, base, ctx.inventario, ctx.EquipadosDoHeroi(base), pontosHeroi)
 	} else {
 		var err error
 		if estado, err = carregarEstadoEquipamento(dbClient, userID, base, nivel, pontosHeroi); err != nil {

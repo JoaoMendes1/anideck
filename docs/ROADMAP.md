@@ -918,6 +918,11 @@ decidiu em 17/11/2026 que ela fecha fora da Fase 18. Escopo a detalhar em issues
 > numeração e não abrem escopo novo. Ficam registrados aqui em ordem cronológica inversa para
 > não sumirem: fase concluída não deve ser reaberta só para receber um conserto.
 
+### 20/11/2026 — Equipamentos individuais por herói (#340)
+
+- [x] **Slots equipados separados por personagem desbloqueado (`sql/142_equipamentos_por_personagem.sql`, `personagem.go`, `rpg_estado.go`, `rpg_esquadrao.go`):**
+      `public.rpg_equipados_herois (user_id, personagem_base, slot)` isola os 7 slots equipados por herói com backfill apenas do personagem ativo da conta; heróis recém-desbloqueados começam sem itens vestidos do líder anterior; `rpg_trocar_personagem` salva o set de quem sai e carrega só o de quem entra; esquadrão usa apenas o equipamento próprio de cada herói. (#340)
+
 ### 20/11/2026 — Troca gratuita e imediata entre heróis desbloqueados (#339)
 
 - [x] **Remoção da espera de 24h e da taxa de 150 Ouro ao trocar de líder (`sql/141_troca_personagem_gratuita.sql`, `personagem.go`, `Personagem.tsx`, `lib/personagem.ts`):**

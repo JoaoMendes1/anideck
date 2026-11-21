@@ -100,3 +100,27 @@ func TestContextoDoEstado_ComElencoETroca(t *testing.T) {
 		t.Errorf("proxima_troca_em deveria sair vazia: %q", resp.Elenco.ProximaTrocaEm)
 	}
 }
+
+func TestContextoDoEstado_EquipadosIndependentesPorHeroi(t *testing.T) {
+	bruto := `{"ok":true,
+	  "personagem":{"nome":"Yoru","personagem_base":"arqueiro_trevas","criado_em":"2026-11-01T00:00:00Z","desbloqueados":["espadachim_eter","arqueiro_trevas"]},
+	  "xp_total":500,
+	  "inventario":[],
+	  "equipados":[],
+	  "equipados_por_heroi":{"espadachim_eter":[{"slot":"armadura","item_id":"armadura_aco"}]},
+	  "ouro":100}`
+	e, ok := interpretarEstadoJogador(bruto)
+	if !ok {
+		t.Fatal("resposta válida rejeitada")
+	}
+	ctx, err := contextoDoEstado(e, configRPG{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(ctx.EquipadosDoHeroi("arqueiro_trevas")) != 0 {
+		t.Errorf("segundo herói deveria começar sem equipamentos: %+v", ctx.EquipadosDoHeroi("arqueiro_trevas"))
+	}
+	if ctx.EquipadosDoHeroi("espadachim_eter")["armadura"] != "armadura_aco" {
+		t.Errorf("primeiro herói deveria manter sua armadura salva: %+v", ctx.EquipadosDoHeroi("espadachim_eter"))
+	}
+}

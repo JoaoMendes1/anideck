@@ -559,16 +559,35 @@ type contextoPersonagem struct {
 	skins    []SkinPersonagem
 	// Vindos da leitura única (sql/076). inventarioLido diz se vieram: sem ela, ficam vazios
 	// e o equipamento é lido à parte.
-	inventario     []linhaInventarioRPG
-	equipados      map[string]string
-	bilhetes       int
-	ouro           int
-	maestria       map[string]int
-	inventarioLido bool
+	inventario        []linhaInventarioRPG
+	equipados         map[string]string
+	equipadosPorHeroi map[string]map[string]string
+	bilhetes          int
+	ouro              int
+	maestria          map[string]int
+	inventarioLido    bool
 	// Pontos distribuídos (sql/077 e sql/140). pontosLidos false: a leitura única não os trouxe.
 	pontos         PrimariosRPG
 	pontosPorHeroi map[string]PrimariosRPG
 	pontosLidos    bool
+}
+
+// EquipadosDoHeroi devolve os slots equipados próprios de cada personagem desbloqueado.
+func (c contextoPersonagem) EquipadosDoHeroi(base string) map[string]string {
+	base = strings.TrimSpace(base)
+	if base == "" && c.linha != nil {
+		base = c.linha.PersonagemBase
+	}
+	if c.equipadosPorHeroi != nil {
+		if eq, ok := c.equipadosPorHeroi[base]; ok {
+			return eq
+		}
+		return map[string]string{}
+	}
+	if c.linha != nil && (base == "" || base == c.linha.PersonagemBase) && c.equipados != nil {
+		return c.equipados
+	}
+	return map[string]string{}
 }
 
 // PontosDoHeroi devolve a distribuição de pontos própria de cada personagem desbloqueado.
