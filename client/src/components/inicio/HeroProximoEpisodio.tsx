@@ -150,7 +150,7 @@ export default function HeroProximoEpisodio({
         </Link>
 
         <div className="flex-1 min-w-0">
-          {/* Cabeçalho do Card: Badge + Maratona + Tags (desktop) e Controles do Carrossel em linha */}
+          {/* Cabeçalho do Card: Badge + Tags (desktop) e Controles do Carrossel em linha */}
           <div className="flex items-center justify-between gap-3 mb-2.5">
             <div className="flex flex-wrap items-center gap-2 min-w-0">
               <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-holo-1/15 border border-holo-1/35 text-holo-1 font-mono text-xs font-bold uppercase tracking-widest shrink-0">
@@ -158,16 +158,6 @@ export default function HeroProximoEpisodio({
                 <span className="hidden sm:inline">Seu próximo episódio</span>
                 <span className="sm:hidden">Próximo ep.</span>
               </span>
-              {maratonaAtiva && (
-                <span
-                  aria-label="Cronômetro da maratona"
-                  className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-gold/15 border border-gold/45 text-gold font-mono text-xs font-bold tabular-nums shrink-0"
-                >
-                  <Timer size={12} aria-hidden="true" />
-                  <span>Maratona · {cronometro(decorridoMaratona)}</span>
-                  {faixaMaratona && <span className="hidden md:inline text-text/90">· {faixaMaratona.nome}</span>}
-                </span>
-              )}
               {anime.genres?.slice(0, 3).map((g) => (
                 <span key={g} className="hidden sm:inline-block px-2 py-0.5 rounded-full bg-panel-2/90 border border-line text-muted font-mono text-xs shrink-0">
                   {g}
@@ -256,27 +246,32 @@ export default function HeroProximoEpisodio({
           </div>
 
           {total > 0 && (
-            <div className="h-1.5 max-w-md rounded-full bg-void/70 overflow-hidden border border-white/10 mb-4">
+            <div className={`h-1.5 max-w-md rounded-full bg-void/70 overflow-hidden border border-white/10 ${maratonaAtiva && !bloqueado ? 'mb-2' : 'mb-5'}`}>
               <div className="h-full rounded-full bg-gradient-to-r from-holo-1 to-holo-3" style={{ width: `${pct}%` }} />
             </div>
           )}
 
           {maratonaAtiva && !bloqueado && (
-            <div className="mb-4 flex flex-wrap items-center gap-2">
+            <div className="mb-4 flex max-w-md flex-wrap items-center justify-between gap-x-3 gap-y-1 font-mono text-xs tabular-nums">
+              <span aria-label="Cronômetro da maratona" className="inline-flex items-center gap-1.5 font-semibold text-gold">
+                <Timer size={12} aria-hidden="true" />
+                <span>{cronometro(decorridoMaratona)}</span>
+                {faixaMaratona && <span className="text-muted">· {faixaMaratona.nome}</span>}
+              </span>
               {faltaProximoMaratona > 0 ? (
                 <span
                   role="status"
                   aria-label="Tempo para liberar o próximo episódio da maratona"
-                  className="inline-flex items-center gap-1.5 rounded-full border border-coral/40 bg-coral/15 px-2.5 py-1 font-mono text-xs font-bold tabular-nums text-coral"
+                  className="inline-flex items-center gap-1 font-semibold text-coral"
                 >
                   <Clock size={12} aria-hidden="true" />
-                  Libera em {faltaProximoMaratona >= 3600 ? cronometro(faltaProximoMaratona) : cronometro(faltaProximoMaratona).slice(3)} · marcar antes perde
+                  Libera em {faltaProximoMaratona >= 3600 ? cronometro(faltaProximoMaratona) : cronometro(faltaProximoMaratona).slice(3)}
                 </span>
               ) : (
                 <span
                   role="status"
                   aria-label="Próximo episódio liberado na maratona"
-                  className="inline-flex items-center gap-1.5 rounded-full border border-green/45 bg-green/15 px-2.5 py-1 font-mono text-xs font-bold text-green"
+                  className="inline-flex items-center gap-1 font-bold text-green"
                 >
                   <Check size={12} aria-hidden="true" />
                   Liberado para marcar
