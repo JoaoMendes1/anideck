@@ -880,7 +880,7 @@ function FichaDoPersonagem({
           {abaAtiva === 'status' && (
             <div className="flex flex-col gap-4">
               <PainelEquipamentos estado={equipamento} />
-              <CartaoEcoPersonagem estado={equipamento} aoAtualizar={aoAtualizarEquipamento} />
+              {equipamento && <CartaoEcoPersonagem estado={equipamento} aoAtualizar={aoAtualizarEquipamento} />}
               {equipamento && <SintoniaElemental estado={equipamento} />}
               {equipamento && <ConjuntosEmUso estado={equipamento} />}
             </div>
