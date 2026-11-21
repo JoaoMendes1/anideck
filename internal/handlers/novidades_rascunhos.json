@@ -556,5 +556,21 @@
         "caminho": "/masmorras"
       }
     ]
+  },
+  {
+    "chave": "2026-11-20-combate-tatico-interativo",
+    "titulo": "Combate Tático por rodada nas Expedições, Masmorras e Duelos",
+    "categoria": "novidade",
+    "resumo": "Agora você pode ativar o Modo Tático por rodada nas Expedições, Masmorras e Duelos!\n\nA cada turno, o adversário revela sua próxima intenção (como Golpe Pesado, Postura Defensiva ou Canalização Arcana) e você decide entre Golpe/Habilidade para quebrar guarda, Defender/Esquivar para reduzir o impacto e recuperar Éter, ou liberar Ruptura de Éter para interromper magias.",
+    "links": [
+      {
+        "rotulo": "Testar nas Expedições",
+        "caminho": "/expedicoes"
+      },
+      {
+        "rotulo": "Abrir Duelos",
+        "caminho": "/duelos"
+      }
+    ]
   }
 ]

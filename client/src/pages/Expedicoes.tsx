@@ -12,6 +12,7 @@
 import BatalhaEmGrupo from '../components/rpg/BatalhaEmGrupo'
 import BotaoEmGrupo from '../components/rpg/BotaoEmGrupo'
 import CardContratosSemanais from '../components/rpg/CardContratosSemanais'
+import CombateInterativoModal from '../components/rpg/CombateInterativoModal'
 import ControleDeVelocidade from '../components/rpg/ControleDeVelocidade'
 import MapaExpedicoes from '../components/rpg/MapaExpedicoes'
 import ComprarLutaExtra from '../components/rpg/ComprarLutaExtra'
@@ -47,6 +48,7 @@ import {
   estiloDaRaridade,
   descreverTurno,
   horaDaPousada,
+  iniciarCombateInterativo,
   obterExpedicoes,
   porMilEmPorcento,
   recuperarVida,
@@ -57,6 +59,7 @@ import {
   ESTILO_DO_ELEMENTO,
   textoDaRelacao,
   textoDoBestiario,
+  type EstadoCombateInterativo,
   type EstadoExpedicoes,
   type MonstroNaLista,
   type RespostaBatalha,
@@ -370,6 +373,8 @@ export default function Expedicoes() {
   const [soSemVitoria, setSoSemVitoria] = useState(false)
   const [soComEvolucao, setSoComEvolucao] = useState(false)
   const [aliadosEsquadrao, setAliadosEsquadrao] = useState<string[]>([])
+  const [combateTatico, setCombateTatico] = useState(false)
+  const [combateInterativo, setCombateInterativo] = useState<EstadoCombateInterativo | null>(null)
   const topo = useRef<HTMLDivElement>(null)
 
   const carregar = () => {
@@ -409,6 +414,16 @@ export default function Expedicoes() {
     if (lutando) return
     setErroDaLuta('')
     setLutando(monstroId)
+    if (combateTatico) {
+      const r = await iniciarCombateInterativo('expedicao', monstroId, aliadosEsquadrao)
+      setLutando(null)
+      if (r.dados) {
+        setCombateInterativo(r.dados)
+        return
+      }
+      setErroDaLuta(r.erro ?? 'Não foi possível iniciar o combate tático.')
+      return
+    }
     const r = aliadosEsquadrao.length > 0 ? await batalhar(monstroId, lerPostura(), aliadosEsquadrao) : await batalhar(monstroId, lerPostura())
     setLutando(null)
     if (r.dados) {
@@ -632,6 +647,32 @@ export default function Expedicoes() {
             />
           )}
 
+          <div className="flex flex-wrap items-center justify-between gap-2 rounded-2xl border border-line bg-panel px-3.5 py-2.5 text-xs">
+            <span className="font-semibold text-text">Modo de combate:</span>
+            <div role="group" aria-label="Modo de combate" className="inline-flex rounded-xl border border-line bg-panel-2 p-0.5">
+              <button
+                type="button"
+                aria-pressed={!combateTatico}
+                onClick={() => setCombateTatico(false)}
+                className={`cursor-pointer rounded-lg px-3 py-1.5 text-xs font-bold transition ${
+                  !combateTatico ? 'bg-holo-3 text-void' : 'text-muted hover:text-text'
+                }`}
+              >
+                Automático
+              </button>
+              <button
+                type="button"
+                aria-pressed={combateTatico}
+                onClick={() => setCombateTatico(true)}
+                className={`cursor-pointer rounded-lg px-3 py-1.5 text-xs font-bold transition ${
+                  combateTatico ? 'bg-holo-3 text-void' : 'text-muted hover:text-text'
+                }`}
+              >
+                Tático (por rodada)
+              </button>
+            </div>
+          </div>
+
           {modo === 'mapa' ? (
             <MapaExpedicoes
               monstros={estado.monstros}
@@ -852,6 +893,16 @@ export default function Expedicoes() {
 
           <CartaoEvento />
         </div>
+      )}
+
+      {combateInterativo && (
+        <CombateInterativoModal
+          estadoInicial={combateInterativo}
+          aoFechar={(concluiu) => {
+            setCombateInterativo(null)
+            if (concluiu) carregar()
+          }}
+        />
       )}
     </div>
   )

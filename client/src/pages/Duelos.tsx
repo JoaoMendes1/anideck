@@ -8,12 +8,15 @@ import {
   ESTILO_DO_ELEMENTO,
   descreverTurno,
   duelar,
+  iniciarCombateInterativo,
   obterDuelos,
   relacaoElemental,
   textoDaRelacao,
+  type EstadoCombateInterativo,
   type EstadoDuelos,
   type RespostaDuelo,
 } from '../lib/rpg'
+import CombateInterativoModal from '../components/rpg/CombateInterativoModal'
 import { rotuloDoElemento } from '../lib/personagem'
 import IconeOuro from '../components/IconeOuro'
 
@@ -78,6 +81,8 @@ export default function Duelos() {
   const [lutando, setLutando] = useState<string | null>(null)
   const [resposta, setResposta] = useState<RespostaDuelo | null>(null)
   const [erroDoDuelo, setErroDoDuelo] = useState('')
+  const [combateTatico, setCombateTatico] = useState(false)
+  const [combateInterativo, setCombateInterativo] = useState<EstadoCombateInterativo | null>(null)
 
   const carregar = () => {
     setCarregando(true)
@@ -93,6 +98,16 @@ export default function Duelos() {
   const desafiar = async (handle: string) => {
     setLutando(handle)
     setErroDoDuelo('')
+    if (combateTatico) {
+      const r = await iniciarCombateInterativo('duelo', handle)
+      setLutando(null)
+      if (r.dados) {
+        setCombateInterativo(r.dados)
+        return
+      }
+      setErroDoDuelo(r.erro ?? 'Não foi possível iniciar o duelo tático agora.')
+      return
+    }
     const r = await duelar(handle)
     setLutando(null)
     if (r.dados) {
@@ -166,6 +181,32 @@ export default function Duelos() {
             )}
             {erroDoDuelo && <p role="alert" className="m-0 text-xs font-bold text-coral">{erroDoDuelo}</p>}
 
+            <div className="flex flex-wrap items-center justify-between gap-2 rounded-2xl border border-line bg-panel px-3.5 py-2.5 text-xs">
+              <span className="font-semibold text-text">Modo do duelo:</span>
+              <div role="group" aria-label="Modo de combate" className="inline-flex rounded-xl border border-line bg-panel-2 p-0.5">
+                <button
+                  type="button"
+                  aria-pressed={!combateTatico}
+                  onClick={() => setCombateTatico(false)}
+                  className={`cursor-pointer rounded-lg px-3 py-1.5 text-xs font-bold transition ${
+                    !combateTatico ? 'bg-holo-3 text-void' : 'text-muted hover:text-text'
+                  }`}
+                >
+                  Automático
+                </button>
+                <button
+                  type="button"
+                  aria-pressed={combateTatico}
+                  onClick={() => setCombateTatico(true)}
+                  className={`cursor-pointer rounded-lg px-3 py-1.5 text-xs font-bold transition ${
+                    combateTatico ? 'bg-holo-3 text-void' : 'text-muted hover:text-text'
+                  }`}
+                >
+                  Tático (por rodada)
+                </button>
+              </div>
+            </div>
+
             {estado.oponentes.length === 0 ? (
               <p className="m-0 rounded-2xl border border-line bg-panel p-4 text-sm text-muted">
                 Ainda não há outros jogadores com perfil público e personagem. Convide alguém pela Guilda.
@@ -221,6 +262,16 @@ export default function Duelos() {
             )}
           </aside>
         </div>
+      )}
+
+      {combateInterativo && (
+        <CombateInterativoModal
+          estadoInicial={combateInterativo}
+          aoFechar={(concluiu) => {
+            setCombateInterativo(null)
+            if (concluiu) carregar()
+          }}
+        />
       )}
     </div>
   )

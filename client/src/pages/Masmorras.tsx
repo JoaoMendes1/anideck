@@ -3,6 +3,7 @@
 // é decidida no servidor; a tela mostra o resultado de cada andar, com o registro dos golpes.
 import BatalhaEmGrupo from '../components/rpg/BatalhaEmGrupo'
 import BotaoEmGrupo from '../components/rpg/BotaoEmGrupo'
+import CombateInterativoModal from '../components/rpg/CombateInterativoModal'
 import ComprarLutaExtra from '../components/rpg/ComprarLutaExtra'
 import MasmorraRoguelite from '../components/rpg/MasmorraRoguelite'
 import SeletorEsquadrao from '../components/rpg/SeletorEsquadrao'
@@ -18,11 +19,13 @@ import {
   descreverTurno,
   entrarNaMasmorra,
   estiloDaRaridade,
+  iniciarCombateInterativo,
   iniciarRoguelite,
   obterEstadoRoguelite,
   obterMasmorras,
   resumoDoItem,
   rotuloDaDificuldade,
+  type EstadoCombateInterativo,
   type EstadoMasmorras,
   type RespostaMasmorra,
   type RespostaRoguelite,
@@ -127,6 +130,8 @@ export default function Masmorras() {
   const [erroRoguelite, setErroRoguelite] = useState('')
   const [erroDaEntrada, setErroDaEntrada] = useState('')
   const [aliadosEsquadrao, setAliadosEsquadrao] = useState<string[]>([])
+  const [combateTatico, setCombateTatico] = useState(false)
+  const [combateInterativo, setCombateInterativo] = useState<EstadoCombateInterativo | null>(null)
 
   const carregar = () => {
     setCarregando(true)
@@ -155,6 +160,16 @@ export default function Masmorras() {
   const entrar = async (id: string) => {
     setEntrando(id)
     setErroDaEntrada('')
+    if (combateTatico) {
+      const r = await iniciarCombateInterativo('masmorra', id, aliadosEsquadrao)
+      setEntrando(null)
+      if (r.dados) {
+        setCombateInterativo(r.dados)
+        return
+      }
+      setErroDaEntrada(r.erro ?? 'Não foi possível iniciar o combate tático.')
+      return
+    }
     const r = aliadosEsquadrao.length > 0 ? await entrarNaMasmorra(id, aliadosEsquadrao) : await entrarNaMasmorra(id)
     setEntrando(null)
     if (r.dados) {
@@ -291,6 +306,32 @@ export default function Masmorras() {
             />
           )}
 
+          <div className="flex flex-wrap items-center justify-between gap-2 rounded-2xl border border-line bg-panel px-3.5 py-2.5 text-xs">
+            <span className="font-semibold text-text">Modo da masmorra rápida:</span>
+            <div role="group" aria-label="Modo de combate" className="inline-flex rounded-xl border border-line bg-panel-2 p-0.5">
+              <button
+                type="button"
+                aria-pressed={!combateTatico}
+                onClick={() => setCombateTatico(false)}
+                className={`cursor-pointer rounded-lg px-3 py-1.5 text-xs font-bold transition ${
+                  !combateTatico ? 'bg-holo-3 text-void' : 'text-muted hover:text-text'
+                }`}
+              >
+                Automático
+              </button>
+              <button
+                type="button"
+                aria-pressed={combateTatico}
+                onClick={() => setCombateTatico(true)}
+                className={`cursor-pointer rounded-lg px-3 py-1.5 text-xs font-bold transition ${
+                  combateTatico ? 'bg-holo-3 text-void' : 'text-muted hover:text-text'
+                }`}
+              >
+                Tático (por rodada)
+              </button>
+            </div>
+          </div>
+
           <ul className="m-0 grid list-none grid-cols-1 gap-3 p-0 md:grid-cols-2">
             {estado.masmorras.map((m) => {
               const dificuldade = rotuloDaDificuldade(m.dificuldade)
@@ -361,6 +402,16 @@ export default function Masmorras() {
             })}
           </ul>
         </div>
+      )}
+
+      {combateInterativo && (
+        <CombateInterativoModal
+          estadoInicial={combateInterativo}
+          aoFechar={(concluiu) => {
+            setCombateInterativo(null)
+            if (concluiu) carregar()
+          }}
+        />
       )}
     </div>
   )

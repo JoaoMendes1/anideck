@@ -1230,6 +1230,93 @@ export async function agirRoguelite(
   }
 }
 
+// --- Combate Interativo (#333) ---------------------------------------------------------
+
+export interface IntencaoInimigo {
+  tipo: string
+  titulo: string
+  descricao: string
+  dano_estimado: number
+  dica: string
+}
+
+export interface HeroiCombateInterativo {
+  base: string
+  nome: string
+  elemento: string
+  vida_atual: number
+  vida_maxima: number
+  eter_atual: number
+  eter_maximo: number
+}
+
+export interface EstadoCombateInterativo {
+  sessao_id: string
+  modo: 'expedicao' | 'masmorra' | 'duelo'
+  alvo_nome: string
+  alvo_elemento: string
+  alvo_nivel: number
+  andar_atual?: number
+  total_andares?: number
+  rodada: number
+  herois: HeroiCombateInterativo[]
+  inimigo_vida: number
+  inimigo_vida_max: number
+  aura_elemental?: string
+  intencao: IntencaoInimigo
+  ultimos_turnos?: TurnoBatalha[]
+  encerrado: boolean
+  venceu: boolean
+  caiu: boolean
+  evento?: string
+  recompensa?: RespostaBatalha['recompensa']
+  pontos_duelo?: number
+  ouro_duelo?: number
+  vida?: VidaRPG
+}
+
+export async function iniciarCombateInterativo(
+  modo: 'expedicao' | 'masmorra' | 'duelo',
+  alvoId: string,
+  esquadrao?: string[],
+): Promise<{ dados?: EstadoCombateInterativo; erro?: string }> {
+  const falha = 'Não foi possível iniciar o combate tático agora.'
+  try {
+    const payload =
+      esquadrao && esquadrao.length > 0 ? { modo, alvo_id: alvoId, esquadrao } : { modo, alvo_id: alvoId }
+    const res = await fetch('/api/rpg/combate-interativo/iniciar', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', ...(await cabecalhoDeAutenticacao()) },
+      body: JSON.stringify(payload),
+    })
+    const json = (await res.json().catch(() => null)) as (EstadoCombateInterativo & { error?: string }) | null
+    if (!res.ok || !json || !json.sessao_id) return { erro: json?.error || falha }
+    return { dados: json }
+  } catch {
+    return { erro: falha }
+  }
+}
+
+export async function agirCombateInterativo(
+  sessaoId: string,
+  acao: 'golpe' | 'defender' | 'ruptura',
+): Promise<{ dados?: EstadoCombateInterativo; erro?: string }> {
+  const falha = 'Não foi possível executar a ação nesta rodada.'
+  try {
+    const res = await fetch('/api/rpg/combate-interativo/agir', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', ...(await cabecalhoDeAutenticacao()) },
+      body: JSON.stringify({ sessao_id: sessaoId, acao }),
+    })
+    const json = (await res.json().catch(() => null)) as (EstadoCombateInterativo & { error?: string }) | null
+    if (!res.ok || !json) return { erro: json?.error || falha }
+    if (json.encerrado) avisarOuroMudou()
+    return { dados: json }
+  } catch {
+    return { erro: falha }
+  }
+}
+
 // --- Duelos (sql/093) ------------------------------------------------------------------
 
 export interface OponenteDeDuelo {

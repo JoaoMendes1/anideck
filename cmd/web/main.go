@@ -223,6 +223,8 @@ func main() {
 		protegido.Get("/api/rpg/masmorras/roguelite", rpgHandler.HandleGetRoguelite)
 		protegido.Post("/api/rpg/masmorras/roguelite/iniciar", rpgHandler.HandleIniciarRoguelite)
 		protegido.Post("/api/rpg/masmorras/roguelite/agir", rpgHandler.HandleAgirRoguelite)
+		protegido.Post("/api/rpg/combate-interativo/iniciar", rpgHandler.HandleIniciarCombateInterativo)
+		protegido.Post("/api/rpg/combate-interativo/agir", rpgHandler.HandleAgirCombateInterativo)
 		protegido.Get("/api/rpg/duelos", rpgHandler.HandleGetDuelos)
 		protegido.Post("/api/rpg/duelos", rpgHandler.HandleDuelar)
 		protegido.Post("/api/rpg/grupos", rpgHandler.HandleCriarGrupo)
