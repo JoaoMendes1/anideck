@@ -93,7 +93,10 @@ func TestContextoDoEstado_ComElencoETroca(t *testing.T) {
 	if resp.Elenco.UltimaTrocaEm != "2026-11-18T10:00:00Z" {
 		t.Errorf("ultima_troca_em errada: %q", resp.Elenco.UltimaTrocaEm)
 	}
-	if resp.Elenco.PrecoDesbloquearOuro != 400 || resp.Elenco.TrocaCooldownHoras != 24 || resp.Elenco.PrecoTrocaAntecipadaOuro != 150 {
+	if resp.Elenco.PrecoDesbloquearOuro != 400 || resp.Elenco.TrocaCooldownHoras != 0 || resp.Elenco.PrecoTrocaAntecipadaOuro != 0 {
 		t.Errorf("preços inesperados: %+v", resp.Elenco)
+	}
+	if resp.Elenco.ProximaTrocaEm != "" {
+		t.Errorf("proxima_troca_em deveria sair vazia: %q", resp.Elenco.ProximaTrocaEm)
 	}
 }
