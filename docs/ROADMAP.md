@@ -918,6 +918,11 @@ decidiu em 17/11/2026 que ela fecha fora da Fase 18. Escopo a detalhar em issues
 > numeração e não abrem escopo novo. Ficam registrados aqui em ordem cronológica inversa para
 > não sumirem: fase concluída não deve ser reaberta só para receber um conserto.
 
+### 20/11/2026 — Contador e insígnias de missões de maratona concluídas (#341)
+
+- [x] **Contagem total e cartas de Maratonista (`sql/143_insignias_maratona.sql`, `guilda.go`, `guilda_admin.go`, `maratona.go`, `Guilda.tsx`, `CartaoMaratona.tsx`):**
+      Regra `maratonas_concluidas` adicionada ao avaliador e ao Painel Admin (`AbaGuilda.tsx`), com duas novas insígnias colecionáveis (`Primeira Maratona`, meta 1; `Lenda das Maratonas`, meta 5); total histórico concluído exibido no cartão de status da Guilda (`status.maratonas_concluidas`) e no card da maratona (`total_concluidas`). (#341)
+
 ### 20/11/2026 — Equipamentos individuais por herói (#340)
 
 - [x] **Slots equipados separados por personagem desbloqueado (`sql/142_equipamentos_por_personagem.sql`, `personagem.go`, `rpg_estado.go`, `rpg_esquadrao.go`):**

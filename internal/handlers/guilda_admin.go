@@ -15,12 +15,13 @@ import (
 )
 
 var regrasInsigniaValidas = map[string]bool{
-	"madrugadas":     true,
-	"curados_vistos": true,
-	"maior_streak":   true,
-	"cedo_marcados":  true,
-	"genero_n3":      true,
-	"rank_s":         true,
+	"madrugadas":           true,
+	"curados_vistos":       true,
+	"maior_streak":         true,
+	"cedo_marcados":        true,
+	"genero_n3":            true,
+	"rank_s":               true,
+	"maratonas_concluidas": true,
 }
 
 // ValidarEconomiaGuilda garante que os parâmetros da economia estejam dentro de faixas seguras.

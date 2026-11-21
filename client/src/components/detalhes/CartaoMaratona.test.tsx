@@ -75,10 +75,11 @@ describe('CartaoMaratona', () => {
 
   it('mostra quantas maratonas a semana ainda permite e explica o limite', async () => {
     vi.mocked(obterMaratona).mockResolvedValue({
-      dados: { ...base, pode: false, semana_feitas: 2, semana_limite: 2, motivo: 'Você já concluiu as 2 maratonas desta semana. As próximas liberam na segunda-feira.' },
+      dados: { ...base, pode: false, semana_feitas: 2, semana_limite: 2, total_concluidas: 4, motivo: 'Você já concluiu as 2 maratonas desta semana. As próximas liberam na segunda-feira.' },
     })
     render(<CartaoMaratona malId={1} />)
     expect((await screen.findByText(/Maratonas concluídas nesta semana/)).textContent).toContain('2 de 2')
+    expect(screen.getByText(/Total de maratonas concluídas:/).textContent).toContain('4')
     expect(screen.getByText(/As próximas liberam na segunda-feira/)).toBeTruthy()
     expect(screen.queryByRole('button', { name: 'Iniciar maratona' })).toBeNull()
   })

@@ -624,5 +624,17 @@
         "caminho": "/personagem"
       }
     ]
+  },
+  {
+    "chave": "2026-11-20-contador-e-insignias-maratona",
+    "titulo": "Contador de Maratonas concluídas e novas Insígnias de Maratonista",
+    "categoria": "novidade",
+    "resumo": "Agora a Guilda e o card da Maratona mostram quantas missões de maratona você já concluiu na conta.\n\nTambém chegaram duas novas cartas colecionáveis de Insígnia avaliadas automaticamente: Primeira Maratona (1 concluída) e Lenda das Maratonas (5 concluídas).",
+    "links": [
+      {
+        "rotulo": "Ver Insígnias na Guilda",
+        "caminho": "/guilda#insignias"
+      }
+    ]
   }
 ]

@@ -143,9 +143,21 @@ type RespostaMaratona struct {
 	Maratona     *MaratonaRPG    `json:"maratona,omitempty"`
 	// OutraAtiva é o mal_id da maratona em andamento em outro anime, quando há.
 	OutraAtiva int `json:"outra_ativa,omitempty"`
-	// Maratonas concluídas nesta semana e o limite do Painel Admin (0 = pausada).
-	SemanaFeitas int `json:"semana_feitas"`
-	SemanaLimite int `json:"semana_limite"`
+	// Maratonas concluídas nesta semana, limite do Painel Admin (0 = pausada) e total histórico.
+	SemanaFeitas    int `json:"semana_feitas"`
+	SemanaLimite    int `json:"semana_limite"`
+	TotalConcluidas int `json:"total_concluidas"`
+}
+
+// MaratonasConcluidas conta quantas missões de maratona o usuário já concluiu no total.
+func MaratonasConcluidas(ms []MaratonaRPG) int {
+	n := 0
+	for _, m := range ms {
+		if m.Status == "concluida" {
+			n++
+		}
+	}
+	return n
 }
 
 // MaratonasNaSemana conta as concluídas desde segunda 00:00 de Brasília, a mesma semana das
@@ -266,6 +278,7 @@ func (h *MaratonaHandler) montarResposta(ctx context.Context, dbClient *supabase
 	}
 	maratonas := lerMaratonas(dbClient, userID)
 	resp.SemanaFeitas = MaratonasNaSemana(maratonas, time.Now())
+	resp.TotalConcluidas = MaratonasConcluidas(maratonas)
 	resp.SemanaLimite = lerRegrasComunidade(dbClient).MaratonasPorSemana
 	for _, m := range maratonas {
 		m := m

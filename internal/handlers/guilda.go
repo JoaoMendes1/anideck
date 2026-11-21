@@ -96,6 +96,7 @@ type StatusNivelGuilda struct {
 	Ouro                  *int   `json:"ouro,omitempty"`
 	UltimoEstornoMissaoEm string `json:"ultimo_estorno_missao_em,omitempty"`
 	XPPendenteTotal       int    `json:"xp_pendente_total,omitempty"`
+	MaratonasConcluidas   int    `json:"maratonas_concluidas"`
 }
 
 // AfinidadeGeneroInput representa uma linha lida de view_user_genre_affinity.
@@ -120,12 +121,13 @@ type EspecialistaGenero struct {
 
 // MetricasUsuarioGuilda agrega os contadores usados para avaliar o catálogo de insígnias.
 type MetricasUsuarioGuilda struct {
-	Madrugadas    int
-	CuradosVistos int
-	MaiorStreak   int
-	CedoMarcados  int
-	GenerosN3Mais int
-	NivelAtual    int
+	Madrugadas          int
+	CuradosVistos       int
+	MaiorStreak         int
+	CedoMarcados        int
+	GenerosN3Mais       int
+	NivelAtual          int
+	MaratonasConcluidas int
 }
 
 // InsigniaStatus é a carta pronta para renderizar na tela da Guilda.
@@ -207,6 +209,8 @@ func InsigniasPadrao() []InsigniaConfig {
 		{ID: "cedo", Icone: "⚡", Nome: "Sempre em Dia", Descricao: "10 episódios no lançamento", Regra: "cedo_marcados", Meta: 10, Estilo: "foil2"},
 		{ID: "especialista", Icone: "🧭", Nome: "Mestre de Gênero", Descricao: "Nível N3 em um gênero", Regra: "genero_n3", Meta: 1, Estilo: "foil"},
 		{ID: "voz_guilda", Icone: "👑", Nome: "Voz da Guilda", Descricao: "Alcançar o Rank S", Regra: "rank_s", Meta: 55, Estilo: "foil2"},
+		{ID: "maratonista_1", Icone: "🏁", Nome: "Primeira Maratona", Descricao: "Concluir 1 missão de maratona", Regra: "maratonas_concluidas", Meta: 1, Estilo: "foil"},
+		{ID: "maratonista_5", Icone: "🏆", Nome: "Lenda das Maratonas", Descricao: "Concluir 5 missões de maratona", Regra: "maratonas_concluidas", Meta: 5, Estilo: "foil2"},
 	}
 }
 
@@ -527,6 +531,8 @@ func AvaliarInsignias(m MetricasUsuarioGuilda, catalogo []InsigniaConfig) []Insi
 			atual = m.GenerosN3Mais
 		case "rank_s":
 			atual = m.NivelAtual
+		case "maratonas_concluidas":
+			atual = m.MaratonasConcluidas
 		}
 
 		saida = append(saida, InsigniaStatus{
@@ -1101,6 +1107,7 @@ func (h *GuildaHandler) HandleGetGuilda(w http.ResponseWriter, r *http.Request) 
 
 	curados := CarregarCuradoria(dbClient)
 	totalPendenteXP, totalPendenteEps, itensPendentes := carregarPendentesGuilda(dbClient, userID, curados)
+	maratonasConcluidas := MaratonasConcluidas(lerMaratonas(dbClient, userID))
 
 	agora := time.Now().UTC()
 	inicioDia := inicioDoDiaBrasilia(agora)
@@ -1140,6 +1147,7 @@ func (h *GuildaHandler) HandleGetGuilda(w http.ResponseWriter, r *http.Request) 
 	status.GamificacaoAtiva = economia.Ativo
 	status.PesoMaximoVoto = pesoMaximo
 	status.XPPendenteTotal = totalPendenteXP
+	status.MaratonasConcluidas = maratonasConcluidas
 
 	// Contagem de sessões ou marcações na madrugada (00h–05h no fuso de Brasília).
 	madrugadas := 0
@@ -1161,12 +1169,13 @@ func (h *GuildaHandler) HandleGetGuilda(w http.ResponseWriter, r *http.Request) 
 	}
 
 	insignias := AvaliarInsignias(MetricasUsuarioGuilda{
-		Madrugadas:    madrugadas,
-		CuradosVistos: curadosVistos,
-		MaiorStreak:   maiorStreak,
-		CedoMarcados:  cedoMarcados,
-		GenerosN3Mais: generosN3,
-		NivelAtual:    status.Nivel,
+		Madrugadas:          madrugadas,
+		CuradosVistos:       curadosVistos,
+		MaiorStreak:         maiorStreak,
+		CedoMarcados:        cedoMarcados,
+		GenerosN3Mais:       generosN3,
+		NivelAtual:          status.Nivel,
+		MaratonasConcluidas: maratonasConcluidas,
 	}, catalogoInsignias)
 
 	especialidade := CalcularEspecialidade(especialistas)
@@ -1221,19 +1230,20 @@ func carregarEspecialidadeEInsigniasDoUsuario(dbClient *supabase.Client, userID 
 		return nil, nil, nil
 	}
 	var (
-		afinidades        []AfinidadeGeneroInput
-		datasRows         []struct{ Dia string `json:"dia"` }
-		tsRows            []map[string]interface{}
-		entriesRows       []struct {
+		afinidades          []AfinidadeGeneroInput
+		datasRows           []struct{ Dia string `json:"dia"` }
+		tsRows              []map[string]interface{}
+		entriesRows         []struct {
 			MalID  int    `json:"mal_id"`
 			Status string `json:"status"`
 		}
-		catalogoInsignias []InsigniaConfig
-		curados           map[int]models.CuratedAnime
-		linhasLedger      []linhaLedgerBanco
-		wg                sync.WaitGroup
+		catalogoInsignias   []InsigniaConfig
+		curados             map[int]models.CuratedAnime
+		linhasLedger        []linhaLedgerBanco
+		maratonas           []MaratonaRPG
+		wg                  sync.WaitGroup
 	)
-	wg.Add(6)
+	wg.Add(7)
 	go func() {
 		defer wg.Done()
 		if afBytes, _, err := dbClient.From("view_user_genre_affinity").Select("*", "", false).Execute(); err == nil {
@@ -1266,6 +1276,10 @@ func carregarEspecialidadeEInsigniasDoUsuario(dbClient *supabase.Client, userID 
 		defer wg.Done()
 		curados = CarregarCuradoria(dbClient)
 		linhasLedger = carregarLedgerUsuario(dbClient, userID)
+	}()
+	go func() {
+		defer wg.Done()
+		maratonas = lerMaratonas(dbClient, userID)
 	}()
 	wg.Wait()
 
@@ -1308,12 +1322,13 @@ func carregarEspecialidadeEInsigniasDoUsuario(dbClient *supabase.Client, userID 
 	}
 
 	insignias := AvaliarInsignias(MetricasUsuarioGuilda{
-		Madrugadas:    madrugadas,
-		CuradosVistos: curadosVistos,
-		MaiorStreak:   maiorStreak,
-		CedoMarcados:  cedoMarcados,
-		GenerosN3Mais: generosN3,
-		NivelAtual:    nivel,
+		Madrugadas:          madrugadas,
+		CuradosVistos:       curadosVistos,
+		MaiorStreak:         maiorStreak,
+		CedoMarcados:        cedoMarcados,
+		GenerosN3Mais:       generosN3,
+		NivelAtual:          nivel,
+		MaratonasConcluidas: MaratonasConcluidas(maratonas),
 	}, catalogoInsignias)
 
 	return esp, passiva, insignias

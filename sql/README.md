@@ -172,6 +172,7 @@ SELECT pg_get_viewdef('nome_da_view'::regclass, true);
 | `140_atributos_por_personagem.sql` | Atributos individuais por herói (#336): tabela `public.rpg_atributos_herois (user_id, personagem_base)`, backfill apenas do herói ativo para novos desbloqueados começarem zerados, `rpg_distribuir_pontos(..., p_base)`, `rpg_trocar_personagem` sincronizada e `pontos_por_heroi` em `rpg_estado_jogador()` / `rpg_ficha_de_duelo()`. **Depois do `137` e do `139`** | 2026-11-20~ |
 | `141_troca_personagem_gratuita.sql` | Troca gratuita entre heróis já desbloqueados (#339): redefine `rpg_trocar_personagem(p_base, p_antecipado)` removendo a espera de 24h e o débito de 150 Ouro (`ouro_gasto: 0`), mantendo a sincronização de `rpg_atributos_herois`. **Depois do `140`** | 2026-11-20~ |
 | `142_equipamentos_por_personagem.sql` | Equipamentos individuais por herói (#340): tabela `public.rpg_equipados_herois (user_id, personagem_base, slot)` com backfill apenas do herói ativo (novos heróis começam sem nada vestido), `rpg_equipar_item(..., p_base)`, sincronização em `rpg_trocar_personagem` e `equipados_por_heroi` em `rpg_estado_jogador()` / `rpg_ficha_de_duelo()`. **Depois do `141`** | 2026-11-20~ |
+| `143_insignias_maratona.sql` | Insígnias de maratona concluída (#341): inclui `Primeira Maratona` (meta 1) e `Lenda das Maratonas` (meta 5) em `app_settings.guilda_insignias` quando ainda não existir regra `maratonas_concluidas`. | 2026-11-20~ |
 
 Datas com `~` são a data do commit, não da aplicação no Supabase.
 

@@ -95,6 +95,7 @@ const dadosMock: DadosDaGuilda = {
     maior_streak: 7,
     gamificacao_ativa: true,
     peso_maximo_voto: 1.4,
+    maratonas_concluidas: 3,
   },
   economia: {
     ativo: true,
@@ -206,6 +207,7 @@ describe('Guilda', () => {
     abrir()
 
     await screen.findByText('Atividades da Guilda')
+    expect(screen.getByText(/3 maratonas/)).toBeTruthy()
     expect(screen.getAllByRole('link', { name: /Expedições/ }).some((el) => el.getAttribute('href') === '/expedicoes')).toBe(true)
     expect(screen.getAllByRole('link', { name: /Masmorras/ }).some((el) => el.getAttribute('href') === '/masmorras')).toBe(true)
     expect(screen.getByRole('link', { name: /Evento da Temporada/ }).getAttribute('href')).toBe('/expedicoes#evento')

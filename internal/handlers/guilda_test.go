@@ -138,12 +138,13 @@ func TestCalcularEspecialistasGenero(t *testing.T) {
 
 func TestAvaliarInsignias(t *testing.T) {
 	metricas := MetricasUsuarioGuilda{
-		Madrugadas:    12,
-		CuradosVistos: 10,
-		MaiorStreak:   20,
-		CedoMarcados:  3,
-		GenerosN3Mais: 1,
-		NivelAtual:    24,
+		Madrugadas:          12,
+		CuradosVistos:       10,
+		MaiorStreak:         20,
+		CedoMarcados:        3,
+		GenerosN3Mais:       1,
+		NivelAtual:          24,
+		MaratonasConcluidas: 2,
 	}
 
 	cartas := AvaliarInsignias(metricas, InsigniasPadrao())
@@ -154,11 +155,11 @@ func TestAvaliarInsignias(t *testing.T) {
 		}
 	}
 
-	if !desbloqueadas["coruja"] || !desbloqueadas["chama"] || !desbloqueadas["especialista"] {
-		t.Fatalf("esperava coruja, chama e especialista desbloqueadas: %+v", desbloqueadas)
+	if !desbloqueadas["coruja"] || !desbloqueadas["chama"] || !desbloqueadas["especialista"] || !desbloqueadas["maratonista_1"] {
+		t.Fatalf("esperava coruja, chama, especialista e maratonista_1 desbloqueadas: %+v", desbloqueadas)
 	}
-	if desbloqueadas["arquivista"] || desbloqueadas["voz_guilda"] {
-		t.Fatalf("arquivista e voz_guilda deveriam continuar bloqueadas: %+v", desbloqueadas)
+	if desbloqueadas["arquivista"] || desbloqueadas["voz_guilda"] || desbloqueadas["maratonista_5"] {
+		t.Fatalf("arquivista, voz_guilda e maratonista_5 deveriam continuar bloqueadas: %+v", desbloqueadas)
 	}
 }
 

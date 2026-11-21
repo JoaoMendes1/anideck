@@ -361,6 +361,13 @@ export default function Guilda() {
                   <span className="inline-flex items-center gap-1 h-6 sm:h-7 font-mono text-[11px] sm:text-xs font-bold px-2 sm:px-2.5 rounded-full bg-gold/12 border border-gold/40 text-gold">
                     <IconeAniCoin size={13} /> {saldoCristais.toLocaleString('pt-BR')} ₳
                   </span>
+                  <span
+                    title="Missões de maratona concluídas na conta"
+                    className="inline-flex items-center gap-1 h-6 sm:h-7 font-mono text-[11px] sm:text-xs font-bold px-2 sm:px-2.5 rounded-full bg-panel-2 border border-line text-text"
+                  >
+                    <span aria-hidden="true">🏁</span> {status.maratonas_concluidas ?? 0}{' '}
+                    {(status.maratonas_concluidas ?? 0) === 1 ? 'maratona' : 'maratonas'}
+                  </span>
                   {!status.gamificacao_ativa && (
                     <span className="inline-flex items-center h-7 font-mono text-xs font-bold px-2.5 rounded-full bg-coral/15 border border-coral/40 text-coral">
                       XP em manutenção

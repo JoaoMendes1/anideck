@@ -25,6 +25,7 @@ export interface StatusNivelGuilda {
   ouro?: number
   ultimo_estorno_missao_em?: string
   xp_pendente_total?: number
+  maratonas_concluidas?: number
 }
 
 export interface EconomiaGuilda {

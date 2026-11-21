@@ -81,14 +81,21 @@ export default function CartaoMaratona({ malId }: { malId: number }) {
       {m?.status === 'ativa' && <MaratonaEmAndamento resp={resp} agora={agora} />}
 
       {m?.status === 'concluida' && (
-        <p className="m-0 flex items-start gap-2 font-bold text-green">
-          <Trophy size={16} className="mt-0.5 shrink-0" aria-hidden="true" />
-          <span>
-            Concluída em {formatarDuracao((Date.parse(m.terminada_em ?? m.iniciada_em) - Date.parse(m.iniciada_em)) / 1000)}
-            {' · '}
-            {m.faixas.find((f) => f.id === m.faixa)?.nome}: {pacoteEmTexto(m)}.
-          </span>
-        </p>
+        <div className="flex flex-col gap-1">
+          <p className="m-0 flex items-start gap-2 font-bold text-green">
+            <Trophy size={16} className="mt-0.5 shrink-0" aria-hidden="true" />
+            <span>
+              Concluída em {formatarDuracao((Date.parse(m.terminada_em ?? m.iniciada_em) - Date.parse(m.iniciada_em)) / 1000)}
+              {' · '}
+              {m.faixas.find((f) => f.id === m.faixa)?.nome}: {pacoteEmTexto(m)}.
+            </span>
+          </p>
+          {typeof resp.total_concluidas === 'number' && (
+            <p className="m-0 font-mono text-xs text-muted">
+              Total de maratonas concluídas: <strong className="text-gold">{resp.total_concluidas}</strong>
+            </p>
+          )}
+        </div>
       )}
 
       {m?.status === 'falhou' && (
@@ -125,13 +132,23 @@ export default function CartaoMaratona({ malId }: { malId: number }) {
               </li>
             ))}
           </ul>
-          {(resp.semana_limite ?? 0) > 0 && (
+          {((resp.semana_limite ?? 0) > 0 || typeof resp.total_concluidas === 'number') && (
             <p className="m-0 text-xs text-muted">
-              Maratonas concluídas nesta semana:{' '}
-              <strong className="text-text">
-                {Math.min(resp.semana_feitas ?? 0, resp.semana_limite ?? 0)} de {resp.semana_limite}
-              </strong>{' '}
-              (renova na segunda-feira).
+              {(resp.semana_limite ?? 0) > 0 && (
+                <>
+                  Maratonas concluídas nesta semana:{' '}
+                  <strong className="text-text">
+                    {Math.min(resp.semana_feitas ?? 0, resp.semana_limite ?? 0)} de {resp.semana_limite}
+                  </strong>{' '}
+                  (renova na segunda-feira).{' '}
+                </>
+              )}
+              {typeof resp.total_concluidas === 'number' && (
+                <>
+                  Total de maratonas concluídas:{' '}
+                  <strong className="text-gold">{resp.total_concluidas}</strong>.
+                </>
+              )}
             </p>
           )}
           {resp.pode ? (

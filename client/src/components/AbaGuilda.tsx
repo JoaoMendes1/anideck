@@ -40,6 +40,7 @@ const REGRAS_DISPONIVEIS = [
   { valor: 'cedo_marcados', rotulo: 'Episódios no lançamento' },
   { valor: 'genero_n3', rotulo: 'Gêneros em nível N3+' },
   { valor: 'rank_s', rotulo: 'Nível mínimo alcançado' },
+  { valor: 'maratonas_concluidas', rotulo: 'Maratonas concluídas' },
 ]
 
 export default function AbaGuilda() {
