@@ -516,5 +516,21 @@
         "caminho": "/"
       }
     ]
+  },
+  {
+    "chave": "2026-11-20-esquadrao-e-reacoes-elementais",
+    "titulo": "Esquadrão de heróis e Reações Elementais",
+    "categoria": "novidade",
+    "resumo": "Agora você pode lutar com um esquadrão de até 3 heróis desbloqueados da sua conta nas Expedições, Masmorras e Grupos online! Heróis de elementos diferentes disparam Reações Elementais ao combinar golpes no mesmo alvo (como Vaporização, Sobrecarga Explosiva e Juízo Crepuscular), e ao abrir um grupo online você escolhe quantos heróis entram na luta e quantas vagas ficam abertas para seus amigos. A força dos monstros se equilibra automaticamente ao tamanho e ao poder do esquadrão.",
+    "links": [
+      {
+        "rotulo": "Ir às Expedições",
+        "caminho": "/expedicoes"
+      },
+      {
+        "rotulo": "Ver Elenco",
+        "caminho": "/personagem"
+      }
+    ]
   }
 ]

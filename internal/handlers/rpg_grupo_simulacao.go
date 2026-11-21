@@ -42,6 +42,48 @@ func MonstroParaGrupo(m MonstroRPG, herois int) MonstroRPG {
 	return m
 }
 
+// EquilibrarMonstroParaGrupo ajusta Vida, Ataque, Defesa e Velocidade do monstro pela
+// quantidade de heróis em campo e pela Força do Mundo (diferença entre o poder médio do
+// esquadrão e o poder base do monstro), mantendo lutas em grupo desafiadoras sem anular
+// a progressão de equipamentos do jogador.
+func EquilibrarMonstroParaGrupo(m MonstroRPG, herois []CombatenteRPG) MonstroRPG {
+	n := len(herois)
+	if n <= 1 {
+		return m
+	}
+	if n > MaxHeroisNoGrupo {
+		n = MaxHeroisNoGrupo
+	}
+	m.Vida = m.Vida * (100 + 75*(n-1)) / 100
+	m.Ataque = max(1, m.Ataque*(100+15*(n-1))/100)
+	m.Defesa = m.Defesa * (100 + 12*(n-1)) / 100
+	if m.Velocidade == 0 {
+		m.Velocidade = VelocidadeDoMonstro(m)
+	}
+	m.Velocidade += n - 1
+
+	somaPoder := 0
+	for _, h := range herois {
+		p := h.Atributos.Poder
+		if p <= 0 {
+			p = CalcularPoder(h.Atributos)
+		}
+		somaPoder += p
+	}
+	poderMedio := somaPoder / len(herois)
+	poderBase := max(1, PoderDoMonstro(MonstroRPG{
+		Nivel: m.Nivel, Tipo: m.Tipo, Vida: max(1, m.Vida*100/(100+75*(n-1))),
+		Ataque: max(1, m.Ataque*100/(100+15*(n-1))), Defesa: m.Defesa * 100 / (100 + 12*(n-1)), Magia: m.Magia,
+	}))
+	if poderMedio > poderBase*125/100 {
+		excesso := min(40, (poderMedio*100/poderBase-125)/3)
+		m.Vida = m.Vida * (100 + excesso) / 100
+		m.Ataque = m.Ataque * (100 + excesso/2) / 100
+		m.Defesa = m.Defesa * (100 + excesso/2) / 100
+	}
+	return m
+}
+
 // SimularBatalhaEmGrupo resolve a luta do grupo. A Vida do monstro já vem ajustada (use
 // MonstroParaGrupo). Em cada rodada, os heróis mais rápidos que o monstro agem antes dele,
 // os outros depois; o monstro ataca um herói de pé sorteado. O grupo vence quando o monstro
@@ -79,6 +121,7 @@ func simularGrupo(herois []CombatenteRPG, fora []bool, monstro MonstroRPG, rng *
 		res.Herois[i].VidaInicial = vida
 		res.Herois[i].VidaMaxima = h.Atributos.Vida
 	}
+	mon.grupo = lutas
 
 	vivos := func() []*lutaEmAndamento {
 		var v []*lutaEmAndamento
@@ -121,7 +164,25 @@ func simularGrupo(herois []CombatenteRPG, fora []bool, monstro MonstroRPG, rng *
 			return fim(true, rodada)
 		}
 		de := vivos()
-		de[rng.Intn(len(de))].vezDoMonstro()
+		idxAlvo := rng.Intn(len(de))
+		turnosAntes := len(diario)
+		de[idxAlvo].vezDoMonstro()
+		atordoado := len(diario) > turnosAntes && diario[turnosAntes].PerdeuVez != ""
+		// Em rodadas pares contra 2+ heróis de pé, o monstro faz um golpe em área leve (30% do Ataque)
+		// em outro aliado, para que postura, defesa e curas do esquadrão façam diferença.
+		if !atordoado && rodada%2 == 0 {
+			depois := vivos()
+			for _, secundario := range depois {
+				if secundario != de[idxAlvo] {
+					danoArea, esquivou := secundario.golpeNoJogadorComTipo(max(1, monstro.Ataque*30/100), false)
+					secundario.registrar(TurnoBatalha{
+						Atacante: "monstro", Poder: "Varredura em área",
+						Dano: danoArea.valor, Critico: danoArea.critico, Esquiva: esquivou,
+					})
+					break
+				}
+			}
+		}
 		if len(vivos()) == 0 {
 			return fim(false, rodada)
 		}
@@ -212,8 +273,15 @@ func SimularMasmorraEmGrupo(herois []CombatenteRPG, monstros []MonstroRPG, rng *
 			copia[i] = h
 			copia[i].VidaInicial = vida[i]
 		}
-		res := simularGrupo(copia, fora, MonstroParaGrupo(m, len(herois)), rng)
-		r.Andares = append(r.Andares, AndarEmGrupo{Monstro: m, Resultado: res})
+		vivosNaEntrada := make([]CombatenteRPG, 0, len(herois))
+		for i, h := range herois {
+			if !fora[i] {
+				vivosNaEntrada = append(vivosNaEntrada, h)
+			}
+		}
+		monstroEscalado := EquilibrarMonstroParaGrupo(m, vivosNaEntrada)
+		res := simularGrupo(copia, fora, monstroEscalado, rng)
+		r.Andares = append(r.Andares, AndarEmGrupo{Monstro: monstroEscalado, Resultado: res})
 		for i, h := range res.Herois {
 			if h.Fora {
 				continue

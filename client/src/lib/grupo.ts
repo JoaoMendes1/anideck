@@ -9,6 +9,14 @@ import { cabecalhoDeAutenticacao, type ItemRPG, type MonstroRPG, type TurnoBatal
 export type AlvoDoGrupo = 'monstro' | 'masmorra'
 export type QuemConvida = 'todos' | 'amigos' | 'ninguem'
 
+export interface AcompanhanteGrupo {
+  nome: string
+  personagem: string
+  nivel: number
+  poder?: number
+  elemento?: string
+}
+
 export interface MembroDoGrupo {
   handle: string
   nome: string
@@ -18,6 +26,7 @@ export interface MembroDoGrupo {
   nivel: number | null
   poder: number | null
   personagem: string | null
+  acompanhantes?: AcompanhanteGrupo[]
 }
 
 export interface HeroiNoResultado {
@@ -66,6 +75,9 @@ export interface EstadoDoGrupo {
   alvo_tipo: AlvoDoGrupo
   alvo_id: string
   alvo_nome: string
+  max_herois?: number
+  herois_lider?: number
+  vagas_online?: number
   status: 'aberto' | 'lutando' | 'concluido' | 'cancelado' | 'expirado'
   expira_em: string
   sou_lider: boolean
@@ -91,6 +103,9 @@ export interface ConvitePendente {
   alvo_nome: string
   lider_nome: string
   lider_handle: string
+  max_herois?: number
+  herois_lider?: number
+  vagas_online?: number
   expira_em: string
 }
 
@@ -122,8 +137,28 @@ async function chamarBanco<T>(funcao: string, args: Record<string, unknown>, fal
   return { dados: r }
 }
 
-export const abrirGrupo = (alvo_tipo: AlvoDoGrupo, alvo_id: string) =>
-  postarNoGo<{ grupo_id: string }>('/api/rpg/grupos', { alvo_tipo, alvo_id }, 'Não foi possível abrir o grupo agora.')
+export interface OpcoesCriarGrupo {
+  max_herois?: number
+  herois_lider?: number
+  esquadrao?: string[]
+}
+
+export const abrirGrupo = (alvo_tipo: AlvoDoGrupo, alvo_id: string, opcoes?: OpcoesCriarGrupo) =>
+  postarNoGo<{ grupo_id: string; max_herois?: number; herois_lider?: number }>(
+    '/api/rpg/grupos',
+    { alvo_tipo, alvo_id, ...opcoes },
+    'Não foi possível abrir o grupo agora.',
+  )
+
+export const configurarGrupo = (
+  grupoId: string,
+  opcoes: { max_herois: number; herois_lider: number; esquadrao?: string[] },
+) =>
+  postarNoGo<{ max_herois: number; herois_lider: number; vagas_online: number }>(
+    `/api/rpg/grupos/${encodeURIComponent(grupoId)}/configurar`,
+    opcoes,
+    'Não foi possível atualizar a formação do grupo agora.',
+  )
 
 export const aceitarConvite = (grupoId: string) =>
   postarNoGo<{ grupo_id: string }>(`/api/rpg/grupos/${encodeURIComponent(grupoId)}/aceitar`, undefined, 'Não foi possível entrar no grupo agora.')

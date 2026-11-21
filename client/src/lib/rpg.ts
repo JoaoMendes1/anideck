@@ -5,8 +5,20 @@
 // e dos itens equipados. A tela só mostra; nada daqui é enviado de volta como atributo.
 import { Footprints, Gem, HandFist, HardHat, Shield, Shirt, Sword, type LucideIcon } from 'lucide-react'
 import type { PassivaEspecialidade } from './guilda'
+import type { ResultadoDoGrupo } from './grupo'
 import { supabase } from './supabase'
 import { avisarOuroMudou } from './hud'
+
+export interface HeroiResumoEsquadrao {
+  id: string
+  nome: string
+  classe: string
+  elemento: string
+  poder: number
+  vida: number
+  ativo: boolean
+  no_grupo: boolean
+}
 
 export interface AtributosRPG {
   vida: number
@@ -573,6 +585,7 @@ export interface EstadoExpedicoes {
   /** Mana de cada luta (sql/118); ausente em servidor antigo. */
   custos_mana?: CustosManaRPG
   passiva?: PassivaEspecialidade
+  elenco?: HeroiResumoEsquadrao[]
 }
 
 export function regioesDoMapa(estado: Pick<EstadoExpedicoes, 'regioes' | 'monstros'>): RegiaoMapa[] {
@@ -739,6 +752,8 @@ export interface TurnoBatalha {
   perdeu_vez?: string
   /** O golpe do atacante se perdeu por Ofuscamento. */
   errou?: boolean
+  /** Reação elemental disparada neste golpe (rpg_reacoes.go). */
+  reacao?: string
 }
 
 export interface RespostaBatalha {
@@ -759,6 +774,7 @@ export interface RespostaBatalha {
   bestiario?: BestiarioDoMonstro
   hoje: HojeRPG
   passiva?: PassivaEspecialidade
+  grupo_resultado?: ResultadoDoGrupo
 }
 
 /** Texto de uma linha do registro da luta e o número ao lado (dano ou cura). */
@@ -775,8 +791,9 @@ export function descreverTurno(turno: TurnoBatalha, nomeDoMonstro: string): { te
     return { texto: `${quem}, mas erra (Ofuscamento)`, valor: '0' }
   }
   const base = descreverGolpe(turno, nomeDoMonstro)
-  if (turno.efeito) return { texto: `${base.texto} e causa ${turno.efeito}`, valor: base.valor }
-  return base
+  let texto = turno.efeito ? `${base.texto} e causa ${turno.efeito}` : base.texto
+  if (turno.reacao) texto = `${texto} · ⚡ ${turno.reacao}`
+  return { texto, valor: base.valor }
 }
 
 function descreverGolpe(turno: TurnoBatalha, nomeDoMonstro: string): { texto: string; valor: string } {
@@ -859,13 +876,14 @@ export async function obterExpedicoes(): Promise<{ dados?: EstadoExpedicoes; err
   }
 }
 
-export async function batalhar(monstroId: string, postura?: string): Promise<{ dados?: RespostaBatalha; erro?: string }> {
+export async function batalhar(monstroId: string, postura?: string, esquadrao?: string[]): Promise<{ dados?: RespostaBatalha; erro?: string }> {
   const falha = 'Não foi possível batalhar agora.'
   try {
+    const payload = esquadrao && esquadrao.length > 0 ? { monstro_id: monstroId, postura, esquadrao } : { monstro_id: monstroId, postura }
     const res = await fetch('/api/rpg/batalhas', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', ...(await cabecalhoDeAutenticacao()) },
-      body: JSON.stringify({ monstro_id: monstroId, postura }),
+      body: JSON.stringify(payload),
     })
     const json = (await res.json().catch(() => null)) as (RespostaBatalha & { error?: string }) | null
     if (!res.ok) return { erro: json?.error || falha }
@@ -1001,6 +1019,7 @@ export interface EstadoMasmorras {
   feita_hoje: string
   masmorras: MasmorraNaLista[]
   custos_mana?: CustosManaRPG
+  elenco?: HeroiResumoEsquadrao[]
 }
 
 export interface AndarDaMasmorra {
@@ -1014,6 +1033,7 @@ export interface RespostaMasmorra {
   expedicao: { andares: AndarDaMasmorra[]; completou: boolean; caiu: boolean; vida_final: number }
   recompensa: RespostaBatalha['recompensa']
   vida: VidaRPG
+  grupo_resultado?: ResultadoDoGrupo
 }
 
 export async function obterMasmorras(): Promise<{ dados?: EstadoMasmorras; erro?: string; semPersonagem?: boolean }> {
@@ -1028,13 +1048,14 @@ export async function obterMasmorras(): Promise<{ dados?: EstadoMasmorras; erro?
   }
 }
 
-export async function entrarNaMasmorra(masmorraId: string): Promise<{ dados?: RespostaMasmorra; erro?: string }> {
+export async function entrarNaMasmorra(masmorraId: string, esquadrao?: string[]): Promise<{ dados?: RespostaMasmorra; erro?: string }> {
   const falha = 'Não foi possível entrar na masmorra agora.'
   try {
+    const payload = esquadrao && esquadrao.length > 0 ? { masmorra_id: masmorraId, esquadrao } : { masmorra_id: masmorraId }
     const res = await fetch('/api/rpg/masmorras', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', ...(await cabecalhoDeAutenticacao()) },
-      body: JSON.stringify({ masmorra_id: masmorraId }),
+      body: JSON.stringify(payload),
     })
     const json = (await res.json().catch(() => null)) as (RespostaMasmorra & { error?: string }) | null
     if (!res.ok) return { erro: json?.error || falha }

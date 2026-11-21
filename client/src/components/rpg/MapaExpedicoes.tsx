@@ -41,6 +41,7 @@ import {
   textoDoBestiario,
   type AtributosRPG,
   type Dificuldade,
+  type HeroiResumoEsquadrao,
   type MonstroNaLista,
   type RegiaoMapa,
   type EfeitoDeElemento,
@@ -298,6 +299,8 @@ export function FolhaInspecaoMonstro({
   efeitoHeroi,
   classeHeroi,
   semAcoes = false,
+  elenco,
+  esquadraoInicial,
 }: {
   monstro: MonstroNaLista
   classeHeroi?: string
@@ -312,6 +315,8 @@ export function FolhaInspecaoMonstro({
   bloqueado: boolean
   aoSelecionar?: (id: string) => void
   aoEnfrentar: (id: string) => void
+  elenco?: HeroiResumoEsquadrao[]
+  esquadraoInicial?: string[]
 }) {
   const tipo = ESTILO_DO_TIPO[monstro.tipo] ?? ESTILO_DO_TIPO.comum
   const dificuldade = rotuloDaDificuldade(monstro.dificuldade)
@@ -557,7 +562,14 @@ export function FolhaInspecaoMonstro({
             <span className="ml-1 font-mono text-xs font-semibold opacity-80">· {custoMana} MP</span>
           )}
         </button>
-        <BotaoEmGrupo tipo="monstro" alvoId={monstro.id} nome={monstro.nome} desativado={bloqueado || lutando !== null} />
+        <BotaoEmGrupo
+          tipo="monstro"
+          alvoId={monstro.id}
+          nome={monstro.nome}
+          desativado={bloqueado || lutando !== null}
+          elenco={elenco}
+          esquadraoInicial={esquadraoInicial}
+        />
       </div>
     </aside>
   )
@@ -731,6 +743,8 @@ export default function MapaExpedicoes({
   elementoHeroi,
   efeitoHeroi,
   classeHeroi,
+  elenco,
+  esquadraoInicial,
 }: {
   monstros: MonstroNaLista[]
   classeHeroi?: string
@@ -744,6 +758,8 @@ export default function MapaExpedicoes({
   bloqueado: boolean
   aoSelecionar: (id: string) => void
   aoEnfrentar: (id: string) => void
+  elenco?: HeroiResumoEsquadrao[]
+  esquadraoInicial?: string[]
 }) {
   const regioes = regioesDoMapa({ regioes: regioesBrutas, monstros })
   const porId = new Map(monstros.map((m) => [m.id, m]))
@@ -1052,6 +1068,8 @@ export default function MapaExpedicoes({
       elementoHeroi={elementoHeroi}
       efeitoHeroi={efeitoHeroi}
       classeHeroi={classeHeroi}
+      elenco={elenco}
+      esquadraoInicial={esquadraoInicial}
     />
   )
   const fichaDaGaveta = selecionado && (
@@ -1439,7 +1457,14 @@ export default function MapaExpedicoes({
                     <span className="ml-1 font-mono text-xs font-semibold opacity-80">· {custoMana} MP</span>
                   )}
                 </button>
-                <BotaoEmGrupo tipo="monstro" alvoId={selecionado.id} nome={selecionado.nome} desativado={bloqueado || lutando !== null} />
+                <BotaoEmGrupo
+                  tipo="monstro"
+                  alvoId={selecionado.id}
+                  nome={selecionado.nome}
+                  desativado={bloqueado || lutando !== null}
+                  elenco={elenco}
+                  esquadraoInicial={esquadraoInicial}
+                />
               </div>
             </div>
           </div>

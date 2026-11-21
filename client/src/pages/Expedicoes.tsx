@@ -9,11 +9,14 @@
 // ou com Ouro, na Pousada ou com uma Poção. Sem Vida, não há batalha.
 //
 // Arte e mapa 2D: usa os retratos por id em client/src/assets/rpg/monstros/.
+import BatalhaEmGrupo from '../components/rpg/BatalhaEmGrupo'
 import BotaoEmGrupo from '../components/rpg/BotaoEmGrupo'
 import CardContratosSemanais from '../components/rpg/CardContratosSemanais'
 import ControleDeVelocidade from '../components/rpg/ControleDeVelocidade'
 import MapaExpedicoes from '../components/rpg/MapaExpedicoes'
 import ComprarLutaExtra from '../components/rpg/ComprarLutaExtra'
+import SeletorEsquadrao from '../components/rpg/SeletorEsquadrao'
+import { preverMonstroParaEsquadrao } from '../lib/esquadrao'
 import { intervaloDaVelocidade, lerVelocidade, salvarVelocidade, type Velocidade } from '../lib/velocidadeBatalha'
 import { lerPostura } from '../lib/postura'
 import { useComunidade } from '../hooks/useComunidade'
@@ -366,6 +369,7 @@ export default function Expedicoes() {
   const [busca, setBusca] = useState('')
   const [soSemVitoria, setSoSemVitoria] = useState(false)
   const [soComEvolucao, setSoComEvolucao] = useState(false)
+  const [aliadosEsquadrao, setAliadosEsquadrao] = useState<string[]>([])
   const topo = useRef<HTMLDivElement>(null)
 
   const carregar = () => {
@@ -374,6 +378,14 @@ export default function Expedicoes() {
       setEstado(r.dados ?? null)
       setErro(r.erro ?? '')
       setSemPersonagem(Boolean(r.semPersonagem))
+      if (r.dados?.elenco) {
+        setAliadosEsquadrao((atual) => {
+          const validos = new Set(r.dados!.elenco!.filter((h) => !h.ativo).map((h) => h.id))
+          const preservados = atual.filter((id) => validos.has(id))
+          if (preservados.length > 0) return preservados
+          return r.dados!.elenco!.filter((h) => !h.ativo && h.no_grupo).map((h) => h.id)
+        })
+      }
       setSelecionadoId((atual) => {
         const lista = r.dados?.monstros ?? []
         if (atual && lista.some((m) => m.id === atual)) return atual
@@ -397,7 +409,7 @@ export default function Expedicoes() {
     if (lutando) return
     setErroDaLuta('')
     setLutando(monstroId)
-    const r = await batalhar(monstroId, lerPostura())
+    const r = aliadosEsquadrao.length > 0 ? await batalhar(monstroId, lerPostura(), aliadosEsquadrao) : await batalhar(monstroId, lerPostura())
     setLutando(null)
     if (r.dados) {
       const dados = r.dados
@@ -474,6 +486,23 @@ export default function Expedicoes() {
             Tentar de novo
           </button>
         </div>
+      ) : batalha?.grupo_resultado ? (
+        <BatalhaEmGrupo
+          key={`${batalhaSeq}-${batalha.monstro.id}`}
+          resultado={batalha.grupo_resultado}
+          recompensa={{
+            ouro: batalha.recompensa.ouro ?? 0,
+            ouro_perdido: batalha.recompensa.ouro_perdido ?? 0,
+            bilhetes: batalha.recompensa.bilhetes,
+            item: batalha.recompensa.item,
+            mana: estado.custos_mana?.expedicao ?? 0,
+          }}
+          aoVoltar={() => {
+            setBatalha(null)
+            carregar()
+          }}
+          rotuloVoltar="Voltar às expedições"
+        />
       ) : batalha ? (
         <TelaDeBatalha
           key={`${batalhaSeq}-${batalha.monstro.id}`}
@@ -595,6 +624,14 @@ export default function Expedicoes() {
             </p>
           )}
 
+          {estado.elenco && estado.elenco.length > 0 && (
+            <SeletorEsquadrao
+              elenco={estado.elenco}
+              aliadosSelecionados={aliadosEsquadrao}
+              aoMudarAliados={setAliadosEsquadrao}
+            />
+          )}
+
           {modo === 'mapa' ? (
             <MapaExpedicoes
               monstros={estado.monstros}
@@ -609,6 +646,8 @@ export default function Expedicoes() {
               bloqueado={restantes === 0 || exausto}
               aoSelecionar={setSelecionadoId}
               aoEnfrentar={enfrentar}
+              elenco={estado.elenco}
+              esquadraoInicial={aliadosEsquadrao}
             />
           ) : (
             <div className="flex flex-col gap-3">
@@ -735,9 +774,21 @@ export default function Expedicoes() {
                           </div>
                         )}
                         <div className="flex flex-wrap items-center gap-x-3 gap-y-1 font-mono text-xs text-muted">
-                          <span className="inline-flex items-center gap-1">
-                            <Heart size={12} className="text-coral" aria-hidden="true" /> {m.vida}
-                          </span>
+                          {(() => {
+                            const poderesAtivos = (estado.elenco ?? [])
+                              .filter((h) => h.ativo || aliadosEsquadrao.includes(h.id))
+                              .map((h) => h.poder)
+                            const escala = preverMonstroParaEsquadrao(m, poderesAtivos.length > 1 ? poderesAtivos : [estado.atributos.poder])
+                            return (
+                              <span className="inline-flex items-center gap-1">
+                                <Heart size={12} className="text-coral" aria-hidden="true" />{' '}
+                                {escala.vida}
+                                {escala.multVidaPct > 100 && (
+                                  <span className="text-gold">({escala.adaptadoAoMundo ? 'mundo + ' : ''}esquadrão)</span>
+                                )}
+                              </span>
+                            )
+                          })()}
                           <span className="inline-flex items-center gap-1">
                             <Ticket size={12} className="text-gold" aria-hidden="true" /> {m.bilhetes}
                           </span>
@@ -761,12 +812,19 @@ export default function Expedicoes() {
                             aria-label={`Enfrentar ${m.nome}`}
                             className="h-10 cursor-pointer rounded-full bg-gradient-to-r from-holo-1 to-holo-3 px-5 text-xs font-extrabold text-void disabled:cursor-not-allowed disabled:opacity-50"
                           >
-                            {lutando === m.id ? 'Batalhando…' : 'Enfrentar'}
+                            {lutando === m.id ? 'Batalhando…' : aliadosEsquadrao.length > 0 ? `Lutar (${aliadosEsquadrao.length + 1} heróis)` : 'Enfrentar'}
                             {lutando !== m.id && estado.custos_mana && (
-                              <span className="ml-1 font-mono text-[11px] font-semibold opacity-80">· {estado.custos_mana.expedicao} MP</span>
+                              <span className="ml-1 font-mono text-xs font-semibold opacity-80">· {estado.custos_mana.expedicao} MP</span>
                             )}
                           </button>
-                          <BotaoEmGrupo tipo="monstro" alvoId={m.id} nome={m.nome} desativado={restantes === 0 || lutando !== null || exausto} />
+                          <BotaoEmGrupo
+                            tipo="monstro"
+                            alvoId={m.id}
+                            nome={m.nome}
+                            desativado={restantes === 0 || lutando !== null || exausto}
+                            elenco={estado.elenco}
+                            esquadraoInicial={aliadosEsquadrao}
+                          />
                           <button
                             type="button"
                             onClick={() => {

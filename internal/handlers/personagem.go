@@ -84,6 +84,7 @@ type ElencoPersonagemInfo struct {
 	PrecoDesbloquearOuro     int      `json:"preco_desbloquear_ouro"`
 	TrocaCooldownHoras       int      `json:"troca_cooldown_horas"`
 	PrecoTrocaAntecipadaOuro int      `json:"preco_troca_antecipada_ouro"`
+	Esquadrao                []string `json:"esquadrao,omitempty"`
 }
 
 // RespostaPersonagem é o corpo de GET e POST /api/personagem. Quem ainda não despertou
@@ -368,17 +369,24 @@ type linhaPersonagemBanco struct {
 	CriadoEm       string   `json:"criado_em"`
 	VisualEquipado *string  `json:"visual_equipado"`
 	Desbloqueados  []string `json:"desbloqueados"`
+	Esquadrao      []string `json:"esquadrao"`
 	UltimaTrocaEm  *string  `json:"ultima_troca_em"`
 }
 
 // lerPersonagem busca a linha do usuário. Devolve nil, sem erro, para quem não despertou.
 func lerPersonagem(dbClient *supabase.Client, userID string) (*linhaPersonagemBanco, error) {
 	dados, _, err := dbClient.From("rpg_personagens").
-		Select("nome,personagem_base,criado_em,visual_equipado,desbloqueados,ultima_troca_em", "", false).
+		Select("nome,personagem_base,criado_em,visual_equipado,desbloqueados,esquadrao,ultima_troca_em", "", false).
 		Eq("user_id", userID).
 		Execute()
 	if err != nil {
-		// Fallback tolerante à ordem de aplicação dos SQLs (068 e 123).
+		// Fallback tolerante à ordem de aplicação dos SQLs (068, 123 e 136).
+		dados, _, err = dbClient.From("rpg_personagens").
+			Select("nome,personagem_base,criado_em,visual_equipado,desbloqueados,ultima_troca_em", "", false).
+			Eq("user_id", userID).
+			Execute()
+	}
+	if err != nil {
 		dados, _, err = dbClient.From("rpg_personagens").
 			Select("nome,personagem_base,criado_em,visual_equipado", "", false).
 			Eq("user_id", userID).
@@ -458,11 +466,13 @@ func calcularElencoInfo(linha linhaPersonagemBanco, baseAtual string, agora time
 		desbloqueados = append(desbloqueados, base)
 	}
 
+	esquadrao := normalizarAliadosEsquadrao(linha.Esquadrao, base, desbloqueados)
 	info := &ElencoPersonagemInfo{
 		Desbloqueados:            desbloqueados,
 		PrecoDesbloquearOuro:     precoDesbloquearPersonagem,
 		TrocaCooldownHoras:       trocaPersonagemCooldownHoras,
 		PrecoTrocaAntecipadaOuro: precoTrocaAntecipadaOuro,
+		Esquadrao:                esquadrao,
 	}
 	if linha.UltimaTrocaEm != nil {
 		if ultima, ok := interpretarInstanteRPG(*linha.UltimaTrocaEm); ok {

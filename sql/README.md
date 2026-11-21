@@ -165,6 +165,7 @@ SELECT pg_get_viewdef('nome_da_view'::regclass, true);
 | `133_maratona.sql` | Missão especial de maratona: tabela `rpg_maratonas` (uma ativa por jogador, uma por anime), `rpg_iniciar_maratona` e `rpg_maratona_episodio` (intervalo mínimo, prazo de 24h, faixa paga em `rpg_recursos` no último episódio), só para `service_role`. **Depois do `081`** (Ouro em `rpg_recursos`) | — |
 | `134_maratona_xp_e_anicoins.sql` | Prêmio da maratona como pacote: colunas `xp` e `anicoins` em `rpg_maratonas`; `rpg_maratona_episodio` paga AniCoins (`creditar_cristais`, motivo `maratona`) e XP (`conceder_xp_extra`, fora do teto diário) na mesma transação do Ouro. **Depois do `133`, `045` e `087`** | — |
 | `135_maratona_limite_semanal.sql` | Limite de maratonas concluídas por semana (segunda 00:00 de Brasília): `rpg_iniciar_maratona` lê `maratonas_por_semana` de `comunidade_regras` (padrão 2; 0 pausa). **Depois do `133`** | — |
+| `136_esquadrao_e_grupo_vagas.sql` | Formação de esquadrão e vagas no grupo online (#330): `rpg_personagens.esquadrao` (`rpg_salvar_esquadrao`, exposto em `rpg_estado_jogador`); `max_herois` e `herois_lider` em `rpg_grupos` com `rpg_grupo_configurar` e trava de vagas em `rpg_grupo_convidar`/`rpg_grupo_aceitar`/`rpg_convites_pendentes`/`rpg_grupo_estado`. **Depois do `120` e do `126`** | — |
 
 Datas com `~` são a data do commit, não da aplicação no Supabase.
 

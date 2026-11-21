@@ -1,8 +1,10 @@
 // client/src/pages/Masmorras.tsx
 // Masmorras (Fase 18.4d): andares seguidos com monstros do catálogo, uma por dia. A luta inteira
 // é decidida no servidor; a tela mostra o resultado de cada andar, com o registro dos golpes.
+import BatalhaEmGrupo from '../components/rpg/BatalhaEmGrupo'
 import BotaoEmGrupo from '../components/rpg/BotaoEmGrupo'
 import ComprarLutaExtra from '../components/rpg/ComprarLutaExtra'
+import SeletorEsquadrao from '../components/rpg/SeletorEsquadrao'
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { ChevronLeft, Hammer, ChevronRight, DoorOpen, Lock, Sparkles, Ticket, Trophy } from 'lucide-react'
@@ -116,6 +118,7 @@ export default function Masmorras() {
   const [entrando, setEntrando] = useState<string | null>(null)
   const [resposta, setResposta] = useState<RespostaMasmorra | null>(null)
   const [erroDaEntrada, setErroDaEntrada] = useState('')
+  const [aliadosEsquadrao, setAliadosEsquadrao] = useState<string[]>([])
 
   const carregar = () => {
     setCarregando(true)
@@ -123,6 +126,14 @@ export default function Masmorras() {
       setEstado(r.dados ?? null)
       setErro(r.erro ?? '')
       setSemPersonagem(Boolean(r.semPersonagem))
+      if (r.dados?.elenco) {
+        setAliadosEsquadrao((atual) => {
+          const validos = new Set(r.dados!.elenco!.filter((h) => !h.ativo).map((h) => h.id))
+          const preservados = atual.filter((id) => validos.has(id))
+          if (preservados.length > 0) return preservados
+          return r.dados!.elenco!.filter((h) => !h.ativo && h.no_grupo).map((h) => h.id)
+        })
+      }
       setCarregando(false)
     })
   }
@@ -131,7 +142,7 @@ export default function Masmorras() {
   const entrar = async (id: string) => {
     setEntrando(id)
     setErroDaEntrada('')
-    const r = await entrarNaMasmorra(id)
+    const r = aliadosEsquadrao.length > 0 ? await entrarNaMasmorra(id, aliadosEsquadrao) : await entrarNaMasmorra(id)
     setEntrando(null)
     if (r.dados) {
       setResposta(r.dados)
@@ -173,6 +184,19 @@ export default function Masmorras() {
             Tentar de novo
           </button>
         </div>
+      ) : resposta?.grupo_resultado ? (
+        <BatalhaEmGrupo
+          resultado={resposta.grupo_resultado}
+          recompensa={{
+            ouro: resposta.recompensa.ouro ?? 0,
+            ouro_perdido: resposta.recompensa.ouro_perdido ?? 0,
+            bilhetes: resposta.recompensa.bilhetes,
+            item: resposta.recompensa.item,
+            mana: estado.custos_mana?.masmorra ?? 0,
+          }}
+          aoVoltar={() => { setResposta(null); carregar() }}
+          rotuloVoltar="Voltar às masmorras"
+        />
       ) : resposta ? (
         <Resultado resposta={resposta} aoVoltar={() => { setResposta(null); carregar() }} />
       ) : (
@@ -187,20 +211,20 @@ export default function Masmorras() {
 
           <dl className="m-0 grid grid-cols-3 gap-2 sm:gap-2.5">
             <div className="flex min-w-0 flex-col justify-between gap-1 rounded-xl border border-line bg-panel p-2.5 sm:p-3">
-              <dt className="text-[11px] font-semibold text-muted sm:text-xs">HP</dt>
+              <dt className="text-xs font-semibold text-muted">HP</dt>
               <dd className="m-0 font-anton text-lg leading-none tabular-nums sm:text-xl">
                 {estado.vida.atual}
                 <span className="font-mono text-xs font-normal text-muted"> / {estado.vida.maxima}</span>
               </dd>
             </div>
             <div className="flex min-w-0 flex-col justify-between gap-1 rounded-xl border border-line bg-panel p-2.5 sm:p-3">
-              <dt className="flex items-center gap-1 text-[11px] font-semibold text-muted sm:text-xs">
+              <dt className="flex items-center gap-1 text-xs font-semibold text-muted">
                 <IconeOuro size={13} /> Ouro
               </dt>
               <dd className="m-0 font-anton text-lg leading-none tabular-nums sm:text-xl">{estado.hoje.ouro ?? 0}</dd>
             </div>
             <div className="flex min-w-0 flex-col justify-between gap-1 rounded-xl border border-line bg-panel p-2.5 sm:p-3">
-              <dt className="text-[11px] font-semibold text-muted sm:text-xs">Hoje</dt>
+              <dt className="text-xs font-semibold text-muted">Hoje</dt>
               <dd className={`m-0 text-sm font-bold leading-tight ${feita ? 'text-muted' : 'text-green'}`}>{feita ? 'Já explorou' : 'Disponível'}</dd>
             </div>
           </dl>
@@ -212,6 +236,14 @@ export default function Masmorras() {
           )}
           {feita && <ComprarLutaExtra tipo="masmorra" aoComprar={carregar} />}
           {erroDaEntrada && <p role="alert" className="m-0 text-xs font-bold text-coral">{erroDaEntrada}</p>}
+
+          {estado.elenco && estado.elenco.length > 0 && (
+            <SeletorEsquadrao
+              elenco={estado.elenco}
+              aliadosSelecionados={aliadosEsquadrao}
+              aoMudarAliados={setAliadosEsquadrao}
+            />
+          )}
 
           <ul className="m-0 grid list-none grid-cols-1 gap-3 p-0 md:grid-cols-2">
             {estado.masmorras.map((m) => {
@@ -255,12 +287,19 @@ export default function Masmorras() {
                     aria-label={`Entrar em ${m.nome}`}
                     className="inline-flex h-10 cursor-pointer items-center justify-center gap-2 rounded-full bg-gradient-to-r from-holo-1 to-holo-3 px-5 text-xs font-extrabold text-void disabled:cursor-not-allowed disabled:opacity-50"
                   >
-                    <DoorOpen size={15} aria-hidden="true" /> {entrando === m.id ? 'Explorando…' : 'Entrar'}
+                    <DoorOpen size={15} aria-hidden="true" /> {entrando === m.id ? 'Explorando…' : aliadosEsquadrao.length > 0 ? `Entrar (${aliadosEsquadrao.length + 1} heróis)` : 'Entrar'}
                     {entrando !== m.id && estado.custos_mana && (
-                      <span className="ml-1 font-mono text-[11px] font-semibold opacity-80">· {estado.custos_mana.masmorra} MP</span>
+                      <span className="ml-1 font-mono text-xs font-semibold opacity-80">· {estado.custos_mana.masmorra} MP</span>
                     )}
                   </button>
-                  <BotaoEmGrupo tipo="masmorra" alvoId={m.id} nome={m.nome} desativado={fechada} />
+                  <BotaoEmGrupo
+                    tipo="masmorra"
+                    alvoId={m.id}
+                    nome={m.nome}
+                    desativado={fechada}
+                    elenco={estado.elenco}
+                    esquadraoInicial={aliadosEsquadrao}
+                  />
                   </div>
                 </li>
               )

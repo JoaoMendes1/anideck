@@ -109,6 +109,8 @@ type TurnoBatalha struct {
 	PerdeuVez string `json:"perdeu_vez,omitempty"`
 	// Errou: o golpe de Atacante se perdeu por Ofuscamento.
 	Errou bool `json:"errou,omitempty"`
+	// Reacao: nome da reação elemental disparada neste golpe (rpg_reacoes.go).
+	Reacao string `json:"reacao,omitempty"`
 }
 
 // CombatenteRPG é o jogador na luta: os números e as habilidades já liberadas.
@@ -203,6 +205,8 @@ type estadoDoMonstro struct {
 	escudo        float64 // fração do dano dos heróis que o monstro absorve
 	rodadasEscudo int
 	status        statusNaLuta
+	auraElemental string
+	grupo         []*lutaEmAndamento
 }
 
 // lutaEmAndamento guarda o que muda durante a luta, do lado de um herói.
@@ -360,6 +364,19 @@ func (l *lutaEmAndamento) vezDoJogador() bool {
 		aj.Vida = max(0, aj.Vida-t.Dano)
 		t.Alvo = aj.Nome
 	} else if t.Dano > 0 {
+		if reacao, reagiu := BuscarReacaoElemental(l.mon.auraElemental, l.j.Elemento); reagiu {
+			l.mon.auraElemental = ""
+			t.Reacao = reacao.Nome
+			if reacao.QuebraEscudo {
+				l.mon.rodadasEscudo = 0
+			}
+			extra := max(1, t.Dano*reacao.BonusDanoPct/100)
+			t.Dano += extra
+			l.aplicarReacaoElemental(reacao, a)
+		} else if l.j.Elemento != "" && l.j.Elemento != elementoNeutro {
+			l.mon.auraElemental = l.j.Elemento
+		}
+
 		if l.mon.rodadasEscudo > 0 {
 			t.Dano = max(1, int(float64(t.Dano)*(1-escudoContraPostura(l.mon.escudo, l.j.Postura))+0.5))
 		}
@@ -376,6 +393,65 @@ func (l *lutaEmAndamento) vezDoJogador() bool {
 	}
 	l.registrar(t)
 	return l.mon.vida == 0
+}
+
+func (l *lutaEmAndamento) aplicarReacaoElemental(reacao ReacaoElemental, a AtributosRPG) {
+	if reacao.FragilizaDefesa {
+		l.mon.status.rachadura = max(l.mon.status.rachadura, 2)
+	}
+	if reacao.DobrarQueimadura {
+		l.mon.status.queimadura = max(l.mon.status.queimadura, 3)
+		l.mon.status.danoQueimadura = max(l.mon.status.danoQueimadura, max(1, a.Ataque*35/100))
+	}
+	if reacao.CongelaAlvo {
+		l.mon.status.congelamento = max(l.mon.status.congelamento, 2)
+	}
+	if reacao.OfuscaAlvo {
+		l.mon.status.ofuscamento = max(l.mon.status.ofuscamento, 2)
+	}
+	if reacao.DosesVeneno > 0 {
+		l.mon.status.venenoDoses = min(3, l.mon.status.venenoDoses+reacao.DosesVeneno)
+		l.mon.status.venenoRodadas = 3
+		l.mon.status.danoVenenoPorDose = max(l.mon.status.danoVenenoPorDose, max(1, a.Ataque/10))
+	}
+	if reacao.ChanceAtordoarPorMil > 0 && !l.mon.status.atordoado && l.mon.status.semAtordoar == 0 {
+		if l.rng.Intn(1000) < reacao.ChanceAtordoarPorMil {
+			l.mon.status.atordoado = true
+		}
+	}
+	if reacao.ReducaoDanoHeroiPct > 0 {
+		fracao := float64(reacao.ReducaoDanoHeroiPct) / 100.0
+		if fracao > l.reducao {
+			l.reducao = fracao
+		}
+		l.rodadasReducao = max(l.rodadasReducao, 2)
+	}
+	alvos := l.mon.grupo
+	if len(alvos) == 0 {
+		alvos = []*lutaEmAndamento{l}
+	}
+	if reacao.CuraAliadoMaisFeridoPct > 0 {
+		var ferido *lutaEmAndamento
+		for _, al := range alvos {
+			if al.vidaJogador <= 0 || al.j.Atributos.Vida <= 0 {
+				continue
+			}
+			if ferido == nil || al.vidaJogador*ferido.j.Atributos.Vida < ferido.vidaJogador*al.j.Atributos.Vida {
+				ferido = al
+			}
+		}
+		if ferido != nil {
+			cura := max(1, ferido.j.Atributos.Vida*reacao.CuraAliadoMaisFeridoPct/100)
+			ferido.vidaJogador = min(ferido.j.Atributos.Vida, ferido.vidaJogador+cura)
+		}
+	}
+	if reacao.RecuperaEterGrupo > 0 {
+		for _, al := range alvos {
+			if al.vidaJogador > 0 {
+				al.eter = min(al.j.Atributos.Eter, al.eter+reacao.RecuperaEterGrupo)
+			}
+		}
+	}
 }
 
 // efeitosNoMonstro aplica no fim da rodada o dano dos efeitos que os heróis deixaram no
@@ -662,8 +738,9 @@ type EstadoExpedicoes struct {
 	Regioes        []RegiaoMapa `json:"regioes,omitempty"`
 	RegiaoDestaque string       `json:"regiao_destaque,omitempty"`
 	// Mana de cada tipo de luta (sql/118).
-	CustosMana CustosManaRPG         `json:"custos_mana"`
-	Passiva    *PassivaEspecialidade `json:"passiva,omitempty"`
+	CustosMana CustosManaRPG          `json:"custos_mana"`
+	Passiva    *PassivaEspecialidade  `json:"passiva,omitempty"`
+	Elenco     []HeroiResumoEsquadrao `json:"elenco,omitempty"`
 }
 
 // RecompensaBatalha é o que a vitória deu.
@@ -679,14 +756,15 @@ type RecompensaBatalha struct {
 
 // RespostaBatalha é o corpo de POST /api/rpg/batalhas.
 type RespostaBatalha struct {
-	Monstro    MonstroRPG            `json:"monstro"`
-	Jogador    AtributosRPG          `json:"jogador"`
-	Resultado  ResultadoSimulado     `json:"resultado"`
-	Recompensa RecompensaBatalha     `json:"recompensa"`
-	Vida       VidaRPG               `json:"vida"`
-	Bestiario  BestiarioDoMonstro    `json:"bestiario"`
-	Hoje       HojeRPG               `json:"hoje"`
-	Passiva    *PassivaEspecialidade `json:"passiva,omitempty"`
+	Monstro        MonstroRPG            `json:"monstro"`
+	Jogador        AtributosRPG          `json:"jogador"`
+	Resultado      ResultadoSimulado     `json:"resultado"`
+	Recompensa     RecompensaBatalha     `json:"recompensa"`
+	Vida           VidaRPG               `json:"vida"`
+	Bestiario      BestiarioDoMonstro    `json:"bestiario"`
+	Hoje           HojeRPG               `json:"hoje"`
+	Passiva        *PassivaEspecialidade `json:"passiva,omitempty"`
+	GrupoResultado *ResultadoDoGrupo     `json:"grupo_resultado,omitempty"`
 }
 
 func lerMonstros(dbClient *supabase.Client) ([]MonstroRPG, error) {
@@ -812,6 +890,7 @@ func (h *RPGHandler) HandleGetExpedicoes(w http.ResponseWriter, r *http.Request)
 		RegiaoDestaque:   regiaoDestaque,
 		CustosMana:       CustosDeMana(sessao.nivel, lerRegrasComunidade(sessao.dbClient)),
 		Passiva:          passiva,
+		Elenco:           ResumoElencoEsquadrao(sessao.dbClient, sessao.userID, sessao.ctx, equipamento),
 	})
 }
 
@@ -819,8 +898,9 @@ func (h *RPGHandler) HandleGetExpedicoes(w http.ResponseWriter, r *http.Request)
 // e grava pelo service role a batalha, a Vida que sobrou e o Ouro. O corpo traz só o monstro.
 func (h *RPGHandler) HandleBatalhar(w http.ResponseWriter, r *http.Request) {
 	var corpo struct {
-		MonstroID string `json:"monstro_id"`
-		Postura   string `json:"postura"`
+		MonstroID string   `json:"monstro_id"`
+		Postura   string   `json:"postura"`
+		Esquadrao []string `json:"esquadrao"`
 	}
 	if r.Body == nil || json.NewDecoder(r.Body).Decode(&corpo) != nil {
 		corpo.MonstroID = ""
@@ -883,14 +963,54 @@ func (h *RPGHandler) HandleBatalhar(w http.ResponseWriter, r *http.Request) {
 	}
 
 	rng := novoGeradorDeBatalha()
-	combatente := CombatenteDoEstado(equipamento)
-	combatente.VidaInicial = vida.Atual
-	combatente.Elemento = elementoDoJogador(sessao.ctx)
-	combatente.Classe = classeDoJogador(sessao.ctx)
-	combatente.Passiva = passiva
-	combatente.Postura = PosturaValida(corpo.Postura)
 	vitoriasAntes := hoje.Vitorias[monstro.ID]
-	resultado := SimularBatalha(combatente, *monstro, rng)
+	monstroExibido := *monstro
+	var (
+		resultado      ResultadoSimulado
+		grupoResultado *ResultadoDoGrupo
+	)
+
+	if len(corpo.Esquadrao) > 0 {
+		combatentes, fichas, errEsq := MontarEsquadraoDoContexto(sessao.dbClient, sessao.userID, sessao.ctx, hoje.VidaPerdida, passiva, corpo.Postura, corpo.Esquadrao)
+		if errEsq != nil {
+			responderErroJSON(w, http.StatusBadRequest, errEsq.Error())
+			return
+		}
+		if len(combatentes) > 1 {
+			monstroExibido = EquilibrarMonstroParaGrupo(*monstro, combatentes)
+			sim := SimularBatalhaEmGrupo(combatentes, monstroExibido, rng)
+			usosTotal := map[string]int{}
+			heroisRes := make([]HeroiDoResultado, 0, len(fichas))
+			for i, f := range fichas {
+				heroisRes = append(heroisRes, HeroiDoResultado{Nome: f.Nome, Personagem: f.Personagem, Nivel: f.Nivel})
+				for id, n := range sim.Herois[i].Usos {
+					usosTotal[id] += n
+				}
+			}
+			grupoResultado = &ResultadoDoGrupo{
+				Modo: "na_hora", Herois: heroisRes, Monstro: &monstroExibido, Luta: &sim, Venceu: sim.Venceu,
+			}
+			resultado = ResultadoSimulado{
+				Venceu:      sim.Venceu,
+				Rodadas:     sim.Rodadas,
+				Turnos:      sim.Turnos,
+				VidaInicial: sim.Herois[0].VidaInicial,
+				VidaFinal:   sim.Herois[0].VidaFinal,
+				Usos:        usosTotal,
+				Elemental:   RelacaoElemental(elementoDoJogador(sessao.ctx), monstro.Elemento),
+				Caiu:        sim.Herois[0].Caiu,
+			}
+		}
+	}
+	if grupoResultado == nil {
+		combatente := CombatenteDoEstado(equipamento)
+		combatente.VidaInicial = vida.Atual
+		combatente.Elemento = elementoDoJogador(sessao.ctx)
+		combatente.Classe = classeDoJogador(sessao.ctx)
+		combatente.Passiva = passiva
+		combatente.Postura = PosturaValida(corpo.Postura)
+		resultado = SimularBatalha(combatente, *monstro, rng)
+	}
 	perdaFinal := PerdaPorMil(equipamento.Atributos.Vida, resultado.VidaFinal)
 
 	var itemSorteado *ItemRPG
@@ -990,18 +1110,15 @@ func (h *RPGHandler) HandleBatalhar(w http.ResponseWriter, r *http.Request) {
 	recompensa.Materiais = entregarMateriais(servico, sessao.userID, SortearMateriaisDaExpedicaoEmDestaque(rng, resultado.Venceu, emDestaque))
 
 	responderJSON(w, http.StatusOK, RespostaBatalha{
-		Monstro:    *monstro,
-		Jogador:    equipamento.Atributos,
-		Resultado:  resultado,
-		Recompensa: recompensa,
-		Vida:       MontarVida(equipamento.Atributos.Vida, registro.VidaPerdida),
-		Bestiario:  bestiario,
-		Hoje: HojeRPG{
-			Feitas: registro.Feitas, Limite: registro.Limite, Bilhetes: registro.Bilhetes,
-			Ouro: registro.Ouro, VidaPerdida: registro.VidaPerdida,
-			PousadaLivreEm: hoje.PousadaLivreEm, EpisodiosHoje: hoje.EpisodiosHoje, Regras: hoje.Regras.ComPadroes(),
-		},
-		Passiva: passiva,
+		Monstro:        monstroExibido,
+		Jogador:        equipamento.Atributos,
+		Resultado:      resultado,
+		Recompensa:     recompensa,
+		Vida:           MontarVida(equipamento.Atributos.Vida, registro.VidaPerdida),
+		Bestiario:      bestiario,
+		Hoje:           HojeRPG{Feitas: registro.Feitas, Limite: registro.Limite, Bilhetes: registro.Bilhetes, Ouro: registro.Ouro, VidaPerdida: registro.VidaPerdida, PousadaLivreEm: hoje.PousadaLivreEm, EpisodiosHoje: hoje.EpisodiosHoje, Regras: hoje.Regras.ComPadroes()},
+		Passiva:        passiva,
+		GrupoResultado: grupoResultado,
 	})
 }
 

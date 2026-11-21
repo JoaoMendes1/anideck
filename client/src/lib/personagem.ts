@@ -59,6 +59,7 @@ export interface ElencoPersonagemInfo {
   preco_desbloquear_ouro: number
   troca_cooldown_horas: number
   preco_troca_antecipada_ouro: number
+  esquadrao?: string[]
 }
 
 // Quem ainda não despertou recebe só `existe: false`: os outros campos ficam ausentes.
@@ -430,6 +431,26 @@ export async function trocarPersonagem(
     if (!res.ok) return { erro: json?.error || falha }
     if (!json || json.existe !== true) return { erro: falha }
     return { dados: json }
+  } catch {
+    return { erro: falha }
+  }
+}
+
+/**
+ * Persiste os até 2 aliados desbloqueados que acompanham o personagem ativo em esquadrão.
+ */
+export async function salvarEsquadrao(esquadrao: string[]): Promise<{ dados?: string[]; erro?: string }> {
+  const falha = 'Não foi possível salvar a formação do esquadrão agora.'
+  try {
+    const res = await fetch('/api/personagem/esquadrao', {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json', ...(await cabecalhoDeAutenticacao()) },
+      body: JSON.stringify({ esquadrao }),
+    })
+    const json = (await res.json().catch(() => null)) as { ok?: boolean; esquadrao?: string[]; error?: string } | null
+    if (!res.ok || !json?.ok) return { erro: json?.error || falha }
+    window.dispatchEvent(new Event(EVENTO_PERSONAGEM_ATUALIZADO))
+    return { dados: json.esquadrao ?? [] }
   } catch {
     return { erro: falha }
   }

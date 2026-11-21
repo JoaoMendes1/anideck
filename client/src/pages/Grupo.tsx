@@ -6,9 +6,10 @@ import { Link, useNavigate, useParams } from 'react-router-dom'
 import { ChevronLeft, Clock, Crown, Search, Swords, UserPlus, Users } from 'lucide-react'
 import { useToast } from '../contexts/ToastContext'
 import {
-  MAX_NO_GRUPO, convidar, lerCandidatos, lerGrupo, lutarEmGrupo, minutosRestantes, origemDoCandidato, sairDoGrupo,
+  MAX_NO_GRUPO, configurarGrupo, convidar, lerCandidatos, lerGrupo, lutarEmGrupo, minutosRestantes, origemDoCandidato, sairDoGrupo,
   type Candidato, type EstadoDoGrupo,
 } from '../lib/grupo'
+import { obterPersonagem, type RespostaPersonagem } from '../lib/personagem'
 import BatalhaEmGrupo from '../components/rpg/BatalhaEmGrupo'
 import PreferenciasDeConvite from '../components/rpg/PreferenciasDeConvite'
 
@@ -27,6 +28,7 @@ export default function Grupo() {
   const navigate = useNavigate()
   const { showToast } = useToast()
   const [grupo, setGrupo] = useState<EstadoDoGrupo | null>(null)
+  const [meuElenco, setMeuElenco] = useState<RespostaPersonagem | null>(null)
   const [erro, setErro] = useState('')
   const [candidatos, setCandidatos] = useState<Candidato[]>([])
   const [filtro, setFiltro] = useState<Filtro>('todos')
@@ -42,6 +44,7 @@ export default function Grupo() {
   const aberto = grupo?.status === 'aberto' || grupo?.status === 'lutando'
   useEffect(() => {
     carregar()
+    obterPersonagem().then(setMeuElenco)
   }, [carregar])
   useEffect(() => {
     if (!aberto) return
@@ -56,8 +59,14 @@ export default function Grupo() {
     if (souLider && grupo?.status === 'aberto') lerCandidatos(id).then(setCandidatos)
   }, [souLider, grupo?.status, id])
 
-  const ocupados = grupo?.membros.filter((m) => m.status === 'aceito' || m.status === 'convidado').length ?? 0
-  const prontos = grupo?.membros.filter((m) => m.status === 'aceito').length ?? 0
+  const maxHerois = grupo?.max_herois ?? MAX_NO_GRUPO
+  const heroisLider = grupo?.herois_lider ?? 1
+  const convidadosOcupados = grupo?.membros.filter((m) => m.papel === 'convidado' && (m.status === 'aceito' || m.status === 'convidado')).length ?? 0
+  const convidadosProntos = grupo?.membros.filter((m) => m.papel === 'convidado' && m.status === 'aceito').length ?? 0
+  const heroisProntosTotal = Math.min(MAX_NO_GRUPO, heroisLider + convidadosProntos)
+  const vagasConvidarRestantes = Math.max(0, maxHerois - (heroisLider + convidadosOcupados))
+  const maxProprios = Math.max(1, Math.min(3, meuElenco?.elenco?.desbloqueados.length ?? 1))
+
   const visiveis = useMemo(() => {
     const termo = busca.trim().toLowerCase().replace(/^@/, '')
     return candidatos.filter((c) => {
@@ -67,6 +76,25 @@ export default function Grupo() {
       return !termo || c.handle.includes(termo) || c.nome.toLowerCase().includes(termo)
     })
   }, [candidatos, filtro, busca])
+
+  const aplicarConfig = async (novoMax: number, novoLider: number) => {
+    setOcupado('config')
+    const baseAtual = meuElenco?.personagem?.personagem_base ?? ''
+    const aliadosPossiveis = (meuElenco?.elenco?.desbloqueados ?? []).filter((d) => d !== baseAtual)
+    const salvos = meuElenco?.elenco?.esquadrao ?? []
+    const ordenados = [...salvos.filter((s) => aliadosPossiveis.includes(s)), ...aliadosPossiveis.filter((s) => !salvos.includes(s))]
+    const r = await configurarGrupo(id, {
+      max_herois: novoMax,
+      herois_lider: novoLider,
+      esquadrao: novoLider > 1 ? ordenados.slice(0, novoLider - 1) : [],
+    })
+    setOcupado(null)
+    if (r.erro) {
+      showToast(r.erro, 'error')
+      return
+    }
+    carregar()
+  }
 
   const chamar = async (handle: string) => {
     setOcupado(handle)
@@ -136,7 +164,9 @@ export default function Grupo() {
           <ChevronLeft size={22} />
         </Link>
         <div className="min-w-0 flex-1">
-          <p className="m-0 font-mono text-xs uppercase tracking-widest text-muted">Luta em grupo</p>
+          <p className="m-0 font-mono text-xs uppercase tracking-widest text-muted">
+            Luta em grupo · até {maxHerois} heróis
+          </p>
           <h1 className="m-0 truncate font-anton text-2xl uppercase leading-tight">{grupo.alvo_nome || 'Grupo'}</h1>
         </div>
         {!encerrado && (
@@ -153,27 +183,77 @@ export default function Grupo() {
         </p>
       )}
 
-      <section aria-labelledby="titulo-membros" className="flex flex-col gap-2 rounded-2xl border border-line bg-panel p-4">
+      <section aria-labelledby="titulo-membros" className="flex flex-col gap-3 rounded-2xl border border-line bg-panel p-4">
         <h2 id="titulo-membros" className="m-0 flex items-center gap-2 text-sm font-bold">
-          <Users size={16} className="text-holo-3" aria-hidden="true" /> Grupo ({prontos} de {MAX_NO_GRUPO} prontos)
+          <Users size={16} className="text-holo-3" aria-hidden="true" />
+          Heróis prontos ({heroisProntosTotal} de {maxHerois})
         </h2>
+
+        {souLider && grupo.status === 'aberto' && (
+          <div className="flex flex-wrap items-center gap-3 rounded-xl border border-line bg-panel-2 px-3 py-2.5 text-xs">
+            <div className="flex items-center gap-1.5">
+              <span className="font-bold text-muted">Total:</span>
+              {[2, 3].map((n) => (
+                <button
+                  key={n}
+                  type="button"
+                  disabled={ocupado !== null}
+                  onClick={() => aplicarConfig(n, Math.min(heroisLider, n))}
+                  className={`cursor-pointer rounded-full px-2.5 py-1 text-xs font-bold ${
+                    maxHerois === n ? 'bg-holo-3 text-void' : 'border border-line text-muted hover:text-text'
+                  }`}
+                >
+                  {n} heróis
+                </button>
+              ))}
+            </div>
+            <div className="flex items-center gap-1.5">
+              <span className="font-bold text-muted">Seus heróis:</span>
+              {[1, 2, 3].map((n) => (
+                <button
+                  key={n}
+                  type="button"
+                  disabled={ocupado !== null || n > maxHerois || n > maxProprios}
+                  onClick={() => aplicarConfig(maxHerois, n)}
+                  className={`cursor-pointer rounded-full px-2.5 py-1 text-xs font-bold disabled:opacity-40 ${
+                    heroisLider === n ? 'bg-holo-2 text-void' : 'border border-line text-muted hover:text-text'
+                  }`}
+                >
+                  {n}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+
         <ul className="m-0 flex list-none flex-col gap-2 p-0">
           {grupo.membros.map((m) => {
             const st = m.papel === 'lider' ? { texto: 'Líder', classe: 'text-gold border-gold/40' } : ROTULO_STATUS[m.status]
             return (
-              <li key={m.handle} className="flex items-center gap-3 rounded-xl bg-panel-2 px-3 py-2">
-                {m.papel === 'lider' ? <Crown size={16} className="shrink-0 text-gold" aria-hidden="true" /> : <Swords size={16} className="shrink-0 text-muted" aria-hidden="true" />}
-                <div className="min-w-0 flex-1">
-                  <p className="m-0 truncate text-sm font-bold">
-                    {m.nome} {m.sou_eu && <span className="font-normal text-muted">(você)</span>}
-                  </p>
-                  <p className="m-0 font-mono text-xs text-muted">
-                    @{m.handle}
-                    {m.nivel ? ` · Nv ${m.nivel}` : ''}
-                    {m.poder ? ` · Poder ${m.poder}` : ''}
-                  </p>
+              <li key={m.handle} className="flex flex-col gap-1.5 rounded-xl bg-panel-2 px-3 py-2">
+                <div className="flex items-center gap-3">
+                  {m.papel === 'lider' ? <Crown size={16} className="shrink-0 text-gold" aria-hidden="true" /> : <Swords size={16} className="shrink-0 text-muted" aria-hidden="true" />}
+                  <div className="min-w-0 flex-1">
+                    <p className="m-0 truncate text-sm font-bold">
+                      {m.nome} {m.sou_eu && <span className="font-normal text-muted">(você)</span>}
+                    </p>
+                    <p className="m-0 font-mono text-xs text-muted">
+                      @{m.handle}
+                      {m.nivel ? ` · Nv ${m.nivel}` : ''}
+                      {m.poder ? ` · Poder ${m.poder}` : ''}
+                    </p>
+                  </div>
+                  <span className={`shrink-0 rounded-full border px-2 py-0.5 text-xs font-bold ${st.classe}`}>{st.texto}</span>
                 </div>
-                <span className={`shrink-0 rounded-full border px-2 py-0.5 text-[11px] font-bold ${st.classe}`}>{st.texto}</span>
+                {Array.isArray(m.acompanhantes) && m.acompanhantes.length > 0 && (
+                  <div className="flex flex-wrap gap-1.5 pl-7">
+                    {m.acompanhantes.map((ac, idx) => (
+                      <span key={idx} className="rounded-full border border-holo-2/40 bg-holo-2/10 px-2 py-0.5 font-mono text-xs text-holo-2">
+                        + {ac.nome} (Nv {ac.nivel}{ac.poder ? ` · Poder ${ac.poder}` : ''})
+                      </span>
+                    ))}
+                  </div>
+                )}
               </li>
             )
           })}
@@ -188,7 +268,11 @@ export default function Grupo() {
                 className="inline-flex h-10 flex-1 cursor-pointer items-center justify-center gap-2 rounded-full bg-gradient-to-r from-holo-1 to-holo-3 px-5 text-sm font-extrabold text-void disabled:opacity-50 sm:flex-none"
               >
                 <Swords size={16} aria-hidden="true" />
-                {ocupado === 'lutar' || grupo.status === 'lutando' ? 'Lutando…' : prontos > 1 ? `Lutar com ${prontos} heróis` : 'Lutar sozinho'}
+                {ocupado === 'lutar' || grupo.status === 'lutando'
+                  ? 'Lutando…'
+                  : heroisProntosTotal > 1
+                    ? `Lutar com ${heroisProntosTotal} heróis`
+                    : 'Lutar sozinho'}
               </button>
             ) : (
               <p className="m-0 flex-1 text-sm text-muted">Você está no grupo. A luta começa quando o líder mandar; fique nesta tela para ver.</p>
@@ -203,7 +287,7 @@ export default function Grupo() {
       {souLider && grupo.status === 'aberto' && (
         <section aria-labelledby="titulo-convidar" className="flex flex-col gap-3 rounded-2xl border border-line bg-panel p-4">
           <h2 id="titulo-convidar" className="m-0 flex items-center gap-2 text-sm font-bold">
-            <UserPlus size={16} className="text-holo-2" aria-hidden="true" /> Convidar ({MAX_NO_GRUPO - ocupados} {MAX_NO_GRUPO - ocupados === 1 ? 'vaga' : 'vagas'})
+            <UserPlus size={16} className="text-holo-2" aria-hidden="true" /> Convidar ({vagasConvidarRestantes} {vagasConvidarRestantes === 1 ? 'vaga online' : 'vagas online'})
           </h2>
           <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
             <label className="relative flex-1">
@@ -234,7 +318,7 @@ export default function Grupo() {
             <button
               type="button"
               onClick={() => chamar(busca.trim().slice(1))}
-              disabled={ocupados >= MAX_NO_GRUPO || ocupado !== null}
+              disabled={vagasConvidarRestantes <= 0 || ocupado !== null}
               className="h-10 cursor-pointer self-start rounded-full border border-holo-2/50 px-4 text-xs font-bold text-holo-2 disabled:opacity-50"
             >
               Convidar {busca.trim()}
@@ -257,7 +341,7 @@ export default function Grupo() {
                         @{c.handle}
                         {origemDoCandidato(c) ? ` · ${origemDoCandidato(c)}` : ''}
                       </p>
-                      {c.motivo && !jaNoGrupo && <p className="m-0 text-[11px] text-coral">{c.motivo}</p>}
+                      {c.motivo && !jaNoGrupo && <p className="m-0 text-xs text-coral">{c.motivo}</p>}
                     </div>
                     {jaNoGrupo ? (
                       <span className="shrink-0 text-xs font-bold text-muted">{c.no_grupo === 'aceito' ? 'No grupo' : 'Convidado'}</span>
@@ -265,7 +349,7 @@ export default function Grupo() {
                       <button
                         type="button"
                         onClick={() => chamar(c.handle)}
-                        disabled={Boolean(c.motivo) || ocupados >= MAX_NO_GRUPO || ocupado !== null}
+                        disabled={Boolean(c.motivo) || vagasConvidarRestantes <= 0 || ocupado !== null}
                         className="h-9 shrink-0 cursor-pointer rounded-full bg-holo-2 px-4 text-xs font-extrabold text-void disabled:opacity-40"
                       >
                         {ocupado === c.handle ? '…' : 'Convidar'}

@@ -113,7 +113,10 @@ export default function ConvitesDeLuta() {
                 <strong>{c.lider_nome}</strong> <span className="text-muted">(@{c.lider_handle})</span> chamou você para{' '}
                 {c.alvo_tipo === 'masmorra' ? 'explorar a masmorra' : 'enfrentar'} <strong className="text-holo-3">{c.alvo_nome}</strong>.
               </p>
-              <p className="m-0 font-mono text-xs text-muted">Vale por mais {minutosRestantes(c.expira_em)} min · você gasta a sua Mana e ganha a recompensa inteira.</p>
+              <p className="m-0 font-mono text-xs text-muted">
+                {c.max_herois ? `Luta para ${c.max_herois} heróis${typeof c.vagas_online === 'number' ? ` (${c.vagas_online} ${c.vagas_online === 1 ? 'vaga online' : 'vagas online'})` : ''} · ` : ''}
+                Vale por mais {minutosRestantes(c.expira_em)} min · você gasta a sua Mana e ganha a recompensa inteira.
+              </p>
               <div className="flex gap-2">
                 <button
                   type="button"

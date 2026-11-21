@@ -108,7 +108,11 @@ export default function BatalhaEmGrupo({
             <li
               key={mostrados - i}
               className={`flex items-center justify-between gap-2 rounded-xl border px-3 py-2 text-xs ${
-                doHeroi ? 'border-holo-3/30 bg-holo-3/5' : 'border-coral/30 bg-coral/5'
+                turno.reacao
+                  ? 'border-gold/50 bg-gold/10'
+                  : doHeroi
+                    ? 'border-holo-3/30 bg-holo-3/5'
+                    : 'border-coral/30 bg-coral/5'
               } ${i === 0 ? '' : 'opacity-70'}`}
             >
               <span className="min-w-0 truncate">

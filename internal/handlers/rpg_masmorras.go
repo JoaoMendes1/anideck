@@ -130,16 +130,18 @@ type EstadoMasmorras struct {
 	FeitaHoje string            `json:"feita_hoje"`
 	Masmorras []MasmorraNaLista `json:"masmorras"`
 	// Mana de cada tipo de luta (sql/118).
-	CustosMana CustosManaRPG `json:"custos_mana"`
+	CustosMana CustosManaRPG          `json:"custos_mana"`
+	Elenco     []HeroiResumoEsquadrao `json:"elenco,omitempty"`
 }
 
 // RespostaMasmorra é o corpo de POST /api/rpg/masmorras.
 type RespostaMasmorra struct {
-	Masmorra   Masmorra            `json:"masmorra"`
-	Jogador    AtributosRPG        `json:"jogador"`
-	Expedicao  ExpedicaoNaMasmorra `json:"expedicao"`
-	Recompensa RecompensaBatalha   `json:"recompensa"`
-	Vida       VidaRPG             `json:"vida"`
+	Masmorra       Masmorra            `json:"masmorra"`
+	Jogador        AtributosRPG        `json:"jogador"`
+	Expedicao      ExpedicaoNaMasmorra `json:"expedicao"`
+	Recompensa     RecompensaBatalha   `json:"recompensa"`
+	Vida           VidaRPG             `json:"vida"`
+	GrupoResultado *ResultadoDoGrupo   `json:"grupo_resultado,omitempty"`
 }
 
 func masmorraPorID(id string) (Masmorra, bool) {
@@ -271,15 +273,17 @@ func (h *RPGHandler) HandleGetMasmorras(w http.ResponseWriter, r *http.Request) 
 		Atributos: equipamento.Atributos, Elemento: elementoDoJogador(sessao.ctx),
 		Vida: MontarVida(equipamento.Atributos.Vida, hoje.VidaPerdida), Hoje: hoje,
 		FeitaHoje: feita, Masmorras: lista, CustosMana: CustosDeMana(sessao.nivel, lerRegrasComunidade(sessao.dbClient)),
+		Elenco: ResumoElencoEsquadrao(sessao.dbClient, sessao.userID, sessao.ctx, equipamento),
 	})
 }
 
 // HandleEntrarNaMasmorra simula a masmorra inteira e grava pelo service role.
 func (h *RPGHandler) HandleEntrarNaMasmorra(w http.ResponseWriter, r *http.Request) {
 	var corpo struct {
-		MasmorraID string `json:"masmorra_id"`
+		MasmorraID string   `json:"masmorra_id"`
+		Esquadrao  []string `json:"esquadrao"`
 	}
-	if r.Body == nil || json.NewDecoder(http.MaxBytesReader(w, r.Body, 256)).Decode(&corpo) != nil {
+	if r.Body == nil || json.NewDecoder(http.MaxBytesReader(w, r.Body, 1024)).Decode(&corpo) != nil {
 		corpo.MasmorraID = ""
 	}
 	sessao, ok := abrirSessaoRPG(w, r)
@@ -329,12 +333,61 @@ func (h *RPGHandler) HandleEntrarNaMasmorra(w http.ResponseWriter, r *http.Reque
 	}
 
 	rng := novoGeradorDeBatalha()
-	combatente := CombatenteDoEstado(equipamento)
-	combatente.VidaInicial = vida.Atual
-	combatente.Elemento = elementoDoJogador(sessao.ctx)
-	combatente.Classe = classeDoJogador(sessao.ctx)
-	combatente.Passiva = passiva
-	expedicao := SimularMasmorra(combatente, monstros, rng)
+	var (
+		expedicao      ExpedicaoNaMasmorra
+		grupoResultado *ResultadoDoGrupo
+	)
+	if len(corpo.Esquadrao) > 0 {
+		combatentes, fichas, errEsq := MontarEsquadraoDoContexto(sessao.dbClient, sessao.userID, sessao.ctx, hoje.VidaPerdida, passiva, "", corpo.Esquadrao)
+		if errEsq != nil {
+			responderErroJSON(w, http.StatusBadRequest, errEsq.Error())
+			return
+		}
+		if len(combatentes) > 1 {
+			sim := SimularMasmorraEmGrupo(combatentes, monstros, rng)
+			usosTotal := map[string]int{}
+			heroisRes := make([]HeroiDoResultado, 0, len(fichas))
+			for i, f := range fichas {
+				heroisRes = append(heroisRes, HeroiDoResultado{Nome: f.Nome, Personagem: f.Personagem, Nivel: f.Nivel})
+				for id, n := range sim.Herois[i].Usos {
+					usosTotal[id] += n
+				}
+			}
+			grupoResultado = &ResultadoDoGrupo{
+				Modo: "na_hora", Herois: heroisRes, Masmorra: &sim, Venceu: sim.Completou,
+			}
+			andares := make([]AndarDaMasmorra, 0, len(sim.Andares))
+			for _, a := range sim.Andares {
+				andares = append(andares, AndarDaMasmorra{
+					Monstro: a.Monstro,
+					Resultado: ResultadoSimulado{
+						Venceu:      a.Resultado.Venceu,
+						Rodadas:     a.Resultado.Rodadas,
+						Turnos:      a.Resultado.Turnos,
+						VidaInicial: a.Resultado.Herois[0].VidaInicial,
+						VidaFinal:   a.Resultado.Herois[0].VidaFinal,
+						Caiu:        a.Resultado.Herois[0].Caiu,
+					},
+				})
+			}
+			expedicao = ExpedicaoNaMasmorra{
+				Andares:   andares,
+				Vencidos:  sim.Vencidos,
+				Completou: sim.Completou,
+				Caiu:      sim.Herois[0].Caiu,
+				VidaFinal: sim.Herois[0].VidaFinal,
+				Usos:      usosTotal,
+			}
+		}
+	}
+	if grupoResultado == nil {
+		combatente := CombatenteDoEstado(equipamento)
+		combatente.VidaInicial = vida.Atual
+		combatente.Elemento = elementoDoJogador(sessao.ctx)
+		combatente.Classe = classeDoJogador(sessao.ctx)
+		combatente.Passiva = passiva
+		expedicao = SimularMasmorra(combatente, monstros, rng)
+	}
 
 	var itemSorteado *ItemRPG
 	if expedicao.Completou {
@@ -426,5 +479,6 @@ func (h *RPGHandler) HandleEntrarNaMasmorra(w http.ResponseWriter, r *http.Reque
 	responderJSON(w, http.StatusOK, RespostaMasmorra{
 		Masmorra: masmorra, Jogador: equipamento.Atributos, Expedicao: expedicao,
 		Recompensa: recompensa, Vida: MontarVida(equipamento.Atributos.Vida, registro.VidaPerdida),
+		GrupoResultado: grupoResultado,
 	})
 }

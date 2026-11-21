@@ -22,14 +22,23 @@ import (
 // reconstrói as habilidades (personagem, nível e maestria), porque os efeitos delas não
 // passam pelo JSON.
 type FichaDeGrupo struct {
-	Nome        string         `json:"nome"`
-	Personagem  string         `json:"personagem"`
-	Nivel       int            `json:"nivel"`
-	Poder       int            `json:"poder"`
-	Atributos   AtributosRPG   `json:"atributos"`
-	Maestria    map[string]int `json:"maestria"`
-	Elemento    string         `json:"elemento"`
-	VidaInicial int            `json:"vida_inicial"`
+	Nome          string         `json:"nome"`
+	Personagem    string         `json:"personagem"`
+	Nivel         int            `json:"nivel"`
+	Poder         int            `json:"poder"`
+	Atributos     AtributosRPG   `json:"atributos"`
+	Maestria      map[string]int `json:"maestria"`
+	Elemento      string         `json:"elemento"`
+	VidaInicial   int            `json:"vida_inicial"`
+	Acompanhantes []FichaDeGrupo `json:"acompanhantes,omitempty"`
+}
+
+// TodosHerois devolve a ficha principal seguida pelos acompanhantes do esquadrão.
+func (f FichaDeGrupo) TodosHerois() []FichaDeGrupo {
+	out := make([]FichaDeGrupo, 0, 1+len(f.Acompanhantes))
+	out = append(out, f)
+	out = append(out, f.Acompanhantes...)
+	return out
 }
 
 // Combatente reconstrói o herói para a simulação.
@@ -155,13 +164,49 @@ func lerRetornoGrupo(bruto string, destino interface{}) (erro string, falhou boo
 	return "", false
 }
 
-// HandleCriarGrupo abre o grupo para um monstro ou masmorra, com o líder já dentro.
+// montarFichaComEsquadrao monta a ficha principal e, quando heroisLider > 1, inclui até
+// (heroisLider - 1) aliados desbloqueados da conta como acompanhantes.
+func montarFichaComEsquadrao(w http.ResponseWriter, sessao sessaoRPG, tipo, alvoID string, heroisLider int, aliadosPedidos []string) (FichaDeGrupo, int, bool) {
+	ficha, ok := montarFicha(w, sessao, tipo, alvoID)
+	if !ok {
+		return FichaDeGrupo{}, 0, false
+	}
+	if heroisLider <= 1 {
+		return ficha, 1, true
+	}
+	hoje, err := lerHojeRPG(sessao.dbClient)
+	if err != nil {
+		return ficha, 1, true
+	}
+	var pedido []string
+	if aliadosPedidos != nil {
+		pedido = aliadosPedidos
+	} else if sessao.ctx.linha != nil {
+		pedido = sessao.ctx.linha.Esquadrao
+	}
+	_, fichas, err := MontarEsquadraoDoContexto(sessao.dbClient, sessao.userID, sessao.ctx, hoje.VidaPerdida, nil, "", pedido)
+	if err != nil {
+		responderErroJSON(w, http.StatusBadRequest, err.Error())
+		return FichaDeGrupo{}, 0, false
+	}
+	limite := min(heroisLider, len(fichas))
+	if limite > 1 {
+		ficha.Acompanhantes = fichas[1:limite]
+	}
+	return ficha, limite, true
+}
+
+// HandleCriarGrupo abre o grupo para um monstro ou masmorra, com o líder já dentro e a
+// opção de quantos heróis serão utilizados na luta e quantas vagas ficam online.
 func (h *RPGHandler) HandleCriarGrupo(w http.ResponseWriter, r *http.Request) {
 	var corpo struct {
-		AlvoTipo string `json:"alvo_tipo"`
-		AlvoID   string `json:"alvo_id"`
+		AlvoTipo    string   `json:"alvo_tipo"`
+		AlvoID      string   `json:"alvo_id"`
+		MaxHerois   int      `json:"max_herois"`
+		HeroisLider int      `json:"herois_lider"`
+		Esquadrao   []string `json:"esquadrao"`
 	}
-	if r.Body == nil || json.NewDecoder(http.MaxBytesReader(w, r.Body, 512)).Decode(&corpo) != nil {
+	if r.Body == nil || json.NewDecoder(http.MaxBytesReader(w, r.Body, 1024)).Decode(&corpo) != nil {
 		responderErroJSON(w, http.StatusBadRequest, "Corpo inválido.")
 		return
 	}
@@ -170,6 +215,17 @@ func (h *RPGHandler) HandleCriarGrupo(w http.ResponseWriter, r *http.Request) {
 		responderErroJSON(w, http.StatusBadRequest, "Escolha um monstro ou uma masmorra.")
 		return
 	}
+	maxHerois := corpo.MaxHerois
+	if maxHerois <= 0 {
+		maxHerois = MaxHeroisNoGrupo
+	}
+	maxHerois = max(1, min(MaxHeroisNoGrupo, maxHerois))
+	heroisLider := corpo.HeroisLider
+	if heroisLider <= 0 {
+		heroisLider = 1
+	}
+	heroisLider = max(1, min(maxHerois, heroisLider))
+
 	sessao, ok := abrirSessaoRPG(w, r)
 	if !ok {
 		return
@@ -195,7 +251,7 @@ func (h *RPGHandler) HandleCriarGrupo(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 	}
-	ficha, ok := montarFicha(w, sessao, tipo, alvo)
+	ficha, qtdEfetiva, ok := montarFichaComEsquadrao(w, sessao, tipo, alvo, heroisLider, corpo.Esquadrao)
 	if !ok {
 		return
 	}
@@ -208,8 +264,15 @@ func (h *RPGHandler) HandleCriarGrupo(w http.ResponseWriter, r *http.Request) {
 		GrupoID string `json:"grupo_id"`
 	}
 	bruto := strings.TrimSpace(servico.Rpc("rpg_grupo_criar", "", map[string]interface{}{
-		"p_user": sessao.userID, "p_tipo": tipo, "p_alvo": alvo, "p_alvo_nome": nome, "p_ficha": ficha,
+		"p_user": sessao.userID, "p_tipo": tipo, "p_alvo": alvo, "p_alvo_nome": nome,
+		"p_ficha": ficha, "p_max_herois": maxHerois, "p_herois_lider": qtdEfetiva,
 	}))
+	if erro, falhou := lerRetornoGrupo(bruto, &criado); falhou && erro == "" {
+		// Fallback caso o sql/136 ainda não tenha sido aplicado no banco.
+		bruto = strings.TrimSpace(servico.Rpc("rpg_grupo_criar", "", map[string]interface{}{
+			"p_user": sessao.userID, "p_tipo": tipo, "p_alvo": alvo, "p_alvo_nome": nome, "p_ficha": ficha,
+		}))
+	}
 	if erro, falhou := lerRetornoGrupo(bruto, &criado); falhou || erro != "" {
 		if erro == "" {
 			log.Printf("[RPG] Falha ao abrir grupo (user=%s): %s", sessao.userID, bruto)
@@ -218,7 +281,76 @@ func (h *RPGHandler) HandleCriarGrupo(w http.ResponseWriter, r *http.Request) {
 		responderErroJSON(w, http.StatusConflict, erro)
 		return
 	}
-	responderJSON(w, http.StatusOK, map[string]string{"grupo_id": criado.GrupoID})
+	responderJSON(w, http.StatusOK, map[string]interface{}{
+		"grupo_id":     criado.GrupoID,
+		"max_herois":   maxHerois,
+		"herois_lider": qtdEfetiva,
+	})
+}
+
+// HandleConfigurarGrupo ajusta quantos heróis totais e quantos heróis do líder entram na sala aberta.
+func (h *RPGHandler) HandleConfigurarGrupo(w http.ResponseWriter, r *http.Request) {
+	grupoID := chi.URLParam(r, "id")
+	if !uuidValido(grupoID) {
+		responderErroJSON(w, http.StatusNotFound, "Grupo não encontrado.")
+		return
+	}
+	var corpo struct {
+		MaxHerois   int      `json:"max_herois"`
+		HeroisLider int      `json:"herois_lider"`
+		Esquadrao   []string `json:"esquadrao"`
+	}
+	if r.Body == nil || json.NewDecoder(http.MaxBytesReader(w, r.Body, 1024)).Decode(&corpo) != nil {
+		responderErroJSON(w, http.StatusBadRequest, "Corpo inválido.")
+		return
+	}
+	maxHerois := max(1, min(MaxHeroisNoGrupo, corpo.MaxHerois))
+	heroisLider := max(1, min(maxHerois, corpo.HeroisLider))
+
+	sessao, ok := abrirSessaoRPG(w, r)
+	if !ok {
+		return
+	}
+	servico, err := database.ServiceRoleClient()
+	if err != nil || servico == nil {
+		responderErroJSON(w, http.StatusServiceUnavailable, "Lutas em grupo indisponíveis no momento.")
+		return
+	}
+	var alvo struct {
+		AlvoTipo string `json:"alvo_tipo"`
+		AlvoID   string `json:"alvo_id"`
+		Lider    string `json:"lider"`
+		Status   string `json:"status"`
+	}
+	bruto := strings.TrimSpace(servico.Rpc("rpg_grupo_alvo", "", map[string]interface{}{"p_grupo": grupoID}))
+	if bruto == "" || bruto == "null" || json.Unmarshal([]byte(bruto), &alvo) != nil || alvo.AlvoTipo == "" {
+		responderErroJSON(w, http.StatusNotFound, "Grupo não encontrado.")
+		return
+	}
+	if alvo.Lider != "" && alvo.Lider != sessao.userID {
+		responderErroJSON(w, http.StatusNotFound, "Grupo não encontrado.")
+		return
+	}
+	ficha, qtdEfetiva, ok := montarFichaComEsquadrao(w, sessao, alvo.AlvoTipo, alvo.AlvoID, heroisLider, corpo.Esquadrao)
+	if !ok {
+		return
+	}
+	brutoCfg := strings.TrimSpace(servico.Rpc("rpg_grupo_configurar", "", map[string]interface{}{
+		"p_lider": sessao.userID, "p_grupo": grupoID, "p_max_herois": maxHerois, "p_herois_lider": qtdEfetiva, "p_ficha": ficha,
+	}))
+	var ret struct {
+		MaxHerois   int `json:"max_herois"`
+		HeroisLider int `json:"herois_lider"`
+		VagasOnline int `json:"vagas_online"`
+	}
+	if erro, falhou := lerRetornoGrupo(brutoCfg, &ret); falhou || erro != "" {
+		if erro == "" {
+			erro = "Não foi possível atualizar a formação do grupo agora."
+		}
+		responderErroJSON(w, http.StatusConflict, erro)
+		return
+	}
+	responderJSON(w, http.StatusOK, ret)
 }
 
 // HandleAceitarConvite entra no grupo com a ficha de agora.
@@ -319,14 +451,16 @@ func (h *RPGHandler) HandleLutarEmGrupo(w http.ResponseWriter, r *http.Request) 
 	resultado := ResultadoDoGrupo{Modo: "na_hora"}
 	recompensas := make([]RecompensaNoGrupo, len(separado.Membros))
 	var lutam []int
+	var foraHerois []HeroiDoResultado
 	for i, m := range separado.Membros {
-		resultado.Herois = append(resultado.Herois, HeroiDoResultado{Nome: m.Ficha.Nome, Personagem: m.Ficha.Personagem, Nivel: m.Ficha.Nivel})
 		custo := CustoDeMana(tipoDeLutaDoGrupo(separado.AlvoTipo), m.Ficha.Nivel, regras)
 		recompensas[i].Mana = custo
 		if custo > 0 {
 			b := strings.TrimSpace(servico.Rpc("rpg_mana_lutar", "", map[string]interface{}{"p_user_id": m.UserID, "p_quantia": custo}))
 			if _, erro := interpretarCobrancaMana(b); erro != "" {
-				resultado.Herois[i].Fora = "sem Mana na hora da luta"
+				foraHerois = append(foraHerois, HeroiDoResultado{
+					Nome: m.Ficha.Nome, Personagem: m.Ficha.Personagem, Nivel: m.Ficha.Nivel, Fora: "sem Mana na hora da luta",
+				})
 				recompensas[i] = RecompensaNoGrupo{Erro: "Sem Mana na hora da luta."}
 				continue
 			}
@@ -342,10 +476,49 @@ func (h *RPGHandler) HandleLutarEmGrupo(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	herois := make([]CombatenteRPG, len(lutam))
-	for k, i := range lutam {
-		herois[k] = separado.Membros[i].Ficha.Combatente()
+	// Todos os jogadores humanos entram primeiro com seu herói principal; as vagas restantes até
+	// MaxHeroisNoGrupo recebem os acompanhantes de esquadrão (priorizando o líder).
+	herois := make([]CombatenteRPG, 0, MaxHeroisNoGrupo)
+	principalIdx := make(map[int]int, len(lutam))
+	acompanhantesDe := make(map[int][]int, len(lutam))
+	for _, i := range lutam {
+		m := separado.Membros[i]
+		idx := len(herois)
+		principalIdx[i] = idx
+		herois = append(herois, m.Ficha.Combatente())
+		resultado.Herois = append(resultado.Herois, HeroiDoResultado{
+			Nome: m.Ficha.Nome, Personagem: m.Ficha.Personagem, Nivel: m.Ficha.Nivel,
+		})
 	}
+	for _, i := range lutam {
+		for _, acomp := range separado.Membros[i].Ficha.Acompanhantes {
+			if len(herois) >= MaxHeroisNoGrupo {
+				break
+			}
+			idx := len(herois)
+			herois = append(herois, acomp.Combatente())
+			acompanhantesDe[i] = append(acompanhantesDe[i], idx)
+			resultado.Herois = append(resultado.Herois, HeroiDoResultado{
+				Nome: acomp.Nome, Personagem: acomp.Personagem, Nivel: acomp.Nivel,
+			})
+		}
+	}
+	resultado.Herois = append(resultado.Herois, foraHerois...)
+
+	somarUsosMembro := func(heroStats []HeroiNoResultado, memberIdx int) map[string]int {
+		soma := map[string]int{}
+		pIdx := principalIdx[memberIdx]
+		for id, n := range heroStats[pIdx].Usos {
+			soma[id] += n
+		}
+		for _, aIdx := range acompanhantesDe[memberIdx] {
+			for id, n := range heroStats[aIdx].Usos {
+				soma[id] += n
+			}
+		}
+		return soma
+	}
+
 	rng := novoGeradorDeBatalha()
 
 	switch separado.AlvoTipo {
@@ -364,8 +537,9 @@ func (h *RPGHandler) HandleLutarEmGrupo(w http.ResponseWriter, r *http.Request) 
 		if vencidos == nil {
 			vencidos = []string{}
 		}
-		for k, i := range lutam {
-			m, heroi := separado.Membros[i], sim.Herois[k]
+		for _, i := range lutam {
+			m := separado.Membros[i]
+			heroi := sim.Herois[principalIdx[i]]
 			itemID, item := "", (*ItemRPG)(nil)
 			if sim.Completou {
 				ultimo := monstros[len(monstros)-1]
@@ -379,7 +553,7 @@ func (h *RPGHandler) HandleLutarEmGrupo(w http.ResponseWriter, r *http.Request) 
 				"p_completou": sim.Completou, "p_caiu": heroi.Caiu, "p_bonus_pct": bonusOuroMasmorraCompleta,
 				"p_item_id": itemID, "p_vida_perdida": PerdaPorMil(m.Ficha.Atributos.Vida, heroi.VidaFinal),
 			}))
-			recompensas[i] = registroDoMembro(servico, b, m.UserID, recompensas[i].Mana, item, heroi.Usos)
+			recompensas[i] = registroDoMembro(servico, b, m.UserID, recompensas[i].Mana, item, somarUsosMembro(sim.Herois, i))
 		}
 	default:
 		var monstro *MonstroRPG
@@ -394,10 +568,12 @@ func (h *RPGHandler) HandleLutarEmGrupo(w http.ResponseWriter, r *http.Request) 
 			responderErroJSON(w, http.StatusConflict, "Monstro desconhecido.")
 			return
 		}
-		sim := SimularBatalhaEmGrupo(herois, MonstroParaGrupo(*monstro, len(herois)), rng)
-		resultado.Monstro, resultado.Luta, resultado.Venceu = monstro, &sim, sim.Venceu
-		for k, i := range lutam {
-			m, heroi := separado.Membros[i], sim.Herois[k]
+		monstroEscalado := EquilibrarMonstroParaGrupo(*monstro, herois)
+		sim := SimularBatalhaEmGrupo(herois, monstroEscalado, rng)
+		resultado.Monstro, resultado.Luta, resultado.Venceu = &monstroEscalado, &sim, sim.Venceu
+		for _, i := range lutam {
+			m := separado.Membros[i]
+			heroi := sim.Herois[principalIdx[i]]
 			itemID, item := "", (*ItemRPG)(nil)
 			if sim.Venceu {
 				item = sortearItem(sessao.dbClient, rng, monstro.RaridadeItem, monstro.ChanceItem+m.Ficha.Atributos.SorteItem)
@@ -410,7 +586,7 @@ func (h *RPGHandler) HandleLutarEmGrupo(w http.ResponseWriter, r *http.Request) 
 				"p_turnos": len(sim.Turnos), "p_item_id": itemID,
 				"p_vida_perdida": PerdaPorMil(m.Ficha.Atributos.Vida, heroi.VidaFinal),
 			}))
-			recompensas[i] = registroDoMembro(servico, b, m.UserID, recompensas[i].Mana, item, heroi.Usos)
+			recompensas[i] = registroDoMembro(servico, b, m.UserID, recompensas[i].Mana, item, somarUsosMembro(sim.Herois, i))
 		}
 	}
 
