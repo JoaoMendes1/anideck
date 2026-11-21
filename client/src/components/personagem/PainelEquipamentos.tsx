@@ -58,28 +58,28 @@ export default function PainelEquipamentos({
         <h2 id="titulo-dos-equipamentos" className={ROTULO_DE_SECAO}>
           Status e equipamentos
         </h2>
-        <span className="inline-flex items-center gap-1 rounded-full border border-holo-2/50 px-2.5 py-0.5 font-mono text-xs font-semibold text-text">
+        <span className="inline-flex items-center gap-1 rounded-full border border-holo-2/50 bg-holo-2/12 px-3 py-0.5 font-mono text-xs font-bold text-text">
           <Zap size={12} className="text-holo-2" aria-hidden="true" />
           Poder {atributos.poder}
         </span>
       </div>
 
       <div className="grid grid-cols-1 gap-3 lg:grid-cols-2 lg:items-stretch">
-        <dl className="m-0 grid grid-cols-3 gap-2.5">
+        <dl className="m-0 grid grid-cols-3 gap-2 sm:gap-2.5">
           {linhasDeAtributo.map(({ chave, rotulo, Icone, valor, bonus, cor }) => (
-            <div key={chave} className="flex min-w-0 flex-col justify-between gap-1 rounded-xl border border-line bg-panel p-3.5">
-              <dt className="flex items-center gap-1.5 text-xs font-semibold text-muted">
-                <Icone size={13} className={cor} aria-hidden="true" />
-                {rotulo}
+            <div key={chave} className="flex min-w-0 flex-col justify-between gap-1 rounded-xl border border-line bg-panel p-2.5 sm:p-3.5">
+              <dt className="flex items-center gap-1 text-xs font-semibold text-muted sm:gap-1.5">
+                <Icone size={13} className={`shrink-0 ${cor}`} aria-hidden="true" />
+                <span className="truncate">{rotulo}</span>
               </dt>
-              <dd className="m-0 font-anton text-2xl sm:text-3xl leading-none">{valor}</dd>
-              <span className="font-mono text-xs text-muted">{bonus > 0 ? `+${bonus} itens` : 'base'}</span>
+              <dd className="m-0 font-anton text-xl leading-none sm:text-3xl">{valor}</dd>
+              <span className="truncate font-mono text-xs text-muted">{bonus > 0 ? `+${bonus} itens` : 'base'}</span>
             </div>
           ))}
         </dl>
 
         {secundarios.length > 0 && (
-          <dl className="m-0 grid grid-cols-2 gap-x-5 gap-y-2 rounded-xl border border-line bg-panel p-3.5 sm:grid-cols-3 lg:content-center">
+          <dl className="m-0 grid grid-cols-2 gap-x-4 gap-y-2 rounded-xl border border-line bg-panel p-3 sm:grid-cols-3 sm:p-3.5 lg:content-center">
             {secundarios.map(({ rotulo, valor }) => (
               <div key={rotulo} className="flex min-w-0 items-baseline justify-between gap-2">
                 <dt className="truncate text-xs text-muted">{rotulo}</dt>

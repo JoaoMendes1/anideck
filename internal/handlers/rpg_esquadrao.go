@@ -38,14 +38,16 @@ func ClasseDoPersonagem(baseID string) string {
 
 // HeroiResumoEsquadrao resume um personagem desbloqueado para a formação de esquadrão na UI.
 type HeroiResumoEsquadrao struct {
-	ID       string `json:"id"`
-	Nome     string `json:"nome"`
-	Classe   string `json:"classe"`
-	Elemento string `json:"elemento"`
-	Poder    int    `json:"poder"`
-	Vida     int    `json:"vida"`
-	Ativo    bool   `json:"ativo"`
-	NoGrupo  bool   `json:"no_grupo"`
+	ID           string       `json:"id"`
+	Nome         string       `json:"nome"`
+	Classe       string       `json:"classe"`
+	Elemento     string       `json:"elemento"`
+	Poder        int          `json:"poder"`
+	Vida         int          `json:"vida"`
+	Ativo        bool         `json:"ativo"`
+	NoGrupo      bool         `json:"no_grupo"`
+	Pontos       PrimariosRPG `json:"pontos"`
+	PontosLivres int          `json:"pontos_livres"`
 }
 
 func desbloqueadosNormalizados(linha *linhaPersonagemBanco) []string {
@@ -285,7 +287,8 @@ func MontarEsquadraoDoContexto(dbClient *supabase.Client, userID string, ctx con
 
 	fatorVida := float64(max(1, 1000-min(1000, max(0, vidaPerdidaPorMil)))) / 1000.0
 	for _, allyBase := range aliados {
-		est := EstadoParaBase(nivel, allyBase, inv, eq, ctx.pontos, ctx.maestria)
+		pontosAlly := LimitarPontos(ctx.PontosDoHeroi(allyBase), PontosDisponiveis(nivel))
+		est := EstadoParaBase(nivel, allyBase, inv, eq, pontosAlly, ctx.maestria)
 		vidaAlly := max(1, int(float64(est.Atributos.Vida)*fatorVida+0.5))
 		c := CombatenteDoEstado(est)
 		c.VidaInicial = vidaAlly
@@ -334,31 +337,38 @@ func ResumoElencoEsquadrao(dbClient *supabase.Client, userID string, ctx context
 		}
 	}
 
+	disponiveis := PontosDisponiveis(eqLider.Nivel)
+	pontosLider := LimitarPontos(ctx.PontosDoHeroi(baseLider), disponiveis)
 	saida := make([]HeroiResumoEsquadrao, 0, len(desbloqueados))
 	saida = append(saida, HeroiResumoEsquadrao{
-		ID:       baseLider,
-		Nome:     nomeLider,
-		Classe:   ClasseDoPersonagem(baseLider),
-		Elemento: ElementoDoPersonagem(baseLider),
-		Poder:    eqLider.Atributos.Poder,
-		Vida:     eqLider.Atributos.Vida,
-		Ativo:    true,
-		NoGrupo:  true,
+		ID:           baseLider,
+		Nome:         nomeLider,
+		Classe:       ClasseDoPersonagem(baseLider),
+		Elemento:     ElementoDoPersonagem(baseLider),
+		Poder:        eqLider.Atributos.Poder,
+		Vida:         eqLider.Atributos.Vida,
+		Ativo:        true,
+		NoGrupo:      true,
+		Pontos:       pontosLider,
+		PontosLivres: max(0, disponiveis-pontosLider.Total()),
 	})
 	for _, id := range desbloqueados {
 		if id == baseLider {
 			continue
 		}
-		est := EstadoParaBase(eqLider.Nivel, id, inv, eq, ctx.pontos, ctx.maestria)
+		pontosAlly := LimitarPontos(ctx.PontosDoHeroi(id), disponiveis)
+		est := EstadoParaBase(eqLider.Nivel, id, inv, eq, pontosAlly, ctx.maestria)
 		saida = append(saida, HeroiResumoEsquadrao{
-			ID:       id,
-			Nome:     NomePadraoElenco(id),
-			Classe:   ClasseDoPersonagem(id),
-			Elemento: ElementoDoPersonagem(id),
-			Poder:    est.Atributos.Poder,
-			Vida:     est.Atributos.Vida,
-			Ativo:    false,
-			NoGrupo:  salvos[id],
+			ID:           id,
+			Nome:         NomePadraoElenco(id),
+			Classe:       ClasseDoPersonagem(id),
+			Elemento:     ElementoDoPersonagem(id),
+			Poder:        est.Atributos.Poder,
+			Vida:         est.Atributos.Vida,
+			Ativo:        false,
+			NoGrupo:      salvos[id],
+			Pontos:       pontosAlly,
+			PontosLivres: max(0, disponiveis-pontosAlly.Total()),
 		})
 	}
 	return saida

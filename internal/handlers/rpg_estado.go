@@ -73,9 +73,10 @@ type estadoJogadorBanco struct {
 	// Usos de cada habilidade (sql/084); ausente antes dele.
 	Maestria map[string]int `json:"maestria"`
 	// Ausente com o sql/076 sem o 077; objeto vazio é quem nunca distribuiu.
-	Pontos     *PrimariosRPG   `json:"pontos"`
-	Cosmeticos json.RawMessage `json:"cosmeticos"`
-	Skins      json.RawMessage `json:"skins"`
+	Pontos         *PrimariosRPG           `json:"pontos"`
+	PontosPorHeroi map[string]PrimariosRPG `json:"pontos_por_heroi"`
+	Cosmeticos     json.RawMessage         `json:"cosmeticos"`
+	Skins          json.RawMessage         `json:"skins"`
 }
 
 // interpretarEstadoJogador lê a resposta da função. `ok` false é resposta fora do formato
@@ -123,6 +124,9 @@ func contextoDoEstado(e estadoJogadorBanco, cfg configRPG) (contextoPersonagem, 
 	if e.Pontos != nil {
 		ctx.pontos, ctx.pontosLidos = *e.Pontos, true
 	}
+	if e.PontosPorHeroi != nil {
+		ctx.pontosPorHeroi = e.PontosPorHeroi
+	}
 	return ctx, nil
 }
 
@@ -166,6 +170,9 @@ func carregarContextoPersonagem(dbClient *supabase.Client, userID string) (conte
 	if !ctx.pontosLidos {
 		ctx.pontos = lerPontos(dbClient, userID)
 	}
+	if ctx.pontosPorHeroi == nil {
+		ctx.pontosPorHeroi = lerPontosPorHeroi(dbClient, userID)
+	}
 	// As skins da Loja são trajes do Espadachim: com outro personagem, não valem.
 	if !aceitaSkins(ctx.linha.PersonagemBase) {
 		ctx.skins = nil
@@ -188,6 +195,31 @@ func lerPontos(dbClient *supabase.Client, userID string) PrimariosRPG {
 		return PrimariosRPG{}
 	}
 	return linhas[0]
+}
+
+// lerPontosPorHeroi lê os pontos por personagem em rpg_atributos_herois (fallback sem RPC nova).
+func lerPontosPorHeroi(dbClient *supabase.Client, userID string) map[string]PrimariosRPG {
+	dados, _, err := dbClient.From("rpg_atributos_herois").
+		Select("personagem_base,forca,inteligencia,constituicao,agilidade,destreza,sorte", "", false).
+		Eq("user_id", userID).
+		Execute()
+	if err != nil {
+		return nil
+	}
+	var linhas []struct {
+		PersonagemBase string `json:"personagem_base"`
+		PrimariosRPG
+	}
+	if json.Unmarshal(dados, &linhas) != nil || len(linhas) == 0 {
+		return nil
+	}
+	mapa := make(map[string]PrimariosRPG, len(linhas))
+	for _, l := range linhas {
+		if l.PersonagemBase != "" {
+			mapa[l.PersonagemBase] = l.PrimariosRPG
+		}
+	}
+	return mapa
 }
 
 // carregarContextoPersonagemAntigo é a leitura de antes do sql/076, mantida como reserva.
@@ -223,15 +255,28 @@ func equipamentoDoContexto(dbClient *supabase.Client, userID string, ctx context
 	if ctx.linha != nil {
 		base = ctx.linha.PersonagemBase
 	}
+	if base == "" {
+		base = personagemBasePadrao
+	}
+	pontosHeroi := ctx.PontosDoHeroi(base)
+
 	var estado EstadoEquipamento
 	if ctx.inventarioLido {
-		estado = MontarEstadoEquipamento(nivel, base, ctx.inventario, ctx.equipados, ctx.pontos)
+		estado = MontarEstadoEquipamento(nivel, base, ctx.inventario, ctx.equipados, pontosHeroi)
 	} else {
 		var err error
-		if estado, err = carregarEstadoEquipamento(dbClient, userID, base, nivel, ctx.pontos); err != nil {
+		if estado, err = carregarEstadoEquipamento(dbClient, userID, base, nivel, pontosHeroi); err != nil {
 			return EstadoEquipamento{}, err
 		}
 	}
+	estado.PersonagemBase = base
+	estado.Classe = ClasseDoPersonagem(base)
+	desbloqueados := desbloqueadosNormalizados(ctx.linha)
+	porHeroi := make(map[string]PrimariosRPG, len(desbloqueados))
+	for _, id := range desbloqueados {
+		porHeroi[id] = ctx.PontosDoHeroi(id)
+	}
+	estado.PontosPorHeroi = porHeroi
 	estado.Habilidades = AplicarMaestria(LivroDeHabilidades(base, nivel), ctx.maestria)
 	estado.Ouro = ctx.ouro
 	if ctx.linha != nil && ctx.linha.EcoMalID != nil && *ctx.linha.EcoMalID > 0 {

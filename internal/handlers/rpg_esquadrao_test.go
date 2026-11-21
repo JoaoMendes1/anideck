@@ -127,3 +127,44 @@ func TestMontarEsquadraoDoContexto_SemBancoComInventarioLido(t *testing.T) {
 		t.Errorf("TodosHerois deveria devolver 2, obtido %d", len(fComAcomp.TodosHerois()))
 	}
 }
+
+func TestMontarEsquadraoDoContexto_AtributosIndependentesPorHeroi(t *testing.T) {
+	ctx := contextoPersonagem{
+		linha: &linhaPersonagemBanco{
+			Nome:           "Kael",
+			PersonagemBase: "espadachim_eter",
+			Desbloqueados:  []string{"espadachim_eter", "maga_agua"},
+			Esquadrao:      []string{"maga_agua"},
+		},
+		xpTotal:        2000,
+		ranks:          RanksPadrao(),
+		estagios:       EstagiosPadrao(),
+		equipados:      map[string]string{},
+		inventarioLido: true,
+		pontos:         PrimariosRPG{Forca: 10},
+		pontosPorHeroi: map[string]PrimariosRPG{
+			"espadachim_eter": {Forca: 10},
+		},
+	}
+
+	combatentes, _, err := MontarEsquadraoDoContexto(nil, "u1", ctx, 0, nil, "", nil)
+	if err != nil {
+		t.Fatalf("erro inesperado: %v", err)
+	}
+	if len(combatentes) != 2 {
+		t.Fatalf("esperava 2 combatentes, veio %d", len(combatentes))
+	}
+	// Líder tem +10 Força (+20 Ataque), aliada não configurada fica zerada (+0 Ataque).
+	if combatentes[0].Ataque <= combatentes[1].Ataque {
+		t.Errorf("aliada sem pontos não deveria copiar Força do líder: lider=%d ally=%d", combatentes[0].Ataque, combatentes[1].Ataque)
+	}
+
+	ctx.pontosPorHeroi["maga_agua"] = PrimariosRPG{Inteligencia: 10}
+	combatentes2, _, err := MontarEsquadraoDoContexto(nil, "u1", ctx, 0, nil, "", nil)
+	if err != nil {
+		t.Fatalf("erro inesperado: %v", err)
+	}
+	if combatentes2[1].Magia <= combatentes2[0].Magia {
+		t.Errorf("maga com +10 Inteligência deveria ter mais Magia que líder: maga=%d lider=%d", combatentes2[1].Magia, combatentes2[0].Magia)
+	}
+}

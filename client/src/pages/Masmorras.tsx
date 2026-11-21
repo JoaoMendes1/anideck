@@ -63,8 +63,8 @@ function Resultado({ resposta, aoVoltar }: { resposta: RespostaMasmorra; aoVolta
                     const { texto, valor } = descreverTurno(turno, andar.monstro.nome)
                     const doJogador = turno.atacante === 'jogador'
                     return (
-                      <li key={k} className="flex items-center justify-between gap-2 rounded-lg border border-line/60 px-2.5 py-1.5">
-                        <span className="min-w-0 truncate">
+                      <li key={k} className="flex items-start justify-between gap-2 rounded-xl border border-line/70 bg-panel-2/50 px-3 py-1.5">
+                        <span className="min-w-0 flex-1 break-words leading-snug text-text">
                           {texto}
                           {turno.critico && <strong className="ml-1 text-gold">Crítico!</strong>}
                         </span>
@@ -79,8 +79,8 @@ function Resultado({ resposta, aoVoltar }: { resposta: RespostaMasmorra; aoVolta
         })}
       </ol>
 
-      <div role="status" className={`flex flex-col gap-3 rounded-2xl border p-4 ${expedicao.completou ? 'border-gold/60 bg-gold/10' : 'border-coral/50 bg-coral/10'}`}>
-        <p className="m-0 font-anton text-3xl uppercase leading-none">{expedicao.completou ? 'Masmorra completa' : 'Fim da exploração'}</p>
+      <div role="status" className={`flex flex-col gap-3 rounded-2xl border p-4 ${expedicao.completou ? 'border-gold/60 bg-gradient-to-br from-gold/15 to-panel' : 'border-coral/50 bg-gradient-to-br from-coral/15 to-panel'}`}>
+        <p className="m-0 font-anton text-2xl uppercase leading-none sm:text-3xl">{expedicao.completou ? 'Masmorra completa' : 'Fim da exploração'}</p>
         <ul className="m-0 flex list-none flex-col gap-2 p-0 text-sm">
           {(recompensa.ouro ?? 0) > 0 && (
             <li className="flex items-center gap-2">
@@ -110,7 +110,7 @@ function Resultado({ resposta, aoVoltar }: { resposta: RespostaMasmorra; aoVolta
             <li className="text-coral">A queda custou {recompensa.ouro_perdido} de Ouro.</li>
           )}
         </ul>
-        <button type="button" onClick={aoVoltar} className="h-10 cursor-pointer self-start rounded-full bg-gradient-to-r from-holo-1 to-holo-3 px-5 text-xs font-extrabold text-void">
+        <button type="button" onClick={aoVoltar} className="h-11 w-full cursor-pointer rounded-full bg-gradient-to-r from-holo-1 via-holo-2 to-holo-3 px-5 text-xs font-extrabold text-void sm:w-auto sm:self-start">
           Voltar às masmorras
         </button>
       </div>

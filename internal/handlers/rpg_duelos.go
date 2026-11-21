@@ -306,7 +306,7 @@ func fichaDeDuelo(ctx contextoPersonagem) CombatenteRPG {
 	if ctx.linha != nil {
 		base = ctx.linha.PersonagemBase
 	}
-	estado := MontarEstadoEquipamento(nivel, base, ctx.inventario, ctx.equipados, ctx.pontos)
+	estado := MontarEstadoEquipamento(nivel, base, ctx.inventario, ctx.equipados, ctx.PontosDoHeroi(base))
 	estado.Habilidades = AplicarMaestria(LivroDeHabilidades(base, nivel), ctx.maestria)
 	c := CombatenteDoEstado(estado)
 	c.Elemento = elementoDoJogador(ctx)

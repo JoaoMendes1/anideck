@@ -47,13 +47,13 @@ export default function SelosDesafioSeletor({ catalogo, selecionados, aoAlterar 
               type="button"
               aria-pressed={ativo}
               onClick={() => alternar(s.id)}
-              className={`flex cursor-pointer flex-col items-start gap-1 rounded-xl border p-3 text-left transition ${
+              className={`flex min-w-0 cursor-pointer flex-col items-start gap-1 rounded-xl border p-3 text-left transition ${
                 ativo
-                  ? 'border-gold/70 bg-gold/15 text-fg'
-                  : 'border-line bg-panel-2/60 text-muted hover:border-gold/40 hover:text-fg'
+                  ? 'border-gold/80 bg-gold/15 text-text ring-1 ring-gold/40'
+                  : 'border-line bg-panel-2/70 text-muted hover:border-gold/50 hover:text-text'
               }`}
             >
-              <span className="inline-flex items-center gap-1.5 text-xs font-extrabold text-fg">
+              <span className="inline-flex items-center gap-1.5 text-xs font-extrabold text-text">
                 <ShieldAlert size={13} className={ativo ? 'text-gold' : 'text-muted'} aria-hidden="true" />
                 {s.nome}
               </span>

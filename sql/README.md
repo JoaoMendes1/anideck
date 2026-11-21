@@ -169,6 +169,7 @@ SELECT pg_get_viewdef('nome_da_view'::regclass, true);
 | `137_ecos_do_anime.sql` | Ecos do Anime (#331): `rpg_personagens.eco_mal_id`, `rpg_equipar_eco(p_mal_id)` validando posse e `is_foil = true` em `user_cards`, e `rpg_estado_jogador()` atualizada com `eco_mal_id`. **Depois do `050` e do `136`** | — |
 | `138_masmorra_roguelite.sql` | Masmorra estilo Roguelite (#332): tabela `rpg_masmorra_sessoes` (RLS de leitura própria) e RPCs `rpg_roguelite_salvar` / `rpg_roguelite_limpar` (`service_role`) para estado andar a andar, HP do esquadrão, bênçãos e altares. **Depois do `128` e do `136`** | — |
 | `139_schema_migrations.sql` | Executor automático na VPS (#335): cria `public.schema_migrations` (`arquivo`, `checksum`, `aplicado_em`) restrita a `service_role`/PostgreSQL para controle transacional de migrations a partir da `139`. **Automática via `/app/migrate`** | 2026-11-20~ |
+| `140_atributos_por_personagem.sql` | Atributos individuais por herói (#336): tabela `public.rpg_atributos_herois (user_id, personagem_base)`, backfill apenas do herói ativo para novos desbloqueados começarem zerados, `rpg_distribuir_pontos(..., p_base)`, `rpg_trocar_personagem` sincronizada e `pontos_por_heroi` em `rpg_estado_jogador()` / `rpg_ficha_de_duelo()`. **Depois do `137` e do `139`** | 2026-11-20~ |
 
 Datas com `~` são a data do commit, não da aplicação no Supabase.
 

@@ -32,9 +32,9 @@ export default function ReplayCompacto({ turnos, nomeDoMonstro, desfecho }: { tu
           return (
             <li
               key={mostrados - i}
-              className={`flex justify-between gap-2 rounded-lg border px-2.5 py-1 ${doHeroi ? 'border-holo-3/30 bg-holo-3/5' : 'border-coral/30 bg-coral/5'} ${i === 0 ? '' : 'opacity-70'}`}
+              className={`flex items-start justify-between gap-2 rounded-xl border px-3 py-1.5 ${doHeroi ? 'border-holo-3/30 bg-holo-3/8' : 'border-coral/30 bg-coral/8'} ${i === 0 ? '' : 'opacity-75'}`}
             >
-              <span className="min-w-0 truncate">
+              <span className="min-w-0 flex-1 break-words leading-snug text-text">
                 {texto}
                 {t.critico && <strong className="ml-1 text-gold">Crítico!</strong>}
               </span>

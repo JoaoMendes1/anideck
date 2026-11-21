@@ -70,6 +70,37 @@ describe('PainelAtributos', () => {
     render(<PainelAtributos estado={antigo} aoAtualizar={vi.fn()} />)
     expect(screen.queryByText('Atributos')).toBeNull()
   })
+
+  it('permite configurar 2º herói desbloqueado do zero com guia e preset da classe', async () => {
+    const est: EstadoEquipamento = {
+      ...estado({ ...zero, forca: 10 }, 10),
+      personagem_base: 'espadachim_eter',
+      classe: 'espadachim',
+      pontos_por_heroi: {
+        espadachim_eter: { ...zero, forca: 10 },
+      },
+    }
+    vi.mocked(distribuirPontos).mockResolvedValue({ dados: est })
+    render(
+      <PainelAtributos
+        estado={est}
+        aoAtualizar={vi.fn()}
+        personagemBase="espadachim_eter"
+        desbloqueados={['espadachim_eter', 'maga_agua']}
+      />,
+    )
+
+    // Seleciona Mizuki (Maga) -> começa zerada com 10 pontos livres
+    fireEvent.click(screen.getByRole('button', { name: /Mizuki/i }))
+    expect(screen.getByText('10 pontos livres')).toBeTruthy()
+    expect(screen.getByText(/Guia da Classe · Maga/)).toBeTruthy()
+
+    // Aplica build recomendada e salva passando 'maga_agua'
+    fireEvent.click(screen.getByRole('button', { name: /Sugerir build/i }))
+    expect(screen.getByText('0 pontos livres')).toBeTruthy()
+    fireEvent.click(screen.getByRole('button', { name: 'Salvar pontos' }))
+    await waitFor(() => expect(distribuirPontos).toHaveBeenCalledWith(expect.objectContaining({ inteligencia: expect.any(Number) }), 'maga_agua'))
+  })
 })
 
 describe('LivroDeHabilidades', () => {

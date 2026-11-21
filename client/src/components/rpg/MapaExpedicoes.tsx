@@ -1173,8 +1173,8 @@ export default function MapaExpedicoes({
             onClick={() => selecionarRegiao(portalVivo.regiao_id)}
             className="mb-2.5 flex w-full cursor-pointer flex-wrap items-center justify-between gap-2 rounded-xl border border-holo-2/50 bg-holo-2/10 px-3 py-2 text-left text-xs transition hover:bg-holo-2/20"
           >
-            <span className="inline-flex items-center gap-1.5 font-bold text-fg">
-              <Zap size={14} className="text-holo-2" aria-hidden="true" />
+            <span className="inline-flex items-center gap-1.5 font-bold text-text">
+              <Zap size={14} className="shrink-0 text-holo-2" aria-hidden="true" />
               Portal Vivo em <strong>{portalVivo.regiao_nome}</strong>: {portalVivo.titulo}
             </span>
             <span className="font-mono text-xs text-holo-2">
@@ -1440,7 +1440,7 @@ export default function MapaExpedicoes({
             aria-modal="true"
             aria-label={`Região ${regiaoAtiva.nome}`}
             tabIndex={-1}
-            className="relative flex max-h-[90dvh] flex-col gap-3 overflow-y-auto rounded-t-3xl border-t border-line bg-panel px-3 pt-0 pb-0 outline-none"
+            className="relative flex max-h-[90dvh] flex-col gap-3 overflow-y-auto overflow-x-hidden rounded-t-3xl border-t border-line bg-panel px-3 pt-0 pb-0 outline-none"
           >
             <div className="sticky top-0 z-10 -mx-3 flex items-center justify-between gap-2 bg-panel px-3 pt-3 pb-2 shadow-[0_6px_12px_-8px_rgba(0,0,0,0.6)]">
               <span aria-hidden="true" className="absolute top-1 left-1/2 h-1 w-10 -translate-x-1/2 rounded-full bg-line" />

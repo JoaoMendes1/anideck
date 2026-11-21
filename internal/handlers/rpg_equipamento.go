@@ -100,16 +100,19 @@ type SlotRPG struct {
 
 // EstadoEquipamento é o corpo de GET e PUT /api/personagem/equipamentos.
 type EstadoEquipamento struct {
-	Nivel int `json:"nivel"`
+	PersonagemBase string `json:"personagem_base,omitempty"`
+	Classe         string `json:"classe,omitempty"`
+	Nivel          int    `json:"nivel"`
 	// Base é sem itens, já com os pontos; Atributos é com tudo.
 	Base      AtributosRPG `json:"base"`
 	Atributos AtributosRPG `json:"atributos"`
 	// Primários: o que o nível dá, os pontos em uso e quantos o nível permite.
-	PrimariosBase     PrimariosRPG       `json:"primarios_base"`
-	Pontos            PrimariosRPG       `json:"pontos"`
-	PontosDisponiveis int                `json:"pontos_disponiveis"`
-	Slots             []SlotRPG          `json:"slots"`
-	Inventario        []ItemDoInventario `json:"inventario"`
+	PrimariosBase     PrimariosRPG            `json:"primarios_base"`
+	Pontos            PrimariosRPG            `json:"pontos"`
+	PontosPorHeroi    map[string]PrimariosRPG `json:"pontos_por_heroi,omitempty"`
+	PontosDisponiveis int                     `json:"pontos_disponiveis"`
+	Slots             []SlotRPG               `json:"slots"`
+	Inventario        []ItemDoInventario      `json:"inventario"`
 	// Livro de habilidades da classe, com as bloqueadas pelo nível.
 	Habilidades []HabilidadeRPG `json:"habilidades"`
 	// Ouro disponível para aprimorar (sql/081).

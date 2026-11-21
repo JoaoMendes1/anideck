@@ -276,8 +276,7 @@ function TrocaDePersonagem({
         <strong className="text-text">{membro.nome}</strong> · {membro.resumo}
       </p>
       <p className="m-0 text-xs leading-snug text-muted">
-        Nível, inventário e pontos continuam. A troca gratuita libera a cada {elenco?.troca_cooldown_horas ?? 24}h; o
-        visual volta ao estágio e peças exclusivas de outra classe são desequipadas.
+        Nível e inventário continuam, e cada herói mantém sua própria distribuição de atributos (herói novo começa zerado). A troca gratuita libera a cada {elenco?.troca_cooldown_horas ?? 24}h; o visual volta ao estágio e peças exclusivas de outra classe são desequipadas.
         {typeof ouro === 'number' && (
           <>
             {' '}
@@ -826,19 +825,19 @@ function FichaDoPersonagem({
       </div>
 
       {/* LINHA 2: Largura toda, com controle segmentado de abas (Status, Atributos, Habilidades) */}
-      <div id="abas-de-combate" className="mt-6 flex scroll-mt-24 flex-col gap-4 rounded-2xl border border-line bg-panel-2/40 p-4 sm:p-5">
+      <div id="abas-de-combate" className="mt-6 flex scroll-mt-24 flex-col gap-4 rounded-2xl border border-line bg-panel-2/40 p-3.5 sm:p-5">
         <div
           role="tablist"
           aria-label="Seções de combate do personagem"
-          className="inline-flex w-full sm:w-auto self-start rounded-xl border border-line bg-panel p-1 gap-1"
+          className="grid w-full grid-cols-3 gap-1 self-start rounded-xl border border-line bg-panel p-1 sm:inline-flex sm:w-auto"
         >
           <button
             type="button"
             role="tab"
             aria-selected={abaAtiva === 'status'}
             onClick={() => selecionarAba('status')}
-            className={`flex-1 min-w-0 sm:flex-initial px-2 sm:px-4 py-2 rounded-lg font-mono text-xs font-bold transition-colors cursor-pointer ${
-              abaAtiva === 'status' ? 'bg-holo-1 text-void' : 'text-muted hover:text-text'
+            className={`min-w-0 cursor-pointer rounded-lg px-3 py-2 font-mono text-xs font-bold transition-colors sm:px-4 ${
+              abaAtiva === 'status' ? 'bg-gradient-to-r from-holo-1 to-holo-3 text-void' : 'text-muted hover:text-text'
             }`}
           >
             Status
@@ -848,14 +847,14 @@ function FichaDoPersonagem({
             role="tab"
             aria-selected={abaAtiva === 'atributos'}
             onClick={() => selecionarAba('atributos')}
-            className={`flex-1 sm:flex-initial inline-flex items-center justify-center gap-1.5 px-4 py-2 rounded-lg font-mono text-xs font-bold transition-colors cursor-pointer ${
-              abaAtiva === 'atributos' ? 'bg-holo-1 text-void' : 'text-muted hover:text-text'
+            className={`inline-flex min-w-0 cursor-pointer items-center justify-center gap-1.5 rounded-lg px-3 py-2 font-mono text-xs font-bold transition-colors sm:px-4 ${
+              abaAtiva === 'atributos' ? 'bg-gradient-to-r from-holo-1 to-holo-3 text-void' : 'text-muted hover:text-text'
             }`}
           >
             <span>Atributos</span>
             {pontosLivres > 0 && (
               <span
-                className={`px-1.5 py-px rounded-full text-xs ${
+                className={`rounded-full px-1.5 py-px text-xs ${
                   abaAtiva === 'atributos' ? 'bg-void/25 text-void' : 'bg-gold/20 text-gold'
                 }`}
               >
@@ -868,8 +867,8 @@ function FichaDoPersonagem({
             role="tab"
             aria-selected={abaAtiva === 'habilidades'}
             onClick={() => selecionarAba('habilidades')}
-            className={`flex-1 min-w-0 sm:flex-initial px-2 sm:px-4 py-2 rounded-lg font-mono text-xs font-bold transition-colors cursor-pointer ${
-              abaAtiva === 'habilidades' ? 'bg-holo-1 text-void' : 'text-muted hover:text-text'
+            className={`min-w-0 cursor-pointer rounded-lg px-3 py-2 font-mono text-xs font-bold transition-colors sm:px-4 ${
+              abaAtiva === 'habilidades' ? 'bg-gradient-to-r from-holo-1 to-holo-3 text-void' : 'text-muted hover:text-text'
             }`}
           >
             Habilidades
@@ -887,7 +886,12 @@ function FichaDoPersonagem({
           )}
           {abaAtiva === 'atributos' &&
             (equipamento ? (
-              <PainelAtributos estado={equipamento} aoAtualizar={aoAtualizarEquipamento} />
+              <PainelAtributos
+                estado={equipamento}
+                aoAtualizar={aoAtualizarEquipamento}
+                personagemBase={base}
+                desbloqueados={dados.elenco?.desbloqueados}
+              />
             ) : (
               <PainelEquipamentos estado={equipamento} />
             ))}

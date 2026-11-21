@@ -148,3 +148,27 @@ func TestAplicarBonusDosPontos(t *testing.T) {
 		t.Errorf("tetos de 35%% e 50%%: %+v", teto)
 	}
 }
+
+func TestContextoPersonagem_PontosDoHeroi(t *testing.T) {
+	ctx := contextoPersonagem{
+		linha: &linhaPersonagemBanco{
+			PersonagemBase: "espadachim_eter",
+			Desbloqueados:  []string{"espadachim_eter", "maga_agua", "arqueiro_trevas"},
+		},
+		pontos: PrimariosRPG{Forca: 12, Constituicao: 6},
+		pontosPorHeroi: map[string]PrimariosRPG{
+			"espadachim_eter": {Forca: 12, Constituicao: 6},
+			"maga_agua":       {Inteligencia: 15, Destreza: 3},
+		},
+	}
+
+	if got := ctx.PontosDoHeroi("espadachim_eter"); got.Forca != 12 {
+		t.Errorf("líder deveria manter Forca=12: %+v", got)
+	}
+	if got := ctx.PontosDoHeroi("maga_agua"); got.Inteligencia != 15 || got.Forca != 0 {
+		t.Errorf("maga deveria usar build própria: %+v", got)
+	}
+	if got := ctx.PontosDoHeroi("arqueiro_trevas"); got.Total() != 0 {
+		t.Errorf("herói recém-desbloqueado sem build deveria começar zerado, veio %+v", got)
+	}
+}

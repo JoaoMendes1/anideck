@@ -584,5 +584,21 @@
         "caminho": "/expedicoes"
       }
     ]
+  },
+  {
+    "chave": "2026-11-20-atributos-por-heroi-e-combate-mobile",
+    "titulo": "Atributos próprios por herói, Guia de Classe e batalhas ajustadas no celular",
+    "categoria": "melhoria",
+    "resumo": "Cada herói desbloqueado agora tem sua própria distribuição de atributos do zero — você pode configurar todos os seus personagens na aba Atributos sem precisar trocar o líder.\n\nTambém adicionamos um Guia da Classe com os atributos recomendados para ficar mais forte (e botão de sugerir build em 1 clique), além de revisão completa do layout das batalhas e do combate tático no celular.",
+    "links": [
+      {
+        "rotulo": "Configurar heróis e atributos",
+        "caminho": "/personagem?aba=atributos"
+      },
+      {
+        "rotulo": "Ir para Expedições",
+        "caminho": "/expedicoes"
+      }
+    ]
   }
 ]

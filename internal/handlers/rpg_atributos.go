@@ -157,12 +157,28 @@ func (h *RPGHandler) HandleDistribuirPontos(w http.ResponseWriter, r *http.Reque
 		return
 	}
 
-	var pontos PrimariosRPG
+	var corpo struct {
+		Forca          int    `json:"forca"`
+		Inteligencia   int    `json:"inteligencia"`
+		Constituicao   int    `json:"constituicao"`
+		Agilidade      int    `json:"agilidade"`
+		Destreza       int    `json:"destreza"`
+		Sorte          int    `json:"sorte"`
+		PersonagemBase string `json:"personagem_base"`
+	}
 	decodificador := json.NewDecoder(http.MaxBytesReader(w, r.Body, 1024))
 	decodificador.DisallowUnknownFields()
-	if err := decodificador.Decode(&pontos); err != nil {
+	if err := decodificador.Decode(&corpo); err != nil {
 		responderErroJSON(w, http.StatusBadRequest, "Corpo inválido.")
 		return
+	}
+	pontos := PrimariosRPG{
+		Forca:        corpo.Forca,
+		Inteligencia: corpo.Inteligencia,
+		Constituicao: corpo.Constituicao,
+		Agilidade:    corpo.Agilidade,
+		Destreza:     corpo.Destreza,
+		Sorte:        corpo.Sorte,
 	}
 	// Antes do banco: recusa negativo sem gastar consulta.
 	if msg := ValidarDistribuicao(pontos, 1<<20); msg != "" {
@@ -179,14 +195,37 @@ func (h *RPGHandler) HandleDistribuirPontos(w http.ResponseWriter, r *http.Reque
 		return
 	}
 
-	bruto := strings.TrimSpace(sessao.dbClient.Rpc("rpg_distribuir_pontos", "", map[string]interface{}{
+	baseAlvo := strings.TrimSpace(corpo.PersonagemBase)
+	if baseAlvo != "" {
+		desbloqueados := desbloqueadosNormalizados(sessao.ctx.linha)
+		permitido := false
+		for _, id := range desbloqueados {
+			if id == baseAlvo {
+				permitido = true
+				break
+			}
+		}
+		if !permitido {
+			responderErroJSON(w, http.StatusBadRequest, "Desbloqueie este personagem antes de configurar os atributos dele.")
+			return
+		}
+	} else if sessao.ctx.linha != nil {
+		baseAlvo = sessao.ctx.linha.PersonagemBase
+	}
+
+	params := map[string]interface{}{
 		"p_forca":        pontos.Forca,
 		"p_inteligencia": pontos.Inteligencia,
 		"p_constituicao": pontos.Constituicao,
 		"p_agilidade":    pontos.Agilidade,
 		"p_destreza":     pontos.Destreza,
 		"p_sorte":        pontos.Sorte,
-	}))
+	}
+	if baseAlvo != "" {
+		params["p_base"] = baseAlvo
+	}
+
+	bruto := strings.TrimSpace(sessao.dbClient.Rpc("rpg_distribuir_pontos", "", params))
 	erroDaRegra, falhou := lerRetornoRPG(bruto)
 	if falhou {
 		log.Printf("[RPG] Falha ao distribuir pontos (user=%s): %s", sessao.userID, bruto)

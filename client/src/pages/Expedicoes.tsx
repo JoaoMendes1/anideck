@@ -140,31 +140,31 @@ function TelaDeBatalha({
     .find((m): m is MonstroNaLista => Boolean(m))
 
   return (
-    <section aria-label={`Batalha contra ${monstro.nome}`} className="flex flex-col gap-4">
-      <div className="flex flex-col gap-3 rounded-2xl border border-line bg-panel p-4 sm:flex-row sm:items-center sm:gap-4">
-        <div className="flex items-center gap-3 self-center sm:self-auto">
-          <IconeDoMonstro monstro={monstro} tamanho="h-24 w-24 sm:h-28 sm:w-28" destaque iconeTamanho={40} />
+    <section aria-label={`Batalha contra ${monstro.nome}`} className="flex flex-col gap-4 overflow-x-hidden">
+      <div className="flex flex-col gap-4 rounded-2xl border border-line bg-gradient-to-br from-panel via-panel to-panel-2 p-3.5 sm:flex-row sm:items-center sm:p-5">
+        <div className="flex items-center justify-center gap-3 self-center sm:self-auto">
+          <IconeDoMonstro monstro={monstro} tamanho="h-20 w-20 sm:h-28 sm:w-28" destaque iconeTamanho={36} />
         </div>
         <div className="flex min-w-0 flex-1 flex-col gap-3">
           {(monstro.regiao_nome || monstro.comportamento) && (
             <div className="flex flex-wrap items-center gap-1.5 text-xs">
               {monstro.regiao_nome && (
-                <span className="rounded-full border border-line bg-panel-2 px-2 py-0.5 font-mono text-muted">{monstro.regiao_nome}</span>
+                <span className="rounded-full border border-line bg-panel-2 px-2.5 py-0.5 font-mono text-muted">{monstro.regiao_nome}</span>
               )}
               {monstro.comportamento && (
-                <span className="inline-flex items-center gap-1 rounded-full border border-holo-2/40 bg-holo-2/10 px-2 py-0.5 font-mono text-holo-2">
+                <span className="inline-flex items-center gap-1 rounded-full border border-holo-2/40 bg-holo-2/12 px-2.5 py-0.5 font-mono text-holo-2">
                   <Brain size={11} aria-hidden="true" />
                   {monstro.comportamento}
                 </span>
               )}
             </div>
           )}
-          <BarraDeVida rotulo={monstro.nome} atual={vidaMonstro} maximo={monstro.vida} cor="bg-coral" />
+          <BarraDeVida rotulo={monstro.nome} atual={vidaMonstro} maximo={monstro.vida} cor="bg-gradient-to-r from-coral to-gold" />
           <BarraDeVida rotulo="Você" atual={vidaJogador} maximo={jogador.vida} cor="bg-gradient-to-r from-holo-2 to-holo-3" />
         </div>
       </div>
 
-      <ol aria-live="polite" className="m-0 flex min-h-48 list-none flex-col gap-1.5 p-0">
+      <ol aria-live="polite" className="m-0 flex min-h-40 list-none flex-col gap-1.5 p-0">
         {recentes.map((turno, i) => {
           const numero = mostrados - i
           const doJogador = turno.atacante === 'jogador'
@@ -173,11 +173,11 @@ function TelaDeBatalha({
           return (
             <li
               key={numero}
-              className={`flex items-center justify-between gap-2 rounded-xl border px-3 py-2 text-xs ${
-                doJogador ? 'border-holo-3/30 bg-holo-3/5' : 'border-coral/30 bg-coral/5'
-              } ${i === 0 ? '' : 'opacity-70'}`}
+              className={`flex items-start justify-between gap-2 rounded-xl border px-3 py-2 text-xs ${
+                doJogador ? 'border-holo-3/35 bg-holo-3/8' : 'border-coral/35 bg-coral/8'
+              } ${i === 0 ? '' : 'opacity-75'}`}
             >
-              <span className="min-w-0 truncate">
+              <span className="min-w-0 flex-1 break-words leading-snug text-text">
                 {especial ? <strong className={turno.cura && doJogador ? 'text-green' : doJogador ? 'text-holo-2' : 'text-coral'}>{texto}</strong> : texto}
                 {turno.critico && <strong className="ml-1 text-gold">Crítico!</strong>}
               </span>
@@ -194,13 +194,13 @@ function TelaDeBatalha({
       {terminou ? (
         <div
           role="status"
-          className={`flex flex-col gap-3 rounded-2xl border p-4 ${resultado.venceu ? 'border-gold/60 bg-gold/10' : 'border-coral/50 bg-coral/10'}`}
+          className={`flex flex-col gap-3 rounded-2xl border p-4 ${resultado.venceu ? 'border-gold/60 bg-gradient-to-br from-gold/15 to-panel' : 'border-coral/50 bg-gradient-to-br from-coral/15 to-panel'}`}
         >
-          <p className="m-0 font-anton text-3xl uppercase leading-none">{resultado.venceu ? 'Vitória' : 'Derrota'}</p>
+          <p className="m-0 font-anton text-2xl uppercase leading-none text-text sm:text-3xl">{resultado.venceu ? 'Vitória' : 'Derrota'}</p>
           {resultado.venceu ? (
             <ul className="m-0 flex list-none flex-col gap-2 p-0 text-sm">
               <li className="flex items-center gap-2">
-                <Ticket size={16} className="text-gold" aria-hidden="true" />
+                <Ticket size={16} className="shrink-0 text-gold" aria-hidden="true" />
                 {recompensa.bilhetes === 1 ? '1 bilhete de invocação' : `${recompensa.bilhetes} bilhetes de invocação`}
               </li>
               {(recompensa.ouro ?? 0) > 0 && (
@@ -211,13 +211,13 @@ function TelaDeBatalha({
               )}
               {batalha.bestiario?.novo_marco && (
                 <li className="flex items-center gap-2 font-bold text-gold">
-                  <Trophy size={16} aria-hidden="true" />
+                  <Trophy size={16} className="shrink-0" aria-hidden="true" />
                   Novo marco do bestiário: +{batalha.bestiario.bonus_ouro}% de Ouro contra {batalha.monstro.nome}
                 </li>
               )}
               {recompensa.materiais && textoDosMateriais(recompensa.materiais) && (
                 <li className="flex items-center gap-2 text-holo-2">
-                  <Hammer size={16} aria-hidden="true" />
+                  <Hammer size={16} className="shrink-0" aria-hidden="true" />
                   Materiais da Forja: {textoDosMateriais(recompensa.materiais)}
                 </li>
               )}
@@ -234,17 +234,17 @@ function TelaDeBatalha({
               )}
             </ul>
           ) : (
-            <p className="m-0 text-sm text-muted">
+            <p className="m-0 text-sm leading-relaxed text-muted">
               {resultado.rodadas >= 20 && vidaJogador > 0
                 ? 'A luta se arrastou demais e você recuou. Melhore o equipamento e tente de novo.'
                 : `Você caiu${(recompensa.ouro_perdido ?? 0) > 0 ? ` e perdeu ${recompensa.ouro_perdido} de Ouro` : ''}. Volte a lutar com pelo menos 30% de Vida: descanse, assista a um episódio ou use a Pousada.`}
             </p>
           )}
-          <div className="flex flex-wrap gap-2">
+          <div className="grid grid-cols-1 gap-2 sm:flex sm:flex-wrap">
             <button
               type="button"
               onClick={aoVoltar}
-              className="h-10 cursor-pointer rounded-full bg-gradient-to-r from-holo-1 to-holo-3 px-5 text-xs font-extrabold text-void"
+              className="h-11 cursor-pointer rounded-full bg-gradient-to-r from-holo-1 via-holo-2 to-holo-3 px-5 text-xs font-extrabold text-void"
             >
               Voltar às expedições
             </button>
@@ -252,7 +252,7 @@ function TelaDeBatalha({
               type="button"
               onClick={() => aoEnfrentarNova(monstro.id)}
               disabled={bloqueado}
-              className="inline-flex h-10 cursor-pointer items-center gap-1.5 rounded-full border border-holo-3/60 bg-panel-2 px-4 text-xs font-bold text-text hover:border-holo-3 disabled:cursor-not-allowed disabled:opacity-50"
+              className="inline-flex h-11 cursor-pointer items-center justify-center gap-1.5 rounded-full border border-holo-3/60 bg-panel-2 px-4 text-xs font-bold text-text hover:border-holo-3 disabled:cursor-not-allowed disabled:opacity-50"
             >
               <RotateCcw size={13} aria-hidden="true" />
               Enfrentar novamente
@@ -262,14 +262,14 @@ function TelaDeBatalha({
                 type="button"
                 onClick={() => aoEnfrentarNova(proximaEvolucao.id)}
                 disabled={bloqueado}
-                className="inline-flex h-10 cursor-pointer items-center gap-1.5 rounded-full border border-holo-2/60 bg-holo-2/15 px-4 text-xs font-bold text-holo-2 hover:bg-holo-2/25 disabled:cursor-not-allowed disabled:opacity-50"
+                className="inline-flex h-11 cursor-pointer items-center justify-center gap-1.5 rounded-full border border-holo-2/60 bg-holo-2/15 px-4 text-xs font-bold text-holo-2 hover:bg-holo-2/25 disabled:cursor-not-allowed disabled:opacity-50"
               >
                 <Swords size={13} aria-hidden="true" />
                 Desafiar {proximaEvolucao.nome}
               </button>
             )}
             {recompensa.bilhetes > 0 && (
-              <Link to="/invocacao" className="inline-flex h-10 items-center rounded-full border border-gold/60 px-5 text-xs font-bold text-gold">
+              <Link to="/invocacao" className="inline-flex h-11 items-center justify-center rounded-full border border-gold/60 bg-gold/10 px-5 text-xs font-bold text-gold">
                 Usar bilhetes
               </Link>
             )}
@@ -599,14 +599,14 @@ export default function Expedicoes() {
           </div>
 
           <div className="grid grid-cols-1 gap-2.5 lg:grid-cols-12 lg:items-center">
-            <dl className="m-0 grid grid-cols-4 gap-1.5 sm:gap-2 lg:col-span-5">
-              <div className="flex min-w-0 flex-col justify-between gap-1.5 rounded-2xl border border-line bg-panel p-2.5 sm:px-3.5 sm:py-3">
+            <dl className="m-0 grid grid-cols-2 gap-2 sm:grid-cols-4 lg:col-span-5">
+              <div className="flex min-w-0 flex-col justify-between gap-1.5 rounded-2xl border border-holo-2/35 bg-panel p-2.5 sm:px-3.5 sm:py-3">
                 <dt className="flex min-w-0 items-center gap-1 truncate text-xs font-semibold text-muted sm:gap-1.5">
                   <Zap size={13} className="shrink-0 text-holo-2" aria-hidden="true" /> Poder
                 </dt>
                 <dd className="m-0 font-anton text-lg leading-none sm:text-2xl">{estado.atributos.poder}</dd>
               </div>
-              <div className="flex min-w-0 flex-col justify-between gap-1.5 rounded-2xl border border-line bg-panel p-2.5 sm:px-3.5 sm:py-3">
+              <div className="flex min-w-0 flex-col justify-between gap-1.5 rounded-2xl border border-coral/35 bg-panel p-2.5 sm:px-3.5 sm:py-3">
                 <dt className="flex min-w-0 items-center gap-1 truncate text-xs font-semibold text-muted sm:gap-1.5">
                   <Swords size={13} className="shrink-0 text-coral" aria-hidden="true" /> Hoje
                 </dt>
@@ -615,13 +615,13 @@ export default function Expedicoes() {
                   <span className="font-mono text-xs text-muted"> de {estado.hoje.limite}</span>
                 </dd>
               </div>
-              <div className="flex min-w-0 flex-col justify-between gap-1.5 rounded-2xl border border-line bg-panel p-2.5 sm:px-3.5 sm:py-3">
+              <div className="flex min-w-0 flex-col justify-between gap-1.5 rounded-2xl border border-gold/35 bg-panel p-2.5 sm:px-3.5 sm:py-3">
                 <dt className="flex min-w-0 items-center gap-1 truncate text-xs font-semibold text-muted sm:gap-1.5">
                   <Ticket size={13} className="shrink-0 text-gold" aria-hidden="true" /> Bilhetes
                 </dt>
                 <dd className="m-0 font-anton text-lg leading-none sm:text-2xl">{estado.hoje.bilhetes}</dd>
               </div>
-              <div className="flex min-w-0 flex-col justify-between gap-1.5 rounded-2xl border border-line bg-panel p-2.5 sm:px-3.5 sm:py-3">
+              <div className="flex min-w-0 flex-col justify-between gap-1.5 rounded-2xl border border-gold/35 bg-panel p-2.5 sm:px-3.5 sm:py-3">
                 <dt className="flex min-w-0 items-center gap-1 truncate text-xs font-semibold text-muted sm:gap-1.5">
                   <IconeOuro size={13} /> Ouro
                 </dt>
@@ -655,14 +655,17 @@ export default function Expedicoes() {
           )}
 
           <div className="flex flex-wrap items-center justify-between gap-2 rounded-2xl border border-line bg-panel px-3.5 py-2.5 text-xs">
-            <span className="font-semibold text-text">Modo de combate:</span>
-            <div role="group" aria-label="Modo de combate" className="inline-flex rounded-xl border border-line bg-panel-2 p-0.5">
+            <div className="min-w-0">
+              <span className="font-bold text-text">Modo de combate</span>
+              <span className="ml-2 hidden text-muted sm:inline">Escolha entre simulação rápida ou jogar turno a turno</span>
+            </div>
+            <div role="group" aria-label="Modo de combate" className="inline-flex w-full rounded-xl border border-line bg-panel-2 p-0.5 sm:w-auto">
               <button
                 type="button"
                 aria-pressed={!combateTatico}
                 onClick={() => setCombateTatico(false)}
-                className={`cursor-pointer rounded-lg px-3 py-1.5 text-xs font-bold transition ${
-                  !combateTatico ? 'bg-holo-3 text-void' : 'text-muted hover:text-text'
+                className={`flex-1 cursor-pointer rounded-lg px-3 py-1.5 text-xs font-bold transition sm:flex-initial ${
+                  !combateTatico ? 'bg-gradient-to-r from-holo-2 to-holo-3 text-void' : 'text-muted hover:text-text'
                 }`}
               >
                 Automático
@@ -671,8 +674,8 @@ export default function Expedicoes() {
                 type="button"
                 aria-pressed={combateTatico}
                 onClick={() => setCombateTatico(true)}
-                className={`cursor-pointer rounded-lg px-3 py-1.5 text-xs font-bold transition ${
-                  combateTatico ? 'bg-holo-3 text-void' : 'text-muted hover:text-text'
+                className={`flex-1 cursor-pointer rounded-lg px-3 py-1.5 text-xs font-bold transition sm:flex-initial ${
+                  combateTatico ? 'bg-gradient-to-r from-holo-1 to-holo-3 text-void' : 'text-muted hover:text-text'
                 }`}
               >
                 Tático (por rodada)

@@ -918,6 +918,13 @@ decidiu em 17/11/2026 que ela fecha fora da Fase 18. Escopo a detalhar em issues
 > numeração e não abrem escopo novo. Ficam registrados aqui em ordem cronológica inversa para
 > não sumirem: fase concluída não deve ser reaberta só para receber um conserto.
 
+### 20/11/2026 — Atributos individuais por herói, Guia de Classe e revisão mobile UI/UX (#336, #337)
+
+- [x] **Atributos independentes por herói desbloqueado e Guia da Classe (`sql/140`, `rpg_atributos.go`, `rpg_esquadrao.go`, `PainelAtributos.tsx`):**
+      `public.rpg_atributos_herois` isola os pontos distribuídos por `(user_id, personagem_base)` com backfill apenas do herói ativo para que novos heróis comecem zerados (`0` pontos alocados, todos os pontos do nível livres); `PainelAtributos` ganha seletor multi-herói sem troca de líder, guia de atributos por classe (`Principal` / `Útil`), impacto numérico e preset de 1 clique **Sugerir build** (`gerarBuildRecomendada`). (#336)
+- [x] **Revisão mobile-first e correção de tokens nas telas de batalha e RPG (`CombateInterativoModal.tsx`, `MasmorraRoguelite.tsx`, `SelosDesafioSeletor.tsx`, `Expedicoes.tsx`, `BatalhaEmGrupo.tsx`, `Duelos.tsx`, `EscolhaDoElenco.tsx`):**
+      substituição completa dos tokens inválidos (`text-fg`, `border-border-subtle`, `bg-panel-alt`) pelos tokens oficiais do tema, remoção de truncamentos nos registros de golpes, ajuste de KPIs (`grid-cols-2 sm:grid-cols-4`) e elenco (`grid-cols-2 sm:grid-cols-3`), barras de HP/Éter e rodapé tático fixo no combate por rodada. (#337)
+
 ### 20/11/2026 — Executor automático de migrations SQL no deploy da VPS (#335)
 
 - [x] **Runner transacional na VPS (`cmd/migrate`, `sql/139_schema_migrations.sql`, `Dockerfile`, `.github/workflows/deploy.yml`):**

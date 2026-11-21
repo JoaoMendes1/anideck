@@ -56,8 +56,8 @@ function ResultadoDoDuelo({ resposta, aoVoltar }: { resposta: RespostaDuelo; aoV
           const doJogador = turno.atacante === 'jogador'
           const { texto, valor } = descreverTurno(turno, oponente.nome)
           return (
-            <li key={i} className={`flex items-center justify-between gap-2 rounded-xl border px-3 py-2 text-xs ${doJogador ? 'border-holo-3/30 bg-holo-3/5' : 'border-coral/30 bg-coral/5'}`}>
-              <span className="min-w-0 truncate">
+            <li key={i} className={`flex items-start justify-between gap-2 rounded-xl border px-3 py-2 text-xs ${doJogador ? 'border-holo-3/30 bg-holo-3/8' : 'border-coral/30 bg-coral/8'}`}>
+              <span className="min-w-0 flex-1 break-words leading-snug text-text">
                 {texto}
                 {turno.critico && <strong className="ml-1 text-gold">Crítico!</strong>}
               </span>
@@ -66,7 +66,7 @@ function ResultadoDoDuelo({ resposta, aoVoltar }: { resposta: RespostaDuelo; aoV
           )
         })}
       </ol>
-      <button type="button" onClick={aoVoltar} className="h-10 cursor-pointer self-start rounded-full bg-gradient-to-r from-holo-1 to-holo-3 px-5 text-xs font-extrabold text-void">
+      <button type="button" onClick={aoVoltar} className="h-11 w-full cursor-pointer rounded-full bg-gradient-to-r from-holo-1 via-holo-2 to-holo-3 px-5 text-xs font-extrabold text-void sm:w-auto sm:self-start">
         Voltar aos duelos
       </button>
     </section>
@@ -182,14 +182,14 @@ export default function Duelos() {
             {erroDoDuelo && <p role="alert" className="m-0 text-xs font-bold text-coral">{erroDoDuelo}</p>}
 
             <div className="flex flex-wrap items-center justify-between gap-2 rounded-2xl border border-line bg-panel px-3.5 py-2.5 text-xs">
-              <span className="font-semibold text-text">Modo do duelo:</span>
-              <div role="group" aria-label="Modo de combate" className="inline-flex rounded-xl border border-line bg-panel-2 p-0.5">
+              <span className="font-bold text-text">Modo do duelo</span>
+              <div role="group" aria-label="Modo de combate" className="inline-flex w-full rounded-xl border border-line bg-panel-2 p-0.5 sm:w-auto">
                 <button
                   type="button"
                   aria-pressed={!combateTatico}
                   onClick={() => setCombateTatico(false)}
-                  className={`cursor-pointer rounded-lg px-3 py-1.5 text-xs font-bold transition ${
-                    !combateTatico ? 'bg-holo-3 text-void' : 'text-muted hover:text-text'
+                  className={`flex-1 cursor-pointer rounded-lg px-3 py-1.5 text-xs font-bold transition sm:flex-initial ${
+                    !combateTatico ? 'bg-gradient-to-r from-holo-2 to-holo-3 text-void' : 'text-muted hover:text-text'
                   }`}
                 >
                   Automático
@@ -198,8 +198,8 @@ export default function Duelos() {
                   type="button"
                   aria-pressed={combateTatico}
                   onClick={() => setCombateTatico(true)}
-                  className={`cursor-pointer rounded-lg px-3 py-1.5 text-xs font-bold transition ${
-                    combateTatico ? 'bg-holo-3 text-void' : 'text-muted hover:text-text'
+                  className={`flex-1 cursor-pointer rounded-lg px-3 py-1.5 text-xs font-bold transition sm:flex-initial ${
+                    combateTatico ? 'bg-gradient-to-r from-holo-1 to-holo-3 text-void' : 'text-muted hover:text-text'
                   }`}
                 >
                   Tático (por rodada)
@@ -216,25 +216,27 @@ export default function Duelos() {
                 {estado.oponentes.map((o) => {
                   const relacao = relacaoElemental(estado.elemento, o.elemento)
                   return (
-                    <li key={o.handle} className="flex flex-wrap items-center gap-3 rounded-2xl border border-line bg-panel p-3.5">
-                      <span className="grid h-10 w-11 shrink-0 place-items-center rounded-full bg-gradient-to-br from-holo-2 to-holo-3 font-anton text-lg text-void" aria-hidden="true">
-                        {o.nome.charAt(0).toUpperCase()}
-                      </span>
-                      <div className="min-w-0 flex-1">
-                        <Link to={`/u/${o.handle}`} className="font-bold hover:text-holo-3">{o.nome}</Link>
-                        <p className="m-0 flex flex-wrap items-center gap-2 font-mono text-xs text-muted">
-                          @{o.handle} · nível {o.nivel} · {o.pontos} pts <SeloDoElemento elemento={o.elemento} />
-                        </p>
-                        {textoDaRelacao(relacao) && (
-                          <p className={`m-0 mt-0.5 text-xs font-bold ${relacao === 'vantagem' ? 'text-green' : 'text-coral'}`}>{textoDaRelacao(relacao)}</p>
-                        )}
+                    <li key={o.handle} className="flex flex-col gap-3 rounded-2xl border border-line bg-panel p-3.5 sm:flex-row sm:items-center">
+                      <div className="flex min-w-0 flex-1 items-center gap-3">
+                        <span className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-gradient-to-br from-holo-2 to-holo-3 font-anton text-lg text-void" aria-hidden="true">
+                          {o.nome.charAt(0).toUpperCase()}
+                        </span>
+                        <div className="min-w-0 flex-1">
+                          <Link to={`/u/${o.handle}`} className="font-bold hover:text-holo-3">{o.nome}</Link>
+                          <p className="m-0 flex flex-wrap items-center gap-2 font-mono text-xs text-muted">
+                            @{o.handle} · nível {o.nivel} · {o.pontos} pts <SeloDoElemento elemento={o.elemento} />
+                          </p>
+                          {textoDaRelacao(relacao) && (
+                            <p className={`m-0 mt-0.5 text-xs font-bold ${relacao === 'vantagem' ? 'text-green' : 'text-coral'}`}>{textoDaRelacao(relacao)}</p>
+                          )}
+                        </div>
                       </div>
                       <button
                         type="button"
                         onClick={() => desafiar(o.handle)}
                         disabled={!estado.tem_perfil || o.duelado_hoje || restantes === 0 || lutando !== null}
                         aria-label={`Desafiar ${o.nome}`}
-                        className="h-10 cursor-pointer rounded-full bg-gradient-to-r from-holo-1 to-holo-3 px-4 text-xs font-extrabold text-void disabled:cursor-not-allowed disabled:opacity-50"
+                        className="h-10 w-full shrink-0 cursor-pointer rounded-full bg-gradient-to-r from-holo-1 via-holo-2 to-holo-3 px-4 text-xs font-extrabold text-void disabled:cursor-not-allowed disabled:opacity-50 sm:w-auto"
                       >
                         {lutando === o.handle ? 'Duelando…' : o.duelado_hoje ? 'Feito hoje' : 'Desafiar'}
                       </button>

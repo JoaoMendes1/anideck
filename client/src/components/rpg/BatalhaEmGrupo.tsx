@@ -100,22 +100,23 @@ export default function BatalhaEmGrupo({
         </div>
       </div>
 
-      <ol aria-live="polite" className="m-0 flex min-h-48 list-none flex-col gap-1.5 p-0">
+      <ol aria-live="polite" className="m-0 flex min-h-40 list-none flex-col gap-1.5 p-0">
         {recentes.map(({ turno, etapa: e }, i) => {
           const doHeroi = turno.atacante === 'jogador'
           const { texto, valor } = descreverTurnoEmGrupo(turno, etapas[e].monstro.nome, nomes, descreverTurno)
           return (
             <li
               key={mostrados - i}
-              className={`flex items-center justify-between gap-2 rounded-xl border px-3 py-2 text-xs ${
+              className={`flex items-start justify-between gap-2 rounded-xl border px-3 py-2 text-xs ${
                 turno.reacao
-                  ? 'border-gold/50 bg-gold/10'
+                  ? 'border-gold/55 bg-gold/12'
                   : doHeroi
-                    ? 'border-holo-3/30 bg-holo-3/5'
-                    : 'border-coral/30 bg-coral/5'
-              } ${i === 0 ? '' : 'opacity-70'}`}
+                    ? 'border-holo-3/35 bg-holo-3/8'
+                    : 'border-coral/35 bg-coral/8'
+              } ${i === 0 ? '' : 'opacity-75'}`}
             >
-              <span className="min-w-0 truncate">
+              <span className="min-w-0 flex-1 break-words leading-snug text-text">
+                {turno.reacao && <Sparkles size={12} className="mr-1 inline text-gold" aria-hidden="true" />}
                 {texto}
                 {turno.critico && <strong className="ml-1 text-gold">Crítico!</strong>}
               </span>
@@ -137,15 +138,15 @@ export default function BatalhaEmGrupo({
           aoPular={() => setMostrados(fila.length)}
         />
       ) : (
-        <div role="status" className={`flex flex-col gap-3 rounded-2xl border p-4 ${resultado.venceu ? 'border-gold/60 bg-gold/10' : 'border-coral/50 bg-coral/10'}`}>
-          <p className="m-0 font-anton text-3xl uppercase leading-none">{resultado.venceu ? 'Vitória do grupo' : 'Derrota do grupo'}</p>
+        <div role="status" className={`flex flex-col gap-3 rounded-2xl border p-4 ${resultado.venceu ? 'border-gold/60 bg-gradient-to-br from-gold/15 to-panel' : 'border-coral/50 bg-gradient-to-br from-coral/15 to-panel'}`}>
+          <p className="m-0 font-anton text-2xl uppercase leading-none text-text sm:text-3xl">{resultado.venceu ? 'Vitória do grupo' : 'Derrota do grupo'}</p>
           {recompensa?.erro ? (
             <p className="m-0 text-sm text-muted">Sua luta não contou: {recompensa.erro}</p>
           ) : recompensa ? (
             <ul className="m-0 flex list-none flex-col gap-2 p-0 text-sm">
               {recompensa.bilhetes > 0 && (
                 <li className="flex items-center gap-2">
-                  <Ticket size={16} className="text-gold" aria-hidden="true" />
+                  <Ticket size={16} className="shrink-0 text-gold" aria-hidden="true" />
                   {recompensa.bilhetes === 1 ? '1 bilhete de invocação' : `${recompensa.bilhetes} bilhetes de invocação`}
                 </li>
               )}
@@ -169,12 +170,12 @@ export default function BatalhaEmGrupo({
               {recompensa.mana > 0 && <li className="text-xs text-muted">Gastou {recompensa.mana} de Mana.</li>}
             </ul>
           ) : null}
-          <div className="flex flex-wrap gap-2">
-            <button type="button" onClick={aoVoltar} className="h-10 cursor-pointer rounded-full bg-gradient-to-r from-holo-1 to-holo-3 px-5 text-xs font-extrabold text-void">
+          <div className="grid grid-cols-1 gap-2 sm:flex sm:flex-wrap">
+            <button type="button" onClick={aoVoltar} className="h-11 cursor-pointer rounded-full bg-gradient-to-r from-holo-1 via-holo-2 to-holo-3 px-5 text-xs font-extrabold text-void">
               {rotuloVoltar}
             </button>
             {(recompensa?.bilhetes ?? 0) > 0 && (
-              <Link to="/invocacao" className="inline-flex h-10 items-center rounded-full border border-gold/60 px-5 text-xs font-bold text-gold">
+              <Link to="/invocacao" className="inline-flex h-11 items-center justify-center rounded-full border border-gold/60 bg-gold/10 px-5 text-xs font-bold text-gold">
                 Usar bilhetes
               </Link>
             )}

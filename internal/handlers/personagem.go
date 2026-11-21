@@ -563,9 +563,30 @@ type contextoPersonagem struct {
 	ouro           int
 	maestria       map[string]int
 	inventarioLido bool
-	// Pontos distribuídos (sql/077). pontosLidos false: a leitura única não os trouxe.
-	pontos      PrimariosRPG
-	pontosLidos bool
+	// Pontos distribuídos (sql/077 e sql/140). pontosLidos false: a leitura única não os trouxe.
+	pontos         PrimariosRPG
+	pontosPorHeroi map[string]PrimariosRPG
+	pontosLidos    bool
+}
+
+// PontosDoHeroi devolve a distribuição de pontos própria de cada personagem desbloqueado.
+func (c contextoPersonagem) PontosDoHeroi(base string) PrimariosRPG {
+	base = strings.TrimSpace(base)
+	if base == "" && c.linha != nil {
+		base = c.linha.PersonagemBase
+	}
+	if c.pontosPorHeroi != nil {
+		if p, ok := c.pontosPorHeroi[base]; ok {
+			return p
+		}
+		if c.linha != nil && base != "" && base != c.linha.PersonagemBase {
+			return PrimariosRPG{}
+		}
+	}
+	if c.linha != nil && (base == "" || base == c.linha.PersonagemBase) {
+		return c.pontos
+	}
+	return PrimariosRPG{}
 }
 
 // resposta monta o corpo da API a partir do que foi lido.

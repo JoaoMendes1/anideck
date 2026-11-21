@@ -110,45 +110,66 @@ export default function SeletorEsquadrao({
       </div>
 
       <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
-        <div className="flex items-center justify-between gap-2 rounded-xl border border-holo-3/60 bg-holo-3/10 px-3 py-2">
+        <div className="flex min-w-0 items-center justify-between gap-2 rounded-xl border border-holo-3/60 bg-gradient-to-r from-holo-3/12 to-panel-2 px-3 py-2.5">
           <div className="min-w-0">
             <p className="m-0 truncate text-xs font-extrabold text-text">{lider.nome}</p>
-            <p className="m-0 font-mono text-xs text-muted">
+            <p className="m-0 truncate font-mono text-xs text-muted">
               Líder · {rotuloDaClasse(lider.classe)} · {ESTILO_DO_ELEMENTO[lider.elemento]?.simbolo ?? ''} {rotuloDoElemento(lider.elemento)}
             </p>
           </div>
-          <span className="shrink-0 font-mono text-xs font-bold text-holo-3">{lider.poder}</span>
+          <span className="shrink-0 rounded-full border border-holo-3/40 bg-void/70 px-2 py-0.5 font-mono text-xs font-bold text-holo-3">
+            {lider.poder}
+          </span>
         </div>
 
         {outros.map((aliado) => {
           const selecionado = aliadosSelecionados.includes(aliado.id)
           const el = ESTILO_DO_ELEMENTO[aliado.elemento]
+          const pendentes = aliado.pontos_livres ?? 0
           return (
             <button
               key={aliado.id}
               type="button"
               aria-pressed={selecionado}
               onClick={() => alternar(aliado.id)}
-              className={`flex min-h-[44px] cursor-pointer items-center justify-between gap-2 rounded-xl border px-3 py-2 text-left transition-colors ${
+              className={`flex min-h-[48px] min-w-0 cursor-pointer items-center justify-between gap-2 rounded-xl border px-3 py-2 text-left transition ${
                 selecionado
-                  ? 'border-holo-2/70 bg-holo-2/10 text-text'
-                  : 'border-line bg-panel-2 text-muted hover:border-holo-3/40 hover:text-text'
+                  ? 'border-holo-2/80 bg-gradient-to-r from-holo-2/15 to-panel-2 text-text ring-1 ring-holo-2/30'
+                  : 'border-line bg-panel-2 text-muted hover:border-holo-3/50 hover:text-text'
               }`}
             >
-              <div className="min-w-0">
-                <p className="m-0 flex items-center gap-1.5 truncate text-xs font-bold">
+              <div className="min-w-0 flex-1">
+                <p className="m-0 flex items-center gap-1.5 truncate text-xs font-bold text-text">
                   {selecionado && <Check size={13} className="shrink-0 text-holo-2" aria-hidden="true" />}
                   <span className="truncate">{aliado.nome}</span>
+                  {pendentes > 0 && (
+                    <span className="shrink-0 rounded-full border border-gold/60 bg-gold/15 px-1.5 py-px font-mono text-xs font-bold text-gold">
+                      +{pendentes} pts
+                    </span>
+                  )}
                 </p>
-                <p className="m-0 font-mono text-xs text-muted">
+                <p className="m-0 truncate font-mono text-xs text-muted">
                   {rotuloDaClasse(aliado.classe)} · {el?.simbolo ?? ''} {rotuloDoElemento(aliado.elemento)}
                 </p>
               </div>
-              <span className="shrink-0 font-mono text-xs font-bold">{aliado.poder}</span>
+              <span className="shrink-0 rounded-full border border-line bg-void/70 px-2 py-0.5 font-mono text-xs font-bold text-text">
+                {aliado.poder}
+              </span>
             </button>
           )
         })}
       </div>
+
+      {ativos.some((h) => (h.pontos_livres ?? 0) > 0) && (
+        <div className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-gold/40 bg-gold/10 px-3 py-2 text-xs">
+          <span className="text-text">
+            Você tem <strong className="text-gold">pontos livres</strong> para distribuir no seu esquadrão e deixar seus heróis mais fortes.
+          </span>
+          <Link to="/personagem?aba=atributos" className="font-bold text-gold hover:underline">
+            Configurar atributos →
+          </Link>
+        </div>
+      )}
 
       {reacoes.length > 0 ? (
         <div className="flex flex-wrap items-center gap-1.5 text-xs">

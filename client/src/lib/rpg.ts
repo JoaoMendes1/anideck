@@ -18,6 +18,8 @@ export interface HeroiResumoEsquadrao {
   vida: number
   ativo: boolean
   no_grupo: boolean
+  pontos?: PrimariosRPG
+  pontos_livres?: number
 }
 
 export interface AtributosRPG {
@@ -143,6 +145,8 @@ export interface EcoDoAnime {
 }
 
 export interface EstadoEquipamento {
+  personagem_base?: string
+  classe?: string
   nivel: number
   base: AtributosRPG
   atributos: AtributosRPG
@@ -150,6 +154,7 @@ export interface EstadoEquipamento {
   inventario: ItemDoInventario[]
   primarios_base?: PrimariosRPG
   pontos?: PrimariosRPG
+  pontos_por_heroi?: Record<string, PrimariosRPG>
   pontos_disponiveis?: number
   habilidades?: HabilidadeRPG[]
   /** Ouro disponível para aprimorar. */
@@ -250,6 +255,121 @@ export function itensAfetadosPelosPontos(
 
 export const PRIMARIOS_ZERADOS: PrimariosRPG = { forca: 0, inteligencia: 0, constituicao: 0, agilidade: 0, destreza: 0, sorte: 0 }
 
+export interface RecomendacaoClasse {
+  classe: string
+  titulo: string
+  arquetipo: string
+  principais: PrimarioId[]
+  secundarios: PrimarioId[]
+  resumoForca: string
+  dicaEquipamento: string
+  pesos: PrimariosRPG
+}
+
+export const RECOMENDACOES_CLASSE: Record<string, RecomendacaoClasse> = {
+  espadachim: {
+    classe: 'espadachim',
+    titulo: 'Espadachim',
+    arquetipo: 'Duelista Equilibrado',
+    principais: ['forca', 'destreza'],
+    secundarios: ['constituicao', 'agilidade'],
+    resumoForca: 'Força escala todo corte básico e habilidade de espada; Destreza empurra Crítico (+0,7%/pt) para estourar chefes em poucas rodadas.',
+    dicaEquipamento: 'Priorize espadas de Éter com Ataque + Crítico, conjuntos de 6 peças e Carta Foil equipável no slot de Eco.',
+    pesos: { forca: 5, destreza: 3, constituicao: 2, agilidade: 1, inteligencia: 0, sorte: 0 },
+  },
+  lanceiro: {
+    classe: 'lanceiro',
+    titulo: 'Lanceiro',
+    arquetipo: 'Impacto e Iniciativa',
+    principais: ['forca', 'agilidade'],
+    secundarios: ['destreza', 'constituicao'],
+    resumoForca: 'Lanças exigem golpes físicos fortes antes do monstro reagir: Força garante dano bruto e Agilidade dá velocidade para abrir a rodada.',
+    dicaEquipamento: 'Use lanças de Fogo em sintonia (mínimo 4 peças de Fogo) para aplicar Queimadura contínua.',
+    pesos: { forca: 5, agilidade: 3, destreza: 2, constituicao: 1, inteligencia: 0, sorte: 0 },
+  },
+  assassina: {
+    classe: 'assassina',
+    titulo: 'Assassina',
+    arquetipo: 'Velocidade e Crítico Letal',
+    principais: ['destreza', 'agilidade'],
+    secundarios: ['forca', 'sorte'],
+    resumoForca: 'Cada ponto em Destreza e Agilidade rende +0,7% de Crítico e Esquiva (até 50% / 35%). Ataques críticos multiplicam a rajada elétrica.',
+    dicaEquipamento: 'Busque peças de Raio com Dano Crítico e Velocidade; em esquadrão, combine Raio + Água ou Fogo para Reações.',
+    pesos: { destreza: 4, agilidade: 4, forca: 3, constituicao: 0, inteligencia: 0, sorte: 0 },
+  },
+  maga: {
+    classe: 'maga',
+    titulo: 'Maga',
+    arquetipo: 'Conjuradora Elemental',
+    principais: ['inteligencia', 'destreza'],
+    secundarios: ['agilidade', 'constituicao'],
+    resumoForca: 'Inteligência multiplica o dano das magias e amplia o Éter máximo para lançar feitiços seguidos sem ficar sem energia.',
+    dicaEquipamento: 'Cajados com Magia + Éter alto e peças de Água em sintonia ativam Congelamento e reações de Vapor/Sobrecarga.',
+    pesos: { inteligencia: 6, destreza: 2, agilidade: 2, constituicao: 1, forca: 0, sorte: 0 },
+  },
+  guerreiro: {
+    classe: 'guerreiro',
+    titulo: 'Guerreiro',
+    arquetipo: 'Colosso Blindado',
+    principais: ['constituicao', 'forca'],
+    secundarios: ['agilidade', 'destreza'],
+    resumoForca: 'Constituição transforma cada nível em muralha de Vida (+10 HP/pt) e Defesa, enquanto Força faz os golpes de machado punirem o alvo.',
+    dicaEquipamento: 'Machados pesados e armaduras de Terra garantem resistência em Masmorras Roguelite e seguram fúria de chefes.',
+    pesos: { constituicao: 5, forca: 4, destreza: 1, agilidade: 1, inteligencia: 0, sorte: 0 },
+  },
+  paladina: {
+    classe: 'paladina',
+    titulo: 'Paladina',
+    arquetipo: 'Bastião Sagrado',
+    principais: ['constituicao', 'inteligencia'],
+    secundarios: ['forca', 'agilidade'],
+    resumoForca: 'Constituição sustenta o esquadrão vivo por mais rodadas e Inteligência alimenta o Éter das bênçãos, curas e golpes de Luz.',
+    dicaEquipamento: 'Peças de Luz em sintonia ativam Ofuscamento (reduz acerto do inimigo) e multiplicam cura + Defesa.',
+    pesos: { constituicao: 4, inteligencia: 4, forca: 2, agilidade: 1, destreza: 0, sorte: 0 },
+  },
+  arqueiro: {
+    classe: 'arqueiro',
+    titulo: 'Arqueiro',
+    arquetipo: 'Precisão das Sombras',
+    principais: ['destreza', 'forca'],
+    secundarios: ['agilidade', 'constituicao'],
+    resumoForca: 'Arqueiros dependem de acertos críticos precisos somados a Ataque consistente para perfurar traços Voadores e inimigos ágeis.',
+    dicaEquipamento: 'Conjunto Caçador Violeta / Arcos de Trevas elevam Crítico e aplicam Dreno de Éter contínuo.',
+    pesos: { destreza: 4, forca: 4, agilidade: 2, constituicao: 1, inteligencia: 0, sorte: 0 },
+  },
+}
+
+export function recomendacaoDaClasse(classe?: string): RecomendacaoClasse {
+  const chave = (classe ?? '').trim().toLowerCase()
+  return RECOMENDACOES_CLASSE[chave] ?? RECOMENDACOES_CLASSE.espadachim
+}
+
+export function gerarBuildRecomendada(classe: string | undefined, totalPontos: number): PrimariosRPG {
+  const rec = recomendacaoDaClasse(classe)
+  const resultado: PrimariosRPG = { ...PRIMARIOS_ZERADOS }
+  if (totalPontos <= 0) return resultado
+  const ordem: PrimarioId[] = ['forca', 'inteligencia', 'constituicao', 'agilidade', 'destreza', 'sorte']
+  const somaPesos = ordem.reduce((acc, id) => acc + rec.pesos[id], 0)
+  if (somaPesos <= 0) return resultado
+
+  let usados = 0
+  for (const id of ordem) {
+    if (rec.pesos[id] <= 0) continue
+    const qtd = Math.floor((totalPontos * rec.pesos[id]) / somaPesos)
+    resultado[id] = qtd
+    usados += qtd
+  }
+  let idx = 0
+  const prioridades = [...rec.principais, ...rec.secundarios]
+  while (usados < totalPontos && prioridades.length > 0) {
+    const id = prioridades[idx % prioridades.length]
+    resultado[id] += 1
+    usados += 1
+    idx += 1
+  }
+  return resultado
+}
+
 export function somaDosPontos(p: PrimariosRPG): number {
   return PRIMARIOS_RPG.reduce((total, { id }) => total + (p[id] ?? 0), 0)
 }
@@ -329,13 +449,17 @@ export async function cabecalhoDeAutenticacao(): Promise<Record<string, string>>
 
 const FALHA_DOS_PONTOS = 'Não foi possível salvar os pontos agora.'
 
-/** Grava a distribuição inteira dos pontos. Devolve o estado novo ou a mensagem de erro. */
-export async function distribuirPontos(pontos: PrimariosRPG): Promise<{ dados?: EstadoEquipamento; erro?: string }> {
+/** Grava a distribuição inteira dos pontos do herói ativo ou informado. */
+export async function distribuirPontos(
+  pontos: PrimariosRPG,
+  personagemBase?: string,
+): Promise<{ dados?: EstadoEquipamento; erro?: string }> {
   try {
+    const corpo = personagemBase ? { ...pontos, personagem_base: personagemBase } : pontos
     const res = await fetch('/api/personagem/atributos', {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json', ...(await cabecalhoDeAutenticacao()) },
-      body: JSON.stringify(pontos),
+      body: JSON.stringify(corpo),
     })
     const json = (await res.json().catch(() => null)) as (EstadoEquipamento & { error?: string }) | null
     if (!res.ok) return { erro: json?.error || FALHA_DOS_PONTOS }
