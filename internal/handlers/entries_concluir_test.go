@@ -1,7 +1,7 @@
 package handlers
 
 import (
-	"anideck/internal/models"
+	"github.com/JoaoMendes1/anideck/internal/models"
 	"encoding/json"
 	"reflect"
 	"testing"
