@@ -4,6 +4,7 @@
 import BatalhaEmGrupo from '../components/rpg/BatalhaEmGrupo'
 import BotaoEmGrupo from '../components/rpg/BotaoEmGrupo'
 import ComprarLutaExtra from '../components/rpg/ComprarLutaExtra'
+import MasmorraRoguelite from '../components/rpg/MasmorraRoguelite'
 import SeletorEsquadrao from '../components/rpg/SeletorEsquadrao'
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
@@ -13,14 +14,18 @@ import { textoDosMateriais } from '../lib/forja'
 import IconeOuro from '../components/IconeOuro'
 import {
   abaixoDaVidaMinima,
+  agirRoguelite,
   descreverTurno,
   entrarNaMasmorra,
   estiloDaRaridade,
+  iniciarRoguelite,
+  obterEstadoRoguelite,
   obterMasmorras,
   resumoDoItem,
   rotuloDaDificuldade,
   type EstadoMasmorras,
   type RespostaMasmorra,
+  type RespostaRoguelite,
 } from '../lib/rpg'
 
 const ROTULO_DE_SECAO = 'font-mono text-xs font-semibold uppercase tracking-widest text-muted m-0'
@@ -117,6 +122,9 @@ export default function Masmorras() {
   const [semPersonagem, setSemPersonagem] = useState(false)
   const [entrando, setEntrando] = useState<string | null>(null)
   const [resposta, setResposta] = useState<RespostaMasmorra | null>(null)
+  const [roguelite, setRoguelite] = useState<RespostaRoguelite | null>(null)
+  const [rogueliteOcupado, setRogueliteOcupado] = useState(false)
+  const [erroRoguelite, setErroRoguelite] = useState('')
   const [erroDaEntrada, setErroDaEntrada] = useState('')
   const [aliadosEsquadrao, setAliadosEsquadrao] = useState<string[]>([])
 
@@ -134,6 +142,11 @@ export default function Masmorras() {
           return r.dados!.elenco!.filter((h) => !h.ativo && h.no_grupo).map((h) => h.id)
         })
       }
+      if (r.dados) {
+        obterEstadoRoguelite().then((rg) => {
+          if (rg.dados?.ativo && rg.dados.sessao) setRoguelite(rg.dados)
+        })
+      }
       setCarregando(false)
     })
   }
@@ -148,6 +161,28 @@ export default function Masmorras() {
       setResposta(r.dados)
       window.scrollTo?.({ top: 0 })
     } else setErroDaEntrada(r.erro ?? 'Não foi possível entrar agora.')
+  }
+
+  const entrarRoguelite = async (id: string) => {
+    setEntrando(id)
+    setErroDaEntrada('')
+    setErroRoguelite('')
+    const r = aliadosEsquadrao.length > 0 ? await iniciarRoguelite(id, aliadosEsquadrao) : await iniciarRoguelite(id)
+    setEntrando(null)
+    if (r.dados) {
+      setRoguelite(r.dados)
+      window.scrollTo?.({ top: 0 })
+    } else setErroDaEntrada(r.erro ?? 'Não foi possível iniciar a incursão agora.')
+  }
+
+  const agirNaIncursao = async (acao: 'bencao' | 'altar' | 'avancar' | 'recuar', escolha?: string) => {
+    setRogueliteOcupado(true)
+    setErroRoguelite('')
+    const r = await agirRoguelite(acao, escolha)
+    setRogueliteOcupado(false)
+    if (r.dados) {
+      setRoguelite(r.dados)
+    } else setErroRoguelite(r.erro ?? 'Não foi possível executar essa ação agora.')
   }
 
   const fraco = abaixoDaVidaMinima(estado?.vida, estado?.hoje.regras)
@@ -199,6 +234,17 @@ export default function Masmorras() {
         />
       ) : resposta ? (
         <Resultado resposta={resposta} aoVoltar={() => { setResposta(null); carregar() }} />
+      ) : roguelite ? (
+        <MasmorraRoguelite
+          resposta={roguelite}
+          ocupado={rogueliteOcupado}
+          erro={erroRoguelite}
+          aoEscolherBencao={(id) => agirNaIncursao('bencao', id)}
+          aoDecidirAltar={(escolha) => agirNaIncursao('altar', escolha)}
+          aoAvancar={() => agirNaIncursao('avancar')}
+          aoRecuar={() => agirNaIncursao('recuar')}
+          aoEncerrarResumo={() => { setRoguelite(null); carregar() }}
+        />
       ) : (
         <div className="flex flex-col gap-3 sm:gap-5">
           <div className="flex flex-col gap-2">
@@ -291,6 +337,15 @@ export default function Masmorras() {
                     {entrando !== m.id && estado.custos_mana && (
                       <span className="ml-1 font-mono text-xs font-semibold opacity-80">· {estado.custos_mana.masmorra} MP</span>
                     )}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => entrarRoguelite(m.id)}
+                    disabled={fechada}
+                    aria-label={`Incursão Roguelite em ${m.nome}`}
+                    className="inline-flex h-10 cursor-pointer items-center justify-center gap-1.5 rounded-full border border-holo-3/50 bg-holo-3/10 px-4 text-xs font-extrabold text-holo-3 transition hover:bg-holo-3/20 disabled:cursor-not-allowed disabled:opacity-50"
+                  >
+                    <Sparkles size={14} aria-hidden="true" /> Roguelite
                   </button>
                   <BotaoEmGrupo
                     tipo="masmorra"

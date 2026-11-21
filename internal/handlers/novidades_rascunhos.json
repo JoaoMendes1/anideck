@@ -544,5 +544,17 @@
         "caminho": "/personagem"
       }
     ]
+  },
+  {
+    "chave": "2026-11-20-masmorra-estilo-roguelite",
+    "titulo": "Masmorras estilo Roguelite: bênçãos, altares e retirada tática",
+    "categoria": "novidade",
+    "resumo": "Agora você pode encarar qualquer Masmorra no modo Incursão Roguelite, andar por andar, mantendo o esquadrão selecionado!\n\nA cada andar vencido você escolhe 1 de 3 bênçãos acumuláveis para fortalecer o time, decide se arrisca a vida em altares antigos e pode recuar a qualquer momento levando todo o Ouro, Bilhetes e Materiais já conquistados — ou arriscar ir até o chefe final pelo bônus completo.",
+    "links": [
+      {
+        "rotulo": "Explorar Masmorras",
+        "caminho": "/masmorras"
+      }
+    ]
   }
 ]

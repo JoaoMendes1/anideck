@@ -1123,6 +1123,113 @@ export async function entrarNaMasmorra(masmorraId: string, esquadrao?: string[])
   }
 }
 
+// --- Masmorra Estilo Roguelite (sql/138) -------------------------------------------------
+
+export interface BencaoRoguelite {
+  id: string
+  nome: string
+  descricao: string
+  categoria: string
+  raridade: string
+}
+
+export interface AltarRoguelite {
+  id: string
+  nome: string
+  descricao: string
+  custo: string
+  recompensa: string
+}
+
+export interface HeroiRogueliteHP {
+  base: string
+  nome: string
+  nivel: number
+  elemento: string
+  vida_atual: number
+  vida_maxima: number
+}
+
+export interface SessaoRoguelite {
+  masmorra: Omit<MasmorraNaLista, 'monstros' | 'bloqueada' | 'dificuldade'>
+  monstros: MonstroRPG[]
+  esquadrao: string[]
+  andar_atual: number
+  total_andares: number
+  herois: HeroiRogueliteHP[]
+  bencaos_ativas: BencaoRoguelite[]
+  escolhas_bencao: BencaoRoguelite[]
+  altar_ativo?: AltarRoguelite
+  vencidos: string[]
+  ouro_bonus_pct: number
+  pode_avancar: boolean
+  pode_recuar: boolean
+}
+
+export interface RespostaRoguelite {
+  ativo: boolean
+  finalizada: boolean
+  status: 'nenhuma' | 'ativa' | 'vitoria' | 'recuou' | 'derrota'
+  sessao?: SessaoRoguelite
+  ultimo_andar?: AndarDaMasmorra
+  grupo_andar?: ResultadoDoGrupo
+  recompensa?: RespostaBatalha['recompensa']
+  vida?: VidaRPG
+  evento_texto?: string
+}
+
+export async function obterEstadoRoguelite(): Promise<{ dados?: RespostaRoguelite; erro?: string }> {
+  try {
+    const res = await fetch('/api/rpg/masmorras/roguelite', { headers: await cabecalhoDeAutenticacao() })
+    const json = (await res.json().catch(() => null)) as (RespostaRoguelite & { error?: string }) | null
+    if (!res.ok || !json) return { erro: json?.error || 'Não foi possível verificar a incursão atual.' }
+    return { dados: json }
+  } catch {
+    return { erro: 'Não foi possível verificar a incursão atual.' }
+  }
+}
+
+export async function iniciarRoguelite(
+  masmorraId: string,
+  esquadrao?: string[],
+): Promise<{ dados?: RespostaRoguelite; erro?: string }> {
+  const falha = 'Não foi possível iniciar a incursão Roguelite agora.'
+  try {
+    const payload = esquadrao && esquadrao.length > 0 ? { masmorra_id: masmorraId, esquadrao } : { masmorra_id: masmorraId }
+    const res = await fetch('/api/rpg/masmorras/roguelite/iniciar', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', ...(await cabecalhoDeAutenticacao()) },
+      body: JSON.stringify(payload),
+    })
+    const json = (await res.json().catch(() => null)) as (RespostaRoguelite & { error?: string }) | null
+    if (!res.ok || !json) return { erro: json?.error || falha }
+    if (json.finalizada) avisarOuroMudou()
+    return { dados: json }
+  } catch {
+    return { erro: falha }
+  }
+}
+
+export async function agirRoguelite(
+  acao: 'bencao' | 'altar' | 'avancar' | 'recuar',
+  escolha?: string,
+): Promise<{ dados?: RespostaRoguelite; erro?: string }> {
+  const falha = 'Não foi possível executar a ação na incursão agora.'
+  try {
+    const res = await fetch('/api/rpg/masmorras/roguelite/agir', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', ...(await cabecalhoDeAutenticacao()) },
+      body: JSON.stringify(escolha ? { acao, escolha } : { acao }),
+    })
+    const json = (await res.json().catch(() => null)) as (RespostaRoguelite & { error?: string }) | null
+    if (!res.ok || !json) return { erro: json?.error || falha }
+    if (json.finalizada) avisarOuroMudou()
+    return { dados: json }
+  } catch {
+    return { erro: falha }
+  }
+}
+
 // --- Duelos (sql/093) ------------------------------------------------------------------
 
 export interface OponenteDeDuelo {

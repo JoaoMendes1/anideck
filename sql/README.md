@@ -167,6 +167,7 @@ SELECT pg_get_viewdef('nome_da_view'::regclass, true);
 | `135_maratona_limite_semanal.sql` | Limite de maratonas concluídas por semana (segunda 00:00 de Brasília): `rpg_iniciar_maratona` lê `maratonas_por_semana` de `comunidade_regras` (padrão 2; 0 pausa). **Depois do `133`** | — |
 | `136_esquadrao_e_grupo_vagas.sql` | Formação de esquadrão e vagas no grupo online (#330): `rpg_personagens.esquadrao` (`rpg_salvar_esquadrao`, exposto em `rpg_estado_jogador`); `max_herois` e `herois_lider` em `rpg_grupos` com `rpg_grupo_configurar` e trava de vagas em `rpg_grupo_convidar`/`rpg_grupo_aceitar`/`rpg_convites_pendentes`/`rpg_grupo_estado`. **Depois do `120` e do `126`** | — |
 | `137_ecos_do_anime.sql` | Ecos do Anime (#331): `rpg_personagens.eco_mal_id`, `rpg_equipar_eco(p_mal_id)` validando posse e `is_foil = true` em `user_cards`, e `rpg_estado_jogador()` atualizada com `eco_mal_id`. **Depois do `050` e do `136`** | — |
+| `138_masmorra_roguelite.sql` | Masmorra estilo Roguelite (#332): tabela `rpg_masmorra_sessoes` (RLS de leitura própria) e RPCs `rpg_roguelite_salvar` / `rpg_roguelite_limpar` (`service_role`) para estado andar a andar, HP do esquadrão, bênçãos e altares. **Depois do `128` e do `136`** | — |
 
 Datas com `~` são a data do commit, não da aplicação no Supabase.
 
