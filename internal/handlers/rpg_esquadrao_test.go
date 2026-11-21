@@ -155,8 +155,8 @@ func TestMontarEsquadraoDoContexto_AtributosIndependentesPorHeroi(t *testing.T) 
 		t.Fatalf("esperava 2 combatentes, veio %d", len(combatentes))
 	}
 	// Líder tem +10 Força (+20 Ataque), aliada não configurada fica zerada (+0 Ataque).
-	if combatentes[0].Ataque <= combatentes[1].Ataque {
-		t.Errorf("aliada sem pontos não deveria copiar Força do líder: lider=%d ally=%d", combatentes[0].Ataque, combatentes[1].Ataque)
+	if combatentes[0].Atributos.Ataque <= combatentes[1].Atributos.Ataque {
+		t.Errorf("aliada sem pontos não deveria copiar Força do líder: lider=%d ally=%d", combatentes[0].Atributos.Ataque, combatentes[1].Atributos.Ataque)
 	}
 
 	ctx.pontosPorHeroi["maga_agua"] = PrimariosRPG{Inteligencia: 10}
@@ -164,7 +164,7 @@ func TestMontarEsquadraoDoContexto_AtributosIndependentesPorHeroi(t *testing.T) 
 	if err != nil {
 		t.Fatalf("erro inesperado: %v", err)
 	}
-	if combatentes2[1].Magia <= combatentes2[0].Magia {
-		t.Errorf("maga com +10 Inteligência deveria ter mais Magia que líder: maga=%d lider=%d", combatentes2[1].Magia, combatentes2[0].Magia)
+	if combatentes2[1].Atributos.Magia <= combatentes2[0].Atributos.Magia {
+		t.Errorf("maga com +10 Inteligência deveria ter mais Magia que líder: maga=%d lider=%d", combatentes2[1].Atributos.Magia, combatentes2[0].Atributos.Magia)
 	}
 }
