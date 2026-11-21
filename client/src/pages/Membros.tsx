@@ -181,7 +181,7 @@ export default function Membros() {
         <>
           {/* Seletor de Gênero quando em 'genero' */}
           {periodo === 'genero' && (
-            <div className="flex gap-2 overflow-x-auto pb-3 mb-6 no-scrollbar select-none">
+            <div className="flex gap-2 overflow-x-auto pb-3 mb-6 select-none">
               {GENEROS_DISPONIVEIS.map(g => {
                 const ativo = g === generoSelecionado
                 return (
@@ -191,8 +191,8 @@ export default function Membros() {
                     onClick={() => setGeneroSelecionado(g)}
                     className={`shrink-0 px-3.5 py-1.5 rounded-full text-xs font-bold transition-all cursor-pointer border ${
                       ativo
-                        ? 'bg-gradient-to-r from-holo-1 to-holo-2 text-void border-transparent shadow-md'
-                        : 'bg-panel-2 border-line text-muted hover:text-text hover:border-holo-3/40'
+                        ? 'bg-gradient-to-r from-holo-1 via-holo-2 to-holo-3 text-void border-transparent shadow-[0_0_16px_rgba(34,211,238,0.28)]'
+                        : 'surface-glass text-muted hover:text-text hover:border-holo-3/45'
                     }`}
                   >
                     {g}
@@ -206,12 +206,12 @@ export default function Membros() {
           {periodo === 'semana' && dadosLiga && (
             <div className={`flex flex-wrap items-center justify-between gap-3 p-4 mb-5 rounded-2xl border ${obterEstiloDivisao(dadosLiga.minha_divisao).border} ${obterEstiloDivisao(dadosLiga.minha_divisao).bg}`}>
               <div className="flex items-center gap-3">
-                <span className={`w-10 h-10 rounded-xl grid place-items-center font-anton text-lg border ${obterEstiloDivisao(dadosLiga.minha_divisao).border} bg-panel/70 ${obterEstiloDivisao(dadosLiga.minha_divisao).texto}`}>
+                <span className={`w-10 h-10 rounded-xl grid place-items-center border ${obterEstiloDivisao(dadosLiga.minha_divisao).border} bg-panel/70 ${obterEstiloDivisao(dadosLiga.minha_divisao).texto}`}>
                   <Shield size={20} />
                 </span>
                 <div>
-                  <div className="flex items-center gap-2">
-                    <span className={`font-anton text-base uppercase tracking-wider ${obterEstiloDivisao(dadosLiga.minha_divisao).texto}`}>
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <span className={`font-manrope font-extrabold text-sm sm:text-base tracking-tight ${obterEstiloDivisao(dadosLiga.minha_divisao).texto}`}>
                       Divisão {dadosLiga.minha_divisao}
                     </span>
                     {dadosLiga.modo_divisao_ativa ? (
@@ -232,7 +232,7 @@ export default function Membros() {
               <div className="flex items-center gap-2">
                 <span className="font-mono text-xs text-muted-2">Período:</span>
                 <span
-                  className="font-mono text-xs font-bold text-text bg-panel px-2.5 py-1 rounded-lg border border-line"
+                  className="font-mono text-xs font-bold tabular-nums text-text bg-panel px-2.5 py-1 rounded-lg border border-line"
                   title={`Código da semana: ${dadosLiga.semana}`}
                 >
                   {formatarSemanaISO(dadosLiga.semana)}
@@ -246,14 +246,14 @@ export default function Membros() {
               <p className="text-[13px] text-text m-0">
                 <b>Você ainda não aparece aqui.</b> <span className="text-muted">Crie seu @ para entrar no ranking e comentar episódios.</span>
               </p>
-              <Link to="/configuracoes#comunidade" className="px-4 py-2 rounded-full text-xs font-extrabold text-void bg-gradient-to-r from-holo-1 to-holo-2">
+              <Link to="/configuracoes#comunidade" className="px-4 py-2 rounded-full text-xs font-extrabold text-void bg-gradient-to-r from-holo-1 via-holo-2 to-holo-3">
                 Criar perfil público
               </Link>
             </div>
           )}
 
           {erro ? (
-            <div className="p-6 rounded-2xl bg-panel border border-line text-center text-sm text-muted">
+            <div className="p-6 rounded-2xl surface-glass text-center text-sm text-muted">
               Não foi possível carregar o ranking agora. Tente de novo em instantes.
             </div>
           ) : lista === null ? (

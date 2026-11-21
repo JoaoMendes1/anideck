@@ -79,7 +79,7 @@ export default function CardPrevisoes({ className = '', malId }: Props) {
   }
 
   return (
-    <section className={`rounded-2xl border border-holo-1/30 bg-gradient-to-br from-panel via-panel-2 to-panel p-5 shadow-xl relative overflow-hidden ${className}`}>
+    <section className={`rounded-2xl surface-glass border-holo-1/30 p-5 shadow-xl relative overflow-hidden ${className}`}>
       {/* Glow de fundo */}
       <div className="absolute top-0 right-0 w-60 h-60 bg-holo-1/10 blur-3xl rounded-full pointer-events-none" />
 
@@ -92,13 +92,13 @@ export default function CardPrevisoes({ className = '', malId }: Props) {
             <span className="font-mono text-xs font-bold uppercase tracking-widest text-holo-1 block">
               Oráculo da Comunidade
             </span>
-            <h3 className="font-anton text-lg uppercase text-text m-0">
-              Previsões Apostando Mana
+            <h3 className="font-manrope font-extrabold text-base sm:text-lg tracking-tight text-text m-0">
+              Previsões apostando Mana
             </h3>
           </div>
         </div>
 
-        <span className="font-mono text-xs text-muted bg-panel-2 border border-line px-2.5 py-1 rounded-full">
+        <span className="font-mono text-xs text-muted bg-panel-2 border border-line px-2.5 py-1 rounded-full shrink-0 tabular-nums">
           {previsoes.filter((p) => p.status === 'aberta').length} abertas
         </span>
       </div>
@@ -114,7 +114,7 @@ export default function CardPrevisoes({ className = '', malId }: Props) {
           return (
             <div
               key={prev.id}
-              className="p-4 rounded-xl bg-void/60 border border-line hover:border-holo-1/40 transition-colors"
+              className="p-4 rounded-xl bg-void/65 border border-line hover:border-holo-1/40 transition-colors"
             >
               <div className="flex flex-wrap items-center justify-between gap-2 mb-2">
                 <span className="font-mono text-xs font-bold uppercase px-2 py-0.5 rounded-full bg-holo-3/15 border border-holo-3/30 text-holo-3">
@@ -123,13 +123,13 @@ export default function CardPrevisoes({ className = '', malId }: Props) {
 
                 <div className="flex items-center gap-2 font-mono text-xs">
                   <span className="text-muted">Prêmio:</span>
-                  <span className="font-bold text-gold inline-flex items-center gap-1">
+                  <span className="font-bold text-gold inline-flex items-center gap-1 tabular-nums">
                     +{prev.recompensa_anicoins} <IconeAniCoin size={12} /> +2x MP
                   </span>
                 </div>
               </div>
 
-              <h4 className="font-anton text-base uppercase text-text mb-1 leading-snug">
+              <h4 className="font-manrope font-extrabold text-sm sm:text-base text-text mb-1 leading-snug">
                 {prev.pergunta}
               </h4>
               {prev.descricao && (

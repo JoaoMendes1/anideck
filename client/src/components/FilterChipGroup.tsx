@@ -16,8 +16,8 @@ interface FilterChipGroupProps {
     activeClassName?: string
 }
 
-const DEFAULT_ACTIVE = 'bg-gradient-to-r from-holo-1 to-holo-2 text-void shadow-[0_0_12px_rgba(123,92,255,0.4)]'
-const INACTIVE = 'bg-panel-2 border border-line text-muted hover:border-holo-2 hover:text-text'
+const DEFAULT_ACTIVE = 'bg-gradient-to-r from-holo-1 via-holo-2 to-holo-3 text-void border-transparent shadow-[0_0_16px_rgba(34,211,238,0.28)]'
+const INACTIVE = 'surface-glass text-muted hover:border-holo-3/45 hover:text-text'
 
 export default function FilterChipGroup({
     label,

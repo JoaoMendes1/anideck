@@ -294,10 +294,10 @@ export default function Rankings() {
                             setSelectedYear('')
                             setSelectedSort('POPULARITY_DESC')
                         }}
-                        className={`text-xs sm:text-[13px] font-bold px-3 py-1.5 sm:px-5 sm:py-2.5 rounded-full border transition-all cursor-pointer ${
+                        className={`text-xs sm:text-[13px] font-bold px-3.5 py-2 sm:px-5 sm:py-2.5 rounded-full border transition-all cursor-pointer ${
                             modoRanking === 'top_global'
-                                ? 'bg-gradient-to-r from-holo-1 to-holo-2 text-white border-transparent shadow-lg'
-                                : 'bg-panel border-line text-muted hover:border-holo-3 hover:text-text'
+                                ? 'bg-gradient-to-r from-holo-1 via-holo-2 to-holo-3 text-void border-transparent shadow-[0_0_16px_rgba(34,211,238,0.28)]'
+                                : 'surface-glass text-muted hover:border-holo-3/50 hover:text-text'
                         }`}
                     >
                         🏆 Mais Aclamados
@@ -311,10 +311,10 @@ export default function Rankings() {
                             setSelectedYear('')
                             setSelectedSort('TRENDING_DESC')
                         }}
-                        className={`text-xs sm:text-[13px] font-bold px-3 py-1.5 sm:px-5 sm:py-2.5 rounded-full border transition-all cursor-pointer flex items-center gap-2 ${
+                        className={`text-xs sm:text-[13px] font-bold px-3.5 py-2 sm:px-5 sm:py-2.5 rounded-full border transition-all cursor-pointer flex items-center gap-2 ${
                             modoRanking === 'em_alta'
                                 ? 'bg-coral/20 border-coral text-coral shadow-[0_0_15px_rgba(255,92,108,0.2)]'
-                                : 'bg-panel border-line text-muted hover:border-coral hover:text-text'
+                                : 'surface-glass text-muted hover:border-coral hover:text-text'
                         }`}
                     >
                         🔥 Em Alta
@@ -322,10 +322,10 @@ export default function Rankings() {
                     <button
                         type="button"
                         onClick={() => setModoRanking('clima')}
-                        className={`text-xs sm:text-[13px] font-bold px-3 py-1.5 sm:px-5 sm:py-2.5 rounded-full border transition-all cursor-pointer flex items-center gap-2 ${
+                        className={`text-xs sm:text-[13px] font-bold px-3.5 py-2 sm:px-5 sm:py-2.5 rounded-full border transition-all cursor-pointer flex items-center gap-2 ${
                             modoRanking === 'clima'
                                 ? 'bg-holo-2/20 border-holo-2 text-holo-2 shadow-[0_0_15px_rgba(34,211,238,0.25)]'
-                                : 'bg-panel border-line text-muted hover:border-holo-2 hover:text-text'
+                                : 'surface-glass text-muted hover:border-holo-2 hover:text-text'
                         }`}
                     >
                         <Sparkles size={14} />
@@ -360,7 +360,7 @@ export default function Rankings() {
                                 )}
                             </div>
                             {showCredibilityInfo && (
-                                <div className="bg-panel-2 border border-holo-3/30 shadow-[0_0_15px_rgba(63,224,240,0.05)] rounded-xl p-4 mt-3 text-sm text-muted-2 animate-in fade-in slide-in-from-top-2">
+                                <div className="surface-glass border-holo-3/35 shadow-[0_0_20px_rgba(34,211,238,0.08)] rounded-2xl p-4 mt-3 text-sm text-muted animate-in fade-in slide-in-from-top-2">
                                     <p className="text-holo-3 font-bold mb-1 font-mono tracking-wide">A MATEMÁTICA DA CREDIBILIDADE 🧠</p>
                                     <p className="mb-2 leading-relaxed">
                                         Em rankings comuns, obras de nicho com pouquíssimos votos &quot;nota 10&quot; acabam ultrapassando clássicos globais injustamente. 

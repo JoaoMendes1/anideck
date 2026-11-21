@@ -253,13 +253,13 @@ export default function ClaDetalhe() {
           {/* ESTATÍSTICAS E AÇÕES */}
           <div className="flex flex-col sm:flex-row md:flex-col items-start md:items-end gap-4 shrink-0">
             <div className="flex items-center gap-3 w-full sm:w-auto">
-              <div className="px-4 py-2.5 rounded-2xl bg-void/60 border border-line text-center flex-1 sm:flex-none">
-                <span className="text-xs uppercase font-bold text-muted block">Membros</span>
-                <span className="text-base font-black text-text">{cla.total_membros} / 30</span>
+              <div className="px-4 py-2.5 rounded-2xl bg-void/70 border border-line text-center flex-1 sm:flex-none">
+                <span className="text-xs uppercase font-mono font-bold text-muted block">Membros</span>
+                <span className="font-mono font-bold tabular-nums text-base text-text">{cla.total_membros} / 30</span>
               </div>
-              <div className="px-4 py-2.5 rounded-2xl bg-void/60 border border-line text-center flex-1 sm:flex-none">
-                <span className="text-xs uppercase font-bold text-muted block">XP Semana</span>
-                <span className="text-base font-black text-holo-3">+{cla.xp_semana} XP</span>
+              <div className="px-4 py-2.5 rounded-2xl bg-void/70 border border-line text-center flex-1 sm:flex-none">
+                <span className="text-xs uppercase font-mono font-bold text-muted block">XP Semana</span>
+                <span className="font-mono font-bold tabular-nums text-base text-holo-3">+{cla.xp_semana} XP</span>
               </div>
             </div>
 

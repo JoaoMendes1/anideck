@@ -142,7 +142,7 @@ export default function MenuLateral({ aberto, aoAlternar }: Props) {
   return (
     <aside
       aria-label="Menu principal"
-      className="hidden xl:flex fixed left-0 top-0 bottom-0 z-50 w-[var(--menu-lateral)] flex-col px-3 py-4 bg-gradient-to-b from-panel/95 to-void/95 backdrop-blur-md border-r border-line"
+      className="hidden xl:flex fixed left-0 top-0 bottom-0 z-50 w-[var(--menu-lateral)] flex-col px-3 py-4 bg-gradient-to-b from-panel/95 to-void/98 backdrop-blur-xl border-r border-line shadow-[12px_0_32px_rgba(0,0,0,0.45)]"
     >
       <div className="shrink-0 relative mb-1">
         <Link to="/" className={`flex items-center justify-center gap-2.5 h-10 rounded-xl focus-visible:outline-2 focus-visible:outline-holo-3 ${alinhamento}`} aria-label="AniDeck, início">

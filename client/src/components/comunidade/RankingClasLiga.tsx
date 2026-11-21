@@ -197,11 +197,11 @@ export default function RankingClasLiga() {
         /* RANKING ATUAL DA TEMPORADA */
         <div className="space-y-6">
           {/* Card explicativo das regras da Liga */}
-          <div className="p-4 rounded-2xl bg-panel border border-line flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+          <div className="p-4 rounded-2xl surface-glass flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
             <div className="space-y-1">
               <div className="flex items-center gap-2">
                 <Shield size={16} className="text-holo-2" />
-                <span className="font-anton text-sm uppercase tracking-wide">Regras da Liga de Clãs</span>
+                <span className="font-manrope font-extrabold text-sm tracking-tight">Regras da Liga de Clãs</span>
               </div>
               <p className="text-xs text-muted m-0">
                 <b>Pontuação Justa:</b> média de XP dos <b>10 melhores membros</b> na temporada. Clãs com menos de {dados.min_membros_liga} membros não pontuam.
@@ -241,7 +241,7 @@ export default function RankingClasLiga() {
                         className={`p-4 rounded-2xl border transition-all ${BORDAS_PODIO[pos - 1] || 'border-line bg-panel'}`}
                       >
                         <div className="flex items-center justify-between mb-3">
-                          <span className={`flex items-center gap-1.5 font-anton text-base uppercase ${MEDALHAS[pos - 1]}`}>
+                          <span className={`flex items-center gap-1.5 font-manrope font-extrabold text-sm sm:text-base ${MEDALHAS[pos - 1]}`}>
                             <Icone size={20} />
                             <span>{pos}º Lugar</span>
                           </span>
@@ -256,7 +256,7 @@ export default function RankingClasLiga() {
                         <div className="p-2.5 rounded-xl bg-panel/70 border border-line space-y-1 mb-3">
                           <div className="flex items-center justify-between text-xs">
                             <span className="text-muted">Pontuação Liga:</span>
-                            <span className="font-anton text-base text-text">{c.pontuacao.toLocaleString('pt-BR')} pts</span>
+                            <span className="font-mono font-bold tabular-nums text-sm sm:text-base text-text">{c.pontuacao.toLocaleString('pt-BR')} pts</span>
                           </div>
                           <div className="flex items-center justify-between text-xs text-muted-2">
                             <span>XP Total Acumulado:</span>
@@ -363,7 +363,7 @@ export default function RankingClasLiga() {
 
                         {/* Pontuação da Liga */}
                         <div className="text-right shrink-0">
-                          <span className="block font-anton text-lg leading-none text-text">
+                          <span className="block font-mono font-bold tabular-nums text-base sm:text-lg leading-none text-text">
                             {item.pontuacao.toLocaleString('pt-BR')}
                           </span>
                           <span className="block font-mono text-xs text-muted-2 uppercase mt-0.5">
@@ -406,7 +406,7 @@ export default function RankingClasLiga() {
                                   <span className="w-5 text-center font-mono text-xs font-bold text-muted-2">
                                     {m.posicao}º
                                   </span>
-                                  <span className="w-7 h-7 rounded-full shrink-0 grid place-items-center font-anton text-xs text-void bg-gradient-to-br from-holo-2 to-holo-3">
+                                  <span className="w-7 h-7 rounded-full shrink-0 grid place-items-center font-manrope font-extrabold text-xs text-void bg-gradient-to-br from-holo-2 to-holo-3">
                                     {m.nome.charAt(0).toUpperCase()}
                                   </span>
                                   <div className="min-w-0 flex-1">

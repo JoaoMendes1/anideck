@@ -118,12 +118,12 @@ function Secao({
     <section className={espacamento}>
       <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between sm:gap-4 mb-4 select-none">
         <div className="min-w-0">
-          <h2 className="font-anton text-[18px] sm:text-[20px] uppercase m-0 flex items-center gap-2 tracking-wide">
+          <h2 className="font-manrope font-extrabold text-lg sm:text-xl text-text m-0 flex items-center gap-2 tracking-tight">
             <span className="shrink-0">{icone}</span>
             <span className="min-w-0">{titulo}</span>
           </h2>
           {subtitulo && !minimizada && (
-            <p className="text-xs text-muted mt-1 mb-0 leading-relaxed">{subtitulo}</p>
+            <p className="text-xs sm:text-[13px] text-muted mt-1 mb-0 leading-relaxed">{subtitulo}</p>
           )}
         </div>
         <div className="flex flex-wrap items-center gap-x-3 gap-y-1 sm:shrink-0">

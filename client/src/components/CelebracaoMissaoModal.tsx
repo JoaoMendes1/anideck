@@ -83,7 +83,9 @@ export default function CelebracaoMissaoModal({
       ? 'Maratona Concluída!'
       : dados.tipo === 'contrato'
         ? 'Contrato Cumprido!'
-        : 'Missão Concluída!'
+        : dados.tipo === 'nivel'
+          ? 'Nível Alcançado!'
+          : 'Missão Concluída!'
 
   const conteudo = (
     <div

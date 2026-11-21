@@ -63,14 +63,14 @@ function Secao({ id, titulo, children }: { id: string; titulo: string; children:
     // a seção deixa o título escondido atrás dela.
     return (
         <section id={id} className="scroll-mt-28 border-b border-line py-8 last:border-b-0">
-            <h2 className="font-anton text-[15px] uppercase tracking-wide text-muted mb-4 select-none">{titulo}</h2>
+            <h2 className="font-manrope font-extrabold text-base sm:text-lg tracking-tight text-text mb-4 select-none">{titulo}</h2>
             {children}
         </section>
     )
 }
 
 function Card({ children, className = '' }: { children: ReactNode; className?: string }) {
-    return <div className={`bg-panel border border-line rounded-2xl p-5 ${className}`}>{children}</div>
+    return <div className={`surface-glass rounded-2xl p-5 ${className}`}>{children}</div>
 }
 
 function LinhaToggle({ titulo, desc, ligado }: { titulo: string; desc: string; ligado?: boolean }) {

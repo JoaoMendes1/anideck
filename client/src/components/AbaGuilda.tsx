@@ -589,10 +589,10 @@ export default function AbaGuilda() {
 
       {/* COLUNA LATERAL: BOTÃO SALVAR + AUDITORIA */}
       <aside className="flex flex-col gap-6 lg:sticky lg:top-24">
-        <section className="p-5 rounded-2xl bg-panel border border-line">
+        <section className="p-5 rounded-2xl surface-glass">
           <div className="flex items-center gap-2 mb-2">
             <Award size={16} className="text-holo-1" />
-            <h3 className="font-anton text-lg uppercase m-0">Publicar Calibração</h3>
+            <h3 className="font-manrope font-extrabold text-base tracking-tight m-0">Publicar calibração</h3>
           </div>
           <p className="text-xs text-muted leading-relaxed mb-4">
             As alterações de pesos, faixas e insígnias entram em vigor imediatamente sem reiniciar o
@@ -609,14 +609,14 @@ export default function AbaGuilda() {
           </button>
         </section>
 
-        <section className="p-5 rounded-2xl bg-panel border border-line">
+        <section className="p-5 rounded-2xl surface-glass">
           <div className="flex items-center gap-2 mb-3">
             <ShieldAlert size={16} className="text-gold" />
             <div>
               <p className="font-mono text-xs text-muted-2 uppercase tracking-widest m-0">
                 // auditoria de ritmo
               </p>
-              <h3 className="font-anton text-lg uppercase m-0">Atividade no Ledger</h3>
+              <h3 className="font-manrope font-extrabold text-base tracking-tight m-0">Atividade no Ledger</h3>
             </div>
           </div>
 

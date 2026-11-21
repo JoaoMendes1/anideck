@@ -138,7 +138,7 @@ export default function SecaoClimaTemporada() {
                     Sem capa
                   </div>
                 )}
-                <span className="absolute top-2 left-2 w-6 h-6 rounded-lg bg-void/80 backdrop-blur font-anton text-xs text-holo-3 grid place-items-center border border-line">
+                <span className="absolute top-2 left-2 px-1.5 h-6 rounded-lg bg-void/90 font-mono font-bold tabular-nums text-xs text-holo-3 grid place-items-center border border-line">
                   #{idx + 1}
                 </span>
 

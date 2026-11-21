@@ -54,11 +54,11 @@ function IndicadorVariacao({ atual, anterior }: { atual?: number; anterior?: num
 
     return (
         <span
-            className={`flex items-center font-anton text-xs leading-none select-none ${subiu ? 'text-green' : 'text-coral'
+            className={`flex items-center font-mono text-xs font-extrabold tabular-nums leading-none select-none ${subiu ? 'text-green' : 'text-coral'
                 }`}
             title={`${subiu ? 'Subiu' : 'Caiu'} ${Math.abs(diferenca)} ${Math.abs(diferenca) === 1 ? 'posição' : 'posições'} desde o mês passado`}
         >
-            {subiu ? <ChevronUp size={10} strokeWidth={3} /> : <ChevronDown size={10} strokeWidth={3} />}
+            {subiu ? <ChevronUp size={11} strokeWidth={3} /> : <ChevronDown size={11} strokeWidth={3} />}
             {Math.abs(diferenca)}
         </span>
     )
@@ -76,9 +76,9 @@ export default function RankingCard({ anime, rank, mostrarVariacao, isSaved, isF
     return (
         <Link
             to={`/anime/${anime.mal_id}`}
-            className={`relative overflow-hidden flex items-center gap-2.5 sm:gap-3 p-2.5 sm:p-3 rounded-xl transition-colors group ${isFavorite
-                    ? 'foil-card border border-gold/50 shadow-[0_0_15px_rgba(255,197,66,0.15)]'
-                    : 'bg-panel border border-line hover:border-holo-2'
+            className={`relative overflow-hidden flex items-center gap-2.5 sm:gap-3.5 p-3 sm:p-3.5 rounded-2xl transition-all group ${isFavorite
+                    ? 'foil-card border border-gold/45 bg-panel shadow-[inset_0_1px_0_rgba(255,197,66,0.12),0_12px_28px_-12px_rgba(255,197,66,0.22)]'
+                    : 'bg-panel border border-line shadow-[inset_0_1px_0_rgba(255,255,255,0.04)] hover:border-holo-3/45 hover:bg-panel-2/60'
                 }`}
         >
             {/* COLUNA ESQUERDA: Capa, Badge de posição e variação */}
@@ -87,10 +87,10 @@ export default function RankingCard({ anime, rank, mostrarVariacao, isSaved, isF
                     <img
                         src={anime.images?.jpg?.image_url}
                         alt={anime.title}
-                        className={`${rank <= 3 ? 'w-[72px] sm:w-20' : 'w-[62px] sm:w-[70px]'} aspect-[2/3] rounded-lg object-cover bg-panel-2 border border-line`}
+                        className={`${rank <= 3 ? 'w-[72px] sm:w-20' : 'w-[62px] sm:w-[70px]'} aspect-[2/3] rounded-xl object-cover bg-panel-2 border border-line`}
                     />
                     <span
-                        className={`absolute -top-1.5 -left-1.5 flex items-center justify-center w-[22px] h-[22px] rounded-full font-anton text-xs select-none ${rankBadgeClass}`}
+                        className={`absolute -top-1.5 -left-1.5 flex items-center justify-center w-[22px] h-[22px] rounded-full font-mono text-xs font-extrabold tabular-nums select-none ${rankBadgeClass}`}
                     >
                         {rank}
                     </span>
@@ -102,11 +102,11 @@ export default function RankingCard({ anime, rank, mostrarVariacao, isSaved, isF
             </div>
 
             {/* COLUNA DO MEIO: Título e Metadados (min-w-0 obriga o flex a respeitar o truncate) */}
-            <div className="relative z-30 min-w-0 flex-1 flex flex-col justify-center gap-0.5">
+            <div className="relative z-30 min-w-0 flex-1 flex flex-col justify-center gap-1">
 
                 {/* Título */}
                 <div className="flex items-center gap-1.5">
-                    <span className="font-bold text-[13px] sm:text-sm truncate leading-tight pt-0.5">
+                    <span className="font-manrope font-extrabold text-[13.5px] sm:text-sm text-text truncate leading-snug group-hover:text-holo-3 transition-colors">
                         {isFavorite && <span className="text-gold mr-1" title="Favorito">👑</span>}
                         {anime.title}
                     </span>
@@ -123,31 +123,29 @@ export default function RankingCard({ anime, rank, mostrarVariacao, isSaved, isF
                             {anime.genres[0].name}
                         </span>
                     )}
-                    <span className="select-none truncate leading-none pt-[2px]">{anime.status} • {anime.episodes || '?'} EP</span>
+                    <span className="select-none truncate leading-none pt-[1px]">{anime.status} • {anime.episodes || '?'} EP</span>
                 </div>
 
-                {/* Linha 2: Transparência das notas. TROCADO PARA TRUNCATE para nunca quebrar a linha no celular */}
+                {/* Linha 2: Transparência das notas */}
                 <div className="font-mono text-xs mt-0.5 select-none truncate leading-none">
                     {anime.bayesian_score ? (
                         <>
                             <span className="font-bold text-muted-2">AniList: ★ {anime.score > 0 ? anime.score.toFixed(1) : 'N/A'}</span>
-                            {/* No celular a linha é curta: fica só a nota, em vez de um texto cortado. */}
-                            <span className="hidden sm:inline text-muted opacity-70 ml-1">({anime.popularity?.toLocaleString('pt-BR')} usuários)</span>
+                            <span className="hidden sm:inline text-muted opacity-75 ml-1">({anime.popularity?.toLocaleString('pt-BR')} usuários)</span>
                         </>
                     ) : (
-                        <span className="text-muted opacity-70">{anime.popularity?.toLocaleString('pt-BR')} usuários</span>
+                        <span className="text-muted opacity-75">{anime.popularity?.toLocaleString('pt-BR')} usuários</span>
                     )}
                 </div>
             </div>
 
-            {/* COLUNA DA DIREITA: largura fixa para não ser esmagada pelos títulos longos. Cabe o
-                rótulo "ANIDECK" em 12 px. */}
-            <div className="relative z-30 flex flex-col items-center justify-between shrink-0 w-[58px] sm:w-[62px] h-full gap-2">
+            {/* COLUNA DA DIREITA */}
+            <div className="relative z-30 flex flex-col items-center justify-between shrink-0 w-[60px] sm:w-[64px] h-full gap-2">
                 <div className="flex flex-col items-center justify-center pt-1">
-                    <span className="font-anton text-sm sm:text-[15px] text-gold select-none leading-none">
+                    <span className="font-mono text-sm sm:text-[15px] font-extrabold tabular-nums text-gold select-none leading-none">
                         ★ {anime.bayesian_score ? anime.bayesian_score.toFixed(1) : (anime.score > 0 ? anime.score.toFixed(1) : 'N/A')}
                     </span>
-                    <span className={`text-xs font-bold uppercase mt-1 leading-none tracking-wide select-none ${anime.bayesian_score ? 'text-gold/70' : 'text-muted-2'}`}>
+                    <span className={`text-[11px] font-mono font-bold uppercase mt-1 leading-none tracking-wide select-none ${anime.bayesian_score ? 'text-gold/75' : 'text-muted-2'}`}>
                         {anime.bayesian_score ? 'ANIDECK' : 'ANILIST'}
                     </span>
                 </div>

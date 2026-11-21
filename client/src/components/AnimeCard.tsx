@@ -57,7 +57,7 @@ export default function AnimeCard({
             className={`relative aspect-[3/4.3] w-full overflow-hidden transition-all duration-300 ${
                 isFavorite
                     ? 'carta-rara-corpo'
-                    : `rounded-[14px] border border-line bg-panel-2 ${gradientClass}`
+                    : `rounded-2xl border border-line bg-panel shadow-[inset_0_1px_0_rgba(255,255,255,0.06)] group-hover:border-holo-3/50 ${gradientClass}`
             }`}
         >
             <Link to={`/anime/${malId}`} className="absolute inset-0 z-10" aria-label={title} />
@@ -80,26 +80,20 @@ export default function AnimeCard({
                 />
             )}
 
-            <div className="absolute inset-x-0 top-0 h-16 bg-gradient-to-b from-void/75 via-void/25 to-transparent z-10 pointer-events-none" />
-            <div className="absolute inset-x-0 bottom-0 h-20 bg-gradient-to-t from-void via-void/65 to-transparent z-10 pointer-events-none" />
+            <div className="absolute inset-x-0 top-0 h-16 bg-gradient-to-b from-void/80 via-void/25 to-transparent z-10 pointer-events-none" />
+            <div className="absolute inset-x-0 bottom-0 h-24 bg-gradient-to-t from-void via-void/70 to-transparent z-10 pointer-events-none" />
 
-            {/* Nenhum selo deste card usa backdrop-blur, de propósito. São até 6 por card;
-                com 85 cards no deck eram ~440 desfoques, refeitos pelo navegador a cada
-                capa que terminava de carregar — o maior peso do travamento medido no
-                Lighthouse. As faixas escuras em degradê acima já garantem a leitura. */}
-
-            {/* Badges superiores */}
+            {/* Nenhum selo deste card usa backdrop-blur, de propósito: evita custo em listas longas. */}
             <div className="absolute top-2.5 left-2.5 right-11 z-20 flex flex-col gap-1 items-start pointer-events-none">
                 {statusBadge}
                 {extraBadges}
                 {temRanking && (
-                    <div title={`#${ranking} no ranking geral da AniList`} className="flex items-center gap-1 font-anton text-[9.5px] px-1.5 py-0.5 rounded-md bg-void/80 text-holo-3 border border-holo-3/40 shadow-[0_0_8px_rgba(63,224,240,0.25)]">
-                        <span className="text-[8.5px] leading-none">🏆</span>#{ranking}
+                    <div title={`#${ranking} no ranking geral da AniList`} className="hidden sm:flex items-center gap-1 font-mono text-[10px] font-bold tabular-nums px-1.5 py-0.5 rounded-md bg-void/85 text-holo-3 border border-holo-3/40">
+                        <span className="text-[9px] leading-none">🏆</span>#{ranking}
                     </div>
                 )}
             </div>
 
-            {/* Botão de ação (editar) */}
             {topRightAction && (
                 <div className="absolute top-2.5 right-2.5 z-30">
                     {topRightAction}
@@ -119,10 +113,10 @@ export default function AnimeCard({
                     ))}
                 </div>
 
-                <div className={`shrink-0 font-anton text-[10px] px-1.5 py-0.5 rounded-md border ${
+                <div className={`shrink-0 font-mono text-[10.5px] font-extrabold tabular-nums px-1.5 py-0.5 rounded-md border ${
                     temNota
-                        ? 'bg-void/80 text-gold border-gold/50 shadow-[0_0_8px_rgba(255,197,66,0.3)]'
-                        : 'bg-void/80 text-muted-2 border-line'
+                        ? 'bg-void/85 text-gold border-gold/45'
+                        : 'bg-void/85 text-muted-2 border-line'
                 }`}>
                     {temNota ? `★ ${score}` : 'S/N'}
                 </div>
@@ -135,7 +129,7 @@ export default function AnimeCard({
             {isFavorite ? (
                 <div className="relative">
                     <div
-                        className="absolute -top-2.5 -left-2.5 z-40 w-7 h-7 rounded-full bg-void/90 border border-gold/60 flex items-center justify-center text-xs shadow-[0_0_12px_rgba(255,197,66,0.45)] select-none pointer-events-none"
+                        className="absolute -top-2.5 -left-2.5 z-40 w-7 h-7 rounded-full bg-void/95 border border-gold/60 flex items-center justify-center text-xs shadow-[0_0_12px_rgba(255,197,66,0.45)] select-none pointer-events-none"
                         title="Favorito (Carta Rara)"
                     >
                         👑
@@ -148,19 +142,17 @@ export default function AnimeCard({
                 posterContent
             )}
 
-            {/* Legenda externa: Título com altura fixa de 2 linhas para prateleira perfeita */}
-            <div className="mt-2 flex flex-col gap-1 px-0.5 select-none">
+            {/* Legenda externa: Título legível em Manrope alinhado em até 2 linhas */}
+            <div className="mt-2.5 flex flex-col gap-1 px-0.5 select-none">
                 <Link
                     to={`/anime/${malId}`}
-                    className="font-anton text-[13px] sm:text-[14px] uppercase leading-tight tracking-wide text-text group-hover:text-holo-3 transition-colors line-clamp-2 break-words h-[34px] sm:h-[36px] flex items-start"
+                    className="font-manrope font-extrabold text-[13px] sm:text-sm leading-snug tracking-tight text-text group-hover:text-holo-3 transition-colors line-clamp-2 break-words min-h-[2.45rem]"
                     title={title}
                 >
                     {title}
                 </Link>
 
-                {/* Ano e Próximo Episódio rigorosamente alinhados */}
-                <div className="flex items-center gap-1.5 font-mono text-[10.5px] text-muted-2 font-semibold truncate">
-                    {/* No celular, com próximo episódio, o ano sai para o dia da semana caber inteiro. */}
+                <div className="flex items-center gap-1.5 font-mono text-[11px] text-muted-2 font-semibold tabular-nums truncate">
                     {year && <span className={proximoEpTexto ? 'hidden sm:inline' : undefined}>{year}</span>}
                     {year && proximoEpTexto && <span className="hidden sm:inline opacity-40">•</span>}
                     {proximoEpTexto && (

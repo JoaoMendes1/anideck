@@ -652,5 +652,21 @@
         "caminho": "/guilda"
       }
     ]
+  },
+  {
+    "chave": "2026-11-21-reformulacao-visual-holo",
+    "titulo": "Visual Holo Evoluído, navegação mobile enxuta e recompensas animadas",
+    "categoria": "layout",
+    "resumo": "O AniDeck recebeu uma renovação visual completa em todas as telas preservando a identidade gamer cyberpunk Holo: superfícies translúcidas em vidro fosco, barras de rolagem estilizadas, tipografia mais limpa para leitura e números alinhados em todas as estatísticas.\n\nNo celular, a barra inferior passou a reunir 5 atalhos principais — Início, Deck, o novo botão central Aventura (com acesso rápido para Herói, Expedições 2D, Masmorras, Duelos, Chefão, Clãs, Loja e Agenda), Explorar e Perfil — e o Feed ganhou espaço direto nas abas do Explorar.\n\nTambém chegaram os novos avisos HUD animados ao ganhar XP, Ouro, AniCoins ou recuperar HP, além da celebração especial ao subir de nível.",
+    "links": [
+      {
+        "rotulo": "Explorar o Catálogo",
+        "caminho": "/descobrir"
+      },
+      {
+        "rotulo": "Ver Meu Personagem",
+        "caminho": "/personagem"
+      }
+    ]
   }
 ]

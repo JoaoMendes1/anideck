@@ -30,7 +30,7 @@ interface Props {
 }
 
 function Titulo({ children }: { children: string }) {
-  return <h2 className="font-anton uppercase text-lg sm:text-xl tracking-wide m-0 mb-3">{children}</h2>
+  return <h2 className="font-manrope font-extrabold text-lg sm:text-xl tracking-tight text-text m-0 mb-3.5">{children}</h2>
 }
 
 export default function VitrineDescobrir({ rotulos, ano, aoEscolherRotulo, aoVerLancamentos, aoVerAno }: Props) {
@@ -50,25 +50,25 @@ export default function VitrineDescobrir({ rotulos, ano, aoEscolherRotulo, aoVer
 
   return (
     <div className="flex flex-col gap-10 pt-2">
-      <section className="grid gap-3 sm:grid-cols-2">
+      <section className="grid gap-3.5 sm:grid-cols-2">
         <button
           type="button"
           onClick={aoVerLancamentos}
-          className="group relative overflow-hidden rounded-3xl border border-coral/30 bg-gradient-to-br from-coral/20 via-panel to-panel p-5 sm:p-6 text-left transition-colors hover:border-coral/70 cursor-pointer"
+          className="group relative overflow-hidden rounded-3xl border border-coral/35 bg-gradient-to-br from-coral/18 via-panel to-panel p-5 sm:p-6 text-left transition-all hover:border-coral/70 shadow-[inset_0_1px_0_rgba(255,255,255,0.06)] cursor-pointer"
         >
           <Flame size={96} aria-hidden className="absolute -right-4 -bottom-5 text-coral opacity-15 transition-transform duration-300 group-hover:scale-110" />
-          <span className="font-mono text-xs uppercase tracking-[0.25em] text-coral">No ar agora</span>
-          <span className="block font-anton uppercase text-2xl sm:text-3xl mt-1">Em lançamento</span>
+          <span className="font-mono text-xs uppercase tracking-[0.2em] text-coral font-bold">No ar agora</span>
+          <span className="block font-anton uppercase text-2xl sm:text-3xl mt-1 text-text">Em lançamento</span>
           <span className="block text-sm text-muted mt-1">O que está saindo episódio novo toda semana.</span>
         </button>
         <button
           type="button"
           onClick={aoVerAno}
-          className="group relative overflow-hidden rounded-3xl border border-holo-3/30 bg-gradient-to-br from-holo-3/20 via-panel to-panel p-5 sm:p-6 text-left transition-colors hover:border-holo-3/70 cursor-pointer"
+          className="group relative overflow-hidden rounded-3xl border border-holo-3/35 bg-gradient-to-br from-holo-3/18 via-panel to-panel p-5 sm:p-6 text-left transition-all hover:border-holo-3/70 shadow-[inset_0_1px_0_rgba(255,255,255,0.06)] cursor-pointer"
         >
           <CalendarDays size={96} aria-hidden className="absolute -right-4 -bottom-5 text-holo-3 opacity-15 transition-transform duration-300 group-hover:scale-110" />
-          <span className="font-mono text-xs uppercase tracking-[0.25em] text-holo-3">Safra do ano</span>
-          <span className="block font-anton uppercase text-2xl sm:text-3xl mt-1">Estreias de {ano}</span>
+          <span className="font-mono text-xs uppercase tracking-[0.2em] text-holo-3 font-bold">Safra do ano</span>
+          <span className="block font-anton uppercase text-2xl sm:text-3xl mt-1 text-text">Estreias de {ano}</span>
           <span className="block text-sm text-muted mt-1">Tudo que estreou este ano, do mais popular ao menos.</span>
         </button>
       </section>
@@ -82,12 +82,12 @@ export default function VitrineDescobrir({ rotulos, ano, aoEscolherRotulo, aoVer
                 key={r.nome}
                 type="button"
                 onClick={() => aoEscolherRotulo(r.nome)}
-                className={`group relative overflow-hidden h-20 sm:h-24 rounded-2xl border border-line bg-gradient-to-br ${FUNDOS[i % FUNDOS.length]} px-4 text-left transition-colors cursor-pointer`}
+                className={`group relative overflow-hidden h-20 sm:h-24 rounded-2xl border border-line bg-gradient-to-br ${FUNDOS[i % FUNDOS.length]} px-4 text-left transition-all hover:border-holo-3/50 shadow-[inset_0_1px_0_rgba(255,255,255,0.05)] cursor-pointer`}
               >
                 <span aria-hidden className="absolute -right-1 -bottom-4 font-anton uppercase text-6xl leading-none text-text opacity-[0.06] transition-transform duration-300 group-hover:scale-110 whitespace-nowrap">
                   {r.nome.slice(0, 2)}
                 </span>
-                <span className="relative font-anton uppercase text-base sm:text-lg tracking-wide">{r.nome}</span>
+                <span className="relative font-manrope font-extrabold text-sm sm:text-base tracking-tight text-text">{r.nome}</span>
               </button>
             ))}
           </div>
@@ -98,8 +98,8 @@ export default function VitrineDescobrir({ rotulos, ano, aoEscolherRotulo, aoVer
 
       {destaques.length > 0 && (
         <section>
-          <div className="flex items-end justify-between gap-3 mb-3">
-            <h2 className="font-anton uppercase text-lg sm:text-xl tracking-wide m-0 flex items-center gap-2">
+          <div className="flex items-end justify-between gap-3 mb-3.5">
+            <h2 className="font-manrope font-extrabold text-lg sm:text-xl tracking-tight text-text m-0 flex items-center gap-2">
               <Sparkles size={17} className="text-holo-1" aria-hidden /> Escolhas da curadoria
             </h2>
             <span className="font-mono text-xs uppercase tracking-widest text-muted-2">Sinopse e episódios em português</span>

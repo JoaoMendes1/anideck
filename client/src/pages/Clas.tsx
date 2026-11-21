@@ -217,7 +217,7 @@ export default function Clas() {
 
       {/* SEÇÃO MEU CLÃ OU CONVITES */}
       {session && meuCla?.tem_cla && (
-        <div className="mb-12 p-6 sm:p-8 rounded-3xl bg-gradient-to-br from-panel via-panel-2 to-panel border border-holo-3/30 shadow-[0_0_30px_rgba(34,211,238,0.1)] relative overflow-hidden">
+        <div className="mb-12 p-6 sm:p-8 rounded-3xl surface-glass border-holo-3/35 shadow-[0_0_30px_rgba(34,211,238,0.1)] relative overflow-hidden">
           <div className="absolute -top-12 -right-12 w-48 h-48 bg-holo-3/10 rounded-full blur-3xl pointer-events-none" />
 
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-6">

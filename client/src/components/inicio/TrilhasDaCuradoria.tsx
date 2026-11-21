@@ -28,7 +28,7 @@ export default function TrilhasDaCuradoria({ trilhas }: { trilhas: TrilhaDaHome[
             key={t.id}
             type="button"
             onClick={() => setAberta(t)}
-            className="shrink-0 w-[260px] md:w-auto snap-start text-left bg-panel border border-line rounded-2xl overflow-hidden hover:border-holo-2/50 transition-colors group cursor-pointer"
+            className="shrink-0 w-[260px] md:w-auto snap-start text-left surface-glass rounded-2xl overflow-hidden hover:border-holo-3/50 transition-all group cursor-pointer"
           >
             <div className="grid grid-cols-4 gap-0.5 h-28 bg-void">
               {Array.from({ length: 4 }).map((_, i) => {
@@ -44,8 +44,8 @@ export default function TrilhasDaCuradoria({ trilhas }: { trilhas: TrilhaDaHome[
             </div>
             <div className="p-3.5">
               <div className="flex items-center justify-between gap-2">
-                <h3 className="font-anton text-[16px] uppercase leading-tight m-0 group-hover:text-holo-2 transition-colors line-clamp-1">{t.nome}</h3>
-                <span className="shrink-0 font-mono text-xs text-muted-2">{t.animes.length} obras</span>
+                <h3 className="font-manrope font-extrabold text-[15px] tracking-tight text-text leading-snug m-0 group-hover:text-holo-3 transition-colors line-clamp-1">{t.nome}</h3>
+                <span className="shrink-0 font-mono text-xs text-muted-2 tabular-nums">{t.animes.length} obras</span>
               </div>
               {t.subtitulo && <p className="text-xs text-muted mt-1 line-clamp-1">{t.subtitulo}</p>}
             </div>

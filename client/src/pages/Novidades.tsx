@@ -20,11 +20,14 @@ export default function Novidades() {
   }, [])
 
   return (
-    <div className="mx-auto w-full max-w-2xl px-4 sm:px-6 py-6 space-y-4">
+    <div className="mx-auto w-full max-w-2xl px-4 sm:px-6 pt-4 pb-24 space-y-4">
       <header className="flex items-center gap-3">
-        <Megaphone size={24} className="text-holo-1" aria-hidden />
+        <span className="w-10 h-10 rounded-xl bg-holo-1/15 border border-holo-1/35 grid place-items-center text-holo-1 shrink-0">
+          <Megaphone size={20} aria-hidden />
+        </span>
         <div>
-          <h1 className="m-0 text-2xl font-bold text-text">Novidades</h1>
+          <span className="font-mono text-xs text-holo-3 uppercase tracking-widest block">// changelog</span>
+          <h1 className="m-0 font-manrope text-2xl sm:text-3xl font-extrabold tracking-tight text-text">Novidades</h1>
           <p className="m-0 text-sm text-muted">Funções novas, correções e mudanças no AniDeck.</p>
         </div>
       </header>

@@ -19,7 +19,7 @@ export interface Tema {
 }
 
 export const TEMAS: Tema[] = [
-    { id: 'holo', nome: 'Holo', desc: 'O visual atual', cores: ['#0A0714', '#FF4FD8', '#7B5CFF', '#3FE0F0'] },
+    { id: 'holo', nome: 'Holo', desc: 'Cyberpunk profundo (padrão)', cores: ['#07050E', '#FF4FD8', '#7B5CFF', '#3FE0F0'] },
     { id: 'terminal', nome: 'Terminal', desc: 'Verde de console antigo', cores: ['#050A08', '#A0FF78', '#3FE0F0', '#1F6B4A'] },
     { id: 'arquivo', nome: 'Arquivo', desc: 'Âmbar e papel envelhecido', cores: ['#120C08', '#FFC542', '#FF8A5C', '#8A5A2B'] },
     { id: 'estudio', nome: 'Estúdio', desc: 'Sóbrio, sem gradiente', cores: ['#12141A', '#4A7DFF', '#8C96AD', '#2A3040'] },

@@ -434,7 +434,7 @@ function FichaDoPersonagem({
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,1fr)_420px] lg:items-start">
         <section
           aria-label="Arte do personagem"
-          className="relative h-[min(56vh,470px)] overflow-hidden rounded-2xl border border-line bg-void lg:h-[680px]"
+          className="relative h-[min(56vh,470px)] overflow-hidden rounded-2xl border border-line bg-void cyber-stage-grid shadow-[inset_0_1px_0_rgba(255,255,255,0.06),0_20px_50px_-15px_rgba(0,0,0,0.85)] lg:h-[680px]"
           data-cenario={cenario ? dados.cenario : 'padrao'}
           style={{ backgroundImage: cenario ? `${luz}, ${cenario}` : luz }}
         >

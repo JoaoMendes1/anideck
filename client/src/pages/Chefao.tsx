@@ -204,12 +204,12 @@ export default function Chefao() {
       {/* GRADE COM SEU ATAQUE E RECOMPENSAS */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-5 mb-8">
         {/* CARD: SEU ATAQUE */}
-        <div className="p-5 sm:p-6 rounded-2xl bg-panel border border-line shadow-lg flex flex-col justify-between">
+        <div className="p-5 sm:p-6 rounded-2xl surface-glass shadow-lg flex flex-col justify-between">
           <div>
             <div className="flex items-center justify-between gap-2 mb-3">
               <div className="flex items-center gap-2">
                 <Flame size={18} className="text-coral" />
-                <h2 className="font-anton text-lg uppercase text-text m-0">Sua Contribuição</h2>
+                <h2 className="font-manrope font-extrabold text-lg tracking-tight text-text m-0">Sua contribuição</h2>
               </div>
               {session && (
                 chefao.elegivel_recompensa ? (
@@ -240,7 +240,7 @@ export default function Chefao() {
               <div className="my-4">
                 <div className="flex items-baseline justify-between mb-1.5 font-mono">
                   <span className="text-xs text-muted">Dano Causado:</span>
-                  <span className="text-2xl font-black text-text">{meuDano.toLocaleString('pt-BR')} HP</span>
+                  <span className="text-2xl font-black tabular-nums text-text">{meuDano.toLocaleString('pt-BR')} HP</span>
                 </div>
 
                 <div className="h-2.5 w-full bg-void rounded-full overflow-hidden border border-line">

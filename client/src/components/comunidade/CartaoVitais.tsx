@@ -13,11 +13,11 @@ export default function CartaoVitais() {
   const { perfil } = estado
 
   return (
-    <section className="p-5 rounded-2xl bg-panel border border-line">
+    <section className="p-5 rounded-2xl surface-glass">
       <div className="flex items-center justify-between gap-2 mb-4">
         <div>
-          <p className="font-mono text-xs text-muted-2 uppercase tracking-widest m-0">// comunidade</p>
-          <h3 className="font-anton text-lg uppercase m-0 mt-0.5">Vitalidade &amp; Mana</h3>
+          <p className="font-mono text-xs text-holo-3 uppercase tracking-widest m-0">Comunidade</p>
+          <h3 className="font-manrope font-extrabold text-lg tracking-tight text-text m-0 mt-0.5">Vitalidade &amp; Mana</h3>
         </div>
         {perfil.existe && (
           <Link to={perfil.publico ? `/u/${perfil.handle}` : '/configuracoes#comunidade'} className="font-mono text-xs text-holo-3 hover:underline">

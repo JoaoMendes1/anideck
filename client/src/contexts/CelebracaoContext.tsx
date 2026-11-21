@@ -6,7 +6,7 @@ import { createContext, lazy, Suspense, useCallback, useContext, useMemo, useSta
 const CelebracaoMissaoModal = lazy(() => import('../components/CelebracaoMissaoModal'))
 
 export interface DadosCelebracaoMissao {
-  tipo: 'maratona' | 'missao' | 'contrato'
+  tipo: 'maratona' | 'missao' | 'contrato' | 'nivel'
   titulo?: string
   subtitulo?: string
   notaExtra?: string

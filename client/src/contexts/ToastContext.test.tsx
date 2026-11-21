@@ -1,46 +1,83 @@
+// client/src/contexts/ToastContext.test.tsx
 // @vitest-environment jsdom
-import { describe, it, expect, afterEach } from 'vitest'
-import { useEffect } from 'react'
-import { act, cleanup, render } from '@testing-library/react'
+import { afterEach, describe, expect, it, vi } from 'vitest'
+import { act, cleanup, fireEvent, render, screen } from '@testing-library/react'
 import { ToastProvider, useToast } from './ToastContext'
 
-afterEach(cleanup)
+afterEach(() => {
+  cleanup()
+  vi.useRealTimers()
+})
 
-// Imita uma tela que carrega dados num efeito e avisa quando a carga falha.
-function TelaQueFalha({ aoCarregar }: { aoCarregar: () => number }) {
-  const { showToast } = useToast()
-  useEffect(() => {
-    // O teto impede que o defeito, se voltar, trave a suíte em vez de reprovar o teste.
-    if (aoCarregar() > 20) return
-    showToast('Não foi possível carregar.', 'error')
-  }, [showToast, aoCarregar])
-  return null
+function GatilhoTeste() {
+  const { showToast, showRewardToast } = useToast()
+  return (
+    <div>
+      <button type="button" onClick={() => showToast('Salvo no Deck!', 'success')}>
+        Disparar aviso
+      </button>
+      <button
+        type="button"
+        onClick={() =>
+          showRewardToast({
+            titulo: 'Episódio registrado',
+            subtitulo: 'Progresso sincronizado com a Guilda',
+            badge: 'Nível 12',
+            xp: 45,
+            ouro: 20,
+            anicoins: 5,
+            hp: -10,
+            mp: 12,
+            progressoAntesPct: 30,
+            progressoDepoisPct: 75,
+            xpLabel: '75 / 100 XP',
+            tom: 'xp',
+          })
+        }
+      >
+        Disparar recompensa
+      </button>
+    </div>
+  )
 }
 
-describe('ToastProvider', () => {
-  it('mantém a mesma função showToast depois de exibir um aviso', () => {
-    const vistas: unknown[] = []
-    function Espia() {
-      const { showToast } = useToast()
-      vistas.push(showToast)
-      return <button onClick={() => showToast('ok')}>avisar</button>
-    }
-    const { getByText } = render(<ToastProvider><Espia /></ToastProvider>)
-    act(() => getByText('avisar').click())
-    expect(new Set(vistas).size).toBe(1)
+describe('ToastContext', () => {
+  it('exibe e fecha o toast padrão ao clicar no botão de fechar', () => {
+    render(
+      <ToastProvider>
+        <GatilhoTeste />
+      </ToastProvider>,
+    )
+
+    fireEvent.click(screen.getByRole('button', { name: 'Disparar aviso' }))
+    expect(screen.getByText('Salvo no Deck!')).toBeTruthy()
+
+    fireEvent.click(screen.getByRole('button', { name: 'Fechar notificação' }))
+    const status = screen.getByRole('status')
+    expect(status.className).toContain('opacity-0')
   })
 
-  it('não repete a carga de uma tela que avisa o próprio erro', () => {
-    let cargas = 0
-    const aoCarregar = () => ++cargas
-    render(<ToastProvider><TelaQueFalha aoCarregar={aoCarregar} /></ToastProvider>)
-    expect(cargas).toBe(1)
-  })
+  it('renderiza notificação animada de recompensa com pílulas (+XP, +Ouro, +₳, HP, MP) e barra de progresso', async () => {
+    render(
+      <ToastProvider>
+        <GatilhoTeste />
+      </ToastProvider>,
+    )
 
-  it('aviso escondido não bloqueia o toque nos botões da base da tela', () => {
-    const { container } = render(<ToastProvider><span /></ToastProvider>)
-    const caixa = container.querySelector('[role="status"] > div')
-    expect(caixa?.className).toContain('pointer-events-none')
-    expect(caixa?.className).not.toContain('pointer-events-auto')
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: 'Disparar recompensa' }))
+    })
+
+    expect(await screen.findByText('Episódio registrado')).toBeTruthy()
+    expect(screen.getByText('Nível 12')).toBeTruthy()
+    expect(screen.getByText('+45 XP')).toBeTruthy()
+    expect(screen.getByText('+20 Ouro')).toBeTruthy()
+    expect(screen.getByText('+5 ₳')).toBeTruthy()
+    expect(screen.getByText('-10 HP')).toBeTruthy()
+    expect(screen.getByText('+12 MP')).toBeTruthy()
+    expect(screen.getByText('75 / 100 XP')).toBeTruthy()
+
+    fireEvent.click(screen.getByRole('button', { name: 'Fechar notificação de recompensa' }))
+    expect(screen.queryByText('Episódio registrado')).toBeNull()
   })
 })

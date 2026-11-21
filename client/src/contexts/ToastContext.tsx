@@ -1,10 +1,27 @@
-import { createContext, useCallback, useContext, useState, useRef, useMemo, type ReactNode } from 'react'
+// client/src/contexts/ToastContext.tsx
+import {
+  createContext,
+  lazy,
+  Suspense,
+  useCallback,
+  useContext,
+  useMemo,
+  useRef,
+  useState,
+  type ReactNode,
+} from 'react'
 import { CheckCircle2, AlertCircle, Info, X } from 'lucide-react'
+import type { ItemRecompensaToast } from '../components/RecompensaHudLista'
+
+const RecompensaHudLista = lazy(() => import('../components/RecompensaHudLista'))
 
 export type ToastTipo = 'success' | 'error' | 'info'
 
+export type DadosRecompensaToast = Omit<ItemRecompensaToast, 'id'>
+
 interface ToastContextType {
   showToast: (message: string, type?: ToastTipo) => void
+  showRewardToast: (dados: DadosRecompensaToast) => void
   toast: {
     success: (message: string) => void
     error: (message: string) => void
@@ -20,7 +37,10 @@ export function ToastProvider({ children }: { children: ReactNode }) {
     type: 'success',
     visible: false,
   })
+  const [recompensas, setRecompensas] = useState<ItemRecompensaToast[]>([])
   const timerRef = useRef<number | null>(null)
+  const rewardTimersRef = useRef<Map<number, number>>(new Map())
+  const rewardIdRef = useRef(0)
 
   // Identidade estável: telas usam showToast como dependência de efeito, e uma função
   // nova a cada aviso faria o efeito rodar de novo sempre que um aviso aparecesse.
@@ -37,6 +57,28 @@ export function ToastProvider({ children }: { children: ReactNode }) {
       timerRef.current = null
     }, duracao)
   }, [])
+
+  const fecharRecompensa = useCallback((id: number) => {
+    const t = rewardTimersRef.current.get(id)
+    if (t) {
+      window.clearTimeout(t)
+      rewardTimersRef.current.delete(id)
+    }
+    setRecompensas((atuais) => atuais.filter((item) => item.id !== id))
+  }, [])
+
+  const showRewardToast = useCallback(
+    (dados: DadosRecompensaToast) => {
+      const id = ++rewardIdRef.current
+      setRecompensas((atuais) => [...atuais, { ...dados, id }].slice(-3))
+      const timer = window.setTimeout(() => {
+        rewardTimersRef.current.delete(id)
+        setRecompensas((atuais) => atuais.filter((item) => item.id !== id))
+      }, 4600)
+      rewardTimersRef.current.set(id, timer)
+    },
+    [],
+  )
 
   const fecharToast = () => {
     if (timerRef.current) {
@@ -55,13 +97,22 @@ export function ToastProvider({ children }: { children: ReactNode }) {
     [showToast],
   )
 
-  const valor = useMemo(() => ({ showToast, toast: toastObj }), [showToast, toastObj])
+  const valor = useMemo(
+    () => ({ showToast, showRewardToast, toast: toastObj }),
+    [showToast, showRewardToast, toastObj],
+  )
 
   return (
     <ToastContext.Provider value={valor}>
       {children}
 
-      {/* Componente visual do Toast moderno, retangular com cantos suaves (rounded-2xl) */}
+      {recompensas.length > 0 && (
+        <Suspense fallback={null}>
+          <RecompensaHudLista itens={recompensas} aoFechar={fecharRecompensa} />
+        </Suspense>
+      )}
+
+      {/* Toast padrão refinado: nunca intercepta toque quando oculto */}
       <div
         role="status"
         aria-live="polite"
@@ -71,24 +122,22 @@ export function ToastProvider({ children }: { children: ReactNode }) {
             : 'opacity-0 translate-y-3 scale-95'
         }`}
       >
-        {/* Só recebe toque quando aparece: invisível, a caixa ficava sobre os botões da base da tela. */}
         <div
-          className={`${toast.visible ? 'pointer-events-auto' : 'pointer-events-none'} flex items-start gap-3 p-3.5 sm:p-4 rounded-2xl border backdrop-blur-xl shadow-2xl transition-all ${
+          className={`${toast.visible ? 'pointer-events-auto' : 'pointer-events-none'} flex items-start gap-3 p-3.5 sm:p-4 rounded-2xl border backdrop-blur-xl shadow-[inset_0_1px_0_rgba(255,255,255,0.08),0_20px_45px_-12px_rgba(0,0,0,0.8)] transition-all ${
             toast.type === 'success'
-              ? 'bg-panel/95 border-green/40 shadow-[0_12px_40px_rgba(34,197,94,0.18)]'
+              ? 'bg-panel/95 border-green/45'
               : toast.type === 'error'
-              ? 'bg-panel/95 border-coral/40 shadow-[0_12px_40px_rgba(255,92,108,0.22)]'
-              : 'bg-panel/95 border-holo-3/40 shadow-[0_12px_40px_rgba(34,211,238,0.18)]'
+              ? 'bg-panel/95 border-coral/45'
+              : 'bg-panel/95 border-holo-3/45'
           }`}
         >
-          {/* Ícone de status em container destacado */}
           <div
             className={`w-7 h-7 rounded-xl flex items-center justify-center shrink-0 mt-0.5 ${
               toast.type === 'success'
-                ? 'bg-green/15 text-green border border-green/30'
+                ? 'bg-green/15 text-green border border-green/35'
                 : toast.type === 'error'
-                ? 'bg-coral/15 text-coral border border-coral/30'
-                : 'bg-holo-3/15 text-holo-3 border border-holo-3/30'
+                ? 'bg-coral/15 text-coral border border-coral/35'
+                : 'bg-holo-3/15 text-holo-3 border border-holo-3/35'
             }`}
           >
             {toast.type === 'success' && <CheckCircle2 size={16} />}
@@ -96,14 +145,12 @@ export function ToastProvider({ children }: { children: ReactNode }) {
             {toast.type === 'info' && <Info size={16} />}
           </div>
 
-          {/* Texto legível que quebra em várias linhas sem distorcer o card */}
           <div className="flex-1 min-w-0 pr-1">
             <p className="text-xs sm:text-[13px] font-semibold text-text leading-snug break-words m-0 select-text">
               {toast.message}
             </p>
           </div>
 
-          {/* Botão de fechar */}
           <button
             type="button"
             onClick={fecharToast}

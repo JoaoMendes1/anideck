@@ -320,20 +320,28 @@ export default function MeuDeck() {
                     {/* Os números de cada status ficam nas abas logo abaixo; aqui só o resumo. */}
                     <div className="flex items-center justify-between gap-3 sm:justify-start">
                         <div className="min-w-0">
-                            <h1 className="font-anton text-xl sm:text-2xl uppercase m-0 leading-none">Meu Deck</h1>
-                            <p className="m-0 mt-1 font-mono text-[11px] text-muted">
+                            <h1 className="font-manrope text-2xl sm:text-3xl font-extrabold tracking-tight m-0 leading-tight text-text">Meu Deck</h1>
+                            <p className="m-0 mt-1 font-mono text-xs text-muted tabular-nums">
                                 {entradas.length} {entradas.length === 1 ? 'anime' : 'animes'}
                                 {stats.notaMedia !== 'N/A' ? ` · sua nota média ${stats.notaMedia}` : ''}
                             </p>
                         </div>
-                        <Link
-                            to="/descobrir?foco=1"
-                            aria-label="Adicionar anime ao deck"
-                            title="Adicionar anime"
-                            className="inline-flex h-9 shrink-0 items-center gap-1.5 rounded-full border border-holo-3/50 px-3 text-xs font-bold text-holo-3 hover:bg-holo-3/10"
-                        >
-                            <Plus size={14} aria-hidden="true" /> Adicionar
-                        </Link>
+                        <div className="flex items-center gap-2 shrink-0">
+                            <Link
+                                to="/calendario"
+                                className="inline-flex h-9 items-center gap-1.5 rounded-full border border-line bg-panel-2 px-3 text-xs font-bold text-muted hover:text-holo-3 hover:border-holo-3/50 transition-colors"
+                            >
+                                Agenda
+                            </Link>
+                            <Link
+                                to="/descobrir?foco=1"
+                                aria-label="Adicionar anime ao deck"
+                                title="Adicionar anime"
+                                className="inline-flex h-9 shrink-0 items-center gap-1.5 rounded-full bg-gradient-to-r from-holo-1 via-holo-2 to-holo-3 px-3.5 text-xs font-extrabold text-void shadow-[0_6px_18px_-6px_rgba(255,79,216,0.45)] hover:brightness-110 transition-all"
+                            >
+                                <Plus size={14} aria-hidden="true" /> Adicionar
+                            </Link>
+                        </div>
                     </div>
                     {entradas.length > 0 && (
                         <div className="flex items-center gap-2 w-full sm:w-auto">

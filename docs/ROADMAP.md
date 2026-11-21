@@ -1387,3 +1387,15 @@ senha rotacionada (26), e o painel do provedor desfaz a configuração com um cl
   para não ser reaberto sem contexto meses depois.
 - Ideia nova vai para o Backlog. Só vira fase quando houver decisão explícita de fazer.
 - Decisão estrutural (arquitetura, framework, banco, auth) não mora aqui: vai para `DECISIONS.md`.
+
+---
+
+## Entregas transversais recentes
+
+### Reformulação visual Holo Evoluído, navegação mobile e notificações HUD ([#343](https://github.com/JoaoMendes1/anideck/issues/343)) — 21/11/2026
+
+- [x] **Tokens Holo Evoluído & Scrollbars:** paleta aprofundada (`#07050E` void, superfícies `surface-glass` translúcidas), tipografia separada (`Anton` apenas em display Hero/Ranks/placar e `Manrope`/`JetBrains Mono tabular-nums` em títulos de cards, botões e números), mais barras de rolagem estilizadas em toda a aplicação (`#343`)
+- [x] **Biblioteca base `client/src/components/ui/`:** criados `Button`, `Card`, `Badge`, `PageHeader`, `Tabs` e `EmptyState` reutilizáveis com classes literais do Tailwind (`#343`)
+- [x] **Navegação mobile enxuta & Feed integrado:** `BottomNav` reorganizada em 5 botões principais (`Início`, `Deck`, doca central `Aventura` com grade de atalhos do RPG/Agenda, `Explorar`, `Perfil`) e `AbasDescobrir` com aba `Feed` para usuários autenticados (`#343`)
+- [x] **Notificações animadas de recompensa:** `ToastContext` ganhou `showRewardToast` via `RecompensaHudLista` (`framer-motion` lazy-loaded com spring, pílulas `+XP/+Ouro/+₳/HP/MP` e barra animada), integrado a `PilulaGuilda` e celebração de novo nível em `CelebracaoContext` (`#343`)
+- [x] **Padronização de cards e telas:** aplicação consistente de `surface-glass`, títulos em `Manrope`, números tabulares e ausência de overflow horizontal mobile em telas de catálogo, detalhes, estatísticas, RPG 2D, clãs, loja e painel admin (`#343`)

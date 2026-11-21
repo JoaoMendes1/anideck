@@ -176,7 +176,7 @@ export default function PerfilMembro() {
         <span className="w-14 h-14 mx-auto rounded-full grid place-items-center bg-panel border border-line mb-4">
           <UserX size={22} className="text-muted" aria-hidden />
         </span>
-        <h1 className="font-anton text-2xl uppercase mb-2">
+        <h1 className="font-manrope font-extrabold text-2xl tracking-tight mb-2">
           {estadoTela === 'ausente' ? 'Membro não encontrado' : 'Perfil indisponível'}
         </h1>
         <p className="text-sm text-muted mb-6">
@@ -184,7 +184,7 @@ export default function PerfilMembro() {
             ? `Não existe perfil público para @${handle}. Ele pode ter escondido o perfil ou trocado de @.`
             : 'Não foi possível carregar este perfil agora. Tente de novo em instantes.'}
         </p>
-        <Link to="/membros" className="inline-block px-5 py-2.5 rounded-full text-xs font-extrabold text-void bg-gradient-to-r from-holo-1 to-holo-2">
+        <Link to="/membros" className="inline-block px-5 py-2.5 rounded-full text-xs font-extrabold text-void bg-gradient-to-r from-holo-1 via-holo-2 to-holo-3 shadow-md">
           Ver ranking de membros
         </Link>
       </div>

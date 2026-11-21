@@ -67,22 +67,22 @@ export default function ExpedicaoDoCla() {
       {carregando ? (
         <div className="h-72 animate-pulse rounded-2xl border border-line bg-panel" />
       ) : semPersonagem ? (
-        <div className="rounded-2xl border border-line bg-panel p-6 text-center">
-          <h1 className="m-0 mb-2 font-anton text-2xl uppercase">Desperte o seu personagem</h1>
-          <Link to="/personagem" className="inline-flex h-10 items-center rounded-full bg-gradient-to-r from-holo-1 to-holo-3 px-5 text-xs font-extrabold text-void">Ir para o despertar</Link>
+        <div className="rounded-2xl surface-glass p-6 text-center">
+          <h1 className="m-0 mb-2 font-manrope font-extrabold text-xl tracking-tight">Desperte o seu personagem</h1>
+          <Link to="/personagem" className="inline-flex h-10 items-center rounded-full bg-gradient-to-r from-holo-1 via-holo-2 to-holo-3 px-5 text-xs font-extrabold text-void shadow-md">Ir para o despertar</Link>
         </div>
       ) : !estado ? (
-        <div className="rounded-2xl border border-line bg-panel p-6 text-center">
-          <h1 className="m-0 mb-2 font-anton text-2xl uppercase">Expedição indisponível</h1>
+        <div className="rounded-2xl surface-glass p-6 text-center">
+          <h1 className="m-0 mb-2 font-manrope font-extrabold text-xl tracking-tight">Expedição indisponível</h1>
           <p className="m-0 mb-4 text-sm text-muted">{erro}</p>
-          <button type="button" onClick={carregar} className="h-10 cursor-pointer rounded-full bg-gradient-to-r from-holo-1 to-holo-3 px-5 text-xs font-extrabold text-void">Tentar de novo</button>
+          <button type="button" onClick={carregar} className="h-10 cursor-pointer rounded-full bg-gradient-to-r from-holo-1 via-holo-2 to-holo-3 px-5 text-xs font-extrabold text-void shadow-md">Tentar de novo</button>
         </div>
       ) : !estado.tem_cla || !chefe ? (
-        <div className="rounded-2xl border border-line bg-panel p-6 text-center">
+        <div className="rounded-2xl surface-glass p-6 text-center">
           <Users size={28} className="mx-auto mb-2 text-holo-1" aria-hidden="true" />
-          <h1 className="m-0 mb-2 font-anton text-2xl uppercase">Entre num clã</h1>
+          <h1 className="m-0 mb-2 font-manrope font-extrabold text-xl tracking-tight">Entre num clã</h1>
           <p className="m-0 mb-4 text-sm text-muted">A expedição é um chefe por semana enfrentado pelo clã inteiro. Escolha um clã para participar.</p>
-          <Link to="/clas" className="inline-flex h-10 items-center rounded-full bg-gradient-to-r from-holo-1 to-holo-3 px-5 text-xs font-extrabold text-void">Ver clãs</Link>
+          <Link to="/clas" className="inline-flex h-10 items-center rounded-full bg-gradient-to-r from-holo-1 via-holo-2 to-holo-3 px-5 text-xs font-extrabold text-void shadow-md">Ver clãs</Link>
         </div>
       ) : (
         <div className="grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,1fr)_340px] lg:items-start">

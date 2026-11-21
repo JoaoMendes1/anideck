@@ -339,7 +339,7 @@ export default function Guilda() {
         {/* COLUNA PRINCIPAL */}
         <div className="flex flex-col gap-3 sm:gap-5 min-w-0">
           {/* CARTÃO PRINCIPAL DE RANK E NÍVEL */}
-          <section className="p-3.5 sm:p-6 rounded-2xl bg-panel border border-line relative overflow-hidden">
+          <section className="p-4 sm:p-6 rounded-2xl surface-glass relative overflow-hidden">
             <div className="flex flex-row items-start sm:items-center gap-3 sm:gap-5">
               {/* Insígnia do rank, a mesma do painel do Início e do menu. No celular, ao lado do texto. */}
               <InsigniaRank rank={status.rank} tamanho={116} className="shrink-0 h-auto w-16 sm:w-[116px]" />

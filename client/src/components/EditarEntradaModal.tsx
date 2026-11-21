@@ -243,10 +243,10 @@ export default function EditarEntradaModal({ entrada, onFechar, onSalvar, onExcl
 
     // 🎨 O DESIGN PREMIUM ESTÁ DE VOLTA AQUI
     const modalConfirmacao = confirmandoExclusao ? createPortal(
-        <div className="fixed inset-0 bg-void/80 flex items-center justify-center z-[120] p-4 backdrop-blur-sm animate-in fade-in duration-200">
-            <div className="bg-panel border border-coral/30 rounded-2xl p-6 max-w-sm w-full text-center shadow-2xl animate-in zoom-in-95 duration-200">
-                <h3 className="font-anton text-coral text-xl uppercase mb-2">Remover anime?</h3>
-                <p className="text-sm text-muted mb-6">Tem certeza que deseja remover este anime do seu Deck? Esta ação não pode ser desfeita.</p>
+        <div className="fixed inset-0 bg-void/80 flex items-center justify-center z-[120] p-4 backdrop-blur-md animate-in fade-in duration-200">
+            <div className="surface-glass border border-coral/35 rounded-2xl p-6 max-w-sm w-full text-center shadow-2xl animate-in zoom-in-95 duration-200">
+                <h3 className="font-manrope font-extrabold text-coral text-lg tracking-tight mb-2">Remover anime?</h3>
+                <p className="text-sm text-muted mb-6 leading-relaxed">Tem certeza que deseja remover este anime do seu Deck? Esta ação não pode ser desfeita.</p>
 
                 {erro && <p className="text-coral text-xs mb-6 font-bold bg-coral/10 py-2 rounded-lg">{erro}</p>}
 
@@ -276,9 +276,9 @@ export default function EditarEntradaModal({ entrada, onFechar, onSalvar, onExcl
     ) : null;
 
     const modalZerarEpisodios = confirmandoZerarEpisodios ? createPortal(
-        <div className="fixed inset-0 bg-void/80 flex items-center justify-center z-[120] p-4 backdrop-blur-sm animate-in fade-in duration-200">
-            <div className="bg-panel border border-line rounded-2xl p-6 max-w-md w-full text-center shadow-2xl animate-in zoom-in-95 duration-200">
-                <h3 className="font-anton text-text text-xl uppercase mb-2">Episódios no Histórico</h3>
+        <div className="fixed inset-0 bg-void/80 flex items-center justify-center z-[120] p-4 backdrop-blur-md animate-in fade-in duration-200">
+            <div className="surface-glass rounded-2xl p-6 max-w-md w-full text-center shadow-2xl animate-in zoom-in-95 duration-200">
+                <h3 className="font-manrope font-extrabold text-text text-lg tracking-tight mb-2">Episódios no histórico</h3>
                 <p className="text-sm text-muted mb-3">
                     Você tem <span className="text-holo-3 font-bold font-mono">{totalEpisodiosAssistidos}</span> episódio{totalEpisodiosAssistidos === 1 ? '' : 's'} marcado{totalEpisodiosAssistidos === 1 ? '' : 's'} como assistido{totalEpisodiosAssistidos === 1 ? '' : 's'}. O que deseja fazer ao mover para <strong>"Quero Assistir"</strong>?
                 </p>

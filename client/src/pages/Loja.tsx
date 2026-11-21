@@ -171,7 +171,7 @@ export default function Loja() {
               <>
               <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-xl bg-panel-2 border border-line">
                 <IconeAniCoin size={15} />
-                <span className="font-anton text-lg text-holo-3 tracking-wide leading-none">
+                <span className="font-mono font-bold tabular-nums text-base sm:text-lg text-holo-3 leading-none">
                   {saldo.toLocaleString('pt-BR')}
                 </span>
                 <span className="font-mono text-xs font-bold text-muted">₳ AniCoins</span>
@@ -213,7 +213,7 @@ export default function Loja() {
       </header>
 
       {/* SEÇÕES: Mercado (Ouro), Forja (Ouro e materiais) e Visual (AniCoins) */}
-      <div role="tablist" aria-label="Seções da Loja" className="mb-4 grid grid-cols-3 gap-1 rounded-2xl border border-line bg-panel p-1">
+      <div role="tablist" aria-label="Seções da Loja" className="mb-4 grid grid-cols-3 gap-1 rounded-2xl surface-glass p-1">
         {([
           { id: 'mercado', rotulo: 'Mercado', detalhe: 'Equipamentos · Ouro' },
           { id: 'forja', rotulo: 'Forja', detalhe: 'Ouro e materiais' },

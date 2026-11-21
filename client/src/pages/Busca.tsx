@@ -331,7 +331,7 @@ export default function Busca() {
         <div className="w-full min-w-0 max-w-[1440px] mx-auto pt-6 px-4 sm:px-6 lg:px-10 pb-10">
             <AbasDescobrir />
 
-            <div className="flex items-center gap-3 bg-panel border-2 border-holo-2 rounded-xl p-4 mb-4">
+            <div className="flex items-center gap-3 surface-glass border-holo-2/60 focus-within:border-holo-3 rounded-2xl p-4 mb-4 transition-colors shadow-lg">
                 <Search className="text-muted-2 shrink-0" size={20} />
                 <input
                     ref={inputBuscaRef}

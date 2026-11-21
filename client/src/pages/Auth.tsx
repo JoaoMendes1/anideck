@@ -120,8 +120,8 @@ export default function Auth() {
         </div>
 
         {/* Painel do Formulário */}
-        <div className="bg-panel border border-line rounded-[18px] p-8 shadow-2xl">
-          <h1 className="font-anton text-2xl uppercase text-center mb-1">
+        <div className="surface-glass rounded-[18px] p-6 sm:p-8 shadow-2xl">
+          <h1 className="font-manrope font-extrabold text-2xl tracking-tight text-center mb-1">
             {isLogin ? 'Bem-vindo de volta' : 'Criar sua conta'}
           </h1>
           <p className="text-muted text-sm text-center mb-4">

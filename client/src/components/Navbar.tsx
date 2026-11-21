@@ -72,7 +72,7 @@ export default function Navbar() {
     <>
       <BuscaDoAniDeck aberta={buscaAberta} aoFechar={() => setBuscaAberta(false)} />
       <nav
-        className={`fixed top-0 left-[var(--menu-lateral)] right-0 z-50 transition-all duration-300 ${scrolled ? 'py-2 md:py-2.5 bg-void/85 backdrop-blur-md border-b border-line' : 'py-2 md:py-4 bg-transparent'
+        className={`fixed top-0 left-[var(--menu-lateral)] right-0 z-50 transition-all duration-300 ${scrolled ? 'py-2 md:py-2.5 bg-void/90 backdrop-blur-xl border-b border-line shadow-[0_8px_32px_rgba(0,0,0,0.45)]' : 'py-2.5 md:py-3.5 bg-gradient-to-b from-void/80 to-transparent'
           }`}
       >
         <div className="max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-10 flex items-center justify-between gap-4">
@@ -92,7 +92,7 @@ export default function Navbar() {
                 onClick={() => setBuscaAberta(true)}
                 aria-label="Buscar no AniDeck"
                 title="Buscar no AniDeck"
-                className="w-9 h-9 cursor-pointer rounded-full border border-line bg-panel text-muted flex items-center justify-center transition-colors hover:border-holo-3 hover:text-holo-3 shrink-0"
+                className="w-9 h-9 cursor-pointer rounded-full border border-line bg-panel/90 text-muted flex items-center justify-center transition-colors hover:border-holo-3 hover:text-holo-3 shrink-0 shadow-[inset_0_1px_0_rgba(255,255,255,0.05)]"
               >
                 <Search size={16} />
               </button>
@@ -104,7 +104,7 @@ export default function Navbar() {
                   className={`w-9 h-9 rounded-full border flex items-center justify-center transition-colors shrink-0 ${
                     location.pathname === '/loja'
                       ? 'border-gold bg-gold/20 text-gold shadow-[0_0_10px_rgba(245,158,11,0.35)]'
-                      : 'border-line bg-panel text-gold hover:border-gold hover:bg-gold/15'
+                      : 'border-line bg-panel/90 text-gold hover:border-gold hover:bg-gold/15'
                   }`}
                 >
                   <ShoppingBag size={16} />
@@ -116,17 +116,15 @@ export default function Navbar() {
           )}
 
           {/* LINKS DE NAVEGAÇÃO DESKTOP */}
-          {/* "Admin" saiu daqui e foi pro MenuPerfil: é destino raro e restrito,
-              não merecia um slot fixo ao lado dos links de uso diário. */}
           {session && (
             <button
               type="button"
               onClick={() => setBuscaAberta(true)}
-              className="hidden xl:flex cursor-pointer items-center gap-2.5 h-10 w-full max-w-[420px] px-4 rounded-xl border border-line bg-panel/85 text-sm text-muted-2 transition-colors hover:border-holo-3 hover:text-text focus-visible:outline-2 focus-visible:outline-holo-3"
+              className="hidden xl:flex cursor-pointer items-center gap-2.5 h-10 w-full max-w-[420px] px-4 rounded-xl border border-line bg-panel/85 shadow-[inset_0_1px_0_rgba(255,255,255,0.05)] text-sm text-muted transition-colors hover:border-holo-3/60 hover:text-text focus-visible:outline-2 focus-visible:outline-holo-3"
             >
               <Search size={16} aria-hidden />
-              Buscar no AniDeck
-              <kbd className="ml-auto rounded border border-line px-1.5 font-mono text-[10px] text-muted-2">Ctrl K</kbd>
+              <span>Buscar anime, membro ou item…</span>
+              <kbd className="ml-auto rounded-md border border-line bg-panel-2 px-1.5 py-0.5 font-mono text-xs text-muted-2">Ctrl K</kbd>
             </button>
           )}
           <div className={`hidden md:flex items-center gap-3.5 lg:gap-5 xl:gap-6 ${soSemMenuLateral}`}>

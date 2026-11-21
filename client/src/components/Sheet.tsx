@@ -36,14 +36,19 @@ export default function Sheet({ isOpen, onClose, title, children, maxWidthClass 
                 aria-modal="true"
                 aria-label={title}
                 // Trocamos o 'md:max-w-sm' fixo pela variável genérica
-                className={`relative bg-panel border-t md:border border-line rounded-t-3xl md:rounded-2xl w-full ${maxWidthClass} p-6 pb-safe md:pb-6 shadow-2xl max-h-[85vh] overflow-y-auto custom-scrollbar transition-transform duration-300 transform ${
+                className={`relative bg-panel/95 backdrop-blur-xl border-t md:border border-line rounded-t-3xl md:rounded-2xl w-full ${maxWidthClass} p-5 sm:p-6 pb-safe md:pb-6 shadow-[inset_0_1px_0_rgba(255,255,255,0.08),0_24px_60px_-12px_rgba(0,0,0,0.85)] max-h-[85dvh] overflow-y-auto custom-scrollbar transition-transform duration-300 transform ${
                     isOpen ? 'translate-y-0' : 'translate-y-full'
                 }`}
             >
-                <div className="flex justify-between items-center mb-5">
-                    <h3 className="font-anton text-lg uppercase text-text">{title}</h3>
-                    <button onClick={onClose} className="text-muted hover:text-text cursor-pointer p-1" aria-label="Fechar">
-                        <X size={20} />
+                <div className="flex justify-between items-center gap-3 mb-5 pb-3 border-b border-line/60">
+                    <h3 className="font-manrope font-extrabold text-lg tracking-tight text-text m-0">{title}</h3>
+                    <button
+                        type="button"
+                        onClick={onClose}
+                        className="w-8 h-8 rounded-full border border-line bg-panel-2 text-muted hover:text-text hover:border-holo-3/50 flex items-center justify-center cursor-pointer transition-colors"
+                        aria-label="Fechar"
+                    >
+                        <X size={16} />
                     </button>
                 </div>
 

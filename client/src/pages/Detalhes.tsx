@@ -69,8 +69,8 @@ const RELACOES_MOSTRADAS = ['PREQUEL', 'SEQUEL', 'SPIN_OFF', 'ADAPTATION', 'SIDE
 
 function TituloDeBloco({ children, extra }: { children: ReactNode; extra?: ReactNode }) {
   return (
-    <div className="flex items-center justify-between gap-2 mb-3 select-none">
-      <h2 className="font-anton text-[15px] uppercase tracking-wide m-0">{children}</h2>
+    <div className="flex items-center justify-between gap-2 mb-3.5 select-none">
+      <h2 className="font-manrope font-extrabold text-base tracking-tight text-text m-0">{children}</h2>
       {extra}
     </div>
   )

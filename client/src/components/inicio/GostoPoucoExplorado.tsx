@@ -41,10 +41,10 @@ export default function GostoPoucoExplorado({
 }: Props) {
   if (minimizada) {
     return (
-      <section className="rounded-2xl border border-gold/25 bg-panel/70 px-4 py-3 mb-11 flex items-center justify-between gap-3">
+      <section className="rounded-2xl surface-glass border-gold/30 px-4 py-3 mb-11 flex items-center justify-between gap-3">
         <div className="flex items-center gap-2 min-w-0">
           <Gem size={15} className="text-gold shrink-0" aria-hidden />
-          <span className="font-anton uppercase text-base tracking-wide truncate">
+          <span className="font-manrope font-extrabold text-sm sm:text-base tracking-tight truncate">
             Gosto pouco explorado · {rotulo}
           </span>
         </div>
@@ -63,7 +63,7 @@ export default function GostoPoucoExplorado({
   }
 
   return (
-    <section className="relative overflow-hidden rounded-3xl border border-gold/25 bg-panel/70 p-5 sm:p-7 mb-11">
+    <section className="relative overflow-hidden rounded-3xl surface-glass border-gold/30 p-5 sm:p-7 mb-11">
       <span aria-hidden className="pointer-events-none absolute -top-24 -left-20 w-80 h-80 rounded-full bg-gold opacity-10 blur-3xl" />
       {onAlternarMinimizar && (
         <button

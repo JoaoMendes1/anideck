@@ -31,7 +31,7 @@ export default function Feed() {
 
       <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_300px] items-start">
         <section className="min-w-0">
-          <div role="tablist" aria-label="Abas do feed" className="inline-flex p-1 mb-4 rounded-2xl border border-line bg-panel">
+          <div role="tablist" aria-label="Abas do feed" className="inline-flex p-1 mb-4 rounded-2xl surface-glass">
             {ABAS.map(({ id, rotulo, Icone }) => {
               const ativa = aba === id
               return (
@@ -51,7 +51,7 @@ export default function Feed() {
             })}
           </div>
 
-          <div className="rounded-2xl border border-line bg-panel px-4 sm:px-5 py-1">
+          <div className="rounded-2xl surface-glass px-4 sm:px-5 py-1">
             <ListaDeAtividade
               chave={aba}
               carregar={carregar}
@@ -72,8 +72,8 @@ export default function Feed() {
         </section>
 
         <aside className="space-y-4 lg:sticky lg:top-24">
-          <div className="rounded-2xl border border-line bg-panel p-4">
-            <h2 className="font-anton text-base uppercase m-0 mb-2">Quem aparece aqui</h2>
+          <div className="rounded-2xl surface-glass p-4">
+            <h2 className="font-manrope font-extrabold text-base tracking-tight m-0 mb-2">Quem aparece aqui</h2>
             <ul className="m-0 p-0 list-none space-y-2 text-sm text-muted">
               <li className="flex gap-2"><Globe size={15} className="shrink-0 mt-0.5 text-holo-3" aria-hidden /> Só perfis públicos.</li>
               <li className="flex gap-2"><Lock size={15} className="shrink-0 mt-0.5 text-holo-3" aria-hidden /> Comentário de episódio que você ainda não viu fica escondido, para não dar spoiler.</li>
@@ -83,7 +83,7 @@ export default function Feed() {
               Mudar o que eu compartilho
             </Link>
           </div>
-          <Link to="/membros" className="flex items-center gap-3 rounded-2xl border border-line bg-panel p-4 hover:border-holo-3/60 transition-colors">
+          <Link to="/membros" className="flex items-center gap-3 rounded-2xl surface-glass p-4 hover:border-holo-3/60 transition-colors">
             <span className="w-10 h-10 shrink-0 grid place-items-center rounded-xl bg-holo-3/15 text-holo-3"><UserPlus size={18} aria-hidden /></span>
             <span className="min-w-0">
               <span className="block font-bold text-sm">Encontrar gente para seguir</span>

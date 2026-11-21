@@ -40,26 +40,26 @@ export default function SecaoEmAltaComunidade({ compacta = false }: Props) {
     return (
       <section>
         <div className="flex items-end justify-between gap-3 mb-3">
-          <h2 className="font-anton uppercase text-lg sm:text-xl tracking-wide m-0 flex items-center gap-2">
+          <h2 className="font-manrope font-extrabold text-lg sm:text-xl tracking-tight m-0 flex items-center gap-2">
             <Flame size={17} className="text-coral" aria-hidden /> Animes em alta no AniDeck
           </h2>
-          <Link to="/rankings?modo=em_alta" className="font-mono text-xs uppercase tracking-widest text-holo-3 hover:underline">
+          <Link to="/rankings?modo=em_alta" className="font-mono text-xs uppercase tracking-widest text-holo-3 hover:underline shrink-0">
             Ver ranking →
           </Link>
         </div>
         <div className="flex gap-4 overflow-x-auto custom-scrollbar snap-x pb-3 -mx-4 px-4 sm:mx-0 sm:px-0">
           {itens.map((item, idx) => (
             <Link key={item.mal_id} to={`/anime/${item.mal_id}`} className="group shrink-0 w-36 sm:w-44 snap-start">
-              <div className="relative aspect-[2/3] rounded-2xl overflow-hidden border border-line bg-panel-2 transition-transform duration-200 group-hover:-translate-y-1.5">
+              <div className="relative aspect-[2/3] rounded-2xl overflow-hidden border border-line bg-panel-2 transition-transform duration-200 group-hover:-translate-y-1.5 group-hover:border-holo-3/40">
                 {item.imagem_url ? (
                   <img src={item.imagem_url} alt={item.titulo} loading="lazy" className="absolute inset-0 w-full h-full object-cover" />
                 ) : (
                   <div className="w-full h-full grid place-items-center text-muted-2 font-mono text-xs">Sem capa</div>
                 )}
-                <span className="absolute top-2 left-2 px-2 py-0.5 rounded-lg bg-void/85 border border-line font-anton text-xs text-coral">
+                <span className="absolute top-2 left-2 px-2 py-0.5 rounded-lg bg-void/90 border border-line font-mono font-bold tabular-nums text-xs text-coral">
                   #{idx + 1}
                 </span>
-                <span className="absolute bottom-2 right-2 inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-void/85 border border-line font-mono text-[11px] text-text">
+                <span className="absolute bottom-2 right-2 inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-void/90 border border-line font-mono text-[11px] tabular-nums text-text">
                   <Users size={11} className="text-holo-3" aria-hidden /> {item.usuarios_ativos < 0 ? '< 3' : item.usuarios_ativos}
                 </span>
               </div>
@@ -74,7 +74,7 @@ export default function SecaoEmAltaComunidade({ compacta = false }: Props) {
   }
 
   return (
-    <section className="p-5 sm:p-6 rounded-3xl bg-panel border border-line shadow-xl relative overflow-hidden mb-8">
+    <section className="p-5 sm:p-6 rounded-3xl surface-glass shadow-xl relative overflow-hidden mb-8">
       <div className="absolute top-0 right-0 w-80 h-80 bg-coral/5 rounded-full blur-3xl pointer-events-none" />
 
       <div className="relative z-10 mb-5 flex flex-col sm:flex-row sm:items-end sm:justify-between gap-2">
@@ -88,7 +88,7 @@ export default function SecaoEmAltaComunidade({ compacta = false }: Props) {
               Últimos {dias} dias
             </span>
           </div>
-          <h2 className="font-anton text-2xl sm:text-3xl uppercase tracking-wide text-text m-0">
+          <h2 className="font-manrope font-extrabold text-xl sm:text-2xl tracking-tight text-text m-0">
             Pulso da comunidade no AniDeck
           </h2>
           <p className="text-sm text-muted mt-1 max-w-2xl mb-0">

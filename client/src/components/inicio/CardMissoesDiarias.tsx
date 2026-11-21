@@ -228,7 +228,7 @@ export default function CardMissoesDiarias({
           {longasOrdenadas.length > 0 && (
             <div className={compacto ? 'px-3 pb-3' : 'px-3 sm:px-4 pb-4'}>
               <div className="flex items-center justify-between gap-2 flex-wrap border-t border-line/60 pt-3 mb-2.5">
-                <h4 className="font-anton text-sm uppercase tracking-wide m-0 text-text inline-flex items-center gap-1.5">
+                <h4 className="font-manrope font-extrabold text-sm tracking-tight m-0 text-text inline-flex items-center gap-1.5">
                   <Trophy size={14} className="text-holo-2" /> Missões da Semana
                 </h4>
                 <span className="font-mono text-xs text-muted-2 inline-flex items-center gap-1">

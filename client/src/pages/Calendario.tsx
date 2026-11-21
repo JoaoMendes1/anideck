@@ -261,30 +261,38 @@ export default function Calendario() {
     return (
         <div className="pb-20">
             <div className="max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-10 pt-3 sm:pt-8 relative z-10">
-                <div className="mb-8">
-                    <h1 className="font-anton text-[clamp(1.6rem,3.6vw,2.2rem)] uppercase mb-1 text-text select-none">
-                        Calendário de Lançamentos
-                    </h1>
-                    <p className="text-muted text-sm select-none">
-                        Próximos episódios da sua coleção ou do catálogo global — com contagem regressiva viva.
-                    </p>
+                <div className="mb-6 flex flex-col sm:flex-row sm:items-end justify-between gap-3">
+                    <div>
+                        <h1 className="font-manrope text-2xl sm:text-3xl font-extrabold tracking-tight mb-1 text-text select-none">
+                            Calendário de Lançamentos
+                        </h1>
+                        <p className="text-muted text-xs sm:text-sm select-none">
+                            Próximos episódios da sua coleção ou do catálogo global — com contagem regressiva viva.
+                        </p>
+                    </div>
+                    <Link
+                        to="/deck"
+                        className="inline-flex h-9 items-center gap-1.5 self-start sm:self-auto rounded-full border border-line bg-panel-2 px-3.5 text-xs font-bold text-muted hover:text-holo-3 hover:border-holo-3/50 transition-colors"
+                    >
+                        Voltar ao Meu Deck
+                    </Link>
                 </div>
 
-                <div className="flex gap-2 mb-8 select-none border-b border-line pb-4 overflow-x-auto scrollbar-hide">
+                <div className="flex gap-1.5 p-1 mb-8 select-none rounded-2xl bg-panel border border-line w-fit max-w-full overflow-x-auto scrollbar-hide">
                     <button
                         onClick={() => setAbaAtiva('meus')}
-                        className={`shrink-0 whitespace-nowrap text-[13px] font-bold px-5 py-2.5 rounded-full border transition-colors cursor-pointer ${abaAtiva === 'meus'
-                                ? 'bg-gradient-to-r from-holo-1 to-holo-2 text-white border-transparent shadow-lg'
-                                : 'bg-panel border-line text-muted hover:border-holo-3 hover:text-text'
+                        className={`shrink-0 whitespace-nowrap text-xs font-bold px-4 py-2 rounded-xl transition-all cursor-pointer ${abaAtiva === 'meus'
+                                ? 'bg-gradient-to-r from-holo-1 via-holo-2 to-holo-3 text-void font-extrabold shadow-[0_6px_16px_-6px_rgba(123,92,255,0.55)]'
+                                : 'text-muted hover:text-text hover:bg-panel-2/70'
                             }`}
                     >
                         Meu Deck
                     </button>
                     <button
                         onClick={() => setAbaAtiva('todos')}
-                        className={`shrink-0 whitespace-nowrap text-[13px] font-bold px-5 py-2.5 rounded-full border transition-colors cursor-pointer flex items-center gap-2 ${abaAtiva === 'todos'
-                                ? 'bg-holo-3/20 border-holo-3 text-holo-3 shadow-[0_0_15px_rgba(63,224,240,0.2)]'
-                                : 'bg-panel border-line text-muted hover:border-holo-3 hover:text-text'
+                        className={`shrink-0 whitespace-nowrap text-xs font-bold px-4 py-2 rounded-xl transition-all cursor-pointer flex items-center gap-2 ${abaAtiva === 'todos'
+                                ? 'bg-holo-3/20 border border-holo-3/50 text-holo-3'
+                                : 'text-muted hover:text-text hover:bg-panel-2/70'
                             }`}
                     >
                         Lançamentos Global
@@ -299,9 +307,9 @@ export default function Calendario() {
                 ) : error ? (
                     <div className="p-10 text-center text-coral font-mono text-sm">{error}</div>
                 ) : groups.length === 0 ? (
-                    <div className="text-center py-16 bg-panel border border-line rounded-2xl select-none">
+                    <div className="text-center py-16 surface-glass rounded-2xl select-none">
                         <CalendarIcon className="mx-auto mb-4 text-muted-2" size={32} />
-                        <h3 className="font-anton uppercase text-text text-lg mb-1">Agenda Vazia</h3>
+                        <h3 className="font-manrope font-extrabold text-text text-lg mb-1">Agenda Vazia</h3>
                         <p className="text-sm text-muted">Nenhum episódio previsto para a aba selecionada.</p>
                     </div>
                 ) : (
@@ -316,13 +324,13 @@ export default function Calendario() {
                         return (
                             <div key={group.label} className="mb-10 animate-fade-in">
                                 <div className="flex items-center gap-3 mb-4 select-none">
-                                    <h2 className="font-anton text-text uppercase text-[17px] m-0 flex items-center gap-2">
+                                    <h2 className="font-manrope font-extrabold text-text text-lg tracking-tight m-0 flex items-center gap-2">
                                         {group.label}
                                         {group.label === 'Hoje' && (
                                             <span className="w-2 h-2 rounded-full bg-coral animate-pulse" title="Lançamento hoje!"></span>
                                         )}
                                     </h2>
-                                    <span className={`font-mono text-xs font-bold px-2 py-0.5 rounded-full border ${badgeColor}`}>
+                                    <span className={`font-mono text-xs font-bold tabular-nums px-2.5 py-0.5 rounded-full border ${badgeColor}`}>
                                         {group.dateStr}
                                     </span>
                                     <div className="flex-1 h-[1px] bg-line"></div>
@@ -347,8 +355,8 @@ export default function Calendario() {
                                                 key={anime.mal_id}
                                                 className={`relative flex items-stretch border rounded-2xl overflow-hidden transition-all duration-200 group ${
                                                     anime.is_favorite
-                                                        ? 'bg-panel-2 border-gold/40 shadow-[0_0_15px_rgba(255,197,66,0.08)]'
-                                                        : 'bg-panel border-line hover:border-holo-2/70'
+                                                        ? 'bg-panel-2 border-gold/45 shadow-[inset_0_1px_0_rgba(255,197,66,0.12),0_12px_28px_-12px_rgba(255,197,66,0.18)]'
+                                                        : 'surface-glass hover:border-holo-3/45'
                                                 }`}
                                             >
                                                 <Link

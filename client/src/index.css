@@ -6,14 +6,15 @@
 
 /* 3. A diretiva @theme ensina nossas cores e fontes oficiais ao Tailwind */
 @theme {
-  /* Paleta baseada no nosso documento de tokens */
-  --color-void: #0A0714;
-  --color-panel: #130F22;
-  --color-panel-2: #181330;
-  --color-line: #2B2247;
-  --color-text: #F1EEFA;
-  --color-muted: #A79BC9;
-  --color-muted-2: #6B5F94;
+  /* Paleta Holo Evoluído — ver docs/DESIGN_TOKENS.md */
+  --color-void: #07050E;
+  --color-panel: #100C1E;
+  --color-panel-2: #17122B;
+  --color-panel-3: #211A3D;
+  --color-line: #271E42;
+  --color-text: #F6F4FF;
+  --color-muted: #B6ABD8;
+  --color-muted-2: #7C6FA8;
   --color-holo-1: #FF4FD8;
   --color-holo-2: #7B5CFF;
   --color-holo-3: #3FE0F0;
@@ -70,6 +71,7 @@ html[data-tema='terminal'] {
   --color-void: #050A08;
   --color-panel: #121F1A;
   --color-panel-2: #172B24;
+  --color-panel-3: #1E382E;
   --color-line: #1F6B4A;
   --color-text: #F0F8F5;
   --color-muted: #A2C2B6;
@@ -96,6 +98,7 @@ html[data-tema='arquivo'] {
   --color-void: #120C08;
   --color-panel: #201711;
   --color-panel-2: #2D2016;
+  --color-panel-3: #3A2A1D;
   --color-line: #433326;
   --color-text: #F9F3EF;
   --color-muted: #C4B0A0;
@@ -122,9 +125,10 @@ html[data-tema='estudio'] {
   --color-void: #12141A;
   --color-panel: #15171C;
   --color-panel-2: #1C1F27;
+  --color-panel-3: #242934;
   --color-line: #2A3040;
   --color-text: #F2F3F6;
-  --color-muted: #8C96AD;
+  --color-muted: #98A3BA;
   --color-muted-2: #6F7483;
 
   --color-holo-1: #4A7DFF;
@@ -145,6 +149,12 @@ html[data-tema='estudio'] {
 
 /* 4. Estilos globais (Reset) aplicados a toda a página */
 @layer base {
+  html {
+    color-scheme: dark;
+    scrollbar-width: thin;
+    scrollbar-color: color-mix(in srgb, var(--color-muted-2) 55%, transparent) transparent;
+  }
+
   body {
     background-color: var(--color-void);
     color: var(--color-text);
@@ -152,6 +162,32 @@ html[data-tema='estudio'] {
     -webkit-font-smoothing: antialiased;
     margin: 0;
     min-height: 100vh;
+    overflow-x: clip;
+  }
+
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: color-mix(in srgb, var(--color-muted-2) 45%, transparent) transparent;
+  }
+
+  *::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+
+  *::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  *::-webkit-scrollbar-thumb {
+    background-color: color-mix(in srgb, var(--color-muted-2) 40%, transparent);
+    border-radius: 9999px;
+    border: 2px solid transparent;
+    background-clip: content-box;
+  }
+
+  *::-webkit-scrollbar-thumb:hover {
+    background-color: color-mix(in srgb, var(--color-holo-3) 65%, transparent);
   }
 
   /* Foco de teclado: o mesmo anel, na cor do tema, em link, botão e aba. `:where` deixa a
@@ -163,22 +199,38 @@ html[data-tema='estudio'] {
   }
 }
 
-/* 5. Utilitário customizado para o gradiente de texto recorrente no protótipo */
+/* 5. Utilitário customizado para o gradiente de texto recorrente */
 @utility text-holo {
   background-clip: text;
   color: transparent;
-  background-image: linear-gradient(90deg, var(--color-holo-1), var(--color-holo-2) 45%, var(--color-holo-3));
+  background-image: linear-gradient(95deg, var(--color-holo-1), var(--color-holo-2) 48%, var(--color-holo-3));
 }
 
-/* Efeito de luzes radiais no fundo da tela extraído dos protótipos */
+/* Superfície gamer translúcida com brilho interno sutil no topo */
+@utility surface-glass {
+  background-color: color-mix(in srgb, var(--color-panel) 88%, transparent);
+  border: 1px solid color-mix(in srgb, var(--color-muted) 16%, transparent);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06), 0 16px 36px -14px rgba(0, 0, 0, 0.7);
+  backdrop-filter: blur(14px);
+}
+
+/* Grade tática sutil para palcos do RPG 2D */
+@utility cyber-stage-grid {
+  background-image:
+    linear-gradient(to right, color-mix(in srgb, var(--color-holo-3) 7%, transparent) 1px, transparent 1px),
+    linear-gradient(to bottom, color-mix(in srgb, var(--color-holo-3) 7%, transparent) 1px, transparent 1px);
+  background-size: 28px 28px;
+}
+
+/* Efeito de luzes radiais no fundo da tela */
 @utility bg-ambient {
   position: fixed;
   inset: 0;
   z-index: 0;
   pointer-events: none;
   background:
-    radial-gradient(480px 380px at 15% 15%, color-mix(in srgb, var(--color-holo-1) 12%, transparent), transparent 60%),
-    radial-gradient(520px 420px at 85% 85%, color-mix(in srgb, var(--color-holo-3) 10%, transparent), transparent 60%);
+    radial-gradient(540px 420px at 14% 12%, color-mix(in srgb, var(--color-holo-1) 12%, transparent), transparent 64%),
+    radial-gradient(580px 460px at 86% 86%, color-mix(in srgb, var(--color-holo-3) 10%, transparent), transparent 64%);
 }
 
 /* Shimmer Effect para Skeletons */

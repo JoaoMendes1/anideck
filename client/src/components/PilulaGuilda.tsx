@@ -15,6 +15,8 @@ import { obterHPEscaladoDoEstado, obterMPMaxDoEstado } from '../lib/comunidade'
 import { useResumoGuilda } from '../hooks/useResumoGuilda'
 import { useComunidade } from '../hooks/useComunidade'
 import { useCarteira } from '../hooks/useCarteira'
+import { useToast } from '../contexts/ToastContext'
+import { useCelebracao } from '../contexts/CelebracaoContext'
 import BarrasVitais from './comunidade/BarrasVitais'
 import BarraVital from './hud/BarraVital'
 import InsigniaRank from './hud/InsigniaRank'
@@ -55,11 +57,14 @@ export default function PilulaGuilda() {
   const status = useResumoGuilda()
   const { estado } = useComunidade()
   const { saldo } = useCarteira()
+  const { showRewardToast } = useToast()
+  const { celebrar } = useCelebracao()
   const ouro = typeof status?.ouro === 'number' ? status.ouro : null
   const [aberto, setAberto] = useState(false)
   const [avisos, setAvisos] = useState<(AvisoDoHud & { id: number })[]>([])
   const raiz = useRef<HTMLDivElement>(null)
   const anterior = useRef<FotoDoJogador | null>(null)
+  const progressoAnterior = useRef<number>(0)
   const proximoId = useRef(0)
   const { pathname } = useLocation()
 
@@ -84,15 +89,61 @@ export default function PilulaGuilda() {
       ouro,
       ultimoEstornoMissaoEm: status.ultimo_estorno_missao_em ?? null,
     }
-    const novos = avisosDaMudanca(anterior.current, foto)
-    // Sem comunidade na leitura anterior, HP e MP entram agora como base, sem aviso.
+    const antes = anterior.current
+    const pctAntes = progressoAnterior.current
+    const novos = avisosDaMudanca(antes, foto)
     anterior.current = foto
-    if (novos.length === 0) return
+    progressoAnterior.current = status.progresso_pct
+    if (novos.length === 0 || !antes) return
+
     const comId = novos.map(a => ({ ...a, id: ++proximoId.current }))
     setAvisos(atuais => [...atuais, ...comId].slice(-4))
     const ids = new Set(comId.map(a => a.id))
     window.setTimeout(() => setAvisos(atuais => atuais.filter(a => !ids.has(a.id))), DURACAO_AVISO)
-  }, [status, hp, mp, saldo, ouro])
+
+    const diffXp = foto.xp - antes.xp
+    const diffOuro = typeof foto.ouro === 'number' && typeof antes.ouro === 'number' ? foto.ouro - antes.ouro : 0
+    const diffCristal = typeof foto.cristais === 'number' && typeof antes.cristais === 'number' ? foto.cristais - antes.cristais : 0
+    const diffHp = foto.hp !== null && antes.hp !== null ? foto.hp - antes.hp : 0
+
+    if (foto.nivel > antes.nivel) {
+      celebrar({
+        tipo: 'nivel',
+        subtitulo: `Rank ${status.rank}`,
+        titulo: `Você avançou para o Nível ${foto.nivel}!`,
+        notaExtra: status.titulo_rank,
+        recompensas: {
+          xp: diffXp > 0 ? diffXp : undefined,
+          ouro: diffOuro > 0 ? diffOuro : undefined,
+          anicoins: diffCristal > 0 ? diffCristal : undefined,
+        },
+      })
+      return
+    }
+
+    if (diffXp > 0 || diffOuro > 0 || diffCristal > 0 || diffHp > 0) {
+      showRewardToast({
+        titulo: diffXp > 0 ? 'Recompensa de Guilda' : diffOuro > 0 ? 'Ouro recebido' : diffCristal > 0 ? 'AniCoins recebidos' : 'Vitalidade restaurada',
+        subtitulo: `Nível ${status.nivel} · Rank ${status.rank}`,
+        badge: `Nv ${status.nivel}`,
+        xp: diffXp > 0 ? diffXp : undefined,
+        ouro: diffOuro > 0 ? diffOuro : undefined,
+        anicoins: diffCristal > 0 ? diffCristal : undefined,
+        hp: diffHp > 0 ? diffHp : undefined,
+        progressoAntesPct: diffXp > 0 ? pctAntes : undefined,
+        progressoDepoisPct: diffXp > 0 ? status.progresso_pct : undefined,
+        xpLabel: diffXp > 0 ? `${status.xp_no_nivel}/${status.xp_para_proximo} XP` : undefined,
+        tom: diffXp > 0 || diffOuro > 0 ? 'xp' : 'holo',
+      })
+    } else if (diffXp < 0) {
+      showRewardToast({
+        titulo: 'XP ajustado',
+        subtitulo: 'Progresso atualizado',
+        xp: diffXp,
+        tom: 'alerta',
+      })
+    }
+  }, [status, hp, mp, saldo, ouro, celebrar, showRewardToast])
 
   // Fecha ao trocar de página, ao tocar fora e com Esc.
   useEffect(() => {
@@ -137,7 +188,7 @@ export default function PilulaGuilda() {
         aria-haspopup="dialog"
         aria-label={`Seu status: ${resumoTitulo}`}
         title={resumoTitulo}
-        className="flex items-center gap-2 sm:gap-2.5 h-10 pl-1 pr-2.5 sm:pr-3 rounded-full border border-line bg-panel/80 transition-colors hover:border-holo-2/70 focus-visible:outline-2 focus-visible:outline-holo-3 cursor-pointer"
+        className="flex items-center gap-2 sm:gap-2.5 h-10 pl-1 pr-2.5 sm:pr-3 rounded-full border border-line bg-panel/85 backdrop-blur-md shadow-[inset_0_1px_0_rgba(255,255,255,0.06)] transition-colors hover:border-holo-3/50 focus-visible:outline-2 focus-visible:outline-holo-3 cursor-pointer"
       >
         <InsigniaRank rank={status.rank} tamanho={34} />
 
@@ -192,7 +243,7 @@ export default function PilulaGuilda() {
         <div
           role="dialog"
           aria-label="Seu status"
-          className="fixed left-3 right-3 top-[58px] max-h-[calc(100dvh-140px)] overflow-y-auto md:absolute md:left-auto md:right-0 md:top-full md:mt-2 md:w-[340px] md:max-h-none z-[70] rounded-2xl border border-line bg-panel/95 backdrop-blur-xl p-3 sm:p-4 shadow-[0_24px_60px_-12px_rgba(0,0,0,0.8)]"
+          className="fixed left-3 right-3 top-[58px] max-h-[calc(100dvh-140px)] overflow-y-auto md:absolute md:left-auto md:right-0 md:top-full md:mt-2 md:w-[340px] md:max-h-none z-[70] rounded-2xl border border-line bg-panel/95 backdrop-blur-xl p-3 sm:p-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.08),0_24px_60px_-12px_rgba(0,0,0,0.85)]"
         >
           <div className="flex items-start gap-3 mb-3">
             <InsigniaRank rank={status.rank} tamanho={44} />

@@ -163,13 +163,13 @@ export default function Duelos() {
             </div>
 
             <dl className="m-0 grid grid-cols-2 gap-2.5">
-              <div className="flex flex-col gap-1 rounded-xl border border-line bg-panel p-3">
+              <div className="flex flex-col gap-1 rounded-xl surface-glass p-3">
                 <dt className="flex min-w-0 items-center gap-1 truncate text-[11px] font-semibold text-muted sm:gap-1.5 sm:text-xs"><Swords size={13} className="text-coral" aria-hidden="true" /> Hoje</dt>
-                <dd className="m-0 font-anton text-lg leading-none sm:text-2xl">{restantes}<span className="font-mono text-xs text-muted"> de {estado.limite}</span></dd>
+                <dd className="m-0 font-mono font-bold tabular-nums text-lg leading-none sm:text-2xl">{restantes}<span className="font-mono text-xs font-normal text-muted"> de {estado.limite}</span></dd>
               </div>
-              <div className="flex flex-col gap-1 rounded-xl border border-line bg-panel p-3">
+              <div className="flex flex-col gap-1 rounded-xl surface-glass p-3">
                 <dt className="flex min-w-0 items-center gap-1 truncate text-[11px] font-semibold text-muted sm:gap-1.5 sm:text-xs"><Medal size={13} className="text-gold" aria-hidden="true" /> Pontos na temporada</dt>
-                <dd className="m-0 font-anton text-lg leading-none sm:text-2xl">{estado.pontos}</dd>
+                <dd className="m-0 font-mono font-bold tabular-nums text-lg leading-none sm:text-2xl">{estado.pontos}</dd>
               </div>
             </dl>
 

@@ -452,8 +452,8 @@ export default function AbaModeracao() {
         )}
       </section>
 
-      <section className="p-5 rounded-2xl bg-panel border border-line min-w-0">
-        <h2 className="font-anton text-lg uppercase m-0 mb-1">Mana, Vitalidade e descanso</h2>
+      <section className="p-5 rounded-2xl surface-glass min-w-0">
+        <h2 className="font-manrope font-extrabold text-lg tracking-tight m-0 mb-1">Mana, Vitalidade e descanso</h2>
         <p className="text-[12.5px] text-muted mt-0 mb-4">
           O banco lê estes números na hora de cobrar a Mana: a mudança vale a partir do próximo comentário. A Vitalidade nunca altera XP nem rank.
         </p>
@@ -491,7 +491,7 @@ export default function AbaModeracao() {
               <button
                 type="button"
                 onClick={() => setRegras({ ...regras, previsoes_ativas: !regras.previsoes_ativas })}
-                className={`px-4 py-2 rounded-xl font-bold font-mono text-xs transition-colors cursor-pointer ${
+                className={`px-4 py-2 rounded-xl font-bold font-mono text-xs transition-colors cursor-pointer shrink-0 ${
                   regras.previsoes_ativas
                     ? 'bg-green/20 border border-green text-green'
                     : 'bg-void border border-line text-muted hover:text-text'
@@ -501,7 +501,7 @@ export default function AbaModeracao() {
               </button>
             </div>
 
-            <button type="button" onClick={salvarRegras} disabled={salvandoRegras} className="mt-4 inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-gradient-to-r from-holo-1 to-holo-2 text-void text-sm font-extrabold cursor-pointer disabled:opacity-50">
+            <button type="button" onClick={salvarRegras} disabled={salvandoRegras} className="mt-4 inline-flex items-center gap-2 px-5 py-2.5 rounded-full bg-gradient-to-r from-holo-1 via-holo-2 to-holo-3 text-void text-sm font-extrabold cursor-pointer disabled:opacity-50">
               <Save size={14} aria-hidden /> {salvandoRegras ? 'Salvando…' : 'Salvar regras'}
             </button>
           </>
@@ -509,10 +509,10 @@ export default function AbaModeracao() {
       </section>
 
       {/* RECOMPENSAS POR CONVITE & CONVITE VIP DO FUNDADOR (#191) */}
-      <section className="p-5 rounded-2xl bg-panel border border-line min-w-0">
+      <section className="p-5 rounded-2xl surface-glass min-w-0">
         <div className="flex items-center gap-2 mb-1">
           <Gift size={18} className="text-gold" />
-          <h2 className="font-anton text-lg uppercase m-0">Convites & Recrutamento</h2>
+          <h2 className="font-manrope font-extrabold text-lg tracking-tight m-0">Convites & recrutamento</h2>
         </div>
         <p className="text-[12.5px] text-muted mt-0 mb-4">
           Ajuste os valores de incentivo em AniCoins (₳) e XP para membros que convidam amigos e o pacote de boas-vindas VIP concedido pelo Fundador.
@@ -596,10 +596,10 @@ export default function AbaModeracao() {
       </section>
 
       {/* MODERAÇÃO DE CLÃS (FASE 17, #180, #181) */}
-      <section className="p-5 rounded-2xl bg-panel border border-line min-w-0">
+      <section className="p-5 rounded-2xl surface-glass min-w-0">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-2">
           <div className="flex items-center gap-2">
-            <h2 className="font-anton text-lg uppercase m-0">Clãs & Desafios</h2>
+            <h2 className="font-manrope font-extrabold text-lg tracking-tight m-0">Clãs & Desafios</h2>
             <span className="text-xs px-2.5 py-0.5 rounded-full bg-panel-2 border border-line font-mono font-bold text-muted">
               {denunciasClas.length} pendente(s)
             </span>

@@ -109,18 +109,18 @@ export default function Invocacao() {
       {carregando ? (
         <div className="h-72 animate-pulse rounded-2xl border border-line bg-panel" />
       ) : semPersonagem ? (
-        <div className="rounded-2xl border border-line bg-panel p-6 text-center">
-          <h1 className="m-0 mb-2 font-anton text-2xl uppercase">Desperte o seu personagem</h1>
+        <div className="rounded-2xl surface-glass p-6 text-center">
+          <h1 className="m-0 mb-2 font-manrope font-extrabold text-xl tracking-tight">Desperte o seu personagem</h1>
           <p className="m-0 mb-4 text-sm text-muted">A invocação começa depois do despertar.</p>
-          <Link to="/personagem" className="inline-flex h-10 items-center rounded-full bg-gradient-to-r from-holo-1 to-holo-3 px-5 text-xs font-extrabold text-void">
+          <Link to="/personagem" className="inline-flex h-10 items-center rounded-full bg-gradient-to-r from-holo-1 via-holo-2 to-holo-3 px-5 text-xs font-extrabold text-void shadow-md">
             Ir para o despertar
           </Link>
         </div>
       ) : !estado ? (
-        <div className="rounded-2xl border border-line bg-panel p-6 text-center">
-          <h1 className="m-0 mb-2 font-anton text-2xl uppercase">Invocação indisponível</h1>
+        <div className="rounded-2xl surface-glass p-6 text-center">
+          <h1 className="m-0 mb-2 font-manrope font-extrabold text-xl tracking-tight">Invocação indisponível</h1>
           <p className="m-0 mb-4 text-sm text-muted">{erro}</p>
-          <button type="button" onClick={carregar} className="h-10 cursor-pointer rounded-full bg-gradient-to-r from-holo-1 to-holo-3 px-5 text-xs font-extrabold text-void">
+          <button type="button" onClick={carregar} className="h-10 cursor-pointer rounded-full bg-gradient-to-r from-holo-1 via-holo-2 to-holo-3 px-5 text-xs font-extrabold text-void shadow-md">
             Tentar de novo
           </button>
         </div>
@@ -128,7 +128,7 @@ export default function Invocacao() {
         <div className="grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,1fr)_360px] lg:items-start">
           <div className="flex min-w-0 flex-col gap-5">
             <div
-              className="relative flex min-h-56 flex-col items-center justify-center gap-3 overflow-hidden rounded-2xl border border-holo-2/40 p-6 text-center"
+              className="relative flex min-h-56 flex-col items-center justify-center gap-3 overflow-hidden rounded-2xl border border-holo-2/40 p-6 text-center shadow-lg"
               style={{ backgroundImage: 'radial-gradient(60% 70% at 50% 45%, color-mix(in srgb, var(--color-holo-2) 45%, transparent), transparent 75%)' }}
             >
               <Sparkles size={40} className="text-gold motion-safe:animate-pulse" aria-hidden="true" />
@@ -136,7 +136,7 @@ export default function Invocacao() {
               <p className="m-0 max-w-md text-xs sm:text-sm leading-relaxed text-muted">
                 Troque bilhetes de expedição por uma chance de equipamento. Quando não vem item, vem Ouro. Repetidos se acumulam no inventário.
               </p>
-              <p className="m-0 inline-flex items-center gap-2 rounded-full border border-gold/50 bg-void/60 px-4 py-1.5 font-mono text-sm font-bold text-gold">
+              <p className="m-0 inline-flex items-center gap-2 rounded-full border border-gold/50 bg-void/70 px-4 py-1.5 font-mono text-sm font-bold text-gold tabular-nums">
                 <Ticket size={16} aria-hidden="true" /> {estado.bilhetes} {estado.bilhetes === 1 ? 'bilhete' : 'bilhetes'}
               </p>
             </div>
@@ -146,7 +146,7 @@ export default function Invocacao() {
                 type="button"
                 onClick={() => fazerInvocacao(1)}
                 disabled={invocando || estado.bilhetes < 1}
-                className="min-h-13 cursor-pointer rounded-full border border-holo-3/60 bg-panel px-4 text-sm font-extrabold text-text disabled:cursor-not-allowed disabled:opacity-50"
+                className="min-h-13 cursor-pointer rounded-full border border-holo-3/50 surface-glass px-4 text-sm font-extrabold text-text hover:border-holo-3 disabled:cursor-not-allowed disabled:opacity-50"
               >
                 Invocar 1 <span className="block font-mono text-xs font-semibold text-muted">1 bilhete</span>
               </button>
@@ -154,7 +154,7 @@ export default function Invocacao() {
                 type="button"
                 onClick={() => fazerInvocacao(10)}
                 disabled={invocando || estado.bilhetes < 10}
-                className="min-h-13 cursor-pointer rounded-full bg-gradient-to-r from-holo-1 to-holo-3 px-4 text-sm font-extrabold text-void disabled:cursor-not-allowed disabled:opacity-50"
+                className="min-h-13 cursor-pointer rounded-full bg-gradient-to-r from-holo-1 via-holo-2 to-holo-3 px-4 text-sm font-extrabold text-void shadow-md disabled:cursor-not-allowed disabled:opacity-50"
               >
                 Invocar 10 <span className="block font-mono text-xs font-semibold">10 bilhetes</span>
               </button>

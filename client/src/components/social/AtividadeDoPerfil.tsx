@@ -58,8 +58,8 @@ export default function AtividadeDoPerfil({ handle, mostra, souEu }: Props) {
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_320px] gap-6 items-start mb-6">
-      <section className="rounded-2xl bg-panel border border-line p-5 min-w-0" aria-labelledby="atividade-recente">
-        <h2 id="atividade-recente" className="font-anton text-base uppercase m-0 mb-1 inline-flex items-center gap-2">
+      <section className="rounded-2xl surface-glass p-5 min-w-0" aria-labelledby="atividade-recente">
+        <h2 id="atividade-recente" className="font-manrope font-extrabold text-base tracking-tight text-text m-0 mb-1 inline-flex items-center gap-2">
           <Activity size={16} className="text-holo-3" aria-hidden /> Atividade recente
         </h2>
         {dados === undefined ? (
@@ -75,8 +75,8 @@ export default function AtividadeDoPerfil({ handle, mostra, souEu }: Props) {
         )}
       </section>
 
-      <section className="rounded-2xl bg-panel border border-line p-5" aria-labelledby="assistindo-agora">
-        <h2 id="assistindo-agora" className="font-anton text-base uppercase m-0 mb-4 inline-flex items-center gap-2">
+      <section className="rounded-2xl surface-glass p-5" aria-labelledby="assistindo-agora">
+        <h2 id="assistindo-agora" className="font-manrope font-extrabold text-base tracking-tight text-text m-0 mb-4 inline-flex items-center gap-2">
           <PlayCircle size={16} className="text-green" aria-hidden /> Assistindo agora
         </h2>
         {dados === undefined ? (

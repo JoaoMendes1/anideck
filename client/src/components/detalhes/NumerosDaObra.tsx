@@ -75,11 +75,11 @@ export default function NumerosDaObra({ nota, ranking, stats, comunidade, minhaN
 
   return (
     <div className="space-y-6">
-      <section className="bg-panel border border-line rounded-2xl p-5">
+      <section className="surface-glass rounded-2xl p-5">
         <div className="flex flex-wrap items-baseline justify-between gap-2 mb-4">
           <div>
             <p className="font-mono text-xs text-holo-3 uppercase tracking-widest m-0">No AniDeck</p>
-            <h3 className="font-anton text-base uppercase m-0 mt-0.5">Comunidade nesta obra</h3>
+            <h3 className="font-manrope font-extrabold text-base tracking-tight text-text m-0 mt-0.5">Comunidade nesta obra</h3>
           </div>
           <span className="font-mono text-xs text-muted-2">
             {comunidade
@@ -101,7 +101,7 @@ export default function NumerosDaObra({ nota, ranking, stats, comunidade, minhaN
               <div className={`font-anton ${c.valor !== null && c.valor < 0 ? 'text-lg' : 'text-2xl'} mt-1 tabular-nums ${c.cor}`}>
                 {c.valor !== null ? formatarContagemComunidade(c.valor) : '–'}
               </div>
-              <div className="text-[11px] text-muted-2 mt-1">{c.detalhe}</div>
+              <div className="text-xs text-muted-2 mt-1">{c.detalhe}</div>
             </div>
           ))}
         </div>
@@ -109,20 +109,20 @@ export default function NumerosDaObra({ nota, ranking, stats, comunidade, minhaN
 
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
         {cartoes.map(c => (
-          <div key={c.rotulo} className="bg-panel border border-line rounded-2xl p-4">
+          <div key={c.rotulo} className="surface-glass rounded-2xl p-4">
             <div className="font-mono text-xs text-muted-2 uppercase tracking-wider flex items-center gap-1.5">
               {c.icone} {c.rotulo}
             </div>
-            <div className={`font-anton text-2xl mt-1 ${c.cor}`}>{c.valor}</div>
+            <div className={`font-anton text-2xl mt-1 tabular-nums ${c.cor}`}>{c.valor}</div>
           </div>
         ))}
       </div>
 
       {stats?.scores?.length ? (
-        <div className="bg-panel border border-line rounded-2xl p-5">
+        <div className="surface-glass rounded-2xl p-5">
           <div className="flex items-baseline justify-between gap-2 mb-4">
-            <h3 className="font-anton text-base uppercase m-0">Como o público global avaliou</h3>
-            <span className="font-mono text-xs text-muted-2">{votos.toLocaleString('pt-BR')} avaliações</span>
+            <h3 className="font-manrope font-extrabold text-base tracking-tight text-text m-0">Como o público global avaliou</h3>
+            <span className="font-mono text-xs text-muted-2 tabular-nums">{votos.toLocaleString('pt-BR')} avaliações</span>
           </div>
           <div className="flex items-end gap-1.5 h-[140px] mb-2">
             {[...stats.scores]

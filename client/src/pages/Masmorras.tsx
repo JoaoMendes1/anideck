@@ -220,17 +220,17 @@ export default function Masmorras() {
       {carregando ? (
         <div className="h-72 animate-pulse rounded-2xl border border-line bg-panel" />
       ) : semPersonagem ? (
-        <div className="rounded-2xl border border-line bg-panel p-6 text-center">
-          <h1 className="m-0 mb-2 font-anton text-2xl uppercase">Desperte o seu personagem</h1>
-          <Link to="/personagem" className="inline-flex h-10 items-center rounded-full bg-gradient-to-r from-holo-1 to-holo-3 px-5 text-xs font-extrabold text-void">
+        <div className="rounded-2xl surface-glass p-6 text-center">
+          <h1 className="m-0 mb-2 font-manrope font-extrabold text-xl tracking-tight">Desperte o seu personagem</h1>
+          <Link to="/personagem" className="inline-flex h-10 items-center rounded-full bg-gradient-to-r from-holo-1 via-holo-2 to-holo-3 px-5 text-xs font-extrabold text-void shadow-md">
             Ir para o despertar
           </Link>
         </div>
       ) : !estado ? (
-        <div className="rounded-2xl border border-line bg-panel p-6 text-center">
-          <h1 className="m-0 mb-2 font-anton text-2xl uppercase">Masmorras indisponíveis</h1>
+        <div className="rounded-2xl surface-glass p-6 text-center">
+          <h1 className="m-0 mb-2 font-manrope font-extrabold text-xl tracking-tight">Masmorras indisponíveis</h1>
           <p className="m-0 mb-4 text-sm text-muted">{erro}</p>
-          <button type="button" onClick={carregar} className="h-10 cursor-pointer rounded-full bg-gradient-to-r from-holo-1 to-holo-3 px-5 text-xs font-extrabold text-void">
+          <button type="button" onClick={carregar} className="h-10 cursor-pointer rounded-full bg-gradient-to-r from-holo-1 via-holo-2 to-holo-3 px-5 text-xs font-extrabold text-void shadow-md">
             Tentar de novo
           </button>
         </div>

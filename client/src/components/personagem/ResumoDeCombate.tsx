@@ -8,12 +8,12 @@ import IconeOuro from '../IconeOuro'
 
 function Numero({ icone, rotulo, valor }: { icone: React.ReactNode; rotulo: string; valor: number }) {
   return (
-    <div className="flex min-w-0 flex-col items-center gap-0.5 rounded-xl bg-panel-2 px-1 py-2">
-      <span className="flex items-center gap-1 text-[11px] font-semibold text-muted">
+    <div className="flex min-w-0 flex-col items-center gap-1 rounded-xl border border-line/60 bg-panel-2/90 px-1 py-2">
+      <span className="flex items-center gap-1 text-xs font-semibold text-muted">
         {icone}
         {rotulo}
       </span>
-      <span className="font-anton text-lg leading-none text-text">{valor}</span>
+      <span className="font-mono text-base font-extrabold tabular-nums leading-none text-text">{valor}</span>
     </div>
   )
 }
@@ -30,7 +30,7 @@ export default function ResumoDeCombate({ estado, aoAbrirAtributos }: { estado: 
     (estado.pontos?.sorte ?? 0)
   const livres = Math.max(0, pontos - usados)
   return (
-    <section aria-label="Resumo de combate" className="flex flex-col gap-2.5 rounded-2xl border border-line bg-panel p-3 lg:hidden">
+    <section aria-label="Resumo de combate" className="flex flex-col gap-2.5 rounded-2xl surface-glass p-3.5 lg:hidden">
       <div className="grid grid-cols-2 gap-1.5 sm:grid-cols-4">
         <Numero icone={<Zap size={12} className="text-holo-2" aria-hidden="true" />} rotulo="Poder" valor={a.poder} />
         <Numero icone={<Heart size={12} className="text-coral" aria-hidden="true" />} rotulo="Vida" valor={a.vida} />

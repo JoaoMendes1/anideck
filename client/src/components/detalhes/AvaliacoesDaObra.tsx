@@ -191,10 +191,10 @@ export default function AvaliacoesDaObra({ malId, ehCompleto, aoContarReviews }:
 
   return (
     <section id="avaliacoes" className="space-y-5 scroll-mt-32">
-      <div className="rounded-2xl border border-line bg-panel p-4 sm:p-5">
+      <div className="rounded-2xl surface-glass p-4 sm:p-5">
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div className="min-w-0 flex-1">
-            <h2 className="font-anton text-[15px] uppercase tracking-wide text-text m-0 flex items-center gap-2">
+            <h2 className="font-manrope font-extrabold text-base tracking-tight text-text m-0 flex items-center gap-2">
               <MessageSquareQuote size={16} className="text-holo-3" aria-hidden />
               Avaliações públicas da obra
             </h2>
