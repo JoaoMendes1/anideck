@@ -182,3 +182,41 @@ func TestHandleGetEquipamentos_SemAutenticacao(t *testing.T) {
 		t.Fatalf("esperava 401, recebeu %d", w.Code)
 	}
 }
+
+func TestEquipamentoExclusivoEntreHerois(t *testing.T) {
+	inv := []linhaInventarioRPG{
+		{
+			Quantidade: 1,
+			Item:       &ItemRPG{ID: "armadura_aco", Slot: "armadura", Nome: "Armadura de Aço", Raridade: "raro", NivelMinimo: 1},
+		},
+		{
+			Quantidade: 2,
+			Item:       &ItemRPG{ID: "elmo_ferro", Slot: "elmo", Nome: "Elmo de Ferro", Raridade: "comum", NivelMinimo: 1},
+		},
+	}
+	porHeroi := map[string]map[string]string{
+		"espadachim_eter": {"armadura": "armadura_aco", "elmo": "elmo_ferro"},
+		"arqueiro_trevas": {},
+	}
+
+	estadoYoru := MontarEstadoEquipamentoComOutros(15, "arqueiro_trevas", inv, map[string]string{}, PrimariosRPG{}, porHeroi)
+
+	if msg := ErroItemSemCopiaLivre(estadoYoru, "armadura_aco"); msg == "" || !strings.Contains(msg, "Espadachim de Éter") {
+		t.Fatalf("armadura com 1 cópia no Espadachim deveria bloquear no Yoru, veio %q", msg)
+	}
+	if msg := ErroItemSemCopiaLivre(estadoYoru, "elmo_ferro"); msg != "" {
+		t.Fatalf("elmo com 2 cópias deveria permitir equipar no Yoru, veio %q", msg)
+	}
+
+	for _, it := range estadoYoru.Inventario {
+		if it.ID == "armadura_aco" && (it.EmUsoPorOutros != 1 || len(it.EmUsoPor) != 1 || it.EmUsoPor[0] != "Espadachim de Éter") {
+			t.Fatalf("metadados em uso inesperados para armadura_aco: %+v", it)
+		}
+	}
+
+	// Para o próprio Espadachim que veste a armadura, EmUsoPorOutros é 0 e não bloqueia.
+	estadoEsp := MontarEstadoEquipamentoComOutros(15, "espadachim_eter", inv, porHeroi["espadachim_eter"], PrimariosRPG{}, porHeroi)
+	if msg := ErroItemSemCopiaLivre(estadoEsp, "armadura_aco"); msg != "" {
+		t.Fatalf("não deveria bloquear item já equipado no herói atual: %q", msg)
+	}
+}

@@ -312,7 +312,7 @@ func equipamentoDoContexto(dbClient *supabase.Client, userID string, ctx context
 
 	var estado EstadoEquipamento
 	if ctx.inventarioLido {
-		estado = MontarEstadoEquipamento(nivel, base, ctx.inventario, ctx.EquipadosDoHeroi(base), pontosHeroi)
+		estado = MontarEstadoEquipamentoComOutros(nivel, base, ctx.inventario, ctx.EquipadosDoHeroi(base), pontosHeroi, ctx.equipadosPorHeroi)
 	} else {
 		var err error
 		if estado, err = carregarEstadoEquipamento(dbClient, userID, base, nivel, pontosHeroi); err != nil {

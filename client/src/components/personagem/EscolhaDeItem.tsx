@@ -187,6 +187,10 @@ export default function EscolhaDeItem({
             const custo = item.custo_aprimorar ?? 0
             const classes = textoDasClasses(item)
             const conjunto = item.conjunto ? (estado.conjuntos ?? []).find((c) => c.id === item.conjunto) : undefined
+            const emUsoOutros = item.em_uso_outros ?? 0
+            const semCopiaLivre = !item.equipado && emUsoOutros >= item.quantidade
+            const copiasLivres = Math.max(0, item.quantidade - (item.equipado ? 1 : 0) - emUsoOutros)
+            const emUsoPorTexto = (item.em_uso_por ?? []).join(', ') || 'outro personagem'
             return (
               <li key={item.id} className={`flex flex-wrap items-center gap-2 rounded-xl border p-2.5 ${estilo.borda} ${estilo.fundo}`}>
                 <span className={`flex h-10 w-11 shrink-0 items-center justify-center overflow-hidden rounded-lg bg-void/50 ${estilo.texto}`}>
@@ -210,6 +214,12 @@ export default function EscolhaDeItem({
                       {item.falta_requisito ?? `Requisito: ${textoDosRequisitos(item.requisitos)}`}
                     </p>
                   )}
+                  {emUsoOutros > 0 && (
+                    <p className="m-0 text-xs font-bold text-gold">
+                      Em uso por {emUsoPorTexto}
+                      {item.quantidade > 1 && copiasLivres > 0 ? ` · ${copiasLivres} ${copiasLivres === 1 ? 'livre' : 'livres'}` : ''}
+                    </p>
+                  )}
                   {item.em_sintonia && (
                     <p className="m-0 inline-flex items-center gap-1 text-xs font-bold text-gold">
                       <Sparkles size={11} aria-hidden="true" /> Sintonia: +{SINTONIA.bonusPct}% no seu herói
@@ -222,7 +232,7 @@ export default function EscolhaDeItem({
                       {conjunto ? ` · ${conjunto.pecas} em uso` : ''}
                     </p>
                   )}
-                  {!item.equipado && !item.bloqueado && !item.nao_serve && !item.falta_requisito && (
+                  {!item.equipado && !semCopiaLivre && !item.bloqueado && !item.nao_serve && !item.falta_requisito && (
                     <p className="m-0 flex flex-wrap gap-x-2 font-mono text-xs">
                       <Diferenca valor={dif.vida} rotulo="Vida" />
                       <Diferenca valor={dif.ataque} rotulo="Ataque" />
@@ -232,19 +242,7 @@ export default function EscolhaDeItem({
                     </p>
                   )}
                 </div>
-                {item.nao_serve && !item.equipado ? (
-                  <span className="inline-flex shrink-0 items-center gap-1 font-mono text-xs text-coral">
-                    <Ban size={12} aria-hidden="true" /> outra classe
-                  </span>
-                ) : item.falta_requisito && !item.equipado ? (
-                  <span className="inline-flex shrink-0 items-center gap-1 font-mono text-xs text-coral">
-                    <Lock size={12} aria-hidden="true" /> falta atributo
-                  </span>
-                ) : item.bloqueado ? (
-                  <span className="inline-flex shrink-0 items-center gap-1 font-mono text-xs text-muted">
-                    <Lock size={12} aria-hidden="true" /> nível {item.nivel_minimo}
-                  </span>
-                ) : item.equipado ? (
+                {item.equipado ? (
                   <button
                     type="button"
                     onClick={() => trocar('')}
@@ -253,6 +251,25 @@ export default function EscolhaDeItem({
                   >
                     Remover
                   </button>
+                ) : semCopiaLivre ? (
+                  <span
+                    className="inline-flex shrink-0 items-center gap-1 rounded-full border border-gold/40 bg-gold/10 px-3 py-1 font-mono text-xs font-bold text-gold"
+                    title={`Este equipamento está em uso por ${emUsoPorTexto}`}
+                  >
+                    <Lock size={12} aria-hidden="true" /> em uso
+                  </span>
+                ) : item.nao_serve ? (
+                  <span className="inline-flex shrink-0 items-center gap-1 font-mono text-xs text-coral">
+                    <Ban size={12} aria-hidden="true" /> outra classe
+                  </span>
+                ) : item.falta_requisito ? (
+                  <span className="inline-flex shrink-0 items-center gap-1 font-mono text-xs text-coral">
+                    <Lock size={12} aria-hidden="true" /> falta atributo
+                  </span>
+                ) : item.bloqueado ? (
+                  <span className="inline-flex shrink-0 items-center gap-1 font-mono text-xs text-muted">
+                    <Lock size={12} aria-hidden="true" /> nível {item.nivel_minimo}
+                  </span>
                 ) : (
                   <button
                     type="button"
@@ -266,24 +283,28 @@ export default function EscolhaDeItem({
                 {item.quantidade > 1 && (
                   <div className="flex w-full flex-wrap items-center justify-between gap-2 border-t border-line/60 pt-2 font-mono text-xs">
                     <span className="text-muted">
-                      {item.quantidade - 1 === 1 ? '1 cópia repetida' : `${item.quantidade - 1} cópias repetidas`}
+                      {copiasLivres === 0
+                        ? 'Todas as cópias estão equipadas'
+                        : item.quantidade - 1 === 1
+                          ? '1 cópia repetida'
+                          : `${item.quantidade - 1} cópias repetidas`}
                     </span>
                     <span className="flex gap-1.5">
                       <button
                         type="button"
                         onClick={() => tirarCopia(item.id, item.nome, 'vender')}
-                        disabled={salvando}
+                        disabled={salvando || copiasLivres === 0}
                         aria-label={`Vender uma cópia de ${item.nome} por ${valorDeVenda(item.raridade)} de Ouro`}
-                        className="inline-flex min-h-10 cursor-pointer items-center gap-1 rounded-full border border-gold/50 px-3 font-bold text-gold hover:bg-gold/10 disabled:cursor-wait disabled:opacity-50"
+                        className="inline-flex min-h-10 cursor-pointer items-center gap-1 rounded-full border border-gold/50 px-3 font-bold text-gold hover:bg-gold/10 disabled:cursor-not-allowed disabled:opacity-50"
                       >
                         <Coins size={12} aria-hidden="true" /> +{valorDeVenda(item.raridade)}
                       </button>
                       <button
                         type="button"
                         onClick={() => tirarCopia(item.id, item.nome, 'desmontar')}
-                        disabled={salvando}
+                        disabled={salvando || copiasLivres === 0}
                         aria-label={`Desmontar uma cópia de ${item.nome} em materiais da Forja`}
-                        className="inline-flex min-h-10 cursor-pointer items-center gap-1 rounded-full border border-holo-2/50 px-3 font-bold text-holo-2 hover:bg-holo-2/10 disabled:cursor-wait disabled:opacity-50"
+                        className="inline-flex min-h-10 cursor-pointer items-center gap-1 rounded-full border border-holo-2/50 px-3 font-bold text-holo-2 hover:bg-holo-2/10 disabled:cursor-not-allowed disabled:opacity-50"
                       >
                         <Recycle size={12} aria-hidden="true" /> Desmontar
                       </button>

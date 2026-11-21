@@ -114,6 +114,10 @@ export interface ItemDoInventario extends ItemRPG {
   custo_aprimorar?: number
   /** O atributo que falta para o item valer ("Exige Força 30 (você tem 25)"). */
   falta_requisito?: string
+  /** Quantas cópias deste item já estão equipadas em outros heróis do elenco. */
+  em_uso_outros?: number
+  /** Nomes dos outros heróis que estão vestindo este item. */
+  em_uso_por?: string[]
 }
 
 export interface SlotRPG {

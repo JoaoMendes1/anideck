@@ -86,6 +86,10 @@ type ItemDoInventario struct {
 	// nível, 0 quando já está no teto.
 	AprimoramentoMaximo int `json:"aprimoramento_maximo"`
 	CustoAprimorar      int `json:"custo_aprimorar"`
+	// EmUsoPorOutros conta quantas cópias deste item estão equipadas em outros personagens.
+	EmUsoPorOutros int `json:"em_uso_outros,omitempty"`
+	// EmUsoPor lista os nomes dos outros heróis que estão vestindo este item.
+	EmUsoPor []string `json:"em_uso_por,omitempty"`
 }
 
 // SlotRPG é um dos sete lugares de equipamento. Item nil é slot vazio.
@@ -250,6 +254,36 @@ func interpretarInventarioRPG(dados []byte) ([]linhaInventarioRPG, error) {
 // alcança: desmarcar episódios reduz o XP, e o item acima do nível fica no slot sem somar
 // atributo, em vez de dar erro.
 func MontarEstadoEquipamento(nivel int, personagemBase string, inventario []linhaInventarioRPG, equipados map[string]string, pontos PrimariosRPG) EstadoEquipamento {
+	return MontarEstadoEquipamentoComOutros(nivel, personagemBase, inventario, equipados, pontos, nil)
+}
+
+// ErroItemSemCopiaLivre verifica no estado calculado se todas as cópias do item no
+// inventário já estão equipadas em outros heróis. Devolve a mensagem de erro ou "".
+func ErroItemSemCopiaLivre(estado EstadoEquipamento, itemID string) string {
+	if itemID == "" {
+		return ""
+	}
+	for _, it := range estado.Inventario {
+		if it.ID != itemID {
+			continue
+		}
+		if it.Equipado {
+			return ""
+		}
+		if it.EmUsoPorOutros < max(1, it.Quantidade) {
+			return ""
+		}
+		if len(it.EmUsoPor) == 1 {
+			return fmt.Sprintf("Este equipamento já está em uso por %s. Desequipe dele antes ou consiga outra cópia.", it.EmUsoPor[0])
+		}
+		return "Todas as cópias deste equipamento já estão em uso por outros personagens."
+	}
+	return ""
+}
+
+// MontarEstadoEquipamentoComOutros estende MontarEstadoEquipamento informando no inventário
+// quantas cópias já estão equipadas por outros heróis do elenco.
+func MontarEstadoEquipamentoComOutros(nivel int, personagemBase string, inventario []linhaInventarioRPG, equipados map[string]string, pontos PrimariosRPG, equipadosPorHeroi map[string]map[string]string) EstadoEquipamento {
 	if nivel < 1 {
 		nivel = 1
 	}
@@ -268,6 +302,25 @@ func MontarEstadoEquipamento(nivel int, personagemBase string, inventario []linh
 			faltaDoItem[l.Item.ID] = FaltaDeRequisito(req, primarios)
 		}
 		porID[l.Item.ID] = item
+	}
+
+	outrosPorItem := make(map[string][]string)
+	for baseHeroi, slotsHeroi := range equipadosPorHeroi {
+		if baseHeroi == "" || baseHeroi == personagemBase {
+			continue
+		}
+		vistoNoHeroi := make(map[string]bool)
+		for _, id := range slotsHeroi {
+			if id == "" || vistoNoHeroi[id] {
+				continue
+			}
+			vistoNoHeroi[id] = true
+			outrosPorItem[id] = append(outrosPorItem[id], NomePadraoElenco(baseHeroi))
+		}
+	}
+	for id, nomes := range outrosPorItem {
+		sort.Strings(nomes)
+		outrosPorItem[id] = nomes
 	}
 
 	elemento := ElementoDoPersonagem(personagemBase)
@@ -312,6 +365,7 @@ func MontarEstadoEquipamento(nivel int, personagemBase string, inventario []linh
 		if l.Aprimoramento < teto {
 			custo = CustoDeAprimoramento(l.Item.Raridade, l.Aprimoramento+1)
 		}
+		usandoOutros := outrosPorItem[l.Item.ID]
 		lista = append(lista, ItemDoInventario{
 			ItemRPG:             porID[l.Item.ID],
 			Quantidade:          l.Quantidade,
@@ -322,6 +376,8 @@ func MontarEstadoEquipamento(nivel int, personagemBase string, inventario []linh
 			FaltaRequisito:      faltaDoItem[l.Item.ID],
 			AprimoramentoMaximo: teto,
 			CustoAprimorar:      custo,
+			EmUsoPorOutros:      len(usandoOutros),
+			EmUsoPor:            usandoOutros,
 		})
 	}
 	sort.SliceStable(lista, func(i, j int) bool {
@@ -388,7 +444,8 @@ func carregarEstadoEquipamento(dbClient *supabase.Client, userID, personagemBase
 		equipados[l.Slot] = l.ItemID
 	}
 
-	return MontarEstadoEquipamento(nivel, personagemBase, inventario, equipados, pontos), nil
+	equipadosPorHeroi := lerEquipadosPorHeroi(dbClient, userID)
+	return MontarEstadoEquipamentoComOutros(nivel, personagemBase, inventario, equipados, pontos, equipadosPorHeroi), nil
 }
 
 // RPGHandler responde pelas rotas de jogo do personagem: equipamentos, batalhas e invocação.
@@ -489,13 +546,16 @@ func (h *RPGHandler) HandleEquiparItemRPG(w http.ResponseWriter, r *http.Request
 		return
 	}
 
-	// O requisito de atributo é conferido aqui: o banco não conhece os primários derivados.
-	// Quem passasse por fora só teria o item no slot, inativo.
+	// O requisito de atributo e a posse de cópia livre são conferidos aqui antes da RPC.
 	if itemID != "" {
 		atual, err := equipamentoDoContexto(sessao.dbClient, sessao.userID, sessao.ctx)
 		if err != nil {
 			log.Printf("[RPG] Falha ao ler equipamentos para equipar (user=%s): %v", sessao.userID, err)
 			responderErroJSON(w, http.StatusServiceUnavailable, "Não foi possível trocar o equipamento agora.")
+			return
+		}
+		if erroUso := ErroItemSemCopiaLivre(atual, itemID); erroUso != "" {
+			responderErroJSON(w, http.StatusBadRequest, erroUso)
 			return
 		}
 		if falta := FaltaParaEquipar(atual, itemID); falta != "" {

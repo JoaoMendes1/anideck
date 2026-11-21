@@ -177,3 +177,40 @@ describe('Aprimoramento', () => {
     await waitFor(() => expect(screen.getByRole('alert').textContent).toContain('Ouro insuficiente'))
   })
 })
+
+describe('Uso exclusivo por cópia entre heróis', () => {
+  it('exibe Em uso por outro herói e impede equipar item sem cópias livres', () => {
+    const base = estado()
+    const comEmUso: EstadoEquipamento = {
+      ...base,
+      slots: [{ slot: 'arma' }, ...base.slots.slice(1)],
+      inventario: [
+        {
+          ...espada,
+          quantidade: 1,
+          equipado: false,
+          bloqueado: false,
+          em_uso_outros: 1,
+          em_uso_por: ['Espadachim de Éter'],
+        },
+        {
+          ...lamina,
+          quantidade: 2,
+          equipado: false,
+          bloqueado: false,
+          em_uso_outros: 1,
+          em_uso_por: ['Haruto'],
+        },
+      ],
+    }
+
+    render(<Tela inicial={comEmUso} />)
+    fireEvent.click(screen.getByRole('button', { name: 'Arma: vazio. Equipar' }))
+
+    expect(screen.getByText('Em uso por Espadachim de Éter')).toBeTruthy()
+    expect(screen.getByText('Em uso por Haruto · 1 livre')).toBeTruthy()
+    expect(screen.getByText('em uso')).toBeTruthy()
+    // Apenas Lâmina de Éter (com 1 cópia livre) mantém botão Equipar ativo.
+    expect(screen.getAllByRole('button', { name: 'Equipar' })).toHaveLength(1)
+  })
+})

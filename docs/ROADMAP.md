@@ -918,6 +918,11 @@ decidiu em 17/11/2026 que ela fecha fora da Fase 18. Escopo a detalhar em issues
 > numeração e não abrem escopo novo. Ficam registrados aqui em ordem cronológica inversa para
 > não sumirem: fase concluída não deve ser reaberta só para receber um conserto.
 
+### 21/11/2026 — Equipamento exclusivo por cópia possuída entre heróis (#344)
+
+- [x] **Trava de cópia em uso por outro personagem (`sql/144_equipamento_exclusivo_por_heroi.sql`, `rpg_equipamento.go`, `rpg_estado.go`, `EscolhaDeItem.tsx`):**
+      `rpg_equipar_item` e `HandleEquiparItemRPG` passam a contar quantas cópias (`quantidade`) estão vestidas em `rpg_equipados_herois` por outros personagens antes de equipar, bloqueando o uso simultâneo quando não há cópias livres (informando qual herói está vestindo o item). O saneamento em `sql/144` remove eventuais duplicidades anteriores e `rpg_tirar_copia_repetida` impede vender ou desmontar cópias atualmente equipadas; `EscolhaDeItem` exibe `Em uso por <Herói>` e trava o botão `Equipar`. (#344)
+
 ### 21/11/2026 — Correção do Ep. 14 fantasma, aceleração na marcação e celebração animada (#342)
 
 - [x] **Eliminação do Ep. N+1 fantasma, atualização otimista/paralelização e celebração de missões (`Inicio.tsx`, `HeroProximoEpisodio.tsx`, `CelebracaoMissaoModal.tsx`, `CelebracaoContext.tsx`, `entries.go`, `entries_concluir.go`, `guilda.go`):**

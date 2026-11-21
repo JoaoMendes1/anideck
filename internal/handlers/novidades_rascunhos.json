@@ -668,5 +668,17 @@
         "caminho": "/personagem"
       }
     ]
+  },
+  {
+    "chave": "2026-11-21-equipamento-exclusivo-por-heroi",
+    "titulo": "Equipamentos agora respeitam cópias livres entre heróis",
+    "categoria": "novidade",
+    "resumo": "Um item que já está vestido por outro personagem do seu elenco não pode mais ser equipado ao mesmo tempo sem uma cópia extra no inventário.\n\nA lista de seleção do slot agora mostra exatamente qual herói está usando cada peça e quantas cópias ainda estão livres.",
+    "links": [
+      {
+        "rotulo": "Gerenciar heróis e equipamentos",
+        "caminho": "/personagem"
+      }
+    ]
   }
 ]

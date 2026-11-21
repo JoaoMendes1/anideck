@@ -208,4 +208,80 @@ describe('sql/142_equipamentos_por_personagem', () => {
       { slot: 'botas', item_id: 'botas_couro' },
     ])
   }, 15000)
+
+  it('sql/144 impede equipar item sem cópia livre entre heróis e saneia duplicidades', async () => {
+    const { default: sql144 } = await import('../../../sql/144_equipamento_exclusivo_por_heroi.sql?raw')
+    const db = await criarBancoTeste({ scriptsExtras: [BASE_SQL] })
+    const user = '99999999-9999-4999-8999-999999999999'
+    await criarUsuarioTeste(db, user, 'yoru', 'Yoru')
+
+    await db.query(`
+      INSERT INTO public.rpg_itens (id, slot, nome, classes) VALUES
+        ('armadura_aco', 'armadura', 'Armadura de Aço', NULL),
+        ('elmo_ferro', 'elmo', 'Elmo de Ferro', NULL)
+    `)
+    await db.query(
+      `INSERT INTO public.rpg_personagens (user_id, nome, personagem_base, desbloqueados)
+       VALUES ($1, 'Kael', 'arqueiro_trevas', ARRAY['espadachim_eter', 'arqueiro_trevas'])`,
+      [user],
+    )
+    await db.query(
+      `INSERT INTO public.rpg_inventario (user_id, item_id, quantidade) VALUES
+        ($1, 'armadura_aco', 1),
+        ($1, 'elmo_ferro', 2)`,
+      [user],
+    )
+    await db.query(
+      `INSERT INTO public.rpg_equipados (user_id, slot, item_id) VALUES
+        ($1, 'armadura', 'armadura_aco')`,
+      [user],
+    )
+
+    await db.exec(sql140)
+    await db.exec(sql141)
+    await db.exec(sql142)
+
+    // Simula o bug anterior à 144: armadura_aco (qtd=1) vestida tanto no Espadachim (antes) quanto no Yoru (depois).
+    await db.query(
+      `INSERT INTO public.rpg_equipados_herois (user_id, personagem_base, slot, item_id, equipado_em) VALUES
+        ($1, 'espadachim_eter', 'armadura', 'armadura_aco', now() - interval '10 minutes')
+       ON CONFLICT (user_id, personagem_base, slot) DO NOTHING`,
+      [user],
+    )
+    await db.query(
+      `INSERT INTO public.rpg_equipados_herois (user_id, personagem_base, slot, item_id, equipado_em) VALUES
+        ($1, 'espadachim_eter', 'elmo', 'elmo_ferro', now() - interval '5 minutes')
+       ON CONFLICT (user_id, personagem_base, slot) DO NOTHING`,
+      [user],
+    )
+
+    // Ao aplicar 144, mantém armadura_aco no Espadachim (quem equipou primeiro) e limpa do Yoru.
+    await db.exec(sql144)
+    await autenticarComo(db, user)
+
+    const restantes = await db.query<{ personagem_base: string }>(
+      `SELECT personagem_base FROM public.rpg_equipados_herois WHERE user_id = $1 AND item_id = 'armadura_aco'`,
+      [user],
+    )
+    expect(restantes.rows).toEqual([{ personagem_base: 'espadachim_eter' }])
+
+    // Yoru tenta equipar a armadura_aco (1 cópia já no Espadachim) -> bloqueado com o nome do herói.
+    const bloqueio = await db.query<{ r: { ok?: boolean; erro?: string } }>(
+      `SELECT public.rpg_equipar_item('armadura', 'armadura_aco', NULL) AS r`,
+    )
+    expect(bloqueio.rows[0].r.erro).toContain('Espadachim de Éter')
+
+    // Yoru equipa elmo_ferro porque o jogador tem 2 cópias no inventário -> permitido.
+    const segundaCopia = await db.query<{ r: { ok?: boolean } }>(
+      `SELECT public.rpg_equipar_item('elmo', 'elmo_ferro', NULL) AS r`,
+    )
+    expect(segundaCopia.rows[0].r.ok).toBe(true)
+
+    // Espadachim desequipa armadura_aco -> agora Yoru consegue equipar.
+    await db.query(`SELECT public.rpg_equipar_item('armadura', '', 'espadachim_eter')`)
+    const liberado = await db.query<{ r: { ok?: boolean } }>(
+      `SELECT public.rpg_equipar_item('armadura', 'armadura_aco', NULL) AS r`,
+    )
+    expect(liberado.rows[0].r.ok).toBe(true)
+  }, 15000)
 })
