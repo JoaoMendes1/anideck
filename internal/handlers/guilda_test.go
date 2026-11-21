@@ -334,3 +334,26 @@ func TestValidarEconomiaGuilda_FaixasEPendente(t *testing.T) {
 		t.Fatal("esperava erro quando teto_pendente_diario supera o teto_diario")
 	}
 }
+
+func TestContamEpisodiosNaJanela(t *testing.T) {
+	agora := time.Date(2026, 11, 21, 18, 0, 0, 0, time.UTC)
+	naJanela := []string{
+		agora.Add(-5 * time.Minute).Format(time.RFC3339),
+		agora.Add(-10 * time.Minute).Format(time.RFC3339),
+		agora.Add(-15 * time.Minute).Format(time.RFC3339),
+		agora.Add(-20 * time.Minute).Format(time.RFC3339),
+		agora.Add(-25 * time.Minute).Format(time.RFC3339),
+		agora.Add(-29 * time.Minute).Format(time.RFC3339),
+		agora.Add(-45 * time.Minute).Format(time.RFC3339), // fora da janela de 30min
+		"timestamp-invalido",
+	}
+
+	if contamEpisodiosNaJanela(naJanela, agora, 30, 6) {
+		t.Fatal("6 episódios na janela não deveria ultrapassar o limite de 6")
+	}
+
+	setimo := append(naJanela, agora.Add(-2*time.Minute).Format(time.RFC3339))
+	if !contamEpisodiosNaJanela(setimo, agora, 30, 6) {
+		t.Fatal("7 episódios na janela deveria ativar detecção de maratona")
+	}
+}

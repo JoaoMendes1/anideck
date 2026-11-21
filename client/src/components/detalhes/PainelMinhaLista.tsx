@@ -6,6 +6,7 @@ import { Link } from 'react-router-dom'
 import { Check, ChevronDown, Crown, Loader2, MoreHorizontal, NotebookPen, Play, Plus, Star, Trash2, X } from 'lucide-react'
 import { useSessao } from '../../contexts/SessaoContext'
 import { useToast } from '../../contexts/ToastContext'
+import { useCelebracao } from '../../contexts/CelebracaoContext'
 import { invalidarCachesDoDeck } from '../../lib/cacheDeTela'
 import { STATUS_DO_DECK, ajustarNota, formatarNota, lerNotaDigitada, proximoEpisodio, rotuloDaNota, type EntradaNoDeck, type EscolhaSaidaCompleto, type ResumoSaidaCompleto } from '../../lib/detalhes'
 import ModalSaidaCompleto from '../ModalSaidaCompleto'
@@ -33,6 +34,7 @@ export default function PainelMinhaLista({ malId, entrada, assistidos, ultimoDis
   const { session } = useSessao()
   const token = session?.access_token
   const { showToast } = useToast()
+  const { celebrar } = useCelebracao()
   const { confirmar, dialogo } = useConfirmacao()
   const [salvo, setSalvo] = useState<Salvo>('parado')
   const [statusPendente, setStatusPendente] = useState<string | null>(null)
@@ -197,8 +199,22 @@ export default function PainelMinhaLista({ malId, entrada, assistidos, ultimoDis
         const corpo = (await res.json()) as { xp_earned?: number; reason?: string; concluiu?: boolean; maratona?: ResultadoMaratonaEpisodio }
         concluiu = Boolean(corpo.concluiu)
         anotarMarcacao(malId, episodio, corpo.maratona)
-        const avisoMaratona = mensagemDaMaratona(corpo.maratona)
-        if (avisoMaratona) showToast(avisoMaratona.texto, avisoMaratona.tipo)
+        if (corpo.maratona?.status === 'concluida') {
+          celebrar({
+            tipo: 'maratona',
+            subtitulo: corpo.maratona.faixa ? `Faixa ${corpo.maratona.faixa} · Maratona finalizada` : 'Maratona finalizada',
+            notaExtra: 'Conta para as Insígnias de Maratona!',
+            recompensas: {
+              ouro: corpo.maratona.ouro,
+              xp: corpo.maratona.xp,
+              anicoins: corpo.maratona.anicoins,
+              bilhetes: corpo.maratona.bilhetes,
+            },
+          })
+        } else {
+          const avisoMaratona = mensagemDaMaratona(corpo.maratona)
+          if (avisoMaratona) showToast(avisoMaratona.texto, avisoMaratona.tipo)
+        }
         showToast(corpo.xp_earned ? `Ep ${episodio} visto · +${corpo.xp_earned} XP na Guilda` : `Ep ${episodio} marcado como visto`)
       } catch {
         showToast(`Ep ${episodio} marcado como visto`)

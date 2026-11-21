@@ -98,10 +98,12 @@ export default function HeroProximoEpisodio({
 
   const { anime } = item
   const total = anime.episodes || 0
-  const episodio = epProp !== undefined && itemProp === item
+  const episodioBruto = epProp !== undefined && itemProp === item
     ? epProp
     : (recemMarcados[anime.mal_id] ?? item.proximoEpisodio - 1) + 1
-  const vistos = Math.max(0, episodio - 1)
+  const concluidoLocal = total > 0 && episodioBruto > total
+  const episodio = concluidoLocal ? total : episodioBruto
+  const vistos = concluidoLocal ? total : Math.max(0, episodio - 1)
   const pct = total > 0 ? Math.min(100, Math.round((vistos / total) * 100)) : 0
   const fundo = anime.banner || anime.image_url
   const streaming = escolherLinkStreaming(anime.streaming)
@@ -279,7 +281,11 @@ export default function HeroProximoEpisodio({
           )}
 
           <div className="flex flex-wrap items-center gap-2 pt-1">
-            {bloqueado ? (
+            {concluidoLocal ? (
+              <span className="inline-flex items-center gap-1.5 h-10 px-4 rounded-full bg-jade/15 border border-jade/40 text-jade font-extrabold text-xs uppercase tracking-wide whitespace-nowrap">
+                <Check size={14} /> Concluído
+              </span>
+            ) : bloqueado ? (
               <span className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-panel-2 border border-line text-muted-2 font-bold text-xs whitespace-nowrap">
                 <Lock size={14} className="text-gold" />
                 Ep. {episodio} ainda não saiu

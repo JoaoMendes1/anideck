@@ -550,8 +550,24 @@ func AvaliarInsignias(m MetricasUsuarioGuilda, catalogo []InsigniaConfig) []Insi
 	return saida
 }
 
+const prazoConfigGuilda = 60 * time.Second
+
+var (
+	cacheGuildaTrava     sync.Mutex
+	cacheGuildaEconomia  EconomiaGuilda
+	cacheGuildaRanks     []FaixaRank
+	cacheGuildaInsignias []InsigniaConfig
+	cacheGuildaValeAte   time.Time
+)
+
+func invalidarCacheConfigGuilda() {
+	cacheGuildaTrava.Lock()
+	cacheGuildaValeAte = time.Time{}
+	cacheGuildaTrava.Unlock()
+}
+
 // carregarConfigGuilda lê economia, faixas e insígnias de app_settings em uma única consulta,
-// caindo para os padrões quando alguma chave ainda não existe.
+// usando cache em memória de 60s para evitar múltiplas viagens repetidas ao banco.
 func carregarConfigGuilda(dbClient *supabase.Client) (EconomiaGuilda, []FaixaRank, []InsigniaConfig) {
 	economia := EconomiaPadrao()
 	ranks := RanksPadrao()
@@ -564,6 +580,16 @@ func carregarConfigGuilda(dbClient *supabase.Client) (EconomiaGuilda, []FaixaRan
 	if cliente == nil {
 		return economia, ranks, insignias
 	}
+
+	cacheGuildaTrava.Lock()
+	if time.Now().Before(cacheGuildaValeAte) {
+		ec := cacheGuildaEconomia
+		rk := append([]FaixaRank(nil), cacheGuildaRanks...)
+		ins := append([]InsigniaConfig(nil), cacheGuildaInsignias...)
+		cacheGuildaTrava.Unlock()
+		return ec, rk, ins
+	}
+	cacheGuildaTrava.Unlock()
 
 	data, _, err := cliente.From("app_settings").
 		Select("key,value", "", false).
@@ -619,6 +645,14 @@ func carregarConfigGuilda(dbClient *supabase.Client) (EconomiaGuilda, []FaixaRan
 			}
 		}
 	}
+
+	cacheGuildaTrava.Lock()
+	cacheGuildaEconomia = economia
+	cacheGuildaRanks = append([]FaixaRank(nil), ranks...)
+	cacheGuildaInsignias = append([]InsigniaConfig(nil), insignias...)
+	cacheGuildaValeAte = time.Now().Add(prazoConfigGuilda)
+	cacheGuildaTrava.Unlock()
+
 	return economia, ranks, insignias
 }
 
@@ -686,37 +720,33 @@ func episodioSaiuAte24h(curado *models.CuratedAnime, episodeNumber int, agora ti
 	return false
 }
 
-// episodioEmMaratona indica se a marcação atual excede o limite de episódios do mesmo anime na janela curta.
-func episodioEmMaratona(dbClient *supabase.Client, userID string, malID int, agora time.Time, cfg EconomiaGuilda) bool {
-	limite := cfg.MaratonaLimiteEps
+// contamEpisodiosNaJanela verifica na lista de timestamps recentes se houve excesso na janela da maratona.
+func contamEpisodiosNaJanela(timestamps []string, agora time.Time, janelaMin, limite int) bool {
 	if limite <= 0 {
 		limite = 6
 	}
-	janelaMin := cfg.MaratonaJanelaMin
 	if janelaMin <= 0 {
 		janelaMin = 30
 	}
-	corte := agora.Add(-time.Duration(janelaMin) * time.Minute).Format(time.RFC3339)
-	data, _, err := dbClient.From("episode_progress").
-		Select("episode_number", "", false).
-		Eq("user_id", userID).
-		Eq("mal_id", strconv.Itoa(malID)).
-		Not("watched_at", "is", "null").
-		Gte("watched_at", corte).
-		Execute()
-	if err != nil {
-		return false
+	corte := agora.Add(-time.Duration(janelaMin) * time.Minute)
+	contagem := 0
+	for _, bruto := range timestamps {
+		t, err := time.Parse(time.RFC3339Nano, bruto)
+		if err != nil {
+			continue
+		}
+		if !t.Before(corte) {
+			contagem++
+			if contagem > limite {
+				return true
+			}
+		}
 	}
-	var rows []struct {
-		EpisodeNumber int `json:"episode_number"`
-	}
-	if json.Unmarshal(data, &rows) != nil {
-		return false
-	}
-	return len(rows) > limite
+	return false
 }
 
-// RegistrarXPEpisodio grava o ganho de XP ao marcar um episódio.
+// RegistrarXPEpisodio grava o ganho de XP ao marcar um episódio, paralelizando as leituras
+// independentes para responder rápido.
 // Nunca falha a operação principal: se a tabela xp_ledger ainda não existir, apenas loga.
 func RegistrarXPEpisodio(dbClient *supabase.Client, userID string, malID, episodeNumber int, curado *models.CuratedAnime) (int, string) {
 	if dbClient == nil || userID == "" || malID <= 0 || episodeNumber <= 0 {
@@ -724,74 +754,136 @@ func RegistrarXPEpisodio(dbClient *supabase.Client, userID string, malID, episod
 	}
 
 	agora := time.Now().UTC()
-	if revBytes, _, errRev := dbClient.From("revisoes").
-		Select("id", "", false).
-		Eq("user_id", userID).
-		Eq("mal_id", strconv.Itoa(malID)).
-		Eq("ativa", "true").
-		Limit(1, "").
-		Execute(); errRev == nil {
-		var revRows []struct {
-			ID string `json:"id"`
+	ehCedo := episodioEhLancamentoRecente(curado, episodeNumber, agora)
+	saiuAte24h := episodioSaiuAte24h(curado, episodeNumber, agora)
+
+	var (
+		emRevisao    bool
+		economia     EconomiaGuilda
+		errHoje      error
+		linhasHoje   []struct {
+			XPEarned int `json:"xp_earned"`
 		}
-		if json.Unmarshal(revBytes, &revRows) == nil && len(revRows) > 0 {
-			return 0, "revisão · histórico preservado"
-		}
+		timestampsJanela []string
+		hp               int
+		estornoOriginal  *int
+		wg               sync.WaitGroup
+	)
+
+	wg.Add(5)
+	if !saiuAte24h {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			// MaratonaJanelaMin aceita até 240 min no Admin; filtramos depois pelo valor exato.
+			corteMax := agora.Add(-240 * time.Minute).Format(time.RFC3339)
+			if data, _, err := dbClient.From("episode_progress").
+				Select("watched_at", "", false).
+				Eq("user_id", userID).
+				Eq("mal_id", strconv.Itoa(malID)).
+				Not("watched_at", "is", "null").
+				Gte("watched_at", corteMax).
+				Execute(); err == nil {
+				var rows []struct {
+					WatchedAt string `json:"watched_at"`
+				}
+				if json.Unmarshal(data, &rows) == nil {
+					timestampsJanela = make([]string, 0, len(rows))
+					for _, r := range rows {
+						timestampsJanela = append(timestampsJanela, r.WatchedAt)
+					}
+				}
+			}
+		}()
 	}
 
-	economia, _, _ := carregarConfigGuilda(dbClient)
+	go func() {
+		defer wg.Done()
+		if revBytes, _, errRev := dbClient.From("revisoes").
+			Select("id", "", false).
+			Eq("user_id", userID).
+			Eq("mal_id", strconv.Itoa(malID)).
+			Eq("ativa", "true").
+			Limit(1, "").
+			Execute(); errRev == nil {
+			var revRows []struct {
+				ID string `json:"id"`
+			}
+			emRevisao = json.Unmarshal(revBytes, &revRows) == nil && len(revRows) > 0
+		}
+	}()
+
+	go func() {
+		defer wg.Done()
+		economia, _, _ = carregarConfigGuilda(dbClient)
+	}()
+
+	go func() {
+		defer wg.Done()
+		inicioDia := inicioDoDiaBrasilia(agora).Format(time.RFC3339)
+		// mal_id 0 é XP sem episódio (missão, convite): não gasta o teto diário dos episódios.
+		var dataHoje []byte
+		dataHoje, _, errHoje = dbClient.From("xp_ledger").
+			Select("xp_earned", "", false).
+			Eq("user_id", userID).
+			Gt("mal_id", "0").
+			Gte("earned_at", inicioDia).
+			Execute()
+		if errHoje == nil {
+			_ = json.Unmarshal(dataHoje, &linhasHoje)
+		}
+	}()
+
+	go func() {
+		defer wg.Done()
+		if resHP := strings.TrimSpace(dbClient.Rpc("vitalidade_atual", "", map[string]interface{}{"p_user": userID})); resHP != "" && !strings.Contains(resHP, "error") {
+			hp, _ = strconv.Atoi(resHP)
+		}
+	}()
+
+	go func() {
+		defer wg.Done()
+		if estBytes, _, errEst := dbClient.From("estornos").
+			Select("xp_original", "", false).
+			Eq("user_id", userID).
+			Eq("mal_id", strconv.Itoa(malID)).
+			Eq("episode_number", strconv.Itoa(episodeNumber)).
+			Gte("estornado_em", agora.Add(-7*24*time.Hour).Format(time.RFC3339)).
+			Limit(1, "").
+			Execute(); errEst == nil {
+			var estRows []struct {
+				XPOriginal int `json:"xp_original"`
+			}
+			if json.Unmarshal(estBytes, &estRows) == nil && len(estRows) > 0 {
+				v := estRows[0].XPOriginal
+				estornoOriginal = &v
+			}
+		}
+	}()
+
+	wg.Wait()
+
+	if emRevisao {
+		return 0, "revisão · histórico preservado"
+	}
 	if !economia.Ativo {
 		return 0, "gamificação pausada"
 	}
-
-	inicioDia := inicioDoDiaBrasilia(agora).Format(time.RFC3339)
-	// mal_id 0 é XP sem episódio (missão, convite): não gasta o teto diário dos episódios.
-	dataHoje, _, errHoje := dbClient.From("xp_ledger").
-		Select("xp_earned", "", false).
-		Eq("user_id", userID).
-		Gt("mal_id", "0").
-		Gte("earned_at", inicioDia).
-		Execute()
 	if errHoje != nil {
 		log.Printf("[GUILDA XP] Falha ao consultar ledger do dia (user=%s): %v", userID, errHoje)
 		return 0, ""
 	}
-
-	var linhasHoje []struct {
-		XPEarned int `json:"xp_earned"`
-	}
-	_ = json.Unmarshal(dataHoje, &linhasHoje)
 
 	xpHoje := 0
 	for _, l := range linhasHoje {
 		xpHoje += l.XPEarned
 	}
 	ordemNoDia := len(linhasHoje) + 1
-	ehCedo := episodioEhLancamentoRecente(curado, episodeNumber, agora)
-	saiuAte24h := episodioSaiuAte24h(curado, episodeNumber, agora)
-	ehMaratona := !saiuAte24h && episodioEmMaratona(dbClient, userID, malID, agora, economia)
-
-	hp := 0
-	if resHP := strings.TrimSpace(dbClient.Rpc("vitalidade_atual", "", map[string]interface{}{"p_user": userID})); resHP != "" && !strings.Contains(resHP, "error") {
-		hp, _ = strconv.Atoi(resHP)
-	}
+	ehMaratona := !saiuAte24h && contamEpisodiosNaJanela(timestampsJanela, agora, economia.MaratonaJanelaMin, economia.MaratonaLimiteEps)
 
 	xpGanho, motivo := CalcularXPEpisodioComFaixa(ordemNoDia, xpHoje, ehCedo, ehMaratona, saiuAte24h, hp, economia, agora)
-
-	if estBytes, _, errEst := dbClient.From("estornos").
-		Select("xp_original", "", false).
-		Eq("user_id", userID).
-		Eq("mal_id", strconv.Itoa(malID)).
-		Eq("episode_number", strconv.Itoa(episodeNumber)).
-		Gte("estornado_em", agora.Add(-7*24*time.Hour).Format(time.RFC3339)).
-		Limit(1, "").
-		Execute(); errEst == nil {
-		var estRows []struct {
-			XPOriginal int `json:"xp_original"`
-		}
-		if json.Unmarshal(estBytes, &estRows) == nil && len(estRows) > 0 {
-			xpGanho, motivo = AplicarLimiteEstorno(xpGanho, motivo, &estRows[0].XPOriginal)
-		}
+	if estornoOriginal != nil {
+		xpGanho, motivo = AplicarLimiteEstorno(xpGanho, motivo, estornoOriginal)
 	}
 
 	novaLinha := map[string]interface{}{

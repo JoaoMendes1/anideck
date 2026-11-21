@@ -918,6 +918,11 @@ decidiu em 17/11/2026 que ela fecha fora da Fase 18. Escopo a detalhar em issues
 > numeração e não abrem escopo novo. Ficam registrados aqui em ordem cronológica inversa para
 > não sumirem: fase concluída não deve ser reaberta só para receber um conserto.
 
+### 21/11/2026 — Correção do Ep. 14 fantasma, aceleração na marcação e celebração animada (#342)
+
+- [x] **Eliminação do Ep. N+1 fantasma, atualização otimista/paralelização e celebração de missões (`Inicio.tsx`, `HeroProximoEpisodio.tsx`, `CelebracaoMissaoModal.tsx`, `CelebracaoContext.tsx`, `entries.go`, `entries_concluir.go`, `guilda.go`):**
+      Ao concluir o último episódio na Início, o card e o destaque atualizam de forma otimista o progresso e o status (`Completo`), removendo imediatamente o anime finalizado sem exibir `Ep. N+1`; `HeroProximoEpisodio` e os cartões horizontais travam qualquer exibição além do total de episódios. No backend, `HandleMarkEpisode`, `RegistrarXPEpisodio` e `concluirSeAssistiuTudo` passam a paralelizar leituras/escritas independentes e reutilizar cache de configuração da Guilda (60s). Conclusões de maratonas, missões diárias/semanais e contratos passam a exibir sobreposição animada com recompensas em destaque. (#342)
+
 ### 20/11/2026 — Contador e insígnias de missões de maratona concluídas (#341)
 
 - [x] **Contagem total e cartas de Maratonista (`sql/143_insignias_maratona.sql`, `guilda.go`, `guilda_admin.go`, `maratona.go`, `Guilda.tsx`, `CartaoMaratona.tsx`):**

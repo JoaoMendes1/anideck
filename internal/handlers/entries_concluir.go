@@ -3,6 +3,7 @@ package handlers
 import (
 	"encoding/json"
 	"strconv"
+	"sync"
 
 	"github.com/JoaoMendes1/anideck/internal/models"
 	supabase "github.com/supabase-community/supabase-go"
@@ -71,6 +72,26 @@ func statusDaEntrada(dbClient *supabase.Client, userID string, malID int) string
 	return linhas[0].Status
 }
 
+// numerosDaCuradoria extrai os números positivos de custom_episodes quando preenchido (nil = usar cache).
+func numerosDaCuradoria(curado *models.CuratedAnime) ([]int, bool) {
+	if curado == nil || len(curado.CustomEpisodes) == 0 || string(curado.CustomEpisodes) == "null" {
+		return nil, false
+	}
+	var eps []struct {
+		Number int `json:"number"`
+	}
+	if json.Unmarshal(curado.CustomEpisodes, &eps) != nil {
+		return nil, false
+	}
+	numeros := make([]int, 0, len(eps))
+	for _, ep := range eps {
+		if ep.Number > 0 {
+			numeros = append(numeros, ep.Number)
+		}
+	}
+	return numeros, true
+}
+
 // concluirSeAssistiuTudo aplica DeveConcluir depois de um episódio marcado. Devolve true
 // quando o anime passou para "Completo". Falha de leitura não conclui: o pior caso é o
 // jogador mover à mão, como antes.
@@ -78,12 +99,42 @@ func concluirSeAssistiuTudo(dbClient *supabase.Client, userID string, malID int,
 	if dbClient == nil || userID == "" || malID <= 0 {
 		return false
 	}
-	status := statusDaEntrada(dbClient, userID, malID)
+
+	var (
+		status     string
+		marcados   map[int]bool
+		totalCache int
+		wg         sync.WaitGroup
+	)
+	wg.Add(3)
+	go func() {
+		defer wg.Done()
+		status = statusDaEntrada(dbClient, userID, malID)
+	}()
+	go func() {
+		defer wg.Done()
+		marcados = episodiosJaMarcados(dbClient, userID, malID)
+	}()
+	go func() {
+		defer wg.Done()
+		totalCache = totalDeclarado(dbClient, malID)
+	}()
+	wg.Wait()
+
 	if status != "Assistindo" && status != "Em Dia" {
 		return false
 	}
+
+	numeros, temCuradoria := numerosDaCuradoria(curado)
+	if !temCuradoria && totalCache > 0 {
+		numeros = make([]int, 0, totalCache)
+		for i := 1; i <= totalCache; i++ {
+			numeros = append(numeros, i)
+		}
+	}
+
 	curadoFinalizado := curado != nil && ordemDoStatus(curado.CustomStatus) == 3
-	if !DeveConcluir(status, numerosDeEpisodios(dbClient, malID), episodiosJaMarcados(dbClient, userID, malID), totalDeclarado(dbClient, malID), curadoFinalizado) {
+	if !DeveConcluir(status, numeros, marcados, totalCache, curadoFinalizado) {
 		return false
 	}
 	_, _, err := dbClient.From("media_entries").

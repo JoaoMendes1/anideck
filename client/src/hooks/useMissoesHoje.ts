@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from 'react'
 import { useSessao } from '../contexts/SessaoContext'
 import { useToast } from '../contexts/ToastContext'
+import { useCelebracao } from '../contexts/CelebracaoContext'
 import { chaveDoUsuario } from '../lib/cacheDeTela'
 import { VALIDADE_NA_MONTAGEM, buscarUmaVez } from '../lib/buscaCompartilhada'
 
@@ -103,6 +104,7 @@ export function useMissoesHoje() {
   const { session } = useSessao()
   const token = session?.access_token
   const { showToast } = useToast()
+  const { celebrar } = useCelebracao()
   const chave = chaveDoUsuario(session?.user.id, 'missoes:hoje')
 
   const [dados, setDados] = useState<ResumoMissoesHoje | null>(null)
@@ -147,6 +149,7 @@ export function useMissoesHoje() {
     if (!token || resgatandoId) return
     setResgatandoId(id)
     try {
+      const missaoAtual = [...(dados?.missoes ?? []), ...(dados?.longas ?? [])].find((m) => m.id === id)
       const res = await fetch(`/api/missoes/${id}/resgatar`, {
         method: 'POST',
         headers: {
@@ -158,18 +161,28 @@ export function useMissoesHoje() {
       if (!res.ok) {
         throw new Error(json.error || 'Falha ao resgatar missão')
       }
-      showToast(json.mensagem || `+${json.recompensa || 15} ₳ resgatados com sucesso!`, 'success')
+      const anicoins = Number(json.recompensa) || missaoAtual?.recompensa_cristais || 15
+      const xp = Number(json.xp) || 0
+      celebrar({
+        tipo: 'missao',
+        titulo: missaoAtual?.titulo ?? 'Missão Concluída!',
+        subtitulo: missaoAtual?.periodo === 'semana' ? 'Missão Semanal' : 'Missão Diária',
+        recompensas: {
+          anicoins,
+          xp,
+        },
+      })
       // Notifica carteira para atualizar saldo instantaneamente
       window.dispatchEvent(new CustomEvent('anideck:cristais-atualizados'))
       // XP muda nível e rank: o HUD e a Guilda recarregam pelo mesmo aviso do episódio marcado.
-      if (Number(json.xp) > 0) window.dispatchEvent(new CustomEvent('anideck:episodio-atualizado'))
+      if (xp > 0) window.dispatchEvent(new CustomEvent('anideck:episodio-atualizado'))
       await carregar()
     } catch (err: unknown) {
       showToast(err instanceof Error ? err.message : 'Falha ao resgatar missão', 'error')
     } finally {
       setResgatandoId(null)
     }
-  }, [token, resgatandoId, showToast, carregar])
+  }, [token, resgatandoId, dados, celebrar, showToast, carregar])
 
   return {
     dados,

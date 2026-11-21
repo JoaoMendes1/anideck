@@ -1,6 +1,11 @@
 package handlers
 
-import "testing"
+import (
+	"anideck/internal/models"
+	"encoding/json"
+	"reflect"
+	"testing"
+)
 
 func marcados(n ...int) map[int]bool {
 	m := map[int]bool{}
@@ -36,5 +41,24 @@ func TestDeveConcluir(t *testing.T) {
 		if got := DeveConcluir(c.status, c.numeros, c.marcados, c.total, c.finalizado); got != c.quer {
 			t.Errorf("%s: esperava %v, veio %v", c.nome, c.quer, got)
 		}
+	}
+}
+
+func TestNumerosDaCuradoria(t *testing.T) {
+	if nums, ok := numerosDaCuradoria(nil); ok || nums != nil {
+		t.Fatalf("curado nil deveria retornar (nil, false), veio (%v, %v)", nums, ok)
+	}
+	if nums, ok := numerosDaCuradoria(&models.CuratedAnime{CustomEpisodes: json.RawMessage("null")}); ok || nums != nil {
+		t.Fatalf("CustomEpisodes null deveria retornar (nil, false), veio (%v, %v)", nums, ok)
+	}
+	curado := &models.CuratedAnime{
+		CustomEpisodes: json.RawMessage(`[{"number":1},{"number":0},{"number":2},{"number":13}]`),
+	}
+	nums, ok := numerosDaCuradoria(curado)
+	if !ok {
+		t.Fatal("esperava ok=true para curado válido")
+	}
+	if !reflect.DeepEqual(nums, []int{1, 2, 13}) {
+		t.Fatalf("esperava [1 2 13], veio %v", nums)
 	}
 }

@@ -346,6 +346,8 @@ func (h *GuildaHandler) HandleSaveAdminGuilda(w http.ResponseWriter, r *http.Req
 		return
 	}
 
+	invalidarCacheConfigGuilda()
+
 	w.Header().Set("Content-Type", "application/json")
 	_ = json.NewEncoder(w).Encode(payloadAdminGuilda{
 		Economia:  ecLimpa,

@@ -11,6 +11,7 @@ import {
 } from '../../lib/rpg'
 import { textoDosMateriais } from '../../lib/forja'
 import { useToast } from '../../contexts/ToastContext'
+import { useCelebracao } from '../../contexts/CelebracaoContext'
 import IconeOuro from '../IconeOuro'
 
 interface Props {
@@ -19,6 +20,7 @@ interface Props {
 
 export default function CardContratosSemanais({ aoResgatar }: Props) {
   const { showToast } = useToast()
+  const { celebrar } = useCelebracao()
   const [estado, setEstado] = useState<RespostaContratosRPG | null>(null)
   const [resgatandoId, setResgatandoId] = useState<string | null>(null)
 
@@ -36,6 +38,7 @@ export default function CardContratosSemanais({ aoResgatar }: Props) {
 
   const resgatar = async (id: string) => {
     if (resgatandoId) return
+    const contrato = estado.contratos.find((c) => c.id === id)
     setResgatandoId(id)
     const r = await resgatarContratoSemanal(id)
     setResgatandoId(null)
@@ -45,6 +48,16 @@ export default function CardContratosSemanais({ aoResgatar }: Props) {
     }
     setEstado(r.dados.estado)
     showToast(`Contrato resgatado! +${r.dados.ouro_ganho} Ouro e +${r.dados.bilhetes_ganhos} bilhete(s).`)
+    celebrar({
+      tipo: 'contrato',
+      titulo: contrato?.titulo ?? 'Contrato Semanal',
+      subtitulo: 'Contrato da Guilda',
+      recompensas: {
+        ouro: r.dados.ouro_ganho,
+        bilhetes: r.dados.bilhetes_ganhos,
+        materiais: contrato?.materiais ? textoDosMateriais(contrato.materiais) : undefined,
+      },
+    })
     aoResgatar?.(r.dados)
   }
 

@@ -10,6 +10,7 @@ import (
 	"net/http"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/JoaoMendes1/anideck/internal/anilist"
@@ -384,9 +385,22 @@ func (h *EntriesHandler) HandleMarkEpisode(w http.ResponseWriter, r *http.Reques
 
 	if err != nil {
 		if strings.Contains(err.Error(), "duplicate key value violates unique constraint") || strings.Contains(err.Error(), "23505") {
-			promoverQueroAssistirParaAssistindo(dbClient, userID, malID)
-			marcarNotificacaoDoEpisodioComoLida(dbClient, userID, malID, episodeNumber)
-			concluiu := concluirSeAssistiuTudo(dbClient, userID, malID, curadoRef)
+			var wgDup sync.WaitGroup
+			var concluiu bool
+			wgDup.Add(3)
+			go func() {
+				defer wgDup.Done()
+				promoverQueroAssistirParaAssistindo(dbClient, userID, malID)
+			}()
+			go func() {
+				defer wgDup.Done()
+				marcarNotificacaoDoEpisodioComoLida(dbClient, userID, malID, episodeNumber)
+			}()
+			go func() {
+				defer wgDup.Done()
+				concluiu = concluirSeAssistiuTudo(dbClient, userID, malID, curadoRef)
+			}()
+			wgDup.Wait()
 			w.Header().Set("Content-Type", "application/json")
 			w.WriteHeader(http.StatusOK)
 			_ = json.NewEncoder(w).Encode(map[string]interface{}{
@@ -401,12 +415,33 @@ func (h *EntriesHandler) HandleMarkEpisode(w http.ResponseWriter, r *http.Reques
 		return
 	}
 
-	promoverQueroAssistirParaAssistindo(dbClient, userID, malID)
-	marcarNotificacaoDoEpisodioComoLida(dbClient, userID, malID, episodeNumber)
-	xpGanho, motivoXP := RegistrarXPEpisodio(dbClient, userID, malID, episodeNumber, curadoRef)
-	// Antes da conclusão: a maratona conta este episódio pela hora em que foi marcado.
-	maratona := registrarEpisodioNaMaratona(userID, malID, episodeNumber)
-	// Depois do XP: o episódio conta antes de o anime virar Completo.
+	var (
+		xpGanho  int
+		motivoXP string
+		maratona *ResultadoMaratonaEpisodio
+		wgPos    sync.WaitGroup
+	)
+	wgPos.Add(4)
+	go func() {
+		defer wgPos.Done()
+		promoverQueroAssistirParaAssistindo(dbClient, userID, malID)
+	}()
+	go func() {
+		defer wgPos.Done()
+		marcarNotificacaoDoEpisodioComoLida(dbClient, userID, malID, episodeNumber)
+	}()
+	go func() {
+		defer wgPos.Done()
+		xpGanho, motivoXP = RegistrarXPEpisodio(dbClient, userID, malID, episodeNumber, curadoRef)
+	}()
+	go func() {
+		defer wgPos.Done()
+		// Antes da conclusão: a maratona conta este episódio pela hora em que foi marcado.
+		maratona = registrarEpisodioNaMaratona(userID, malID, episodeNumber)
+	}()
+	wgPos.Wait()
+
+	// Depois do XP e promoção de status: o episódio conta antes de o anime virar Completo.
 	concluiu := concluirSeAssistiuTudo(dbClient, userID, malID, curadoRef)
 
 	w.Header().Set("Content-Type", "application/json")

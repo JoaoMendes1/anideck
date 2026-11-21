@@ -7,6 +7,7 @@ import Layout from './components/Layout'
 import CarregandoPagina from './components/CarregandoPagina'
 import LimiteDeErro from './components/LimiteDeErro'
 import { ToastProvider } from './contexts/ToastContext'
+import { CelebracaoProvider } from './contexts/CelebracaoContext'
 import { SessaoProvider, useSessao } from './contexts/SessaoContext'
 import { CARREGAR } from './lib/rotasPreguicosas'
 
@@ -63,6 +64,7 @@ function App() {
   return (
     <SessaoProvider>
       <ToastProvider>
+        <CelebracaoProvider>
         {/* Limite de erro das rotas sem Navbar (login, admin, retrospectiva) e do próprio
             Layout. As páginas de dentro do Layout têm o delas, que mantém o menu de pé. */}
         <LimiteDeErro chave={pathname}>
@@ -110,6 +112,7 @@ function App() {
           </Routes>
         </Suspense>
         </LimiteDeErro>
+        </CelebracaoProvider>
       </ToastProvider>
     </SessaoProvider>
   )

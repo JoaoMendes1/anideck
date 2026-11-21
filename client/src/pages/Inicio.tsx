@@ -14,6 +14,7 @@ import OnboardingGostoModal from '../components/OnboardingGostoModal'
 import OrganizarInicioModal from '../components/inicio/OrganizarInicioModal'
 import { useSessao } from '../contexts/SessaoContext'
 import { useToast } from '../contexts/ToastContext'
+import { useCelebracao } from '../contexts/CelebracaoContext'
 import { useConfirmacao } from '../hooks/useConfirmacao'
 import { useMidia } from '../hooks/useMidia'
 import { chaveDoUsuario, guardarNaMemoria, lerDaMemoria, invalidarCachesDoDeck } from '../lib/cacheDeTela'
@@ -284,6 +285,7 @@ export default function Inicio() {
     if (precisaDaConfiguracaoInicial(session?.user.user_metadata)) navigate('/bem-vindo', { replace: true })
   }, [session, navigate])
   const { showToast } = useToast()
+  const { celebrar } = useCelebracao()
   const { confirmar, dialogo } = useConfirmacao()
   const ehDesktopLargo = useMidia('(min-width: 1280px)')
   const userId = session?.user.id || ''
@@ -476,6 +478,68 @@ export default function Inicio() {
   const avancarEpisodioRapido = async (malId: number, episodio: number, titulo: string) => {
     if (!session || marcandoEp[malId]) return
     if (!(await confirmarMarcacaoNaMaratona(malId, episodio, confirmar))) return
+
+    const animeObj = dados.animes[malId]
+    const totalEp = animeObj?.episodes || 0
+    const entradaAnterior = dados.entradas.find(e => e.mal_id === malId)
+    const progressoAnterior = dados.progresso.find(p => p.mal_id === malId)
+    const recemAnterior = recemMarcados[malId]
+    const ultimoPrev = progressoAnterior?.ultimo_episodio ?? 0
+    const marcadosPrev = progressoAnterior?.marcados ?? 0
+    const atingiuFim = totalEp > 0 && episodio >= totalEp
+    const concluiuOtimista = atingiuFim && marcadosPrev + 1 >= totalEp
+
+    const aplicarOtimismo = () => {
+      setDados(prev => {
+        const existeProg = prev.progresso.some(p => p.mal_id === malId)
+        const novoProg: ProgressoDoAnime = {
+          mal_id: malId,
+          ultimo_episodio: Math.max(ultimoPrev, episodio),
+          marcados: marcadosPrev + 1,
+          ultimo_em: new Date().toISOString(),
+        }
+        const progressoAtualizado = existeProg
+          ? prev.progresso.map(p => (p.mal_id === malId ? novoProg : p))
+          : [...prev.progresso, novoProg]
+
+        const entradasAtualizadas = prev.entradas.map(e => {
+          if (e.mal_id !== malId) return e
+          if (concluiuOtimista) return { ...e, status: 'Completo' }
+          if (e.status === 'Quero Assistir') return { ...e, status: 'Assistindo' }
+          return e
+        })
+        return { ...prev, progresso: progressoAtualizado, entradas: entradasAtualizadas }
+      })
+      setRecemMarcados(prev => {
+        if (atingiuFim) {
+          if (!(malId in prev)) return prev
+          const copia = { ...prev }
+          delete copia[malId]
+          return copia
+        }
+        return { ...prev, [malId]: episodio }
+      })
+    }
+
+    const reverterOtimismo = () => {
+      setDados(prev => ({
+        ...prev,
+        progresso: progressoAnterior
+          ? prev.progresso.map(p => (p.mal_id === malId ? progressoAnterior : p))
+          : prev.progresso.filter(p => p.mal_id !== malId),
+        entradas: entradaAnterior
+          ? prev.entradas.map(e => (e.mal_id === malId ? entradaAnterior : e))
+          : prev.entradas,
+      }))
+      setRecemMarcados(prev => {
+        const copia = { ...prev }
+        if (recemAnterior === undefined) delete copia[malId]
+        else copia[malId] = recemAnterior
+        return copia
+      })
+    }
+
+    aplicarOtimismo()
     setMarcandoEp(prev => ({ ...prev, [malId]: true }))
     try {
       const res = await fetch(`/api/entries/${malId}/episodes/${episodio}`, {
@@ -485,28 +549,48 @@ export default function Inicio() {
       if (res.ok) {
         let sufixoXP = ''
         let avisoMaratona: { texto: string; tipo: 'success' | 'error' } | null = null
+        let maratonaConcluida: ResultadoMaratonaEpisodio | null = null
+        let concluiu = concluiuOtimista
         try {
-          const payload = (await res.json()) as { xp_earned?: number; maratona?: ResultadoMaratonaEpisodio }
+          const payload = (await res.json()) as {
+            xp_earned?: number
+            concluiu?: boolean
+            maratona?: ResultadoMaratonaEpisodio
+          }
+          if (typeof payload.concluiu === 'boolean') concluiu = payload.concluiu
           anotarMarcacao(malId, episodio, payload.maratona)
-          avisoMaratona = mensagemDaMaratona(payload.maratona)
+          if (payload.maratona?.status === 'concluida') {
+            maratonaConcluida = payload.maratona
+          } else {
+            avisoMaratona = mensagemDaMaratona(payload.maratona)
+          }
           if (typeof payload.xp_earned === 'number' && payload.xp_earned > 0) {
             sufixoXP = ` (+${payload.xp_earned} XP)`
           }
         } catch {
           // Segue sem sufixo se a resposta vier vazia.
         }
-        setRecemMarcados(prev => ({ ...prev, [malId]: episodio }))
+        if (concluiu) {
+          setDados(prev => ({
+            ...prev,
+            entradas: prev.entradas.map(e => (e.mal_id === malId ? { ...e, status: 'Completo' } : e)),
+          }))
+          setRecemMarcados(prev => {
+            if (!(malId in prev)) return prev
+            const copia = { ...prev }
+            delete copia[malId]
+            return copia
+          })
+        }
         invalidarCachesDoDeck(session.user.id)
         window.dispatchEvent(
           new CustomEvent('anideck:episodio-atualizado', {
-            detail: { malId, episodeNumber: episodio, watched: true },
+            detail: { malId, episodeNumber: episodio, watched: true, concluiu },
           }),
         )
 
-        const animeObj = dados.animes[malId]
-        const entradaObj = dados.entradas.find(e => e.mal_id === malId)
-        if (entradaObj && animeObj?.nextAiringEpisode?.episode && episodio >= animeObj.nextAiringEpisode.episode - 1) {
-          fetch(`/api/entries/${(entradaObj as unknown as { id: string }).id}`, {
+        if (entradaAnterior && animeObj?.nextAiringEpisode?.episode && episodio >= animeObj.nextAiringEpisode.episode - 1) {
+          fetch(`/api/entries/${(entradaAnterior as unknown as { id: string }).id}`, {
             method: 'PUT',
             headers: {
               'Content-Type': 'application/json',
@@ -516,19 +600,37 @@ export default function Inicio() {
               mal_id: malId,
               tipo: 'anime',
               status: 'Em Dia',
-              nota: (entradaObj as unknown as { nota?: number | null }).nota ?? null,
-              anotacao: (entradaObj as unknown as { anotacao?: string }).anotacao ?? '',
-              is_favorite: (entradaObj as unknown as { is_favorite?: boolean }).is_favorite ?? false,
+              nota: (entradaAnterior as unknown as { nota?: number | null }).nota ?? null,
+              anotacao: (entradaAnterior as unknown as { anotacao?: string }).anotacao ?? '',
+              is_favorite: (entradaAnterior as unknown as { is_favorite?: boolean }).is_favorite ?? false,
             }),
           }).catch(() => null)
         }
 
         showToast(`Ep. ${episodio} de ${titulo} marcado como visto!${sufixoXP}`, 'success')
-        if (avisoMaratona) showToast(avisoMaratona.texto, avisoMaratona.tipo)
+        if (maratonaConcluida) {
+          celebrar({
+            tipo: 'maratona',
+            subtitulo: maratonaConcluida.faixa
+              ? `Faixa ${maratonaConcluida.faixa} · Maratona finalizada`
+              : 'Maratona finalizada',
+            notaExtra: 'Conta para as Insígnias de Maratona!',
+            recompensas: {
+              ouro: maratonaConcluida.ouro,
+              xp: maratonaConcluida.xp,
+              anicoins: maratonaConcluida.anicoins,
+              bilhetes: maratonaConcluida.bilhetes,
+            },
+          })
+        } else if (avisoMaratona) {
+          showToast(avisoMaratona.texto, avisoMaratona.tipo)
+        }
       } else {
+        reverterOtimismo()
         showToast('Não foi possível registrar o episódio.', 'error')
       }
     } catch {
+      reverterOtimismo()
       showToast('Erro de conexão ao registrar episódio.', 'error')
     } finally {
       setMarcandoEp(prev => ({ ...prev, [malId]: false }))
@@ -617,11 +719,13 @@ export default function Inicio() {
         {continuar.length > 0 && (
           <FaixaRolavel ariaLabel="Continue de onde parou">
             {continuar.map((c, idx) => {
-              const epAlvo = recemMarcados[c.anime.mal_id]
+              const epAlvoBruto = recemMarcados[c.anime.mal_id]
                 ? recemMarcados[c.anime.mal_id] + 1
                 : c.proximoEpisodio
-              const vistos = epAlvo - 1
               const total = c.anime.episodes || 0
+              const concluidoLocal = total > 0 && epAlvoBruto > total
+              const epAlvo = concluidoLocal ? total : epAlvoBruto
+              const vistos = concluidoLocal ? total : epAlvo - 1
               const pct = total > 0 ? Math.min(100, Math.round((vistos / total) * 100)) : 0
               const diaSemana = obterTextoDiaLancamento({
                 status: 'RELEASING',
@@ -699,6 +803,10 @@ export default function Inicio() {
                         <AlertTriangle size={12} className="shrink-0" />
                         {isAdmin ? 'Curar episódios' : 'Sem episódios'}
                       </Link>
+                    ) : concluidoLocal ? (
+                      <span className="w-full inline-flex items-center justify-center gap-1.5 py-2 px-2.5 rounded-xl bg-jade/15 border border-jade/40 text-jade text-xs font-extrabold">
+                        <Check size={13} /> Concluído
+                      </span>
                     ) : bloqueadoPorLancamento ? (
                       <button
                         type="button"

@@ -107,4 +107,24 @@ describe('HeroProximoEpisodio · maratona', () => {
     expect(screen.queryByLabelText('Próximo episódio liberado na maratona')).toBeNull()
     expect(screen.queryByLabelText('Tempo para liberar o próximo episódio da maratona')).toBeNull()
   })
+
+  it('não exibe Ep. 14 fantasma nem botão de marcar quando o último episódio (13/13) acabou de ser marcado', async () => {
+    vi.mocked(obterMaratona).mockResolvedValue({
+      dados: { pode: false, total: 13, duracao_min: 24, intervalo_seg: 1296, faixas },
+    })
+
+    render(
+      <MemoryRouter>
+        <HeroProximoEpisodio
+          itens={[{ ...itemOverlord, proximoEpisodio: 13 }]}
+          recemMarcados={{ 35073: 13 }}
+        />
+      </MemoryRouter>,
+    )
+
+    await vi.waitFor(() => expect(obterMaratona).toHaveBeenCalledWith(35073))
+    expect(screen.queryByText(/Ep\. 14/)).toBeNull()
+    expect(screen.queryByRole('button', { name: /Marcar ep\. 14 visto/i })).toBeNull()
+    expect(screen.getByText('Concluído')).toBeTruthy()
+  })
 })
