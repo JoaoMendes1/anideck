@@ -768,6 +768,10 @@ func (h *RPGHandler) HandleIniciarCombateInterativo(w http.ResponseWriter, r *ht
 
 // HandleAgirCombateInterativo resolve uma rodada escolhida pelo jogador e registra prêmios ao concluir.
 func (h *RPGHandler) HandleAgirCombateInterativo(w http.ResponseWriter, r *http.Request) {
+	sessao, ok := abrirSessaoRPG(w, r)
+	if !ok {
+		return
+	}
 	var corpo struct {
 		SessaoID string `json:"sessao_id"`
 		Acao     string `json:"acao"`
@@ -779,10 +783,6 @@ func (h *RPGHandler) HandleAgirCombateInterativo(w http.ResponseWriter, r *http.
 	corpo.Acao = strings.TrimSpace(corpo.Acao)
 	if corpo.Acao != acaoInterativaGolpe && corpo.Acao != acaoInterativaDefender && corpo.Acao != acaoInterativaRuptura {
 		responderErroJSON(w, http.StatusBadRequest, "Escolha golpe, defender ou ruptura.")
-		return
-	}
-	sessao, ok := abrirSessaoRPG(w, r)
-	if !ok {
 		return
 	}
 	s, existe := cofreCombates.obter(strings.TrimSpace(corpo.SessaoID), sessao.userID)
