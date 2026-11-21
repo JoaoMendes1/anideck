@@ -234,5 +234,10 @@ func equipamentoDoContexto(dbClient *supabase.Client, userID string, ctx context
 	}
 	estado.Habilidades = AplicarMaestria(LivroDeHabilidades(base, nivel), ctx.maestria)
 	estado.Ouro = ctx.ouro
+	if ctx.linha != nil && ctx.linha.EcoMalID != nil && *ctx.linha.EcoMalID > 0 {
+		if eco := carregarEcoEquipado(dbClient, userID, ctx.linha.EcoMalID, nivel); eco != nil {
+			AplicarEcoNoEstado(&estado, eco)
+		}
+	}
 	return estado, nil
 }

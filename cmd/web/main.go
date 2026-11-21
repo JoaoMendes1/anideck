@@ -208,6 +208,8 @@ func main() {
 		protegido.Put("/api/personagem/base", personagemHandler.HandleTrocarPersonagem)
 		protegido.Post("/api/personagem/desbloquear", personagemHandler.HandleDesbloquearPersonagem)
 		protegido.Put("/api/personagem/esquadrao", rpgHandler.HandleSalvarEsquadrao)
+		protegido.Get("/api/personagem/ecos", rpgHandler.HandleGetEcos)
+		protegido.Put("/api/personagem/eco", rpgHandler.HandleEquiparEco)
 		protegido.Get("/api/personagem/equipamentos", rpgHandler.HandleGetEquipamentos)
 		protegido.Put("/api/personagem/equipamentos", rpgHandler.HandleEquiparItemRPG)
 		protegido.Post("/api/rpg/aprimorar", rpgHandler.HandleAprimorar)

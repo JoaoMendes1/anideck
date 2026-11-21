@@ -122,6 +122,26 @@ export interface SlotRPG {
   motivo?: string
 }
 
+export interface EcoDoAnime {
+  mal_id: number
+  titulo: string
+  imagem_url?: string
+  raridade: string
+  nota: number
+  genero_principal: string
+  nome_efeito: string
+  resumo: string
+  vida?: number
+  ataque?: number
+  defesa?: number
+  magia?: number
+  eter?: number
+  velocidade?: number
+  critico_por_mil?: number
+  esquiva_por_mil?: number
+  sorte_item?: number
+}
+
 export interface EstadoEquipamento {
   nivel: number
   base: AtributosRPG
@@ -142,6 +162,8 @@ export interface EstadoEquipamento {
   ressonancia?: boolean
   /** Efeito de status que os golpes do herói podem deixar (vem do elemento). */
   efeito_do_elemento?: EfeitoDeElemento
+  /** Carta Foil equipada como Eco do Anime (sql/137). */
+  eco?: EcoDoAnime
 }
 
 /** Regras da sintonia, iguais às do Go (rpg_sintonia.go), para a tela explicar. */
@@ -371,6 +393,40 @@ export async function aprimorarItem(itemId: string): Promise<{ dados?: EstadoEqu
     if (!res.ok) return { erro: json?.error || falha }
     if (!json || !Array.isArray(json.slots)) return { erro: falha }
     avisarOuroMudou()
+    return { dados: json }
+  } catch {
+    return { erro: falha }
+  }
+}
+
+export async function obterEcosDoAnime(): Promise<{
+  dados?: { eco_mal_id: number; eco_ativo?: EcoDoAnime; cartas: EcoDoAnime[] }
+  erro?: string
+}> {
+  const falha = 'Não foi possível carregar suas Cartas Foil agora.'
+  try {
+    const res = await fetch('/api/personagem/ecos', { headers: await cabecalhoDeAutenticacao() })
+    const json = (await res.json().catch(() => null)) as
+      | { eco_mal_id?: number; eco_ativo?: EcoDoAnime; cartas?: EcoDoAnime[]; error?: string }
+      | null
+    if (!res.ok || !json || !Array.isArray(json.cartas)) return { erro: json?.error || falha }
+    return { dados: { eco_mal_id: json.eco_mal_id ?? 0, eco_ativo: json.eco_ativo, cartas: json.cartas } }
+  } catch {
+    return { erro: falha }
+  }
+}
+
+export async function equiparEcoDoAnime(malId: number): Promise<{ dados?: EstadoEquipamento; erro?: string }> {
+  const falha = 'Não foi possível equipar este Eco agora.'
+  try {
+    const res = await fetch('/api/personagem/eco', {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json', ...(await cabecalhoDeAutenticacao()) },
+      body: JSON.stringify({ mal_id: malId }),
+    })
+    const json = (await res.json().catch(() => null)) as (EstadoEquipamento & { error?: string }) | null
+    if (!res.ok) return { erro: json?.error || falha }
+    if (!json || !Array.isArray(json.slots)) return { erro: falha }
     return { dados: json }
   } catch {
     return { erro: falha }

@@ -532,5 +532,17 @@
         "caminho": "/personagem"
       }
     ]
+  },
+  {
+    "chave": "2026-11-20-ecos-do-anime",
+    "titulo": "Ecos do Anime: equipe suas Cartas Foil",
+    "categoria": "novidade",
+    "resumo": "Suas Cartas Foil (conquistadas ao terminar animes com nota 10) agora podem ser equipadas no slot Eco do Anime em Meu Personagem! O gênero principal da obra e a raridade da carta concedem bônus táticos permanentes em ataque, magia, vida, defesa, velocidade, crítico ou sorte de item em todas as batalhas.",
+    "links": [
+      {
+        "rotulo": "Equipar Eco no Personagem",
+        "caminho": "/personagem"
+      }
+    ]
   }
 ]

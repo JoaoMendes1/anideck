@@ -370,17 +370,24 @@ type linhaPersonagemBanco struct {
 	VisualEquipado *string  `json:"visual_equipado"`
 	Desbloqueados  []string `json:"desbloqueados"`
 	Esquadrao      []string `json:"esquadrao"`
+	EcoMalID       *int     `json:"eco_mal_id"`
 	UltimaTrocaEm  *string  `json:"ultima_troca_em"`
 }
 
 // lerPersonagem busca a linha do usuário. Devolve nil, sem erro, para quem não despertou.
 func lerPersonagem(dbClient *supabase.Client, userID string) (*linhaPersonagemBanco, error) {
 	dados, _, err := dbClient.From("rpg_personagens").
-		Select("nome,personagem_base,criado_em,visual_equipado,desbloqueados,esquadrao,ultima_troca_em", "", false).
+		Select("nome,personagem_base,criado_em,visual_equipado,desbloqueados,esquadrao,eco_mal_id,ultima_troca_em", "", false).
 		Eq("user_id", userID).
 		Execute()
 	if err != nil {
-		// Fallback tolerante à ordem de aplicação dos SQLs (068, 123 e 136).
+		// Fallback tolerante à ordem de aplicação dos SQLs (068, 123, 136 e 137).
+		dados, _, err = dbClient.From("rpg_personagens").
+			Select("nome,personagem_base,criado_em,visual_equipado,desbloqueados,esquadrao,ultima_troca_em", "", false).
+			Eq("user_id", userID).
+			Execute()
+	}
+	if err != nil {
 		dados, _, err = dbClient.From("rpg_personagens").
 			Select("nome,personagem_base,criado_em,visual_equipado,desbloqueados,ultima_troca_em", "", false).
 			Eq("user_id", userID).

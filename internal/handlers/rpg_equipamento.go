@@ -123,6 +123,8 @@ type EstadoEquipamento struct {
 	Ressonancia     bool   `json:"ressonancia"`
 	// EfeitoDoElemento é o efeito de status que os golpes do herói podem deixar.
 	EfeitoDoElemento *EfeitoDeElemento `json:"efeito_do_elemento,omitempty"`
+	// Eco do Anime (Carta Foil equipada, sql/137).
+	Eco *EcoDoAnime `json:"eco,omitempty"`
 }
 
 // SlotsRPG devolve os slots na ordem em que a tela os mostra. A lista repete o CHECK de

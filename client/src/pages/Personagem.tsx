@@ -20,6 +20,7 @@ import SintoniaElemental from '../components/personagem/SintoniaElemental'
 import LivroDeHabilidades from '../components/personagem/LivroDeHabilidades'
 import EscolhaDoElenco from '../components/personagem/EscolhaDoElenco'
 import ResumoDeCombate from '../components/personagem/ResumoDeCombate'
+import CartaoEcoPersonagem from '../components/personagem/CartaoEcoPersonagem'
 import { obterEquipamentos, type EstadoEquipamento, type SlotId } from '../lib/rpg'
 import {
   ALTURA_DA_ARTE,
@@ -879,6 +880,7 @@ function FichaDoPersonagem({
           {abaAtiva === 'status' && (
             <div className="flex flex-col gap-4">
               <PainelEquipamentos estado={equipamento} />
+              <CartaoEcoPersonagem estado={equipamento} aoAtualizar={aoAtualizarEquipamento} />
               {equipamento && <SintoniaElemental estado={equipamento} />}
               {equipamento && <ConjuntosEmUso estado={equipamento} />}
             </div>
