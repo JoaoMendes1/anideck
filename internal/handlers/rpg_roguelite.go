@@ -8,7 +8,7 @@ import (
 	"strings"
 	"sync"
 
-	"anideck/internal/database"
+	"github.com/JoaoMendes1/anideck/internal/database"
 	"github.com/supabase-community/supabase-go"
 )
 
