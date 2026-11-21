@@ -918,6 +918,11 @@ decidiu em 17/11/2026 que ela fecha fora da Fase 18. Escopo a detalhar em issues
 > numeração e não abrem escopo novo. Ficam registrados aqui em ordem cronológica inversa para
 > não sumirem: fase concluída não deve ser reaberta só para receber um conserto.
 
+### 20/11/2026 — Correção do modal mobile de combate, trava de scroll e atalho gratuito de atributos (#338)
+
+- [x] **Portal em `document.body`, trava de rolagem e atalho de atributos por herói (`CombateInterativoModal.tsx`, `MapaExpedicoes.tsx`, `Personagem.tsx`, `PainelAtributos.tsx`):**
+      `CombateInterativoModal` passa a usar `createPortal(..., document.body)` com `z-[90]` e `useSheetBehavior` (`overflow: hidden` no `body` e `overscroll-contain`), deixando de ficar preso no contexto de empilhamento do `<main>` sob `Navbar` e `BottomNav` no mobile; rodapé tático em `grid-cols-3` mantém `Golpe / Habilidade`, `Defender / Esquivar` e `Ruptura de Éter` visíveis em telas estreitas; `MapaExpedicoes` também trava o scroll de fundo na gaveta mobile em `z-[90]`; `TrocaDePersonagem` ganha atalho direto para configurar gratuitamente os atributos de qualquer herói desbloqueado em `PainelAtributos` sem pagar troca antecipada de líder. (#338)
+
 ### 20/11/2026 — Atributos individuais por herói, Guia de Classe e revisão mobile UI/UX (#336, #337)
 
 - [x] **Atributos independentes por herói desbloqueado e Guia da Classe (`sql/140`, `rpg_atributos.go`, `rpg_esquadrao.go`, `PainelAtributos.tsx`):**

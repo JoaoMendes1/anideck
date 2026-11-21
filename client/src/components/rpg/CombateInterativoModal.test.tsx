@@ -62,4 +62,17 @@ describe('CombateInterativoModal', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Concluir e atualizar' }))
     expect(aoFechar).toHaveBeenCalledWith(true)
   })
+
+  it('renderiza em portal no document.body e trava a rolagem de fundo enquanto aberto', () => {
+    const aoFechar = vi.fn()
+    const { container, unmount } = render(<CombateInterativoModal estadoInicial={inicial} aoFechar={aoFechar} />)
+
+    expect(container.querySelector('[role="dialog"]')).toBeNull()
+    const dialogo = document.body.querySelector('[role="dialog"]')
+    expect(dialogo).not.toBeNull()
+    expect(document.body.style.overflow).toBe('hidden')
+
+    unmount()
+    expect(document.body.style.overflow).toBe('')
+  })
 })

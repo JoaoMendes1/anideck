@@ -207,11 +207,13 @@ function TrocaDePersonagem({
   elenco,
   ouro,
   aoTrocar,
+  aoConfigurarAtributos,
 }: {
   atual: string
   elenco?: ElencoPersonagemInfo
   ouro?: number
   aoTrocar: (dados: RespostaPersonagem) => void
+  aoConfigurarAtributos?: (heroiId: string) => void
 }) {
   const [escolhido, setEscolhido] = useState(atual)
   const [salvando, setSalvando] = useState(false)
@@ -314,14 +316,25 @@ function TrocaDePersonagem({
           )}
         </div>
       ) : !esperaRestante ? (
-        <button
-          type="button"
-          onClick={() => confirmar(false)}
-          disabled={salvando}
-          className="h-10 cursor-pointer rounded-full bg-gradient-to-r from-holo-1 to-holo-3 px-4 text-xs font-extrabold text-void disabled:cursor-wait disabled:opacity-50"
-        >
-          {salvando ? 'Trocando…' : `Trocar para ${membro.nome} (grátis)`}
-        </button>
+        <div className="flex flex-col gap-1.5">
+          <button
+            type="button"
+            onClick={() => confirmar(false)}
+            disabled={salvando}
+            className="h-10 cursor-pointer rounded-full bg-gradient-to-r from-holo-1 to-holo-3 px-4 text-xs font-extrabold text-void disabled:cursor-wait disabled:opacity-50"
+          >
+            {salvando ? 'Trocando…' : `Trocar para ${membro.nome} (grátis)`}
+          </button>
+          {aoConfigurarAtributos && (
+            <button
+              type="button"
+              onClick={() => aoConfigurarAtributos(escolhido)}
+              className="h-9 cursor-pointer rounded-full border border-holo-1/40 bg-holo-1/10 px-4 text-xs font-bold text-holo-1 transition hover:border-holo-1 hover:bg-holo-1/20"
+            >
+              Configurar atributos de {membro.nome} (grátis, sem trocar líder)
+            </button>
+          )}
+        </div>
       ) : (
         <div className="flex flex-col gap-1.5">
           <p className="m-0 font-mono text-xs text-muted">
@@ -335,6 +348,15 @@ function TrocaDePersonagem({
           >
             {salvando ? 'Trocando…' : `Trocar agora por ${precoAntecipado} Ouro`}
           </button>
+          {aoConfigurarAtributos && (
+            <button
+              type="button"
+              onClick={() => aoConfigurarAtributos(escolhido)}
+              className="h-9 cursor-pointer rounded-full border border-holo-1/40 bg-holo-1/10 px-4 text-xs font-bold text-holo-1 transition hover:border-holo-1 hover:bg-holo-1/20"
+            >
+              Configurar atributos de {membro.nome} (grátis, sem trocar líder)
+            </button>
+          )}
           {faltaTrocaAntecipada > 0 && (
             <p className="m-0 text-center font-mono text-xs text-coral">
               Faltam {faltaTrocaAntecipada.toLocaleString('pt-BR')} de Ouro
@@ -399,6 +421,7 @@ function FichaDoPersonagem({
   const [salvando, setSalvando] = useState(false)
   const [erroDoVisual, setErroDoVisual] = useState('')
   const [trocandoPersonagem, setTrocandoPersonagem] = useState(false)
+  const [heroiAtributos, setHeroiAtributos] = useState<string | undefined>(() => searchParams.get('heroi') ?? undefined)
 
   const { personagem, progressao, estagio, proximo_estagio: proximoEstagio } = dados
   if (!personagem || !progressao || !estagio) return null
@@ -555,6 +578,12 @@ function FichaDoPersonagem({
                     setTrocandoPersonagem(false)
                   }
                   window.dispatchEvent(new Event(EVENTO_PERSONAGEM_ATUALIZADO))
+                }}
+                aoConfigurarAtributos={(heroiId) => {
+                  setHeroiAtributos(heroiId)
+                  selecionarAba('atributos')
+                  setTrocandoPersonagem(false)
+                  document.getElementById('abas-de-combate')?.scrollIntoView?.({ behavior: 'smooth', block: 'start' })
                 }}
               />
             )}
@@ -891,6 +920,7 @@ function FichaDoPersonagem({
                 aoAtualizar={aoAtualizarEquipamento}
                 personagemBase={base}
                 desbloqueados={dados.elenco?.desbloqueados}
+                heroiInicial={heroiAtributos}
               />
             ) : (
               <PainelEquipamentos estado={equipamento} />

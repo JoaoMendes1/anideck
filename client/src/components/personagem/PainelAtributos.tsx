@@ -74,11 +74,13 @@ export default function PainelAtributos({
   aoAtualizar,
   personagemBase,
   desbloqueados,
+  heroiInicial,
 }: {
   estado: EstadoEquipamento
   aoAtualizar: (estado: EstadoEquipamento) => void
   personagemBase?: string
   desbloqueados?: string[]
+  heroiInicial?: string
 }) {
   const baseAtivo = personagemBase ?? estado.personagem_base ?? ''
   const listaHerois =
@@ -90,11 +92,14 @@ export default function PainelAtributos({
           ? [baseAtivo]
           : []
 
-  const [heroiEditado, setHeroiEditado] = useState<string>(baseAtivo)
+  const alvoInicial = heroiInicial && listaHerois.includes(heroiInicial) ? heroiInicial : baseAtivo
+  const [heroiEditado, setHeroiEditado] = useState<string>(alvoInicial)
+  const listaChave = listaHerois.join(',')
 
   useEffect(() => {
-    setHeroiEditado(baseAtivo)
-  }, [baseAtivo])
+    const validos = listaChave ? listaChave.split(',') : []
+    setHeroiEditado(heroiInicial && validos.includes(heroiInicial) ? heroiInicial : baseAtivo)
+  }, [heroiInicial, baseAtivo, listaChave])
 
   const estaEditandoLider = !heroiEditado || heroiEditado === baseAtivo
   const salvosDoHeroi: PrimariosRPG = estaEditandoLider

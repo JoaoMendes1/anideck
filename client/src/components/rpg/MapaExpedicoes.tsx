@@ -50,6 +50,7 @@ import {
 import { ESTILO_DO_TIPO } from '../../lib/monstrosVisual'
 import { rotuloDoElemento } from '../../lib/personagem'
 import { useMidia } from '../../hooks/useMidia'
+import { useSheetBehavior } from '../../hooks/useSheetBehavior'
 import IconeDoMonstro from './IconeDoMonstro'
 import BotaoEmGrupo from './BotaoEmGrupo'
 import ConfrontoElemental from './ConfrontoElemental'
@@ -889,6 +890,8 @@ export default function MapaExpedicoes({
     if (!ehMobile) setGavetaAberta(false)
   }, [ehMobile])
 
+  useSheetBehavior(ehMobile && gavetaAberta, () => setGavetaAberta(false), true)
+
   if (!selecionado || regioes.length === 0) return null
 
   const regiaoPorId = new Map(regioes.map((r) => [r.id, r]))
@@ -1427,7 +1430,7 @@ export default function MapaExpedicoes({
       {ehMobile &&
         gavetaAberta &&
         createPortal(
-        <div className="fixed inset-0 z-[60] flex flex-col justify-end">
+        <div className="fixed inset-0 z-[90] flex flex-col justify-end">
           <button
             type="button"
             aria-label="Fechar região"
@@ -1440,7 +1443,7 @@ export default function MapaExpedicoes({
             aria-modal="true"
             aria-label={`Região ${regiaoAtiva.nome}`}
             tabIndex={-1}
-            className="relative flex max-h-[90dvh] flex-col gap-3 overflow-y-auto overflow-x-hidden rounded-t-3xl border-t border-line bg-panel px-3 pt-0 pb-0 outline-none"
+            className="relative flex max-h-[90dvh] flex-col gap-3 overflow-y-auto overflow-x-hidden overscroll-contain rounded-t-3xl border-t border-line bg-panel px-3 pt-0 pb-0 outline-none"
           >
             <div className="sticky top-0 z-10 -mx-3 flex items-center justify-between gap-2 bg-panel px-3 pt-3 pb-2 shadow-[0_6px_12px_-8px_rgba(0,0,0,0.6)]">
               <span aria-hidden="true" className="absolute top-1 left-1/2 h-1 w-10 -translate-x-1/2 rounded-full bg-line" />

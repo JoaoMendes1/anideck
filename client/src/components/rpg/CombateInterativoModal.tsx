@@ -1,7 +1,8 @@
 // client/src/components/rpg/CombateInterativoModal.tsx
-// Combate tático por rodada (#333): revela a próxima intenção do adversário e permite ao
-// jogador escolher Golpe, Defesa/Esquiva ou Ruptura de Éter a cada turno, com layout mobile-first.
-import { useState } from 'react'
+// Combate tático por rodada (#333): renderizado via portal no body para ficar acima da Navbar
+// e BottomNav, com trava de rolagem do documento e layout adaptado para tela cheia no celular.
+import { useCallback, useState } from 'react'
+import { createPortal } from 'react-dom'
 import { AlertTriangle, Flame, Heart, Medal, Shield, Sparkles, Swords, Ticket, X, Zap } from 'lucide-react'
 import {
   ESTILO_DO_ELEMENTO,
@@ -11,6 +12,7 @@ import {
 } from '../../lib/rpg'
 import { arteDoEstagio, rotuloDoElemento } from '../../lib/personagem'
 import { textoDosMateriais } from '../../lib/forja'
+import { useSheetBehavior } from '../../hooks/useSheetBehavior'
 import IconeOuro from '../IconeOuro'
 
 interface Props {
@@ -37,6 +39,9 @@ export default function CombateInterativoModal({ estadoInicial, aoFechar }: Prop
   const [erro, setErro] = useState('')
   const [historico, setHistorico] = useState(() => estadoInicial.ultimos_turnos ?? [])
 
+  const fechar = useCallback(() => aoFechar(estado.encerrado), [aoFechar, estado.encerrado])
+  useSheetBehavior(true, fechar, true)
+
   const executar = async (acao: 'golpe' | 'defender' | 'ruptura') => {
     if (ocupado || estado.encerrado) return
     setOcupado(true)
@@ -59,16 +64,16 @@ export default function CombateInterativoModal({ estadoInicial, aoFechar }: Prop
   const lider = estado.herois[0]
   const eterSuficienteRuptura = !lider || lider.eter_atual >= 12
 
-  return (
+  const modal = (
     <div
       role="dialog"
       aria-modal="true"
       aria-label={`Combate tático contra ${estado.alvo_nome}`}
-      className="fixed inset-0 z-[70] flex items-end justify-center bg-void/85 p-0 backdrop-blur-sm sm:items-center sm:p-4"
+      className="fixed inset-0 z-[90] flex items-stretch justify-center overflow-hidden bg-void/90 p-0 backdrop-blur-sm sm:items-center sm:p-4"
     >
-      <div className="flex max-h-[94dvh] w-full max-w-2xl flex-col overflow-hidden rounded-t-3xl border border-holo-3/45 bg-panel shadow-2xl sm:max-h-[90dvh] sm:rounded-3xl">
-        {/* Cabeçalho fixo */}
-        <header className="flex shrink-0 items-start justify-between gap-3 border-b border-line bg-panel px-4 py-3 sm:px-6 sm:py-4">
+      <div className="flex h-[100dvh] w-full max-w-2xl flex-col overflow-hidden bg-panel shadow-2xl sm:h-auto sm:max-h-[90dvh] sm:rounded-3xl sm:border sm:border-holo-3/45">
+        {/* Cabeçalho fixo acima de qualquer barra */}
+        <header className="flex shrink-0 items-start justify-between gap-3 border-b border-line bg-panel px-4 pt-[max(0.75rem,env(safe-area-inset-top))] pb-3 sm:px-6 sm:py-4">
           <div className="min-w-0 flex-1">
             <div className="flex flex-wrap items-center gap-1.5">
               <span className="rounded-full border border-holo-3/40 bg-holo-3/12 px-2.5 py-0.5 font-mono text-xs font-bold uppercase tracking-wider text-holo-3">
@@ -88,14 +93,14 @@ export default function CombateInterativoModal({ estadoInicial, aoFechar }: Prop
                 </span>
               )}
             </div>
-            <h2 className="m-0 mt-1.5 break-words font-anton text-xl uppercase leading-none text-text sm:text-2xl">
+            <h2 className="m-0 mt-1 break-words font-anton text-xl uppercase leading-none text-text sm:text-2xl">
               {estado.alvo_nome}
             </h2>
             <p className="m-0 mt-0.5 font-mono text-xs text-muted">Nível {estado.alvo_nivel}</p>
           </div>
           <button
             type="button"
-            onClick={() => aoFechar(estado.encerrado)}
+            onClick={fechar}
             aria-label="Fechar combate tático"
             className="flex h-10 w-10 shrink-0 cursor-pointer items-center justify-center rounded-full border border-line bg-panel-2 text-muted transition hover:border-holo-3/60 hover:text-text"
           >
@@ -103,10 +108,10 @@ export default function CombateInterativoModal({ estadoInicial, aoFechar }: Prop
           </button>
         </header>
 
-        {/* Arena rolável no meio */}
-        <div className="flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto overflow-x-hidden px-4 py-3 sm:gap-4 sm:px-6 sm:py-4">
+        {/* Arena rolável com overscroll-contain para não vazar scroll para a página */}
+        <div className="flex min-h-0 flex-1 flex-col gap-2.5 overflow-y-auto overflow-x-hidden overscroll-contain px-4 py-3 sm:gap-4 sm:px-6 sm:py-4">
           {/* Vida do adversário */}
-          <div className="flex flex-col gap-2 rounded-2xl border border-coral/50 bg-gradient-to-r from-coral/12 via-panel-2 to-panel-2 p-3.5">
+          <div className="flex flex-col gap-1.5 rounded-2xl border border-coral/50 bg-gradient-to-r from-coral/12 via-panel-2 to-panel-2 p-3">
             <div className="flex flex-wrap items-center justify-between gap-2 text-xs font-bold">
               <span className="inline-flex items-center gap-1.5 text-coral">
                 <Flame size={14} aria-hidden="true" />
@@ -116,7 +121,7 @@ export default function CombateInterativoModal({ estadoInicial, aoFechar }: Prop
                 {estado.inimigo_vida.toLocaleString('pt-BR')} / {estado.inimigo_vida_max.toLocaleString('pt-BR')} HP ({pctInimigo}%)
               </span>
             </div>
-            <div className="h-3 w-full overflow-hidden rounded-full border border-line bg-void/90">
+            <div className="h-2.5 w-full overflow-hidden rounded-full border border-line bg-void/90">
               <div
                 className="h-full rounded-full bg-gradient-to-r from-coral to-gold transition-all duration-300"
                 style={{ width: `${pctInimigo}%` }}
@@ -124,8 +129,8 @@ export default function CombateInterativoModal({ estadoInicial, aoFechar }: Prop
             </div>
           </div>
 
-          {/* Esquadrão de heróis */}
-          <div className={`grid grid-cols-1 gap-2 ${estado.herois.length > 1 ? 'sm:grid-cols-3' : ''}`}>
+          {/* Esquadrão de heróis compacto para caber lado a lado no celular */}
+          <div className={`grid gap-2 ${estado.herois.length > 1 ? 'grid-cols-2 sm:grid-cols-3' : 'grid-cols-1'}`}>
             {estado.herois.map((h) => {
               const pctHp = Math.max(0, Math.min(100, Math.round((h.vida_atual / Math.max(1, h.vida_maxima)) * 100)))
               const pctEter = h.eter_maximo > 0 ? Math.max(0, Math.min(100, Math.round((h.eter_atual / h.eter_maximo) * 100))) : 0
@@ -133,18 +138,18 @@ export default function CombateInterativoModal({ estadoInicial, aoFechar }: Prop
               return (
                 <div
                   key={h.base}
-                  className={`flex items-center gap-2.5 rounded-2xl border p-2.5 sm:flex-col sm:items-stretch sm:p-3 ${
-                    h.vida_atual > 0 ? 'border-holo-3/40 bg-panel-2/80' : 'border-coral/40 bg-coral/5 opacity-60'
+                  className={`flex min-w-0 flex-col gap-1.5 rounded-2xl border p-2.5 sm:p-3 ${
+                    h.vida_atual > 0 ? 'border-holo-3/40 bg-panel-2/85' : 'border-coral/40 bg-coral/5 opacity-60'
                   }`}
                 >
-                  <div className="flex min-w-0 flex-1 items-center gap-2">
+                  <div className="flex min-w-0 items-center gap-2">
                     {retrato && (
                       <img
                         src={retrato}
                         alt=""
-                        width={36}
-                        height={36}
-                        className="h-9 w-9 shrink-0 rounded-xl border border-line bg-void object-cover"
+                        width={32}
+                        height={32}
+                        className="h-8 w-8 shrink-0 rounded-xl border border-line bg-void object-cover"
                       />
                     )}
                     <div className="min-w-0 flex-1">
@@ -155,16 +160,16 @@ export default function CombateInterativoModal({ estadoInicial, aoFechar }: Prop
                       </p>
                     </div>
                   </div>
-                  <div className="flex w-28 shrink-0 flex-col gap-1.5 sm:w-full">
-                    <div className="h-2 w-full overflow-hidden rounded-full bg-void/80">
+                  <div className="flex flex-col gap-1">
+                    <div className="h-1.5 w-full overflow-hidden rounded-full bg-void/80">
                       <div
                         className={`h-full rounded-full transition-all ${h.vida_atual > 0 ? 'bg-gradient-to-r from-green to-holo-3' : 'bg-coral'}`}
                         style={{ width: `${pctHp}%` }}
                       />
                     </div>
-                    <div className="flex items-center justify-between gap-1 font-mono text-xs text-mana">
+                    <div className="flex items-center justify-between gap-2 font-mono text-xs text-mana">
                       <span>{h.eter_atual} Éter</span>
-                      <div className="h-1.5 w-14 overflow-hidden rounded-full bg-void/80 sm:flex-1">
+                      <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-void/80">
                         <div className="h-full rounded-full bg-mana transition-all" style={{ width: `${pctEter}%` }} />
                       </div>
                     </div>
@@ -175,18 +180,18 @@ export default function CombateInterativoModal({ estadoInicial, aoFechar }: Prop
           </div>
 
           {!estado.encerrado && (
-            <div className={`flex flex-col gap-1.5 rounded-2xl border p-3.5 ${corIntencao(estado.intencao.tipo)}`}>
-              <div className="flex flex-wrap items-center justify-between gap-2">
+            <div className={`flex flex-col gap-1 rounded-2xl border p-3 ${corIntencao(estado.intencao.tipo)}`}>
+              <div className="flex flex-wrap items-center justify-between gap-1.5">
                 <span className="inline-flex items-center gap-1.5 text-xs font-extrabold uppercase tracking-wide">
                   <AlertTriangle size={14} className="shrink-0" aria-hidden="true" />
                   Próxima intenção: {estado.intencao.titulo}
                 </span>
-                <span className="rounded-full border border-current/30 bg-void/50 px-2.5 py-0.5 font-mono text-xs font-bold">
-                  ~{estado.intencao.dano_estimado} de dano
+                <span className="rounded-full border border-current/30 bg-void/50 px-2 py-0.5 font-mono text-xs font-bold">
+                  ~{estado.intencao.dano_estimado} dano
                 </span>
               </div>
               <p className="m-0 text-xs leading-snug text-text">{estado.intencao.descricao}</p>
-              <p className="m-0 text-xs font-semibold text-gold">Dica tática: {estado.intencao.dica}</p>
+              <p className="m-0 text-xs font-semibold text-gold">Dica: {estado.intencao.dica}</p>
             </div>
           )}
 
@@ -204,7 +209,7 @@ export default function CombateInterativoModal({ estadoInicial, aoFechar }: Prop
 
           {estado.encerrado && (
             <div
-              className={`flex flex-col gap-3 rounded-2xl border p-4 ${
+              className={`flex flex-col gap-2.5 rounded-2xl border p-4 ${
                 estado.venceu ? 'border-gold/60 bg-gradient-to-br from-gold/15 to-panel-2' : 'border-coral/50 bg-gradient-to-br from-coral/15 to-panel-2'
               }`}
             >
@@ -255,7 +260,7 @@ export default function CombateInterativoModal({ estadoInicial, aoFechar }: Prop
                   return (
                     <li
                       key={i}
-                      className={`flex items-start justify-between gap-2 rounded-xl border px-3 py-2 ${
+                      className={`flex items-start justify-between gap-2 rounded-xl border px-3 py-1.5 ${
                         t.reacao
                           ? 'border-gold/50 bg-gold/10'
                           : doHeroi
@@ -278,56 +283,59 @@ export default function CombateInterativoModal({ estadoInicial, aoFechar }: Prop
           )}
         </div>
 
-        {/* Rodapé fixo: fácil de alcançar com o polegar no celular */}
-        <footer className="shrink-0 border-t border-line bg-panel-2/95 px-4 pt-3 pb-[max(0.85rem,env(safe-area-inset-bottom))] sm:px-6 sm:pb-4">
+        {/* Rodapé fixo com os 3 botões táticos sempre visíveis lado a lado */}
+        <footer className="shrink-0 border-t border-line bg-panel-2 px-3 pt-2.5 pb-[max(0.75rem,env(safe-area-inset-bottom))] sm:px-6 sm:py-3.5">
           {estado.encerrado ? (
             <button
               type="button"
-              onClick={() => aoFechar(true)}
+              onClick={fechar}
               className="h-11 w-full cursor-pointer rounded-full bg-gradient-to-r from-holo-1 via-holo-2 to-holo-3 px-5 text-xs font-extrabold text-void shadow-lg sm:w-auto"
             >
               Concluir e atualizar
             </button>
           ) : (
-            <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
+            <div className="grid grid-cols-3 gap-1.5 sm:gap-2.5">
               <button
                 type="button"
                 disabled={ocupado}
                 onClick={() => executar('golpe')}
-                className="flex min-h-11 cursor-pointer items-center justify-between gap-2 rounded-2xl border border-holo-3/60 bg-holo-3/12 px-3 py-2.5 text-left transition hover:bg-holo-3/20 disabled:cursor-not-allowed disabled:opacity-50 sm:flex-col sm:items-start sm:gap-1"
+                className="flex min-h-14 cursor-pointer flex-col items-center justify-center gap-0.5 rounded-2xl border border-holo-3/60 bg-holo-3/12 px-2 py-2 text-center transition hover:bg-holo-3/20 disabled:cursor-not-allowed disabled:opacity-50 sm:items-start sm:px-3 sm:text-left"
               >
-                <span className="inline-flex items-center gap-1.5 text-xs font-extrabold text-text">
-                  <Swords size={15} className="shrink-0 text-holo-3" aria-hidden="true" /> Golpe / Habilidade
+                <span className="inline-flex items-center gap-1 text-xs font-extrabold leading-tight text-text">
+                  <Swords size={14} className="shrink-0 text-holo-3" aria-hidden="true" />
+                  <span>Golpe / Habilidade</span>
                 </span>
-                <span className="text-xs text-muted">Quebra postura (+25% dano)</span>
+                <span className="text-xs leading-tight text-muted">+25% postura</span>
               </button>
 
               <button
                 type="button"
                 disabled={ocupado}
                 onClick={() => executar('defender')}
-                className="flex min-h-11 cursor-pointer items-center justify-between gap-2 rounded-2xl border border-green/60 bg-green/12 px-3 py-2.5 text-left transition hover:bg-green/20 disabled:cursor-not-allowed disabled:opacity-50 sm:flex-col sm:items-start sm:gap-1"
+                className="flex min-h-14 cursor-pointer flex-col items-center justify-center gap-0.5 rounded-2xl border border-green/60 bg-green/12 px-2 py-2 text-center transition hover:bg-green/20 disabled:cursor-not-allowed disabled:opacity-50 sm:items-start sm:px-3 sm:text-left"
               >
-                <span className="inline-flex items-center gap-1.5 text-xs font-extrabold text-text">
-                  <Shield size={15} className="shrink-0 text-green" aria-hidden="true" /> Defender / Esquivar
+                <span className="inline-flex items-center gap-1 text-xs font-extrabold leading-tight text-text">
+                  <Shield size={14} className="shrink-0 text-green" aria-hidden="true" />
+                  <span>Defender / Esquivar</span>
                 </span>
-                <span className="text-xs text-muted">-55% dano · +8 Éter</span>
+                <span className="text-xs leading-tight text-muted">-55% · +8 Éter</span>
               </button>
 
               <button
                 type="button"
                 disabled={ocupado}
                 onClick={() => executar('ruptura')}
-                className={`flex min-h-11 cursor-pointer items-center justify-between gap-2 rounded-2xl border px-3 py-2.5 text-left transition disabled:cursor-not-allowed disabled:opacity-50 sm:flex-col sm:items-start sm:gap-1 ${
+                className={`flex min-h-14 cursor-pointer flex-col items-center justify-center gap-0.5 rounded-2xl border px-2 py-2 text-center transition disabled:cursor-not-allowed disabled:opacity-50 sm:items-start sm:px-3 sm:text-left ${
                   eterSuficienteRuptura
                     ? 'border-gold/60 bg-gold/12 hover:bg-gold/20'
                     : 'border-line bg-panel text-muted hover:border-gold/40'
                 }`}
               >
-                <span className="inline-flex items-center gap-1.5 text-xs font-extrabold text-text">
-                  <Zap size={15} className="shrink-0 text-gold" aria-hidden="true" /> Ruptura de Éter
+                <span className="inline-flex items-center gap-1 text-xs font-extrabold leading-tight text-text">
+                  <Zap size={14} className="shrink-0 text-gold" aria-hidden="true" />
+                  <span>Ruptura de Éter</span>
                 </span>
-                <span className="text-xs text-muted">12 Éter · corta magia</span>
+                <span className="text-xs leading-tight text-muted">12 Éter</span>
               </button>
             </div>
           )}
@@ -335,4 +343,6 @@ export default function CombateInterativoModal({ estadoInicial, aoFechar }: Prop
       </div>
     </div>
   )
+
+  return typeof document !== 'undefined' ? createPortal(modal, document.body) : modal
 }
