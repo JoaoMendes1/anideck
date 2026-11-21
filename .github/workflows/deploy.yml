@@ -21,6 +21,7 @@ jobs:
             git pull origin main
             docker build -t anideck .
             cd ~/infra
+            docker compose run --rm --no-deps -T anideck /app/migrate
             docker compose up -d --force-recreate anideck
             # O worker usa a mesma imagem. Só é recriado se o serviço já existir no
             # compose do servidor; sem ele, o deploy do site segue normal.

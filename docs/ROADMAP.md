@@ -918,6 +918,11 @@ decidiu em 17/11/2026 que ela fecha fora da Fase 18. Escopo a detalhar em issues
 > numeração e não abrem escopo novo. Ficam registrados aqui em ordem cronológica inversa para
 > não sumirem: fase concluída não deve ser reaberta só para receber um conserto.
 
+### 20/11/2026 — Executor automático de migrations SQL no deploy da VPS (#335)
+
+- [x] **Runner transacional na VPS (`cmd/migrate`, `sql/139_schema_migrations.sql`, `Dockerfile`, `.github/workflows/deploy.yml`):**
+      binário Go puro `/app/migrate` acionado antes da recriação dos containers via `docker compose run --rm --no-deps -T anideck /app/migrate`, com `psql` e `DATABASE_URL` lida exclusivamente do `.env` privado da VPS; registra `001`–`138` como `baseline` automático no primeiro deploy e aplica `>= 139` em ordem numérica sob `pg_advisory_xact_lock` e validação SHA-256 de imutabilidade. (#335)
+
 ### 17/11/2026 — Início personalizável, destaque configurável e 3ª coluna (#275)
 
 - [x] **Ordem, visibilidade e minimização salvas por usuário (`sql/110`, `inicio_preferencias.go`, `Inicio.tsx`, `OrganizarInicioModal.tsx`):**

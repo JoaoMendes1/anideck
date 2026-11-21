@@ -20,14 +20,16 @@ RUN CGO_ENABLED=0 go build -o /anideck ./cmd/web
 # O worker da fila de curadoria sai da mesma imagem; o serviço dele no compose do
 # servidor troca só o comando.
 RUN CGO_ENABLED=0 go build -o /worker ./cmd/worker
+RUN CGO_ENABLED=0 go build -o /migrate ./cmd/migrate
 
 # ---- etapa 3: imagem final ----
 FROM alpine:3.22
-RUN apk add --no-cache ca-certificates
+RUN apk add --no-cache ca-certificates postgresql-client
 WORKDIR /app
 
 COPY --from=builder /anideck /app/anideck
 COPY --from=builder /worker /app/worker
+COPY --from=builder /migrate /app/migrate
 COPY --from=front /app/dist /app/client/dist
 COPY sql /app/sql
 
