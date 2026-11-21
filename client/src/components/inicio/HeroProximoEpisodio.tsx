@@ -2,10 +2,11 @@
 // O topo da Início para quem tem anime em andamento: responde "o que eu assisto agora" com o
 // próximo episódio liberado, resumo da obra, atalho para assistir na plataforma certa, botão
 // de marcar visto sem precisar navegar e carrossel entre as obras disponíveis.
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { Check, Clock, Lock, Play, Plus, Tv, ChevronLeft, ChevronRight } from 'lucide-react'
+import { Check, Clock, Lock, Play, Plus, Timer, Tv, ChevronLeft, ChevronRight } from 'lucide-react'
 import { artigoStreaming, escolherLinkStreaming, type ParaContinuar } from '../../lib/inicio'
+import { cronometro, faixaAtual, obterMaratona, type MaratonaRPG } from '../../lib/maratona'
 
 interface Props {
   itens?: ParaContinuar[]
@@ -51,6 +52,8 @@ export default function HeroProximoEpisodio({
 }: Props) {
   const listaItens = itens && itens.length > 0 ? itens : itemProp ? [itemProp] : []
   const [indiceInterno, setIndiceInterno] = useState(0)
+  const [maratona, setMaratona] = useState<MaratonaRPG | null>(null)
+  const [agora, setAgora] = useState(() => Date.now())
 
   const indice = indiceProp !== undefined ? indiceProp : indiceInterno
   const mudarIndice = (novo: number) => {
@@ -59,6 +62,38 @@ export default function HeroProximoEpisodio({
   }
 
   const item = listaItens[indice] || listaItens[0]
+  const malIdAtual = item?.anime.mal_id ?? 0
+
+  useEffect(() => {
+    if (!malIdAtual) return
+    let ativo = true
+    const carregar = () => {
+      obterMaratona(malIdAtual).then((r) => {
+        if (!ativo) return
+        setMaratona(r.dados?.maratona ?? null)
+        setAgora(Date.now())
+      })
+    }
+    carregar()
+    const aoMarcar = (ev: Event) => {
+      const d = (ev as CustomEvent<{ malId?: number }>).detail
+      if (d?.malId === malIdAtual) carregar()
+    }
+    window.addEventListener('anideck:episodio-atualizado', aoMarcar)
+    return () => {
+      ativo = false
+      window.removeEventListener('anideck:episodio-atualizado', aoMarcar)
+    }
+  }, [malIdAtual])
+
+  const maratonaAtiva = maratona && maratona.mal_id === malIdAtual && maratona.status === 'ativa' ? maratona : null
+
+  useEffect(() => {
+    if (!maratonaAtiva) return
+    const id = window.setInterval(() => setAgora(Date.now()), 1000)
+    return () => window.clearInterval(id)
+  }, [maratonaAtiva])
+
   if (!item) return null
 
   const { anime } = item
@@ -81,6 +116,10 @@ export default function HeroProximoEpisodio({
     ? jaMarcadoProp
     : recemMarcados[anime.mal_id] !== undefined
   const previsao = bloqueado && anime.nextAiringEpisode?.airingAt ? tempoRestante(anime.nextAiringEpisode.airingAt) : null
+
+  const decorridoMaratona = maratonaAtiva ? Math.max(0, (agora - Date.parse(maratonaAtiva.iniciada_em)) / 1000) : 0
+  const faltaProximoMaratona = maratonaAtiva ? (Date.parse(maratonaAtiva.proximo_em) - agora) / 1000 : 0
+  const faixaMaratona = maratonaAtiva ? faixaAtual(maratonaAtiva.faixas, decorridoMaratona) : undefined
 
   const handleMarcar = () => {
     if (onMarcarProp && itemProp === item) {
@@ -111,7 +150,7 @@ export default function HeroProximoEpisodio({
         </Link>
 
         <div className="flex-1 min-w-0">
-          {/* Cabeçalho do Card: Badge + Tags (desktop) e Controles do Carrossel em linha */}
+          {/* Cabeçalho do Card: Badge + Maratona + Tags (desktop) e Controles do Carrossel em linha */}
           <div className="flex items-center justify-between gap-3 mb-2.5">
             <div className="flex flex-wrap items-center gap-2 min-w-0">
               <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-holo-1/15 border border-holo-1/35 text-holo-1 font-mono text-xs font-bold uppercase tracking-widest shrink-0">
@@ -119,6 +158,16 @@ export default function HeroProximoEpisodio({
                 <span className="hidden sm:inline">Seu próximo episódio</span>
                 <span className="sm:hidden">Próximo ep.</span>
               </span>
+              {maratonaAtiva && (
+                <span
+                  aria-label="Cronômetro da maratona"
+                  className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-gold/15 border border-gold/45 text-gold font-mono text-xs font-bold tabular-nums shrink-0"
+                >
+                  <Timer size={12} aria-hidden="true" />
+                  <span>Maratona · {cronometro(decorridoMaratona)}</span>
+                  {faixaMaratona && <span className="hidden md:inline text-text/90">· {faixaMaratona.nome}</span>}
+                </span>
+              )}
               {anime.genres?.slice(0, 3).map((g) => (
                 <span key={g} className="hidden sm:inline-block px-2 py-0.5 rounded-full bg-panel-2/90 border border-line text-muted font-mono text-xs shrink-0">
                   {g}
@@ -207,8 +256,32 @@ export default function HeroProximoEpisodio({
           </div>
 
           {total > 0 && (
-            <div className="h-1.5 max-w-md rounded-full bg-void/70 overflow-hidden border border-white/10 mb-5">
+            <div className="h-1.5 max-w-md rounded-full bg-void/70 overflow-hidden border border-white/10 mb-4">
               <div className="h-full rounded-full bg-gradient-to-r from-holo-1 to-holo-3" style={{ width: `${pct}%` }} />
+            </div>
+          )}
+
+          {maratonaAtiva && !bloqueado && (
+            <div className="mb-4 flex flex-wrap items-center gap-2">
+              {faltaProximoMaratona > 0 ? (
+                <span
+                  role="status"
+                  aria-label="Tempo para liberar o próximo episódio da maratona"
+                  className="inline-flex items-center gap-1.5 rounded-full border border-coral/40 bg-coral/15 px-2.5 py-1 font-mono text-xs font-bold tabular-nums text-coral"
+                >
+                  <Clock size={12} aria-hidden="true" />
+                  Libera em {faltaProximoMaratona >= 3600 ? cronometro(faltaProximoMaratona) : cronometro(faltaProximoMaratona).slice(3)} · marcar antes perde
+                </span>
+              ) : (
+                <span
+                  role="status"
+                  aria-label="Próximo episódio liberado na maratona"
+                  className="inline-flex items-center gap-1.5 rounded-full border border-green/45 bg-green/15 px-2.5 py-1 font-mono text-xs font-bold text-green"
+                >
+                  <Check size={12} aria-hidden="true" />
+                  Liberado para marcar
+                </span>
+              )}
             </div>
           )}
 

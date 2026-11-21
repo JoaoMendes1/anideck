@@ -504,5 +504,17 @@
         "caminho": "/expedicoes"
       }
     ]
+  },
+  {
+    "chave": "2026-11-20-cronometro-maratona-inicio",
+    "titulo": "Cronômetro da maratona direto na tela Início",
+    "categoria": "novidade",
+    "resumo": "Quem está em uma missão especial de maratona agora vê o cronômetro em tempo real direto no cartão Continue de onde parou, na tela Início, junto do aviso de quanto falta para liberar o próximo episódio ou se já está liberado para marcar. Marcar pela Início antes da hora agora também abre a confirmação para você não perder a maratona sem querer.",
+    "links": [
+      {
+        "rotulo": "Abrir Início",
+        "caminho": "/"
+      }
+    ]
   }
 ]

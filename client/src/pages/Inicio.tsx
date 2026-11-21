@@ -14,8 +14,11 @@ import OnboardingGostoModal from '../components/OnboardingGostoModal'
 import OrganizarInicioModal from '../components/inicio/OrganizarInicioModal'
 import { useSessao } from '../contexts/SessaoContext'
 import { useToast } from '../contexts/ToastContext'
+import { useConfirmacao } from '../hooks/useConfirmacao'
 import { useMidia } from '../hooks/useMidia'
 import { chaveDoUsuario, guardarNaMemoria, lerDaMemoria, invalidarCachesDoDeck } from '../lib/cacheDeTela'
+import { confirmarMarcacaoNaMaratona } from '../lib/avisoDaMaratona'
+import { anotarMarcacao, mensagemDaMaratona, type ResultadoMaratonaEpisodio } from '../lib/maratona'
 import { gradienteDoCard, obterTextoDiaLancamento } from '../lib/deckHelpers'
 import { miniatura } from '../lib/miniatura'
 import {
@@ -281,6 +284,7 @@ export default function Inicio() {
     if (precisaDaConfiguracaoInicial(session?.user.user_metadata)) navigate('/bem-vindo', { replace: true })
   }, [session, navigate])
   const { showToast } = useToast()
+  const { confirmar, dialogo } = useConfirmacao()
   const ehDesktopLargo = useMidia('(min-width: 1280px)')
   const userId = session?.user.id || ''
   const chave = chaveDoUsuario(userId, 'inicio')
@@ -471,6 +475,7 @@ export default function Inicio() {
 
   const avancarEpisodioRapido = async (malId: number, episodio: number, titulo: string) => {
     if (!session || marcandoEp[malId]) return
+    if (!(await confirmarMarcacaoNaMaratona(malId, episodio, confirmar))) return
     setMarcandoEp(prev => ({ ...prev, [malId]: true }))
     try {
       const res = await fetch(`/api/entries/${malId}/episodes/${episodio}`, {
@@ -479,8 +484,11 @@ export default function Inicio() {
       })
       if (res.ok) {
         let sufixoXP = ''
+        let avisoMaratona: { texto: string; tipo: 'success' | 'error' } | null = null
         try {
-          const payload = (await res.json()) as { xp_earned?: number }
+          const payload = (await res.json()) as { xp_earned?: number; maratona?: ResultadoMaratonaEpisodio }
+          anotarMarcacao(malId, episodio, payload.maratona)
+          avisoMaratona = mensagemDaMaratona(payload.maratona)
           if (typeof payload.xp_earned === 'number' && payload.xp_earned > 0) {
             sufixoXP = ` (+${payload.xp_earned} XP)`
           }
@@ -516,6 +524,7 @@ export default function Inicio() {
         }
 
         showToast(`Ep. ${episodio} de ${titulo} marcado como visto!${sufixoXP}`, 'success')
+        if (avisoMaratona) showToast(avisoMaratona.texto, avisoMaratona.tipo)
       } else {
         showToast('Não foi possível registrar o episódio.', 'error')
       }
@@ -958,6 +967,7 @@ export default function Inicio() {
         onClose={() => setModalGostoAberto(false)}
         onSaved={novas => setPrefsGosto(novas)}
       />
+      {dialogo}
     </div>
   )
 }
