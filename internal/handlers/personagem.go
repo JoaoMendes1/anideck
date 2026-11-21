@@ -21,8 +21,8 @@ const (
 	nomePersonagemMinimo         = 2
 	nomePersonagemMaximo         = 24
 	precoDesbloquearPersonagem   = 400
-	trocaPersonagemCooldownHoras = 24
-	precoTrocaAntecipadaOuro     = 150
+	trocaPersonagemCooldownHoras = 0
+	precoTrocaAntecipadaOuro     = 0
 )
 
 // EstagioRPG é um degrau da jornada visual do personagem, alcançado por nível.
@@ -452,7 +452,7 @@ func interpretarInstanteRPG(bruto string) (time.Time, bool) {
 	return time.Time{}, false
 }
 
-// calcularElencoInfo normaliza a lista de desbloqueados e calcula o fim da espera de 24h.
+// calcularElencoInfo normaliza a lista de desbloqueados e os parâmetros do elenco (troca livre e gratuita).
 func calcularElencoInfo(linha linhaPersonagemBanco, baseAtual string, agora time.Time) *ElencoPersonagemInfo {
 	base := strings.TrimSpace(baseAtual)
 	if base == "" {
@@ -484,9 +484,11 @@ func calcularElencoInfo(linha linhaPersonagemBanco, baseAtual string, agora time
 	if linha.UltimaTrocaEm != nil {
 		if ultima, ok := interpretarInstanteRPG(*linha.UltimaTrocaEm); ok {
 			info.UltimaTrocaEm = ultima.Format(time.RFC3339)
-			proxima := ultima.Add(time.Duration(trocaPersonagemCooldownHoras) * time.Hour)
-			if proxima.After(agora) {
-				info.ProximaTrocaEm = proxima.Format(time.RFC3339)
+			if trocaPersonagemCooldownHoras > 0 {
+				proxima := ultima.Add(time.Duration(trocaPersonagemCooldownHoras) * time.Hour)
+				if proxima.After(agora) {
+					info.ProximaTrocaEm = proxima.Format(time.RFC3339)
+				}
 			}
 		}
 	}
@@ -1028,9 +1030,9 @@ func (h *PersonagemHandler) HandleDesbloquearPersonagem(w http.ResponseWriter, r
 	responderJSON(w, http.StatusOK, resposta)
 }
 
-// HandleTrocarPersonagem troca para um personagem já desbloqueado do elenco. A troca é
-// gratuita a cada 24h; antes disso, exige `pagar_antecipado: true` (150 Ouro). Itens de
-// outra classe são desequipados pelo gatilho do banco, e o visual fixado volta ao automático.
+// HandleTrocarPersonagem troca gratuitamente e de forma imediata para qualquer personagem
+// já desbloqueado do elenco. Itens exclusivos de outra classe são desequipados pelo
+// gatilho do banco, e o visual fixado volta ao automático.
 func (h *PersonagemHandler) HandleTrocarPersonagem(w http.ResponseWriter, r *http.Request) {
 	userID, ok := r.Context().Value(middleware.UserIDKey).(string)
 	token, tokenOk := r.Context().Value(middleware.TokenKey).(string)

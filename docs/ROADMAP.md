@@ -918,6 +918,11 @@ decidiu em 17/11/2026 que ela fecha fora da Fase 18. Escopo a detalhar em issues
 > numeração e não abrem escopo novo. Ficam registrados aqui em ordem cronológica inversa para
 > não sumirem: fase concluída não deve ser reaberta só para receber um conserto.
 
+### 20/11/2026 — Troca gratuita e imediata entre heróis desbloqueados (#339)
+
+- [x] **Remoção da espera de 24h e da taxa de 150 Ouro ao trocar de líder (`sql/141_troca_personagem_gratuita.sql`, `personagem.go`, `Personagem.tsx`, `lib/personagem.ts`):**
+      `rpg_trocar_personagem` passa a permitir troca imediata e gratuita (`ouro_gasto: 0`) entre quaisquer heróis já comprados no elenco, preservando a sincronização de atributos individuais em `rpg_atributos_herois`; desbloqueio de novos personagens segue custando 400 Ouro. (#339)
+
 ### 20/11/2026 — Correção do modal mobile de combate, trava de scroll e atalho gratuito de atributos (#338)
 
 - [x] **Portal em `document.body`, trava de rolagem e atalho de atributos por herói (`CombateInterativoModal.tsx`, `MapaExpedicoes.tsx`, `Personagem.tsx`, `PainelAtributos.tsx`):**

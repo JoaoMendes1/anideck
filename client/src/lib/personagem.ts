@@ -141,8 +141,8 @@ export const ORDEM_DOS_ESTAGIOS = ['iniciante', 'aventureiro', 'veterano', 'lend
 export const PERSONAGEM_BASE_PADRAO = 'espadachim_eter'
 
 export const PRECO_DESBLOQUEAR_OURO = 400
-export const PRECO_TROCA_ANTECIPADA_OURO = 150
-export const COOLDOWN_TROCA_HORAS = 24
+export const PRECO_TROCA_ANTECIPADA_OURO = 0
+export const COOLDOWN_TROCA_HORAS = 0
 
 /** Formata o tempo restante até a próxima troca gratuita, ou devolve null quando já liberou. */
 export function formatarEsperaTroca(proximaTrocaEm?: string, agoraMs: number = Date.now()): string | null {

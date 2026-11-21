@@ -186,29 +186,21 @@ func TestCalcularElencoInfo(t *testing.T) {
 		t.Errorf("sem ultima_troca_em não deveria haver espera: %q", basico.ProximaTrocaEm)
 	}
 
-	// Filtra repetidos e desconhecidos, mantendo o atual presente.
+	// Filtra repetidos e desconhecidos, mantendo o atual presente, e mantém troca sem espera.
 	recente := agora.Add(-2 * time.Hour).Format(time.RFC3339)
-	dentroDaEspera := calcularElencoInfo(linhaPersonagemBanco{
+	semEspera := calcularElencoInfo(linhaPersonagemBanco{
 		PersonagemBase: "paladina_luz",
 		Desbloqueados:  []string{"maga_agua", "maga_agua", "invalido"},
 		UltimaTrocaEm:  &recente,
 	}, "paladina_luz", agora)
-	if len(dentroDaEspera.Desbloqueados) != 2 || dentroDaEspera.Desbloqueados[0] != "maga_agua" || dentroDaEspera.Desbloqueados[1] != "paladina_luz" {
-		t.Fatalf("normalização inesperada: %+v", dentroDaEspera.Desbloqueados)
+	if len(semEspera.Desbloqueados) != 2 || semEspera.Desbloqueados[0] != "maga_agua" || semEspera.Desbloqueados[1] != "paladina_luz" {
+		t.Fatalf("normalização inesperada: %+v", semEspera.Desbloqueados)
 	}
-	if dentroDaEspera.ProximaTrocaEm != "2026-11-19T10:00:00Z" {
-		t.Errorf("esperava proxima_troca_em em 2026-11-19T10:00:00Z, veio %q", dentroDaEspera.ProximaTrocaEm)
+	if semEspera.ProximaTrocaEm != "" {
+		t.Errorf("troca entre desbloqueados deve ser imediata (proxima_troca_em vazia), veio %q", semEspera.ProximaTrocaEm)
 	}
-
-	// Passadas 24h, proxima_troca_em fica vazia.
-	antiga := agora.Add(-25 * time.Hour).Format(time.RFC3339)
-	liberado := calcularElencoInfo(linhaPersonagemBanco{
-		PersonagemBase: "paladina_luz",
-		Desbloqueados:  []string{"paladina_luz", "maga_agua"},
-		UltimaTrocaEm:  &antiga,
-	}, "paladina_luz", agora)
-	if liberado.ProximaTrocaEm != "" {
-		t.Errorf("após 24h proxima_troca_em deve sair vazia, veio %q", liberado.ProximaTrocaEm)
+	if semEspera.TrocaCooldownHoras != 0 || semEspera.PrecoTrocaAntecipadaOuro != 0 {
+		t.Errorf("esperava cooldown=0 e preco_troca_antecipada_ouro=0, veio cooldown=%d preco=%d", semEspera.TrocaCooldownHoras, semEspera.PrecoTrocaAntecipadaOuro)
 	}
 }
 

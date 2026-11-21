@@ -27,14 +27,12 @@ import {
   LARGURA_DA_ARTE,
   NOME_MAXIMO,
   PRECO_DESBLOQUEAR_OURO,
-  PRECO_TROCA_ANTECIPADA_OURO,
   EVENTO_PERSONAGEM_ATUALIZADO,
   PERSONAGEM_BASE_PADRAO,
   arteDoEstagio,
   desbloquearPersonagem,
   despertarPersonagem,
   equiparVisual,
-  formatarEsperaTroca,
   membroDoElenco,
   obterPersonagem,
   trocarPersonagem,
@@ -218,21 +216,11 @@ function TrocaDePersonagem({
   const [escolhido, setEscolhido] = useState(atual)
   const [salvando, setSalvando] = useState(false)
   const [erro, setErro] = useState('')
-  const [agora, setAgora] = useState(() => Date.now())
-
-  useEffect(() => {
-    if (!elenco?.proxima_troca_em) return
-    const timer = window.setInterval(() => setAgora(Date.now()), 30_000)
-    return () => window.clearInterval(timer)
-  }, [elenco?.proxima_troca_em])
 
   const desbloqueados = elenco?.desbloqueados ?? [atual]
   const precoDesbloquear = elenco?.preco_desbloquear_ouro ?? PRECO_DESBLOQUEAR_OURO
-  const precoAntecipado = elenco?.preco_troca_antecipada_ouro ?? PRECO_TROCA_ANTECIPADA_OURO
   const desbloqueado = desbloqueados.includes(escolhido)
-  const esperaRestante = formatarEsperaTroca(elenco?.proxima_troca_em, agora)
   const faltaDesbloqueio = typeof ouro === 'number' && ouro < precoDesbloquear ? precoDesbloquear - ouro : 0
-  const faltaTrocaAntecipada = typeof ouro === 'number' && ouro < precoAntecipado ? precoAntecipado - ouro : 0
   const membro = membroDoElenco(escolhido)
 
   const desbloquear = async () => {
@@ -248,11 +236,11 @@ function TrocaDePersonagem({
     setErro(resultado.erro ?? 'Não foi possível desbloquear o personagem agora.')
   }
 
-  const confirmar = async (pagarAntecipado: boolean) => {
+  const confirmar = async () => {
     if (salvando || escolhido === atual || !desbloqueado) return
     setErro('')
     setSalvando(true)
-    const resultado = await trocarPersonagem(escolhido, pagarAntecipado)
+    const resultado = await trocarPersonagem(escolhido, false)
     setSalvando(false)
     if (resultado.dados) {
       aoTrocar(resultado.dados)
@@ -278,7 +266,7 @@ function TrocaDePersonagem({
         <strong className="text-text">{membro.nome}</strong> · {membro.resumo}
       </p>
       <p className="m-0 text-xs leading-snug text-muted">
-        Nível e inventário continuam, e cada herói mantém sua própria distribuição de atributos (herói novo começa zerado). A troca gratuita libera a cada {elenco?.troca_cooldown_horas ?? 24}h; o visual volta ao estágio e peças exclusivas de outra classe são desequipadas.
+        Nível e inventário continuam, e cada herói mantém sua própria distribuição de atributos (herói novo começa zerado). A troca entre heróis desbloqueados é gratuita e imediata; o visual volta ao estágio e peças exclusivas de outra classe são desequipadas.
         {typeof ouro === 'number' && (
           <>
             {' '}
@@ -315,11 +303,11 @@ function TrocaDePersonagem({
             </p>
           )}
         </div>
-      ) : !esperaRestante ? (
+      ) : (
         <div className="flex flex-col gap-1.5">
           <button
             type="button"
-            onClick={() => confirmar(false)}
+            onClick={confirmar}
             disabled={salvando}
             className="h-10 cursor-pointer rounded-full bg-gradient-to-r from-holo-1 to-holo-3 px-4 text-xs font-extrabold text-void disabled:cursor-wait disabled:opacity-50"
           >
@@ -333,34 +321,6 @@ function TrocaDePersonagem({
             >
               Configurar atributos de {membro.nome} (grátis, sem trocar líder)
             </button>
-          )}
-        </div>
-      ) : (
-        <div className="flex flex-col gap-1.5">
-          <p className="m-0 font-mono text-xs text-muted">
-            Troca gratuita disponível em <strong className="text-text">{esperaRestante}</strong>.
-          </p>
-          <button
-            type="button"
-            onClick={() => confirmar(true)}
-            disabled={salvando || faltaTrocaAntecipada > 0}
-            className="h-10 cursor-pointer rounded-full bg-gradient-to-r from-gold to-holo-3 px-4 text-xs font-extrabold text-void disabled:cursor-not-allowed disabled:opacity-50"
-          >
-            {salvando ? 'Trocando…' : `Trocar agora por ${precoAntecipado} Ouro`}
-          </button>
-          {aoConfigurarAtributos && (
-            <button
-              type="button"
-              onClick={() => aoConfigurarAtributos(escolhido)}
-              className="h-9 cursor-pointer rounded-full border border-holo-1/40 bg-holo-1/10 px-4 text-xs font-bold text-holo-1 transition hover:border-holo-1 hover:bg-holo-1/20"
-            >
-              Configurar atributos de {membro.nome} (grátis, sem trocar líder)
-            </button>
-          )}
-          {faltaTrocaAntecipada > 0 && (
-            <p className="m-0 text-center font-mono text-xs text-coral">
-              Faltam {faltaTrocaAntecipada.toLocaleString('pt-BR')} de Ouro
-            </p>
           )}
         </div>
       )}

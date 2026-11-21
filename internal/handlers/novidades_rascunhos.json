@@ -600,5 +600,17 @@
         "caminho": "/expedicoes"
       }
     ]
+  },
+  {
+    "chave": "2026-11-20-troca-herois-gratuita",
+    "titulo": "Troca entre heróis desbloqueados agora é gratuita e sem espera",
+    "categoria": "novidade",
+    "resumo": "Você não precisa mais esperar 24 horas nem gastar 150 Ouro para trocar o líder ativo: alternar entre qualquer herói já desbloqueado no seu elenco agora é 100% gratuito e imediato.\n\nCada herói mantém a própria distribuição de atributos salva ao alternar, e você também pode ajustar a build de qualquer personagem pela aba Atributos ou direto pelo atalho na tela de troca.",
+    "links": [
+      {
+        "rotulo": "Trocar ou configurar heróis",
+        "caminho": "/personagem"
+      }
+    ]
   }
 ]
