@@ -12,7 +12,6 @@ import (
 	"time"
 
 	"github.com/JoaoMendes1/anideck/internal/database"
-	"github.com/supabase-community/supabase-go"
 )
 
 const (
@@ -302,9 +301,16 @@ func ResolverRodadaInterativa(s *sessaoCombateInterativo, acao string, rng *math
 					if reacao.BonusDanoPct > 0 {
 						dano = max(1, dano*(100+reacao.BonusDanoPct)/100)
 					}
-					if reacao.CuraPct > 0 && s.HeroisInfo[i].VidaAtual > 0 {
-						cura := max(1, s.HeroisInfo[i].VidaMaxima*reacao.CuraPct/100)
+					if reacao.CuraAliadoMaisFeridoPct > 0 && s.HeroisInfo[i].VidaAtual > 0 {
+						cura := max(1, s.HeroisInfo[i].VidaMaxima*reacao.CuraAliadoMaisFeridoPct/100)
 						s.HeroisInfo[i].VidaAtual = min(s.HeroisInfo[i].VidaMaxima, s.HeroisInfo[i].VidaAtual+cura)
+					}
+					if reacao.RecuperaEterGrupo > 0 {
+						for j := range s.HeroisInfo {
+							if s.HeroisInfo[j].VidaAtual > 0 {
+								s.HeroisInfo[j].EterAtual = min(s.HeroisInfo[j].EterMaximo, s.HeroisInfo[j].EterAtual+reacao.RecuperaEterGrupo)
+							}
+						}
 					}
 					s.AuraElemental = ""
 				} else {
@@ -576,7 +582,15 @@ func (h *RPGHandler) HandleIniciarCombateInterativo(w http.ResponseWriter, r *ht
 				responderErroJSON(w, http.StatusTooManyRequests, "Suas batalhas de hoje acabaram.")
 				return
 			}
-			monstro, achou := monstroPorID(catalogo, corpo.AlvoID)
+			var monstro MonstroRPG
+			achou := false
+			for _, cand := range catalogo {
+				if cand.ID == corpo.AlvoID {
+					monstro = cand
+					achou = true
+					break
+				}
+			}
 			if !achou {
 				responderErroJSON(w, http.StatusBadRequest, "Monstro não encontrado.")
 				return
