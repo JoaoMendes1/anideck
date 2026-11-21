@@ -572,5 +572,17 @@
         "caminho": "/duelos"
       }
     ]
+  },
+  {
+    "chave": "2026-11-20-mapa-mundi-vivo-portais-selos",
+    "titulo": "Mapa-Múndi Vivo: Portais Dimensionais e Selos de Desafio",
+    "categoria": "novidade",
+    "resumo": "O Mapa-Múndi das Expedições agora pulsa ao longo do dia! A cada 2 horas um Portal Dimensional se abre em uma das sete regiões, garantindo materiais extras da Forja na vitória.\n\nAntes de batalhar você também pode ativar Selos de Desafio opcionais (Pressa Mortal, Fúria Elemental ou Voto Sem Cura) para enfrentar monstros fortalecidos em troca de mais materiais garantidos.",
+    "links": [
+      {
+        "rotulo": "Explorar Portais no Mapa",
+        "caminho": "/expedicoes"
+      }
+    ]
   }
 ]

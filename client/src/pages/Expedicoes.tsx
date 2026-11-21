@@ -16,6 +16,7 @@ import CombateInterativoModal from '../components/rpg/CombateInterativoModal'
 import ControleDeVelocidade from '../components/rpg/ControleDeVelocidade'
 import MapaExpedicoes from '../components/rpg/MapaExpedicoes'
 import ComprarLutaExtra from '../components/rpg/ComprarLutaExtra'
+import SelosDesafioSeletor from '../components/rpg/SelosDesafioSeletor'
 import SeletorEsquadrao from '../components/rpg/SeletorEsquadrao'
 import { preverMonstroParaEsquadrao } from '../lib/esquadrao'
 import { intervaloDaVelocidade, lerVelocidade, salvarVelocidade, type Velocidade } from '../lib/velocidadeBatalha'
@@ -373,6 +374,7 @@ export default function Expedicoes() {
   const [soSemVitoria, setSoSemVitoria] = useState(false)
   const [soComEvolucao, setSoComEvolucao] = useState(false)
   const [aliadosEsquadrao, setAliadosEsquadrao] = useState<string[]>([])
+  const [selosAtivos, setSelosAtivos] = useState<string[]>([])
   const [combateTatico, setCombateTatico] = useState(false)
   const [combateInterativo, setCombateInterativo] = useState<EstadoCombateInterativo | null>(null)
   const topo = useRef<HTMLDivElement>(null)
@@ -424,7 +426,12 @@ export default function Expedicoes() {
       setErroDaLuta(r.erro ?? 'Não foi possível iniciar o combate tático.')
       return
     }
-    const r = aliadosEsquadrao.length > 0 ? await batalhar(monstroId, lerPostura(), aliadosEsquadrao) : await batalhar(monstroId, lerPostura())
+    const r =
+      selosAtivos.length > 0
+        ? await batalhar(monstroId, lerPostura(), aliadosEsquadrao, selosAtivos)
+        : aliadosEsquadrao.length > 0
+          ? await batalhar(monstroId, lerPostura(), aliadosEsquadrao)
+          : await batalhar(monstroId, lerPostura())
     setLutando(null)
     if (r.dados) {
       const dados = r.dados
@@ -673,6 +680,14 @@ export default function Expedicoes() {
             </div>
           </div>
 
+          {estado.selos_catalogo && estado.selos_catalogo.length > 0 && (
+            <SelosDesafioSeletor
+              catalogo={estado.selos_catalogo}
+              selecionados={selosAtivos}
+              aoAlterar={setSelosAtivos}
+            />
+          )}
+
           {modo === 'mapa' ? (
             <MapaExpedicoes
               monstros={estado.monstros}
@@ -689,6 +704,7 @@ export default function Expedicoes() {
               aoEnfrentar={enfrentar}
               elenco={estado.elenco}
               esquadraoInicial={aliadosEsquadrao}
+              portalVivo={estado.portal_vivo}
             />
           ) : (
             <div className="flex flex-col gap-3">

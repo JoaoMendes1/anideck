@@ -43,6 +43,7 @@ import {
   type Dificuldade,
   type HeroiResumoEsquadrao,
   type MonstroNaLista,
+  type PortalMapaVivo,
   type RegiaoMapa,
   type EfeitoDeElemento,
 } from '../../lib/rpg'
@@ -745,6 +746,7 @@ export default function MapaExpedicoes({
   classeHeroi,
   elenco,
   esquadraoInicial,
+  portalVivo,
 }: {
   monstros: MonstroNaLista[]
   classeHeroi?: string
@@ -760,6 +762,7 @@ export default function MapaExpedicoes({
   aoEnfrentar: (id: string) => void
   elenco?: HeroiResumoEsquadrao[]
   esquadraoInicial?: string[]
+  portalVivo?: PortalMapaVivo
 }) {
   const regioes = regioesDoMapa({ regioes: regioesBrutas, monstros })
   const porId = new Map(monstros.map((m) => [m.id, m]))
@@ -1164,6 +1167,22 @@ export default function MapaExpedicoes({
           </div>
         </div>
 
+        {portalVivo && (
+          <button
+            type="button"
+            onClick={() => selecionarRegiao(portalVivo.regiao_id)}
+            className="mb-2.5 flex w-full cursor-pointer flex-wrap items-center justify-between gap-2 rounded-xl border border-holo-2/50 bg-holo-2/10 px-3 py-2 text-left text-xs transition hover:bg-holo-2/20"
+          >
+            <span className="inline-flex items-center gap-1.5 font-bold text-fg">
+              <Zap size={14} className="text-holo-2" aria-hidden="true" />
+              Portal Vivo em <strong>{portalVivo.regiao_nome}</strong>: {portalVivo.titulo}
+            </span>
+            <span className="font-mono text-xs text-holo-2">
+              {portalVivo.bonus_descricao} · {portalVivo.minutos_restantes} min
+            </span>
+          </button>
+        )}
+
         <div
           ref={containerMapaRef}
           aria-label="Mapa interativo das regiões"
@@ -1278,6 +1297,16 @@ export default function MapaExpedicoes({
                     <span className="absolute -top-1 -left-1 flex h-3.5 min-w-3.5 items-center justify-center rounded-full border border-line bg-void px-0.5 font-mono text-[8px] font-bold leading-none text-text sm:-top-1.5 sm:-left-1.5 sm:h-4 sm:min-w-4 sm:px-1 sm:text-[10px]">
                       {regiao.ordem}
                     </span>
+
+                    {portalVivo?.regiao_id === regiao.id && (
+                      <span
+                        title={`Portal Dimensional ativo: ${portalVivo.titulo}`}
+                        className="absolute -bottom-1 -right-1 flex h-4 w-4 animate-pulse items-center justify-center rounded-full border border-holo-2 bg-void text-holo-2 sm:-bottom-1.5 sm:-right-1.5 sm:h-5 sm:w-5"
+                      >
+                        <Zap size={9} className="sm:hidden" aria-hidden="true" />
+                        <Zap size={11} className="hidden sm:block" aria-hidden="true" />
+                      </span>
+                    )}
 
                     {regiao.em_destaque ? (
                       <span

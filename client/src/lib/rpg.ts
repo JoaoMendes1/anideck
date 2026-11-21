@@ -624,6 +624,24 @@ export interface CustosRecuperacao {
 
 export type TipoRecuperacao = 'pousada' | 'pocao' | 'pocao_mana' | 'fonte'
 
+export interface PortalMapaVivo {
+  id: string
+  regiao_id: string
+  regiao_nome: string
+  titulo: string
+  descricao: string
+  bonus_descricao: string
+  termina_em: string
+  minutos_restantes: number
+}
+
+export interface SeloDesafio {
+  id: string
+  nome: string
+  risco: string
+  recompensa: string
+}
+
 export interface EstadoExpedicoes {
   atributos: AtributosRPG
   /** Elemento do seu personagem. */
@@ -642,6 +660,8 @@ export interface EstadoExpedicoes {
   custos_mana?: CustosManaRPG
   passiva?: PassivaEspecialidade
   elenco?: HeroiResumoEsquadrao[]
+  portal_vivo?: PortalMapaVivo
+  selos_catalogo?: SeloDesafio[]
 }
 
 export function regioesDoMapa(estado: Pick<EstadoExpedicoes, 'regioes' | 'monstros'>): RegiaoMapa[] {
@@ -831,6 +851,8 @@ export interface RespostaBatalha {
   hoje: HojeRPG
   passiva?: PassivaEspecialidade
   grupo_resultado?: ResultadoDoGrupo
+  selos_ativos?: string[]
+  portal_ativo?: boolean
 }
 
 /** Texto de uma linha do registro da luta e o número ao lado (dano ou cura). */
@@ -932,10 +954,17 @@ export async function obterExpedicoes(): Promise<{ dados?: EstadoExpedicoes; err
   }
 }
 
-export async function batalhar(monstroId: string, postura?: string, esquadrao?: string[]): Promise<{ dados?: RespostaBatalha; erro?: string }> {
+export async function batalhar(
+  monstroId: string,
+  postura?: string,
+  esquadrao?: string[],
+  selos?: string[],
+): Promise<{ dados?: RespostaBatalha; erro?: string }> {
   const falha = 'Não foi possível batalhar agora.'
   try {
-    const payload = esquadrao && esquadrao.length > 0 ? { monstro_id: monstroId, postura, esquadrao } : { monstro_id: monstroId, postura }
+    const payload: Record<string, unknown> = { monstro_id: monstroId, postura }
+    if (esquadrao && esquadrao.length > 0) payload.esquadrao = esquadrao
+    if (selos && selos.length > 0) payload.selos = selos
     const res = await fetch('/api/rpg/batalhas', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', ...(await cabecalhoDeAutenticacao()) },

@@ -738,9 +738,11 @@ type EstadoExpedicoes struct {
 	Regioes        []RegiaoMapa `json:"regioes,omitempty"`
 	RegiaoDestaque string       `json:"regiao_destaque,omitempty"`
 	// Mana de cada tipo de luta (sql/118).
-	CustosMana CustosManaRPG          `json:"custos_mana"`
-	Passiva    *PassivaEspecialidade  `json:"passiva,omitempty"`
-	Elenco     []HeroiResumoEsquadrao `json:"elenco,omitempty"`
+	CustosMana    CustosManaRPG          `json:"custos_mana"`
+	Passiva       *PassivaEspecialidade  `json:"passiva,omitempty"`
+	Elenco        []HeroiResumoEsquadrao `json:"elenco,omitempty"`
+	PortalVivo    *PortalMapaVivo        `json:"portal_vivo,omitempty"`
+	SelosCatalogo []SeloDesafio          `json:"selos_catalogo,omitempty"`
 }
 
 // RecompensaBatalha é o que a vitória deu.
@@ -765,6 +767,8 @@ type RespostaBatalha struct {
 	Hoje           HojeRPG               `json:"hoje"`
 	Passiva        *PassivaEspecialidade `json:"passiva,omitempty"`
 	GrupoResultado *ResultadoDoGrupo     `json:"grupo_resultado,omitempty"`
+	SelosAtivos    []string              `json:"selos_ativos,omitempty"`
+	PortalAtivo    bool                  `json:"portal_ativo,omitempty"`
 }
 
 func lerMonstros(dbClient *supabase.Client) ([]MonstroRPG, error) {
@@ -877,6 +881,7 @@ func (h *RPGHandler) HandleGetExpedicoes(w http.ResponseWriter, r *http.Request)
 		})
 	}
 	hoje.Regras = hoje.Regras.ComPadroes()
+	portal := PortalDimensionalAtivoEm(time.Now())
 	responderJSON(w, http.StatusOK, EstadoExpedicoes{
 		Atributos:        equipamento.Atributos,
 		Elemento:         elemento,
@@ -891,6 +896,8 @@ func (h *RPGHandler) HandleGetExpedicoes(w http.ResponseWriter, r *http.Request)
 		CustosMana:       CustosDeMana(sessao.nivel, lerRegrasComunidade(sessao.dbClient)),
 		Passiva:          passiva,
 		Elenco:           ResumoElencoEsquadrao(sessao.dbClient, sessao.userID, sessao.ctx, equipamento),
+		PortalVivo:       &portal,
+		SelosCatalogo:    CatalogoSelosDesafio(),
 	})
 }
 
@@ -901,6 +908,7 @@ func (h *RPGHandler) HandleBatalhar(w http.ResponseWriter, r *http.Request) {
 		MonstroID string   `json:"monstro_id"`
 		Postura   string   `json:"postura"`
 		Esquadrao []string `json:"esquadrao"`
+		Selos     []string `json:"selos"`
 	}
 	if r.Body == nil || json.NewDecoder(r.Body).Decode(&corpo) != nil {
 		corpo.MonstroID = ""
@@ -970,6 +978,7 @@ func (h *RPGHandler) HandleBatalhar(w http.ResponseWriter, r *http.Request) {
 		grupoResultado *ResultadoDoGrupo
 	)
 
+	selosAtivos := NormalizarSelosDesafio(corpo.Selos)
 	if len(corpo.Esquadrao) > 0 {
 		combatentes, fichas, errEsq := MontarEsquadraoDoContexto(sessao.dbClient, sessao.userID, sessao.ctx, hoje.VidaPerdida, passiva, corpo.Postura, corpo.Esquadrao)
 		if errEsq != nil {
@@ -978,6 +987,7 @@ func (h *RPGHandler) HandleBatalhar(w http.ResponseWriter, r *http.Request) {
 		}
 		if len(combatentes) > 1 {
 			monstroExibido = EquilibrarMonstroParaGrupo(*monstro, combatentes)
+			AplicarSelosNoCombate(combatentes, &monstroExibido, selosAtivos)
 			sim := SimularBatalhaEmGrupo(combatentes, monstroExibido, rng)
 			usosTotal := map[string]int{}
 			heroisRes := make([]HeroiDoResultado, 0, len(fichas))
@@ -1009,7 +1019,9 @@ func (h *RPGHandler) HandleBatalhar(w http.ResponseWriter, r *http.Request) {
 		combatente.Classe = classeDoJogador(sessao.ctx)
 		combatente.Passiva = passiva
 		combatente.Postura = PosturaValida(corpo.Postura)
-		resultado = SimularBatalha(combatente, *monstro, rng)
+		listaHerois := []CombatenteRPG{combatente}
+		AplicarSelosNoCombate(listaHerois, &monstroExibido, selosAtivos)
+		resultado = SimularBatalha(listaHerois[0], monstroExibido, rng)
 	}
 	perdaFinal := PerdaPorMil(equipamento.Atributos.Vida, resultado.VidaFinal)
 
@@ -1106,8 +1118,20 @@ func (h *RPGHandler) HandleBatalhar(w http.ResponseWriter, r *http.Request) {
 	if registro.ItemID != nil && itemSorteado != nil && *registro.ItemID == itemSorteado.ID {
 		recompensa.Item = itemSorteado
 	}
-	emDestaque := monstro.Regiao != "" && monstro.Regiao == RegiaoEmDestaqueEm(time.Now())
-	recompensa.Materiais = entregarMateriais(servico, sessao.userID, SortearMateriaisDaExpedicaoEmDestaque(rng, resultado.Venceu, emDestaque))
+	agora := time.Now()
+	emDestaque := monstro.Regiao != "" && monstro.Regiao == RegiaoEmDestaqueEm(agora)
+	portal := PortalDimensionalAtivoEm(agora)
+	emPortal := monstro.Regiao != "" && monstro.Regiao == portal.RegiaoID
+	materiais := SortearMateriaisDaExpedicaoEmDestaque(rng, resultado.Venceu, emDestaque)
+	if extras := SortearMateriaisMapaVivo(rng, resultado.Venceu, emPortal, len(selosAtivos)); len(extras) > 0 {
+		if materiais == nil {
+			materiais = map[string]int{}
+		}
+		for k, v := range extras {
+			materiais[k] += v
+		}
+	}
+	recompensa.Materiais = entregarMateriais(servico, sessao.userID, materiais)
 
 	responderJSON(w, http.StatusOK, RespostaBatalha{
 		Monstro:        monstroExibido,
@@ -1119,6 +1143,8 @@ func (h *RPGHandler) HandleBatalhar(w http.ResponseWriter, r *http.Request) {
 		Hoje:           HojeRPG{Feitas: registro.Feitas, Limite: registro.Limite, Bilhetes: registro.Bilhetes, Ouro: registro.Ouro, VidaPerdida: registro.VidaPerdida, PousadaLivreEm: hoje.PousadaLivreEm, EpisodiosHoje: hoje.EpisodiosHoje, Regras: hoje.Regras.ComPadroes()},
 		Passiva:        passiva,
 		GrupoResultado: grupoResultado,
+		SelosAtivos:    selosAtivos,
+		PortalAtivo:    emPortal,
 	})
 }
 
