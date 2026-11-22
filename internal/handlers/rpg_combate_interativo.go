@@ -64,6 +64,7 @@ type EstadoCombateInterativo struct {
 	PontosDuelo    int                      `json:"pontos_duelo,omitempty"`
 	OuroDuelo      int                      `json:"ouro_duelo,omitempty"`
 	Vida           *VidaRPG                 `json:"vida,omitempty"`
+	ATB            *EstadoATB               `json:"atb,omitempty"`
 }
 
 type sessaoCombateInterativo struct {
@@ -261,12 +262,13 @@ func ResolverRodadaInterativa(s *sessaoCombateInterativo, acao string, rng *math
 				}
 			}
 			if escolhida != nil {
-				s.HeroisInfo[i].EterAtual -= escolhida.CustoEter
+				gasto, fatorSobrecarga := CustoEterComSobrecarga(s.HeroisInfo[i].EterAtual, escolhida.CustoEter, h.Atributos.Magia)
+				s.HeroisInfo[i].EterAtual -= gasto
 				nomeHab = escolhida.Nome
 				if h.Atributos.Magia > 0 && escolhida.Efeito == efeitoArcano {
-					atk = int(float64(atk)*escolhida.Fator + float64(h.Atributos.Magia)*escolhida.Fator2 + 0.5)
+					atk = int((float64(atk)*escolhida.Fator+float64(h.Atributos.Magia)*escolhida.Fator2)*fatorSobrecarga + 0.5)
 				} else if escolhida.Fator > 0 {
-					fator = escolhida.Fator
+					fator = escolhida.Fator * fatorSobrecarga
 				}
 				if escolhida.Tipo == "comum" {
 					if s.Usos == nil {
@@ -284,7 +286,10 @@ func ResolverRodadaInterativa(s *sessaoCombateInterativo, acao string, rng *math
 			defesaAlvo = defesaAlvo * 75 / 100
 		}
 
-		dano, critico := golpe(rng, max(1, int(float64(atk)*fator+0.5)), defesaAlvo, min(850, h.Atributos.CriticoPorMil+critExtra), float64(max(120, h.Atributos.DanoCritico))/100)
+		furiaHeroi := BonusFuria(s.HeroisInfo[i].VidaAtual, s.HeroisInfo[i].VidaMaxima)
+		atkEfetivo := max(1, int(float64(atk)*fator*furiaHeroi+0.5))
+		critDinamico := ChanceCriticoDinamica(min(850, h.Atributos.CriticoPorMil+critExtra), atkEfetivo, defesaAlvo, h.Atributos.Velocidade, VelocidadeDoMonstro(s.MonstroAtual))
+		dano, critico := golpe(rng, atkEfetivo, defesaAlvo, critDinamico, float64(max(120, h.Atributos.DanoCritico))/100)
 		if m := MultiplicadorElemental(h.Elemento, s.AlvoElemento); m != 1 {
 			dano = max(1, int(float64(dano)*m+0.5))
 		}
@@ -329,6 +334,8 @@ func ResolverRodadaInterativa(s *sessaoCombateInterativo, acao string, rng *math
 			Dano:        dano,
 			Critico:     critico,
 			Reacao:      reacaoNome,
+			Furia:       furiaHeroi > 1,
+			Eter:        s.HeroisInfo[i].EterAtual,
 			VidaJogador: s.HeroisInfo[0].VidaAtual,
 			VidaMonstro: s.InimigoVida,
 		}
@@ -414,38 +421,73 @@ func ResolverRodadaInterativa(s *sessaoCombateInterativo, acao string, rng *math
 		if defendendo {
 			esquivaExtra = 280
 		}
+		velAlvo := VelocidadeDoMonstro(s.MonstroAtual)
+		chanceEsquiva := min(750, ChanceEsquivaDinamica(alvoHeroi.Atributos.EsquivaPorMil, alvoHeroi.Atributos.Velocidade, velAlvo)+esquivaExtra)
 
-		if rng.Intn(1000) < min(750, alvoHeroi.Atributos.EsquivaPorMil+esquivaExtra) {
+		if rng.Intn(1000) < chanceEsquiva {
+			contraDano := 0
+			if defendendo && s.InimigoVida > 0 {
+				contraDano = DanoContraAtaque(alvoHeroi.Atributos.Ataque, s.AlvoDefesa)
+				s.InimigoVida = max(0, s.InimigoVida-contraDano)
+				evento = "Esquiva perfeita e contra-ataque!"
+			}
 			t := TurnoBatalha{
-				Atacante:    "monstro",
-				Heroi:       alvoIdx + 1,
-				Poder:       s.Intencao.Titulo,
-				Esquiva:     true,
-				VidaJogador: s.HeroisInfo[0].VidaAtual,
-				VidaMonstro: s.InimigoVida,
+				Atacante:     "monstro",
+				Heroi:        alvoIdx + 1,
+				Poder:        s.Intencao.Titulo,
+				Esquiva:      true,
+				ContraAtaque: contraDano,
+				VidaJogador:  s.HeroisInfo[0].VidaAtual,
+				VidaMonstro:  s.InimigoVida,
 			}
 			turnosRodada = append(turnosRodada, t)
 			s.Turnos = append(s.Turnos, t)
 		} else {
-			danoInimigo, critInimigo := golpe(rng, max(1, ataqueInimigo), defesaAlvoHeroi, max(50, s.AlvoCritMil), 1.45)
+			critAlvo := ChanceCriticoDinamica(max(50, s.AlvoCritMil), ataqueInimigo, defesaAlvoHeroi, velAlvo, alvoHeroi.Atributos.Velocidade)
+			danoInimigo, critInimigo := golpe(rng, max(1, ataqueInimigo), defesaAlvoHeroi, critAlvo, 1.45)
 			if m := MultiplicadorElemental(s.AlvoElemento, alvoHeroi.Elemento); m != 1 {
 				danoInimigo = max(1, int(float64(danoInimigo)*m+0.5))
 			}
+			bloqueio := false
+			if chanceBloq := ChanceBloqueioDinamica(defesaAlvoHeroi, ataqueInimigo); chanceBloq > 0 && rng.Intn(1000) < chanceBloq {
+				bloqueio = true
+				danoInimigo = max(1, danoInimigo*70/100)
+			}
+			contraDano := 0
 			if defendendo {
 				danoInimigo = max(1, danoInimigo*45/100)
+				if s.InimigoVida > 0 {
+					contraDano = DanoContraAtaque(alvoHeroi.Atributos.Ataque, s.AlvoDefesa)
+					s.InimigoVida = max(0, s.InimigoVida-contraDano)
+				}
 			}
 			s.HeroisInfo[alvoIdx].VidaAtual = max(0, s.HeroisInfo[alvoIdx].VidaAtual-danoInimigo)
 			t := TurnoBatalha{
-				Atacante:    "monstro",
-				Heroi:       alvoIdx + 1,
-				Poder:       s.Intencao.Titulo,
-				Dano:        danoInimigo,
-				Critico:     critInimigo,
-				VidaJogador: s.HeroisInfo[0].VidaAtual,
-				VidaMonstro: s.InimigoVida,
+				Atacante:     "monstro",
+				Heroi:        alvoIdx + 1,
+				Poder:        s.Intencao.Titulo,
+				Dano:         danoInimigo,
+				Critico:      critInimigo,
+				Bloqueio:     bloqueio,
+				ContraAtaque: contraDano,
+				VidaJogador:  s.HeroisInfo[0].VidaAtual,
+				VidaMonstro:  s.InimigoVida,
 			}
 			turnosRodada = append(turnosRodada, t)
 			s.Turnos = append(s.Turnos, t)
+		}
+	}
+
+	if s.InimigoVida == 0 {
+		s.Encerrado = true
+		s.Venceu = true
+		return turnosRodada, "Vitória por contra-ataque!"
+	}
+
+	// Regenera 3 de Éter por rodada para manter ritmo tático com habilidades de custo maior.
+	for i := range s.HeroisInfo {
+		if s.HeroisInfo[i].VidaAtual > 0 {
+			s.HeroisInfo[i].EterAtual = min(s.HeroisInfo[i].EterMaximo, s.HeroisInfo[i].EterAtual+3)
 		}
 	}
 
@@ -481,6 +523,15 @@ func snapshotCombateInterativo(s *sessaoCombateInterativo, ultimos []TurnoBatalh
 		andar = s.AndarIdx + 1
 		total = len(s.Andares)
 	}
+	var atb *EstadoATB
+	if len(s.Herois) > 0 {
+		velAlvo := VelocidadeDoMonstro(s.MonstroAtual)
+		if s.AtribAdversar != nil {
+			velAlvo = s.AtribAdversar.Velocidade
+		}
+		calc := CalcularIniciativaATB(s.Herois[0].Atributos.Velocidade, velAlvo)
+		atb = &calc
+	}
 	return EstadoCombateInterativo{
 		SessaoID:       s.ID,
 		Modo:           s.Modo,
@@ -500,6 +551,7 @@ func snapshotCombateInterativo(s *sessaoCombateInterativo, ultimos []TurnoBatalh
 		Venceu:         s.Venceu,
 		Caiu:           s.Caiu,
 		Evento:         evento,
+		ATB:            atb,
 	}
 }
 

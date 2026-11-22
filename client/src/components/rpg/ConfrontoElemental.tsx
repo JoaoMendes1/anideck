@@ -2,7 +2,8 @@
 // O confronto entre o herói e o monstro, dito do ponto de vista do jogador: quem leva vantagem
 // de elemento, a fraqueza do monstro, o efeito que os golpes de cada lado deixam e os traços do
 // monstro que favorecem ou atrapalham a classe do herói.
-import { Check, Feather, Minus, ShieldAlert, Swords, X } from 'lucide-react'
+import { Check, Feather, Gauge, Info, Minus, Shield, ShieldAlert, Swords, Wind, X, Zap } from 'lucide-react'
+import type { EstimativaCombate } from '../../lib/combate'
 import { elementoQueVence, relacaoElemental, type EfeitoDeElemento, type TracoMonstro } from '../../lib/rpg'
 import { rotuloDaClasse, rotuloDoElemento } from '../../lib/personagem'
 
@@ -14,6 +15,7 @@ export default function ConfrontoElemental({
   efeitoHeroi,
   tracos,
   classeHeroi,
+  estimativa,
 }: {
   nomeDoMonstro: string
   elementoMonstro?: string
@@ -22,6 +24,7 @@ export default function ConfrontoElemental({
   efeitoHeroi?: EfeitoDeElemento
   tracos?: TracoMonstro[]
   classeHeroi?: string
+  estimativa?: EstimativaCombate
 }) {
   const classe = rotuloDaClasse(classeHeroi)
   const relacao = relacaoElemental(elementoHeroi, elementoMonstro)
@@ -82,6 +85,45 @@ export default function ConfrontoElemental({
             {efeitoMonstro.descricao}
           </span>
         </p>
+      )}
+      {estimativa && (
+        <div className="mt-1 flex flex-col gap-1.5 rounded-xl border border-holo-3/30 bg-panel-2/60 p-2.5">
+          <p className="m-0 inline-flex items-center gap-1 font-mono text-xs font-bold uppercase tracking-wider text-holo-3">
+            <Info size={12} aria-hidden="true" />
+            Probabilidades dinâmicas (seus atributos × alvo)
+          </p>
+          <div className="grid grid-cols-2 gap-1.5 font-mono text-xs">
+            <span
+              title="Ajustado por Destreza, Ataque vs Defesa do alvo e diferença de Velocidade"
+              className="inline-flex items-center gap-1 text-gold"
+            >
+              <Zap size={12} aria-hidden="true" /> Crítico real: <strong>{estimativa.criticoJogadorPct}%</strong>
+            </span>
+            <span
+              title="Ajustada pela diferença entre sua Velocidade e a do monstro"
+              className="inline-flex items-center gap-1 text-holo-3"
+            >
+              <Wind size={12} aria-hidden="true" /> Sua esquiva: <strong>{estimativa.esquivaJogadorPct}%</strong>
+            </span>
+            <span
+              title="Chance de aparar 30% do dano quando sua Defesa acompanha o Ataque do monstro"
+              className="inline-flex items-center gap-1 text-green"
+            >
+              <Shield size={12} aria-hidden="true" /> Bloqueio: <strong>{estimativa.bloqueioJogadorPct}%</strong>
+            </span>
+            <span
+              title="Ordem de iniciativa calculada pela Velocidade (barra ATB)"
+              className="inline-flex items-center gap-1 text-holo-2"
+            >
+              <Gauge size={12} aria-hidden="true" /> Abre:{' '}
+              <strong>{estimativa.atb.primeiro === 'jogador' ? 'Você' : nomeDoMonstro}</strong>
+            </span>
+          </div>
+          <p className="m-0 text-xs text-muted">
+            Resistência a efeitos: <strong className="text-text">{estimativa.resistenciaJogadorPct}%</strong> · Esquiva do alvo:{' '}
+            <strong className="text-text">{estimativa.esquivaMonstroPct}%</strong>
+          </p>
+        </div>
       )}
     </section>
   )

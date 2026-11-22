@@ -111,6 +111,14 @@ type TurnoBatalha struct {
 	Errou bool `json:"errou,omitempty"`
 	// Reacao: nome da reação elemental disparada neste golpe (rpg_reacoes.go).
 	Reacao string `json:"reacao,omitempty"`
+	// EterGasto: Éter consumido pela habilidade (incluindo sobrecarga, quando houver).
+	EterGasto int `json:"eter_gasto,omitempty"`
+	// Bloqueio: defensor aparou parcialmente o golpe graças à Defesa.
+	Bloqueio bool `json:"bloqueio,omitempty"`
+	// ContraAtaque: dano devolvido ao atacante em postura defensiva ou aparo.
+	ContraAtaque int `json:"contra_ataque,omitempty"`
+	// Furia: golpe potencializado por estar com Vida baixa.
+	Furia bool `json:"furia,omitempty"`
 }
 
 // CombatenteRPG é o jogador na luta: os números e as habilidades já liberadas.
@@ -294,8 +302,12 @@ func (l *lutaEmAndamento) golpeDoJogador(ataque int) (int, bool) {
 		defesa = 0
 		l.ignorarDefesa = false
 	}
-	dano, critico := golpe(l.rng, ataque, defesa, a.CriticoPorMil, float64(a.DanoCritico)/100)
+	crit := ChanceCriticoDinamica(a.CriticoPorMil, ataque, defesa, a.Velocidade, l.m.Velocidade)
+	dano, critico := golpe(l.rng, ataque, defesa, crit, float64(a.DanoCritico)/100)
 	dano = l.status.danoCausado(dano)
+	if furia := BonusFuria(l.vidaJogador, a.Vida); furia > 1 {
+		dano = max(1, int(float64(dano)*furia+0.5))
+	}
 	if m := MultiplicadorElemental(l.j.Elemento, l.m.Elemento); m != 1 {
 		dano = max(1, int(float64(dano)*m+0.5))
 	}
@@ -318,25 +330,38 @@ func (l *lutaEmAndamento) vezDoJogador() bool {
 	}
 	h := l.escolher()
 	t := TurnoBatalha{Atacante: "jogador"}
+	fatorSobrecarga := 1.0
 	if h != nil {
-		l.eter -= h.CustoEter
+		gasto := h.CustoEter
+		if h.Efeito != efeitoCura {
+			gasto, fatorSobrecarga = CustoEterComSobrecarga(l.eter, h.CustoEter, a.Magia)
+		}
+		l.eter -= gasto
 		l.recargas[h.ID] = h.Recarga
 		t.Habilidade = h.Nome
+		t.EterGasto = gasto
 		if h.Tipo == "comum" {
 			l.usos[h.ID]++
 		}
 	}
 
 	ofensiva := h == nil || h.Efeito != efeitoCura
-	if ofensiva && l.ajudanteVivo() == nil && !l.ignorarDefesa && l.m.EsquivaPorMil > 0 && l.rng.Intn(1000) < l.m.EsquivaPorMil {
-		t.Esquiva = true
-		l.registrar(t)
-		return false
+	if ofensiva && l.ajudanteVivo() == nil && !l.ignorarDefesa {
+		esquiva := ChanceEsquivaDinamica(l.m.EsquivaPorMil, l.m.Velocidade, a.Velocidade)
+		if esquiva > 0 && l.rng.Intn(1000) < esquiva {
+			t.Esquiva = true
+			l.registrar(t)
+			return false
+		}
 	}
 	if ofensiva && l.status.errou(l.rng) {
 		t.Errou = true
 		l.registrar(t)
 		return false
+	}
+
+	if ofensiva && BonusFuria(l.vidaJogador, a.Vida) > 1 {
+		t.Furia = true
 	}
 
 	switch {
@@ -349,14 +374,14 @@ func (l *lutaEmAndamento) vezDoJogador() bool {
 		t.Cura = cura
 	case h.Efeito == efeitoGolpeDuplo:
 		for range 2 {
-			dano, critico := l.golpeDoJogador(int(float64(a.Ataque)*h.Fator + 0.5))
+			dano, critico := l.golpeDoJogador(int(float64(a.Ataque)*h.Fator*fatorSobrecarga + 0.5))
 			t.Dano += dano
 			t.Critico = t.Critico || critico
 		}
 	case h.Efeito == efeitoArcano:
-		t.Dano, t.Critico = l.golpeDoJogador(int(float64(a.Ataque)*h.Fator + float64(a.Magia)*h.Fator2 + 0.5))
+		t.Dano, t.Critico = l.golpeDoJogador(int((float64(a.Ataque)*h.Fator+float64(a.Magia)*h.Fator2)*fatorSobrecarga + 0.5))
 	default:
-		t.Dano, t.Critico = l.golpeDoJogador(int(float64(a.Ataque)*h.Fator + 0.5))
+		t.Dano, t.Critico = l.golpeDoJogador(int(float64(a.Ataque)*h.Fator*fatorSobrecarga + 0.5))
 	}
 
 	// O ajudante de pé recebe o golpe no lugar do monstro; o escudo só protege o monstro.
@@ -379,6 +404,20 @@ func (l *lutaEmAndamento) vezDoJogador() bool {
 
 		if l.mon.rodadasEscudo > 0 {
 			t.Dano = max(1, int(float64(t.Dano)*(1-escudoContraPostura(l.mon.escudo, l.j.Postura))+0.5))
+		}
+		if !l.ignorarDefesa {
+			ataqueEfetivo := a.Ataque
+			if h != nil {
+				if h.Efeito == efeitoArcano {
+					ataqueEfetivo = int(float64(a.Ataque)*h.Fator + float64(a.Magia)*h.Fator2 + 0.5)
+				} else if h.Fator > 0 {
+					ataqueEfetivo = int(float64(a.Ataque)*h.Fator + 0.5)
+				}
+			}
+			if chanceBloq := ChanceBloqueioDinamica(l.m.Defesa, ataqueEfetivo); chanceBloq > 0 && l.rng.Intn(1000) < chanceBloq {
+				t.Bloqueio = true
+				t.Dano = max(1, t.Dano*75/100)
+			}
 		}
 		l.mon.vida = max(0, l.mon.vida-t.Dano)
 		if l.mon.vida > 0 {
@@ -520,12 +559,14 @@ func (l *lutaEmAndamento) vezDoMonstro() bool {
 			break
 		}
 		dano, esquivou := l.golpeNoJogadorComTipo(ataque, arcano)
-		t.Dano, t.Critico, t.Esquiva = dano.valor, dano.critico, esquivou
+		t.Dano, t.Critico, t.Esquiva, t.Bloqueio = dano.valor, dano.critico, esquivou, dano.bloqueio
 		if poder != nil && poder.Tipo == poderDrenar && t.Dano > 0 {
 			t.Cura = min(t.Dano/2, l.m.Vida-l.mon.vida)
 			l.mon.vida += t.Cura
 		}
-		if t.Dano > 0 && l.vidaJogador > 0 && !resisteAEfeito(l.j.Postura, l.rng) {
+		resistencia := ResistenciaElementalPorMil(l.j.Atributos.Defesa, l.j.Atributos.Magia)
+		resistiu := resistencia > 0 && l.rng.Intn(1000) < resistencia
+		if t.Dano > 0 && l.vidaJogador > 0 && !resistiu && !resisteAEfeito(l.j.Postura, l.rng) {
 			if ef, ok := l.status.tentarAplicar(l.rng, l.m.Elemento, l.m.Ataque, poder != nil, true); ok {
 				t.Efeito = ef.Nome
 				if ef.ID == efeitoDrenoDeEter {
@@ -769,6 +810,7 @@ type RespostaBatalha struct {
 	GrupoResultado *ResultadoDoGrupo     `json:"grupo_resultado,omitempty"`
 	SelosAtivos    []string              `json:"selos_ativos,omitempty"`
 	PortalAtivo    bool                  `json:"portal_ativo,omitempty"`
+	ATB            *EstadoATB            `json:"atb,omitempty"`
 }
 
 func lerMonstros(dbClient *supabase.Client) ([]MonstroRPG, error) {
@@ -1133,6 +1175,7 @@ func (h *RPGHandler) HandleBatalhar(w http.ResponseWriter, r *http.Request) {
 	}
 	recompensa.Materiais = entregarMateriais(servico, sessao.userID, materiais)
 
+	atb := CalcularIniciativaATB(equipamento.Atributos.Velocidade, VelocidadeDoMonstro(monstroExibido))
 	responderJSON(w, http.StatusOK, RespostaBatalha{
 		Monstro:        monstroExibido,
 		Jogador:        equipamento.Atributos,
@@ -1145,7 +1188,36 @@ func (h *RPGHandler) HandleBatalhar(w http.ResponseWriter, r *http.Request) {
 		GrupoResultado: grupoResultado,
 		SelosAtivos:    selosAtivos,
 		PortalAtivo:    emPortal,
+		ATB:            &atb,
 	})
+}
+
+// HandleGetATB devolve a leitura de iniciativa ATB pela Velocidade do jogador contra um alvo.
+func (h *RPGHandler) HandleGetATB(w http.ResponseWriter, r *http.Request) {
+	sessao, ok := abrirSessaoRPG(w, r)
+	if !ok {
+		return
+	}
+	equipamento, err := equipamentoDoContexto(sessao.dbClient, sessao.userID, sessao.ctx)
+	if err != nil {
+		responderErroJSON(w, http.StatusServiceUnavailable, "Atributos indisponíveis no momento.")
+		return
+	}
+	velMonstro := equipamento.Atributos.Velocidade
+	if raw := strings.TrimSpace(r.URL.Query().Get("velocidade_alvo")); raw != "" {
+		var v int
+		for _, ch := range raw {
+			if ch < '0' || ch > '9' {
+				v = -1
+				break
+			}
+			v = v*10 + int(ch-'0')
+		}
+		if v >= 0 && v <= 9999 {
+			velMonstro = v
+		}
+	}
+	responderJSON(w, http.StatusOK, CalcularIniciativaATB(equipamento.Atributos.Velocidade, velMonstro))
 }
 
 // lerItensDaRaridade lista os itens que a batalha pode dar: ativos, fora do kit inicial.
@@ -1167,8 +1239,9 @@ func lerItensDaRaridade(dbClient *supabase.Client, raridade string) []ItemRPG {
 }
 
 type danoDeGolpe struct {
-	valor   int
-	critico bool
+	valor    int
+	critico  bool
+	bloqueio bool
 }
 
 // golpeNoJogador resolve um golpe físico do lado do monstro (dele ou de um ajudante).
@@ -1176,14 +1249,15 @@ func (l *lutaEmAndamento) golpeNoJogador(ataque int) (danoDeGolpe, bool) {
 	return l.golpeNoJogadorComTipo(ataque, false)
 }
 
-// golpeNoJogadorComTipo resolve um golpe físico ou arcano do monstro: esquiva, fúria,
-// crítico próprio do monstro, elemento e a redução da habilidade única.
+// golpeNoJogadorComTipo resolve um golpe físico ou arcano do monstro: esquiva dinâmica,
+// bloqueio por Defesa, fúria, crítico dinâmico, elemento e redução da habilidade única.
 func (l *lutaEmAndamento) golpeNoJogadorComTipo(ataque int, arcano bool) (danoDeGolpe, bool) {
+	esquiva := ChanceEsquivaDinamica(l.j.Atributos.EsquivaPorMil, l.j.Atributos.Velocidade, l.m.Velocidade)
 	switch {
 	case l.esquivasCertas > 0:
 		l.esquivasCertas--
 		return danoDeGolpe{}, true
-	case l.rng.Intn(1000) < l.j.Atributos.EsquivaPorMil:
+	case esquiva > 0 && l.rng.Intn(1000) < esquiva:
 		return danoDeGolpe{}, true
 	}
 	if l.mon.furia > 0 {
@@ -1197,6 +1271,7 @@ func (l *lutaEmAndamento) golpeNoJogadorComTipo(ataque int, arcano bool) (danoDe
 	if critPorMil <= 0 {
 		critPorMil = critMonstroPorMil
 	}
+	critPorMil = ChanceCriticoDinamica(critPorMil, ataque, defesa, l.m.Velocidade, l.j.Atributos.Velocidade)
 	multCrit := float64(l.m.DanoCritico) / 100
 	if multCrit < 1 {
 		multCrit = multCritMonstro
@@ -1207,11 +1282,16 @@ func (l *lutaEmAndamento) golpeNoJogadorComTipo(ataque int, arcano bool) (danoDe
 	if m := MultiplicadorElemental(l.m.Elemento, l.j.Elemento); m != 1 {
 		valor = max(1, int(float64(valor)*m+0.5))
 	}
+	bloqueio := false
+	if chanceBloq := ChanceBloqueioDinamica(defesa, ataque); chanceBloq > 0 && l.rng.Intn(1000) < chanceBloq {
+		bloqueio = true
+		valor = max(1, valor*70/100)
+	}
 	if l.rodadasReducao > 0 {
 		valor = max(1, int(float64(valor)*(1-l.reducao)+0.5))
 	}
 	l.vidaJogador = max(0, l.vidaJogador-valor)
-	return danoDeGolpe{valor, critico}, false
+	return danoDeGolpe{valor: valor, critico: critico, bloqueio: bloqueio}, false
 }
 
 // escolherPoder decide a ação tática do monstro pelo contexto da rodada: evita desperdício

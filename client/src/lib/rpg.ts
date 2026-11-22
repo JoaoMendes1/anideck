@@ -4,6 +4,7 @@
 // Os números de combate (Vida, Ataque, Defesa) são calculados no servidor a partir do nível
 // e dos itens equipados. A tela só mostra; nada daqui é enviado de volta como atributo.
 import { Footprints, Gem, HandFist, HardHat, Shield, Shirt, Sword, type LucideIcon } from 'lucide-react'
+import type { EstadoATB } from './combate'
 import type { PassivaEspecialidade } from './guilda'
 import type { ResultadoDoGrupo } from './grupo'
 import { supabase } from './supabase'
@@ -973,6 +974,14 @@ export interface TurnoBatalha {
   errou?: boolean
   /** Reação elemental disparada neste golpe (rpg_reacoes.go). */
   reacao?: string
+  /** Éter gasto pela habilidade nesta ação. */
+  eter_gasto?: number
+  /** Defensor aparou parte do dano pela Defesa. */
+  bloqueio?: boolean
+  /** Dano devolvido em contra-ataque. */
+  contra_ataque?: number
+  /** Golpe fortalecido por Fúria. */
+  furia?: boolean
 }
 
 export interface RespostaBatalha {
@@ -996,6 +1005,7 @@ export interface RespostaBatalha {
   grupo_resultado?: ResultadoDoGrupo
   selos_ativos?: string[]
   portal_ativo?: boolean
+  atb?: EstadoATB
 }
 
 /** Texto de uma linha do registro da luta e o número ao lado (dano ou cura). */
@@ -1013,6 +1023,8 @@ export function descreverTurno(turno: TurnoBatalha, nomeDoMonstro: string): { te
   }
   const base = descreverGolpe(turno, nomeDoMonstro)
   let texto = turno.efeito ? `${base.texto} e causa ${turno.efeito}` : base.texto
+  if (turno.bloqueio) texto = `${texto} (Bloqueado)`
+  if (turno.contra_ataque && turno.contra_ataque > 0) texto = `${texto} · ↩ Contra-ataque −${turno.contra_ataque}`
   if (turno.reacao) texto = `${texto} · ⚡ ${turno.reacao}`
   return { texto, valor: base.valor }
 }
@@ -1445,6 +1457,7 @@ export interface EstadoCombateInterativo {
   pontos_duelo?: number
   ouro_duelo?: number
   vida?: VidaRPG
+  atb?: EstadoATB
 }
 
 export async function iniciarCombateInterativo(

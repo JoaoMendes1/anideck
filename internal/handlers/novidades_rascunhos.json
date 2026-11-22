@@ -692,5 +692,21 @@
         "caminho": "/personagem"
       }
     ]
+  },
+  {
+    "chave": "2026-11-22-reforma-combate-atributos",
+    "titulo": "Combate mais estratégico: probabilidades dinâmicas, barra ATB, Sobrecarga de Éter e contra-ataque",
+    "categoria": "balanceamento",
+    "resumo": "Agora seus atributos pesam ainda mais em cada troca de golpes: Crítico e Esquiva variam conforme Ataque, Defesa e Velocidade contra o alvo, Constituição e Magia liberam Bloqueio e Resistência a efeitos, e a Velocidade preenche a nova barra de iniciativa ATB.\n\nAs habilidades usam mais Éter e ativam Sobrecarga (+10% de dano) quando você tem Magia e MP sobrando. No combate tático, defender devolve Contra-ataque real e todos ganham Fúria com HP baixo.",
+    "links": [
+      {
+        "rotulo": "Testar nas Expedições",
+        "caminho": "/expedicoes"
+      },
+      {
+        "rotulo": "Ajustar Atributos",
+        "caminho": "/personagem?aba=atributos"
+      }
+    ]
   }
 ]

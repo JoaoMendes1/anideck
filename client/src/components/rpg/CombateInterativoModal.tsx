@@ -3,7 +3,7 @@
 // e BottomNav, com trava de rolagem do documento e layout adaptado para tela cheia no celular.
 import { useCallback, useState } from 'react'
 import { createPortal } from 'react-dom'
-import { AlertTriangle, Flame, Heart, Medal, Shield, Sparkles, Swords, Ticket, X, Zap } from 'lucide-react'
+import { AlertTriangle, Flame, Heart, Medal, RotateCcw, Shield, Sparkles, Swords, Ticket, Wind, X, Zap } from 'lucide-react'
 import {
   ESTILO_DO_ELEMENTO,
   agirCombateInterativo,
@@ -13,6 +13,7 @@ import {
 import { arteDoEstagio, rotuloDoElemento } from '../../lib/personagem'
 import { textoDosMateriais } from '../../lib/forja'
 import { useSheetBehavior } from '../../hooks/useSheetBehavior'
+import BarraATB from './BarraATB'
 import IconeOuro from '../IconeOuro'
 
 interface Props {
@@ -179,6 +180,8 @@ export default function CombateInterativoModal({ estadoInicial, aoFechar }: Prop
             })}
           </div>
 
+          {estado.atb && <BarraATB atb={estado.atb} nomeMonstro={estado.alvo_nome} />}
+
           {!estado.encerrado && (
             <div className={`flex flex-col gap-1 rounded-2xl border p-3 ${corIntencao(estado.intencao.tipo)}`}>
               <div className="flex flex-wrap items-center justify-between gap-1.5">
@@ -268,9 +271,32 @@ export default function CombateInterativoModal({ estadoInicial, aoFechar }: Prop
                             : 'border-coral/30 bg-coral/8'
                       }`}
                     >
-                      <span className="min-w-0 flex-1 break-words leading-snug text-text">
-                        {t.reacao && <Sparkles size={12} className="mr-1 inline text-gold" aria-hidden="true" />}
-                        {texto}
+                      <span className="inline-flex min-w-0 flex-1 flex-wrap items-center gap-1 break-words leading-snug text-text">
+                        {t.reacao ? (
+                          <Sparkles size={12} className="shrink-0 text-gold" aria-hidden="true" />
+                        ) : t.esquiva ? (
+                          <Wind size={12} className="shrink-0 text-holo-3" aria-hidden="true" />
+                        ) : t.bloqueio ? (
+                          <Shield size={12} className="shrink-0 text-green" aria-hidden="true" />
+                        ) : (
+                          <Swords size={12} className={`shrink-0 ${doHeroi ? 'text-holo-3' : 'text-coral'}`} aria-hidden="true" />
+                        )}
+                        <span>{texto}</span>
+                        {t.critico && (
+                          <strong className="inline-flex items-center gap-0.5 text-gold">
+                            <Zap size={11} aria-hidden="true" /> Crítico!
+                          </strong>
+                        )}
+                        {t.furia && (
+                          <span className="inline-flex items-center gap-0.5 rounded bg-coral/15 px-1.5 py-0.5 font-mono text-[11px] font-bold text-coral">
+                            <Flame size={10} aria-hidden="true" /> Fúria
+                          </span>
+                        )}
+                        {(t.contra_ataque ?? 0) > 0 && (
+                          <span className="inline-flex items-center gap-0.5 rounded bg-green/15 px-1.5 py-0.5 font-mono text-[11px] font-bold text-green">
+                            <RotateCcw size={10} aria-hidden="true" /> Contra
+                          </span>
+                        )}
                       </span>
                       <span className={`shrink-0 font-mono font-bold ${t.cura && doHeroi ? 'text-green' : doHeroi ? 'text-holo-3' : 'text-coral'}`}>
                         {valor}

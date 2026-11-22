@@ -51,59 +51,59 @@ func habilidadesDaClasse(classe string) []HabilidadeRPG {
 	switch classe {
 	case "espadachim":
 		return []HabilidadeRPG{
-			hab("golpe_firme", "Golpe Firme", "Um corte com o peso do corpo: 1,5x o Ataque.", 1, 8, 0, efeitoDano, 1.5, 0),
-			hab("corte_duplo", "Corte Duplo", "Dois cortes seguidos, cada um com quase todo o Ataque.", 8, 14, 0, efeitoGolpeDuplo, 0.95, 0),
-			hab("postura_de_guarda", "Postura de Guarda", "Recupera 20% da Vida quando ela passa da metade para baixo.", 15, 12, 3, efeitoCura, 0.20, 0),
-			hab("lamina_arcana", "Lâmina Arcana", "A lâmina conduz o Éter: soma Ataque e Magia num golpe.", 25, 18, 0, efeitoArcano, 1.1, 1.2),
-			hab("tempestade_de_aco", "Tempestade de Aço", "Uma sequência de cortes: 2,8x o Ataque.", 40, 30, 3, efeitoDano, 2.8, 0),
+			hab("golpe_firme", "Golpe Firme", "Um corte com o peso do corpo: 1,5x o Ataque.", 1, 10, 0, efeitoDano, 1.5, 0),
+			hab("corte_duplo", "Corte Duplo", "Dois cortes seguidos, cada um com quase todo o Ataque.", 8, 16, 0, efeitoGolpeDuplo, 0.95, 0),
+			hab("postura_de_guarda", "Postura de Guarda", "Recupera 20% da Vida quando ela passa da metade para baixo.", 15, 13, 3, efeitoCura, 0.20, 0),
+			hab("lamina_arcana", "Lâmina Arcana", "A lâmina conduz o Éter: soma Ataque e Magia num golpe.", 25, 22, 0, efeitoArcano, 1.1, 1.2),
+			hab("tempestade_de_aco", "Tempestade de Aço", "Uma sequência de cortes: 2,8x o Ataque.", 40, 34, 3, efeitoDano, 2.8, 0),
 		}
 	case "lanceiro":
 		return []HabilidadeRPG{
-			hab("estocada", "Estocada", "Um avanço certeiro com a ponta da lança: 1,5x o Ataque.", 1, 8, 0, efeitoDano, 1.5, 0),
-			hab("investida_dupla", "Investida Dupla", "Duas estocadas seguidas, cada uma com quase todo o Ataque.", 8, 14, 0, efeitoGolpeDuplo, 0.95, 0),
-			hab("folego_de_brasa", "Fôlego de Brasa", "Recupera 20% da Vida quando ela passa da metade para baixo.", 15, 12, 3, efeitoCura, 0.20, 0),
-			hab("lanca_flamejante", "Lança Flamejante", "A lâmina pega fogo: soma Ataque e Magia num golpe.", 25, 18, 0, efeitoArcano, 1.2, 1.0),
-			hab("chuva_de_lancas", "Chuva de Lanças", "Uma sequência de estocadas em chamas: 2,8x o Ataque.", 40, 30, 3, efeitoDano, 2.8, 0),
+			hab("estocada", "Estocada", "Um avanço certeiro com a ponta da lança: 1,5x o Ataque.", 1, 10, 0, efeitoDano, 1.5, 0),
+			hab("investida_dupla", "Investida Dupla", "Duas estocadas seguidas, cada uma com quase todo o Ataque.", 8, 16, 0, efeitoGolpeDuplo, 0.95, 0),
+			hab("folego_de_brasa", "Fôlego de Brasa", "Recupera 20% da Vida quando ela passa da metade para baixo.", 15, 13, 3, efeitoCura, 0.20, 0),
+			hab("lanca_flamejante", "Lança Flamejante", "A lâmina pega fogo: soma Ataque e Magia num golpe.", 25, 22, 0, efeitoArcano, 1.2, 1.0),
+			hab("chuva_de_lancas", "Chuva de Lanças", "Uma sequência de estocadas em chamas: 2,8x o Ataque.", 40, 34, 3, efeitoDano, 2.8, 0),
 		}
 	case "assassina":
 		return []HabilidadeRPG{
-			hab("corte_rapido", "Corte Rápido", "Um golpe veloz por trás da guarda: 1,5x o Ataque.", 1, 7, 0, efeitoDano, 1.5, 0),
-			hab("laminas_gemeas", "Lâminas Gêmeas", "As duas adagas de uma vez, cada uma com todo o Ataque.", 8, 14, 0, efeitoGolpeDuplo, 1.0, 0),
-			hab("sombra_fugaz", "Sombra Fugaz", "Some nas sombras e recupera 18% da Vida quando ela passa da metade para baixo.", 15, 10, 3, efeitoCura, 0.18, 0),
-			hab("relampago_fatal", "Relâmpago Fatal", "As lâminas conduzem o raio: soma Ataque e Magia num golpe.", 25, 18, 0, efeitoArcano, 1.3, 0.8),
-			hab("mil_cortes", "Mil Cortes", "Uma rajada de cortes elétricos: 2,9x o Ataque.", 40, 30, 3, efeitoDano, 2.9, 0),
+			hab("corte_rapido", "Corte Rápido", "Um golpe veloz por trás da guarda: 1,5x o Ataque.", 1, 9, 0, efeitoDano, 1.5, 0),
+			hab("laminas_gemeas", "Lâminas Gêmeas", "As duas adagas de uma vez, cada uma com todo o Ataque.", 8, 16, 0, efeitoGolpeDuplo, 1.0, 0),
+			hab("sombra_fugaz", "Sombra Fugaz", "Some nas sombras e recupera 18% da Vida quando ela passa da metade para baixo.", 15, 12, 3, efeitoCura, 0.18, 0),
+			hab("relampago_fatal", "Relâmpago Fatal", "As lâminas conduzem o raio: soma Ataque e Magia num golpe.", 25, 22, 0, efeitoArcano, 1.3, 0.8),
+			hab("mil_cortes", "Mil Cortes", "Uma rajada de cortes elétricos: 2,9x o Ataque.", 40, 34, 3, efeitoDano, 2.9, 0),
 		}
 	case "maga":
 		return []HabilidadeRPG{
-			hab("seta_dagua", "Seta d'Água", "Um projétil de água: soma parte do Ataque e da Magia.", 1, 8, 0, efeitoArcano, 0.6, 1.2),
-			hab("lanca_de_gelo", "Lança de Gelo", "Um espinho de gelo puro: mais Magia que Ataque.", 8, 14, 0, efeitoArcano, 0.8, 1.6),
-			hab("bencao_da_mare", "Bênção da Maré", "Recupera 22% da Vida quando ela passa da metade para baixo.", 15, 12, 3, efeitoCura, 0.22, 0),
-			hab("explosao_gelida", "Explosão Gélida", "Uma explosão de frio: Ataque e o dobro da Magia.", 25, 20, 0, efeitoArcano, 1.1, 2.2),
-			hab("onda_glacial", "Onda Glacial", "Uma onda que congela tudo à frente.", 40, 30, 3, efeitoArcano, 1.3, 2.9),
+			hab("seta_dagua", "Seta d'Água", "Um projétil de água: soma parte do Ataque e da Magia.", 1, 10, 0, efeitoArcano, 0.6, 1.2),
+			hab("lanca_de_gelo", "Lança de Gelo", "Um espinho de gelo puro: mais Magia que Ataque.", 8, 16, 0, efeitoArcano, 0.8, 1.6),
+			hab("bencao_da_mare", "Bênção da Maré", "Recupera 22% da Vida quando ela passa da metade para baixo.", 15, 13, 3, efeitoCura, 0.22, 0),
+			hab("explosao_gelida", "Explosão Gélida", "Uma explosão de frio: Ataque e o dobro da Magia.", 25, 21, 0, efeitoArcano, 1.1, 2.2),
+			hab("onda_glacial", "Onda Glacial", "Uma onda que congela tudo à frente.", 40, 31, 3, efeitoArcano, 1.3, 2.9),
 		}
 	case "guerreiro":
 		return []HabilidadeRPG{
-			hab("golpe_pesado", "Golpe Pesado", "O martelo desce com todo o peso: 1,5x o Ataque.", 1, 8, 0, efeitoDano, 1.5, 0),
-			hab("impacto_duplo", "Impacto Duplo", "Dois golpes de martelo, cada um com quase todo o Ataque.", 8, 14, 0, efeitoGolpeDuplo, 0.95, 0),
-			hab("forja_interior", "Forja Interior", "Recupera 20% da Vida quando ela passa da metade para baixo.", 15, 12, 3, efeitoCura, 0.20, 0),
-			hab("golpe_vulcanico", "Golpe Vulcânico", "O martelo em brasa: soma Ataque e Magia num golpe.", 25, 18, 0, efeitoArcano, 1.3, 0.8),
-			hab("terremoto", "Terremoto", "Um golpe no chão que racha a terra: 2,8x o Ataque.", 40, 30, 3, efeitoDano, 2.8, 0),
+			hab("golpe_pesado", "Golpe Pesado", "O martelo desce com todo o peso: 1,5x o Ataque.", 1, 10, 0, efeitoDano, 1.5, 0),
+			hab("impacto_duplo", "Impacto Duplo", "Dois golpes de martelo, cada um com quase todo o Ataque.", 8, 16, 0, efeitoGolpeDuplo, 0.95, 0),
+			hab("forja_interior", "Forja Interior", "Recupera 20% da Vida quando ela passa da metade para baixo.", 15, 13, 3, efeitoCura, 0.20, 0),
+			hab("golpe_vulcanico", "Golpe Vulcânico", "O martelo em brasa: soma Ataque e Magia num golpe.", 25, 22, 0, efeitoArcano, 1.3, 0.8),
+			hab("terremoto", "Terremoto", "Um golpe no chão que racha a terra: 2,8x o Ataque.", 40, 34, 3, efeitoDano, 2.8, 0),
 		}
 	case "paladina":
 		return []HabilidadeRPG{
-			hab("golpe_sagrado", "Golpe Sagrado", "Um golpe abençoado: 1,4x o Ataque.", 1, 7, 0, efeitoDano, 1.4, 0),
-			hab("lamina_e_escudo", "Lâmina e Escudo", "Espada e escudo em sequência, cada um com quase todo o Ataque.", 8, 13, 0, efeitoGolpeDuplo, 0.9, 0),
-			hab("cura_sagrada", "Cura Sagrada", "Recupera 26% da Vida quando ela passa da metade para baixo.", 15, 12, 3, efeitoCura, 0.26, 0),
-			hab("julgamento_da_luz", "Julgamento da Luz", "A espada brilha: soma Ataque e Magia num golpe.", 25, 18, 0, efeitoArcano, 1.0, 1.4),
-			hab("luz_da_esperanca", "Luz da Esperança", "Um raio de luz sobre o inimigo: 2,7x o Ataque.", 40, 30, 3, efeitoDano, 2.7, 0),
+			hab("golpe_sagrado", "Golpe Sagrado", "Um golpe abençoado: 1,4x o Ataque.", 1, 9, 0, efeitoDano, 1.4, 0),
+			hab("lamina_e_escudo", "Lâmina e Escudo", "Espada e escudo em sequência, cada um com quase todo o Ataque.", 8, 15, 0, efeitoGolpeDuplo, 0.9, 0),
+			hab("cura_sagrada", "Cura Sagrada", "Recupera 26% da Vida quando ela passa da metade para baixo.", 15, 13, 3, efeitoCura, 0.26, 0),
+			hab("julgamento_da_luz", "Julgamento da Luz", "A espada brilha: soma Ataque e Magia num golpe.", 25, 22, 0, efeitoArcano, 1.0, 1.4),
+			hab("luz_da_esperanca", "Luz da Esperança", "Um raio de luz sobre o inimigo: 2,7x o Ataque.", 40, 34, 3, efeitoDano, 2.7, 0),
 		}
 	case "arqueiro":
 		return []HabilidadeRPG{
-			hab("flecha_certeira", "Flecha Certeira", "Uma flecha no ponto fraco: 1,5x o Ataque.", 1, 7, 0, efeitoDano, 1.5, 0),
-			hab("disparo_duplo", "Disparo Duplo", "Duas flechas no mesmo arco, cada uma com quase todo o Ataque.", 8, 14, 0, efeitoGolpeDuplo, 0.95, 0),
-			hab("recuo_nas_sombras", "Recuo nas Sombras", "Some entre as sombras e recupera 20% da Vida quando ela passa da metade para baixo.", 15, 12, 3, efeitoCura, 0.20, 0),
-			hab("flecha_do_eter_sombrio", "Flecha do Éter Sombrio", "A flecha carrega o Éter Sombrio: soma Ataque e Magia num disparo.", 25, 18, 0, efeitoArcano, 1.2, 1.0),
-			hab("chuva_de_flechas", "Chuva de Flechas", "Uma saraivada de flechas violeta: 2,8x o Ataque.", 40, 30, 3, efeitoDano, 2.8, 0),
+			hab("flecha_certeira", "Flecha Certeira", "Uma flecha no ponto fraco: 1,5x o Ataque.", 1, 9, 0, efeitoDano, 1.5, 0),
+			hab("disparo_duplo", "Disparo Duplo", "Duas flechas no mesmo arco, cada uma com quase todo o Ataque.", 8, 16, 0, efeitoGolpeDuplo, 0.95, 0),
+			hab("recuo_nas_sombras", "Recuo nas Sombras", "Some entre as sombras e recupera 20% da Vida quando ela passa da metade para baixo.", 15, 13, 3, efeitoCura, 0.20, 0),
+			hab("flecha_do_eter_sombrio", "Flecha do Éter Sombrio", "A flecha carrega o Éter Sombrio: soma Ataque e Magia num disparo.", 25, 22, 0, efeitoArcano, 1.2, 1.0),
+			hab("chuva_de_flechas", "Chuva de Flechas", "Uma saraivada de flechas violeta: 2,8x o Ataque.", 40, 34, 3, efeitoDano, 2.8, 0),
 		}
 	}
 	return nil
