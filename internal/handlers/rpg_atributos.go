@@ -88,25 +88,45 @@ func LimitarPontos(p PrimariosRPG, disponiveis int) PrimariosRPG {
 	return p
 }
 
+// limiarPontosSemRetornoDecrescente define quantos pontos distribuídos num único
+// atributo rendem 1:1 antes do retorno decrescente entrar em vigor.
+const limiarPontosSemRetornoDecrescente = 60
+
 // DerivarAtributos transforma nível e primários nos números de combate, sem os itens.
 // Com os primários da base, Vida, Ataque e Defesa são os mesmos de antes do sql/077:
-// 100+20k, 10+3k e 5+2k.
+// 100+20k, 10+3k e 5+2k; pontos distribuídos acima do limiar seguem retorno decrescente.
 func DerivarAtributos(nivel int, p PrimariosRPG) AtributosRPG {
 	if nivel < 1 {
 		nivel = 1
 	}
 	k := nivel - 1
+	base := PrimariosBase(nivel)
+	ajustar := func(total, baseVal int) int {
+		extra := total - baseVal
+		if extra <= limiarPontosSemRetornoDecrescente {
+			return total
+		}
+		return baseVal + EscalarAtributo(extra, limiarPontosSemRetornoDecrescente)
+	}
+	efetivo := PrimariosRPG{
+		Forca:        ajustar(p.Forca, base.Forca),
+		Inteligencia: ajustar(p.Inteligencia, base.Inteligencia),
+		Constituicao: ajustar(p.Constituicao, base.Constituicao),
+		Agilidade:    ajustar(p.Agilidade, base.Agilidade),
+		Destreza:     ajustar(p.Destreza, base.Destreza),
+		Sorte:        ajustar(p.Sorte, base.Sorte),
+	}
 	a := AtributosRPG{
-		Vida:          50 + p.Constituicao*10 + k*10,
-		Ataque:        p.Forca*2 + k,
-		Defesa:        p.Constituicao + k,
-		Magia:         p.Inteligencia*2 + k,
-		Eter:          10 + p.Inteligencia,
-		Velocidade:    p.Agilidade + k/2,
-		CriticoPorMil: min(400, 50+p.Destreza*2),
-		DanoCritico:   min(220, 150+p.Destreza/2),
-		EsquivaPorMil: min(250, p.Agilidade*2),
-		SorteItem:     min(10, p.Sorte/5),
+		Vida:          50 + efetivo.Constituicao*10 + k*10,
+		Ataque:        efetivo.Forca*2 + k,
+		Defesa:        efetivo.Constituicao + k,
+		Magia:         efetivo.Inteligencia*2 + k,
+		Eter:          10 + efetivo.Inteligencia,
+		Velocidade:    efetivo.Agilidade + k/2,
+		CriticoPorMil: min(400, 50+efetivo.Destreza*2),
+		DanoCritico:   min(220, 150+efetivo.Destreza/2),
+		EsquivaPorMil: min(250, efetivo.Agilidade*2),
+		SorteItem:     min(10, efetivo.Sorte/5),
 	}
 	a.Poder = CalcularPoder(a)
 	return a
@@ -124,11 +144,13 @@ const (
 // nível, a 0,2% por ponto elas ficavam muito atrás da Força. Só os pontos ganham o extra: a
 // base do nível continua a mesma, e com ela a calibração dos monstros e do chefe final.
 func AplicarBonusDosPontos(a AtributosRPG, pontos PrimariosRPG) AtributosRPG {
-	if pontos.Agilidade > 0 {
-		a.EsquivaPorMil = min(tetoEsquivaComPontos, a.EsquivaPorMil+pontos.Agilidade*5)
+	agiEfetiva := EscalarAtributo(pontos.Agilidade, limiarPontosSemRetornoDecrescente)
+	desEfetiva := EscalarAtributo(pontos.Destreza, limiarPontosSemRetornoDecrescente)
+	if agiEfetiva > 0 {
+		a.EsquivaPorMil = min(tetoEsquivaComPontos, a.EsquivaPorMil+agiEfetiva*5)
 	}
-	if pontos.Destreza > 0 {
-		a.CriticoPorMil = min(tetoCriticoComPontos, a.CriticoPorMil+pontos.Destreza*5)
+	if desEfetiva > 0 {
+		a.CriticoPorMil = min(tetoCriticoComPontos, a.CriticoPorMil+desEfetiva*5)
 	}
 	a.Poder = CalcularPoder(a)
 	return a

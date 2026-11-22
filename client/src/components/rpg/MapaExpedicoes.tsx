@@ -55,6 +55,7 @@ import IconeDoMonstro from './IconeDoMonstro'
 import BotaoEmGrupo from './BotaoEmGrupo'
 import ConfrontoElemental from './ConfrontoElemental'
 import EscolhaDePostura from './EscolhaDePostura'
+import { estimarProbabilidadesCombate } from '../../lib/combate'
 import mapaMundiImg from '../../assets/rpg/mapa-mundi.webp'
 
 interface EstiloRegiao {
@@ -408,6 +409,7 @@ export function FolhaInspecaoMonstro({
         efeitoHeroi={efeitoHeroi}
         tracos={monstro.tracos}
         classeHeroi={classeHeroi}
+        estimativa={estimarProbabilidadesCombate(atributosJogador, monstro)}
       />
 
       <div className="flex flex-col gap-1.5">

@@ -9,6 +9,7 @@
 // ou com Ouro, na Pousada ou com uma Poção. Sem Vida, não há batalha.
 //
 // Arte e mapa 2D: usa os retratos por id em client/src/assets/rpg/monstros/.
+import BarraATB from '../components/rpg/BarraATB'
 import BatalhaEmGrupo from '../components/rpg/BatalhaEmGrupo'
 import BotaoEmGrupo from '../components/rpg/BotaoEmGrupo'
 import CardContratosSemanais from '../components/rpg/CardContratosSemanais'
@@ -29,6 +30,7 @@ import {
   Brain,
   ChevronLeft,
   Compass,
+  Flame,
   FlaskConical,
   Hammer,
   Heart,
@@ -36,11 +38,13 @@ import {
   Map as MapIcon,
   RotateCcw,
   Search,
+  Shield,
   Sparkles,
   Swords,
   Ticket,
   Trophy,
   Waves,
+  Wind,
   Zap,
 } from 'lucide-react'
 import {
@@ -164,6 +168,8 @@ function TelaDeBatalha({
         </div>
       </div>
 
+      {batalha.atb && <BarraATB atb={batalha.atb} nomeMonstro={monstro.nome} />}
+
       <ol aria-live="polite" className="m-0 flex min-h-40 list-none flex-col gap-1.5 p-0">
         {recentes.map((turno, i) => {
           const numero = mostrados - i
@@ -177,9 +183,39 @@ function TelaDeBatalha({
                 doJogador ? 'border-holo-3/35 bg-holo-3/8' : 'border-coral/35 bg-coral/8'
               } ${i === 0 ? '' : 'opacity-75'}`}
             >
-              <span className="min-w-0 flex-1 break-words leading-snug text-text">
-                {especial ? <strong className={turno.cura && doJogador ? 'text-green' : doJogador ? 'text-holo-2' : 'text-coral'}>{texto}</strong> : texto}
-                {turno.critico && <strong className="ml-1 text-gold">Crítico!</strong>}
+              <span className="inline-flex min-w-0 flex-1 flex-wrap items-center gap-1 break-words leading-snug text-text">
+                {turno.esquiva ? (
+                  <Wind size={12} className="shrink-0 text-holo-3" aria-hidden="true" />
+                ) : turno.bloqueio ? (
+                  <Shield size={12} className="shrink-0 text-green" aria-hidden="true" />
+                ) : especial ? (
+                  <Sparkles size={12} className="shrink-0 text-holo-2" aria-hidden="true" />
+                ) : (
+                  <Swords size={12} className={`shrink-0 ${doJogador ? 'text-holo-3' : 'text-coral'}`} aria-hidden="true" />
+                )}
+                <span>
+                  {especial ? <strong className={turno.cura && doJogador ? 'text-green' : doJogador ? 'text-holo-2' : 'text-coral'}>{texto}</strong> : texto}
+                </span>
+                {turno.critico && (
+                  <strong className="inline-flex items-center gap-0.5 text-gold">
+                    <Zap size={11} aria-hidden="true" /> Crítico!
+                  </strong>
+                )}
+                {turno.furia && (
+                  <span className="inline-flex items-center gap-0.5 rounded bg-coral/15 px-1.5 py-0.5 font-mono text-[11px] font-bold text-coral">
+                    <Flame size={10} aria-hidden="true" /> Fúria
+                  </span>
+                )}
+                {(turno.eter_gasto ?? 0) > 0 && (
+                  <span className="rounded bg-mana/15 px-1.5 py-0.5 font-mono text-[11px] font-semibold text-mana">
+                    −{turno.eter_gasto} Éter
+                  </span>
+                )}
+                {(turno.contra_ataque ?? 0) > 0 && (
+                  <span className="inline-flex items-center gap-0.5 rounded bg-green/15 px-1.5 py-0.5 font-mono text-[11px] font-bold text-green">
+                    <RotateCcw size={10} aria-hidden="true" /> Contra
+                  </span>
+                )}
               </span>
               <span
                 className={`shrink-0 font-mono font-bold ${turno.cura && doJogador ? 'text-green' : turno.esquiva ? 'text-muted' : doJogador ? 'text-holo-3' : 'text-coral'}`}

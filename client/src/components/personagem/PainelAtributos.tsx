@@ -31,6 +31,7 @@ import {
   type PrimarioId,
   type PrimariosRPG,
 } from '../../lib/rpg'
+import { calcularEscalaAtributo, LIMIAR_PONTOS_RETORNO_DECRESCENTE } from '../../lib/combate'
 import { membroDoElenco, rotuloDaClasse, rotuloDoElemento } from '../../lib/personagem'
 
 const ROTULO_DE_SECAO = 'font-mono text-xs font-semibold uppercase tracking-widest text-muted m-0'
@@ -49,23 +50,25 @@ const BOTAO =
 
 function impactoDosPontos(id: PrimarioId, pts: number): string {
   if (pts <= 0) return ''
+  const efetivos = calcularEscalaAtributo(pts, LIMIAR_PONTOS_RETORNO_DECRESCENTE)
+  const sufixoRetorno = pts > LIMIAR_PONTOS_RETORNO_DECRESCENTE ? ' (retorno decrescente)' : ''
   switch (id) {
     case 'forca':
-      return `+${pts * 2} Ataque`
+      return `+${efetivos * 2} Ataque · +Crítico vs Defesa${sufixoRetorno}`
     case 'inteligencia':
-      return `+${pts * 2} Magia · +${pts} Éter`
+      return `+${efetivos * 2} Magia · +${efetivos} Éter · +Sobrecarga/Res.${sufixoRetorno}`
     case 'constituicao':
-      return `+${pts * 10} Vida · +${pts} Defesa`
+      return `+${efetivos * 10} Vida · +${efetivos} Defesa · +Bloqueio/Res.${sufixoRetorno}`
     case 'agilidade': {
-      const esq = Math.min(25, pts * 0.7)
-      return `+${pts} Vel · +${Number.isInteger(esq) ? esq : esq.toFixed(1).replace('.', ',')}% Esq`
+      const esq = Math.min(25, efetivos * 0.7)
+      return `+${efetivos} Vel/ATB · +${Number.isInteger(esq) ? esq : esq.toFixed(1).replace('.', ',')}% Esq${sufixoRetorno}`
     }
     case 'destreza': {
-      const crit = Math.min(35, pts * 0.7)
-      return `+${Number.isInteger(crit) ? crit : crit.toFixed(1).replace('.', ',')}% Crít · +${Math.floor(pts / 2)}% Dano`
+      const crit = Math.min(35, efetivos * 0.7)
+      return `+${Number.isInteger(crit) ? crit : crit.toFixed(1).replace('.', ',')}% Crít · +${Math.floor(efetivos / 2)}% Dano${sufixoRetorno}`
     }
     case 'sorte':
-      return `+${Math.floor(pts / 5)}% Sorte`
+      return `+${Math.floor(efetivos / 5)}% Sorte${sufixoRetorno}`
   }
 }
 

@@ -27,4 +27,35 @@ describe('ConfrontoElemental', () => {
     expect(screen.getByText('Golem não tem fraqueza de elemento.')).toBeTruthy()
     expect(screen.getByText('Você (Guerreiro): você causa 20% mais dano.')).toBeTruthy()
   })
+
+  it('exibe probabilidades dinâmicas quando estimativa é informada', () => {
+    render(
+      <ConfrontoElemental
+        nomeDoMonstro="Dragão"
+        elementoMonstro="fogo"
+        elementoHeroi="agua"
+        estimativa={{
+          criticoJogadorPct: 24,
+          esquivaJogadorPct: 18,
+          esquivaMonstroPct: 6,
+          bloqueioJogadorPct: 9,
+          resistenciaJogadorPct: 12,
+          atb: {
+            velocidade_jogador: 28,
+            velocidade_monstro: 20,
+            ritmo_jogador: 33,
+            ritmo_monstro: 25,
+            atb_jogador: 100,
+            atb_monstro: 75,
+            primeiro: 'jogador',
+            proxima_ordem: ['jogador', 'monstro', 'jogador', 'monstro', 'jogador', 'monstro'],
+          },
+        }}
+      />,
+    )
+    expect(screen.getByText(/Probabilidades dinâmicas/)).toBeTruthy()
+    expect(screen.getByText('24%')).toBeTruthy()
+    expect(screen.getByText('18%')).toBeTruthy()
+    expect(screen.getByText('9%')).toBeTruthy()
+  })
 })

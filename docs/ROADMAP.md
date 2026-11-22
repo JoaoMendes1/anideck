@@ -1409,3 +1409,9 @@ senha rotacionada (26), e o painel do provedor desfaz a configuração com um cl
 - [x] **Navegação mobile enxuta & Feed integrado:** `BottomNav` reorganizada em 5 botões principais (`Início`, `Deck`, doca central `Aventura` com grade de atalhos do RPG/Agenda, `Explorar`, `Perfil`) e `AbasDescobrir` com aba `Feed` para usuários autenticados (`#343`)
 - [x] **Notificações animadas de recompensa:** `ToastContext` ganhou `showRewardToast` via `RecompensaHudLista` (`framer-motion` lazy-loaded com spring, pílulas `+XP/+Ouro/+₳/HP/MP` e barra animada), integrado a `PilulaGuilda` e celebração de novo nível em `CelebracaoContext` (`#343`)
 - [x] **Padronização de cards e telas:** aplicação consistente de `surface-glass`, títulos em `Manrope`, números tabulares e ausência de overflow horizontal mobile em telas de catálogo, detalhes, estatísticas, RPG 2D, clãs, loja e painel admin (`#343`)
+
+### Reformulação do sistema de combate, probabilidades dinâmicas, MP e ATB ([#347](https://github.com/JoaoMendes1/anideck/issues/347)) — 22/11/2026
+
+- [x] **Retorno decrescente & probabilidades dinâmicas (`rpg_combate_regras.go`, `rpg_atributos.go`):** pontos distribuídos acima de 60 num mesmo atributo aplicam retorno decrescente suave (`EscalarAtributo`), enquanto crítico, esquiva, bloqueio e resistência passam a responder aos atributos de ambos os combatentes (`#347`)
+- [x] **Economia de Éter (MP) e Sobrecarga:** habilidades comuns consomem mais Éter e heróis com reserva abundante e Magia ativam Sobrecarga (`+10%` de potência com custo extra de Éter), com regeneração de `+3` Éter/rodada no combate tático (`#347`)
+- [x] **Barra ATB e novas mecânicas:** adicionadas iniciativa ATB (`GET /api/rpg/atb` e `BarraATB.tsx`), Fúria por Vida baixa, Contra-ataque real ao defender/esquivar, Bloqueio e Resistência a efeitos, com fórmulas compartilhadas em `client/src/lib/combate.ts` e documentadas em `docs/COMBAT.md` (`#347`)
