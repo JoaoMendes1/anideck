@@ -79,7 +79,9 @@ export default function Navbar() {
 
           {/* Logo */}
           <Link to="/" className={`flex items-center gap-2.5 z-50 group ${soSemMenuLateral}`}>
-            <LogoMark />
+            <span className="inline-flex rounded-xl bg-panel/90 border border-holo-2/35 p-0.5 shadow-[0_0_16px_rgba(123,92,255,0.28)] group-hover:border-holo-3/60 transition-colors">
+              <LogoMark className="w-8 h-8" />
+            </span>
             <div className={`font-anton text-lg tracking-wide group-hover:opacity-80 transition-opacity ${session ? 'max-[419px]:hidden' : ''}`}>
               Ani<span className="text-holo">Deck</span>
             </div>

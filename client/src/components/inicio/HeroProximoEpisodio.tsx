@@ -229,25 +229,27 @@ export default function HeroProximoEpisodio({
             </p>
           )}
 
-          <div className="flex flex-wrap items-baseline gap-2.5 mt-2 mb-3">
-            <span className="font-anton text-xl sm:text-2xl text-holo-3 tracking-wide">Ep. {episodio}</span>
+          <div className="flex flex-wrap items-center gap-2 mt-2 mb-3">
+            <span className="inline-flex items-center px-2.5 py-0.5 rounded-lg bg-holo-3/15 border border-holo-3/35 font-mono font-bold tabular-nums text-sm sm:text-base text-holo-3">
+              Ep. {episodio}
+            </span>
             {epTitulo && (
-              <span className="text-xs sm:text-sm font-medium text-text/80 line-clamp-1 italic">
-                · {epTitulo}
+              <span className="text-xs sm:text-sm font-medium text-muted line-clamp-1">
+                {epTitulo}
               </span>
             )}
             {total > 0 ? (
-              <span className="font-mono text-xs text-muted">
+              <span className="font-mono text-xs text-muted tabular-nums">
                 {vistos} de {total} vistos · {pct}%
               </span>
             ) : vistos > 0 ? (
-              <span className="font-mono text-xs text-muted">{vistos} assistidos</span>
+              <span className="font-mono text-xs text-muted tabular-nums">{vistos} assistidos</span>
             ) : null}
           </div>
 
           {total > 0 && (
             <div className={`h-1.5 max-w-md rounded-full bg-void/70 overflow-hidden border border-white/10 ${maratonaAtiva && !bloqueado ? 'mb-2' : 'mb-5'}`}>
-              <div className="h-full rounded-full bg-gradient-to-r from-holo-1 to-holo-3" style={{ width: `${pct}%` }} />
+              <div className="h-full rounded-full bg-gradient-to-r from-holo-1 via-holo-2 to-holo-3" style={{ width: `${pct}%` }} />
             </div>
           )}
 
@@ -300,7 +302,7 @@ export default function HeroProximoEpisodio({
                 type="button"
                 disabled={marcando}
                 onClick={handleMarcar}
-                className="inline-flex items-center gap-1.5 h-10 px-4 rounded-full bg-gradient-to-r from-holo-1 to-holo-2 text-void font-extrabold text-xs uppercase tracking-wide whitespace-nowrap shadow-lg hover:opacity-95 transition-opacity cursor-pointer disabled:opacity-60"
+                className="inline-flex items-center gap-1.5 h-10 px-4 rounded-full bg-gradient-to-r from-holo-1 via-holo-2 to-holo-3 text-void font-extrabold text-xs uppercase tracking-wide whitespace-nowrap shadow-[0_8px_24px_-8px_rgba(255,79,216,0.5)] hover:brightness-110 transition-all cursor-pointer disabled:opacity-60"
               >
                 {jaMarcado ? <Check size={14} /> : <Plus size={14} />} Marcar ep. {episodio} visto
               </button>

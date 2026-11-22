@@ -59,7 +59,7 @@ function LayoutInterno() {
       <Navbar />
 
       {/* pt-24 compensa a navbar superior. pb-24 compensa a BottomNav no mobile... */}
-      <main className="relative z-10 flex-1 flex flex-col pt-[60px] md:pt-24 pb-20 md:pb-0 pl-[var(--menu-lateral)] w-full max-w-[100vw] overflow-x-hidden">
+      <main className="relative z-10 flex-1 flex flex-col pt-[68px] md:pt-24 pb-20 md:pb-0 pl-[var(--menu-lateral)] w-full max-w-[100vw] overflow-x-hidden">
         <AvisoCatalogo />
         <AvisoModeracao />
         <AvisoNovidades />

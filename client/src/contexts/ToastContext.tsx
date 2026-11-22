@@ -48,6 +48,7 @@ export function ToastProvider({ children }: { children: ReactNode }) {
     if (timerRef.current) {
       window.clearTimeout(timerRef.current)
     }
+    setRecompensas([])
     setToast({ message, type, visible: true })
 
     // Mensagens mais longas ganham tempo de leitura proporcional (mínimo 3.5s, máximo 6s)
@@ -69,12 +70,17 @@ export function ToastProvider({ children }: { children: ReactNode }) {
 
   const showRewardToast = useCallback(
     (dados: DadosRecompensaToast) => {
+      if (timerRef.current) {
+        window.clearTimeout(timerRef.current)
+        timerRef.current = null
+      }
+      setToast((prev) => (prev.visible ? { ...prev, visible: false } : prev))
       const id = ++rewardIdRef.current
-      setRecompensas((atuais) => [...atuais, { ...dados, id }].slice(-3))
+      setRecompensas((atuais) => [...atuais, { ...dados, id }].slice(-2))
       const timer = window.setTimeout(() => {
         rewardTimersRef.current.delete(id)
         setRecompensas((atuais) => atuais.filter((item) => item.id !== id))
-      }, 4600)
+      }, 4200)
       rewardTimersRef.current.set(id, timer)
     },
     [],

@@ -90,7 +90,7 @@ export default function PlayerHudInicio({
     return (
       <section
         aria-label="Painel do herói minimizado"
-        className="mb-4 rounded-2xl border border-holo-3/30 bg-gradient-to-r from-[#171034] to-[#0d0a1d] px-3.5 py-3 sm:px-5"
+        className="mb-4 rounded-2xl surface-glass border-holo-3/30 px-3.5 py-3 sm:px-5"
       >
         <div className="flex flex-wrap items-center justify-between gap-2.5">
           <div className="flex min-w-0 flex-1 items-center gap-2.5">
@@ -103,7 +103,7 @@ export default function PlayerHudInicio({
             </Link>
             <div className="min-w-0 flex-1">
               <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5">
-                <h1 className="m-0 truncate font-anton text-lg uppercase leading-tight text-text sm:text-xl">
+                <h1 className="m-0 truncate font-manrope font-extrabold text-base sm:text-lg tracking-tight leading-tight text-text">
                   {nome ?? 'Sua central'}
                 </h1>
                 <span className="font-mono text-[11px] font-bold uppercase tracking-wider text-holo-3">

@@ -13,6 +13,7 @@ import ModalSaidaCompleto from '../ModalSaidaCompleto'
 import { useConfirmacao } from '../../hooks/useConfirmacao'
 import { confirmarMarcacaoNaMaratona } from '../../lib/avisoDaMaratona'
 import { anotarMarcacao, mensagemDaMaratona, type ResultadoMaratonaEpisodio } from '../../lib/maratona'
+import { marcarRecompensaContextual } from '../../lib/recompensaEvento'
 
 interface Props {
   malId: number
@@ -33,7 +34,7 @@ type Expansao = 'status' | 'nota' | 'mais'
 export default function PainelMinhaLista({ malId, entrada, assistidos, ultimoDisponivel, obraTerminou, onEntradaMudou, onEpisodiosZerados, compacto = false }: Props) {
   const { session } = useSessao()
   const token = session?.access_token
-  const { showToast } = useToast()
+  const { showToast, showRewardToast } = useToast()
   const { celebrar } = useCelebracao()
   const { confirmar, dialogo } = useConfirmacao()
   const [salvo, setSalvo] = useState<Salvo>('parado')
@@ -199,6 +200,7 @@ export default function PainelMinhaLista({ malId, entrada, assistidos, ultimoDis
         const corpo = (await res.json()) as { xp_earned?: number; reason?: string; concluiu?: boolean; maratona?: ResultadoMaratonaEpisodio }
         concluiu = Boolean(corpo.concluiu)
         anotarMarcacao(malId, episodio, corpo.maratona)
+        marcarRecompensaContextual()
         if (corpo.maratona?.status === 'concluida') {
           celebrar({
             tipo: 'maratona',
@@ -213,11 +215,22 @@ export default function PainelMinhaLista({ malId, entrada, assistidos, ultimoDis
           })
         } else {
           const avisoMaratona = mensagemDaMaratona(corpo.maratona)
-          if (avisoMaratona) showToast(avisoMaratona.texto, avisoMaratona.tipo)
+          if (corpo.xp_earned && corpo.xp_earned > 0 && showRewardToast) {
+            showRewardToast({
+              titulo: `Ep. ${episodio} marcado como visto`,
+              subtitulo: avisoMaratona ? avisoMaratona.texto : concluiu ? 'Anime concluído!' : 'Progresso salvo no seu Deck',
+              badge: concluiu ? 'Completo' : undefined,
+              xp: corpo.xp_earned,
+              tom: avisoMaratona?.tipo === 'error' ? 'alerta' : 'xp',
+            })
+          } else if (avisoMaratona) {
+            showToast(`Ep. ${episodio} visto · ${avisoMaratona.texto}`, avisoMaratona.tipo)
+          } else {
+            showToast(`Ep. ${episodio} marcado como visto`)
+          }
         }
-        showToast(corpo.xp_earned ? `Ep ${episodio} visto · +${corpo.xp_earned} XP na Guilda` : `Ep ${episodio} marcado como visto`)
       } catch {
-        showToast(`Ep ${episodio} marcado como visto`)
+        showToast(`Ep. ${episodio} marcado como visto`)
       }
       invalidarCachesDoDeck(session?.user.id)
       window.dispatchEvent(new CustomEvent('anideck:episodio-atualizado', { detail: { malId, episodeNumber: episodio, watched: true, concluiu } }))

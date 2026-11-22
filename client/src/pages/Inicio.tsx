@@ -17,6 +17,7 @@ import { useToast } from '../contexts/ToastContext'
 import { useCelebracao } from '../contexts/CelebracaoContext'
 import { useConfirmacao } from '../hooks/useConfirmacao'
 import { useMidia } from '../hooks/useMidia'
+import { marcarRecompensaContextual } from '../lib/recompensaEvento'
 import { chaveDoUsuario, guardarNaMemoria, lerDaMemoria, invalidarCachesDoDeck } from '../lib/cacheDeTela'
 import { confirmarMarcacaoNaMaratona } from '../lib/avisoDaMaratona'
 import { anotarMarcacao, mensagemDaMaratona, type ResultadoMaratonaEpisodio } from '../lib/maratona'
@@ -116,37 +117,37 @@ function Secao({
 }) {
   return (
     <section className={espacamento}>
-      <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between sm:gap-4 mb-4 select-none">
-        <div className="min-w-0">
-          <h2 className="font-manrope font-extrabold text-lg sm:text-xl text-text m-0 flex items-center gap-2 tracking-tight">
+      <div className="mb-4 select-none space-y-1">
+        <div className="flex items-center justify-between gap-2">
+          <h2 className="font-manrope font-extrabold text-lg sm:text-xl text-text m-0 flex items-center gap-2 tracking-tight min-w-0">
             <span className="shrink-0">{icone}</span>
-            <span className="min-w-0">{titulo}</span>
+            <span className="truncate">{titulo}</span>
           </h2>
-          {subtitulo && !minimizada && (
-            <p className="text-xs sm:text-[13px] text-muted mt-1 mb-0 leading-relaxed">{subtitulo}</p>
-          )}
+          <div className="flex items-center gap-2.5 shrink-0">
+            {acaoExtra}
+            {link && (
+              <Link
+                to={link.para}
+                className="font-mono text-xs text-muted-2 uppercase tracking-widest hover:text-holo-3 transition-colors whitespace-nowrap"
+              >
+                {link.texto} →
+              </Link>
+            )}
+            {aoAlternarMinimizar && (
+              <button
+                type="button"
+                onClick={aoAlternarMinimizar}
+                aria-label={minimizada ? `Expandir ${titulo}` : `Minimizar ${titulo}`}
+                className="w-8 h-8 rounded-full surface-glass hover:border-holo-3/50 text-muted hover:text-text grid place-items-center cursor-pointer transition-colors"
+              >
+                {minimizada ? <ChevronDown size={15} /> : <ChevronUp size={15} />}
+              </button>
+            )}
+          </div>
         </div>
-        <div className="flex flex-wrap items-center gap-x-3 gap-y-1 sm:shrink-0">
-          {acaoExtra}
-          {link && (
-            <Link
-              to={link.para}
-              className="font-mono text-xs text-muted-2 uppercase tracking-widest hover:text-holo-3 transition-colors"
-            >
-              {link.texto} →
-            </Link>
-          )}
-          {aoAlternarMinimizar && (
-            <button
-              type="button"
-              onClick={aoAlternarMinimizar}
-              aria-label={minimizada ? `Expandir ${titulo}` : `Minimizar ${titulo}`}
-              className="w-8 h-8 rounded-full bg-panel border border-line hover:border-holo-2 text-muted hover:text-text grid place-items-center cursor-pointer transition-colors"
-            >
-              {minimizada ? <ChevronDown size={15} /> : <ChevronUp size={15} />}
-            </button>
-          )}
-        </div>
+        {subtitulo && !minimizada && (
+          <p className="text-xs sm:text-[13px] text-muted m-0 leading-relaxed">{subtitulo}</p>
+        )}
       </div>
 
       {minimizada ? (
@@ -284,7 +285,7 @@ export default function Inicio() {
   useEffect(() => {
     if (precisaDaConfiguracaoInicial(session?.user.user_metadata)) navigate('/bem-vindo', { replace: true })
   }, [session, navigate])
-  const { showToast } = useToast()
+  const { showToast, showRewardToast } = useToast()
   const { celebrar } = useCelebracao()
   const { confirmar, dialogo } = useConfirmacao()
   const ehDesktopLargo = useMidia('(min-width: 1280px)')
@@ -547,7 +548,7 @@ export default function Inicio() {
         headers: { Authorization: `Bearer ${session.access_token}` },
       })
       if (res.ok) {
-        let sufixoXP = ''
+        let xpEarned = 0
         let avisoMaratona: { texto: string; tipo: 'success' | 'error' } | null = null
         let maratonaConcluida: ResultadoMaratonaEpisodio | null = null
         let concluiu = concluiuOtimista
@@ -565,7 +566,7 @@ export default function Inicio() {
             avisoMaratona = mensagemDaMaratona(payload.maratona)
           }
           if (typeof payload.xp_earned === 'number' && payload.xp_earned > 0) {
-            sufixoXP = ` (+${payload.xp_earned} XP)`
+            xpEarned = payload.xp_earned
           }
         } catch {
           // Segue sem sufixo se a resposta vier vazia.
@@ -583,6 +584,7 @@ export default function Inicio() {
           })
         }
         invalidarCachesDoDeck(session.user.id)
+        marcarRecompensaContextual()
         window.dispatchEvent(
           new CustomEvent('anideck:episodio-atualizado', {
             detail: { malId, episodeNumber: episodio, watched: true, concluiu },
@@ -607,7 +609,6 @@ export default function Inicio() {
           }).catch(() => null)
         }
 
-        showToast(`Ep. ${episodio} de ${titulo} marcado como visto!${sufixoXP}`, 'success')
         if (maratonaConcluida) {
           celebrar({
             tipo: 'maratona',
@@ -622,8 +623,21 @@ export default function Inicio() {
               bilhetes: maratonaConcluida.bilhetes,
             },
           })
-        } else if (avisoMaratona) {
-          showToast(avisoMaratona.texto, avisoMaratona.tipo)
+        } else if (xpEarned > 0 && showRewardToast) {
+          showRewardToast({
+            titulo: `Ep. ${episodio} · ${titulo}`,
+            subtitulo: avisoMaratona
+              ? avisoMaratona.texto
+              : concluiu
+              ? 'Anime concluído!'
+              : 'Episódio marcado como visto',
+            badge: concluiu ? 'Completo' : undefined,
+            xp: xpEarned,
+            tom: avisoMaratona?.tipo === 'error' ? 'alerta' : 'xp',
+          })
+        } else {
+          const sufixo = avisoMaratona ? ` · ${avisoMaratona.texto}` : ''
+          showToast(`Ep. ${episodio} de ${titulo} marcado como visto!${sufixo}`, 'success')
         }
       } else {
         reverterOtimismo()
@@ -1019,7 +1033,7 @@ export default function Inicio() {
     : []
 
   return (
-    <div className="w-full min-w-0 max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-10 pt-3 sm:pt-6 pb-24">
+    <div className="w-full min-w-0 max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-10 pt-1.5 sm:pt-6 pb-24">
       <PlayerHudInicio
         nome={nome}
         dataHoje={dataDeHoje}
@@ -1028,7 +1042,7 @@ export default function Inicio() {
         aoAbrirGosto={() => setModalGostoAberto(true)}
       />
 
-      <div className="flex flex-wrap items-center justify-between gap-3 mb-6">
+      <div className="flex flex-wrap items-center justify-between gap-3 mb-5">
         <span className="font-mono text-xs text-muted-2">
           {configInicio.ocultas.length > 0
             ? `${configInicio.ocultas.length} ${configInicio.ocultas.length === 1 ? 'seção oculta' : 'seções ocultas'}`
@@ -1037,7 +1051,7 @@ export default function Inicio() {
         <button
           type="button"
           onClick={() => setOrganizandoAberto(true)}
-          className="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl border border-line bg-panel hover:border-holo-3 text-xs font-bold text-text transition-colors cursor-pointer"
+          className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full surface-glass hover:border-holo-3/50 text-xs font-bold text-text transition-colors cursor-pointer"
         >
           <SlidersHorizontal size={14} className="text-holo-3" /> Organizar Início
         </button>

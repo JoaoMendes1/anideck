@@ -7,6 +7,7 @@ import { useToast } from '../contexts/ToastContext';
 import Sheet from './Sheet';
 import { useSessao } from '../contexts/SessaoContext';
 import { contarPendentes } from '../lib/moderacao';
+import { marcarRecompensaContextual } from '../lib/recompensaEvento';
 
 interface AppNotification {
   id: string;
@@ -72,7 +73,7 @@ function grupoDe(iso: string): string {
 const ORDEM_GRUPOS = ['Hoje', 'Ontem', 'Últimos 7 dias', 'Anteriores'];
 
 export default function NotificationBell() {
-  const { showToast } = useToast();
+  const { showToast, showRewardToast } = useToast();
   const [notifications, setNotifications] = useState<AppNotification[]>([]);
   const [isOpen, setIsOpen] = useState(false);
   // BUG CORRIGIDO: antes checava só Notification.permission === 'granted' — isso
@@ -206,6 +207,7 @@ export default function NotificationBell() {
       });
 
       if (res.ok) {
+        const corpo = (await res.json().catch(() => ({}))) as { xp_earned?: number; concluiu?: boolean };
         const agora = new Date().toISOString();
         setEpisodiosMarcados(prev => ({ ...prev, [n.id]: true }));
         setNotifications(prev =>
@@ -219,12 +221,23 @@ export default function NotificationBell() {
         if (!n.read_at) {
           await markAsRead(n.id);
         }
+        marcarRecompensaContextual();
         window.dispatchEvent(
           new CustomEvent('anideck:episodio-atualizado', {
-            detail: { malId: n.mal_id, episodeNumber: n.episode_number, watched: true },
+            detail: { malId: n.mal_id, episodeNumber: n.episode_number, watched: true, concluiu: Boolean(corpo.concluiu) },
           })
         );
-        showToast(`Ep. ${n.episode_number} de ${n.anime_title || 'Anime'} marcado como visto!`, 'success');
+        if (typeof corpo.xp_earned === 'number' && corpo.xp_earned > 0 && showRewardToast) {
+          showRewardToast({
+            titulo: `Ep. ${n.episode_number} · ${n.anime_title || 'Anime'}`,
+            subtitulo: corpo.concluiu ? 'Anime concluído!' : 'Episódio marcado como visto',
+            badge: corpo.concluiu ? 'Completo' : undefined,
+            xp: corpo.xp_earned,
+            tom: 'xp',
+          });
+        } else {
+          showToast(`Ep. ${n.episode_number} de ${n.anime_title || 'Anime'} marcado como visto!`, 'success');
+        }
       } else {
         showToast('Não foi possível marcar o episódio.', 'error');
       }
@@ -311,7 +324,7 @@ export default function NotificationBell() {
       >
         <Bell size={16} />
         {naoLidas > 0 && (
-          <span className="absolute -top-1.5 -right-1.5 flex h-[18px] min-w-[18px] px-1 items-center justify-center rounded-full bg-coral text-xs leading-none font-bold text-void border border-void">
+          <span className="absolute -top-1 -right-1 flex h-[18px] min-w-[18px] px-1 items-center justify-center rounded-full bg-coral text-[10px] leading-none font-bold tabular-nums text-void border border-void">
             {naoLidas > 9 ? '9+' : naoLidas}
           </span>
         )}

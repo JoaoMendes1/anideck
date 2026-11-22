@@ -3,10 +3,12 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { act, cleanup, fireEvent, render, screen } from '@testing-library/react'
 import { ToastProvider, useToast } from './ToastContext'
+import { marcarRecompensaContextual, recompensaContextualRecente, resetarRecompensaContextual } from '../lib/recompensaEvento'
 
 afterEach(() => {
   cleanup()
   vi.useRealTimers()
+  resetarRecompensaContextual()
 })
 
 function GatilhoTeste() {
@@ -79,5 +81,27 @@ describe('ToastContext', () => {
 
     fireEvent.click(screen.getByRole('button', { name: 'Fechar notificação de recompensa' }))
     expect(screen.queryByText('Episódio registrado')).toBeNull()
+  })
+
+  it('oculta o toast padrão ao exibir recompensa HUD e coordena janela de deduplicação contextual', async () => {
+    render(
+      <ToastProvider>
+        <GatilhoTeste />
+      </ToastProvider>,
+    )
+
+    fireEvent.click(screen.getByRole('button', { name: 'Disparar aviso' }))
+    expect(screen.getByRole('status').className).toContain('opacity-100')
+
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: 'Disparar recompensa' }))
+    })
+    expect(await screen.findByText('Episódio registrado')).toBeTruthy()
+    expect(screen.getByRole('status').className).toContain('opacity-0')
+
+    expect(recompensaContextualRecente(6000, 1000)).toBe(false)
+    marcarRecompensaContextual(1000)
+    expect(recompensaContextualRecente(6000, 3000)).toBe(true)
+    expect(recompensaContextualRecente(6000, 8000)).toBe(false)
   })
 })

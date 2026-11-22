@@ -10,7 +10,8 @@ import IconeAniCoin from './IconeAniCoin'
 import IconeOuro from './IconeOuro'
 import AvisoTemporada0 from './AvisoTemporada0'
 
-import { avisosDaMudanca, type AvisoDoHud, type FotoDoJogador } from '../lib/hud'
+import { avisosDaMudanca, type FotoDoJogador } from '../lib/hud'
+import { recompensaContextualRecente } from '../lib/recompensaEvento'
 import { obterHPEscaladoDoEstado, obterMPMaxDoEstado } from '../lib/comunidade'
 import { useResumoGuilda } from '../hooks/useResumoGuilda'
 import { useComunidade } from '../hooks/useComunidade'
@@ -20,20 +21,6 @@ import { useCelebracao } from '../contexts/CelebracaoContext'
 import BarrasVitais from './comunidade/BarrasVitais'
 import BarraVital from './hud/BarraVital'
 import InsigniaRank from './hud/InsigniaRank'
-
-// Tempo que cada aviso fica na tela; a animação em index.css (.aviso-hud) dura o mesmo.
-const DURACAO_AVISO = 1800
-
-const ESTILO_DO_AVISO: Record<AvisoDoHud['tipo'], string> = {
-  xp: 'text-gold border-gold/50',
-  xp_perdido: 'text-coral border-coral/50',
-  nivel: 'text-void bg-gradient-to-r from-holo-1 to-holo-2 border-transparent',
-  rank_queda: 'text-coral border-coral/60 bg-void/95',
-  hp: 'text-coral border-coral/50',
-  mp: 'text-holo-3 border-holo-3/50',
-  cristal: 'text-holo-3 border-holo-3/50',
-  ouro: 'text-gold border-gold/50',
-}
 
 // Número da Vitalidade ou da Mana na pílula. De 2xl para cima ganha o máximo e uma barra
 // própria; abaixo disso, só o número, para caber ao lado da busca.
@@ -61,11 +48,9 @@ export default function PilulaGuilda() {
   const { celebrar } = useCelebracao()
   const ouro = typeof status?.ouro === 'number' ? status.ouro : null
   const [aberto, setAberto] = useState(false)
-  const [avisos, setAvisos] = useState<(AvisoDoHud & { id: number })[]>([])
   const raiz = useRef<HTMLDivElement>(null)
   const anterior = useRef<FotoDoJogador | null>(null)
   const progressoAnterior = useRef<number>(0)
-  const proximoId = useRef(0)
   const { pathname } = useLocation()
 
   const nivel = status?.nivel ?? 1
@@ -75,8 +60,9 @@ export default function PilulaGuilda() {
   const mp = estado ? Math.floor(estado.mana) : null
   const mpMax = estado ? obterMPMaxDoEstado(estado, nivel) : 50
 
-  // Compara com a última foto e solta os avisos do que mudou. A primeira leitura só
-  // registra a foto: carregar a página não é ganho.
+  // Compara com a última foto e solta um único aviso HUD quando o ganho veio de fora.
+  // Se a própria tela já mostrou toast/celebração contextual (ex.: marcar episódio ou missão),
+  // suprime o aviso passivo para não notificar duas vezes a mesma recompensa.
   useEffect(() => {
     if (!status) return
     const foto: FotoDoJogador = {
@@ -95,11 +81,6 @@ export default function PilulaGuilda() {
     anterior.current = foto
     progressoAnterior.current = status.progresso_pct
     if (novos.length === 0 || !antes) return
-
-    const comId = novos.map(a => ({ ...a, id: ++proximoId.current }))
-    setAvisos(atuais => [...atuais, ...comId].slice(-4))
-    const ids = new Set(comId.map(a => a.id))
-    window.setTimeout(() => setAvisos(atuais => atuais.filter(a => !ids.has(a.id))), DURACAO_AVISO)
 
     const diffXp = foto.xp - antes.xp
     const diffOuro = typeof foto.ouro === 'number' && typeof antes.ouro === 'number' ? foto.ouro - antes.ouro : 0
@@ -121,11 +102,13 @@ export default function PilulaGuilda() {
       return
     }
 
+    if (recompensaContextualRecente()) return
+
     if (diffXp > 0 || diffOuro > 0 || diffCristal > 0 || diffHp > 0) {
       showRewardToast({
         titulo: diffXp > 0 ? 'Recompensa de Guilda' : diffOuro > 0 ? 'Ouro recebido' : diffCristal > 0 ? 'AniCoins recebidos' : 'Vitalidade restaurada',
-        subtitulo: `Nível ${status.nivel} · Rank ${status.rank}`,
-        badge: `Nv ${status.nivel}`,
+        subtitulo: `Nível ${status.nivel} · ${status.titulo_rank}`,
+        badge: `Rank ${status.rank}`,
         xp: diffXp > 0 ? diffXp : undefined,
         ouro: diffOuro > 0 ? diffOuro : undefined,
         anicoins: diffCristal > 0 ? diffCristal : undefined,
@@ -229,15 +212,6 @@ export default function PilulaGuilda() {
           )}
         </span>
       </button>
-
-      {/* Avisos de ganho: sobem da pílula e somem sozinhos. */}
-      <div className="absolute top-full right-0 mt-1.5 flex flex-col items-end gap-1 pointer-events-none z-[60]" aria-live="polite">
-        {avisos.map(a => (
-          <span key={a.id} className={`aviso-hud px-2 py-0.5 rounded-full border bg-void/90 font-mono text-xs font-bold shadow-lg ${ESTILO_DO_AVISO[a.tipo]}`}>
-            {a.texto}
-          </span>
-        ))}
-      </div>
 
       {aberto && (
         <div

@@ -5,6 +5,7 @@ import { useSessao } from '../contexts/SessaoContext'
 import { useToast } from '../contexts/ToastContext'
 import { useCelebracao } from '../contexts/CelebracaoContext'
 import { chaveDoUsuario } from '../lib/cacheDeTela'
+import { marcarRecompensaContextual } from '../lib/recompensaEvento'
 import { VALIDADE_NA_MONTAGEM, buscarUmaVez } from '../lib/buscaCompartilhada'
 
 export interface MissaoDiariaItem {
@@ -163,6 +164,7 @@ export function useMissoesHoje() {
       }
       const anicoins = Number(json.recompensa) || missaoAtual?.recompensa_cristais || 15
       const xp = Number(json.xp) || 0
+      marcarRecompensaContextual()
       celebrar({
         tipo: 'missao',
         titulo: missaoAtual?.titulo ?? 'Missão Concluída!',
