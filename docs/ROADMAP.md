@@ -918,6 +918,11 @@ decidiu em 17/11/2026 que ela fecha fora da Fase 18. Escopo a detalhar em issues
 > numeração e não abrem escopo novo. Ficam registrados aqui em ordem cronológica inversa para
 > não sumirem: fase concluída não deve ser reaberta só para receber um conserto.
 
+### 21/11/2026 — Aprimoramento individual por cópia entre heróis (#346)
+
+- [x] **Separação do aprimoramento por cópia (`sql/145_aprimoramento_por_copia.sql`, `rpg_equipamento.go`, `rpg_aprimoramento.go`, `rpg_estado.go`, `rpg_esquadrao.go`, `EscolhaDeItem.tsx`):**
+      `public.rpg_inventario.aprimoramentos SMALLINT[]` passa a guardar o nível individual de cada cópia possuída (novas cópias começam sempre em `+0`) e `public.rpg_equipados_herois.copia` (com `UNIQUE DEFERRABLE (user_id, item_id, copia)`) garante que cada herói vista uma cópia distinta. Ao upar uma peça para `+6`, somente a cópia vestida naquele herói recebe o `+6`; a cópia extra pode ser equipada no outro herói no nível `+0` e aprimorada em separado. (#346)
+
 ### 21/11/2026 — Equipamento exclusivo por cópia possuída entre heróis (#344)
 
 - [x] **Trava de cópia em uso por outro personagem (`sql/144_equipamento_exclusivo_por_heroi.sql`, `rpg_equipamento.go`, `rpg_estado.go`, `EscolhaDeItem.tsx`):**

@@ -196,10 +196,13 @@ describe('Uso exclusivo por cópia entre heróis', () => {
         {
           ...lamina,
           quantidade: 2,
+          aprimoramento: 0,
           equipado: false,
           bloqueado: false,
+          copia_alvo: 2,
           em_uso_outros: 1,
           em_uso_por: ['Haruto'],
+          em_uso_detalhes: [{ heroi: 'Haruto', copia: 1, aprimoramento: 6 }],
         },
       ],
     }
@@ -208,7 +211,7 @@ describe('Uso exclusivo por cópia entre heróis', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Arma: vazio. Equipar' }))
 
     expect(screen.getByText('Em uso por Espadachim de Éter')).toBeTruthy()
-    expect(screen.getByText('Em uso por Haruto · 1 livre')).toBeTruthy()
+    expect(screen.getByText('Em uso por Haruto (+6) · 1 livre (+0)')).toBeTruthy()
     expect(screen.getByText('em uso')).toBeTruthy()
     // Apenas Lâmina de Éter (com 1 cópia livre) mantém botão Equipar ativo.
     expect(screen.getAllByRole('button', { name: 'Equipar' })).toHaveLength(1)

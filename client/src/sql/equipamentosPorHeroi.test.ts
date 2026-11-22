@@ -284,4 +284,83 @@ describe('sql/142_equipamentos_por_personagem', () => {
     )
     expect(liberado.rows[0].r.ok).toBe(true)
   }, 15000)
+
+  it('sql/145 mantém o +6 só na cópia equipada do 1º herói e equipa a cópia extra no 2º como +0', async () => {
+    const { default: sql144 } = await import('../../../sql/144_equipamento_exclusivo_por_heroi.sql?raw')
+    const { default: sql145 } = await import('../../../sql/145_aprimoramento_por_copia.sql?raw')
+    const db = await criarBancoTeste({ scriptsExtras: [BASE_SQL] })
+    const user = 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa'
+    await criarUsuarioTeste(db, user, 'kael', 'Kael')
+
+    await db.exec(`
+      CREATE TABLE IF NOT EXISTS public.rpg_aprimoramentos (
+        id BIGSERIAL PRIMARY KEY,
+        user_id UUID NOT NULL,
+        item_id TEXT NOT NULL,
+        para SMALLINT NOT NULL,
+        ouro_gasto INTEGER NOT NULL,
+        criado_em TIMESTAMPTZ NOT NULL DEFAULT now()
+      );
+    `)
+    await db.query(`
+      INSERT INTO public.rpg_itens (id, slot, nome, raridade, classes) VALUES
+        ('peitoral_aco', 'armadura', 'Peitoral de Aço', 'raro', NULL)
+    `)
+    await db.query(
+      `INSERT INTO public.rpg_personagens (user_id, nome, personagem_base, desbloqueados)
+       VALUES ($1, 'Kael', 'arqueiro_trevas', ARRAY['espadachim_eter', 'arqueiro_trevas'])`,
+      [user],
+    )
+    await db.query(`INSERT INTO public.rpg_recursos (user_id, ouro) VALUES ($1, 500)`, [user])
+    await db.query(
+      `INSERT INTO public.rpg_inventario (user_id, item_id, quantidade, aprimoramento) VALUES ($1, 'peitoral_aco', 2, 6)`,
+      [user],
+    )
+
+    await db.exec(sql140)
+    await db.exec(sql141)
+    await db.exec(sql142)
+    await db.exec(sql144)
+
+    // Simula ambos usando antes da 145: Espadachim pegou antes, Yoru depois.
+    await db.query(
+      `INSERT INTO public.rpg_equipados_herois (user_id, personagem_base, slot, item_id, equipado_em) VALUES
+        ($1, 'espadachim_eter', 'armadura', 'peitoral_aco', now() - interval '10 minutes'),
+        ($1, 'arqueiro_trevas', 'armadura', 'peitoral_aco', now())`,
+      [user],
+    )
+
+    await db.exec(sql145)
+    await autenticarComo(db, user)
+
+    // Espadachim ficou com cópia 1 (+6) e Yoru com cópia 2 (+0).
+    const copias = await db.query<{ personagem_base: string; copia: number; nivel: number }>(
+      `SELECT eh.personagem_base, eh.copia, public.rpg_nivel_copia(inv.aprimoramento, inv.aprimoramentos, eh.copia) AS nivel
+         FROM public.rpg_equipados_herois eh
+         JOIN public.rpg_inventario inv ON inv.user_id = eh.user_id AND inv.item_id = eh.item_id
+        WHERE eh.user_id = $1
+        ORDER BY eh.copia`,
+      [user],
+    )
+    expect(copias.rows).toEqual([
+      { personagem_base: 'espadachim_eter', copia: 1, nivel: 6 },
+      { personagem_base: 'arqueiro_trevas', copia: 2, nivel: 0 },
+    ])
+
+    // Yoru aprimora sua própria cópia 2 (+0 -> +1): Espadachim segue com cópia 1 em +6.
+    const upYoru = await db.query<{ r: { ok?: boolean; copia?: number; aprimoramento?: number; aprimoramentos?: number[] } }>(
+      `SELECT public.rpg_aprimorar_item($1, 'peitoral_aco', 0, 40, 6, 2) AS r`,
+      [user],
+    )
+    expect(upYoru.rows[0].r.ok).toBe(true)
+    expect(upYoru.rows[0].r.copia).toBe(2)
+    expect(upYoru.rows[0].r.aprimoramento).toBe(1)
+    expect(upYoru.rows[0].r.aprimoramentos).toEqual([6, 1])
+
+    // Não é possível equipar a mesma cópia em dois heróis mesmo forçando p_copia.
+    const erroForcado = await db.query<{ r: { erro?: string } }>(
+      `SELECT public.rpg_equipar_item('armadura', 'peitoral_aco', 'arqueiro_trevas', 1) AS r`,
+    )
+    expect(erroForcado.rows[0].r.erro).toContain('já está equipada')
+  }, 15000)
 })

@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"encoding/json"
+	"fmt"
 	"log"
 	"net/http"
 	"strings"
@@ -68,6 +69,7 @@ func AplicarAprimoramento(item ItemRPG, aprimoramento int) ItemRPG {
 func (h *RPGHandler) HandleAprimorar(w http.ResponseWriter, r *http.Request) {
 	var corpo struct {
 		ItemID string `json:"item_id"`
+		Copia  int    `json:"copia"`
 	}
 	if r.Body == nil || json.NewDecoder(http.MaxBytesReader(w, r.Body, 512)).Decode(&corpo) != nil {
 		corpo.ItemID = ""
@@ -105,7 +107,29 @@ func (h *RPGHandler) HandleAprimorar(w http.ResponseWriter, r *http.Request) {
 		responderErroJSON(w, http.StatusNotFound, "Você não tem este item.")
 		return
 	}
-	if alvo.CustoAprimorar == 0 {
+
+	copiaAlvo := corpo.Copia
+	if copiaAlvo <= 0 {
+		copiaAlvo = alvo.CopiaAlvo
+	}
+	if copiaAlvo <= 0 {
+		if len(alvo.EmUsoPor) == 1 {
+			responderErroJSON(w, http.StatusBadRequest, fmt.Sprintf("Este item está em uso por %s. Desequipe ou troque para ele para aprimorar.", alvo.EmUsoPor[0]))
+		} else {
+			responderErroJSON(w, http.StatusBadRequest, "Desequipe uma cópia de outro personagem antes de aprimorar.")
+		}
+		return
+	}
+
+	nivelAtual := alvo.Aprimoramento
+	if copiaAlvo >= 1 && copiaAlvo <= len(alvo.Aprimoramentos) {
+		nivelAtual = alvo.Aprimoramentos[copiaAlvo-1]
+	}
+	custo := 0
+	if nivelAtual < alvo.AprimoramentoMaximo {
+		custo = CustoDeAprimoramento(alvo.Raridade, nivelAtual+1)
+	}
+	if custo == 0 {
 		responderErroJSON(w, http.StatusConflict, "Este item já está no máximo.")
 		return
 	}
@@ -115,22 +139,25 @@ func (h *RPGHandler) HandleAprimorar(w http.ResponseWriter, r *http.Request) {
 		responderErroJSON(w, http.StatusServiceUnavailable, "Não foi possível aprimorar agora.")
 		return
 	}
-	bruto := strings.TrimSpace(servico.Rpc("rpg_aprimorar_item", "", map[string]interface{}{
+	params := map[string]interface{}{
 		"p_user_id": sessao.userID,
 		"p_item_id": itemID,
-		"p_de":      alvo.Aprimoramento,
-		"p_custo":   alvo.CustoAprimorar,
+		"p_de":      nivelAtual,
+		"p_custo":   custo,
 		"p_teto":    alvo.AprimoramentoMaximo,
-	}))
+		"p_copia":   copiaAlvo,
+	}
+	bruto := strings.TrimSpace(servico.Rpc("rpg_aprimorar_item", "", params))
 	var retorno struct {
-		Ok            bool   `json:"ok"`
-		Erro          string `json:"erro"`
-		SemItem       bool   `json:"sem_item"`
-		SemOuro       bool   `json:"sem_ouro"`
-		Mudou         bool   `json:"mudou"`
-		NoMaximo      bool   `json:"no_maximo"`
-		Aprimoramento int    `json:"aprimoramento"`
-		Ouro          int    `json:"ouro"`
+		Ok             bool   `json:"ok"`
+		Erro           string `json:"erro"`
+		SemItem        bool   `json:"sem_item"`
+		SemOuro        bool   `json:"sem_ouro"`
+		Mudou          bool   `json:"mudou"`
+		NoMaximo       bool   `json:"no_maximo"`
+		Aprimoramento  int    `json:"aprimoramento"`
+		Aprimoramentos []int  `json:"aprimoramentos"`
+		Ouro           int    `json:"ouro"`
 	}
 	if bruto == "" || json.Unmarshal([]byte(bruto), &retorno) != nil || (!retorno.Ok && retorno.Erro == "") {
 		log.Printf("[RPG] Falha ao aprimorar (user=%s item=%s): %s", sessao.userID, itemID, bruto)
@@ -149,7 +176,7 @@ func (h *RPGHandler) HandleAprimorar(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// O estado novo sai do contexto já lido, com a linha atualizada: sem outra ida ao banco.
+	// O estado novo sai do contexto já lido, com a cópia atualizada: sem outra ida ao banco.
 	ctx := sessao.ctx
 	ctx.ouro = retorno.Ouro
 	if ctx.inventarioLido && len(ctx.inventario) > 0 {
@@ -157,7 +184,20 @@ func (h *RPGHandler) HandleAprimorar(w http.ResponseWriter, r *http.Request) {
 		copy(inventario, ctx.inventario)
 		for i := range inventario {
 			if inventario[i].Item.ID == itemID {
-				inventario[i].Aprimoramento = retorno.Aprimoramento
+				niveis := inventario[i].NiveisDasCopias()
+				if len(retorno.Aprimoramentos) > 0 {
+					niveis = retorno.Aprimoramentos
+				} else if copiaAlvo >= 1 && copiaAlvo <= len(niveis) {
+					niveis[copiaAlvo-1] = retorno.Aprimoramento
+				}
+				inventario[i].Aprimoramentos = niveis
+				maxLv := 0
+				for _, nv := range niveis {
+					if nv > maxLv {
+						maxLv = nv
+					}
+				}
+				inventario[i].Aprimoramento = maxLv
 			}
 		}
 		ctx.inventario = inventario

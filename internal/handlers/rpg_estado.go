@@ -66,10 +66,12 @@ type estadoJogadorBanco struct {
 	Equipados []struct {
 		Slot   string `json:"slot"`
 		ItemID string `json:"item_id"`
+		Copia  int    `json:"copia"`
 	} `json:"equipados"`
 	EquipadosPorHeroi map[string][]struct {
 		Slot   string `json:"slot"`
 		ItemID string `json:"item_id"`
+		Copia  int    `json:"copia"`
 	} `json:"equipados_por_heroi"`
 	Bilhetes int `json:"bilhetes"`
 	// Ouro (sql/083); ausente antes dele, e então zero.
@@ -107,6 +109,7 @@ func contextoDoEstado(e estadoJogadorBanco, cfg configRPG) (contextoPersonagem, 
 		ouro:           e.Ouro,
 		maestria:       e.Maestria,
 		equipados:      map[string]string{},
+		copias:         map[string]int{},
 		inventarioLido: true,
 	}
 	if len(e.Cosmeticos) > 0 {
@@ -124,19 +127,29 @@ func contextoDoEstado(e estadoJogadorBanco, cfg configRPG) (contextoPersonagem, 
 	}
 	for _, eq := range e.Equipados {
 		ctx.equipados[eq.Slot] = eq.ItemID
+		if eq.Copia > 0 {
+			ctx.copias[eq.Slot] = eq.Copia
+		}
 	}
 	if e.EquipadosPorHeroi != nil {
 		porHeroi := make(map[string]map[string]string, len(e.EquipadosPorHeroi))
+		copiasPorHeroi := make(map[string]map[string]int, len(e.EquipadosPorHeroi))
 		for base, lista := range e.EquipadosPorHeroi {
 			slots := make(map[string]string, len(lista))
+			copias := make(map[string]int, len(lista))
 			for _, eq := range lista {
 				if eq.Slot != "" && eq.ItemID != "" {
 					slots[eq.Slot] = eq.ItemID
+					if eq.Copia > 0 {
+						copias[eq.Slot] = eq.Copia
+					}
 				}
 			}
 			porHeroi[base] = slots
+			copiasPorHeroi[base] = copias
 		}
 		ctx.equipadosPorHeroi = porHeroi
+		ctx.copiasPorHeroi = copiasPorHeroi
 	}
 	if e.Pontos != nil {
 		ctx.pontos, ctx.pontosLidos = *e.Pontos, true
@@ -191,7 +204,7 @@ func carregarContextoPersonagem(dbClient *supabase.Client, userID string) (conte
 		ctx.pontosPorHeroi = lerPontosPorHeroi(dbClient, userID)
 	}
 	if ctx.equipadosPorHeroi == nil {
-		ctx.equipadosPorHeroi = lerEquipadosPorHeroi(dbClient, userID)
+		ctx.equipadosPorHeroi, ctx.copiasPorHeroi = lerEquipadosPorHeroi(dbClient, userID)
 	}
 	// As skins da Loja são trajes do Espadachim: com outro personagem, não valem.
 	if !aceitaSkins(ctx.linha.PersonagemBase) {
@@ -242,34 +255,46 @@ func lerPontosPorHeroi(dbClient *supabase.Client, userID string) map[string]Prim
 	return mapa
 }
 
-// lerEquipadosPorHeroi lê os equipamentos por personagem em rpg_equipados_herois (fallback sem RPC nova).
-func lerEquipadosPorHeroi(dbClient *supabase.Client, userID string) map[string]map[string]string {
+// lerEquipadosPorHeroi lê os equipamentos e cópias por personagem em rpg_equipados_herois (fallback sem RPC nova).
+func lerEquipadosPorHeroi(dbClient *supabase.Client, userID string) (map[string]map[string]string, map[string]map[string]int) {
 	dados, _, err := dbClient.From("rpg_equipados_herois").
-		Select("personagem_base,slot,item_id", "", false).
+		Select("personagem_base,slot,item_id,copia", "", false).
 		Eq("user_id", userID).
 		Execute()
 	if err != nil {
-		return nil
+		dados, _, err = dbClient.From("rpg_equipados_herois").
+			Select("personagem_base,slot,item_id", "", false).
+			Eq("user_id", userID).
+			Execute()
+	}
+	if err != nil {
+		return nil, nil
 	}
 	var linhas []struct {
 		PersonagemBase string `json:"personagem_base"`
 		Slot           string `json:"slot"`
 		ItemID         string `json:"item_id"`
+		Copia          int    `json:"copia"`
 	}
 	if json.Unmarshal(dados, &linhas) != nil || len(linhas) == 0 {
-		return nil
+		return nil, nil
 	}
 	mapa := make(map[string]map[string]string)
+	copias := make(map[string]map[string]int)
 	for _, l := range linhas {
 		if l.PersonagemBase == "" || l.Slot == "" || l.ItemID == "" {
 			continue
 		}
 		if mapa[l.PersonagemBase] == nil {
 			mapa[l.PersonagemBase] = make(map[string]string)
+			copias[l.PersonagemBase] = make(map[string]int)
 		}
 		mapa[l.PersonagemBase][l.Slot] = l.ItemID
+		if l.Copia > 0 {
+			copias[l.PersonagemBase][l.Slot] = l.Copia
+		}
 	}
-	return mapa
+	return mapa, copias
 }
 
 // carregarContextoPersonagemAntigo é a leitura de antes do sql/076, mantida como reserva.
@@ -312,7 +337,7 @@ func equipamentoDoContexto(dbClient *supabase.Client, userID string, ctx context
 
 	var estado EstadoEquipamento
 	if ctx.inventarioLido {
-		estado = MontarEstadoEquipamentoComOutros(nivel, base, ctx.inventario, ctx.EquipadosDoHeroi(base), pontosHeroi, ctx.equipadosPorHeroi)
+		estado = MontarEstadoEquipamentoCompleto(nivel, base, ctx.inventario, ctx.EquipadosDoHeroi(base), pontosHeroi, ctx.equipadosPorHeroi, ctx.copiasPorHeroi)
 	} else {
 		var err error
 		if estado, err = carregarEstadoEquipamento(dbClient, userID, base, nivel, pontosHeroi); err != nil {

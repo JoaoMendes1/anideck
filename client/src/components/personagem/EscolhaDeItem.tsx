@@ -93,11 +93,11 @@ export default function EscolhaDeItem({
     return () => window.removeEventListener('keydown', aoTeclar)
   }, [slot, aoFechar])
 
-  const trocar = async (itemId: string) => {
+  const trocar = async (itemId: string, copia?: number) => {
     if (salvando) return
     setErro('')
     setSalvando(true)
-    const resultado = await equiparItemRPG(slot, itemId)
+    const resultado = copia ? await equiparItemRPG(slot, itemId, copia) : await equiparItemRPG(slot, itemId)
     setSalvando(false)
     if (resultado.dados) {
       aoAtualizar(resultado.dados)
@@ -108,11 +108,11 @@ export default function EscolhaDeItem({
   }
 
   // Aprimorar não fecha a lista: o jogador costuma subir mais de um nível seguido.
-  const aprimorar = async (itemId: string) => {
+  const aprimorar = async (itemId: string, copia?: number) => {
     if (salvando) return
     setErro('')
     setSalvando(true)
-    const resultado = await aprimorarItem(itemId)
+    const resultado = copia ? await aprimorarItem(itemId, copia) : await aprimorarItem(itemId)
     setSalvando(false)
     if (resultado.dados) {
       aoAtualizar(resultado.dados)
@@ -190,7 +190,11 @@ export default function EscolhaDeItem({
             const emUsoOutros = item.em_uso_outros ?? 0
             const semCopiaLivre = !item.equipado && emUsoOutros >= item.quantidade
             const copiasLivres = Math.max(0, item.quantidade - (item.equipado ? 1 : 0) - emUsoOutros)
-            const emUsoPorTexto = (item.em_uso_por ?? []).join(', ') || 'outro personagem'
+            const emUsoPorTexto =
+              item.em_uso_detalhes && item.em_uso_detalhes.length > 0
+                ? item.em_uso_detalhes.map((d) => (d.aprimoramento > 0 ? `${d.heroi} (+${d.aprimoramento})` : d.heroi)).join(', ')
+                : (item.em_uso_por ?? []).join(', ') || 'outro personagem'
+            const copiaAlvo = item.copia_alvo && item.copia_alvo > 0 ? item.copia_alvo : undefined
             return (
               <li key={item.id} className={`flex flex-wrap items-center gap-2 rounded-xl border p-2.5 ${estilo.borda} ${estilo.fundo}`}>
                 <span className={`flex h-10 w-11 shrink-0 items-center justify-center overflow-hidden rounded-lg bg-void/50 ${estilo.texto}`}>
@@ -216,8 +220,10 @@ export default function EscolhaDeItem({
                   )}
                   {emUsoOutros > 0 && (
                     <p className="m-0 text-xs font-bold text-gold">
-                      Em uso por {emUsoPorTexto}
-                      {item.quantidade > 1 && copiasLivres > 0 ? ` · ${copiasLivres} ${copiasLivres === 1 ? 'livre' : 'livres'}` : ''}
+                      {item.equipado ? `Outra cópia em uso por ${emUsoPorTexto}` : `Em uso por ${emUsoPorTexto}`}
+                      {!item.equipado && item.quantidade > 1 && copiasLivres > 0
+                        ? ` · ${copiasLivres} ${copiasLivres === 1 ? 'livre' : 'livres'} (+${nivel})`
+                        : ''}
                     </p>
                   )}
                   {item.em_sintonia && (
@@ -273,7 +279,7 @@ export default function EscolhaDeItem({
                 ) : (
                   <button
                     type="button"
-                    onClick={() => trocar(item.id)}
+                    onClick={() => trocar(item.id, copiaAlvo)}
                     disabled={salvando}
                     className="h-10 shrink-0 cursor-pointer rounded-full bg-gradient-to-r from-holo-1 to-holo-3 px-4 text-xs font-extrabold text-void disabled:cursor-wait disabled:opacity-60"
                   >
@@ -319,8 +325,9 @@ export default function EscolhaDeItem({
                     {custo > 0 ? (
                       <button
                         type="button"
-                        onClick={() => aprimorar(item.id)}
-                        disabled={salvando || ouro < custo}
+                        onClick={() => aprimorar(item.id, copiaAlvo)}
+                        disabled={salvando || ouro < custo || semCopiaLivre}
+                        title={semCopiaLivre ? `Troque para quem usa (${emUsoPorTexto}) ou desequipe para aprimorar` : undefined}
                         aria-label={`Aprimorar ${item.nome} para +${nivel + 1} por ${custo} de Ouro`}
                         className="inline-flex min-h-10 shrink-0 cursor-pointer items-center gap-1.5 rounded-full border border-gold/50 px-3 font-bold text-gold hover:bg-gold/10 disabled:cursor-not-allowed disabled:opacity-50"
                       >

@@ -217,7 +217,12 @@ func carregarInventarioBruto(dbClient *supabase.Client, userID string) ([]linhaI
 // EstadoParaBase calcula EstadoEquipamento para outro personagem desbloqueado usando
 // exclusivamente os slots equipados próprios daquele herói (nunca herdando do líder).
 func EstadoParaBase(nivel int, base string, inventario []linhaInventarioRPG, equipadosHeroi map[string]string, pontos PrimariosRPG, maestria map[string]int) EstadoEquipamento {
-	est := MontarEstadoEquipamento(nivel, base, inventario, equipadosHeroi, pontos)
+	return EstadoParaBaseComCopias(nivel, base, inventario, equipadosHeroi, nil, nil, nil, pontos, maestria)
+}
+
+// EstadoParaBaseComCopias calcula EstadoEquipamento considerando a cópia exata vestida por cada herói.
+func EstadoParaBaseComCopias(nivel int, base string, inventario []linhaInventarioRPG, equipadosHeroi map[string]string, equipadosPorHeroi map[string]map[string]string, copiasPorHeroi map[string]map[string]int, pontos PrimariosRPG, maestria map[string]int) EstadoEquipamento {
+	est := MontarEstadoEquipamentoCompleto(nivel, base, inventario, equipadosHeroi, pontos, equipadosPorHeroi, copiasPorHeroi)
 	est.Habilidades = AplicarMaestria(LivroDeHabilidades(base, nivel), maestria)
 	return est
 }
@@ -288,7 +293,7 @@ func MontarEsquadraoDoContexto(dbClient *supabase.Client, userID string, ctx con
 	fatorVida := float64(max(1, 1000-min(1000, max(0, vidaPerdidaPorMil)))) / 1000.0
 	for _, allyBase := range aliados {
 		pontosAlly := LimitarPontos(ctx.PontosDoHeroi(allyBase), PontosDisponiveis(nivel))
-		est := EstadoParaBase(nivel, allyBase, inv, ctx.EquipadosDoHeroi(allyBase), pontosAlly, ctx.maestria)
+		est := EstadoParaBaseComCopias(nivel, allyBase, inv, ctx.EquipadosDoHeroi(allyBase), ctx.equipadosPorHeroi, ctx.copiasPorHeroi, pontosAlly, ctx.maestria)
 		vidaAlly := max(1, int(float64(est.Atributos.Vida)*fatorVida+0.5))
 		c := CombatenteDoEstado(est)
 		c.VidaInicial = vidaAlly
@@ -357,7 +362,7 @@ func ResumoElencoEsquadrao(dbClient *supabase.Client, userID string, ctx context
 			continue
 		}
 		pontosAlly := LimitarPontos(ctx.PontosDoHeroi(id), disponiveis)
-		est := EstadoParaBase(eqLider.Nivel, id, inv, ctx.EquipadosDoHeroi(id), pontosAlly, ctx.maestria)
+		est := EstadoParaBaseComCopias(eqLider.Nivel, id, inv, ctx.EquipadosDoHeroi(id), ctx.equipadosPorHeroi, ctx.copiasPorHeroi, pontosAlly, ctx.maestria)
 		saida = append(saida, HeroiResumoEsquadrao{
 			ID:           id,
 			Nome:         NomePadraoElenco(id),

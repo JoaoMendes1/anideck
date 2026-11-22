@@ -562,6 +562,8 @@ type contextoPersonagem struct {
 	inventario        []linhaInventarioRPG
 	equipados         map[string]string
 	equipadosPorHeroi map[string]map[string]string
+	copias            map[string]int
+	copiasPorHeroi    map[string]map[string]int
 	bilhetes          int
 	ouro              int
 	maestria          map[string]int
@@ -588,6 +590,24 @@ func (c contextoPersonagem) EquipadosDoHeroi(base string) map[string]string {
 		return c.equipados
 	}
 	return map[string]string{}
+}
+
+// CopiasDoHeroi devolve o índice da cópia (1..quantidade) equipada em cada slot do herói.
+func (c contextoPersonagem) CopiasDoHeroi(base string) map[string]int {
+	base = strings.TrimSpace(base)
+	if base == "" && c.linha != nil {
+		base = c.linha.PersonagemBase
+	}
+	if c.copiasPorHeroi != nil {
+		if cp, ok := c.copiasPorHeroi[base]; ok {
+			return cp
+		}
+		return nil
+	}
+	if c.linha != nil && (base == "" || base == c.linha.PersonagemBase) {
+		return c.copias
+	}
+	return nil
 }
 
 // PontosDoHeroi devolve a distribuição de pontos própria de cada personagem desbloqueado.

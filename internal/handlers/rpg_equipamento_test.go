@@ -220,3 +220,49 @@ func TestEquipamentoExclusivoEntreHerois(t *testing.T) {
 		t.Fatalf("não deveria bloquear item já equipado no herói atual: %q", msg)
 	}
 }
+
+func TestAprimoramentoPorCopiaEntreHerois(t *testing.T) {
+	inv := []linhaInventarioRPG{
+		{
+			Quantidade:     2,
+			Aprimoramento:  6,
+			Aprimoramentos: []int{6, 0},
+			Item:           &ItemRPG{ID: "peitoral_aco", Slot: "armadura", Nome: "Peitoral de Aço", Raridade: "raro", Defesa: 20, NivelMinimo: 1},
+		},
+	}
+	porHeroi := map[string]map[string]string{
+		"espadachim_eter": {"armadura": "peitoral_aco"},
+		"arqueiro_trevas": {"armadura": "peitoral_aco"},
+	}
+	copiasPorHeroi := map[string]map[string]int{
+		"espadachim_eter": {"armadura": 1},
+		"arqueiro_trevas": {"armadura": 2},
+	}
+
+	estadoEsp := MontarEstadoEquipamentoCompleto(15, "espadachim_eter", inv, porHeroi["espadachim_eter"], PrimariosRPG{}, porHeroi, copiasPorHeroi)
+	estadoYoru := MontarEstadoEquipamentoCompleto(15, "arqueiro_trevas", inv, porHeroi["arqueiro_trevas"], PrimariosRPG{}, porHeroi, copiasPorHeroi)
+
+	var slotEsp, slotYoru *ItemRPG
+	for _, s := range estadoEsp.Slots {
+		if s.Slot == "armadura" {
+			slotEsp = s.Item
+		}
+	}
+	for _, s := range estadoYoru.Slots {
+		if s.Slot == "armadura" {
+			slotYoru = s.Item
+		}
+	}
+	if slotEsp == nil || slotEsp.Aprimoramento != 6 || slotEsp.Copia != 1 {
+		t.Fatalf("Espadachim deveria vestir cópia 1 +6, veio %+v", slotEsp)
+	}
+	if slotYoru == nil || slotYoru.Aprimoramento != 0 || slotYoru.Copia != 2 {
+		t.Fatalf("Yoru deveria vestir cópia 2 +0, veio %+v", slotYoru)
+	}
+	if estadoEsp.Atributos.Defesa <= estadoYoru.Atributos.Defesa {
+		t.Fatalf("Defesa com +6 (%d) deveria superar cópia +0 (%d)", estadoEsp.Atributos.Defesa, estadoYoru.Atributos.Defesa)
+	}
+	if len(estadoYoru.Inventario) != 1 || len(estadoYoru.Inventario[0].EmUsoDetalhes) != 1 || estadoYoru.Inventario[0].EmUsoDetalhes[0].Aprimoramento != 6 {
+		t.Fatalf("Yoru deveria enxergar cópia +6 em uso pelo Espadachim: %+v", estadoYoru.Inventario)
+	}
+}

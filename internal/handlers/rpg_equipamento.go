@@ -67,6 +67,15 @@ type ItemRPG struct {
 	// Aprimoramento é de 0 a 10 (sql/083). Vida, Ataque, Defesa e Magia já vêm com ele somado
 	// quando o item é do jogador; no catálogo, é sempre 0.
 	Aprimoramento int `json:"aprimoramento"`
+	// Copia identifica qual cópia (1..quantidade) está equipada ou em foco (sql/145).
+	Copia int `json:"copia,omitempty"`
+}
+
+// UsoEmOutroHeroi descreve qual cópia e em que nível está vestida em outro herói.
+type UsoEmOutroHeroi struct {
+	Heroi         string `json:"heroi"`
+	Copia         int    `json:"copia"`
+	Aprimoramento int    `json:"aprimoramento"`
 }
 
 // ItemDoInventario é o item como a tela o lista: com quantas cópias, se está em uso e se o
@@ -90,6 +99,12 @@ type ItemDoInventario struct {
 	EmUsoPorOutros int `json:"em_uso_outros,omitempty"`
 	// EmUsoPor lista os nomes dos outros heróis que estão vestindo este item.
 	EmUsoPor []string `json:"em_uso_por,omitempty"`
+	// EmUsoDetalhes lista os outros heróis junto do nível da cópia que cada um veste.
+	EmUsoDetalhes []UsoEmOutroHeroi `json:"em_uso_detalhes,omitempty"`
+	// CopiaAlvo indica qual cópia seria equipada/aprimorada a partir da tela do herói atual.
+	CopiaAlvo int `json:"copia_alvo,omitempty"`
+	// Aprimoramentos traz o nível individual de cada cópia possuída (1..quantidade).
+	Aprimoramentos []int `json:"aprimoramentos,omitempty"`
 }
 
 // SlotRPG é um dos sete lugares de equipamento. Item nil é slot vazio.
@@ -223,9 +238,35 @@ func somarItem(total AtributosRPG, i ItemRPG) AtributosRPG {
 
 // linhaInventarioRPG é uma linha de rpg_inventario com o item do catálogo embutido.
 type linhaInventarioRPG struct {
-	Quantidade    int      `json:"quantidade"`
-	Aprimoramento int      `json:"aprimoramento"`
-	Item          *ItemRPG `json:"rpg_itens"`
+	Quantidade     int      `json:"quantidade"`
+	Aprimoramento  int      `json:"aprimoramento"`
+	Aprimoramentos []int    `json:"aprimoramentos"`
+	Item           *ItemRPG `json:"rpg_itens"`
+}
+
+// NiveisDasCopias devolve os níveis individuais de cada cópia (1..quantidade). Quando
+// aprimoramentos está vazio (linhas anteriores ao sql/145), apenas a cópia 1 herda o
+// campo legado aprimoramento; cópias adicionais começam em +0.
+func (l linhaInventarioRPG) NiveisDasCopias() []int {
+	qtd := max(1, l.Quantidade)
+	saida := make([]int, qtd)
+	if len(l.Aprimoramentos) > 0 {
+		for i := 0; i < qtd && i < len(l.Aprimoramentos); i++ {
+			saida[i] = max(0, min(aprimoramentoMaximoGeral, l.Aprimoramentos[i]))
+		}
+		return saida
+	}
+	saida[0] = max(0, min(aprimoramentoMaximoGeral, l.Aprimoramento))
+	return saida
+}
+
+// NivelDaCopia devolve o nível da cópia 1-indexada (0 fora do intervalo).
+func (l linhaInventarioRPG) NivelDaCopia(copia int) int {
+	niveis := l.NiveisDasCopias()
+	if copia < 1 || copia > len(niveis) {
+		return 0
+	}
+	return niveis[copia-1]
 }
 
 // interpretarInventarioRPG lê a resposta do PostgREST. Linha sem item (apagado do catálogo
@@ -244,6 +285,9 @@ func interpretarInventarioRPG(dados []byte) ([]linhaInventarioRPG, error) {
 			l.Quantidade = 1
 		}
 		l.Aprimoramento = max(0, min(aprimoramentoMaximoGeral, l.Aprimoramento))
+		for i := range l.Aprimoramentos {
+			l.Aprimoramentos[i] = max(0, min(aprimoramentoMaximoGeral, l.Aprimoramentos[i]))
+		}
 		saida = append(saida, l)
 	}
 	return saida, nil
@@ -284,6 +328,12 @@ func ErroItemSemCopiaLivre(estado EstadoEquipamento, itemID string) string {
 // MontarEstadoEquipamentoComOutros estende MontarEstadoEquipamento informando no inventário
 // quantas cópias já estão equipadas por outros heróis do elenco.
 func MontarEstadoEquipamentoComOutros(nivel int, personagemBase string, inventario []linhaInventarioRPG, equipados map[string]string, pontos PrimariosRPG, equipadosPorHeroi map[string]map[string]string) EstadoEquipamento {
+	return MontarEstadoEquipamentoCompleto(nivel, personagemBase, inventario, equipados, pontos, equipadosPorHeroi, nil)
+}
+
+// MontarEstadoEquipamentoCompleto calcula bônus de slots e exibição de inventário respeitando
+// o nível de aprimoramento individual de cada cópia vestida por cada herói (sql/145).
+func MontarEstadoEquipamentoCompleto(nivel int, personagemBase string, inventario []linhaInventarioRPG, equipados map[string]string, pontos PrimariosRPG, equipadosPorHeroi map[string]map[string]string, copiasPorHeroi map[string]map[string]int) EstadoEquipamento {
 	if nivel < 1 {
 		nivel = 1
 	}
@@ -293,29 +343,71 @@ func MontarEstadoEquipamentoComOutros(nivel int, personagemBase string, inventar
 	primarios := primariosBase.Somar(pontos)
 
 	// O requisito sai do item do catálogo: aprimorar não muda o que ele pede.
-	porID := make(map[string]ItemRPG, len(inventario))
+	linhaPorID := make(map[string]linhaInventarioRPG, len(inventario))
+	niveisPorID := make(map[string][]int, len(inventario))
+	reqPorID := make(map[string]*PrimariosRPG, len(inventario))
 	faltaDoItem := make(map[string]string, len(inventario))
 	for _, l := range inventario {
-		item := AplicarAprimoramento(*l.Item, l.Aprimoramento)
-		if req := RequisitosDoItem(*l.Item); temRequisito(req) {
-			item.Requisitos = &req
-			faltaDoItem[l.Item.ID] = FaltaDeRequisito(req, primarios)
-		}
-		porID[l.Item.ID] = item
-	}
-
-	outrosPorItem := make(map[string][]string)
-	for baseHeroi, slotsHeroi := range equipadosPorHeroi {
-		if baseHeroi == "" || baseHeroi == personagemBase {
+		if l.Item == nil {
 			continue
 		}
+		linhaPorID[l.Item.ID] = l
+		niveisPorID[l.Item.ID] = l.NiveisDasCopias()
+		if req := RequisitosDoItem(*l.Item); temRequisito(req) {
+			copiaReq := req
+			reqPorID[l.Item.ID] = &copiaReq
+			faltaDoItem[l.Item.ID] = FaltaDeRequisito(req, primarios)
+		}
+	}
+
+	outrosBases := make([]string, 0, len(equipadosPorHeroi))
+	for baseHeroi := range equipadosPorHeroi {
+		if baseHeroi != "" && baseHeroi != personagemBase {
+			outrosBases = append(outrosBases, baseHeroi)
+		}
+	}
+	sort.Strings(outrosBases)
+
+	ocupadasPorItem := make(map[string]map[int]bool)
+	detalhesPorItem := make(map[string][]UsoEmOutroHeroi)
+	outrosPorItem := make(map[string][]string)
+
+	for _, baseHeroi := range outrosBases {
+		slotsHeroi := equipadosPorHeroi[baseHeroi]
+		copiasHeroi := copiasPorHeroi[baseHeroi]
 		vistoNoHeroi := make(map[string]bool)
-		for _, id := range slotsHeroi {
+		for _, slot := range SlotsRPG() {
+			id := slotsHeroi[slot]
 			if id == "" || vistoNoHeroi[id] {
 				continue
 			}
 			vistoNoHeroi[id] = true
-			outrosPorItem[id] = append(outrosPorItem[id], NomePadraoElenco(baseHeroi))
+			if ocupadasPorItem[id] == nil {
+				ocupadasPorItem[id] = make(map[int]bool)
+			}
+			c := 0
+			if copiasHeroi != nil {
+				c = copiasHeroi[slot]
+			}
+			if c <= 0 {
+				c = 1
+				for ocupadasPorItem[id][c] {
+					c++
+				}
+			}
+			ocupadasPorItem[id][c] = true
+			niveis := niveisPorID[id]
+			nivelCopia := 0
+			if c >= 1 && c <= len(niveis) {
+				nivelCopia = niveis[c-1]
+			}
+			nomeHeroi := NomePadraoElenco(baseHeroi)
+			outrosPorItem[id] = append(outrosPorItem[id], nomeHeroi)
+			detalhesPorItem[id] = append(detalhesPorItem[id], UsoEmOutroHeroi{
+				Heroi:         nomeHeroi,
+				Copia:         c,
+				Aprimoramento: nivelCopia,
+			})
 		}
 	}
 	for id, nomes := range outrosPorItem {
@@ -328,14 +420,40 @@ func MontarEstadoEquipamentoComOutros(nivel int, personagemBase string, inventar
 	slots := make([]SlotRPG, 0, len(SlotsRPG()))
 	emUso := make([]ItemRPG, 0, len(SlotsRPG()))
 	equipadoNoSlot := make(map[string]bool, len(SlotsRPG()))
+	copiaEquipadaPorID := make(map[string]int, len(SlotsRPG()))
+	copiasAtual := copiasPorHeroi[personagemBase]
+
 	for _, slot := range SlotsRPG() {
-		item, possui := porID[equipados[slot]]
-		if !possui || item.Slot != slot {
+		id := equipados[slot]
+		l, possui := linhaPorID[id]
+		if !possui || l.Item.Slot != slot {
 			slots = append(slots, SlotRPG{Slot: slot})
 			continue
 		}
+		niveis := niveisPorID[id]
+		copiaEq := 0
+		if copiasAtual != nil {
+			copiaEq = copiasAtual[slot]
+		}
+		if copiaEq <= 0 || copiaEq > len(niveis) {
+			copiaEq = 1
+			for copiaEq <= len(niveis) && ocupadasPorItem[id][copiaEq] {
+				copiaEq++
+			}
+			if copiaEq > len(niveis) {
+				copiaEq = 1
+			}
+		}
+		nivelEq := 0
+		if copiaEq >= 1 && copiaEq <= len(niveis) {
+			nivelEq = niveis[copiaEq-1]
+		}
+		item := AplicarAprimoramento(*l.Item, nivelEq)
+		item.Copia = copiaEq
+		item.Requisitos = reqPorID[id]
 		copia := item
-		equipadoNoSlot[item.ID] = true
+		equipadoNoSlot[id] = true
+		copiaEquipadaPorID[id] = copiaEq
 		motivo := ""
 		switch {
 		case nivel < item.NivelMinimo:
@@ -343,7 +461,7 @@ func MontarEstadoEquipamentoComOutros(nivel int, personagemBase string, inventar
 		case !ItemServe(item, personagemBase):
 			motivo = "Não serve para a sua classe"
 		default:
-			motivo = faltaDoItem[item.ID]
+			motivo = faltaDoItem[id]
 		}
 		slots = append(slots, SlotRPG{Slot: slot, Item: &copia, Inativo: motivo != "", Motivo: motivo})
 		if motivo == "" {
@@ -360,24 +478,62 @@ func MontarEstadoEquipamentoComOutros(nivel int, personagemBase string, inventar
 	}
 	lista := make([]ItemDoInventario, 0, len(inventario))
 	for _, l := range inventario {
+		id := l.Item.ID
+		niveis := niveisPorID[id]
+		ocupadas := ocupadasPorItem[id]
+
+		copiaAlvo := 0
+		if equipadoNoSlot[id] {
+			copiaAlvo = copiaEquipadaPorID[id]
+		} else {
+			melhorNivel := -1
+			for k := 1; k <= len(niveis); k++ {
+				if ocupadas[k] {
+					continue
+				}
+				if niveis[k-1] > melhorNivel {
+					melhorNivel = niveis[k-1]
+					copiaAlvo = k
+				}
+			}
+		}
+
+		nivelVista := 0
+		if copiaAlvo >= 1 && copiaAlvo <= len(niveis) {
+			nivelVista = niveis[copiaAlvo-1]
+		} else {
+			for _, nv := range niveis {
+				if nv > nivelVista {
+					nivelVista = nv
+				}
+			}
+		}
+
+		itemVista := AplicarAprimoramento(*l.Item, nivelVista)
+		itemVista.Copia = copiaAlvo
+		itemVista.Requisitos = reqPorID[id]
+
 		teto := TetoDeAprimoramento(l.Item.Raridade)
 		custo := 0
-		if l.Aprimoramento < teto {
-			custo = CustoDeAprimoramento(l.Item.Raridade, l.Aprimoramento+1)
+		if nivelVista < teto {
+			custo = CustoDeAprimoramento(l.Item.Raridade, nivelVista+1)
 		}
-		usandoOutros := outrosPorItem[l.Item.ID]
+		usandoOutros := outrosPorItem[id]
 		lista = append(lista, ItemDoInventario{
-			ItemRPG:             porID[l.Item.ID],
+			ItemRPG:             itemVista,
 			Quantidade:          l.Quantidade,
-			Equipado:            equipadoNoSlot[l.Item.ID],
+			Equipado:            equipadoNoSlot[id],
 			Bloqueado:           nivel < l.Item.NivelMinimo,
 			NaoServe:            !ItemServe(*l.Item, personagemBase),
 			EmSintonia:          EmSintonia(*l.Item, elemento),
-			FaltaRequisito:      faltaDoItem[l.Item.ID],
+			FaltaRequisito:      faltaDoItem[id],
 			AprimoramentoMaximo: teto,
 			CustoAprimorar:      custo,
 			EmUsoPorOutros:      len(usandoOutros),
 			EmUsoPor:            usandoOutros,
+			EmUsoDetalhes:       detalhesPorItem[id],
+			CopiaAlvo:           copiaAlvo,
+			Aprimoramentos:      niveis,
 		})
 	}
 	sort.SliceStable(lista, func(i, j int) bool {
@@ -444,8 +600,8 @@ func carregarEstadoEquipamento(dbClient *supabase.Client, userID, personagemBase
 		equipados[l.Slot] = l.ItemID
 	}
 
-	equipadosPorHeroi := lerEquipadosPorHeroi(dbClient, userID)
-	return MontarEstadoEquipamentoComOutros(nivel, personagemBase, inventario, equipados, pontos, equipadosPorHeroi), nil
+	equipadosPorHeroi, copiasPorHeroi := lerEquipadosPorHeroi(dbClient, userID)
+	return MontarEstadoEquipamentoCompleto(nivel, personagemBase, inventario, equipados, pontos, equipadosPorHeroi, copiasPorHeroi), nil
 }
 
 // RPGHandler responde pelas rotas de jogo do personagem: equipamentos, batalhas e invocação.
@@ -525,6 +681,7 @@ func (h *RPGHandler) HandleEquiparItemRPG(w http.ResponseWriter, r *http.Request
 	var corpo struct {
 		Slot   string `json:"slot"`
 		ItemID string `json:"item_id"`
+		Copia  int    `json:"copia"`
 	}
 	if err := json.NewDecoder(r.Body).Decode(&corpo); err != nil {
 		responderErroJSON(w, http.StatusBadRequest, "Corpo inválido.")
@@ -564,10 +721,14 @@ func (h *RPGHandler) HandleEquiparItemRPG(w http.ResponseWriter, r *http.Request
 		}
 	}
 
-	bruto := strings.TrimSpace(sessao.dbClient.Rpc("rpg_equipar_item", "", map[string]interface{}{
+	rpcParams := map[string]interface{}{
 		"p_slot":    slot,
 		"p_item_id": itemID,
-	}))
+	}
+	if corpo.Copia > 0 {
+		rpcParams["p_copia"] = corpo.Copia
+	}
+	bruto := strings.TrimSpace(sessao.dbClient.Rpc("rpg_equipar_item", "", rpcParams))
 	erroDaRegra, falhou := lerRetornoRPG(bruto)
 	if falhou {
 		log.Printf("[RPG] Falha ao equipar (user=%s, slot=%s): %s", sessao.userID, slot, bruto)

@@ -680,5 +680,17 @@
         "caminho": "/personagem"
       }
     ]
+  },
+  {
+    "chave": "2026-11-21-aprimoramento-por-copia",
+    "titulo": "Cada cópia de equipamento agora tem seu próprio nível de aprimoramento",
+    "categoria": "novidade",
+    "resumo": "Quando você upa um equipamento (ex.: +6), esse aprimoramento pertence somente àquela cópia específica!\n\nSe você tiver uma 2ª cópia do mesmo item para equipar em outro herói do seu elenco, ela vai no nível +0 (sem herdar o +6 da peça do primeiro personagem) e pode ser aprimorada separadamente.",
+    "links": [
+      {
+        "rotulo": "Ver equipamentos dos heróis",
+        "caminho": "/personagem"
+      }
+    ]
   }
 ]

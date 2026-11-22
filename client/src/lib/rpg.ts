@@ -85,6 +85,8 @@ export interface ItemRPG {
   nivel_minimo: number
   /** De 0 a 10 (sql/083); Vida, Ataque, Defesa e Magia já vêm com ele somado. */
   aprimoramento?: number
+  /** Índice da cópia (1..quantidade) equipada ou alvo (sql/145). */
+  copia?: number
   /** Atributos do sql/121. Chances em milésimos; dano_critico em pontos percentuais. */
   magia?: number
   velocidade?: number
@@ -98,6 +100,12 @@ export interface ItemRPG {
   elemento?: string
   /** Mínimo de cada primário para o item valer; ausente é sem requisito. */
   requisitos?: Partial<PrimariosRPG>
+}
+
+export interface UsoEmOutroHeroi {
+  heroi: string
+  copia: number
+  aprimoramento: number
 }
 
 export interface ItemDoInventario extends ItemRPG {
@@ -118,6 +126,12 @@ export interface ItemDoInventario extends ItemRPG {
   em_uso_outros?: number
   /** Nomes dos outros heróis que estão vestindo este item. */
   em_uso_por?: string[]
+  /** Outros heróis junto do nível individual da cópia que cada um veste. */
+  em_uso_detalhes?: UsoEmOutroHeroi[]
+  /** Cópia que seria equipada ou aprimorada a partir do herói atual. */
+  copia_alvo?: number
+  /** Níveis de aprimoramento de todas as cópias (1..quantidade). */
+  aprimoramentos?: number[]
 }
 
 export interface SlotRPG {
@@ -491,13 +505,14 @@ export async function obterEquipamentos(): Promise<EstadoEquipamento | null> {
 export async function equiparItemRPG(
   slot: SlotId,
   itemId: string,
+  copia?: number,
 ): Promise<{ dados?: EstadoEquipamento; erro?: string }> {
   const falha = 'Não foi possível trocar o equipamento agora.'
   try {
     const res = await fetch('/api/personagem/equipamentos', {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json', ...(await cabecalhoDeAutenticacao()) },
-      body: JSON.stringify({ slot, item_id: itemId }),
+      body: JSON.stringify({ slot, item_id: itemId, ...(copia && copia > 0 ? { copia } : {}) }),
     })
     const json = (await res.json().catch(() => null)) as (EstadoEquipamento & { error?: string }) | null
     if (!res.ok) return { erro: json?.error || falha }
@@ -508,14 +523,14 @@ export async function equiparItemRPG(
   }
 }
 
-/** Sobe um nível do item. O preço é do servidor; a tela só o mostra. */
-export async function aprimorarItem(itemId: string): Promise<{ dados?: EstadoEquipamento; erro?: string }> {
+/** Sobe um nível do item (ou da cópia específica). O preço é do servidor; a tela só o mostra. */
+export async function aprimorarItem(itemId: string, copia?: number): Promise<{ dados?: EstadoEquipamento; erro?: string }> {
   const falha = 'Não foi possível aprimorar agora.'
   try {
     const res = await fetch('/api/rpg/aprimorar', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', ...(await cabecalhoDeAutenticacao()) },
-      body: JSON.stringify({ item_id: itemId }),
+      body: JSON.stringify({ item_id: itemId, ...(copia && copia > 0 ? { copia } : {}) }),
     })
     const json = (await res.json().catch(() => null)) as (EstadoEquipamento & { error?: string }) | null
     if (!res.ok) return { erro: json?.error || falha }
