@@ -217,7 +217,7 @@ func carregarInventarioBruto(dbClient *supabase.Client, userID string) ([]linhaI
 // EstadoParaBase calcula EstadoEquipamento para outro personagem desbloqueado usando
 // exclusivamente os slots equipados próprios daquele herói (nunca herdando do líder).
 func EstadoParaBase(nivel int, base string, inventario []linhaInventarioRPG, equipadosHeroi map[string]string, pontos PrimariosRPG, maestria map[string]int) EstadoEquipamento {
-	return EstadoParaBaseComCopias(nivel, base, inventario, equipadosHeroi, nil, nil, nil, pontos, maestria)
+	return EstadoParaBaseComCopias(nivel, base, inventario, equipadosHeroi, nil, nil, pontos, maestria)
 }
 
 // EstadoParaBaseComCopias calcula EstadoEquipamento considerando a cópia exata vestida por cada herói.
